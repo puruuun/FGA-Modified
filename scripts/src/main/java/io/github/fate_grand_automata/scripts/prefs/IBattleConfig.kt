@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.scripts.prefs
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
+import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 
 interface IBattleConfig : IExecutionProfile {
     val id: String
@@ -16,6 +17,8 @@ interface IBattleConfig : IExecutionProfile {
     val secondaryStartServant: Int
     val secondaryStartCardCount: Int
     val secondaryExecution: IExecutionProfile
+    /** Skill and NP automatic use is shared by both start conditions. */
+    var spam: List<ServantSpamConfig>
 
     fun executionProfile(index: Int): IExecutionProfile = when (index) {
         0 -> this

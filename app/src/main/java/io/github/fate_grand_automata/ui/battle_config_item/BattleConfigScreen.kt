@@ -90,7 +90,7 @@ fun BattleConfigScreen(
 sealed class BattleConfigDestination {
     data class SkillMaker(val profileIndex: Int = 0) : BattleConfigDestination()
     data class CardPriority(val profileIndex: Int = 0) : BattleConfigDestination()
-    data class Spam(val profileIndex: Int = 0) : BattleConfigDestination()
+    object Spam : BattleConfigDestination()
     object PreferredSupport : BattleConfigDestination()
     object Back : BattleConfigDestination()
     class Other(val id: String) : BattleConfigDestination()
@@ -107,8 +107,8 @@ private fun BattleConfigContent(
 ) {
     val startMode by config.commandStartMode.remember()
     val secondEnabled by config.secondaryStartEnabled.remember()
-    val showFirst = startMode == CommandStartMode.CardCount
-    val showSecond = showFirst && secondEnabled
+    val cardCountMode = startMode == CommandStartMode.CardCount
+    val showSecond = cardCountMode && secondEnabled
 
     Box(
         modifier = Modifier
@@ -233,17 +233,10 @@ private fun BattleConfigContent(
                         Column {
                             SkillCommandGroup(
                                 config = config.execution,
-                                title = stringResource(R.string.p_battle_config_cmd),
+                                title = if (cardCountMode) stringResource(R.string.command_start_edit_command, 1)
+                                    else stringResource(R.string.p_battle_config_cmd),
                                 openSkillMaker = { navigate(BattleConfigDestination.SkillMaker()) }
                             )
-                            if (showFirst) {
-                                HorizontalDivider()
-                                SkillCommandGroup(
-                                    config = config.execution,
-                                    title = stringResource(R.string.command_start_edit_command, 1),
-                                    openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(0)) }
-                                )
-                            }
                             if (showSecond) {
                                 HorizontalDivider()
                                 SkillCommandGroup(
@@ -286,7 +279,7 @@ private fun BattleConfigContent(
 
                                 ConfigSummaryCell(
                                     label = stringResource(R.string.p_spam_spam),
-                                    onClick = { navigate(BattleConfigDestination.Spam()) },
+                                    onClick = { navigate(BattleConfigDestination.Spam) },
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     ConfigSummaryValue(
@@ -310,29 +303,19 @@ private fun BattleConfigContent(
                                 RaidDelay(config = config, modifier = Modifier.weight(1f))
                             }
 
-                            if (showFirst) {
-                                HorizontalDivider()
-                                ProfileSpamPreference(config.execution, 0, navigate)
-                            }
-                            if (showSecond) {
-                                HorizontalDivider()
-                                ProfileSpamPreference(config.secondaryExecution, 1, navigate)
-                            }
-
                             HorizontalDivider()
 
-                            val cardPriority by vm.cardPriority.collectAsState(null)
-
-                            cardPriority?.let {
-                                Preference(
-                                    title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
-                                    summary = { CardPrioritySummary(it) },
-                                    onClick = { navigate(BattleConfigDestination.CardPriority()) }
-                                )
-                            }
-                            if (showFirst) {
-                                HorizontalDivider()
+                            if (cardCountMode) {
                                 ProfilePriorityPreference(config.execution, 0, navigate)
+                            } else {
+                                val cardPriority by vm.cardPriority.collectAsState(null)
+                                cardPriority?.let {
+                                    Preference(
+                                        title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
+                                        summary = { CardPrioritySummary(it) },
+                                        onClick = { navigate(BattleConfigDestination.CardPriority()) }
+                                    )
+                                }
                             }
                             if (showSecond) {
                                 HorizontalDivider()
@@ -357,28 +340,11 @@ private fun BattleConfigContent(
                 }
 
                 item {
-                    ShuffleCardsGroup(config.execution, showFirst, config.secondaryExecution.takeIf { showSecond })
+                    ShuffleCardsGroup(config.execution, cardCountMode, config.secondaryExecution.takeIf { showSecond })
                 }
             }
         }
     }
-}
-
-@Composable
-private fun ProfileSpamPreference(
-    profile: ExecutionProfileCore,
-    index: Int,
-    navigate: (BattleConfigDestination) -> Unit
-) {
-    val spam by profile.spam.remember()
-    val enabled = spam.any { servant ->
-        servant.np.spam != SpamEnum.None || servant.skills.any { it.spam != SpamEnum.None }
-    }
-    Preference(
-        title = { Text(stringResource(R.string.command_start_edit_spam, index + 1)) },
-        summary = { Text(stringResource(if (enabled) R.string.config_state_on else R.string.config_state_off)) },
-        onClick = { navigate(BattleConfigDestination.Spam(index)) }
-    )
 }
 
 @Composable

@@ -44,7 +44,7 @@ class BattleConfigCore(
     val braveChains get() = execution.braveChains
     val shuffleCards get() = execution.shuffleCards
     val shuffleCardsWave get() = execution.shuffleCardsWave
-    val spam get() = execution.spam
+    val spam = SpamConfigCore(maker).spam
     val commandStartMode = maker.enum("command_start_mode", CommandStartMode.Basic)
     val commandStartServant = maker.int("command_start_servant", 1)
     val commandStartCardCount = maker.int("command_start_card_count", 2)

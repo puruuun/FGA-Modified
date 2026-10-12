@@ -5,7 +5,11 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
+import io.github.fate_grand_automata.prefs.core.SpamConfigCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.SpamEnum
+import io.github.fate_grand_automata.scripts.models.NpSpamConfig
+import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 import kotlin.test.Test
 
@@ -83,5 +87,28 @@ class ExecutionProfileCoreTest {
         assertThat(ExecutionProfileCore(PrefMaker(restored)).skillCommand.get()).isEqualTo("a4")
         assertThat(ExecutionProfileCore(PrefMaker(restored), "secondary_").skillCommand.get()).isEqualTo("d5")
         assertThat(ExecutionProfileCore(PrefMaker(restored), "secondary_").useServantPriority.get()).isEqualTo(true)
+    }
+
+    @Test
+    fun `common automatic use retains the legacy key and ignores old secondary automatic use`() {
+        val prefs = MemoryPrefs()
+        val settings = listOf(ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(2))))
+        val common = SpamConfigCore(PrefMaker(prefs))
+        common.spam.set(settings)
+        val original = prefs.data["spam_x"]
+        prefs.data["secondary_spam_x"] = "[]"
+        assertThat(SpamConfigCore(PrefMaker(prefs)).spam.get()).isEqualTo(settings)
+        ExecutionProfileCore(PrefMaker(prefs), "secondary_").skillCommand.set("d5")
+        assertThat(prefs.data["spam_x"]).isEqualTo(original)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all))) }.apply()
+        assertThat(SpamConfigCore(PrefMaker(restored)).spam.get()).isEqualTo(settings)
+    }
+
+    @Test
+    fun `bad common automatic-use data falls back to six disabled servants`() {
+        val prefs = MemoryPrefs()
+        prefs.data["spam_x"] = "invalid"
+        assertThat(SpamConfigCore(PrefMaker(prefs)).spam.get()).isEqualTo((1..6).map { ServantSpamConfig() })
     }
 }

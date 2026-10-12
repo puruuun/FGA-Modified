@@ -541,7 +541,6 @@
     <string name="command_start_second_enabled">두 번째 조건 및 별도 설정 사용</string>
     <string name="command_start_edit_command">%1$d번째 설정의 커맨드 편집</string>
     <string name="command_start_edit_priority">%1$d번째 설정의 카드·서번트 우선순위</string>
-    <string name="command_start_edit_spam">%1$d번째 설정의 스킬·보구 자동 사용</string>
     <string name="command_start_profile_caption">%1$d번째 실행 설정</string>
     <string name="command_start_waiting_both">카드 대기: 서번트 %1$d번 %2$d/%3$d장 이상 · 서번트 %4$d번 %5$d/%6$d장 이상</string>
     <string name="command_started_profile">%1$d번째 설정 시작 · 실제 %2$d웨이브 %3$d턴</string>

@@ -25,7 +25,7 @@ import io.github.fate_grand_automata.util.stringRes
 @Composable
 fun ShuffleCardsGroup(
     config: ExecutionProfileCore,
-    showFirst: Boolean = false,
+    cardCountMode: Boolean = false,
     second: ExecutionProfileCore? = null
 ) {
     Card(
@@ -45,12 +45,10 @@ fun ShuffleCardsGroup(
                 title = stringResource(R.string.p_shuffle_cards)
             )
 
-            ShuffleFields(config)
-            if (showFirst) {
-                HorizontalDivider()
+            if (cardCountMode) {
                 PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 1))
-                ShuffleFields(config)
             }
+            ShuffleFields(config)
             if (second != null) {
                 HorizontalDivider()
                 PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 2))

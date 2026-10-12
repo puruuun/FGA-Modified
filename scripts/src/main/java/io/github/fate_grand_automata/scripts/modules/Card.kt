@@ -31,7 +31,7 @@ class Card @Inject constructor(
             (FieldSlot.list.zip(CommandCard.NP.list))
                 .mapNotNull { (servantSlot, np) ->
                     val teamSlot = servantTracker.deployed[servantSlot] ?: return@mapNotNull null
-                    val npSpamConfig = execution.active.spam[teamSlot].np
+                    val npSpamConfig = execution.spam[teamSlot].np
 
                     if (caster.canSpam(npSpamConfig.spam) && (state.commandStage + 1) in npSpamConfig.waves)
                         np

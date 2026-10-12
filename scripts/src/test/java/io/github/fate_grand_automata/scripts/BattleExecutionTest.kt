@@ -23,7 +23,8 @@ class BattleExecutionTest {
         first: TestExecutionProfile = TestExecutionProfile(skillCommand = "a4"),
         second: TestExecutionProfile = TestExecutionProfile(skillCommand = "d5,e5,#,f5"),
         mode: CommandStartMode = CommandStartMode.CardCount,
-        enabled: Boolean = true
+        enabled: Boolean = true,
+        spam: List<ServantSpamConfig> = emptyList()
     ): IBattleConfig = mockk<IBattleConfig>().also { config ->
         every { config.skillCommand } answers { first.skillCommand }
         every { config.cardPriority } answers { first.cardPriority }
@@ -31,7 +32,7 @@ class BattleExecutionTest {
         every { config.useServantPriority } returns first.useServantPriority
         every { config.rearrangeCards } returns first.rearrangeCards
         every { config.braveChains } returns first.braveChains
-        every { config.spam } answers { first.spam }
+        every { config.spam } returns spam
         every { config.shuffleCards } returns first.shuffleCards
         every { config.shuffleCardsWave } returns first.shuffleCardsWave
         every { config.commandStartMode } returns mode
@@ -76,11 +77,10 @@ class BattleExecutionTest {
     }
 
     @Test
-    fun `second profile brave chain rearrangement spam and shuffle are separate`() {
+    fun `second profile brave chain rearrangement and shuffle are separate`() {
         val second = TestExecutionProfile(
             braveChains = listOf(BraveChainEnum.WithNP),
             rearrangeCards = listOf(true),
-            spam = listOf(ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam))),
             shuffleCards = ShuffleCardsEnum.NoNPMatching,
             shuffleCardsWave = 2
         )
@@ -89,7 +89,6 @@ class BattleExecutionTest {
         execution.select(1)
         assertThat(execution.active.braveChains).isEqualTo(listOf(BraveChainEnum.WithNP))
         assertThat(execution.active.rearrangeCards).isEqualTo(listOf(true))
-        assertThat(execution.active.spam[TeamSlot.A].np.spam).isEqualTo(SpamEnum.Spam)
         assertThat(execution.active.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
         assertThat(execution.active.shuffleCardsWave).isEqualTo(2)
     }
@@ -114,15 +113,15 @@ class BattleExecutionTest {
     }
 
     @Test
-    fun `second card selection actually uses its own Brave Chain and NP spam`() {
+    fun `second card selection uses its own Brave Chain and shared NP spam`() {
         val first = TestExecutionProfile()
         val second = TestExecutionProfile(
             useServantPriority = true,
             servantPriority = ServantPriorityPerWave.of("2,1,3,4,5,6"),
-            braveChains = listOf(BraveChainEnum.WithNP),
-            spam = listOf(ServantSpamConfig(), ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(1))))
+            braveChains = listOf(BraveChainEnum.WithNP)
         )
-        val execution = BattleExecution(config(first, second))
+        val sharedSpam = listOf(ServantSpamConfig(), ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(1))))
+        val execution = BattleExecution(config(first, second, spam = sharedSpam))
         execution.select(1)
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val tracker = mockk<ServantTracker>()
@@ -135,10 +134,41 @@ class BattleExecutionTest {
                 if (index < 2) FieldSlot.B else FieldSlot.A, CardTypeEnum.Buster)
         }
         Card(api, tracker, state, caster, mockk<CardParser>(), ApplyBraveChains(), execution)
-            .clickCommandCards(cards, NPUsage(setOf(CommandCard.NP.B), 0))
+            .clickCommandCards(cards, NPUsage.none)
         verify(exactly = 1) { caster.use(CommandCard.NP.B) }
         verify(exactly = 0) { caster.use(CommandCard.NP.A) }
         verify(exactly = 1) { caster.use(CommandCard.Face.A) }
         verify(exactly = 1) { caster.use(CommandCard.Face.B) }
+    }
+
+    @Test
+    fun `common automatic skill and NP settings survive both selections and quest reset`() {
+        val automatic = ServantSpamConfig(
+            np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(2)),
+            skills = listOf(SkillSpamConfig(spam = SpamEnum.Danger, waves = setOf(1)))
+        )
+        val execution = BattleExecution(config(spam = listOf(automatic)))
+        for (index in listOf(0, 1, 0)) {
+            execution.select(index)
+            assertThat(execution.spam[TeamSlot.A]).isEqualTo(automatic)
+            execution.nextRun()
+        }
+    }
+
+    @Test
+    fun `both branches use the common automatic skill settings`() {
+        val automatic = ServantSpamConfig(skills = listOf(SkillSpamConfig(spam = SpamEnum.Spam, waves = setOf(1))))
+        for (index in listOf(0, 1)) {
+            val execution = BattleExecution(config(spam = listOf(automatic)))
+            execution.select(index)
+            val tracker = mockk<ServantTracker>()
+            every { tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A)
+            every { tracker.checkImages } returns mutableMapOf()
+            val caster = mockk<Caster>(relaxed = true)
+            every { caster.canSpam(SpamEnum.Spam) } returns true
+            val state = BattleState().also { it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
+            SkillSpam(mockk<IFgoAutomataApi>(relaxed = true), tracker, state, execution, caster).spamSkills()
+            verify(exactly = 1) { caster.canSpam(SpamEnum.Spam) }
+        }
     }
 }

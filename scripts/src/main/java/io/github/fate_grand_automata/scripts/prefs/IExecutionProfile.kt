@@ -4,7 +4,6 @@ import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 
 /** Battle actions that may differ between the two start conditions. */
 interface IExecutionProfile {
@@ -16,5 +15,4 @@ interface IExecutionProfile {
     val braveChains: List<BraveChainEnum>
     val shuffleCards: ShuffleCardsEnum
     val shuffleCardsWave: Int
-    var spam: List<ServantSpamConfig>
 }

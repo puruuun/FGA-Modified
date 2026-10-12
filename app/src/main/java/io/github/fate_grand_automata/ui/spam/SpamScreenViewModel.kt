@@ -21,15 +21,14 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 class SpamScreenViewModel @AssistedInject constructor(
     prefs: IPreferences,
     prefsCore: PrefsCore,
-    @Assisted id: String,
-    @Assisted val profileIndex: Int
+    @Assisted id: String
 ) : ViewModel() {
-    val battleConfig = prefs.forBattleConfig(id).executionProfile(profileIndex)
+    val battleConfig = prefs.forBattleConfig(id)
     val battleConfigCore = prefsCore.forBattleConfig(id)
 
     @AssistedFactory
     interface Factory {
-        fun create(id: String, profileIndex: Int = 0): SpamScreenViewModel
+        fun create(id: String): SpamScreenViewModel
     }
     private val spamConfig = battleConfig.spam
 

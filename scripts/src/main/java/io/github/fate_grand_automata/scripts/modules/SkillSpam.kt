@@ -27,7 +27,7 @@ class SkillSpam @Inject constructor(
         for (servantSlot in FieldSlot.list) {
             val skills = servantSlot.skills()
             val teamSlot = servantTracker.deployed[servantSlot] ?: continue
-            val servantSpamConfig = execution.active.spam[teamSlot]
+            val servantSpamConfig = execution.spam[teamSlot]
 
             servantSpamConfig.skills.forEachIndexed { skillIndex, skillSpamConfig ->
                 if (caster.canSpam(skillSpamConfig.spam) && (state.commandStage + 1) in skillSpamConfig.waves) {

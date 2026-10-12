@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -15,6 +16,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
+import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.StepperPreference
 import io.github.fate_grand_automata.ui.prefs.remember
@@ -30,16 +32,19 @@ fun CommandStartGroup(config: BattleConfigCore) {
     ) {
         Column {
             PreferenceGroupHeader(title = stringResource(R.string.p_command_start))
-            config.commandStartMode.DropdownPreference(
-                title = stringResource(R.string.p_command_start_mode),
-                entries = mapOf(
-                    CommandStartMode.Basic to stringResource(R.string.command_start_mode_basic),
-                    CommandStartMode.CardCount to stringResource(R.string.command_start_mode_card_count)
-                )
-            )
-
-            val mode by config.commandStartMode.remember()
-            if (mode == CommandStartMode.CardCount) {
+            var mode by config.commandStartMode.remember()
+            val enabled = mode == CommandStartMode.CardCount
+            fun setEnabled(value: Boolean) {
+                mode = if (value) CommandStartMode.CardCount else CommandStartMode.Basic
+            }
+            Preference(
+                title = stringResource(R.string.command_start_mode_card_count),
+                summary = stringResource(if (enabled) R.string.config_state_on else R.string.command_start_mode_basic),
+                onClick = { setEnabled(!enabled) }
+            ) {
+                Switch(checked = enabled, onCheckedChange = ::setEnabled)
+            }
+            if (enabled) {
                 config.commandStartServant.DropdownPreference(
                     title = stringResource(R.string.command_start_first_servant),
                     entries = (1..3).associateWith {

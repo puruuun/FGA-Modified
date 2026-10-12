@@ -12,5 +12,4 @@ internal class ExecutionProfile(core: ExecutionProfileCore) : IExecutionProfile 
     override val braveChains by core.braveChains
     override val shuffleCards by core.shuffleCards
     override val shuffleCardsWave by core.shuffleCardsWave
-    override var spam by core.spam
 }

@@ -45,5 +45,5 @@ sealed interface Route : NavKey {
     data class PreferredSupport(override val id: String) : BattleConfig
 
     @Serializable
-    data class Spam(override val id: String, val profileIndex: Int = 0) : BattleConfig
+    data class Spam(override val id: String) : BattleConfig
 }

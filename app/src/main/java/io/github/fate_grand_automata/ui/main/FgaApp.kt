@@ -193,7 +193,7 @@ fun FgaApp(
                                         context.startActivity(intent)
                                     }
 
-                                    is BattleConfigDestination.Spam -> backStack.add(Route.Spam(id, it.profileIndex))
+                                    BattleConfigDestination.Spam -> backStack.add(Route.Spam(id))
                                 }
                             }
                         )
@@ -216,7 +216,7 @@ fun FgaApp(
                     entry<Route.Spam> { key ->
                         SpamScreen(
                             vm = hiltViewModel<SpamScreenViewModel, SpamScreenViewModel.Factory>(
-                                creationCallback = { it.create(key.id, key.profileIndex) }
+                                creationCallback = { it.create(key.id) }
                             )
                         )
                     }

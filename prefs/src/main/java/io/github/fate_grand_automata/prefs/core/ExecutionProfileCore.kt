@@ -5,18 +5,6 @@ import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-
-/*
- * A config exported from a newer version has to stay loadable here, and one exported from here
- * loadable there: unknown keys are skipped, and every field is written out even at its default.
- */
-private val spamJson = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-}
 
 class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
     val skillCommand = maker.string(prefix + "autoskill_cmd")
@@ -93,24 +81,6 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
                 value.toString()
         },
         default = ServantPriorityPerWave.default
-    )
-
-    private val defaultSpamConfig = (1..6).map { ServantSpamConfig() }
-
-    val spam = maker.serialized(
-        prefix + "spam_x",
-        serializer = object : Serializer<List<ServantSpamConfig>> {
-            override fun deserialize(serialized: String) =
-                try {
-                    spamJson.decodeFromString<List<ServantSpamConfig>>(serialized)
-                } catch (e: SerializationException) {
-                    defaultSpamConfig
-                }
-
-            override fun serialize(value: List<ServantSpamConfig>) =
-                spamJson.encodeToString(value)
-        },
-        defaultSpamConfig
     )
 
 }
