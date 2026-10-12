@@ -70,8 +70,15 @@ class BattleState @Inject constructor() {
     val stage get() = runState.stage
     val turn get() = runState.turn
 
+    var commandPosition: CommandPosition? = null
+    val commandStage get() = commandPosition?.stage ?: stage
+    val commandTurn get() = commandPosition?.turn ?: turn
+
     fun nextTurn() = runState.nextTurn()
     fun nextStage() = runState.nextStage()
 
-    fun nextRun() = ++runs
+    fun nextRun(): Int {
+        commandPosition = null
+        return ++runs
+    }
 }

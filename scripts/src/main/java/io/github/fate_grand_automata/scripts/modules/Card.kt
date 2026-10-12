@@ -37,7 +37,7 @@ class Card @Inject constructor(
                     val teamSlot = servantTracker.deployed[servantSlot] ?: return@mapNotNull null
                     val npSpamConfig = spamConfig[teamSlot].np
 
-                    if (caster.canSpam(npSpamConfig.spam) && (state.stage + 1) in npSpamConfig.waves)
+                    if (caster.canSpam(npSpamConfig.spam) && (state.commandStage + 1) in npSpamConfig.waves)
                         np
                     else null
                 }
@@ -47,11 +47,11 @@ class Card @Inject constructor(
         cards: List<ParsedCard>,
         npUsage: NPUsage
     ): List<CommandCard.Face> {
-        val cardsOrderedByPriority = priority.sort(cards, state.stage)
+        val cardsOrderedByPriority = priority.sort(cards, state.commandStage)
 
         fun <T> List<T>.inCurrentWave(default: T) =
             if (isNotEmpty())
-                this[state.stage.coerceIn(indices)]
+                this[state.commandStage.coerceIn(indices)]
             else default
 
         val braveChainsPerWave = battleConfig.braveChains
@@ -67,7 +67,8 @@ class Card @Inject constructor(
 
     fun clickCommandCards(
         cards: List<ParsedCard>,
-        npUsage: NPUsage
+        npUsage: NPUsage,
+        allowNpSpam: Boolean = true
     ) {
         val pickedCards = pickCards(cards, npUsage)
             .take(3)
@@ -79,7 +80,7 @@ class Card @Inject constructor(
                 .forEach { caster.use(it) }
         }
 
-        val nps = npUsage.nps + spamNps
+        val nps = npUsage.nps + if (allowNpSpam) spamNps else emptySet()
 
         if (nps.isNotEmpty()) {
             nps

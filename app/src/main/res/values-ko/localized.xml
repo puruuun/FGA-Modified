@@ -518,4 +518,22 @@
     <string name="ce_name_report_check">리포트 체크</string>
     <string name="ce_name_secret_mission">시크릿 미션</string>
     <string name="ce_name_wings_of_manuscript">수고의 날개</string>
+    <string name="p_command_start">커맨드 시작 조건</string>
+    <string name="p_command_start_mode">시작 모드</string>
+    <string name="command_start_mode_basic">기본 모드</string>
+    <string name="command_start_mode_card_count">커맨드 카드 개수 선택 모드</string>
+    <string name="p_command_start_servant">대상 서번트</string>
+    <string name="command_start_servant_slot">전투 시작 시 전열 %1$d번</string>
+    <string name="p_command_start_card_count">필요한 일반 카드 수 (이상)</string>
+    <string name="p_command_start_max_turns">최대 대기 턴</string>
+    <string name="command_start_unlimited">무제한</string>
+    <string name="command_start_turns">턴</string>
+    <string name="command_start_description">대상의 사용 가능한 일반 카드가 설정한 개수 이상 나올 때까지 일반 공격으로 턴을 넘깁니다. 조건 충족 시점부터 기존 커맨드를 처음부터 실행하고, 이후에는 시작 조건을 검사하지 않습니다. 대기 중 웨이브가 바뀌어도 계속 기다립니다. 이 설정에서는 서번트 얼굴 카드 검사를 사용하며, 대기 중에는 스킬·보구·자동 셔플을 보류합니다.</string>
+    <string name="command_start_waiting">카드 대기 중: 서번트 %1$d번, 현재 %2$d장 / 필요 %3$d장 이상</string>
+    <string name="command_started">실제 %1$d웨이브 %2$d턴부터 커맨드 시작</string>
+    <string name="command_start_skipped">조건 충족 전 전투가 종료되어 커맨드를 실행하지 않았습니다. (대기 %1$d턴)</string>
+    <string name="command_start_recognition_failed">일반 카드를 세 번 확인했지만 인식하지 못했습니다. 추가 턴을 소비하지 않고 중단했습니다.</string>
+    <string name="command_start_target_unavailable">대상 서번트 %1$d번이 전열에 없습니다. 커맨드 시작 대기를 중단했습니다.</string>
+    <string name="command_start_wait_limit">%1$d턴을 기다렸지만 카드 수 조건을 충족하지 못했습니다.</string>
+    <string name="command_start_return_failed">스킬 화면으로 돌아가지 못했습니다. 커맨드를 시작하기 전에 중단했습니다.</string>
 </resources>

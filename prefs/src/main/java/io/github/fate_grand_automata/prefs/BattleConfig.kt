@@ -13,6 +13,10 @@ internal class BattleConfig(
 
     override var name by prefs.name
     override var skillCommand by prefs.skillCommand
+    override val commandStartMode by prefs.commandStartMode
+    override val commandStartServant by prefs.commandStartServant
+    override val commandStartCardCount by prefs.commandStartCardCount
+    override val commandStartMaxTurns by prefs.commandStartMaxTurns
 
     override var cardPriority by prefs.cardPriority
     override val rearrangeCards by prefs.rearrangeCards

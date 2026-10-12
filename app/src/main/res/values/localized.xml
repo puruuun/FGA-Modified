@@ -592,4 +592,22 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="ce_name_sword_saints_of_wandering">Sword Saints of Wandering</string>
     <string name="ce_name_the_chaldean">The Chaldean</string>
     <string name="ce_name_wings_of_manuscript">Wings of Manuscript</string>
+    <string name="p_command_start">Command start</string>
+    <string name="p_command_start_mode">Start mode</string>
+    <string name="command_start_mode_basic">Basic mode</string>
+    <string name="command_start_mode_card_count">Command card count mode</string>
+    <string name="p_command_start_servant">Target Servant</string>
+    <string name="command_start_servant_slot">Starting party slot %1$d</string>
+    <string name="p_command_start_card_count">Required face cards (at least)</string>
+    <string name="p_command_start_max_turns">Maximum skipped turns</string>
+    <string name="command_start_unlimited">Unlimited</string>
+    <string name="command_start_turns">turns</string>
+    <string name="command_start_description">Wait with face cards only until the target has at least this many usable face cards. Then start the existing command once, shifting its waves and turns to the start position. Waiting continues across waves. Servant face-card checks are enabled for this config; skills, NPs and automatic shuffle are held while waiting.</string>
+    <string name="command_start_waiting">Waiting for cards: Servant %1$d, %2$d / at least %3$d</string>
+    <string name="command_started">Command started at actual wave %1$d, turn %2$d</string>
+    <string name="command_start_skipped">Quest ended before the command started (%1$d turns skipped).</string>
+    <string name="command_start_recognition_failed">Cannot reliably recognize the face cards after three checks. Stopped without consuming another turn.</string>
+    <string name="command_start_target_unavailable">Target Servant %1$d is no longer on the field. Command start cancelled.</string>
+    <string name="command_start_wait_limit">Card condition not met after %1$d skipped turns.</string>
+    <string name="command_start_return_failed">Cannot return to the skill screen. Stopped before starting the command.</string>
 </resources>

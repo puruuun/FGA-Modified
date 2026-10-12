@@ -76,6 +76,10 @@ class AutoBattle @Inject constructor(
         data object Paused : ExitReason()
         data object StopAfterThisRun : ExitReason()
         data object OutOfCommandSpells: ExitReason()
+        data object CommandStartRecognitionFailed : ExitReason()
+        class CommandStartTargetUnavailable(val servant: Int) : ExitReason()
+        class CommandStartWaitLimit(val turns: Int) : ExitReason()
+        data object CommandStartReturnFailed : ExitReason()
     }
 
     internal class BattleExitException(val reason: ExitReason) : Exception(reason.cause)

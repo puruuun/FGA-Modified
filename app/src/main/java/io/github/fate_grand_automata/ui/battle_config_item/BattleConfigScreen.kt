@@ -311,6 +311,10 @@ private fun BattleConfigContent(
                 }
 
                 item {
+                    CommandStartGroup(config)
+                }
+
+                item {
                     ShuffleCardsGroup(config)
                 }
             }

@@ -131,7 +131,8 @@ android {
         }
         create("ci") {
             initWith(getByName("release"))
-            applicationIdSuffix = ".debug"
+            // Keep this private card-count build separate from all upstream variants.
+            applicationIdSuffix = ".cardcount"
             signingConfig = signingConfigs.getByName("debug")
 
             ndk {

@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
@@ -15,12 +17,17 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @ScriptScope
 class ServantTracker @Inject constructor(
-    api: IFgoAutomataApi
+    api: IFgoAutomataApi,
+    battleConfig: IBattleConfig
 ) : IFgoAutomataApi by api, AutoCloseable {
 
     private val servantQueue = mutableListOf<TeamSlot>()
     private val _deployed = mutableMapOf<FieldSlot, TeamSlot>()
     val deployed: Map<FieldSlot, TeamSlot> = _deployed
+
+    // A local override for this battle config, without changing the global preference.
+    private val forceFaceCardCheck = battleConfig.commandStartMode == CommandStartMode.CardCount
+    val faceCardCheckEnabled get() = !prefs.skipServantFaceCardCheck || forceFaceCardCheck
 
     fun nextRun() {
         servantQueue.clear()
@@ -99,7 +106,7 @@ class ServantTracker @Inject constructor(
     }
 
     private fun initFaceCard(teamSlot: TeamSlot, slot: FieldSlot, addAnotherImage: Boolean = false) {
-        if (prefs.skipServantFaceCardCheck || (!addAnotherImage && teamSlot in faceCardImages))
+        if (!faceCardCheckEnabled || (!addAnotherImage && teamSlot in faceCardImages))
             return
 
         // Open details dialog and click on INFO
@@ -190,7 +197,7 @@ class ServantTracker @Inject constructor(
     }
 
     fun faceCardsGroupedByServant(): Map<TeamSlot, Collection<CommandCard.Face>> {
-        if (prefs.skipServantFaceCardCheck) {
+        if (!faceCardCheckEnabled) {
             return emptyMap()
         }
 

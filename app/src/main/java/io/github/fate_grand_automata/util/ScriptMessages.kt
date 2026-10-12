@@ -143,6 +143,17 @@ class ScriptMessages @Inject constructor(
                     context.getString(R.string.bond_level_up)
                 )
             }
+            is ScriptNotify.CommandStartWaiting -> notification.status(
+                context.getString(R.string.command_start_waiting, action.servant, action.count, action.required)
+            )
+            is ScriptNotify.CommandStarted -> notification.status(
+                context.getString(R.string.command_started, action.stage, action.turn)
+            )
+            is ScriptNotify.CommandStartSkipped -> {
+                val msg = context.getString(R.string.command_start_skipped, action.waitingTurns)
+                Timber.i(msg)
+                notification.status(msg)
+            }
         }
 
     private fun makeRefillAndRunsMessage(

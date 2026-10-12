@@ -32,6 +32,7 @@
     - [Raid Battle](#raid-battle)
 - [Additional Battle Config (optional)](#additional-battle-config-optional)
   - [Materials](#materials)
+  - [Command start](#command-start)
   - [Spam](#spam)
   - [Server](#server)
   - [Party Selection](#party-selection)
@@ -366,6 +367,24 @@ Any Selected Material will be shown at the top of the list.
 After selecting the material and pressing `OK`, you'll see a summary of the first 3 selected materials.
 
 ![Material Summary](https://i.imgur.com/LDrLxre.png)
+
+## Command start
+
+Each battle config has a **Command start** group:
+
+- **Basic mode** (default) runs the existing command as before. Old configs without the new settings use this mode.
+- **Command card count mode** waits from the beginning of each quest until the selected starting frontline Servant has **at least** the requested number (1–5) of usable face cards. NPs and stunned cards do not count.
+- **Maximum skipped turns** is zero / Unlimited by default. A positive value limits the number of waiting attacks; a qualifying hand after the final allowed skip can still start the command.
+
+While waiting, FGA attacks with face cards only and holds all command actions, Skill Spam, NP Spam and automatic shuffle. The existing card and Servant priorities are used for waiting attacks. Waiting continues when an attack clears a wave. If card ownership or type cannot be recognized, FGA retries the same hand up to three checks and then stops without selecting cards. It also stops if the target is no longer deployed.
+
+Once the condition is met, FGA returns to the skill screen and runs the first command turn **in that same actual turn**. It never gates subsequent command turns again during that quest. Normal card recognition still runs for attack selection. The gate resets on the next quest.
+
+The actual start position becomes command wave 1, turn 1. For example, starting at actual wave 2, turn 3 maps command wave 1, turns 1 and 2 to actual wave 2, turns 3 and 4. Command wave 2, turn 1 then maps to actual wave 3, turn 1. Wave-based card priority, Brave Chain, Spam and shuffle settings follow the shifted command waves after starting. Actual turn statistics continue to include waiting attacks.
+
+Servant face-card checks are enabled for this config even if the global **Skip servant face-card checks** preference is enabled; the global setting is not changed. Existing image matching limitations still apply. A duplicate own/support Servant requires correct support identification.
+
+The condition only controls when the command starts. For NP + two matching face cards, set the threshold to 2, script just the target NP, set Cards before NP to 0 and use Brave Chain With NP. Skills that shuffle or transform cards can change the hand after the condition is met; FGA rereads the hand but does not undo skills or restart the gate. NP readiness is not part of the condition. Delaying across waves does not add waves to the quest, so later command waves may never be reached. A quest ending before the condition is met is logged as a command that did not start.
 
 ## Spam
 

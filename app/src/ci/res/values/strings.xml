@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">FGA (CI)</string>
+    <string name="app_name" translatable="false">FGA (Card Count)</string>
+    <string name="link_releases" translatable="false">https://github.com/puruuun/FGA-card-count/releases</string>
 </resources>

@@ -78,6 +78,10 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.Paused -> stringResource(R.string.script_paused)
     AutoBattle.ExitReason.StopAfterThisRun -> stringResource(R.string.stop_after_this_run)
     AutoBattle.ExitReason.OutOfCommandSpells -> stringResource(id = R.string.p_stop_on_out_of_command_spell)
+    AutoBattle.ExitReason.CommandStartRecognitionFailed -> stringResource(R.string.command_start_recognition_failed)
+    is AutoBattle.ExitReason.CommandStartTargetUnavailable -> stringResource(R.string.command_start_target_unavailable, servant)
+    is AutoBattle.ExitReason.CommandStartWaitLimit -> stringResource(R.string.command_start_wait_limit, turns)
+    AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
 }
 
 @Composable

@@ -110,7 +110,7 @@ class CardParser @Inject constructor(
                         true
                     }
 
-                    it.servant is TeamSlot.Unknown && !prefs.skipServantFaceCardCheck -> {
+                    it.servant is TeamSlot.Unknown && servantTracker.faceCardCheckEnabled -> {
                         unknownServants = true
                         true
                     }

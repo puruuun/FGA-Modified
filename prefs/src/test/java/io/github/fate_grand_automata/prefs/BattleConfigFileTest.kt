@@ -10,6 +10,17 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 class BattleConfigFileTest {
+    @Test
+    fun `card count start settings survive export and import`() {
+        val values = mapOf(
+            "command_start_mode" to "CardCount",
+            "command_start_servant" to 2,
+            "command_start_card_count" to 3,
+            "command_start_max_turns" to 0
+        )
+        assertThat(BattleConfigFile.decode(BattleConfigFile.encode(values))).isEqualTo(values)
+    }
+
     private fun roundTrip(values: Map<String, *>) =
         BattleConfigFile.decode(BattleConfigFile.encode(values))
 

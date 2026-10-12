@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.ScriptNotify
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
@@ -24,7 +25,8 @@ class Battle @Inject constructor(
     private val skillSpam: SkillSpam,
     private val shuffleChecker: ShuffleChecker,
     private val stageTracker: StageTracker,
-    private val autoChooseTarget: AutoChooseTarget
+    private val autoChooseTarget: AutoChooseTarget,
+    private val commandStart: CommandStartGate
 ) : IFgoAutomataApi by api {
     init {
         prefs.stopAfterThisRun = false
@@ -37,7 +39,11 @@ class Battle @Inject constructor(
         // Don't increment no. of runs if we're just clicking on quest again and again
         // This can happen due to lags introduced during some events
         if (state.stage != -1) {
+            if (commandStart.isWaiting && commandStart.waitingTurns > 0) {
+                messages.notify(ScriptNotify.CommandStartSkipped(commandStart.waitingTurns))
+            }
             state.nextRun()
+            commandStart.nextRun()
 
             servantTracker.nextRun()
 
@@ -78,7 +84,11 @@ class Battle @Inject constructor(
 
         servantTracker.beginTurn()
 
-        val npUsage = autoSkill.execute(state.stage, state.turn)
+        if (commandStart.isWaiting && !tryStartCommand()) return
+
+        state.commandPosition = commandStart.position(state.stage, state.turn)
+
+        val npUsage = autoSkill.execute(state.commandStage, state.commandTurn)
         skillSpam.spamSkills()
 
         val cards = clickAttack()
@@ -90,9 +100,66 @@ class Battle @Inject constructor(
         0.5.seconds.wait()
     }
 
+    /** Returns false only after consuming a waiting turn with face cards alone. */
+    private fun tryStartCommand(): Boolean {
+        if (commandStart.target !in servantTracker.deployed.values) {
+            throw AutoBattle.BattleExitException(
+                AutoBattle.ExitReason.CommandStartTargetUnavailable(commandStart.target.position)
+            )
+        }
+
+        var cards = clickAttack()
+        var result = commandStart.check(cards, servantTracker.deployed.values)
+        // Retry the same attack screen; a failed match must never consume a turn.
+        repeat(2) {
+            if (result == CommandStartGate.Result.RecognitionFailed) {
+                prefs.waitBeforeCards.wait()
+                cards = card.readCommandCards()
+                result = commandStart.check(cards, servantTracker.deployed.values)
+            }
+        }
+
+        when (val checked = result) {
+            is CommandStartGate.Result.Ready -> {
+                locations.attack.backClick.click()
+                if (!locations.battle.screenCheckRegion.exists(images[Images.BattleScreen], 5.seconds)) {
+                    throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartReturnFailed)
+                }
+                commandStart.startAt(state.stage, state.turn)
+                messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1))
+                return true
+            }
+
+            is CommandStartGate.Result.Wait -> {
+                messages.notify(
+                    ScriptNotify.CommandStartWaiting(
+                        commandStart.target.position, checked.count, commandStart.requiredCards
+                    )
+                )
+                // NPUsage.none alone is insufficient: Card normally appends NP Spam.
+                card.clickCommandCards(cards, NPUsage.none, allowNpSpam = false)
+                commandStart.recordWaitingTurn()
+                0.5.seconds.wait()
+                return false
+            }
+
+            CommandStartGate.Result.RecognitionFailed -> throw AutoBattle.BattleExitException(
+                AutoBattle.ExitReason.CommandStartRecognitionFailed
+            )
+
+            CommandStartGate.Result.TargetUnavailable -> throw AutoBattle.BattleExitException(
+                AutoBattle.ExitReason.CommandStartTargetUnavailable(commandStart.target.position)
+            )
+
+            CommandStartGate.Result.WaitLimitReached -> throw AutoBattle.BattleExitException(
+                AutoBattle.ExitReason.CommandStartWaitLimit(commandStart.waitingTurns)
+            )
+        }
+    }
+
     private fun shouldShuffle(cards: List<ParsedCard>, npUsage: NPUsage): Boolean {
         // Not this wave
-        if (state.stage != (battleConfig.shuffleCardsWave - 1)) {
+        if (state.commandStage != (battleConfig.shuffleCardsWave - 1)) {
             return false
         }
 

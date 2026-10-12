@@ -1,3 +1,19 @@
+# FGA (Card Count) 개인 수정판
+
+특정 서번트의 사용 가능한 일반 카드가 설정한 개수 이상 나올 때까지 일반 공격으로 기다린 뒤, 기존 커맨드를 처음부터 시작하는 개인용 수정판입니다.
+
+- **APK 다운로드:** [이 저장소의 Releases](https://github.com/puruuun/FGA-card-count/releases)
+- **설치·설정 안내:** [한국어 카드 개수 모드 안내](wiki/scripts/Card-Count-Start-KR.md)
+- **원본:** [Fate-Grand-Automata/FGA](https://github.com/Fate-Grand-Automata/FGA), 공식 v3059 / `e138a15273dee9cac342833ee2d8aee93d8ae700`
+- **앱 구분:** `FGA (Card Count)`, 초록색 Quick 아이콘, 패키지 `io.github.fate_grand_automata.cardcount`. 원본 공식판 및 원본 CI판과 별도 설치됩니다.
+- **검증:** 실행 로직 41개 + 설정 파일 7개 테스트 통과, 앱 컴파일 및 APK 서명 확인. 실제 FGO 기기 동작은 아직 검증하지 않았습니다.
+
+기본 모드는 기존 동작을 유지합니다. 카드 개수 모드에서는 대기 중 스킬·보구·Spam·자동 셔플을 보류하고, 조건 충족 위치부터 커맨드 웨이브·턴을 이동시켜 실행합니다. 시작 뒤에는 조건 검사를 생략하고 다음 주회에서 다시 초기화합니다.
+
+비공개 저장소이므로 릴리스 다운로드에는 접근 권한이 있는 GitHub 계정의 로그인이 필요합니다. 아래는 원본 프로젝트 안내입니다. 수정판 APK는 위 Releases에서 받으세요.
+
+---
+
 # Fate/Grand Automata
 
 [![CI](https://github.com/Fate-Grand-Automata/FGA/actions/workflows/ci.yml/badge.svg)](https://github.com/Fate-Grand-Automata/FGA/actions/workflows/ci.yml)

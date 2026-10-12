@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.fredporciuncula.flow.preferences.Serializer
 import io.github.fate_grand_automata.prefs.import
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
@@ -45,6 +46,10 @@ class BattleConfigCore(
 
     val name = maker.string("autoskill_name", "--")
     val skillCommand = maker.string("autoskill_cmd")
+    val commandStartMode = maker.enum("command_start_mode", CommandStartMode.Basic)
+    val commandStartServant = maker.int("command_start_servant", 1)
+    val commandStartCardCount = maker.int("command_start_card_count", 2)
+    val commandStartMaxTurns = maker.int("command_start_max_turns", 0)
     val notes = maker.string("autoskill_notes")
 
     val cardPriority = maker.serialized(

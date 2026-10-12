@@ -159,6 +159,20 @@ class ScriptRunnerNotification @Inject constructor(
         return true
     }
 
+    /** Quiet progress on the existing service notification, without a sound or vibration. */
+    fun status(msg: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+            || ContextCompat.checkSelfPermission(service, POST_NOTIFICATIONS) == PERMISSION_GRANTED
+        ) {
+            val notification = startBuildNotification()
+                .setContentText(msg)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(msg))
+                .setOnlyAlertOnce(true)
+                .build()
+            NotificationManagerCompat.from(service).notify(Ids.foregroundNotification, notification)
+        }
+    }
+
     fun message(msg: String) {
         val notification = NotificationCompat.Builder(service, Channels.message)
             .setContentTitle(service.getString(R.string.app_name))

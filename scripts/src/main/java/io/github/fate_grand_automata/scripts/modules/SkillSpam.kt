@@ -31,7 +31,7 @@ class SkillSpam @Inject constructor(
             val servantSpamConfig = spamConfig[teamSlot]
 
             servantSpamConfig.skills.forEachIndexed { skillIndex, skillSpamConfig ->
-                if (caster.canSpam(skillSpamConfig.spam) && (state.stage + 1) in skillSpamConfig.waves) {
+                if (caster.canSpam(skillSpamConfig.spam) && (state.commandStage + 1) in skillSpamConfig.waves) {
                     val skill = skills[skillIndex]
                     val skillImage = servantTracker
                         .checkImages[teamSlot]
