@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -17,12 +17,10 @@ import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.StepperPreference
-import io.github.fate_grand_automata.ui.prefs.SwitchPreference
-import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.remember
 
 @Composable
-fun CommandStartGroup(config: BattleConfigCore, navigate: (BattleConfigDestination) -> Unit) {
+fun CommandStartGroup(config: BattleConfigCore) {
     Card(
         modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
         colors = CardDefaults.cardColors(
@@ -42,11 +40,6 @@ fun CommandStartGroup(config: BattleConfigCore, navigate: (BattleConfigDestinati
 
             val mode by config.commandStartMode.remember()
             if (mode == CommandStartMode.CardCount) {
-                Text(
-                    stringResource(R.string.command_start_dual_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
                 config.commandStartServant.DropdownPreference(
                     title = stringResource(R.string.command_start_first_servant),
                     entries = (1..3).associateWith {
@@ -57,31 +50,34 @@ fun CommandStartGroup(config: BattleConfigCore, navigate: (BattleConfigDestinati
                     title = stringResource(R.string.p_command_start_card_count),
                     valueRange = 1..5
                 )
-                ProfileLinks(0, navigate)
 
-                config.secondaryStartEnabled.SwitchPreference(
-                    title = stringResource(R.string.command_start_second_enabled)
-                )
-                val secondEnabled by config.secondaryStartEnabled.remember()
-                if (secondEnabled) {
-                    config.secondaryStartServant.DropdownPreference(
-                        title = stringResource(R.string.command_start_second_servant),
-                        entries = (1..3).associateWith {
-                            stringResource(R.string.command_start_servant_slot, it)
+                var secondEnabled by config.secondaryStartEnabled.remember()
+                var secondTarget by config.secondaryStartServant.remember()
+                DropdownPreference(
+                    title = stringResource(R.string.command_start_second_servant),
+                    value = if (secondEnabled) secondTarget else 0,
+                    entries = mapOf(0 to stringResource(R.string.command_start_second_disabled)) +
+                        (1..3).associateWith { stringResource(R.string.command_start_servant_slot, it) },
+                    onValueChange = {
+                        if (it == 0) {
+                            secondEnabled = false
+                        } else {
+                            secondTarget = it
+                            secondEnabled = true
                         }
-                    )
+                    }
+                )
+                if (secondEnabled) {
                     config.secondaryStartCardCount.StepperPreference(
                         title = stringResource(R.string.p_command_start_card_count),
                         valueRange = 1..5
                     )
                     val first by config.commandStartServant.remember()
-                    val second by config.secondaryStartServant.remember()
-                    if (first == second) {
+                    if (first == secondTarget) {
                         PreferenceError(stringResource(R.string.command_start_duplicate_targets))
                     }
-                    ProfileLinks(1, navigate)
-                    ShuffleCardsGroup(config.secondaryExecution)
                 }
+
                 val unlimited = stringResource(R.string.command_start_unlimited)
                 val turns = stringResource(R.string.command_start_turns)
                 config.commandStartMaxTurns.StepperPreference(
@@ -92,20 +88,4 @@ fun CommandStartGroup(config: BattleConfigCore, navigate: (BattleConfigDestinati
             }
         }
     }
-}
-
-@Composable
-private fun ProfileLinks(index: Int, navigate: (BattleConfigDestination) -> Unit) {
-    Preference(
-        title = { Text(stringResource(R.string.command_start_edit_command, index + 1)) },
-        onClick = { navigate(BattleConfigDestination.SkillMaker(index)) }
-    )
-    Preference(
-        title = { Text(stringResource(R.string.command_start_edit_priority, index + 1)) },
-        onClick = { navigate(BattleConfigDestination.CardPriority(index)) }
-    )
-    Preference(
-        title = { Text(stringResource(R.string.command_start_edit_spam, index + 1)) },
-        onClick = { navigate(BattleConfigDestination.Spam(index)) }
-    )
 }

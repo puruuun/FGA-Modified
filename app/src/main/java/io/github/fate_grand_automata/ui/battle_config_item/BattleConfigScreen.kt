@@ -45,7 +45,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
+import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardScore
 import io.github.fate_grand_automata.ui.FGAMenuContainerColor
@@ -103,6 +105,11 @@ private fun BattleConfigContent(
     onDelete: () -> Unit,
     navigate: (BattleConfigDestination) -> Unit
 ) {
+    val startMode by config.commandStartMode.remember()
+    val secondEnabled by config.secondaryStartEnabled.remember()
+    val showFirst = startMode == CommandStartMode.CardCount
+    val showSecond = showFirst && secondEnabled
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -223,11 +230,29 @@ private fun BattleConfigContent(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
-                        SkillCommandGroup(
-                            config = config,
-                            vm = vm,
-                            openSkillMaker = { navigate(BattleConfigDestination.SkillMaker()) }
-                        )
+                        Column {
+                            SkillCommandGroup(
+                                config = config.execution,
+                                title = stringResource(R.string.p_battle_config_cmd),
+                                openSkillMaker = { navigate(BattleConfigDestination.SkillMaker()) }
+                            )
+                            if (showFirst) {
+                                HorizontalDivider()
+                                SkillCommandGroup(
+                                    config = config.execution,
+                                    title = stringResource(R.string.command_start_edit_command, 1),
+                                    openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(0)) }
+                                )
+                            }
+                            if (showSecond) {
+                                HorizontalDivider()
+                                SkillCommandGroup(
+                                    config = config.secondaryExecution,
+                                    title = stringResource(R.string.command_start_edit_command, 2),
+                                    openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(1)) }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -285,6 +310,15 @@ private fun BattleConfigContent(
                                 RaidDelay(config = config, modifier = Modifier.weight(1f))
                             }
 
+                            if (showFirst) {
+                                HorizontalDivider()
+                                ProfileSpamPreference(config.execution, 0, navigate)
+                            }
+                            if (showSecond) {
+                                HorizontalDivider()
+                                ProfileSpamPreference(config.secondaryExecution, 1, navigate)
+                            }
+
                             HorizontalDivider()
 
                             val cardPriority by vm.cardPriority.collectAsState(null)
@@ -295,6 +329,14 @@ private fun BattleConfigContent(
                                     summary = { CardPrioritySummary(it) },
                                     onClick = { navigate(BattleConfigDestination.CardPriority()) }
                                 )
+                            }
+                            if (showFirst) {
+                                HorizontalDivider()
+                                ProfilePriorityPreference(config.execution, 0, navigate)
+                            }
+                            if (showSecond) {
+                                HorizontalDivider()
+                                ProfilePriorityPreference(config.secondaryExecution, 1, navigate)
                             }
                         }
                     }
@@ -311,15 +353,55 @@ private fun BattleConfigContent(
                 }
 
                 item {
-                    CommandStartGroup(config, navigate)
+                    CommandStartGroup(config)
                 }
 
                 item {
-                    ShuffleCardsGroup(config.execution)
+                    ShuffleCardsGroup(config.execution, showFirst, config.secondaryExecution.takeIf { showSecond })
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ProfileSpamPreference(
+    profile: ExecutionProfileCore,
+    index: Int,
+    navigate: (BattleConfigDestination) -> Unit
+) {
+    val spam by profile.spam.remember()
+    val enabled = spam.any { servant ->
+        servant.np.spam != SpamEnum.None || servant.skills.any { it.spam != SpamEnum.None }
+    }
+    Preference(
+        title = { Text(stringResource(R.string.command_start_edit_spam, index + 1)) },
+        summary = { Text(stringResource(if (enabled) R.string.config_state_on else R.string.config_state_off)) },
+        onClick = { navigate(BattleConfigDestination.Spam(index)) }
+    )
+}
+
+@Composable
+private fun ProfilePriorityPreference(
+    profile: ExecutionProfileCore,
+    index: Int,
+    navigate: (BattleConfigDestination) -> Unit
+) {
+    val priority by profile.cardPriority.remember()
+    val servantPriority by profile.useServantPriority.remember()
+    Preference(
+        title = { Text(stringResource(R.string.command_start_edit_priority, index + 1)) },
+        summary = {
+            Column {
+                CardPrioritySummary(priority)
+                Text(
+                    stringResource(R.string.p_battle_config_use_servant_priority) + ": " +
+                        stringResource(if (servantPriority) R.string.config_state_on else R.string.config_state_off)
+                )
+            }
+        },
+        onClick = { navigate(BattleConfigDestination.CardPriority(index)) }
+    )
 }
 
 private val CardScore.color: Color

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,7 +23,11 @@ import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun ShuffleCardsGroup(config: ExecutionProfileCore) {
+fun ShuffleCardsGroup(
+    config: ExecutionProfileCore,
+    showFirst: Boolean = false,
+    second: ExecutionProfileCore? = null
+) {
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -40,26 +45,36 @@ fun ShuffleCardsGroup(config: ExecutionProfileCore) {
                 title = stringResource(R.string.p_shuffle_cards)
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                config.shuffleCards.DropdownPreference(
-                    title = stringResource(R.string.p_shuffle_cards_when),
-                    entries = ShuffleCardsEnum.entries
-                        .associateWith { stringResource(it.stringRes) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                val shuffleType by config.shuffleCards.remember()
-
-                if (shuffleType != ShuffleCardsEnum.None) {
-                    config.shuffleCardsWave.StepperPreference(
-                        title = stringResource(R.string.p_shuffle_cards_wave),
-                        valueRange = 1..3,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+            ShuffleFields(config)
+            if (showFirst) {
+                HorizontalDivider()
+                PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 1))
+                ShuffleFields(config)
             }
+            if (second != null) {
+                HorizontalDivider()
+                PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 2))
+                ShuffleFields(second)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShuffleFields(config: ExecutionProfileCore) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        config.shuffleCards.DropdownPreference(
+            title = stringResource(R.string.p_shuffle_cards_when),
+            entries = ShuffleCardsEnum.entries.associateWith { stringResource(it.stringRes) },
+            modifier = Modifier.weight(1f)
+        )
+        val shuffleType by config.shuffleCards.remember()
+        if (shuffleType != ShuffleCardsEnum.None) {
+            config.shuffleCardsWave.StepperPreference(
+                title = stringResource(R.string.p_shuffle_cards_wave),
+                valueRange = 1..3,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

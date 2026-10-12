@@ -36,6 +36,26 @@ fun <T> Pref<T>.DropdownPreference(
     enabled: Boolean = true
 ) {
     var selected by remember()
+    DropdownPreference(
+        title = title,
+        value = selected,
+        entries = entries,
+        onValueChange = { selected = it },
+        modifier = modifier,
+        enabled = enabled
+    )
+}
+
+/** The same row for a selection backed by more than one preference. */
+@Composable
+fun <T> DropdownPreference(
+    title: String,
+    value: T,
+    entries: Map<T, String>,
+    onValueChange: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
@@ -45,7 +65,7 @@ fun <T> Pref<T>.DropdownPreference(
                 StatusWrapper(enabled) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            entries[selected] ?: "",
+                            entries[value] ?: "",
                             style = MaterialTheme.typography.bodyMedium
                         )
 
@@ -66,14 +86,14 @@ fun <T> Pref<T>.DropdownPreference(
             onDismissRequest = { expanded = false },
             containerColor = FGAMenuContainerColor()
         ) {
-            entries.forEach { (value, label) ->
+            entries.forEach { (entryValue, label) ->
                 DropdownMenuItem(
                     text = { Text(label) },
-                    trailingIcon = if (value == selected) {
+                    trailingIcon = if (entryValue == value) {
                         { Icon(Icons.Default.Check, contentDescription = null) }
                     } else null,
                     onClick = {
-                        selected = value
+                        onValueChange(entryValue)
                         expanded = false
                     }
                 )

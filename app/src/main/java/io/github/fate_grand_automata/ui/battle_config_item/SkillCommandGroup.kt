@@ -13,7 +13,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.icon
@@ -33,16 +32,19 @@ import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceTextEditor
 import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.ui.skill_maker.SkillMakerEntry
+import io.github.fate_grand_automata.ui.skill_maker.SkillMakerModel
 import io.github.fate_grand_automata.ui.skill_maker.colorRes
 
 @Composable
 fun SkillCommandGroup(
-    config: BattleConfigCore,
-    vm: BattleConfigScreenViewModel,
+    config: ExecutionProfileCore,
+    title: String,
     openSkillMaker: () -> Unit
 ) {
     var cmd by config.skillCommand.remember()
-    val parsedCommand by vm.skillCommand.collectAsState(listOf())
+    val parsedCommand = remember(cmd) {
+        runCatching { SkillMakerModel(cmd).skillCommand.drop(1) }.getOrDefault(emptyList())
+    }
     var editing by remember { mutableStateOf(false) }
 
     val invalidCommandMessage = stringResource(R.string.battle_config_cmd_invalid)
@@ -52,7 +54,7 @@ fun SkillCommandGroup(
 
         Column {
             PreferenceTextEditor(
-                label = stringResource(R.string.p_battle_config_cmd),
+                label = title,
                 prefill = cmd,
                 onSubmit = {
                     try {
@@ -78,7 +80,7 @@ fun SkillCommandGroup(
         }
     } else {
         Preference(
-            title = { Text(stringResource(R.string.p_battle_config_cmd)) },
+            title = { Text(title) },
             summary = if (parsedCommand.isNotEmpty()) {
                 { SkillCommandSummary(parsedCommand) }
             } else {
