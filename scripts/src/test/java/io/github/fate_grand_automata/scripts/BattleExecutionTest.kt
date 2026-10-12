@@ -24,7 +24,9 @@ class BattleExecutionTest {
         second: TestExecutionProfile = TestExecutionProfile(skillCommand = "d5,e5,#,f5"),
         mode: CommandStartMode = CommandStartMode.CardCount,
         enabled: Boolean = true,
-        spam: List<ServantSpamConfig> = emptyList()
+        spam: List<ServantSpamConfig> = emptyList(),
+        shuffle: ShuffleCardsEnum = ShuffleCardsEnum.None,
+        shuffleWave: Int = 3
     ): IBattleConfig = mockk<IBattleConfig>().also { config ->
         every { config.skillCommand } answers { first.skillCommand }
         every { config.cardPriority } answers { first.cardPriority }
@@ -33,8 +35,8 @@ class BattleExecutionTest {
         every { config.rearrangeCards } returns first.rearrangeCards
         every { config.braveChains } returns first.braveChains
         every { config.spam } returns spam
-        every { config.shuffleCards } returns first.shuffleCards
-        every { config.shuffleCardsWave } returns first.shuffleCardsWave
+        every { config.shuffleCards } returns shuffle
+        every { config.shuffleCardsWave } returns shuffleWave
         every { config.commandStartMode } returns mode
         every { config.secondaryStartEnabled } returns enabled
         every { config.secondaryExecution } returns second
@@ -77,20 +79,20 @@ class BattleExecutionTest {
     }
 
     @Test
-    fun `second profile brave chain rearrangement and shuffle are separate`() {
+    fun `second profile brave chain and rearrangement remain separate with common shuffle`() {
         val second = TestExecutionProfile(
             braveChains = listOf(BraveChainEnum.WithNP),
-            rearrangeCards = listOf(true),
-            shuffleCards = ShuffleCardsEnum.NoNPMatching,
-            shuffleCardsWave = 2
+            rearrangeCards = listOf(true)
         )
-        val execution = BattleExecution(config(second = second))
+        val execution = BattleExecution(config(second = second, shuffle = ShuffleCardsEnum.NoNPMatching, shuffleWave = 2))
         assertThat(execution.active.braveChains).isEqualTo(emptyList())
+        assertThat(execution.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
+        assertThat(execution.shuffleCardsWave).isEqualTo(2)
         execution.select(1)
         assertThat(execution.active.braveChains).isEqualTo(listOf(BraveChainEnum.WithNP))
         assertThat(execution.active.rearrangeCards).isEqualTo(listOf(true))
-        assertThat(execution.active.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
-        assertThat(execution.active.shuffleCardsWave).isEqualTo(2)
+        assertThat(execution.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
+        assertThat(execution.shuffleCardsWave).isEqualTo(2)
     }
 
     @Test

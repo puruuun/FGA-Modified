@@ -6,8 +6,10 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.SpamConfigCore
+import io.github.fate_grand_automata.prefs.core.ShuffleConfigCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
+import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.NpSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
@@ -110,5 +112,33 @@ class ExecutionProfileCoreTest {
         val prefs = MemoryPrefs()
         prefs.data["spam_x"] = "invalid"
         assertThat(SpamConfigCore(PrefMaker(prefs)).spam.get()).isEqualTo((1..6).map { ServantSpamConfig() })
+    }
+
+    @Test
+    fun `common shuffle retains legacy mode and wave and ignores old secondary shuffle`() {
+        val prefs = MemoryPrefs()
+        prefs.data["shuffle_cards"] = "NoEffective"
+        prefs.data["shuffle_cards_wave"] = 2
+        prefs.data["secondary_shuffle_cards"] = "NoNPMatching"
+        prefs.data["secondary_shuffle_cards_wave"] = 3
+        val shuffle = ShuffleConfigCore(PrefMaker(prefs))
+        assertThat(shuffle.mode.get()).isEqualTo(ShuffleCardsEnum.NoEffective)
+        assertThat(shuffle.wave.get()).isEqualTo(2)
+        shuffle.mode.set(ShuffleCardsEnum.None)
+        assertThat(prefs.data["shuffle_cards"]).isEqualTo("None")
+        assertThat(prefs.data["secondary_shuffle_cards"]).isEqualTo("NoNPMatching")
+    }
+
+    @Test
+    fun `first turn shuffle mode survives export and import with its existing saved wave`() {
+        val prefs = MemoryPrefs()
+        val shuffle = ShuffleConfigCore(PrefMaker(prefs))
+        shuffle.mode.set(ShuffleCardsEnum.FirstTurnStartCondition)
+        shuffle.wave.set(3)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all))) }.apply()
+        val result = ShuffleConfigCore(PrefMaker(restored))
+        assertThat(result.mode.get()).isEqualTo(ShuffleCardsEnum.FirstTurnStartCondition)
+        assertThat(result.wave.get()).isEqualTo(3)
     }
 }

@@ -18,12 +18,12 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
         val priority = FaceCardPriority(source.cardPriority, source.servantPriority.takeIf { source.useServantPriority })
         val braveChains: List<BraveChainEnum> = source.braveChains.toList()
         val rearrangeCards = source.rearrangeCards.toList()
-        val shuffleCards: ShuffleCardsEnum = source.shuffleCards
-        val shuffleCardsWave = source.shuffleCardsWave
     }
 
     private val primary = Profile(config)
     val spam = SpamConfigPerTeamSlot(config.spam.toList())
+    val shuffleCards: ShuffleCardsEnum = config.shuffleCards
+    val shuffleCardsWave = config.shuffleCardsWave
     private val secondary = if (config.commandStartMode == CommandStartMode.CardCount && config.secondaryStartEnabled)
         Profile(config.secondaryExecution) else null
 

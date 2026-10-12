@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
@@ -23,11 +22,7 @@ import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun ShuffleCardsGroup(
-    config: ExecutionProfileCore,
-    cardCountMode: Boolean = false,
-    second: ExecutionProfileCore? = null
-) {
+fun ShuffleCardsGroup(config: BattleConfigCore) {
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -45,21 +40,13 @@ fun ShuffleCardsGroup(
                 title = stringResource(R.string.p_shuffle_cards)
             )
 
-            if (cardCountMode) {
-                PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 1))
-            }
             ShuffleFields(config)
-            if (second != null) {
-                HorizontalDivider()
-                PreferenceGroupHeader(title = stringResource(R.string.command_start_profile_caption, 2))
-                ShuffleFields(second)
-            }
         }
     }
 }
 
 @Composable
-private fun ShuffleFields(config: ExecutionProfileCore) {
+private fun ShuffleFields(config: BattleConfigCore) {
     Row(modifier = Modifier.fillMaxWidth()) {
         config.shuffleCards.DropdownPreference(
             title = stringResource(R.string.p_shuffle_cards_when),
@@ -67,7 +54,7 @@ private fun ShuffleFields(config: ExecutionProfileCore) {
             modifier = Modifier.weight(1f)
         )
         val shuffleType by config.shuffleCards.remember()
-        if (shuffleType != ShuffleCardsEnum.None) {
+        if (shuffleType == ShuffleCardsEnum.NoEffective || shuffleType == ShuffleCardsEnum.NoNPMatching) {
             config.shuffleCardsWave.StepperPreference(
                 title = stringResource(R.string.p_shuffle_cards_wave),
                 valueRange = 1..3,

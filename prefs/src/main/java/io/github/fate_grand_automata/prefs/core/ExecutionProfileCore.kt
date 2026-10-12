@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.prefs.core
 
 import com.fredporciuncula.flow.preferences.Serializer
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
-import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 
@@ -62,9 +61,6 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
         },
         default = emptyList()
     )
-
-    val shuffleCards = maker.enum(prefix + "shuffle_cards", ShuffleCardsEnum.None)
-    val shuffleCardsWave = maker.int(prefix + "shuffle_cards_wave", 3)
 
     val useServantPriority = maker.bool(prefix + "use_servant_priority")
     val servantPriority = maker.serialized(

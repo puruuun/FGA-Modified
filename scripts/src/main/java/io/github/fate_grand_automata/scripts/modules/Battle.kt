@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptNotify
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
+import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
 import io.github.fate_grand_automata.scripts.models.Skill
@@ -114,15 +115,16 @@ class Battle @Inject constructor(
             )
         }
 
-        var cards = clickAttack()
-        var result = commandStart.check(cards, servantTracker.deployed.values)
-        // Retry the same attack screen; a failed match must never consume a turn.
-        repeat(2) {
-            if (result == CommandStartGate.Result.RecognitionFailed) {
-                prefs.waitBeforeCards.wait()
-                cards = card.readCommandCards()
-                result = commandStart.check(cards, servantTracker.deployed.values)
-            }
+        var (cards, result) = checkStartHand(clickAttack())
+        // Only a reliably recognized, insufficient first-turn hand can trigger this mode.
+        // Recheck both targets before spending a turn or selecting an execution profile.
+        if (result is CommandStartGate.Result.Wait &&
+            execution.shuffleCards == ShuffleCardsEnum.FirstTurnStartCondition &&
+            state.stage == 0 && state.turn == 0 && !state.shuffled
+        ) {
+            val reshuffled = checkStartHand(shuffleCards(verifyReturn = true))
+            cards = reshuffled.first
+            result = reshuffled.second
         }
 
         when (val checked = result) {
@@ -172,9 +174,23 @@ class Battle @Inject constructor(
         }
     }
 
+    private fun checkStartHand(initialCards: List<ParsedCard>): Pair<List<ParsedCard>, CommandStartGate.Result> {
+        var cards = initialCards
+        var result = commandStart.check(cards, servantTracker.deployed.values)
+        // A failed match retries the same hand, both before and after shuffling.
+        repeat(2) {
+            if (result == CommandStartGate.Result.RecognitionFailed) {
+                prefs.waitBeforeCards.wait()
+                cards = card.readCommandCards()
+                result = commandStart.check(cards, servantTracker.deployed.values)
+            }
+        }
+        return cards to result
+    }
+
     private fun shouldShuffle(cards: List<ParsedCard>, npUsage: NPUsage): Boolean {
         // Not this wave
-        if (state.commandStage != (execution.active.shuffleCardsWave - 1)) {
+        if (state.commandStage != (execution.shuffleCardsWave - 1)) {
             return false
         }
 
@@ -184,14 +200,17 @@ class Battle @Inject constructor(
         }
 
         return shuffleChecker.shouldShuffle(
-            mode = execution.active.shuffleCards,
+            mode = execution.shuffleCards,
             cards = cards,
             npUsage = npUsage
         )
     }
 
-    private fun shuffleCards(): List<ParsedCard> {
+    private fun shuffleCards(verifyReturn: Boolean = false): List<ParsedCard> {
         locations.attack.backClick.click()
+        if (verifyReturn && !locations.battle.screenCheckRegion.exists(images[Images.BattleScreen], 5.seconds)) {
+            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartReturnFailed)
+        }
 
         caster.castMasterSkill(Skill.Master.C)
         state.shuffled = true

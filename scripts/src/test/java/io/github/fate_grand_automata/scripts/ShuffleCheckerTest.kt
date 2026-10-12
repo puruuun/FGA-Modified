@@ -14,4 +14,10 @@ class ShuffleCheckerTest {
         val should = checker.shouldShuffle(ShuffleCardsEnum.None, FaceCardPriorityTest.lineup1, NPUsage.none)
         assertFalse(should)
     }
+
+    @Test
+    fun `first turn start-condition mode cannot shuffle after commands start`() {
+        val checker = ShuffleChecker()
+        assertFalse(checker.shouldShuffle(ShuffleCardsEnum.FirstTurnStartCondition, FaceCardPriorityTest.lineup1, NPUsage.none))
+    }
 }

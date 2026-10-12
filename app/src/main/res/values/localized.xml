@@ -408,6 +408,7 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="p_shuffle_cards_when_none">"None"</string>
     <string name="p_shuffle_cards_when_no_effective">"No effective cards"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"No cards matching NP"</string>
+    <string name="p_shuffle_cards_when_first_turn_start_condition">Start condition not met on first turn</string>
     <string name="p_game_area_mode">"Game Area Mode"</string>
     <string name="p_game_area_default">"Default"</string>
     <string name="p_game_area_duo">"Surface Duo"</string>

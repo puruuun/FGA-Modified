@@ -281,9 +281,10 @@
     <string name="p_script_mode_support_image_maker">"서포트 이미지 메이커"</string>
     <string name="p_shuffle_cards">"카드 셔플"</string>
     <string name="p_shuffle_cards_wave">"웨이브"</string>
-    <string name="p_shuffle_cards_when">"웨이브"</string>
+    <string name="p_shuffle_cards_when">사용 조건</string>
     <string name="p_shuffle_cards_when_no_effective">"효과있는 카드 없음"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"보구와 맞는 카드 없음"</string>
+    <string name="p_shuffle_cards_when_first_turn_start_condition">첫 턴 커맨드 시작 조건 불만족</string>
     <string name="p_shuffle_cards_when_none">"없음"</string>
     <string name="p_skip_servant_face_checks">"서번트 카드 아이콘 확인 생략"</string>
     <string name="p_skip_servant_face_checks_summary">"활성화시 브레이브 체인, 서번트 우선순위, 보구에 맞는 카드 셔플 등의 기능을 사용할 수 없습니다."</string>

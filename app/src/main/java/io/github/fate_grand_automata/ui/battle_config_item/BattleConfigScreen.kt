@@ -340,7 +340,7 @@ private fun BattleConfigContent(
                 }
 
                 item {
-                    ShuffleCardsGroup(config.execution, cardCountMode, config.secondaryExecution.takeIf { showSecond })
+                    ShuffleCardsGroup(config)
                 }
             }
         }

@@ -81,6 +81,7 @@ val ShuffleCardsEnum.stringRes
         ShuffleCardsEnum.None -> R.string.p_shuffle_cards_when_none
         ShuffleCardsEnum.NoEffective -> R.string.p_shuffle_cards_when_no_effective
         ShuffleCardsEnum.NoNPMatching -> R.string.p_shuffle_cards_when_no_np_matching
+        ShuffleCardsEnum.FirstTurnStartCondition -> R.string.p_shuffle_cards_when_first_turn_start_condition
     }
 
 val MaterialEnum.stringRes: Int

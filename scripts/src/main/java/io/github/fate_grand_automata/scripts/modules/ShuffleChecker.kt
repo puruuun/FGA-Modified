@@ -15,7 +15,8 @@ class ShuffleChecker @Inject constructor() {
         cards: List<ParsedCard>,
         npUsage: NPUsage
     ): Boolean = when (mode) {
-        ShuffleCardsEnum.None -> false
+        // The first-turn mode is handled before commands by Battle's start gate.
+        ShuffleCardsEnum.None, ShuffleCardsEnum.FirstTurnStartCondition -> false
         ShuffleCardsEnum.NoEffective -> {
             val effectiveCardCount = cards
                 .count { it.affinity == CardAffinityEnum.Weak }

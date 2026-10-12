@@ -5,10 +5,12 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
+import io.github.fate_grand_automata.scripts.models.Skill
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.AutoChooseTarget
@@ -34,16 +36,21 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class BattleCommandStartTest {
-    private fun hand(count: Int) = CommandCard.Face.list.mapIndexed { index, card ->
+    private fun hand(count: Int, secondCount: Int = 5 - count) = CommandCard.Face.list.mapIndexed { index, card ->
         ParsedCard(
             card,
-            if (index < count) TeamSlot.A else TeamSlot.B,
-            if (index < count) FieldSlot.A else FieldSlot.B,
+            if (index < count) TeamSlot.A else if (index < count + secondCount) TeamSlot.B else TeamSlot.C,
+            if (index < count) FieldSlot.A else if (index < count + secondCount) FieldSlot.B else FieldSlot.C,
             CardTypeEnum.Buster
         )
     }
 
-    private class Fixture(mode: CommandStartMode = CommandStartMode.CardCount, dual: Boolean = false) {
+    private class Fixture(
+        mode: CommandStartMode = CommandStartMode.CardCount,
+        dual: Boolean = false,
+        shuffleMode: ShuffleCardsEnum = ShuffleCardsEnum.None,
+        shuffleWave: Int = 1
+    ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val config = mockk<IBattleConfig>(relaxed = true)
         val state = BattleState()
@@ -78,8 +85,8 @@ class BattleCommandStartTest {
             every { config.braveChains } returns emptyList()
             every { config.rearrangeCards } returns emptyList()
             every { config.spam } returns emptyList()
-            every { config.shuffleCards } returns io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum.None
-            every { config.shuffleCardsWave } returns 1
+            every { config.shuffleCards } returns shuffleMode
+            every { config.shuffleCardsWave } returns shuffleWave
             every { tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B)
             every { api.locations.battle.screenCheckRegion } returns screen
             every { api.locations.attack.backClick } returns back
@@ -251,6 +258,166 @@ class BattleCommandStartTest {
         assertThat(f.execution.selectedIndex).isEqualTo(0)
         verify(exactly = 1) { f.autoSkill.execute(0, 0) }
         verify(exactly = 1) { f.spam.spamSkills() }
+    }
+
+    @Test
+    fun `first turn insufficient hand shuffles and starts the command without spending a turn`() {
+        val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition, shuffleWave = 3)
+        every { f.card.readCommandCards() } returnsMany listOf(hand(1), hand(2), hand(2), hand(0))
+        f.battle.performBattle()
+        assertThat(f.gate.waitingTurns).isEqualTo(0)
+        assertThat(f.state.turn).isEqualTo(0)
+        assertThat(f.state.shuffled).isEqualTo(true)
+        verifyOrder {
+            f.card.readCommandCards()
+            with(f.api) { f.back.click(any()) }
+            f.caster.castMasterSkill(Skill.Master.C, null)
+            f.card.readCommandCards()
+            with(f.api) { f.back.click(any()) }
+            f.autoSkill.execute(0, 0)
+            f.spam.spamSkills()
+            f.card.readCommandCards()
+            f.card.clickCommandCards(any(), any(), true)
+        }
+        f.battle.performBattle()
+        verify(exactly = 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        verify(exactly = 0) { f.card.clickCommandCards(any(), any(), false) }
+        verify(exactly = 1) { f.autoSkill.execute(0, 1) }
+    }
+
+    @Test
+    fun `post shuffle both conditions are checked and first still wins a tie`() {
+        for ((cards, selected) in listOf(hand(2, 2) to 0, hand(1, 2) to 1)) {
+            val f = Fixture(dual = true, shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+            every { f.card.readCommandCards() } returnsMany listOf(hand(1, 1), cards, cards)
+            f.battle.performBattle()
+            assertThat(f.execution.selectedIndex).isEqualTo(selected)
+            assertThat(f.gate.selectedProfile).isEqualTo(selected)
+            assertThat(f.gate.waitingTurns).isEqualTo(0)
+            verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+            verify(exactly = 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        }
+    }
+
+    @Test
+    fun `either initial qualifying condition bypasses shuffle`() {
+        for ((cards, selected) in listOf(hand(2, 2) to 0, hand(1, 2) to 1)) {
+            val f = Fixture(dual = true, shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+            every { f.card.readCommandCards() } returns cards
+            f.battle.performBattle()
+            assertThat(f.execution.selectedIndex).isEqualTo(selected)
+            verify(exactly = 0) { f.caster.castMasterSkill(any(), any()) }
+            verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+        }
+    }
+
+    @Test
+    fun `post shuffle insufficient hand attacks with the new cards and does not reshuffle later turns`() {
+        val f = Fixture(dual = true, shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+        val original = hand(1, 1)
+        val newHand = hand(0, 1)
+        every { f.card.readCommandCards() } returnsMany listOf(original, newHand, newHand)
+        f.battle.performBattle()
+        // ParsedCard equality compares only card positions, not the recognized owner.
+        verify(exactly = 1) { f.card.clickCommandCards(match { it.map { card -> card.servant } == newHand.map { card -> card.servant } }, NPUsage.none, false) }
+        verify(exactly = 0) { f.card.clickCommandCards(match { it.map { card -> card.servant } == original.map { card -> card.servant } }, any(), any()) }
+        assertThat(f.gate.waitingTurns).isEqualTo(1)
+        assertThat(f.state.turn).isEqualTo(0)
+        f.battle.performBattle()
+        verify(exactly = 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+        verify(exactly = 0) { f.spam.spamSkills() }
+        assertThat(f.gate.waitingTurns).isEqualTo(2)
+        assertThat(f.state.turn).isEqualTo(1)
+    }
+
+    @Test
+    fun `first turn mode cannot shuffle on a later turn or first turn of a later wave`() {
+        for (laterWave in listOf(false, true)) {
+            val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+            f.state.nextStage()
+            if (laterWave) f.state.nextStage() else f.state.nextTurn()
+            every { f.card.readCommandCards() } returns hand(1)
+            f.battle.performBattle()
+            verify(exactly = 0) { f.caster.castMasterSkill(any(), any()) }
+            verify(exactly = 1) { f.card.clickCommandCards(any(), NPUsage.none, false) }
+        }
+    }
+
+    @Test
+    fun `recognition failure before shuffle cannot spend the shuffle skill or attack`() {
+        val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+        every { f.card.readCommandCards() } returns hand(1).map { it.copy(servant = TeamSlot.Unknown) }
+        val error = assertFailsWith<AutoBattle.BattleExitException> { f.battle.performBattle() }
+        assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.CommandStartRecognitionFailed)
+        verify(exactly = 3) { f.card.readCommandCards() }
+        verify(exactly = 0) { f.caster.castMasterSkill(any(), any()) }
+        verify(exactly = 0) { f.card.clickCommandCards(any(), any(), any()) }
+    }
+
+    @Test
+    fun `recognition failure after shuffle retries the new hand then stops without starting or attacking`() {
+        val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+        val unknown = hand(2).map { it.copy(servant = TeamSlot.Unknown) }
+        every { f.card.readCommandCards() } returnsMany listOf(hand(1), unknown, unknown, unknown)
+        val error = assertFailsWith<AutoBattle.BattleExitException> { f.battle.performBattle() }
+        assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.CommandStartRecognitionFailed)
+        verify(exactly = 4) { f.card.readCommandCards() }
+        verify(exactly = 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        verify(exactly = 0) { f.card.clickCommandCards(any(), any(), any()) }
+        verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+        assertThat(f.gate.waitingTurns).isEqualTo(0)
+        assertTrue(f.gate.isWaiting)
+    }
+
+    @Test
+    fun `return failure before or after shuffle prevents the command from starting`() {
+        for (before in listOf(true, false)) {
+            val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+            every { f.card.readCommandCards() } returnsMany listOf(hand(1), hand(2))
+            every { with(f.api) { f.screen.exists(any(), any(), any()) } } returnsMany
+                if (before) listOf(false) else listOf(true, false)
+            val error = assertFailsWith<AutoBattle.BattleExitException> { f.battle.performBattle() }
+            assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.CommandStartReturnFailed)
+            verify(exactly = if (before) 0 else 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+            verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+            verify(exactly = 0) { f.card.clickCommandCards(any(), any(), any()) }
+            assertTrue(f.gate.isWaiting)
+        }
+    }
+
+    @Test
+    fun `the next quest can attempt the first turn shuffle again`() {
+        val f = Fixture(shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+        every { f.card.readCommandCards() } returnsMany listOf(hand(1), hand(2), hand(2), hand(1), hand(2), hand(2))
+        f.battle.performBattle()
+        f.battle.resetState()
+        assertThat(f.state.shuffled).isEqualTo(false)
+        f.battle.performBattle()
+        verify(exactly = 2) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        verify(exactly = 2) { f.autoSkill.execute(0, 0) }
+        assertThat(f.gate.waitingTurns).isEqualTo(0)
+        assertThat(f.state.turn).isEqualTo(0)
+    }
+
+    @Test
+    fun `legacy shuffle conditions do not run during waiting and still use common settings after second starts`() {
+        for (mode in listOf(ShuffleCardsEnum.NoEffective, ShuffleCardsEnum.NoNPMatching)) {
+            val waiting = Fixture(shuffleMode = mode)
+            every { waiting.card.readCommandCards() } returns hand(1)
+            every { waiting.shuffle.shouldShuffle(any(), any(), any()) } returns true
+            waiting.battle.performBattle()
+            verify(exactly = 0) { waiting.shuffle.shouldShuffle(any(), any(), any()) }
+            verify(exactly = 0) { waiting.caster.castMasterSkill(any(), any()) }
+
+            val ready = Fixture(dual = true, shuffleMode = mode)
+            every { ready.card.readCommandCards() } returns hand(1)
+            every { ready.shuffle.shouldShuffle(any(), any(), any()) } returns true
+            ready.battle.performBattle()
+            assertThat(ready.execution.selectedIndex).isEqualTo(1)
+            verify(exactly = 1) { ready.shuffle.shouldShuffle(mode, any(), any()) }
+            verify(exactly = 1) { ready.caster.castMasterSkill(Skill.Master.C, null) }
+        }
     }
 
 }

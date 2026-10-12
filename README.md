@@ -1,79 +1,98 @@
-# FGA (Card Count) 개인 수정판
+# FGA Modified — 커맨드 카드 개수 조건 모드
 
-두 서번트의 일반 카드 수 조건을 함께 검사해 충족한 쪽의 별도 커맨드·카드·서번트 우선순위를 시작하는 개인용 수정판입니다. 둘 다 충족하면 첫 번째 설정이 우선하며, 시작 후 선택은 전투 종료까지 고정합니다.
+이 프로젝트는 **[Fate/Grand Automata(FGA)](https://github.com/Fate-Grand-Automata/FGA)를 바탕으로 기능을 추가한 Modified 버전**입니다. 원본의 Android 자동 전투·카드 인식 기능을 기반으로, 특정 서번트의 일반 카드가 원하는 개수 이상 나왔을 때 예약 커맨드를 시작하도록 확장했습니다.
 
-- **APK 다운로드:** [이 저장소의 Releases](https://github.com/puruuun/FGA-card-count/releases)
-- **설치·설정 안내:** [한국어 카드 개수 모드 안내](wiki/scripts/Card-Count-Start-KR.md)
-- **원본:** [Fate-Grand-Automata/FGA](https://github.com/Fate-Grand-Automata/FGA), 공식 v3059 / `e138a15273dee9cac342833ee2d8aee93d8ae700`
-- **앱 구분:** `FGA (Card Count)`, 초록색 Quick 아이콘, 패키지 `io.github.fate_grand_automata.cardcount`. 원본 공식판 및 원본 CI판과 별도 설치됩니다.
-- **검증:** 실행 로직 57개 + 설정 파일 9개 테스트 통과, 앱 컴파일 및 APK 서명 확인. 실제 FGO 기기 동작은 아직 검증하지 않았습니다.
+원본 개발팀의 공식 배포판과 별도로 관리됩니다. 원본 FGA의 사용 안내와 공식 업데이트는 아래 링크에서 확인할 수 있습니다.
 
-기본 모드는 기존 동작을 유지합니다. 카드 개수 모드에서는 대기 중 스킬·보구·Spam·자동 셔플을 보류하고, 조건 충족 위치부터 커맨드 웨이브·턴을 이동시켜 실행합니다. 시작 뒤에는 조건 검사를 생략하고 다음 주회에서 다시 초기화합니다.
+- **원본 저장소:** https://github.com/Fate-Grand-Automata/FGA
+- **원본 공식 사이트:** https://fate-grand-automata.github.io/
+- **원본 사용 안내:** https://github.com/Fate-Grand-Automata/FGA/wiki
+- **수정 기준:** 공식 FGA v3059, 커밋 `e138a15273dee9cac342833ee2d8aee93d8ae700`
 
-비공개 저장소이므로 릴리스 다운로드에는 접근 권한이 있는 GitHub 계정의 로그인이 필요합니다. 아래는 원본 프로젝트 안내입니다. 수정판 APK는 위 Releases에서 받으세요.
+## 다운로드
 
----
+- **[최신 수정판 APK](https://github.com/puruuun/FGA-card-count/releases/latest)**
+- **[자세한 설치·설정 안내](wiki/scripts/Card-Count-Start-KR.md)**
 
-# Fate/Grand Automata
+릴리스의 `FGA-Modified-0.1.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
 
-[![CI](https://github.com/Fate-Grand-Automata/FGA/actions/workflows/ci.yml/badge.svg)](https://github.com/Fate-Grand-Automata/FGA/actions/workflows/ci.yml)
+| 항목 | 수정판 정보 |
+|---|---|
+| 버전 | 0.1.0 |
+| 앱 이름 | FGA (Card Count) |
+| 아이콘 | 초록색 Quick |
+| 패키지 | `io.github.fate_grand_automata.cardcount` |
 
-[![Discord Banner 2](https://discordapp.com/api/guilds/1117873862500163684/widget.png?style=banner2)](https://tinyurl.com/2z2d6wuz)
+원본 공식판·원본 CI판과 별도로 설치됩니다. 앞서 배포한 Card Count 수정판과는 패키지·서명이 같아 업데이트 설치할 수 있습니다. 원본 앱의 설정은 `.fga` 파일로 내보낸 뒤 수정판에서 가져오세요.
 
-Auto-battle app for FGO (Android 7 or later, no need for root on phones).
+## 추가·수정된 기능
 
-Download from our [website](https://fate-grand-automata.github.io)
+### 1. 일반 카드 개수로 커맨드 시작
 
-This is a **Kotlin** port of [FGO-Lua][FGOLua] as an Android app with UI for configuration and without a time-limit on use.  
-It doesn't tamper with the game in anyway and works by looking at the screen and tapping things just like a normal user would do.  
-It's not made to do the story for you, but to automate the mundane farming.
+**커맨드 카드 개수 선택 모드** 토글을 켜고, 전투 시작 시 전열 1~3번 중 대상 서번트와 필요한 일반 카드 수(1~5장)를 지정합니다. 설정값 **이상**이 나오면 예약된 커맨드를 처음부터 시작합니다. 보구와 스턴 등으로 사용할 수 없는 일반 카드는 개수에서 제외합니다.
 
-Having Trouble? See the [Troubleshooting Guide](https://github.com/Fate-Grand-Automata/FGA/wiki/Troubleshooting) first.
+조건이 부족하면 스킬·보구·자동 사용을 보류하고 일반 공격으로 턴을 넘기며 다시 검사합니다. 최대 대기 턴도 설정할 수 있고, 0은 무제한입니다. 토글을 끄면 기존 기본 모드로 동작하며 작성한 설정은 보존됩니다.
 
-## Video Guide by @reconman
+### 2. 두 서번트 조건과 우선 선택
 
-[![Watch the video guide](https://img.youtube.com/vi/JOwupZ4W8AQ/sddefault.jpg)](https://youtu.be/JOwupZ4W8AQ)
+두 번째 대상 서번트와 별도의 필요 카드 수를 추가할 수 있습니다. 두 조건은 같은 손패로 확인합니다.
 
-## How to Use?
+| 첫 번째 조건 | 두 번째 조건 | 실행 |
+|---|---|---|
+| 충족 | 미달 | 첫 번째 설정 |
+| 미달 | 충족 | 두 번째 설정 |
+| 충족 | 충족 | 첫 번째 설정 우선 |
+| 미달 | 미달 | 대기 공격 후 다음 턴 검사 |
 
-1. Install from the link given above and launch the app.
-2. Click on `Start Service` and give all the permissions it asks for.
-3. Open FGO. Now, you can see a button with play icon on it floating on screen.
-4. Go to the node you want to farm.
-5. Press Play to start. The same button can be pressed to pause/stop later.
+하나를 선택한 뒤에는 해당 전투가 끝날 때까지 고정합니다. 다음 주회에서는 다시 조건을 검사합니다. 두 번째 대상에서 **사용 안 함**을 선택하면 단일 조건으로 동작합니다.
 
-Check the [Troubleshooting Guide](https://github.com/Fate-Grand-Automata/FGA/wiki/Troubleshooting) first if you face any problems.
+### 3. 조건별 커맨드와 카드 선택 설정
 
-## How to make/use images of Servant/CE/Friend?
+첫 번째·두 번째 설정에 각각 다른 **커맨드, 카드 우선순위, 서번트 우선순위 사용 여부와 순서, 브레이브 체인, 카드 재정렬**을 저장할 수 있습니다.
 
-See the wiki page for [Support Image Maker](https://github.com/Fate-Grand-Automata/FGA/wiki/Support-Image-Maker).
+기본 설정과 첫 번째 설정은 같은 값을 사용하며 화면에 한 번만 표시합니다. 두 번째 설정은 그 아래에 추가됩니다. 복사·내보내기·가져오기에도 두 설정이 함께 포함됩니다.
 
-## What about other scripts like Lottery and Friend Gacha?
+### 4. 기다린 만큼 커맨드 실행 위치 이동
 
-When you click on the PLAY button, the app detects which script can be run on the current screen and presents it to you.
+실제 조건 충족 위치를 커맨드의 1웨이브 1턴으로 잡습니다. 예를 들어 실제 2웨이브 3턴에 시작하면 커맨드 1웨이브 2턴은 실제 2웨이브 4턴에, 커맨드 2웨이브 1턴은 실제 3웨이브 1턴에 실행합니다.
 
-## How does it work?
+시작 후에는 카드 개수 조건을 다시 적용하지 않고 기존 커맨드를 계속 실행합니다. 기다리는 동안 웨이브가 바뀌어도 대기를 유지합니다.
 
-This is a native Android app written in Kotlin.
-We use [OpenCV](https://opencv.org/) for image recognition,
-[Media Projection](https://developer.android.com/reference/android/media/projection/MediaProjection) for taking screenshots
-and [Accessibility Service](https://developer.android.com/guide/topics/ui/accessibility) for clicking/swiping.
+### 5. 스팸 모드와 카드 셔플을 공통 관리
 
-## Contributing
+**스킬·보구 자동 사용(스팸 모드)**과 **카드 셔플**은 조건별로 나누지 않고 기존 설정 한 곳에서 관리합니다. 어느 서번트 조건으로 시작하든 같은 설정을 사용합니다.
 
-If you want to contribute, read the [Contribution Guide](CONTRIBUTING.md).
+기존 첫 번째 설정의 자동 사용·셔플 값을 유지합니다. 이전 버전의 두 번째 자동 사용·셔플 값은 사용하지 않습니다. 파티·서버·서포트·자동 적 지정도 공통입니다.
 
-## Acknowledgements
+### 6. 첫 턴 조건 부족 시 셔플 후 재검사
 
-- [FGO-Lua][FGOLua] developers are the real deal. Without them this app won't exist.
-- The icons are from https://materialdesignicons.com/
+**카드 셔플 → 사용 조건 → 첫 턴 커맨드 시작 조건 불만족** 옵션을 추가했습니다.
 
-[FGOLua]: https://github.com/29988122/Fate-Grand-Order_Lua
+1. 첫 웨이브 첫 턴에 시작 조건을 검사합니다.
+2. 조건을 만족하면 즉시 해당 커맨드를 시작합니다.
+3. 모두 부족하면 마스터 3번 스킬로 셔플을 한 번 시도합니다.
+4. 새 손패로 두 조건을 다시 검사합니다.
+5. 충족하면 같은 턴에 커맨드를 시작하고, 여전히 부족하면 새 카드로 일반 공격한 뒤 다음 턴으로 넘깁니다.
 
-## Like the project? Want to support us?
+재검사에서도 두 조건이 동시에 충족되면 첫 번째 설정이 우선입니다. 셔플 자체는 대기 턴 수에 포함하지 않습니다. 전투 첫 턴에 최대 한 번만 시도하고 이후 턴·웨이브와 커맨드 시작 이후에는 반복하지 않습니다. 다음 주회에서는 다시 사용할 수 있습니다.
 
-<a href='https://ko-fi.com/W7W0F7D9T' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+이 옵션은 카드 개수 선택 모드에서 사용하며, 마스터 3번 스킬이 카드 셔플인 마술예장을 장착해야 합니다. 기존 **없음 / 효과있는 카드 없음 / 보구와 맞는 카드 없음** 옵션도 유지됩니다.
 
-Code/doc contributions are surely welcome!
+### 7. 설정 화면 정리와 예외 처리
 
-Translations should be edited via https://poeditor.com/join/project/67PXOyBGI0
+- 모드 선택을 켜기·끄기 토글로 바꿨습니다.
+- 기본 설정과 첫 번째 설정의 중복 표시를 제거했습니다.
+- 시작 조건 박스에는 토글·대상·필요 카드 수·최대 대기 턴만 표시합니다.
+- 같은 서번트를 두 조건에 지정하면 시작을 중단합니다.
+- 한 대상이 전열에서 이탈하면 남아 있는 조건으로 기다리고, 대상이 모두 없으면 중단합니다.
+- 카드 인식이 불명확하면 같은 손패에서 최대 세 번 확인한 뒤 공격 없이 중단합니다. 셔플 후에도 같은 처리를 적용합니다.
+
+## 확인 범위
+
+실행 로직 70개·설정 저장 13개 등 **83개 테스트**, 앱 컴파일·ARM APK 빌드, APK 서명과 이전 수정판의 업데이트 호환성을 확인했습니다. **실제 기기의 화면 시각 검수와 FGO 전투 동작은 아직 검증하지 않았습니다.**
+
+시작 조건은 보구 게이지나 사용 가능 여부까지 검사하지 않습니다. 시작 후 사용하는 스킬이 카드를 변환·셔플·교체하면 손패가 달라질 수 있습니다. 자세한 동작과 제한은 [설정 안내](wiki/scripts/Card-Count-Start-KR.md)를 확인하세요.
+
+## 원본 및 라이선스
+
+기존 자동 전투와 이미지 인식 기능은 원본 FGA 개발자들의 작업을 기반으로 합니다. 원본 프로젝트의 **MIT 라이선스와 저작권 고지**를 유지하며, 전체 라이선스는 [LICENSE](LICENSE)에서 확인할 수 있습니다.
