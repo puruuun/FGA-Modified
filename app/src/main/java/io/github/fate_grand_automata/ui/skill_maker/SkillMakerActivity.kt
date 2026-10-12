@@ -39,7 +39,7 @@ class SkillMakerActivity : AppCompatActivity() {
                 PreventRtl {
                     SkillMakerUI(
                         vm = hiltViewModel<SkillMakerViewModel, SkillMakerViewModel.Factory>(
-                            creationCallback = { it.create(configId) }
+                            creationCallback = { it.create(configId, intent.getIntExtra(Route.BattleConfig.profileArg, 0)) }
                         ),
                         exit = { finish() }
                     )

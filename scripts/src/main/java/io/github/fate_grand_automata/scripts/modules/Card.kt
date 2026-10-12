@@ -7,9 +7,7 @@ import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
-import io.github.fate_grand_automata.scripts.models.SpamConfigPerTeamSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
-import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
@@ -18,12 +16,10 @@ class Card @Inject constructor(
     api: IFgoAutomataApi,
     private val servantTracker: ServantTracker,
     private val state: BattleState,
-    private val spamConfig: SpamConfigPerTeamSlot,
     private val caster: Caster,
     private val parser: CardParser,
-    private val priority: FaceCardPriority,
     private val braveChains: ApplyBraveChains,
-    private val battleConfig: IBattleConfig
+    private val execution: BattleExecution
 ) : IFgoAutomataApi by api {
 
     fun readCommandCards(): List<ParsedCard> = useSameSnapIn {
@@ -35,7 +31,7 @@ class Card @Inject constructor(
             (FieldSlot.list.zip(CommandCard.NP.list))
                 .mapNotNull { (servantSlot, np) ->
                     val teamSlot = servantTracker.deployed[servantSlot] ?: return@mapNotNull null
-                    val npSpamConfig = spamConfig[teamSlot].np
+                    val npSpamConfig = execution.active.spam[teamSlot].np
 
                     if (caster.canSpam(npSpamConfig.spam) && (state.commandStage + 1) in npSpamConfig.waves)
                         np
@@ -47,15 +43,15 @@ class Card @Inject constructor(
         cards: List<ParsedCard>,
         npUsage: NPUsage
     ): List<CommandCard.Face> {
-        val cardsOrderedByPriority = priority.sort(cards, state.commandStage)
+        val cardsOrderedByPriority = execution.active.priority.sort(cards, state.commandStage)
 
         fun <T> List<T>.inCurrentWave(default: T) =
             if (isNotEmpty())
                 this[state.commandStage.coerceIn(indices)]
             else default
 
-        val braveChainsPerWave = battleConfig.braveChains
-        val rearrangeCardsPerWave = battleConfig.rearrangeCards
+        val braveChainsPerWave = execution.active.braveChains
+        val rearrangeCardsPerWave = execution.active.rearrangeCards
 
         return braveChains.pick(
             cards = cardsOrderedByPriority,

@@ -1,35 +1,31 @@
 package io.github.fate_grand_automata.scripts.prefs
 
-import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
-import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
-import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 
-interface IBattleConfig {
+interface IBattleConfig : IExecutionProfile {
     val id: String
     var name: String
-    var skillCommand: String
     val commandStartMode: CommandStartMode
     val commandStartServant: Int
     val commandStartCardCount: Int
     /** Maximum number of skipped turns; zero means unlimited. */
     val commandStartMaxTurns: Int
-    var cardPriority: CardPriorityPerWave
-    val useServantPriority: Boolean
-    val servantPriority: ServantPriorityPerWave
-    val rearrangeCards: List<Boolean>
-    val braveChains: List<BraveChainEnum>
+    val secondaryStartEnabled: Boolean
+    val secondaryStartServant: Int
+    val secondaryStartCardCount: Int
+    val secondaryExecution: IExecutionProfile
+
+    fun executionProfile(index: Int): IExecutionProfile = when (index) {
+        0 -> this
+        1 -> secondaryExecution
+        else -> error("Invalid execution profile: $index")
+    }
     val party: Int
     val materials: Set<MaterialEnum>
     val support: ISupportPreferences
-    val shuffleCards: ShuffleCardsEnum
-    val shuffleCardsWave: Int
 
-    var spam: List<ServantSpamConfig>
     val autoChooseTarget: Boolean
 
     val server: GameServer?

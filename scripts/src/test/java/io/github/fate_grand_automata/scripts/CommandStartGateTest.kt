@@ -24,13 +24,18 @@ class CommandStartGateTest {
         mode: CommandStartMode = CommandStartMode.CardCount,
         target: Int = 1,
         required: Int = 2,
-        limit: Int = 0
+        limit: Int = 0,
+        second: Int? = null,
+        secondRequired: Int = 2
     ): CommandStartGate {
         val config = mockk<IBattleConfig>()
         every { config.commandStartMode } returns mode
         every { config.commandStartServant } returns target
         every { config.commandStartCardCount } returns required
         every { config.commandStartMaxTurns } returns limit
+        every { config.secondaryStartEnabled } returns (second != null)
+        every { config.secondaryStartServant } returns (second ?: 2)
+        every { config.secondaryStartCardCount } returns secondRequired
         return CommandStartGate(config)
     }
 
@@ -156,4 +161,70 @@ class CommandStartGateTest {
         assertThat(gate.target).isEqualTo(TeamSlot.C)
         assertThat(gate.requiredCards).isEqualTo(1)
     }
+    private fun dualHand(a: Int, b: Int) = CommandCard.Face.list.mapIndexed { index, card ->
+        ParsedCard(card, when {
+            index < a -> TeamSlot.A
+            index < a + b -> TeamSlot.B
+            else -> TeamSlot.C
+        }, null, CardTypeEnum.Buster)
+    }
+
+    @Test
+    fun `two conditions choose first second or wait from the same hand`() {
+        val gate = gate(second = 2)
+        assertThat(gate.check(dualHand(2, 1), deployed)).isEqualTo(CommandStartGate.Result.Ready(2, 0))
+        assertThat(gate.check(dualHand(1, 2), deployed)).isEqualTo(CommandStartGate.Result.Ready(2, 1))
+        assertThat(gate.check(dualHand(2, 2), deployed)).isEqualTo(CommandStartGate.Result.Ready(2, 0))
+        assertThat(gate.check(dualHand(1, 1), deployed)).isEqualTo(CommandStartGate.Result.Wait(1, 1))
+    }
+
+    @Test
+    fun `first condition wins even if second has more cards`() {
+        assertThat(gate(second = 2).check(dualHand(2, 3), deployed))
+            .isEqualTo(CommandStartGate.Result.Ready(2, 0))
+    }
+
+    @Test
+    fun `thresholds are independent`() {
+        val gate = gate(required = 3, second = 2, secondRequired = 2)
+        assertThat(gate.check(dualHand(2, 2), deployed)).isEqualTo(CommandStartGate.Result.Ready(2, 1))
+        assertThat(gate.check(dualHand(3, 2), deployed)).isEqualTo(CommandStartGate.Result.Ready(3, 0))
+    }
+
+    @Test
+    fun `surviving second target can start after the first dies`() {
+        assertThat(gate(second = 2).check(dualHand(0, 2), listOf(TeamSlot.B, TeamSlot.C)))
+            .isEqualTo(CommandStartGate.Result.Ready(2, 1))
+    }
+
+    @Test
+    fun `surviving first target can start after the second dies`() {
+        assertThat(gate(second = 2).check(dualHand(2, 0), listOf(TeamSlot.A, TeamSlot.C)))
+            .isEqualTo(CommandStartGate.Result.Ready(2, 0))
+    }
+
+    @Test
+    fun `both missing targets stop instead of waiting forever`() {
+        assertThat(gate(second = 2).check(dualHand(0, 0), listOf(TeamSlot.C)))
+            .isEqualTo(CommandStartGate.Result.TargetUnavailable)
+    }
+
+    @Test
+    fun `duplicate target settings are rejected`() {
+        assertThat(gate(second = 1).check(dualHand(2, 2), deployed))
+            .isEqualTo(CommandStartGate.Result.DuplicateTargets)
+    }
+
+    @Test
+    fun `second selection latches and resets on the next quest`() {
+        val gate = gate(second = 2)
+        gate.startAt(1, 2, 1)
+        assertThat(gate.selectedProfile).isEqualTo(1)
+        assertFalse(gate.isWaiting)
+        assertThat(gate.position(1, 3)).isEqualTo(CommandPosition(0, 1))
+        gate.nextRun()
+        assertTrue(gate.isWaiting)
+        assertThat(gate.selectedProfile).isEqualTo(null)
+    }
+
 }

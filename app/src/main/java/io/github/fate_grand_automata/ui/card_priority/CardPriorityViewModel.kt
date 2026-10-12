@@ -17,13 +17,14 @@ import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 @HiltViewModel(assistedFactory = CardPriorityViewModel.Factory::class)
 class CardPriorityViewModel @AssistedInject constructor(
     prefsCore: PrefsCore,
-    @Assisted id: String
+    @Assisted id: String,
+    @Assisted val profileIndex: Int
 ) : ViewModel() {
-    val battleConfig = prefsCore.forBattleConfig(id)
+    val battleConfig = prefsCore.forBattleConfig(id).executionProfile(profileIndex)
 
     @AssistedFactory
     interface Factory {
-        fun create(id: String): CardPriorityViewModel
+        fun create(id: String, profileIndex: Int = 0): CardPriorityViewModel
     }
     val cardPriorityItems: SnapshotStateList<CardPriorityListItem> by lazy {
         val cardPriority = battleConfig.cardPriority.get()

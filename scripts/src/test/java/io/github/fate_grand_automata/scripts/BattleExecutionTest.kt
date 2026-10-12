@@ -1,0 +1,144 @@
+package io.github.fate_grand_automata.scripts
+
+import assertk.assertThat
+import assertk.assertions.isEqualTo
+import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
+import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
+import io.github.fate_grand_automata.scripts.enums.SpamEnum
+import io.github.fate_grand_automata.scripts.models.*
+import io.github.fate_grand_automata.scripts.models.battle.BattleState
+import io.github.fate_grand_automata.scripts.models.battle.CommandPosition
+import io.github.fate_grand_automata.scripts.modules.*
+import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlin.test.Test
+import kotlin.test.assertFailsWith
+
+class BattleExecutionTest {
+    private fun config(
+        first: TestExecutionProfile = TestExecutionProfile(skillCommand = "a4"),
+        second: TestExecutionProfile = TestExecutionProfile(skillCommand = "d5,e5,#,f5"),
+        mode: CommandStartMode = CommandStartMode.CardCount,
+        enabled: Boolean = true
+    ): IBattleConfig = mockk<IBattleConfig>().also { config ->
+        every { config.skillCommand } answers { first.skillCommand }
+        every { config.cardPriority } answers { first.cardPriority }
+        every { config.servantPriority } returns first.servantPriority
+        every { config.useServantPriority } returns first.useServantPriority
+        every { config.rearrangeCards } returns first.rearrangeCards
+        every { config.braveChains } returns first.braveChains
+        every { config.spam } answers { first.spam }
+        every { config.shuffleCards } returns first.shuffleCards
+        every { config.shuffleCardsWave } returns first.shuffleCardsWave
+        every { config.commandStartMode } returns mode
+        every { config.secondaryStartEnabled } returns enabled
+        every { config.secondaryExecution } returns second
+    }
+
+    @Test
+    fun `selected second command executes its own skills and NP across shifted waves`() {
+        val execution = BattleExecution(config())
+        execution.select(1)
+        val caster = mockk<Caster>(relaxed = true)
+        val autoSkill = AutoSkill(mockk<IFgoAutomataApi>(relaxed = true), execution, caster)
+        assertThat(autoSkill.execute(0, 0)).isEqualTo(NPUsage(setOf(CommandCard.NP.B), 0))
+        autoSkill.execute(0, 1)
+        autoSkill.execute(1, 0)
+        verify(exactly = 1) { caster.castServantSkill(Skill.Servant.B1, emptyList()) }
+        verify(exactly = 1) { caster.castServantSkill(Skill.Servant.B2, emptyList()) }
+        verify(exactly = 1) { caster.castServantSkill(Skill.Servant.B3, emptyList()) }
+        verify(exactly = 0) { caster.castServantSkill(Skill.Servant.A1, any<List<ServantTarget>>()) }
+    }
+
+    @Test
+    fun `profiles retain independent card priorities and servant-priority toggle`() {
+        val first = TestExecutionProfile(useServantPriority = false)
+        val second = TestExecutionProfile(
+            cardPriority = CardPriorityPerWave.of("Q, A, B, WQ, WA, WB, RQ, RA, RB"),
+            useServantPriority = true,
+            servantPriority = ServantPriorityPerWave.of("2,1,3,4,5,6")
+        )
+        val cards = listOf(
+            ParsedCard(CommandCard.Face.A, TeamSlot.A, FieldSlot.A, CardTypeEnum.Buster),
+            ParsedCard(CommandCard.Face.B, TeamSlot.B, FieldSlot.B, CardTypeEnum.Arts),
+            ParsedCard(CommandCard.Face.C, TeamSlot.B, FieldSlot.B, CardTypeEnum.Quick)
+        )
+        val execution = BattleExecution(config(first, second))
+        assertThat(execution.active.priority.sort(cards, 0).map { it.card })
+            .isEqualTo(listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C))
+        execution.select(1)
+        assertThat(execution.active.priority.sort(cards, 0).map { it.card })
+            .isEqualTo(listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.Face.A))
+    }
+
+    @Test
+    fun `second profile brave chain rearrangement spam and shuffle are separate`() {
+        val second = TestExecutionProfile(
+            braveChains = listOf(BraveChainEnum.WithNP),
+            rearrangeCards = listOf(true),
+            spam = listOf(ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam))),
+            shuffleCards = ShuffleCardsEnum.NoNPMatching,
+            shuffleCardsWave = 2
+        )
+        val execution = BattleExecution(config(second = second))
+        assertThat(execution.active.braveChains).isEqualTo(emptyList())
+        execution.select(1)
+        assertThat(execution.active.braveChains).isEqualTo(listOf(BraveChainEnum.WithNP))
+        assertThat(execution.active.rearrangeCards).isEqualTo(listOf(true))
+        assertThat(execution.active.spam[TeamSlot.A].np.spam).isEqualTo(SpamEnum.Spam)
+        assertThat(execution.active.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
+        assertThat(execution.active.shuffleCardsWave).isEqualTo(2)
+    }
+
+    @Test
+    fun `a selected profile cannot switch before the next quest`() {
+        val execution = BattleExecution(config())
+        execution.select(1)
+        assertFailsWith<IllegalStateException> { execution.select(0) }
+        execution.nextRun()
+        execution.select(0)
+        assertThat(execution.selectedIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `basic or single-condition mode ignores an invalid unused second command`() {
+        for ((mode, enabled) in listOf(CommandStartMode.Basic to true, CommandStartMode.CardCount to false)) {
+            val execution = BattleExecution(config(second = TestExecutionProfile(skillCommand = "!"), mode = mode, enabled = enabled))
+            assertThat(execution.selectedIndex).isEqualTo(null)
+            assertFailsWith<IllegalArgumentException> { execution.select(1) }
+        }
+    }
+
+    @Test
+    fun `second card selection actually uses its own Brave Chain and NP spam`() {
+        val first = TestExecutionProfile()
+        val second = TestExecutionProfile(
+            useServantPriority = true,
+            servantPriority = ServantPriorityPerWave.of("2,1,3,4,5,6"),
+            braveChains = listOf(BraveChainEnum.WithNP),
+            spam = listOf(ServantSpamConfig(), ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(1))))
+        )
+        val execution = BattleExecution(config(first, second))
+        execution.select(1)
+        val api = mockk<IFgoAutomataApi>(relaxed = true)
+        val tracker = mockk<ServantTracker>()
+        every { tracker.deployed } returns mapOf(FieldSlot.B to TeamSlot.B)
+        val state = BattleState().also { it.nextStage(); it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
+        val caster = mockk<Caster>(relaxed = true)
+        every { caster.canSpam(SpamEnum.Spam) } returns true
+        val cards = CommandCard.Face.list.mapIndexed { index, card ->
+            ParsedCard(card, if (index < 2) TeamSlot.B else TeamSlot.A,
+                if (index < 2) FieldSlot.B else FieldSlot.A, CardTypeEnum.Buster)
+        }
+        Card(api, tracker, state, caster, mockk<CardParser>(), ApplyBraveChains(), execution)
+            .clickCommandCards(cards, NPUsage(setOf(CommandCard.NP.B), 0))
+        verify(exactly = 1) { caster.use(CommandCard.NP.B) }
+        verify(exactly = 0) { caster.use(CommandCard.NP.A) }
+        verify(exactly = 1) { caster.use(CommandCard.Face.A) }
+        verify(exactly = 1) { caster.use(CommandCard.Face.B) }
+    }
+}

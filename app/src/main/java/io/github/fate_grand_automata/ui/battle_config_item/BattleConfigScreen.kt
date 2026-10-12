@@ -86,9 +86,9 @@ fun BattleConfigScreen(
 }
 
 sealed class BattleConfigDestination {
-    object SkillMaker : BattleConfigDestination()
-    object CardPriority : BattleConfigDestination()
-    object Spam : BattleConfigDestination()
+    data class SkillMaker(val profileIndex: Int = 0) : BattleConfigDestination()
+    data class CardPriority(val profileIndex: Int = 0) : BattleConfigDestination()
+    data class Spam(val profileIndex: Int = 0) : BattleConfigDestination()
     object PreferredSupport : BattleConfigDestination()
     object Back : BattleConfigDestination()
     class Other(val id: String) : BattleConfigDestination()
@@ -226,7 +226,7 @@ private fun BattleConfigContent(
                         SkillCommandGroup(
                             config = config,
                             vm = vm,
-                            openSkillMaker = { navigate(BattleConfigDestination.SkillMaker) }
+                            openSkillMaker = { navigate(BattleConfigDestination.SkillMaker()) }
                         )
                     }
                 }
@@ -261,7 +261,7 @@ private fun BattleConfigContent(
 
                                 ConfigSummaryCell(
                                     label = stringResource(R.string.p_spam_spam),
-                                    onClick = { navigate(BattleConfigDestination.Spam) },
+                                    onClick = { navigate(BattleConfigDestination.Spam()) },
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     ConfigSummaryValue(
@@ -293,7 +293,7 @@ private fun BattleConfigContent(
                                 Preference(
                                     title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
                                     summary = { CardPrioritySummary(it) },
-                                    onClick = { navigate(BattleConfigDestination.CardPriority) }
+                                    onClick = { navigate(BattleConfigDestination.CardPriority()) }
                                 )
                             }
                         }
@@ -311,11 +311,11 @@ private fun BattleConfigContent(
                 }
 
                 item {
-                    CommandStartGroup(config)
+                    CommandStartGroup(config, navigate)
                 }
 
                 item {
-                    ShuffleCardsGroup(config)
+                    ShuffleCardsGroup(config.execution)
                 }
             }
         }

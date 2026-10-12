@@ -16,6 +16,7 @@ sealed interface Route : NavKey {
 
         companion object {
             const val idArg = "id"
+            const val profileArg = "profile"
         }
     }
 
@@ -38,11 +39,11 @@ sealed interface Route : NavKey {
     data class BattleConfigItem(override val id: String) : BattleConfig
 
     @Serializable
-    data class CardPriority(override val id: String) : BattleConfig
+    data class CardPriority(override val id: String, val profileIndex: Int = 0) : BattleConfig
 
     @Serializable
     data class PreferredSupport(override val id: String) : BattleConfig
 
     @Serializable
-    data class Spam(override val id: String) : BattleConfig
+    data class Spam(override val id: String, val profileIndex: Int = 0) : BattleConfig
 }

@@ -17,6 +17,10 @@ internal class BattleConfig(
     override val commandStartServant by prefs.commandStartServant
     override val commandStartCardCount by prefs.commandStartCardCount
     override val commandStartMaxTurns by prefs.commandStartMaxTurns
+    override val secondaryStartEnabled by prefs.secondaryStartEnabled
+    override val secondaryStartServant by prefs.secondaryStartServant
+    override val secondaryStartCardCount by prefs.secondaryStartCardCount
+    override val secondaryExecution = ExecutionProfile(prefs.secondaryExecution)
 
     override var cardPriority by prefs.cardPriority
     override val rearrangeCards by prefs.rearrangeCards

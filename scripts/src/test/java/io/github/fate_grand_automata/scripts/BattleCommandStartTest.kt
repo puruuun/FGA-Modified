@@ -14,6 +14,7 @@ import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.AutoChooseTarget
 import io.github.fate_grand_automata.scripts.modules.AutoSkill
 import io.github.fate_grand_automata.scripts.modules.Battle
+import io.github.fate_grand_automata.scripts.modules.BattleExecution
 import io.github.fate_grand_automata.scripts.modules.Card
 import io.github.fate_grand_automata.scripts.modules.Caster
 import io.github.fate_grand_automata.scripts.modules.CommandStartGate
@@ -42,7 +43,7 @@ class BattleCommandStartTest {
         )
     }
 
-    private class Fixture(mode: CommandStartMode = CommandStartMode.CardCount) {
+    private class Fixture(mode: CommandStartMode = CommandStartMode.CardCount, dual: Boolean = false) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val config = mockk<IBattleConfig>(relaxed = true)
         val state = BattleState()
@@ -57,6 +58,7 @@ class BattleCommandStartTest {
         val screen = Region(0, 0, 10, 10)
         val back = Location(20, 20)
         val attack = Location(30, 30)
+        val execution: BattleExecution
         val gate: CommandStartGate
         val battle: Battle
 
@@ -65,6 +67,18 @@ class BattleCommandStartTest {
             every { config.commandStartServant } returns 1
             every { config.commandStartCardCount } returns 2
             every { config.commandStartMaxTurns } returns 0
+            every { config.secondaryStartEnabled } returns dual
+            every { config.secondaryStartServant } returns 2
+            every { config.secondaryStartCardCount } returns 2
+            every { config.secondaryExecution } returns TestExecutionProfile(skillCommand = "5")
+            every { config.skillCommand } returns "4"
+            every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
+            every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
+            every { config.useServantPriority } returns false
+            every { config.braveChains } returns emptyList()
+            every { config.rearrangeCards } returns emptyList()
+            every { config.spam } returns emptyList()
+            every { config.shuffleCards } returns io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum.None
             every { config.shuffleCardsWave } returns 1
             every { tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B)
             every { api.locations.battle.screenCheckRegion } returns screen
@@ -76,8 +90,9 @@ class BattleCommandStartTest {
                 if (state.stage == -1) state.nextStage()
             }
             every { autoSkill.execute(any(), any()) } returns NPUsage.none
+            execution = BattleExecution(config)
             gate = CommandStartGate(config)
-            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate)
+            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate, execution)
         }
     }
 
@@ -209,4 +224,33 @@ class BattleCommandStartTest {
         verify(exactly = 1) { f.autoSkill.execute(any(), any()) }
         verify(exactly = 1) { f.card.clickCommandCards(any(), NPUsage.none, false) }
     }
+    @Test
+    fun `second ready hand selects second settings and never switches back`() {
+        val f = Fixture(dual = true)
+        every { f.card.readCommandCards() } returns hand(1) // B owns four cards
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(1)
+        assertThat(f.gate.selectedProfile).isEqualTo(1)
+        every { f.card.readCommandCards() } returns hand(4) // A is ready next turn
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(1)
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+        verify(exactly = 1) { f.autoSkill.execute(0, 1) }
+        verify(exactly = 3) { f.card.readCommandCards() }
+        f.battle.resetState()
+        assertThat(f.execution.selectedIndex).isEqualTo(null)
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `both ready chooses only the first settings`() {
+        val f = Fixture(dual = true)
+        every { f.card.readCommandCards() } returns hand(2) // A two, B three
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(0)
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+        verify(exactly = 1) { f.spam.spamSkills() }
+    }
+
 }

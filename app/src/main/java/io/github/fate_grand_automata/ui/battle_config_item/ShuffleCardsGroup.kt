@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
@@ -22,7 +22,7 @@ import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun ShuffleCardsGroup(config: BattleConfigCore) {
+fun ShuffleCardsGroup(config: ExecutionProfileCore) {
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)

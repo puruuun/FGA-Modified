@@ -60,6 +60,7 @@ fun SkillMakerMain(
             .padding(vertical = 16.dp)
             .fillMaxSize()
     ) {
+        Text(stringResource(R.string.command_start_profile_caption, vm.profileIndex + 1))
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,

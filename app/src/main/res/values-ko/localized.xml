@@ -536,4 +536,16 @@
     <string name="command_start_target_unavailable">대상 서번트 %1$d번이 전열에 없습니다. 커맨드 시작 대기를 중단했습니다.</string>
     <string name="command_start_wait_limit">%1$d턴을 기다렸지만 카드 수 조건을 충족하지 못했습니다.</string>
     <string name="command_start_return_failed">스킬 화면으로 돌아가지 못했습니다. 커맨드를 시작하기 전에 중단했습니다.</string>
+    <string name="command_start_dual_description">매 턴 두 조건을 함께 확인합니다. 첫 번째 조건을 만족하면 첫 번째 설정을, 첫 번째가 부족하고 두 번째를 만족하면 두 번째 설정을 시작합니다. 둘 다 부족하면 일반 공격으로 계속 기다립니다. 시작한 설정은 전투 종료까지 고정합니다. 대기 공격에는 첫 번째 설정의 우선순위를 사용하며, 파티·서포트·자동 적 지정은 공통입니다.</string>
+    <string name="command_start_first_servant">첫 번째 조건: 대상 서번트</string>
+    <string name="command_start_second_servant">두 번째 조건: 대상 서번트</string>
+    <string name="command_start_second_enabled">두 번째 조건 및 별도 설정 사용</string>
+    <string name="command_start_edit_command">%1$d번째 설정의 커맨드 편집</string>
+    <string name="command_start_edit_priority">%1$d번째 설정의 카드·서번트 우선순위</string>
+    <string name="command_start_edit_spam">%1$d번째 설정의 스킬·보구 자동 사용</string>
+    <string name="command_start_profile_caption">%1$d번째 실행 설정</string>
+    <string name="command_start_waiting_both">카드 대기: 서번트 %1$d번 %2$d/%3$d장 이상 · 서번트 %4$d번 %5$d/%6$d장 이상</string>
+    <string name="command_started_profile">%1$d번째 설정 시작 · 실제 %2$d웨이브 %3$d턴</string>
+    <string name="command_start_duplicate_targets">첫 번째와 두 번째 조건에 서로 다른 서번트를 선택해 주세요.</string>
+    <string name="command_start_targets_unavailable">설정한 두 대상 서번트가 모두 전열에 없습니다. 시작 대기를 중단했습니다.</string>
 </resources>

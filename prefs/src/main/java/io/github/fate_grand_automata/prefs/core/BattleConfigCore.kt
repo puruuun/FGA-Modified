@@ -5,26 +5,10 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.fredporciuncula.flow.preferences.Serializer
 import io.github.fate_grand_automata.prefs.import
-import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
-import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
-import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
-import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-
-/*
- * A config exported from a newer version has to stay loadable here, and one exported from here
- * loadable there: unknown keys are skipped, and every field is written out even at its default.
- */
-private val spamJson = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-}
 
 class BattleConfigCore(
     val id: String,
@@ -45,104 +29,30 @@ class BattleConfigCore(
     fun export(): Map<String, *> = sharedPrefs.all
 
     val name = maker.string("autoskill_name", "--")
-    val skillCommand = maker.string("autoskill_cmd")
+    val execution = ExecutionProfileCore(maker)
+    val secondaryExecution = ExecutionProfileCore(maker, "secondary_")
+    fun executionProfile(index: Int): ExecutionProfileCore = when (index) {
+        0 -> execution
+        1 -> secondaryExecution
+        else -> error("Invalid execution profile: $index")
+    }
+    val skillCommand get() = execution.skillCommand
+    val cardPriority get() = execution.cardPriority
+    val useServantPriority get() = execution.useServantPriority
+    val servantPriority get() = execution.servantPriority
+    val rearrangeCards get() = execution.rearrangeCards
+    val braveChains get() = execution.braveChains
+    val shuffleCards get() = execution.shuffleCards
+    val shuffleCardsWave get() = execution.shuffleCardsWave
+    val spam get() = execution.spam
     val commandStartMode = maker.enum("command_start_mode", CommandStartMode.Basic)
     val commandStartServant = maker.int("command_start_servant", 1)
     val commandStartCardCount = maker.int("command_start_card_count", 2)
     val commandStartMaxTurns = maker.int("command_start_max_turns", 0)
+    val secondaryStartEnabled = maker.bool("secondary_start_enabled")
+    val secondaryStartServant = maker.int("secondary_start_servant", 2)
+    val secondaryStartCardCount = maker.int("secondary_start_card_count", 2)
     val notes = maker.string("autoskill_notes")
-
-    val cardPriority = maker.serialized(
-        "card_priority",
-        serializer = object : Serializer<CardPriorityPerWave> {
-            override fun deserialize(serialized: String) =
-                CardPriorityPerWave.of(serialized)
-
-            override fun serialize(value: CardPriorityPerWave) =
-                value.toString()
-        },
-        default = CardPriorityPerWave.default
-    )
-
-    val rearrangeCards = maker.serialized(
-        "auto_skill_rearrange_cards",
-        serializer = object : Serializer<List<Boolean>> {
-            private val separator = ","
-            private val Yes = "T"
-            private val No = "F"
-
-            override fun deserialize(serialized: String) =
-                serialized
-                    .split(separator)
-                    .map { m -> m == Yes }
-
-            override fun serialize(value: List<Boolean>) =
-                value
-                    .joinToString(separator) { m -> if (m) Yes else No }
-        },
-        default = emptyList()
-    )
-
-    val braveChains = maker.serialized(
-        "auto_skill_brave_chains",
-        serializer = object : Serializer<List<BraveChainEnum>> {
-            private val separator = ","
-
-            override fun deserialize(serialized: String) =
-                serialized
-                    .split(separator)
-                    .map { m ->
-                        try {
-                            enumValueOf(m)
-                        } catch (e: Exception) {
-                            BraveChainEnum.None
-                        }
-                    }
-
-            override fun serialize(value: List<BraveChainEnum>) =
-                value
-                    .joinToString(separator) { m -> m.toString() }
-        },
-        default = emptyList()
-    )
-
-    val shuffleCards = maker.enum("shuffle_cards", ShuffleCardsEnum.None)
-    val shuffleCardsWave = maker.int("shuffle_cards_wave", 3)
-
-    val useServantPriority = maker.bool("use_servant_priority")
-    val servantPriority = maker.serialized(
-        "servant_priority",
-        serializer = object : Serializer<ServantPriorityPerWave> {
-            override fun deserialize(serialized: String): ServantPriorityPerWave =
-                try {
-                    ServantPriorityPerWave.of(serialized)
-                } catch (e: Exception) {
-                    ServantPriorityPerWave.default
-                }
-
-            override fun serialize(value: ServantPriorityPerWave) =
-                value.toString()
-        },
-        default = ServantPriorityPerWave.default
-    )
-
-    private val defaultSpamConfig = (1..6).map { ServantSpamConfig() }
-
-    val spam = maker.serialized(
-        "spam_x",
-        serializer = object : Serializer<List<ServantSpamConfig>> {
-            override fun deserialize(serialized: String) =
-                try {
-                    spamJson.decodeFromString<List<ServantSpamConfig>>(serialized)
-                } catch (e: SerializationException) {
-                    defaultSpamConfig
-                }
-
-            override fun serialize(value: List<ServantSpamConfig>) =
-                spamJson.encodeToString(value)
-        },
-        defaultSpamConfig
-    )
 
     val party = maker.stringAsInt("autoskill_party", -1)
     val materials = maker.stringSet("battle_config_mat").map(

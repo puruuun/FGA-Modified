@@ -58,7 +58,7 @@ fun SpamScreen(
 
     LazyColumn {
         item {
-            Heading(stringResource(R.string.p_spam_spam))
+            Heading(stringResource(R.string.p_spam_spam) + " · " + stringResource(R.string.command_start_profile_caption, vm.profileIndex + 1))
         }
 
         item {

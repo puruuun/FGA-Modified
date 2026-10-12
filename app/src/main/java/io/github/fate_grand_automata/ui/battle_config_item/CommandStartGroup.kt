@@ -17,10 +17,12 @@ import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.StepperPreference
+import io.github.fate_grand_automata.ui.prefs.SwitchPreference
+import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.remember
 
 @Composable
-fun CommandStartGroup(config: BattleConfigCore) {
+fun CommandStartGroup(config: BattleConfigCore, navigate: (BattleConfigDestination) -> Unit) {
     Card(
         modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
         colors = CardDefaults.cardColors(
@@ -41,12 +43,12 @@ fun CommandStartGroup(config: BattleConfigCore) {
             val mode by config.commandStartMode.remember()
             if (mode == CommandStartMode.CardCount) {
                 Text(
-                    stringResource(R.string.command_start_description),
+                    stringResource(R.string.command_start_dual_description),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 config.commandStartServant.DropdownPreference(
-                    title = stringResource(R.string.p_command_start_servant),
+                    title = stringResource(R.string.command_start_first_servant),
                     entries = (1..3).associateWith {
                         stringResource(R.string.command_start_servant_slot, it)
                     }
@@ -55,6 +57,31 @@ fun CommandStartGroup(config: BattleConfigCore) {
                     title = stringResource(R.string.p_command_start_card_count),
                     valueRange = 1..5
                 )
+                ProfileLinks(0, navigate)
+
+                config.secondaryStartEnabled.SwitchPreference(
+                    title = stringResource(R.string.command_start_second_enabled)
+                )
+                val secondEnabled by config.secondaryStartEnabled.remember()
+                if (secondEnabled) {
+                    config.secondaryStartServant.DropdownPreference(
+                        title = stringResource(R.string.command_start_second_servant),
+                        entries = (1..3).associateWith {
+                            stringResource(R.string.command_start_servant_slot, it)
+                        }
+                    )
+                    config.secondaryStartCardCount.StepperPreference(
+                        title = stringResource(R.string.p_command_start_card_count),
+                        valueRange = 1..5
+                    )
+                    val first by config.commandStartServant.remember()
+                    val second by config.secondaryStartServant.remember()
+                    if (first == second) {
+                        PreferenceError(stringResource(R.string.command_start_duplicate_targets))
+                    }
+                    ProfileLinks(1, navigate)
+                    ShuffleCardsGroup(config.secondaryExecution)
+                }
                 val unlimited = stringResource(R.string.command_start_unlimited)
                 val turns = stringResource(R.string.command_start_turns)
                 config.commandStartMaxTurns.StepperPreference(
@@ -65,4 +92,20 @@ fun CommandStartGroup(config: BattleConfigCore) {
             }
         }
     }
+}
+
+@Composable
+private fun ProfileLinks(index: Int, navigate: (BattleConfigDestination) -> Unit) {
+    Preference(
+        title = { Text(stringResource(R.string.command_start_edit_command, index + 1)) },
+        onClick = { navigate(BattleConfigDestination.SkillMaker(index)) }
+    )
+    Preference(
+        title = { Text(stringResource(R.string.command_start_edit_priority, index + 1)) },
+        onClick = { navigate(BattleConfigDestination.CardPriority(index)) }
+    )
+    Preference(
+        title = { Text(stringResource(R.string.command_start_edit_spam, index + 1)) },
+        onClick = { navigate(BattleConfigDestination.Spam(index)) }
+    )
 }

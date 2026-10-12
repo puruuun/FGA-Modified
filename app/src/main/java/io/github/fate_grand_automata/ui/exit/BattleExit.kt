@@ -81,6 +81,8 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.CommandStartRecognitionFailed -> stringResource(R.string.command_start_recognition_failed)
     is AutoBattle.ExitReason.CommandStartTargetUnavailable -> stringResource(R.string.command_start_target_unavailable, servant)
     is AutoBattle.ExitReason.CommandStartWaitLimit -> stringResource(R.string.command_start_wait_limit, turns)
+    AutoBattle.ExitReason.CommandStartDuplicateTargets -> stringResource(R.string.command_start_duplicate_targets)
+    AutoBattle.ExitReason.CommandStartTargetsUnavailable -> stringResource(R.string.command_start_targets_unavailable)
     AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
 }
 

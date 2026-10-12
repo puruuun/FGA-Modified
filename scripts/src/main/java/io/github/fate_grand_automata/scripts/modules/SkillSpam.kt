@@ -5,7 +5,6 @@ import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.ServantTarget
 import io.github.fate_grand_automata.scripts.models.SkillSpamConfig
 import io.github.fate_grand_automata.scripts.models.SkillSpamTarget
-import io.github.fate_grand_automata.scripts.models.SpamConfigPerTeamSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.models.skills
 import io.github.lib_automata.dagger.ScriptScope
@@ -17,7 +16,7 @@ class SkillSpam @Inject constructor(
     api: IFgoAutomataApi,
     private val servantTracker: ServantTracker,
     private val state: BattleState,
-    private val spamConfig: SpamConfigPerTeamSlot,
+    private val execution: BattleExecution,
     private val caster: Caster
 ) : IFgoAutomataApi by api {
     companion object {
@@ -28,7 +27,7 @@ class SkillSpam @Inject constructor(
         for (servantSlot in FieldSlot.list) {
             val skills = servantSlot.skills()
             val teamSlot = servantTracker.deployed[servantSlot] ?: continue
-            val servantSpamConfig = spamConfig[teamSlot]
+            val servantSpamConfig = execution.active.spam[teamSlot]
 
             servantSpamConfig.skills.forEachIndexed { skillIndex, skillSpamConfig ->
                 if (caster.canSpam(skillSpamConfig.spam) && (state.commandStage + 1) in skillSpamConfig.waves) {

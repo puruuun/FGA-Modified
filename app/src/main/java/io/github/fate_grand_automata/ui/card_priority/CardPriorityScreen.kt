@@ -10,7 +10,8 @@ fun CardPriorityScreen(
 ) {
     CardPriorityView(
         items = vm.cardPriorityItems,
-        useServantPriority = vm.useServantPriority
+        useServantPriority = vm.useServantPriority,
+        profileIndex = vm.profileIndex
     )
 
     DisposableEffect(vm) {

@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.models.AutoSkillAction
-import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
@@ -10,7 +9,7 @@ import javax.inject.Inject
 @ScriptScope
 class AutoSkill @Inject constructor(
     api: IFgoAutomataApi,
-    private val skillCommand: AutoSkillCommand,
+    private val execution: BattleExecution,
     private val caster: Caster
 ) : IFgoAutomataApi by api {
     private fun act(action: AutoSkillAction) = when (action) {
@@ -23,7 +22,7 @@ class AutoSkill @Inject constructor(
     }
 
     fun execute(stage: Int, turn: Int): NPUsage {
-        val commandList = skillCommand[stage, turn]
+        val commandList = execution.active.skillCommand[stage, turn]
         var npUsage = NPUsage.none
 
         if (commandList.isNotEmpty()) {

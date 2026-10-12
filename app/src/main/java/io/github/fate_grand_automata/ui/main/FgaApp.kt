@@ -166,8 +166,8 @@ fun FgaApp(
                             navigate = {
                                 when (it) {
                                     BattleConfigDestination.Back -> backStack.removeLastOrNull()
-                                    BattleConfigDestination.CardPriority ->
-                                        backStack.add(Route.CardPriority(id))
+                                    is BattleConfigDestination.CardPriority ->
+                                        backStack.add(Route.CardPriority(id, it.profileIndex))
 
                                     is BattleConfigDestination.Other -> {
                                         // replaces the current battle config screen with another one,
@@ -184,15 +184,16 @@ fun FgaApp(
                                     BattleConfigDestination.PreferredSupport ->
                                         backStack.add(Route.PreferredSupport(id))
 
-                                    BattleConfigDestination.SkillMaker -> {
+                                    is BattleConfigDestination.SkillMaker -> {
                                         val intent = Intent(context, SkillMakerActivity::class.java).apply {
                                             putExtra(Route.BattleConfig.idArg, id)
+                                            putExtra(Route.BattleConfig.profileArg, it.profileIndex)
                                         }
 
                                         context.startActivity(intent)
                                     }
 
-                                    BattleConfigDestination.Spam -> backStack.add(Route.Spam(id))
+                                    is BattleConfigDestination.Spam -> backStack.add(Route.Spam(id, it.profileIndex))
                                 }
                             }
                         )
@@ -200,7 +201,7 @@ fun FgaApp(
                     entry<Route.CardPriority> { key ->
                         CardPriorityScreen(
                             vm = hiltViewModel<CardPriorityViewModel, CardPriorityViewModel.Factory>(
-                                creationCallback = { it.create(key.id) }
+                                creationCallback = { it.create(key.id, key.profileIndex) }
                             )
                         )
                     }
@@ -215,7 +216,7 @@ fun FgaApp(
                     entry<Route.Spam> { key ->
                         SpamScreen(
                             vm = hiltViewModel<SpamScreenViewModel, SpamScreenViewModel.Factory>(
-                                creationCallback = { it.create(key.id) }
+                                creationCallback = { it.create(key.id, key.profileIndex) }
                             )
                         )
                     }

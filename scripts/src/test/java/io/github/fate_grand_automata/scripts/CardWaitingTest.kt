@@ -15,6 +15,7 @@ import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.models.battle.CommandPosition
 import io.github.fate_grand_automata.scripts.modules.ApplyBraveChains
 import io.github.fate_grand_automata.scripts.modules.Card
+import io.github.fate_grand_automata.scripts.modules.BattleExecution
 import io.github.fate_grand_automata.scripts.modules.CardParser
 import io.github.fate_grand_automata.scripts.modules.Caster
 import io.github.fate_grand_automata.scripts.modules.FaceCardPriority
@@ -41,20 +42,24 @@ class CardWaitingTest {
         val caster = mockk<Caster>(relaxed = true)
         every { caster.canSpam(SpamEnum.Spam) } returns true
         val parser = mockk<CardParser>()
-        val priority = mockk<FaceCardPriority>()
         val chains = mockk<ApplyBraveChains>()
-        val config = mockk<IBattleConfig>()
+        val config = mockk<IBattleConfig>(relaxed = true)
         every { config.braveChains } returns emptyList()
         every { config.rearrangeCards } returns emptyList()
         val cards = CommandCard.Face.list.map {
             ParsedCard(it, TeamSlot.A, FieldSlot.A, CardTypeEnum.Buster)
         }
-        every { priority.sort(cards, 0) } returns cards
         every { chains.pick(any(), any(), any(), any()) } answers { firstArg() }
-        val spam = SpamConfigPerTeamSlot(listOf(
+        every { config.skillCommand } returns ""
+        every { config.commandStartMode } returns CommandStartMode.Basic
+        every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
+        every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
+        every { config.useServantPriority } returns false
+        every { config.spam } returns listOf(
             ServantSpamConfig(np = NpSpamConfig(waves = setOf(1), spam = SpamEnum.Spam))
-        ))
-        val card = Card(api, tracker, state, spam, caster, parser, priority, chains, config)
+        )
+        val execution = BattleExecution(config)
+        val card = Card(api, tracker, state, caster, parser, chains, execution)
 
         card.clickCommandCards(cards, NPUsage.none, allowNpSpam = false)
         verify(exactly = 0) { caster.use(any<CommandCard.NP>()) }
@@ -63,7 +68,7 @@ class CardWaitingTest {
 
         card.clickCommandCards(cards, NPUsage.none)
         verify(exactly = 1) { caster.use(CommandCard.NP.A) }
-        verify(exactly = 2) { priority.sort(cards, 0) }
+        verify(exactly = 6) { caster.use(any<CommandCard.Face>()) }
     }
 
     @Test

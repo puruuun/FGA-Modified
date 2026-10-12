@@ -26,7 +26,8 @@ class Battle @Inject constructor(
     private val shuffleChecker: ShuffleChecker,
     private val stageTracker: StageTracker,
     private val autoChooseTarget: AutoChooseTarget,
-    private val commandStart: CommandStartGate
+    private val commandStart: CommandStartGate,
+    private val execution: BattleExecution
 ) : IFgoAutomataApi by api {
     init {
         prefs.stopAfterThisRun = false
@@ -44,6 +45,7 @@ class Battle @Inject constructor(
             }
             state.nextRun()
             commandStart.nextRun()
+            execution.nextRun()
 
             servantTracker.nextRun()
 
@@ -102,9 +104,13 @@ class Battle @Inject constructor(
 
     /** Returns false only after consuming a waiting turn with face cards alone. */
     private fun tryStartCommand(): Boolean {
-        if (commandStart.target !in servantTracker.deployed.values) {
+        if (commandStart.hasDuplicateTargets) {
+            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartDuplicateTargets)
+        }
+        if (!commandStart.hasAvailableTarget(servantTracker.deployed.values)) {
             throw AutoBattle.BattleExitException(
-                AutoBattle.ExitReason.CommandStartTargetUnavailable(commandStart.target.position)
+                if (commandStart.secondaryEnabled) AutoBattle.ExitReason.CommandStartTargetsUnavailable
+                else AutoBattle.ExitReason.CommandStartTargetUnavailable(commandStart.target.position)
             )
         }
 
@@ -125,17 +131,23 @@ class Battle @Inject constructor(
                 if (!locations.battle.screenCheckRegion.exists(images[Images.BattleScreen], 5.seconds)) {
                     throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartReturnFailed)
                 }
-                commandStart.startAt(state.stage, state.turn)
-                messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1))
+                execution.select(checked.profileIndex)
+                commandStart.startAt(state.stage, state.turn, checked.profileIndex)
+                messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1, checked.profileIndex))
                 return true
             }
 
             is CommandStartGate.Result.Wait -> {
-                messages.notify(
+                messages.notify(if (checked.secondaryCount != null) {
+                    ScriptNotify.CommandStartWaitingBoth(
+                        commandStart.target.position, checked.count, commandStart.requiredCards,
+                        checkNotNull(commandStart.secondaryTarget).position, checked.secondaryCount, commandStart.secondaryRequired
+                    )
+                } else {
                     ScriptNotify.CommandStartWaiting(
                         commandStart.target.position, checked.count, commandStart.requiredCards
                     )
-                )
+                })
                 // NPUsage.none alone is insufficient: Card normally appends NP Spam.
                 card.clickCommandCards(cards, NPUsage.none, allowNpSpam = false)
                 commandStart.recordWaitingTurn()
@@ -154,12 +166,15 @@ class Battle @Inject constructor(
             CommandStartGate.Result.WaitLimitReached -> throw AutoBattle.BattleExitException(
                 AutoBattle.ExitReason.CommandStartWaitLimit(commandStart.waitingTurns)
             )
+            CommandStartGate.Result.DuplicateTargets -> throw AutoBattle.BattleExitException(
+                AutoBattle.ExitReason.CommandStartDuplicateTargets
+            )
         }
     }
 
     private fun shouldShuffle(cards: List<ParsedCard>, npUsage: NPUsage): Boolean {
         // Not this wave
-        if (state.commandStage != (battleConfig.shuffleCardsWave - 1)) {
+        if (state.commandStage != (execution.active.shuffleCardsWave - 1)) {
             return false
         }
 
@@ -169,7 +184,7 @@ class Battle @Inject constructor(
         }
 
         return shuffleChecker.shouldShuffle(
-            mode = battleConfig.shuffleCards,
+            mode = execution.active.shuffleCards,
             cards = cards,
             npUsage = npUsage
         )

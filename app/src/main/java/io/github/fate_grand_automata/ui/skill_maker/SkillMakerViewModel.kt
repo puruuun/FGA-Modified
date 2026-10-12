@@ -20,13 +20,14 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 class SkillMakerViewModel @AssistedInject constructor(
     val prefs: IPreferences,
     val savedState: SavedStateHandle,
-    @Assisted id: String
+    @Assisted id: String,
+    @Assisted val profileIndex: Int
 ) : ViewModel() {
-    val battleConfig = prefs.forBattleConfig(id)
+    val battleConfig = prefs.forBattleConfig(id).executionProfile(profileIndex)
 
     @AssistedFactory
     interface Factory {
-        fun create(id: String): SkillMakerViewModel
+        fun create(id: String, profileIndex: Int = 0): SkillMakerViewModel
     }
 
     val navigation = mutableStateOf<SkillMakerNav>(SkillMakerNav.Main)

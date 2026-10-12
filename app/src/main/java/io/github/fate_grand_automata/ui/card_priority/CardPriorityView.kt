@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun CardPriorityView(
     items: SnapshotStateList<CardPriorityListItem>,
-    useServantPriority: Pref<Boolean>
+    useServantPriority: Pref<Boolean>,
+    profileIndex: Int = 0
 ) {
     val pagerState = rememberPagerState(pageCount = {items.size},)
     val scope = rememberCoroutineScope()
@@ -45,7 +46,7 @@ fun CardPriorityView(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            Heading(stringResource(R.string.card_priority))
+            Heading(stringResource(R.string.card_priority) + " · " + stringResource(R.string.command_start_profile_caption, profileIndex + 1))
 
             val servantPriority by useServantPriority.remember()
             useServantPriority.SwitchPreference(

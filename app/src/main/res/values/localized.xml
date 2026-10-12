@@ -610,4 +610,16 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="command_start_target_unavailable">Target Servant %1$d is no longer on the field. Command start cancelled.</string>
     <string name="command_start_wait_limit">Card condition not met after %1$d skipped turns.</string>
     <string name="command_start_return_failed">Cannot return to the skill screen. Stopped before starting the command.</string>
+    <string name="command_start_dual_description">Check both conditions each turn. Start the first setting if it qualifies; otherwise start the second if enabled and qualified. If neither qualifies, attack with face cards and keep waiting across waves. Once started, keep the selected setting until the quest ends. The first setting also supplies waiting attack priorities. Party, support and enemy auto-target settings are shared.</string>
+    <string name="command_start_first_servant">First condition: target Servant</string>
+    <string name="command_start_second_servant">Second condition: target Servant</string>
+    <string name="command_start_second_enabled">Enable second condition and separate settings</string>
+    <string name="command_start_edit_command">Edit command for setting %1$d</string>
+    <string name="command_start_edit_priority">Card and Servant priorities for setting %1$d</string>
+    <string name="command_start_edit_spam">Skill / NP Spam for setting %1$d</string>
+    <string name="command_start_profile_caption">Setting %1$d</string>
+    <string name="command_start_waiting_both">Waiting: Servant %1$d %2$d/%3$d; Servant %4$d %5$d/%6$d (at least)</string>
+    <string name="command_started_profile">Setting %1$d started at actual wave %2$d, turn %3$d</string>
+    <string name="command_start_duplicate_targets">Choose different Servants for the first and second conditions.</string>
+    <string name="command_start_targets_unavailable">Neither configured target is deployed. Command start cancelled.</string>
 </resources>
