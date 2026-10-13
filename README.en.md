@@ -14,15 +14,15 @@ This project is maintained separately from the upstream team's official distribu
 ## Download
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[NP level stable release 0.5.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.5.0)**
+- **[NP recognition stable release 0.5.1](https://github.com/puruuun/FGA-Modified/releases/tag/v0.5.1)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.5.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.5.1-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.5.0 (stable release) |
+| Version | 0.5.1 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -111,7 +111,7 @@ Open **Command Editor → Attack → Direct cards**, next to **Cards before NP**
 
 Direct attacks bypass automatic card/Servant priority, Brave Chain selection, rearrangement and added NP Spam. Missing or unrecognized required face cards stop the script before any card is tapped. Other turns keep the original behavior. **Available in stable version 0.4.0.** See the [direct-card guide (Korean)](wiki/scripts/Direct-Cards-KR.md) for syntax and verification limits.
 
-### 11. Support NP level checks — 0.5.0
+### 11. Support NP level checks — 0.5.1
 
 Open **Support Selection → Preferred Servants → Check support NP level**, then choose a **Minimum NP level** from 1 to 5. A minimum of 3 accepts NP levels 3, 4 and 5. The filter defaults to off; the initial minimum selection is 5.
 
@@ -119,7 +119,9 @@ The app locates `Lv.` inside the candidate's NP name area, then reads its suffix
 
 **All ordinary filters, including score and NP level → Append Skill checks → selection**. A failed earlier condition skips that candidate's Append view switch entirely. When NP, score and Append conditions are enabled together, all must pass. Settings survive copies, exports and imports. See the [NP guide (Korean)](wiki/scripts/Support-NP-Level-KR.md).
 
-All 12 visible NP levels in the five submitted KR/JP images were correct (12/12, **100% on these submitted images**), also matching in both normalization orders (24/24). The images cover real NP levels 1 and 5. Real levels 2–4 and Android/FGO device operation still need verification.
+In 0.5.1, failed reads trigger a search at several `Lv.` sizes and OCR with alternate preprocessing. Recovery requires at least two high-confidence readings of the same level and rejects conflicting levels. This recovers missed smaller text in long NP names and differences caused by screenshot resizing.
+
+All **44 visible NP levels across 16 submitted KR/JP images were correct (100% on this submitted dataset)**, covering real NP levels 1–5. Both normalization orders passed all 88 reads, 440 minimum-level comparisons and 176 negative checks without the number. Eleven partially hidden top rows used annotated origins. These are desktop image checks; Android/FGO automation and accuracy on other screens remain unverified.
 
 ## Updates through Obtainium
 
@@ -128,7 +130,7 @@ All 12 visible NP levels in the five submitted KR/JP images were correct (12/12,
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.5.0 with NP level checks is a stable release and works with the existing Obtainium configuration.
+Version 0.5.1 with improved NP recognition is a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
 
