@@ -2,12 +2,14 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
+import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
+import io.github.fate_grand_automata.scripts.models.toFieldSlot
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
@@ -66,6 +68,20 @@ class Card @Inject constructor(
         npUsage: NPUsage,
         allowNpSpam: Boolean = true
     ) {
+        npUsage.directCards?.let { sequence ->
+            val picked = sequence.resolve(cards)
+            if (picked == null || sequence.nps.any { it.toFieldSlot() !in servantTracker.deployed }) {
+                throw AutoBattle.BattleExitException(AutoBattle.ExitReason.DirectCardsUnavailable(sequence.toString()))
+            }
+            // Resolve all three before the first tap. Do not sort, rearrange or append NP Spam.
+            picked.forEach {
+                when (it) {
+                    is CommandCard.NP -> caster.use(it)
+                    is CommandCard.Face -> caster.use(it)
+                }
+            }
+            return
+        }
         val pickedCards = pickCards(cards, npUsage)
             .take(3)
 

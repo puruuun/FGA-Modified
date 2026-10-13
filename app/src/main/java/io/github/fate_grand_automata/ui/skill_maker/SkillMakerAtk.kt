@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.models.AutoSkillAction
 import io.github.fate_grand_automata.scripts.models.CommandCard
+import io.github.fate_grand_automata.scripts.models.DirectCardSequence
 import io.github.fate_grand_automata.ui.FGATitle
 import io.github.fate_grand_automata.ui.VectorIcon
 import io.github.fate_grand_automata.ui.icon
@@ -122,7 +125,8 @@ private fun CardsBeforeNp(
     modifier: Modifier = Modifier,
     numberOfNpSelected: Int,
     cardsBeforeNp: Int,
-    onCardsBeforeNpChange: (Int) -> Unit
+    onCardsBeforeNpChange: (Int) -> Unit,
+    enabled: Boolean = true
 ) {
     Column(
         modifier = modifier
@@ -133,7 +137,7 @@ private fun CardsBeforeNp(
             (0..2).map { cardNumber ->
                 val isSelected = cardsBeforeNp == cardNumber
 
-                val canSelect = numberOfNpSelected + cardNumber <= 3
+                val canSelect = enabled && numberOfNpSelected + cardNumber <= 3
 
                 val animatedColorState by animateColorAsState(
                     targetValue = when {
@@ -210,8 +214,45 @@ fun SkillMakerAtk(
         var cardsBeforeNp by rememberSaveable { mutableIntStateOf(0) }
 
         var numberOfNPs by rememberSaveable { mutableIntStateOf(0) }
+        var directEnabled by rememberSaveable { mutableStateOf(false) }
+        var directSequence by rememberSaveable { mutableStateOf("") }
+        var directDialog by rememberSaveable { mutableStateOf(false) }
 
-        SelectNps(
+        if (directDialog) {
+            val defaultSequence = buildString {
+                val npCodes = npSequence.map { (it.digitToInt() + 3).digitToChar() }
+                val faceCount = 3 - npCodes.size
+                val before = cardsBeforeNp.coerceAtMost(faceCount)
+                append("baq".take(before))
+                append(npCodes.joinToString(""))
+                append("baq".drop(before).take(faceCount - before))
+            }
+            DirectCardsDialog(
+                initialSequence = directSequence.ifEmpty { defaultSequence },
+                initiallyEnabled = directEnabled,
+                onApply = { enabled, sequence ->
+                    directEnabled = enabled
+                    directSequence = sequence
+                    directDialog = false
+                },
+                onDismiss = { directDialog = false }
+            )
+        }
+
+        fun attackAction() = if (directEnabled)
+            AutoSkillAction.Atk.direct(DirectCardSequence.parse(directSequence))
+        else makeAtkAction(npSequence, cardsBeforeNp)
+
+        if (directEnabled) {
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(stringResource(R.string.skill_maker_direct_cards_use))
+                DirectCardsSummary(directSequence)
+            }
+        } else SelectNps(
             numberOfCardsSelected = cardsBeforeNp,
             npSequence = npSequence,
             onNpSequenceChange = { NPs ->
@@ -223,28 +264,29 @@ fun SkillMakerAtk(
                 .fillMaxWidth()
         )
 
-        Box(
-            contentAlignment = Alignment.Center,
+        FlowRow(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(40.dp, 0.dp)
         ) {
-
-
-            CardsBeforeNp(
-                modifier = Modifier.align(Alignment.CenterStart),
-                numberOfNpSelected = numberOfNPs,
-                cardsBeforeNp = cardsBeforeNp,
-                onCardsBeforeNpChange = { cardsBeforeNp = it }
-            )
-
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CardsBeforeNp(
+                    numberOfNpSelected = numberOfNPs,
+                    cardsBeforeNp = cardsBeforeNp,
+                    onCardsBeforeNpChange = { cardsBeforeNp = it },
+                    enabled = !directEnabled
+                )
+                OutlinedButton(onClick = { directDialog = true }) {
+                    Text(stringResource(R.string.skill_maker_direct_cards_button), textAlign = TextAlign.Center)
+                }
+            }
 
             Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { onNextTurn(makeAtkAction(npSequence, cardsBeforeNp)) },
+                    onClick = { onNextTurn(attackAction()) },
                     modifier = Modifier
                         .padding(end = 16.dp)
                 ) {
@@ -257,7 +299,7 @@ fun SkillMakerAtk(
                 ButtonWithIcon(
                     text = R.string.skill_maker_atk_next_wave,
                     icon = icon(Icons.Default.FastForward),
-                    onClick = { onNextWave(makeAtkAction(npSequence, cardsBeforeNp)) }
+                    onClick = { onNextWave(attackAction()) }
                 )
             }
         }

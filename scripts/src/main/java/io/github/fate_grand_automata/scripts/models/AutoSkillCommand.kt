@@ -169,6 +169,12 @@ class AutoSkillCommand private constructor(
                         AutoSkillAction.Atk.cardsBeforeNP(count)
                     }
 
+                    SpecialCommand.DirectCards.autoSkillCode -> {
+                        val sequence = buildString { repeat(3) { append(queue.remove()) } }
+                        require(queue.isEmpty()) { "Direct attack must be the last command in the turn" }
+                        AutoSkillAction.Atk.direct(DirectCardSequence.parse(sequence))
+                    }
+
                     SpecialCommand.OrderChange.autoSkillCode -> {
                         val startingCode = queue.remove()
                         val starting = OrderChangeMember.Starting.list
@@ -205,6 +211,15 @@ class AutoSkillCommand private constructor(
 
                         while (queue.isNotEmpty()) {
                             val action = parseAction(queue)
+
+                            if (action is AutoSkillAction.Atk && action.directCards != null) {
+                                if (actions.any { it is AutoSkillAction.Atk && it != AutoSkillAction.Atk.noOp() }) {
+                                    throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SkillCommandParseError(
+                                        IllegalArgumentException("Direct and automatic attacks cannot share a turn")
+                                    ))
+                                }
+                                actions.removeAll { it == AutoSkillAction.Atk.noOp() }
+                            }
 
                             // merge NPs and cards before NPs
                             if (actions.isNotEmpty() && action is AutoSkillAction.Atk) {

@@ -46,19 +46,7 @@ sealed class SkillMakerEntry {
         }
 
         override fun toString() = when (action) {
-            is AutoSkillAction.Atk -> {
-                if (action == AutoSkillAction.Atk.noOp()) {
-                    "0"
-                } else {
-                    val cardsBeforeNP = if (action.cardsBeforeNP > 0) {
-                        "${SpecialCommand.CardsBeforeNP.autoSkillCode}${action.cardsBeforeNP}"
-                    } else ""
-
-                    cardsBeforeNP + action.nps.joinToString("") {
-                        it.autoSkillCode.toString()
-                    }
-                }
-            }
+            is AutoSkillAction.Atk -> action.toCommandString()
 
             is AutoSkillAction.ServantSkill -> toString(action.skill, action.targets)
             is AutoSkillAction.MasterSkill -> toString(action.skill, action.target)

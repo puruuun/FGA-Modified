@@ -1,16 +1,29 @@
 package io.github.fate_grand_automata.scripts.models
 
 sealed class AutoSkillAction {
-    data class Atk constructor(val nps: Set<CommandCard.NP>, val cardsBeforeNP: Int) : AutoSkillAction() {
+    data class Atk constructor(
+        val nps: Set<CommandCard.NP>,
+        val cardsBeforeNP: Int,
+        val directCards: DirectCardSequence? = null
+    ) : AutoSkillAction() {
         init {
             require(cardsBeforeNP in 0..2) { "Only 0, 1 or 2 cards can be used before NP" }
+            require(directCards == null || (nps == directCards.nps && cardsBeforeNP == directCards.cardsBeforeNP))
         }
 
-        operator fun plus(other: Atk) =
-            Atk(nps + other.nps, cardsBeforeNP + other.cardsBeforeNP)
+        operator fun plus(other: Atk): Atk {
+            require(directCards == null && other.directCards == null) { "Direct and automatic attacks cannot be combined" }
+            return Atk(nps + other.nps, cardsBeforeNP + other.cardsBeforeNP)
+        }
 
         fun toNPUsage() =
-            NPUsage(nps, cardsBeforeNP)
+            NPUsage(nps, cardsBeforeNP, directCards)
+
+        fun toCommandString(): String = directCards?.toString() ?: when {
+            this == noOp() -> "0"
+            else -> (if (cardsBeforeNP > 0) "${SpecialCommand.CardsBeforeNP.autoSkillCode}$cardsBeforeNP" else "") +
+                nps.joinToString("") { it.autoSkillCode.toString() }
+        }
 
         companion object {
             fun noOp() = Atk(emptySet(), 0)
@@ -18,6 +31,8 @@ sealed class AutoSkillAction {
             fun np(np: CommandCard.NP) = Atk(setOf(np), 0)
 
             fun cardsBeforeNP(cards: Int) = Atk(emptySet(), cards)
+
+            fun direct(sequence: DirectCardSequence) = Atk(sequence.nps, sequence.cardsBeforeNP, sequence)
         }
     }
 

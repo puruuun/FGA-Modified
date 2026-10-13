@@ -30,6 +30,13 @@
 
 NP"</string>
     <string name="skill_maker_atk_cards_before_np">"Cards before NP"</string>
+    <string name="skill_maker_direct_cards">Direct cards</string>
+    <string name="skill_maker_direct_cards_button">Direct\ncards</string>
+    <string name="skill_maker_direct_cards_use">Fix the attack order for this turn</string>
+    <string name="skill_maker_direct_cards_help">Choose all three cards in order. Buster, Arts and Quick ignore affinity. Missing or unrecognized face cards stop the script.</string>
+    <string name="skill_maker_direct_cards_slot">Attack %1$d</string>
+    <string name="skill_maker_direct_np">Servant %1$d NP</string>
+    <string name="direct_cards_unavailable">Could not prepare the fixed attack %1$s. No cards were selected. Check the hand and deployed Servants.</string>
     <string name="skill_maker_atk_done">"Done"</string>
     <string name="skill_maker_atk_next_wave">"Next Wave"</string>
     <string name="skill_maker_atk_next_turn">"Next Turn

@@ -253,6 +253,13 @@
     <string name="p_max_skills">"스킬 최대 레벨"</string>
     <string name="p_append_skill_check">어펜드 스킬 판독</string>
     <string name="p_score_62_check">스코어 +62 판독</string>
+    <string name="skill_maker_direct_cards">일반 카드 직접 지정</string>
+    <string name="skill_maker_direct_cards_button">일반 카드\n직접 지정</string>
+    <string name="skill_maker_direct_cards_use">이 턴의 공격 순서 직접 지정</string>
+    <string name="skill_maker_direct_cards_help">세 장의 공격 순서를 선택합니다. 버스터·아츠·퀵은 상성을 구분하지 않습니다. 필요한 일반 카드가 없거나 판독하지 못하면 중단합니다.</string>
+    <string name="skill_maker_direct_cards_slot">%1$d번째 공격</string>
+    <string name="skill_maker_direct_np">서번트 %1$d 보구</string>
+    <string name="direct_cards_unavailable">고정 공격 %1$s에 필요한 카드를 확인하지 못했습니다. 카드는 선택하지 않았습니다. 현재 카드와 전열 서번트를 확인해 주세요.</string>
     <string name="p_append_skills_max">어펜드 스킬 최대 레벨 (1 → 5)</string>
     <string name="support_skill_display_failed">서포트 스킬 표시를 확인하지 못했습니다. 일반 스킬 표시로 돌린 뒤 다시 실행해 주세요.</string>
     <string name="p_more_options">"더 많은 옵션"</string>

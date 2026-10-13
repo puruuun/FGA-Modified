@@ -23,6 +23,9 @@ sealed class SpecialCommand(
      */
     data object CardsBeforeNP : SpecialCommand('n')
 
+    /** Three ordered B/A/Q or NP choices, terminating this turn's commands. */
+    data object DirectCards : SpecialCommand('&')
+
     /**
      * The "0" character that represents a no-op.
      * No operation this turn is performed.
