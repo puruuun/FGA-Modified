@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.scripts.prefs
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.scripts.enums.SupportClass
 import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
+import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 
 interface ISupportPreferences {
     val friendNames: List<String>
@@ -23,6 +24,8 @@ interface ISupportPreferences {
     val appendSkillCheck: Boolean
     val appendSkillsMax: List<Boolean>
     val score62Check: Boolean
+    val grandScore16Check: Boolean
+    val scoreMatchMode: SupportScoreMatchMode
     val npLevelCheck: Boolean
     val minimumNpLevel: Int
 

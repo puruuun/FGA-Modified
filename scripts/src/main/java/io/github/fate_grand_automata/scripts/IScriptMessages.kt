@@ -33,6 +33,10 @@ sealed class ScriptLog {
     ) : ScriptLog()
     class MaxAppendSkills(val required: List<Boolean>, val detected: List<Boolean>) : ScriptLog()
     class SupportScore62(val matched: Boolean) : ScriptLog()
+    class SupportScoreConditions(
+        val classScore: Int?, val grandScore: Int?, val checkClass: Boolean,
+        val checkGrand: Boolean, val requireAll: Boolean, val matched: Boolean
+    ) : ScriptLog()
     class SupportNpLevel(val required: Int, val detected: Int?, val matched: Boolean) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()

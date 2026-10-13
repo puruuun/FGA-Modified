@@ -14,15 +14,15 @@ This project is maintained separately from the upstream team's official distribu
 ## Download
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[NP recognition stable release 0.5.1](https://github.com/puruuun/FGA-Modified/releases/tag/v0.5.1)**
+- **[Class/Grand score stable release 0.6.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.6.0)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.5.1-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.6.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.5.1 (stable release) |
+| Version | 0.6.0 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -99,11 +99,21 @@ The app checks the existing preferred-support and normal-skill conditions first.
 
 The feature defaults to off. Five ignored slots skip switching. Settings are included in copies, exports and imports. See the [Append Skill guide (Korean)](wiki/scripts/Support-Append-Skills-KR.md) for configuration and the provided KR/JP screenshot results.
 
-### 9. Support score +62 checks
+### 9. Class score +62 and Grand score +16 — 0.6.0
 
-Enable **Require support score +62** in the preferred Servant settings to accept only a matching +62 score. Other numbers or an unreadable score cause the app to search for another Servant. Version 0.5.0 also moves this setting above Append Skills.
+Enable **Require Class score +62** and **Require Grand score +16** independently under **Support Selection → Preferred Servants**. Both the ordinary `+62` display and the quest-specific `+62/+16` display are supported. The field before `/` is Class; the field after it is Grand.
 
-It works independently of Append checks. If both are enabled, both must pass. Score checks do not require switching skill views. You can also use only the +62 filter without choosing Servant or CE images. See the [score guide (Korean)](wiki/scripts/Support-Score-62-KR.md).
+| Settings | Passing condition |
+|---|---|
+| Class only | Class +62 |
+| Grand only | Grand +16, regardless of Class |
+| Both enabled → Both conditions must match | Class +62 and Grand +16 |
+| Both enabled → At least one condition must match | Class +62 or Grand +16 |
+| Both disabled | No score filter |
+
+For example, `+0/+16` passes with Grand only or the OR option. An ordinary `+62` without a Grand field meets only the Class condition. Uncertain fields do not satisfy their condition; disabled fields do not affect selection. Existing +62 settings remain Class checks, and the new Grand toggle defaults to off.
+
+Score checks still run **before Append Skill checks**. All other preferred-support and Append conditions must also pass. Score-only selection works without Servant or CE images. See the [score guide and validation limits (Korean)](wiki/scripts/Support-Score-62-KR.md).
 
 ### 10. Fixed attack order for a specific turn
 
@@ -130,7 +140,7 @@ All **44 visible NP levels across 16 submitted KR/JP images were correct (100% o
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.5.1 with improved NP recognition is a stable release and works with the existing Obtainium configuration.
+Version 0.6.0 with Class/Grand score filters is a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
 

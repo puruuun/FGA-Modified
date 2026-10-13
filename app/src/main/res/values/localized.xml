@@ -123,7 +123,11 @@ Skills"</string>
     <string name="p_battle_config_support_also_check_all">"Also check All"</string>
     <string name="p_max_skills">"Max Skills"</string>
     <string name="p_append_skill_check">Check Append Skills</string>
-    <string name="p_score_62_check">Require support score +62</string>
+    <string name="p_score_62_check">Require Class score +62</string>
+    <string name="p_grand_score_16_check">Require Grand score +16</string>
+    <string name="p_score_match_mode">Score conditions</string>
+    <string name="p_score_match_all">Both conditions must match</string>
+    <string name="p_score_match_any">At least one condition must match</string>
     <string name="p_np_level_check">Check support NP level</string>
     <string name="p_np_level_check_summary">Choose a support with at least the required NP level. Skip unreadable candidates.</string>
     <string name="p_np_min_level">Minimum NP level</string>

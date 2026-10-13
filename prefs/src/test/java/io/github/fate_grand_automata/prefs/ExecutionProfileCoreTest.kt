@@ -11,6 +11,7 @@ import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
+import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 import io.github.fate_grand_automata.scripts.models.NpSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
@@ -200,5 +201,34 @@ class ExecutionProfileCoreTest {
         assertThat(result.score62Check.get()).isEqualTo(true)
         assertThat(result.appendSkillCheck.get()).isEqualTo(true)
         assertThat(result.appendSkillsMax[1].get()).isEqualTo(true)
+    }
+
+    @Test
+    fun `legacy class score preferences retain class only while grand defaults off`() {
+        val storage = MemoryPrefs()
+        storage.edit().putBoolean("support_score_62_check", true).apply()
+        val result = SupportPrefsCore(PrefMaker(storage))
+        assertThat(result.score62Check.get()).isEqualTo(true)
+        assertThat(result.grandScore16Check.get()).isEqualTo(false)
+        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.All)
+    }
+
+    @Test
+    fun `grand only and score combination mode survive export import independently`() {
+        val storage = MemoryPrefs()
+        val support = SupportPrefsCore(PrefMaker(storage))
+        support.grandScore16Check.set(true)
+        support.scoreMatchMode.set(SupportScoreMatchMode.Any)
+        support.npLevelCheck.set(true)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(storage.all))) }.apply()
+        val result = SupportPrefsCore(PrefMaker(restored))
+        assertThat(result.score62Check.get()).isEqualTo(false)
+        assertThat(result.grandScore16Check.get()).isEqualTo(true)
+        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.Any)
+        result.score62Check.set(true)
+        result.grandScore16Check.set(false)
+        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.Any)
+        assertThat(result.npLevelCheck.get()).isEqualTo(true)
     }
 }

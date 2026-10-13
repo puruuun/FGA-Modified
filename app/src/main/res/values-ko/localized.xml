@@ -252,7 +252,11 @@
     <string name="p_max_gold_ember_total_count">"종화 획득 총량"</string>
     <string name="p_max_skills">"스킬 최대 레벨"</string>
     <string name="p_append_skill_check">어펜드 스킬 판독</string>
-    <string name="p_score_62_check">스코어 +62 판독</string>
+    <string name="p_score_62_check">클래스 스코어 +62 판독</string>
+    <string name="p_grand_score_16_check">그랜드 스코어 +16 판독</string>
+    <string name="p_score_match_mode">스코어 조건 적용</string>
+    <string name="p_score_match_all">두 조건 모두 만족</string>
+    <string name="p_score_match_any">둘 중 하나 이상 만족</string>
     <string name="p_np_level_check">보구 레벨 판독</string>
     <string name="p_np_level_check_summary">설정한 보구 레벨 이상인 서포트를 선택합니다. 판독 실패 시 다음 서포트를 찾습니다.</string>
     <string name="p_np_min_level">최소 보구 레벨</string>

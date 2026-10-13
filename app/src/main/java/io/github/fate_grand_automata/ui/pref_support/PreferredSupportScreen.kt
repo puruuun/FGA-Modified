@@ -30,6 +30,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
+import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.icon
@@ -157,6 +158,20 @@ private fun PreferredSupport(
                     config.score62Check.SwitchPreference(
                         title = stringResource(R.string.p_score_62_check)
                     )
+                    config.grandScore16Check.SwitchPreference(
+                        title = stringResource(R.string.p_grand_score_16_check)
+                    )
+                    val classScoreEnabled by config.score62Check.remember()
+                    val grandScoreEnabled by config.grandScore16Check.remember()
+                    AnimatedVisibility(classScoreEnabled && grandScoreEnabled) {
+                        config.scoreMatchMode.ListPreference(
+                            title = stringResource(R.string.p_score_match_mode),
+                            entries = SupportScoreMatchMode.entries.associateWith {
+                                stringResource(if (it == SupportScoreMatchMode.All) R.string.p_score_match_all
+                                    else R.string.p_score_match_any)
+                            }
+                        )
+                    }
                     if (prefServants.isNotEmpty()) {
                         config.appendSkillCheck.SwitchPreference(
                             title = stringResource(R.string.p_append_skill_check)

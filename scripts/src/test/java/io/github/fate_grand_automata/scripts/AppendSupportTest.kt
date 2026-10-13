@@ -5,6 +5,9 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.locations.SupportSkillLayout
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
+import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
+import io.github.lib_automata.OcrService
+import io.github.lib_automata.OcrText
 import io.github.fate_grand_automata.scripts.prefs.ISupportPreferences
 import io.github.fate_grand_automata.scripts.supportSelection.*
 import io.github.lib_automata.Location
@@ -26,13 +29,17 @@ class AppendSupportTest {
         scoreEnabled: Boolean = false,
         ceNames: List<String> = if (characters.isEmpty()) listOf("CE") else emptyList(),
         npEnabled: Boolean = false,
-        minimumNp: Int = 5
+        minimumNp: Int = 5,
+        grandScoreEnabled: Boolean = false,
+        scoreMatchMode: SupportScoreMatchMode = SupportScoreMatchMode.All
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val prefs = mockk<ISupportPreferences>(relaxed = true)
         val normal = mockk<Pattern>()
         val append = mockk<Pattern>()
         val score = mockk<Pattern>()
+        val scoreOcr = mockk<OcrService>(relaxed = true)
+        val scoreCrop = mockk<Pattern>(relaxed = true)
         val labels = Region(1644, 332, 500, 1091)
         val button = Location(1695, 260)
         var view = SupportSkillDisplay.View.Normal
@@ -58,6 +65,17 @@ class AppendSupportTest {
             every { prefs.preferredServants } returns characters
             every { prefs.preferredCEs } returns ceNames
             every { prefs.score62Check } returns scoreEnabled
+            every { prefs.grandScore16Check } returns grandScoreEnabled
+            every { prefs.scoreMatchMode } returns scoreMatchMode
+            every { scoreCrop.width } returns 55
+            every { scoreCrop.height } returns 30
+            for (bound in listOf(first, second)) {
+                every { with(api) { SupportScoreLayout.numberRegion(bound.region).getPattern("support_class_grand_scores") } } returns scoreCrop
+            }
+            every { scoreOcr.detectTextLine(scoreCrop, any()) } answers {
+                assertTrue(snapshot, "Score OCR must use the candidate snapshot before Append switching")
+                OcrText("+0/+16", 92)
+            }
             every { prefs.npLevelCheck } returns npEnabled
             every { prefs.minimumNpLevel } returns minimumNp
             every { prefs.friendNames } returns emptyList()
@@ -119,7 +137,7 @@ class AppendSupportTest {
             display = SupportSkillDisplay(api)
             selector = AppendSkillSelection(api, prefs, display, reader)
             preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector,
-                SupportScoreSelection(api, prefs), SupportNpSelection(api, prefs, npReader))
+                SupportScoreSelection(api, prefs, SupportScoreReader(api, scoreOcr)), SupportNpSelection(api, prefs, npReader))
         }
     }
 
@@ -263,6 +281,27 @@ class AppendSupportTest {
         assertThat(f.taps).isEqualTo(0)
         verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
         verify(exactly = 1) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `grand only selection works without servant or CE images and ignores class score`() {
+        val f = Fixture(enabled = false, characters = emptyList(), ceNames = emptyList(), grandScoreEnabled = true)
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { f.api.images[Images.SupportScore62, null] }
+        assertThat(f.taps).isEqualTo(0)
+    }
+
+    @Test
+    fun `failed grand score skips Append and a matching second candidate switches only once`() {
+        val f = Fixture(grandScoreEnabled = true)
+        every { f.scoreOcr.detectTextLine(f.scoreCrop, any()) } returnsMany
+            (List(4) { OcrText("+62/+0", 92) } + List(4) { OcrText("+0/+16", 92) })
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 0) { f.reader.read(f.first, true) }
+        verify(exactly = 1) { f.reader.read(f.second, true) }
+        verify(exactly = 1) { with(f.api) { f.second.region.click(any()) } }
+        assertThat(f.taps).isEqualTo(3)
     }
 
     @Test

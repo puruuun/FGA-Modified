@@ -38,7 +38,8 @@ class PreferredSupportSelection @Inject constructor(
     }
 
     override fun select(): SupportSelectionResult {
-        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check && !supportPrefs.npLevelCheck) {
+        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check &&
+            !supportPrefs.grandScore16Check && !supportPrefs.npLevelCheck) {
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
 
