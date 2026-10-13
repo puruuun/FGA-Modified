@@ -1,4 +1,6 @@
-# FGA Modified — 카드 개수 조건·어펜드 스킬·스코어 판독
+# FGA(mod) — 카드 개수 조건·어펜드 스킬·스코어·공격 순서 지정
+
+[한국어](README.md) | [English](README.en.md)
 
 이 프로젝트는 **[Fate/Grand Automata(FGA)](https://github.com/Fate-Grand-Automata/FGA)를 바탕으로 기능을 추가한 Modified 버전**입니다. 원본의 Android 자동 전투·카드 인식 기능을 기반으로, 특정 서번트의 일반 카드가 원하는 개수 이상 나왔을 때 예약 커맨드를 시작하도록 확장했습니다. 서포트 선택에는 어펜드 스킬 5개의 최대 레벨 판독도 추가했습니다.
 
@@ -12,16 +14,16 @@
 ## 다운로드
 
 - **[최신 수정판 APK](https://github.com/puruuun/FGA-card-count/releases/latest)**
-- **[공격 순서 직접 지정 베타 0.4.0-beta.1](https://github.com/puruuun/FGA-card-count/releases/tag/v0.4.0-beta.1)**
+- **[Obtainium에 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-card-count%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[자세한 설치·설정 안내](wiki/scripts/Card-Count-Start-KR.md)**
 
-릴리스의 `FGA-Modified-0.3.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
+릴리스의 `FGA-mod-0.4.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
 
 | 항목 | 수정판 정보 |
 |---|---|
-| 버전 | 0.3.0 |
-| 앱 이름 | FGA (Card Count) |
-| 아이콘 | 초록색 Quick |
+| 버전 | 0.4.0 (정규 버전) |
+| 앱 이름 | FGA(mod) |
+| 아이콘 | 파란색 Arts |
 | 패키지 | `io.github.fate_grand_automata.cardcount` |
 
 원본 공식판·원본 CI판과 별도로 설치됩니다. 앞서 배포한 Card Count 수정판과는 패키지·서명이 같아 업데이트 설치할 수 있습니다. 원본 앱의 설정은 `.fga` 파일로 내보낸 뒤 수정판에서 가져오세요.
@@ -102,11 +104,20 @@
 
 어펜드 판독과 독립적으로 사용할 수 있고, 함께 켜면 두 조건을 모두 만족해야 합니다. 스코어 확인에는 스킬 표시 전환이 필요 없습니다. 서번트·예장 지정 없이 +62 조건만으로 선호 선택도 가능합니다. 설정과 제공된 한국·일본 화면의 판정 결과는 [스코어 +62 안내](wiki/scripts/Support-Score-62-KR.md)를 확인하세요.
 
-### 10. 해당 턴의 공격 순서 직접 지정 (베타)
+### 10. 해당 턴의 공격 순서 직접 지정
 
 **커맨드 편집 → 공격 → 보구 전 공격 카드 옆 일반 카드 직접 지정** 버튼에서 세 장의 일반 카드·보구 순서를 설정합니다. 버스터·아츠·퀵은 상성을 구분하지 않으며, `&a4b`처럼 아츠 → 전열 1번 보구 → 버스터를 한 명령으로 저장합니다.
 
-직접 지정한 턴은 자동 우선순위·브레이브 체인 선택·카드 재정렬·추가 보구 자동 사용을 적용하지 않습니다. 필요한 일반 카드가 없거나 판독에 실패하면 클릭 전에 중단합니다. 기본 방식의 턴은 그대로 실행합니다. **이 기능은 0.4.0-beta.1에서 제공**하며 설정·문법·확인 범위는 [직접 지정 안내](wiki/scripts/Direct-Cards-KR.md)를 확인하세요.
+직접 지정한 턴은 자동 우선순위·브레이브 체인 선택·카드 재정렬·추가 보구 자동 사용을 적용하지 않습니다. 필요한 일반 카드가 없거나 판독에 실패하면 클릭 전에 중단합니다. 기본 방식의 턴은 그대로 실행합니다. **이 기능은 정규 버전 0.4.0에서 제공**하며 설정·문법·확인 범위는 [직접 지정 안내](wiki/scripts/Direct-Cards-KR.md)를 확인하세요.
+
+## Obtainium으로 업데이트
+
+1. [Obtainium](https://obtainium.imranr.dev/)을 설치합니다.
+2. 위의 **Obtainium에 추가**를 누르거나, Obtainium의 **앱 추가**에서 소스 URL `https://github.com/puruuun/FGA-card-count`를 입력합니다. 소스는 GitHub입니다.
+3. 사전 릴리스 포함은 끈 상태로 추가합니다. 릴리스에는 ARM APK 한 개만 있으므로 별도 APK 필터가 필요 없습니다.
+4. 앱 화면에서 업데이트를 확인하거나, Obtainium 설정에서 백그라운드 확인 주기를 정합니다. 새 정규 버전이 올라오면 APK를 받을 수 있습니다.
+
+설정 파일은 [obtainium.json](obtainium.json)입니다. 패키지와 서명을 유지하고 버전 코드를 올리므로 기존 수정판을 업데이트할 수 있습니다. 자동 설치 여부는 Android와 Obtainium의 권한·설정에 따라 달라집니다. [추가 방법](https://wiki.obtainium.imranr.dev/ui_overview/), [업데이트 동작](https://wiki.obtainium.imranr.dev/app_tracking/).
 
 ## 원본 및 라이선스
 

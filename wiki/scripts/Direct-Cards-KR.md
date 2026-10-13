@@ -1,6 +1,6 @@
 # 해당 턴의 공격 순서 직접 지정
 
-**0.4.0-beta.1**에서 일반 카드와 보구를 포함한 세 장의 선택 순서를 해당 턴에 고정할 수 있습니다. [베타 APK](https://github.com/puruuun/FGA-card-count/releases/tag/v0.4.0-beta.1)는 기존 수정판과 같은 앱·패키지·서명으로 업데이트 설치합니다.
+**정규 버전 0.4.0**에서 일반 카드와 보구를 포함한 세 장의 선택 순서를 해당 턴에 고정할 수 있습니다. [FGA(mod) APK](https://github.com/puruuun/FGA-card-count/releases/tag/v0.4.0)는 기존 수정판과 같은 패키지·서명으로 업데이트 설치합니다. 앱 이름은 FGA(mod), 아이콘은 파란색 Arts입니다.
 
 ## 설정 방법
 
@@ -45,9 +45,9 @@
 
 실행 로직 101개·설정 저장 15개·앱 편집기 등 8개, 총 **124개 테스트**가 통과했습니다. 명령 해석·턴/웨이브·스킬 결합, 정확한 클릭 순서, 반복 일반 카드의 중복 방지, 상성 무시, 자동 정책 배제, 카드 부족·스턴·인식 실패·빈 전열의 클릭 전 중단, 다음 턴 초기화, 두 번째 설정 적용, 편집기의 읽기·변경·저장과 기존 문법 호환을 포함합니다.
 
-실제 Android 설정 화면의 시각 검수와 FGO에서의 터치 동작은 아직 검증하지 않았습니다. 이 릴리스는 베타로 표시합니다.
+실제 Android 설정 화면의 시각 검수와 FGO에서의 터치 동작은 아직 검증하지 않았습니다.
 
 ```sh
-FGA_VERSION_CODE=3066 FGA_VERSION_NAME=0.4.0-beta.1 ./gradlew \
+FGA_VERSION_CODE=3067 FGA_VERSION_NAME=0.4.0 ./gradlew \
   :scripts:test :prefs:testCiUnitTest :app:testCiUnitTest :app:compileDebugKotlin :app:assembleCi
 ```

@@ -131,7 +131,7 @@ android {
         }
         create("ci") {
             initWith(getByName("release"))
-            // Keep this private card-count build separate from all upstream variants.
+            // Keep the modified app separate from all upstream variants, preserving its update identity.
             applicationIdSuffix = ".cardcount"
             signingConfig = signingConfigs.getByName("debug")
 

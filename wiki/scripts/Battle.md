@@ -258,7 +258,7 @@ Keep in mind, they will be __*used in the order you choose*__ them.
 
 ### Cards before NP
 
-This modified build's **0.4.0-beta.1** adds a **Direct cards** button next to Cards before NP. It sets the entire three-card order for this turn, for example `&a4b` (Arts, first Servant NP, Buster). B/A/Q ignore affinity. Direct attacks bypass automatic card/Servant priority, Brave Chain, rearrangement and added NP Spam; required face cards are resolved before any tap. See the [Korean guide](Direct-Cards-KR.md) for settings, syntax and limits.
+This modified build's **0.4.0** adds a **Direct cards** button next to Cards before NP. It sets the entire three-card order for this turn, for example `&a4b` (Arts, first Servant NP, Buster). B/A/Q ignore affinity. Direct attacks bypass automatic card/Servant priority, Brave Chain, rearrangement and added NP Spam; required face cards are resolved before any tap. See the [Korean guide](Direct-Cards-KR.md) for settings, syntax and limits.
 
 If you ever need to use cards before NP, you can select the following options.
 

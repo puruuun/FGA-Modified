@@ -1,0 +1,9 @@
+{
+  "id": "io.github.fate_grand_automata.cardcount",
+  "url": "https://github.com/puruuun/FGA-card-count",
+  "author": "puruuun",
+  "name": "FGA(mod)",
+  "additionalSettings": {
+    "includePrereleases": false
+  }
+}
