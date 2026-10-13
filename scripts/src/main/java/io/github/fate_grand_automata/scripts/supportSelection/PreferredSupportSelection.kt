@@ -17,7 +17,8 @@ class PreferredSupportSelection @Inject constructor(
     private val servantSelection: ServantSelection,
     private val ceSelection: CESelection,
     private val friendSelection: FriendSelection,
-    private val appendSelection: AppendSkillSelection
+    private val appendSelection: AppendSkillSelection,
+    private val scoreSelection: SupportScoreSelection
 ) : SupportSelectionProvider, IFgoAutomataApi by api {
     private val servants = supportPrefs.preferredServants
     private val ces = supportPrefs.preferredCEs
@@ -36,7 +37,7 @@ class PreferredSupportSelection @Inject constructor(
     }
 
     override fun select(): SupportSelectionResult {
-        if (servants.isEmpty() && ces.isEmpty()) {
+        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check) {
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
 
@@ -96,6 +97,7 @@ class PreferredSupportSelection @Inject constructor(
 
         return if (
             servantSelection.check(servants, bounds) &&
+            scoreSelection.check(bounds) &&
             ceSelection.check(ces, bounds) &&
             (!supportPrefs.friendsOnly || friendSelection.check(friendNames, bounds))
         ) {

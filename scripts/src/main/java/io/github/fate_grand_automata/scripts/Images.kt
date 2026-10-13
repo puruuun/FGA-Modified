@@ -38,6 +38,7 @@ enum class Images(val path: String) {
     SkillTen("skill_ten.png"),
     SupportNormalSkills("support_normal_skills.png"),
     SupportAppendSkills("support_append_skills.png"),
+    SupportScore62("support_score_62.png"),
     Stun("stun.png"),
     StunBuster("stun_buster.png"),
     StunArts("stun_arts.png"),

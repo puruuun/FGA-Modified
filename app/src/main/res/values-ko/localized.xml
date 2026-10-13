@@ -252,6 +252,7 @@
     <string name="p_max_gold_ember_total_count">"종화 획득 총량"</string>
     <string name="p_max_skills">"스킬 최대 레벨"</string>
     <string name="p_append_skill_check">어펜드 스킬 판독</string>
+    <string name="p_score_62_check">스코어 +62 판독</string>
     <string name="p_append_skills_max">어펜드 스킬 최대 레벨 (1 → 5)</string>
     <string name="support_skill_display_failed">서포트 스킬 표시를 확인하지 못했습니다. 일반 스킬 표시로 돌린 뒤 다시 실행해 주세요.</string>
     <string name="p_more_options">"더 많은 옵션"</string>

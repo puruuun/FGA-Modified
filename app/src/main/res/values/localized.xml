@@ -116,6 +116,7 @@ Skills"</string>
     <string name="p_battle_config_support_also_check_all">"Also check All"</string>
     <string name="p_max_skills">"Max Skills"</string>
     <string name="p_append_skill_check">Check Append Skills</string>
+    <string name="p_score_62_check">Require support score +62</string>
     <string name="p_append_skills_max">Append Skill max levels (1 → 5)</string>
     <string name="support_skill_display_failed">Could not confirm the support skill display. Restore the normal skill display and retry.</string>
     <string name="p_game_server">"Game Server"</string>

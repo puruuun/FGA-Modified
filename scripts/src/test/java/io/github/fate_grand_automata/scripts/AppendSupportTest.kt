@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.locations.SupportSkillLayout
+import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.prefs.ISupportPreferences
 import io.github.fate_grand_automata.scripts.supportSelection.*
 import io.github.lib_automata.Location
@@ -18,11 +19,18 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppendSupportTest {
-    private class Fixture(enabled: Boolean = true, required: List<Boolean> = List(5) { true }, characters: List<String> = listOf("test")) {
+    private class Fixture(
+        enabled: Boolean = true,
+        required: List<Boolean> = List(5) { true },
+        characters: List<String> = listOf("test"),
+        scoreEnabled: Boolean = false,
+        ceNames: List<String> = if (characters.isEmpty()) listOf("CE") else emptyList()
+    ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val prefs = mockk<ISupportPreferences>(relaxed = true)
         val normal = mockk<Pattern>()
         val append = mockk<Pattern>()
+        val score = mockk<Pattern>()
         val labels = Region(1644, 332, 500, 1091)
         val button = Location(1695, 260)
         var view = SupportSkillDisplay.View.Normal
@@ -45,13 +53,19 @@ class AppendSupportTest {
             every { prefs.appendSkillCheck } returns enabled
             every { prefs.appendSkillsMax } returns required
             every { prefs.preferredServants } returns characters
-            every { prefs.preferredCEs } returns if (characters.isEmpty()) listOf("CE") else emptyList()
+            every { prefs.preferredCEs } returns ceNames
+            every { prefs.score62Check } returns scoreEnabled
             every { prefs.friendNames } returns emptyList()
             every { prefs.friendsOnly } returns false
             every { api.locations.support.skillDisplayLabelsRegion } returns labels
             every { api.locations.support.skillDisplaySwitchClick } returns button
             every { api.images[Images.SupportNormalSkills, null] } returns normal
             every { api.images[Images.SupportAppendSkills, null] } returns append
+            every { api.images[Images.SupportScore62, null] } returns score
+            every { with(api) { any<Region>().exists(score, any(), any()) } } answers {
+                assertTrue(snapshot, "Score must use the same candidate frame as the other preferred checks")
+                true
+            }
             every { api.useColor<Any?>(any()) } answers {
                 color = true
                 try { firstArg<() -> Any?>().invoke() } finally { color = false }
@@ -94,7 +108,7 @@ class AppendSupportTest {
             every { ces.check(any(), any()) } returns true
             display = SupportSkillDisplay(api)
             selector = AppendSkillSelection(api, prefs, display, reader)
-            preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector)
+            preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector, SupportScoreSelection(api, prefs))
         }
     }
 
@@ -228,5 +242,81 @@ class AppendSupportTest {
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
         assertThat(f.taps).isEqualTo(0)
         verify(exactly = 0) { f.reader.read(any(), any()) }
+    }
+
+    @Test
+    fun `score check rejects the first candidate and selects the next plus 62 without toggling skills`() {
+        val f = Fixture(enabled = false, scoreEnabled = true)
+        every { with(f.api) { SupportScoreLayout.numberRegion(f.first.region).exists(f.score, any(), any()) } } returns false
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(0)
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 1) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `disabled score check does not load or match the score template`() {
+        val f = Fixture(enabled = false)
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 0) { f.api.images[Images.SupportScore62, null] }
+        verify(exactly = 0) { with(f.api) { any<Region>().exists(f.score, any(), any()) } }
+    }
+
+    @Test
+    fun `score and append enabled require both and score failure skips append switching`() {
+        val f = Fixture(scoreEnabled = true)
+        every { with(f.api) { SupportScoreLayout.numberRegion(f.first.region).exists(f.score, any(), any()) } } returns false
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(3)
+        verify(exactly = 0) { f.reader.read(f.first, true) }
+        verify(exactly = 1) { f.reader.read(f.second, true) }
+    }
+
+    @Test
+    fun `passing score does not bypass failed append and restores before next score check`() {
+        val f = Fixture(scoreEnabled = true)
+        every { f.reader.read(f.first, true) } returns List(5) { false }
+        every { with(f.api) { SupportScoreLayout.numberRegion(f.second.region).exists(f.score, any(), any()) } } answers {
+            assertTrue(f.snapshot)
+            assertThat(f.view).isEqualTo(SupportSkillDisplay.View.Normal)
+            false
+        }
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.EarlyRefresh)
+        assertThat(f.taps).isEqualTo(3)
+        assertThat(f.view).isEqualTo(SupportSkillDisplay.View.Normal)
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `score only selection works without a preferred servant or CE image`() {
+        val f = Fixture(enabled = false, characters = emptyList(), scoreEnabled = true, ceNames = emptyList())
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(0)
+        verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
+    }
+
+    @Test
+    fun `unreadable or non 62 scores reject all candidates and request another page`() {
+        val f = Fixture(enabled = false, scoreEnabled = true)
+        every { with(f.api) { any<Region>().exists(f.score, any(), any()) } } returns false
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.EarlyRefresh)
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `empty selection with score disabled still rejects missing preferences`() {
+        val f = Fixture(enabled = false, characters = emptyList(), ceNames = emptyList())
+        val error = assertFailsWith<AutoBattle.BattleExitException> { f.preferred.select() }
+        assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
+    }
+
+    @Test
+    fun `score number region follows the candidate row offset`() {
+        assertThat(SupportScoreLayout.numberRegion(Region(76, 408, 2356, 428)))
+            .isEqualTo(Region(2036, 718, 110, 60))
+        assertThat(SupportScoreLayout.numberRegion(Region(287, 808, 2356, 428)))
+            .isEqualTo(Region(2247, 1118, 110, 60))
     }
 }

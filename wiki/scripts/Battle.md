@@ -48,6 +48,7 @@
     - [Preferred Selection](#preferred-selection)
       - [Preferred Selection - Preferred Servant](#preferred-selection---preferred-servant)
       - [Preferred Selection - Append Skills](#preferred-selection---append-skills)
+      - [Preferred Selection - Score +62](#preferred-selection---score-62)
       - [Preferred Servant - Preferred CE](#preferred-servant---preferred-ce)
       - [Preferred Servant - Preferred Friends](#preferred-servant---preferred-friends)
       - [Final Look](#final-look)
@@ -578,6 +579,12 @@ This modified build adds **Check Append Skills** below the existing max-level sk
 FGA first checks the existing normal-skill and preferred-support criteria. It then taps the skill-display switch once, confirms append view and checks all five levels from a fresh screenshot. Two more taps restore normal view before selecting a passing candidate or searching for another candidate. Unconfirmed display changes stop selection. The feature defaults to off, and five ignored slots skip display switching.
 
 See the [Korean settings and screenshot verification guide](Support-Append-Skills-KR.md).
+
+#### Preferred Selection - Score +62
+
+This modified build adds **Require support score +62** below the skill settings. When enabled, the candidate's score must match +62; other numbers or an unreadable score reject the candidate. The score is checked without switching skill views. Append checks remain independent; when both are enabled, both must pass. You may also use the score filter without selecting servant or CE images. The feature defaults to off and is included in configuration exports.
+
+See the [Korean settings and screenshot verification guide](Support-Score-62-KR.md).
 
 #### Preferred Servant - Preferred CE
 

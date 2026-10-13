@@ -155,6 +155,9 @@ private fun PreferredSupport(
                             }
                         }
                     }
+                    config.score62Check.SwitchPreference(
+                        title = stringResource(R.string.p_score_62_check)
+                    )
                 }
             }
         }

@@ -160,4 +160,22 @@ class ExecutionProfileCoreTest {
         result.appendSkillCheck.set(false)
         assertThat(result.appendSkillsMax.map { it.get() }).isEqualTo(listOf(false, true, false, false, true))
     }
+
+    @Test
+    fun `score plus 62 defaults off and exports independently from append settings`() {
+        val prefs = MemoryPrefs()
+        val support = SupportPrefsCore(PrefMaker(prefs))
+        assertThat(support.score62Check.get()).isEqualTo(false)
+        support.score62Check.set(true)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all))) }.apply()
+        val result = SupportPrefsCore(PrefMaker(restored))
+        assertThat(result.score62Check.get()).isEqualTo(true)
+        assertThat(result.appendSkillCheck.get()).isEqualTo(false)
+        result.appendSkillCheck.set(true)
+        result.appendSkillsMax[1].set(true)
+        result.score62Check.set(false)
+        assertThat(result.appendSkillCheck.get()).isEqualTo(true)
+        assertThat(result.appendSkillsMax[1].get()).isEqualTo(true)
+    }
 }

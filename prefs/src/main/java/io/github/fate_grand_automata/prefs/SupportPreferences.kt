@@ -35,6 +35,7 @@ internal class SupportPreferences(
     override val skill3Max by prefs.skill3Max
     override val appendSkillCheck by prefs.appendSkillCheck
     override val appendSkillsMax get() = prefs.appendSkillsMax.map { it.get() }
+    override val score62Check by prefs.score62Check
 
     override val grandServant by prefs.grandServant
     override val bondCEEffect by prefs.bondCEEffect
