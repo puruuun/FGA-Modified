@@ -14,15 +14,15 @@ This project is maintained separately from the upstream team's official distribu
 ## Download
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[NP level beta 0.5.0-beta.1](https://github.com/puruuun/FGA-Modified/releases/tag/v0.5.0-beta.1)**
+- **[NP level stable release 0.5.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.5.0)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.4.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.5.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.4.0 (stable release) |
+| Version | 0.5.0 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -101,7 +101,7 @@ The feature defaults to off. Five ignored slots skip switching. Settings are inc
 
 ### 9. Support score +62 checks
 
-Enable **Require support score +62** in the preferred Servant settings to accept only a matching +62 score. Other numbers or an unreadable score cause the app to search for another Servant. The NP beta also moves this setting above Append Skills.
+Enable **Require support score +62** in the preferred Servant settings to accept only a matching +62 score. Other numbers or an unreadable score cause the app to search for another Servant. Version 0.5.0 also moves this setting above Append Skills.
 
 It works independently of Append checks. If both are enabled, both must pass. Score checks do not require switching skill views. You can also use only the +62 filter without choosing Servant or CE images. See the [score guide (Korean)](wiki/scripts/Support-Score-62-KR.md).
 
@@ -111,7 +111,7 @@ Open **Command Editor → Attack → Direct cards**, next to **Cards before NP**
 
 Direct attacks bypass automatic card/Servant priority, Brave Chain selection, rearrangement and added NP Spam. Missing or unrecognized required face cards stop the script before any card is tapped. Other turns keep the original behavior. **Available in stable version 0.4.0.** See the [direct-card guide (Korean)](wiki/scripts/Direct-Cards-KR.md) for syntax and verification limits.
 
-### 11. Support NP level checks — 0.5.0-beta.1
+### 11. Support NP level checks — 0.5.0
 
 Open **Support Selection → Preferred Servants → Check support NP level**, then choose a **Minimum NP level** from 1 to 5. A minimum of 3 accepts NP levels 3, 4 and 5. The filter defaults to off; the initial minimum selection is 5.
 
@@ -119,7 +119,7 @@ The app locates `Lv.` inside the candidate's NP name area, then reads its suffix
 
 **All ordinary filters, including score and NP level → Append Skill checks → selection**. A failed earlier condition skips that candidate's Append view switch entirely. When NP, score and Append conditions are enabled together, all must pass. Settings survive copies, exports and imports. See the [NP guide (Korean)](wiki/scripts/Support-NP-Level-KR.md).
 
-Submitted KR/JP screenshots cover real NP levels 1 and 5. Real levels 2–4 and Android/FGO device operation still need verification, so this feature is distributed as a separate prerelease.
+All 12 visible NP levels in the five submitted KR/JP images were correct (12/12, **100% on these submitted images**), also matching in both normalization orders (24/24). The images cover real NP levels 1 and 5. Real levels 2–4 and Android/FGO device operation still need verification.
 
 ## Updates through Obtainium
 
@@ -128,7 +128,7 @@ Submitted KR/JP screenshots cover real NP levels 1 and 5. Real levels 2–4 and 
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-To receive the NP beta, enable **Include prereleases** for this repository in Obtainium. The default import link and configuration track stable releases only.
+Version 0.5.0 with NP level checks is a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
 

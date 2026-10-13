@@ -538,7 +538,7 @@
     <string name="ce_name_secret_mission">シークレット・ミッション</string>
     <string name="ce_name_the_chaldean">カルデアの者</string>
     <string name="ce_name_wings_of_manuscript">手稿の翼</string>
-    <!-- NP beta strings are maintained locally for this modified build. -->
+    <!-- NP strings are maintained locally for this modified build. -->
     <string name="p_np_level_check">宝具レベル判読</string>
     <string name="p_np_level_check_summary">指定した宝具レベル以上のサポートを選択します。判読できない候補はスキップします。</string>
     <string name="p_np_min_level">宝具レベルの下限</string>
