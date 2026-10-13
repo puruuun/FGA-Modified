@@ -1,0 +1,3 @@
+-r append-skill-vision-requirements.txt
+Pillow==12.3.0
+tesserocr==2.9.2

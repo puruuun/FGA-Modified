@@ -18,7 +18,8 @@ class PreferredSupportSelection @Inject constructor(
     private val ceSelection: CESelection,
     private val friendSelection: FriendSelection,
     private val appendSelection: AppendSkillSelection,
-    private val scoreSelection: SupportScoreSelection
+    private val scoreSelection: SupportScoreSelection,
+    private val npSelection: SupportNpSelection
 ) : SupportSelectionProvider, IFgoAutomataApi by api {
     private val servants = supportPrefs.preferredServants
     private val ces = supportPrefs.preferredCEs
@@ -37,7 +38,7 @@ class PreferredSupportSelection @Inject constructor(
     }
 
     override fun select(): SupportSelectionResult {
-        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check) {
+        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check && !supportPrefs.npLevelCheck) {
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
 
@@ -99,7 +100,9 @@ class PreferredSupportSelection @Inject constructor(
             servantSelection.check(servants, bounds) &&
             scoreSelection.check(bounds) &&
             ceSelection.check(ces, bounds) &&
-            (!supportPrefs.friendsOnly || friendSelection.check(friendNames, bounds))
+            (!supportPrefs.friendsOnly || friendSelection.check(friendNames, bounds)) &&
+            // All snapshot-only conditions must finish before the slow Append display cycle.
+            npSelection.check(bounds)
         ) {
             bounds.region
         } else null

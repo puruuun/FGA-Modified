@@ -5,6 +5,7 @@ import io.github.lib_automata.Match
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
+import io.github.lib_automata.TextLineOcrOptions
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
@@ -198,6 +199,25 @@ class DroidCvPattern(
 
         Core.bitwise_not(mask, mask)
         return DroidCvPattern(mask)
+    }
+
+    /** Enlarge a small outlined label without changing the shared OCR preprocessing. */
+    fun prepareTextLine(options: TextLineOcrOptions): DroidCvPattern {
+        val enlarged = Mat()
+        Imgproc.resize(mat, enlarged, CvSize(width * options.scale.toDouble(), height * options.scale.toDouble()),
+            0.0, 0.0, Imgproc.INTER_CUBIC)
+        return DroidCvPattern(enlarged).use { scaled ->
+            scaled.threshold(options.threshold).use { binary ->
+                val text = if (options.fillOutline) binary.fillText() else binary.copy()
+                text.use {
+                    val padded = Mat()
+                    Core.copyMakeBorder((it as DroidCvPattern).mat, padded,
+                        options.padding, options.padding, options.padding, options.padding,
+                        Core.BORDER_CONSTANT, Scalar(255.0))
+                    DroidCvPattern(padded)
+                }
+            }
+        }
     }
 
     /**

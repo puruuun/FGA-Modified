@@ -124,6 +124,10 @@ Skills"</string>
     <string name="p_max_skills">"Max Skills"</string>
     <string name="p_append_skill_check">Check Append Skills</string>
     <string name="p_score_62_check">Require support score +62</string>
+    <string name="p_np_level_check">Check support NP level</string>
+    <string name="p_np_level_check_summary">Choose a support with at least the required NP level. Skip unreadable candidates.</string>
+    <string name="p_np_min_level">Minimum NP level</string>
+    <string name="p_np_min_level_entry">Lv.%1$d or higher</string>
     <string name="p_append_skills_max">Append Skill max levels (1 → 5)</string>
     <string name="support_skill_display_failed">Could not confirm the support skill display. Restore the normal skill display and retry.</string>
     <string name="p_game_server">"Game Server"</string>

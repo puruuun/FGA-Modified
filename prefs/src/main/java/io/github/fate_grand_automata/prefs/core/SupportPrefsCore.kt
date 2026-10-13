@@ -38,6 +38,8 @@ class SupportPrefsCore(
     val appendSkillCheck = maker.bool("support_append_skill_check")
     val appendSkillsMax = (1..5).map { maker.bool("support_append_skill_max_$it") }
     val score62Check = maker.bool("support_score_62_check")
+    val npLevelCheck = maker.bool("support_np_level_check")
+    val minimumNpLevel = maker.int("support_np_min_level", 5)
 
     val grandServant = maker.bool("support_grand_servant")
     val bondCEEffect = maker.enum(

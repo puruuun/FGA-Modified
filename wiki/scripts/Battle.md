@@ -606,7 +606,7 @@ with the Support Image Maker.
 Enable this option if you want to use Support Servants from specific friends.
 
 This is useful if level 90 NP1 Servants are not strong enough for the farming quest. Since FGA can't detect  
-Servant Levels, NP levels or exact Append Skill levels below 10, this allows you to filter for those using friend names. This modified build can require max-level Append Skills using the setting above.
+Servant Levels or exact Append Skill levels below 10, this allows you to filter for those using friend names. This modified build can require max-level Append Skills using the setting above. The separate 0.5.0-beta.1 prerelease also adds [minimum support NP level checks](Support-NP-Level-KR.md), before any Append Skill checks.
 
 Of course, FGA won't be able to select non-friend Servants who would fulfill those criteria.
 

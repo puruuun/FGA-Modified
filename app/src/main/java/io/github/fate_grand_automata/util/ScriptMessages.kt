@@ -67,6 +67,8 @@ class ScriptMessages @Inject constructor(
             is ScriptLog.MaxAppendSkills -> Timber.d("Append skills: %s", item.required.zip(item.detected)
                 .joinToString("/") { (required, detected) -> if (!required) "x" else if (detected) "10" else "f" })
             is ScriptLog.SupportScore62 -> Timber.d("Support score +62: %s", item.matched)
+            is ScriptLog.SupportNpLevel -> Timber.d("Support NP: %s, minimum: %d, matched: %s",
+                item.detected ?: "unreadable", item.required, item.matched)
 
             ScriptLog.DefaultMasterOffset -> {
                 Timber.d("Defaulting master offset")

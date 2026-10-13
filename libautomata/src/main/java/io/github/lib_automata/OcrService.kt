@@ -6,4 +6,23 @@ package io.github.lib_automata
  */
 interface OcrService : AutoCloseable {
     fun detectText(pattern: Pattern): String
+
+    /** Independent single-line profile; must not alter the ordinary OCR context. */
+    fun detectTextLine(pattern: Pattern, options: TextLineOcrOptions): OcrText
+}
+
+data class OcrText(val text: String, val confidence: Int)
+
+data class TextLineOcrOptions(
+    val scale: Int = 1,
+    val threshold: Double = 0.5,
+    val fillOutline: Boolean = false,
+    val padding: Int = 0,
+    val allowedCharacters: String = ""
+) {
+    init {
+        require(scale > 0)
+        require(threshold in 0.0..1.0)
+        require(padding >= 0)
+    }
 }

@@ -142,6 +142,22 @@ private fun PreferredSupport(
                                 )
                             )
                         }
+                    }
+                    config.npLevelCheck.SwitchPreference(
+                        title = stringResource(R.string.p_np_level_check),
+                        summary = stringResource(R.string.p_np_level_check_summary)
+                    )
+                    val npEnabled by config.npLevelCheck.remember()
+                    AnimatedVisibility(npEnabled) {
+                        config.minimumNpLevel.ListPreference(
+                            title = stringResource(R.string.p_np_min_level),
+                            entries = (1..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
+                        )
+                    }
+                    config.score62Check.SwitchPreference(
+                        title = stringResource(R.string.p_score_62_check)
+                    )
+                    if (prefServants.isNotEmpty()) {
                         config.appendSkillCheck.SwitchPreference(
                             title = stringResource(R.string.p_append_skill_check)
                         )
@@ -155,9 +171,6 @@ private fun PreferredSupport(
                             }
                         }
                     }
-                    config.score62Check.SwitchPreference(
-                        title = stringResource(R.string.p_score_62_check)
-                    )
                 }
             }
         }

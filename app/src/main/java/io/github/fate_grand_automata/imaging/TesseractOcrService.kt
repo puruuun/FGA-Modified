@@ -5,7 +5,9 @@ import android.content.res.AssetManager
 import com.googlecode.tesseract.android.TessBaseAPI
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.lib_automata.OcrService
+import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
+import io.github.lib_automata.TextLineOcrOptions
 import io.github.lib_automata.dagger.ScriptScope
 import java.io.File
 import java.io.FileOutputStream
@@ -23,18 +25,20 @@ class TesseractOcrService @Inject constructor(
      * Only created on the first [detectText] call.
      */
     private var tessApi: TessBaseAPI? = null
+    private var lineApi: TessBaseAPI? = null
 
     private fun api(): TessBaseAPI =
-        tessApi ?: TessBaseAPI().also { api ->
+        tessApi ?: createApi().also { tessApi = it }
+
+    private fun createApi(): TessBaseAPI =
+        TessBaseAPI().also { api ->
             try {
                 extractTesseractTrainingData()
-                api.init(context.filesDir.absolutePath, "eng")
+                check(api.init(context.filesDir.absolutePath, "eng")) { "Could not initialize Tesseract" }
             } catch (e: Throwable) {
                 api.recycle()
                 throw e
             }
-
-            tessApi = api
         }
 
     override fun detectText(pattern: Pattern): String {
@@ -51,6 +55,24 @@ class TesseractOcrService @Inject constructor(
         }
     }
 
+    override fun detectTextLine(pattern: Pattern, options: TextLineOcrOptions): OcrText = synchronized(lock) {
+        // The same bundled Tesseract engine/data, with a separate lazy context so a whitelist
+        // or line segmentation never leaks into gift-box OCR.
+        val api = lineApi ?: createApi().also { lineApi = it }
+        api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_LINE)
+        check(api.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, options.allowedCharacters))
+        try {
+            (pattern as DroidCvPattern).prepareTextLine(options).use { prepared ->
+                prepared.asBitmap().use { bitmap ->
+                    api.setImage(bitmap)
+                    OcrText(api.utF8Text.orEmpty(), api.meanConfidence())
+                }
+            }
+        } finally {
+            api.clear()
+        }
+    }
+
     /**
      * Releases the native Tesseract context. Idempotent, and a no-op if OCR was never used.
      */
@@ -58,6 +80,8 @@ class TesseractOcrService @Inject constructor(
         synchronized(lock) {
             tessApi?.recycle()
             tessApi = null
+            lineApi?.recycle()
+            lineApi = null
         }
     }
 

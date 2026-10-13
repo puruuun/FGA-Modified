@@ -24,7 +24,9 @@ class AppendSupportTest {
         required: List<Boolean> = List(5) { true },
         characters: List<String> = listOf("test"),
         scoreEnabled: Boolean = false,
-        ceNames: List<String> = if (characters.isEmpty()) listOf("CE") else emptyList()
+        ceNames: List<String> = if (characters.isEmpty()) listOf("CE") else emptyList(),
+        npEnabled: Boolean = false,
+        minimumNp: Int = 5
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val prefs = mockk<ISupportPreferences>(relaxed = true)
@@ -40,6 +42,7 @@ class AppendSupportTest {
         var breakRestore = false
         var taps = 0
         val reader = mockk<SupportSkillLevelReader>()
+        val npReader = mockk<SupportNpLevelReader>()
         val boundsFinder = mockk<SupportBoundsFinder>()
         val servants = mockk<ServantSelection>()
         val ces = mockk<CESelection>()
@@ -55,6 +58,8 @@ class AppendSupportTest {
             every { prefs.preferredServants } returns characters
             every { prefs.preferredCEs } returns ceNames
             every { prefs.score62Check } returns scoreEnabled
+            every { prefs.npLevelCheck } returns npEnabled
+            every { prefs.minimumNpLevel } returns minimumNp
             every { prefs.friendNames } returns emptyList()
             every { prefs.friendsOnly } returns false
             every { api.locations.support.skillDisplayLabelsRegion } returns labels
@@ -106,9 +111,15 @@ class AppendSupportTest {
                 true
             }
             every { ces.check(any(), any()) } returns true
+            every { npReader.read(any()) } answers {
+                assertTrue(snapshot, "NP must use the same candidate snapshot as the normal conditions")
+                assertThat(view).isEqualTo(SupportSkillDisplay.View.Normal)
+                5
+            }
             display = SupportSkillDisplay(api)
             selector = AppendSkillSelection(api, prefs, display, reader)
-            preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector, SupportScoreSelection(api, prefs))
+            preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector,
+                SupportScoreSelection(api, prefs), SupportNpSelection(api, prefs, npReader))
         }
     }
 
@@ -318,5 +329,94 @@ class AppendSupportTest {
             .isEqualTo(Region(2036, 718, 110, 60))
         assertThat(SupportScoreLayout.numberRegion(Region(287, 808, 2356, 428)))
             .isEqualTo(Region(2247, 1118, 110, 60))
+    }
+
+    @Test
+    fun `NP below minimum skips the entire append cycle and examines the next candidate`() {
+        val f = Fixture(npEnabled = true)
+        every { f.npReader.read(f.first) } returns 1
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(3)
+        verify(exactly = 0) { f.reader.read(f.first, true) }
+        verify(exactly = 1) { f.reader.read(f.second, true) }
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 1) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `NP higher than minimum passes and append remains the final filter`() {
+        val f = Fixture(npEnabled = true, minimumNp = 2, scoreEnabled = true)
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(3)
+        io.mockk.verifyOrder {
+            f.servants.check(any(), f.first)
+            with(f.api) { SupportScoreLayout.numberRegion(f.first.region).exists(f.score, any(), any()) }
+            f.ces.check(any(), f.first)
+            f.npReader.read(f.first)
+            f.reader.read(f.first, true)
+            with(f.api) { f.first.region.click(any()) }
+        }
+    }
+
+    @Test
+    fun `unreadable NP rejects all candidates without append switching or selection`() {
+        val f = Fixture(npEnabled = true)
+        every { f.npReader.read(any()) } returns null
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.EarlyRefresh)
+        assertThat(f.taps).isEqualTo(0)
+        verify(exactly = 0) { f.reader.read(any(), any()) }
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `disabled NP filter does not invoke OCR and preserves existing settings`() {
+        val f = Fixture()
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 0) { f.npReader.read(any()) }
+    }
+
+    @Test
+    fun `NP only filter works without servant CE or friend name images`() {
+        val f = Fixture(enabled = false, characters = emptyList(), ceNames = emptyList(), npEnabled = true, minimumNp = 3)
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        assertThat(f.taps).isEqualTo(0)
+        verify(exactly = 1) { f.npReader.read(f.first) }
+    }
+
+    @Test
+    fun `score failure skips both NP OCR and append and all enabled conditions must pass`() {
+        val f = Fixture(npEnabled = true, scoreEnabled = true)
+        every { with(f.api) { SupportScoreLayout.numberRegion(f.first.region).exists(f.score, any(), any()) } } returns false
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 0) { f.npReader.read(f.first) }
+        verify(exactly = 0) { f.reader.read(f.first, true) }
+        verify(exactly = 1) { f.npReader.read(f.second) }
+        assertThat(f.taps).isEqualTo(3)
+    }
+
+    @Test
+    fun `append failure restores before reading the next candidate NP and never bypasses it`() {
+        val f = Fixture(npEnabled = true)
+        every { f.reader.read(f.first, true) } returns List(5) { false }
+        every { f.npReader.read(f.second) } answers {
+            assertTrue(f.snapshot)
+            assertThat(f.view).isEqualTo(SupportSkillDisplay.View.Normal)
+            1
+        }
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.EarlyRefresh)
+        assertThat(f.taps).isEqualTo(3)
+        verify(exactly = 0) { f.reader.read(f.second, true) }
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `invalid imported NP requirement fails closed instead of weakening the filter`() {
+        for (minimum in listOf(0, 6, -1)) {
+            val f = Fixture(npEnabled = true, minimumNp = minimum)
+            assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.EarlyRefresh)
+            assertThat(f.taps).isEqualTo(0)
+        }
     }
 }

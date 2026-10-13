@@ -178,4 +178,27 @@ class ExecutionProfileCoreTest {
         assertThat(result.appendSkillCheck.get()).isEqualTo(true)
         assertThat(result.appendSkillsMax[1].get()).isEqualTo(true)
     }
+
+    @Test
+    fun `NP settings default off and retain minimum independently of append and score after import`() {
+        val prefs = MemoryPrefs()
+        val support = SupportPrefsCore(PrefMaker(prefs))
+        assertThat(support.npLevelCheck.get()).isEqualTo(false)
+        assertThat(support.minimumNpLevel.get()).isEqualTo(5)
+        support.npLevelCheck.set(true)
+        support.minimumNpLevel.set(3)
+        support.score62Check.set(true)
+        support.appendSkillCheck.set(true)
+        support.appendSkillsMax[1].set(true)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all))) }.apply()
+        val result = SupportPrefsCore(PrefMaker(restored))
+        assertThat(result.npLevelCheck.get()).isEqualTo(true)
+        assertThat(result.minimumNpLevel.get()).isEqualTo(3)
+        result.npLevelCheck.set(false)
+        assertThat(result.minimumNpLevel.get()).isEqualTo(3)
+        assertThat(result.score62Check.get()).isEqualTo(true)
+        assertThat(result.appendSkillCheck.get()).isEqualTo(true)
+        assertThat(result.appendSkillsMax[1].get()).isEqualTo(true)
+    }
 }
