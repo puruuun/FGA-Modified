@@ -47,6 +47,7 @@
     - [Support Selection Options](#support-selection-options)
     - [Preferred Selection](#preferred-selection)
       - [Preferred Selection - Preferred Servant](#preferred-selection---preferred-servant)
+      - [Preferred Selection - Append Skills](#preferred-selection---append-skills)
       - [Preferred Servant - Preferred CE](#preferred-servant---preferred-ce)
       - [Preferred Servant - Preferred Friends](#preferred-servant---preferred-friends)
       - [Final Look](#final-look)
@@ -570,6 +571,14 @@ Then you can select if you want the preferred servant to be `max ascended` and w
 
 Note: FGA can only reliably detect if the skill level is max level `Lvl. 10` or not. FGA can't detect the current skill level.
 
+#### Preferred Selection - Append Skills
+
+This modified build adds **Check Append Skills** below the existing max-level skill settings. Enable it and mark each of the five slots, from left to right, as `10` (require max level) or `x` (ignore). Every required slot must match. Locked slots do not count as level 10; levels 1–9 cannot be requested individually.
+
+FGA first checks the existing normal-skill and preferred-support criteria. It then taps the skill-display switch once, confirms append view and checks all five levels from a fresh screenshot. Two more taps restore normal view before selecting a passing candidate or searching for another candidate. Unconfirmed display changes stop selection. The feature defaults to off, and five ignored slots skip display switching.
+
+See the [Korean settings and screenshot verification guide](Support-Append-Skills-KR.md).
+
 #### Preferred Servant - Preferred CE
 
 Click on Preferred CE and select the wanted CEs.
@@ -588,7 +597,7 @@ with the Support Image Maker.
 Enable this option if you want to use Support Servants from specific friends.
 
 This is useful if level 90 NP1 Servants are not strong enough for the farming quest. Since FGA can't detect  
-Servant Levels, NP levels and Append Skill levels, this allows you to filter for those using friend names.
+Servant Levels, NP levels or exact Append Skill levels below 10, this allows you to filter for those using friend names. This modified build can require max-level Append Skills using the setting above.
 
 Of course, FGA won't be able to select non-friend Servants who would fulfill those criteria.
 

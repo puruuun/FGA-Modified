@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.SpamConfigCore
 import io.github.fate_grand_automata.prefs.core.ShuffleConfigCore
+import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
@@ -140,5 +141,23 @@ class ExecutionProfileCoreTest {
         val result = ShuffleConfigCore(PrefMaker(restored))
         assertThat(result.mode.get()).isEqualTo(ShuffleCardsEnum.FirstTurnStartCondition)
         assertThat(result.wave.get()).isEqualTo(3)
+    }
+
+    @Test
+    fun `append settings default off and retain five independent slots through export import`() {
+        val prefs = MemoryPrefs()
+        val support = SupportPrefsCore(PrefMaker(prefs))
+        assertThat(support.appendSkillCheck.get()).isEqualTo(false)
+        assertThat(support.appendSkillsMax.map { it.get() }).isEqualTo(List(5) { false })
+        support.appendSkillCheck.set(true)
+        support.appendSkillsMax[1].set(true)
+        support.appendSkillsMax[4].set(true)
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all))) }.apply()
+        val result = SupportPrefsCore(PrefMaker(restored))
+        assertThat(result.appendSkillCheck.get()).isEqualTo(true)
+        assertThat(result.appendSkillsMax.map { it.get() }).isEqualTo(listOf(false, true, false, false, true))
+        result.appendSkillCheck.set(false)
+        assertThat(result.appendSkillsMax.map { it.get() }).isEqualTo(listOf(false, true, false, false, true))
     }
 }

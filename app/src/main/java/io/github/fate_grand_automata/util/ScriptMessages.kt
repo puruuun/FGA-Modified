@@ -64,6 +64,8 @@ class ScriptMessages @Inject constructor(
                         }
                 )
             }
+            is ScriptLog.MaxAppendSkills -> Timber.d("Append skills: %s", item.required.zip(item.detected)
+                .joinToString("/") { (required, detected) -> if (!required) "x" else if (detected) "10" else "f" })
 
             ScriptLog.DefaultMasterOffset -> {
                 Timber.d("Defaulting master offset")

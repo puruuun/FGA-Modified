@@ -20,6 +20,8 @@ interface ISupportPreferences {
     val skill1Max: Boolean
     val skill2Max: Boolean
     val skill3Max: Boolean
+    val appendSkillCheck: Boolean
+    val appendSkillsMax: List<Boolean>
 
     val grandServant: Boolean
     val bondCEEffect: BondCEEffectEnum

@@ -16,7 +16,8 @@ class PreferredSupportSelection @Inject constructor(
     private val friendChecker: SupportFriendChecker,
     private val servantSelection: ServantSelection,
     private val ceSelection: CESelection,
-    private val friendSelection: FriendSelection
+    private val friendSelection: FriendSelection,
+    private val appendSelection: AppendSkillSelection
 ) : SupportSelectionProvider, IFgoAutomataApi by api {
     private val servants = supportPrefs.preferredServants
     private val ces = supportPrefs.preferredCEs
@@ -39,6 +40,8 @@ class PreferredSupportSelection @Inject constructor(
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
 
+        if (appendSelection.enabled) return selectWithAppendSkills()
+
         return useSameSnapIn {
             if (supportPrefs.friendsOnly && !friendChecker.isFriend()) {
                 // no friends on screen, so there's no point in scrolling anymore
@@ -56,6 +59,23 @@ class PreferredSupportSelection @Inject constructor(
                 scrollBarState.resultWhenNoMatch()
             }
         }
+    }
+
+    private fun selectWithAppendSkills(): SupportSelectionResult {
+        appendSelection.ensureNormal()
+        val bounds = useSameSnapIn {
+            if (supportPrefs.friendsOnly && !friendChecker.isFriend()) null else boundsFinder.all()
+        } ?: return SupportSelectionResult.Refresh
+
+        for (bound in bounds) {
+            // Pure normal-screen checks finish before any display mutation; refresh the next candidate's frame.
+            val matched = useSameSnapIn { isMatch(bound) } ?: continue
+            if (appendSelection.check(bound)) {
+                matched.click()
+                return SupportSelectionResult.Done
+            }
+        }
+        return useSameSnapIn { readScrollBarState().resultWhenNoMatch() }
     }
 
     private fun readScrollBarState(): ScrollBarState {

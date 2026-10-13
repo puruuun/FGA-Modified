@@ -31,6 +31,7 @@ sealed class ScriptLog {
         val needMaxedSkills: List<Boolean>,
         val isSkillMaxed: List<Boolean>
     ) : ScriptLog()
+    class MaxAppendSkills(val required: List<Boolean>, val detected: List<Boolean>) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()
     class ClickingCards(val cards: Iterable<CommandCard.Face>) : ScriptLog()

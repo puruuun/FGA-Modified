@@ -2,10 +2,10 @@
 
 ## 설치·업데이트
 
-릴리스의 `FGA-Modified-0.1.0-arm.apk`를 받으세요.
+릴리스의 `FGA-Modified-0.2.0-arm.apk`를 받으세요.
 
 - [수정판 저장소](https://github.com/puruuun/FGA-card-count)
-- [0.1.0 릴리스](https://github.com/puruuun/FGA-card-count/releases/tag/v0.1.0)
+- [0.2.0 릴리스](https://github.com/puruuun/FGA-card-count/releases/tag/v0.2.0)
 
 공개 저장소의 릴리스에서 APK를 받을 수 있습니다.
 
@@ -96,21 +96,23 @@ B의 카드가 더 많아도 A가 조건을 만족하면 A를 선택합니다. *
 
 ## 검증 범위
 
-- 실행 로직 70개·설정 저장 13개 등 **83개 테스트**가 통과했습니다.
+- 실행 로직 82개·설정 저장 14개 등 **96개 테스트**가 통과했습니다. 서포트 어펜드 스킬 관련 검증도 포함합니다.
 - 첫 턴 셔플 후 A/B/동시 충족, 미달 시 새 카드로 대기 공격, 대기 턴 수, 이후 턴·웨이브의 중복 셔플 방지, 다음 주회 초기화, 셔플 전·후 인식과 화면 복귀 실패 처리를 검증합니다.
 - 공통 스팸·셔플 설정의 두 분기 적용과 기존 저장키·내보내기·가져오기 호환, 기본 모드·단일 조건 호환, A/B/동시 충족·대기, 독립 개수, 대상 사망, 선택 고정·초기화, 별도 커맨드·카드·서번트 우선순위·브레이브 체인을 검증합니다.
 - 이번 UI 수정판의 앱 컴파일과 ARM APK 빌드, 서명·패키지·버전·업로드 파일 해시를 확인했습니다.
 
 **실제 기기의 설정 화면 시각 검수, FGO 이미지 인식률, 스킬 화면 복귀 및 실제 전투 동작은 아직 검증하지 않았습니다.**
 
-원본 기준은 공식 FGA **v3059**, 커밋 `e138a15273dee9cac342833ee2d8aee93d8ae700`입니다. 버전 코드 `3063`은 개인 수정판 업데이트용이며 공식 v3063을 의미하지 않습니다.
+서포트 어펜드 스킬의 설정과 한국·일본 화면 이미지 검증은 [어펜드 스킬 안내](Support-Append-Skills-KR.md)를 확인하세요.
+
+원본 기준은 공식 FGA **v3059**, 커밋 `e138a15273dee9cac342833ee2d8aee93d8ae700`입니다. 버전 코드 `3064`는 개인 수정판 업데이트용이며 공식 v3064를 의미하지 않습니다.
 
 ## 소스 빌드
 
 JDK 21과 Android SDK 37을 준비하고 다음을 실행합니다.
 
 ```sh
-FGA_VERSION_CODE=3063 FGA_VERSION_NAME=0.1.0 ./gradlew :scripts:test :prefs:testCiUnitTest :app:compileDebugKotlin :app:assembleCi
+FGA_VERSION_CODE=3064 FGA_VERSION_NAME=0.2.0 ./gradlew :scripts:test :prefs:testCiUnitTest :app:compileDebugKotlin :app:assembleCi
 ```
 
 두 번째 실행 설정은 동일한 Battle Config 안의 `secondary_` 키들에 저장합니다. 별도 설정 파일을 만들지 않으므로 복사·내보내기·가져오기·삭제에 함께 포함됩니다.

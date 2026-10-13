@@ -142,6 +142,18 @@ private fun PreferredSupport(
                                 )
                             )
                         }
+                        config.appendSkillCheck.SwitchPreference(
+                            title = stringResource(R.string.p_append_skill_check)
+                        )
+                        val appendEnabled by config.appendSkillCheck.remember()
+                        AnimatedVisibility(appendEnabled) {
+                            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                Text(stringResource(R.string.p_append_skills_max))
+                                Row(modifier = Modifier.padding(top = 8.dp)) {
+                                    MaxSkills(config.appendSkillsMax, compact = true)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -261,7 +273,8 @@ private fun PreferredSupportHelp() {
 
 @Composable
 private fun MaxSkills(
-    skills: List<Pref<Boolean>>
+    skills: List<Pref<Boolean>>,
+    compact: Boolean = false
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -273,7 +286,7 @@ private fun MaxSkills(
                 Text(
                     "/",
                     modifier = Modifier
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = if (compact) 4.dp else 8.dp)
                 )
             }
 
@@ -300,7 +313,7 @@ private fun MaxSkills(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .clickable { max = !max }
-                        .size(40.dp)
+                        .size(if (compact) 36.dp else 40.dp)
                 ) {
                     Text(skillText(max))
                 }

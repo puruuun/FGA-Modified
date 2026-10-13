@@ -18,6 +18,7 @@ class SupportScreenLocations @Inject constructor(
     val extraRegion = Region(1200, 200, 130, 130) + headerOffset
 
     val updateClick = Location(1865, 260) + headerOffset
+    val skillDisplaySwitchClick = Location(1695, 260) + headerOffset
 
     val listTopClick = Location(if (isWide) -218 else -80, 360).xFromRight()
 
@@ -36,6 +37,8 @@ class SupportScreenLocations @Inject constructor(
 
             Location(305 + border, 0)
         } else Location(94, 0)
+
+    val skillDisplayLabelsRegion = Region(1550, 332, 500, 1091) + supportOffset
 
     val listRegion = Region(-24, 332, 378, 1091) + supportOffset
     val grandCeListRegion = Region(335, 332,342, 1091) + supportOffset
