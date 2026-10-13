@@ -13,8 +13,8 @@ This project is maintained separately from the upstream team's official distribu
 
 ## Download
 
-- **[Latest modified APK](https://github.com/puruuun/FGA-card-count/releases/latest)**
-- **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-card-count%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
+- **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
+- **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
 Install `FGA-mod-0.4.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
@@ -113,7 +113,7 @@ Direct attacks bypass automatic card/Servant priority, Brave Chain selection, re
 ## Updates through Obtainium
 
 1. Install [Obtainium](https://obtainium.imranr.dev/).
-2. Tap **Add to Obtainium** above, or open Obtainium's **Add App** page and enter `https://github.com/puruuun/FGA-card-count`. The source is GitHub.
+2. Tap **Add to Obtainium** above, or open Obtainium's **Add App** page and enter `https://github.com/puruuun/FGA-Modified`. The source is GitHub.
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 

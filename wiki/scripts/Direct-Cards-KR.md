@@ -1,6 +1,6 @@
 # 해당 턴의 공격 순서 직접 지정
 
-**정규 버전 0.4.0**에서 일반 카드와 보구를 포함한 세 장의 선택 순서를 해당 턴에 고정할 수 있습니다. [FGA(mod) APK](https://github.com/puruuun/FGA-card-count/releases/tag/v0.4.0)는 기존 수정판과 같은 패키지·서명으로 업데이트 설치합니다. 앱 이름은 FGA(mod), 아이콘은 파란색 Arts입니다.
+**정규 버전 0.4.0**에서 일반 카드와 보구를 포함한 세 장의 선택 순서를 해당 턴에 고정할 수 있습니다. [FGA(mod) APK](https://github.com/puruuun/FGA-Modified/releases/tag/v0.4.0)는 기존 수정판과 같은 패키지·서명으로 업데이트 설치합니다. 앱 이름은 FGA(mod), 아이콘은 파란색 Arts입니다.
 
 ## 설정 방법
 

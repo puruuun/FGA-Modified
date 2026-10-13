@@ -13,8 +13,8 @@
 
 ## 다운로드
 
-- **[최신 수정판 APK](https://github.com/puruuun/FGA-card-count/releases/latest)**
-- **[Obtainium에 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-card-count%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
+- **[최신 수정판 APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
+- **[Obtainium에 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[자세한 설치·설정 안내](wiki/scripts/Card-Count-Start-KR.md)**
 
 릴리스의 `FGA-mod-0.4.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
@@ -113,7 +113,7 @@
 ## Obtainium으로 업데이트
 
 1. [Obtainium](https://obtainium.imranr.dev/)을 설치합니다.
-2. 위의 **Obtainium에 추가**를 누르거나, Obtainium의 **앱 추가**에서 소스 URL `https://github.com/puruuun/FGA-card-count`를 입력합니다. 소스는 GitHub입니다.
+2. 위의 **Obtainium에 추가**를 누르거나, Obtainium의 **앱 추가**에서 소스 URL `https://github.com/puruuun/FGA-Modified`를 입력합니다. 소스는 GitHub입니다.
 3. 사전 릴리스 포함은 끈 상태로 추가합니다. 릴리스에는 ARM APK 한 개만 있으므로 별도 APK 필터가 필요 없습니다.
 4. 앱 화면에서 업데이트를 확인하거나, Obtainium 설정에서 백그라운드 확인 주기를 정합니다. 새 정규 버전이 올라오면 APK를 받을 수 있습니다.
 

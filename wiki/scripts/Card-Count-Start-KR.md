@@ -4,8 +4,8 @@
 
 릴리스의 `FGA-mod-0.4.0-arm.apk`를 받으세요.
 
-- [수정판 저장소](https://github.com/puruuun/FGA-card-count)
-- [0.4.0 릴리스](https://github.com/puruuun/FGA-card-count/releases/tag/v0.4.0)
+- [수정판 저장소](https://github.com/puruuun/FGA-Modified)
+- [0.4.0 릴리스](https://github.com/puruuun/FGA-Modified/releases/tag/v0.4.0)
 
 공개 저장소의 릴리스에서 APK를 받을 수 있습니다.
 
