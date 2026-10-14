@@ -5,6 +5,7 @@
 이 프로젝트는 **[Fate/Grand Automata(FGA)](https://github.com/Fate-Grand-Automata/FGA)를 바탕으로 기능을 추가한 Modified 버전**입니다. 원본의 Android 자동 전투·카드 인식 기능을 기반으로, 특정 서번트의 일반 카드가 원하는 개수 이상 나왔을 때 예약 커맨드를 시작하도록 확장했습니다. 서포트 선택에는 어펜드 스킬 5개의 최대 레벨 판독도 추가했습니다.
 
 원본 개발팀의 공식 배포판과 별도로 관리됩니다. 원본 FGA의 사용 안내와 공식 업데이트는 아래 링크에서 확인할 수 있습니다.
+kr jp 서버 한정으로 테스트되었습니다. 다른서버는 몰루
 
 - **원본 저장소:** https://github.com/Fate-Grand-Automata/FGA
 - **원본 공식 사이트:** https://fate-grand-automata.github.io/
