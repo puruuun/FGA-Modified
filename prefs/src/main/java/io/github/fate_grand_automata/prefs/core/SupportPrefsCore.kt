@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.prefs.core
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.scripts.enums.SupportClass
 import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
-import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 
 class SupportPrefsCore(
     maker: PrefMaker
@@ -40,7 +39,6 @@ class SupportPrefsCore(
     val appendSkillsMax = (1..5).map { maker.bool("support_append_skill_max_$it") }
     val score62Check = maker.bool("support_score_62_check")
     val grandScore16Check = maker.bool("support_grand_score_16_check")
-    val scoreMatchMode = maker.enum("support_score_match_mode", SupportScoreMatchMode.All)
     val npLevelCheck = maker.bool("support_np_level_check")
     val minimumNpLevel = maker.int("support_np_min_level", 5)
 

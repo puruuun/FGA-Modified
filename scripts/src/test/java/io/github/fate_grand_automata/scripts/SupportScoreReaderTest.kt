@@ -3,7 +3,7 @@ package io.github.fate_grand_automata.scripts
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreDisplay
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
@@ -44,35 +44,32 @@ class SupportScoreReaderTest {
         assertThat(SupportScoreReader.parse(OcrText("+16/+62", 92))).isEqualTo(SupportScores(16, 62))
         assertThat(SupportScoreReader.parse(OcrText("62/+16", 92))).isEqualTo(SupportScores(62, 16))
         assertThat(SupportScoreReader.parse(OcrText("+62/16", 92))).isEqualTo(SupportScores(62, 16))
-        for (text in listOf("+62", "+16", "+62+16", "+62/+16/+0", "+62/-16", "score +62/+16")) {
+        for (text in listOf("+62+16", "+62/+16/+0", "+62/-16", "score +62/+16")) {
             assertThat(SupportScoreReader.parse(OcrText(text, 95))).isNull()
         }
         assertThat(SupportScoreReader.parse(OcrText("+62/+16", 74))).isNull()
+        assertThat(SupportScoreReader.parse(OcrText("+62",92))).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Ordinary))
+        assertThat(SupportScoreReader.parse(OcrText("+0",92))).isEqualTo(SupportScores(0,null,SupportScoreDisplay.Ordinary))
     }
 
     @Test
-    fun `all switch combinations implement class only grand only AND and OR`() {
-        // Expected values are the declared policy table, not recomputed from the implementation.
+    fun `applicable conditions are always AND while Grand is ignored only in confirmed ordinary displays`() {
         val cases = listOf(
-            SupportScores(62,16) to listOf(true,true,true,true),
-            SupportScores(0,16) to listOf(false,true,false,true),
-            SupportScores(62,0) to listOf(true,false,false,true),
-            SupportScores(16,62) to listOf(false,false,false,false),
-            SupportScores() to listOf(false,false,false,false),
-            SupportScores(62,null) to listOf(true,false,false,true)
+            SupportScores(62,16) to listOf(true,true,true),
+            SupportScores(0,16) to listOf(false,true,false),
+            SupportScores(62,0) to listOf(true,false,false),
+            SupportScores(16,62) to listOf(false,false,false),
+            SupportScores() to listOf(false,false,false),
+            SupportScores(62,null,SupportScoreDisplay.Compound) to listOf(true,false,false),
+            SupportScores(62,null,SupportScoreDisplay.Ordinary) to listOf(true,true,true),
+            SupportScores(0,null,SupportScoreDisplay.Ordinary) to listOf(false,true,false)
         )
         for ((scores, expected) in cases) {
-            for (mode in SupportScoreMatchMode.entries) {
-                assertThat(SupportScoreSelection.matches(scores,false,false,mode)).isEqualTo(true)
-                assertThat(SupportScoreSelection.matches(scores,true,false,mode)).isEqualTo(expected[0])
-                assertThat(SupportScoreSelection.matches(scores,false,true,mode)).isEqualTo(expected[1])
-            }
-            assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.All)).isEqualTo(expected[2])
-            assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.Any)).isEqualTo(expected[3])
+            assertThat(SupportScoreSelection.matches(scores,false,false)).isEqualTo(true)
+            assertThat(SupportScoreSelection.matches(scores,true,false)).isEqualTo(expected[0])
+            assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(expected[1])
+            assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(expected[2])
         }
-        assertThat(SupportScoreSelection.matches(SupportScores(0,16),false,true,SupportScoreMatchMode.All)).isEqualTo(true)
-        assertThat(SupportScoreSelection.matches(SupportScores(0,16),true,true,SupportScoreMatchMode.All)).isEqualTo(false)
-        assertThat(SupportScoreSelection.matches(SupportScores(0,16),true,true,SupportScoreMatchMode.Any)).isEqualTo(true)
     }
 
     @Test
@@ -81,7 +78,7 @@ class SupportScoreReaderTest {
         assertThat(SupportScoreReader.confirmed(listOf(OcrText("+62/+16",92),OcrText("+62/+16",84)))).isNull()
         assertThat(SupportScoreReader.confirmed(listOf(
             OcrText("+62/+16",92),OcrText("+62/+16",91),OcrText("+62/+0",75)
-        ))).isEqualTo(SupportScores(62,null))
+        ))).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Compound))
         assertThat(SupportScoreReader.confirmed(listOf(
             OcrText("+62/+16",92),OcrText("+62/+16",91),OcrText("+62/+0",74)
         ))).isEqualTo(SupportScores(62,16))
@@ -93,9 +90,8 @@ class SupportScoreReaderTest {
             OcrText("+0/+16",92),OcrText("+6/+16",91),OcrText("+0/+16",90)
         ))!!
         assertThat(scores).isEqualTo(SupportScores(null,16))
-        assertThat(SupportScoreSelection.matches(scores,false,true,SupportScoreMatchMode.All)).isEqualTo(true)
-        assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.All)).isEqualTo(false)
-        assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.Any)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(false)
     }
 
     @Test
@@ -107,33 +103,32 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `grand only accepts +0 +16 without matching the class template`() {
+    fun `grand only accepts +0 +16 regardless of the class value`() {
         val f=Fixture()
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+0/+16",92)
         val scores=f.reader.read(f.bounds,false,true)
-        assertThat(SupportScoreSelection.matches(scores,false,true,SupportScoreMatchMode.All)).isEqualTo(true)
-        verify(exactly=0) { f.api.images[Images.SupportScore62,null] }
-        verify(exactly=0) { with(f.api) { f.region.exists(any(),any(),any()) } }
+        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(true)
+        verify(exactly=1) { f.api.images[Images.SupportScore62,null] }
+        verify(exactly=1) { with(f.api) { f.region.exists(any(),any(),any()) } }
     }
 
     @Test
     fun `ordinary +62 preserves the existing fast class matcher`() {
         val f=Fixture()
         every { with(f.api) { f.region.exists(f.legacy,any(),any()) } } returns true
-        assertThat(f.reader.read(f.bounds,true,false)).isEqualTo(SupportScores(62,null))
+        assertThat(f.reader.read(f.bounds,true,false)).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Ordinary))
         verify(exactly=0) { f.ocr.detectTextLine(any(),any()) }
         verify(exactly=0) { with(f.api) { f.region.getPattern(any()) } }
     }
 
     @Test
-    fun `ordinary +62 can pass OR but never supplies grand for AND`() {
+    fun `ordinary +62 ignores Grand even when both toggles are on`() {
         val f=Fixture()
         every { with(f.api) { f.region.exists(f.legacy,any(),any()) } } returns true
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+62",92)
         val scores=f.reader.read(f.bounds,true,true)
-        assertThat(scores).isEqualTo(SupportScores(62,null))
-        assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.All)).isEqualTo(false)
-        assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.Any)).isEqualTo(true)
+        assertThat(scores).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Ordinary))
+        assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(true)
     }
 
     @Test
@@ -142,7 +137,6 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+16/+62",92)
         val scores=f.reader.read(f.bounds,true,true)
         assertThat(scores).isEqualTo(SupportScores(16,62))
-        assertThat(SupportScoreSelection.matches(scores,true,true,SupportScoreMatchMode.Any)).isEqualTo(false)
     }
 
     @Test
@@ -152,7 +146,7 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop,any()) } returnsMany listOf(
             OcrText("+62/+16",92),OcrText("+62/+16",91),OcrText("+62/+16",90),OcrText("+16/+62",88)
         )
-        assertThat(f.reader.read(f.bounds,true,true)).isEqualTo(SupportScores())
+        assertThat(f.reader.read(f.bounds,true,true)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
         verify(exactly=4) { f.ocr.detectTextLine(f.crop,any()) }
     }
 
@@ -167,6 +161,26 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(any(),any()) } throws IllegalStateException("score OCR failed")
         kotlin.test.assertFailsWith<IllegalStateException> { f.reader.read(f.bounds,false,true) }
         verify(exactly=2) { f.crop.close() }
+    }
+
+    @Test
+    fun `Grand only on ordinary non 62 is ignored but adding Class rejects it`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+0",92)
+        val scores = f.reader.read(f.bounds,false,true)
+        assertThat(scores).isEqualTo(SupportScores(0,null,SupportScoreDisplay.Ordinary))
+        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(false)
+    }
+
+    @Test
+    fun `unreadable or mixed format never silently ignores Grand`() {
+        val f = Fixture()
+        for (texts in listOf(List(4) { OcrText("+62",74) },
+            listOf(OcrText("+62",92),OcrText("+62",92),OcrText("+62/+?",60),OcrText("+62",92)))) {
+            every { f.ocr.detectTextLine(f.crop,any()) } returnsMany texts
+            assertThat(SupportScoreSelection.matches(f.reader.read(f.bounds,false,true),false,true)).isEqualTo(false)
+        }
     }
 
     @Test

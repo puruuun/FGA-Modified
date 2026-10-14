@@ -37,7 +37,6 @@ internal class SupportPreferences(
     override val appendSkillsMax get() = prefs.appendSkillsMax.map { it.get() }
     override val score62Check by prefs.score62Check
     override val grandScore16Check by prefs.grandScore16Check
-    override val scoreMatchMode by prefs.scoreMatchMode
     override val npLevelCheck by prefs.npLevelCheck
     override val minimumNpLevel by prefs.minimumNpLevel
 

@@ -5,7 +5,6 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.locations.SupportSkillLayout
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
-import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.fate_grand_automata.scripts.prefs.ISupportPreferences
@@ -30,8 +29,7 @@ class AppendSupportTest {
         ceNames: List<String> = if (characters.isEmpty()) listOf("CE") else emptyList(),
         npEnabled: Boolean = false,
         minimumNp: Int = 5,
-        grandScoreEnabled: Boolean = false,
-        scoreMatchMode: SupportScoreMatchMode = SupportScoreMatchMode.All
+        grandScoreEnabled: Boolean = false
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val prefs = mockk<ISupportPreferences>(relaxed = true)
@@ -66,7 +64,6 @@ class AppendSupportTest {
             every { prefs.preferredCEs } returns ceNames
             every { prefs.score62Check } returns scoreEnabled
             every { prefs.grandScore16Check } returns grandScoreEnabled
-            every { prefs.scoreMatchMode } returns scoreMatchMode
             every { scoreCrop.width } returns 55
             every { scoreCrop.height } returns 30
             for (bound in listOf(first, second)) {
@@ -288,7 +285,7 @@ class AppendSupportTest {
         val f = Fixture(enabled = false, characters = emptyList(), ceNames = emptyList(), grandScoreEnabled = true)
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
         verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
-        verify(exactly = 0) { f.api.images[Images.SupportScore62, null] }
+        verify(exactly = 1) { f.api.images[Images.SupportScore62, null] }
         assertThat(f.taps).isEqualTo(0)
     }
 

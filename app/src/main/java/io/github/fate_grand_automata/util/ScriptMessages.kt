@@ -68,9 +68,9 @@ class ScriptMessages @Inject constructor(
                 .joinToString("/") { (required, detected) -> if (!required) "x" else if (detected) "10" else "f" })
             is ScriptLog.SupportScore62 -> Timber.d("Support score +62: %s", item.matched)
             is ScriptLog.SupportScoreConditions -> Timber.d(
-                "Support Class/Grand: %s/%s, required: %s/%s, all: %s, matched: %s",
+                "Support Class/Grand: %s/%s, required: %s/%s, Grand ignored: %s, matched: %s",
                 item.classScore ?: "unknown", item.grandScore ?: "unknown",
-                item.checkClass, item.checkGrand, item.requireAll, item.matched
+                item.checkClass, item.checkGrand, item.grandIgnored, item.matched
             )
             is ScriptLog.SupportNpLevel -> Timber.d("Support NP: %s, minimum: %d, matched: %s",
                 item.detected ?: "unreadable", item.required, item.matched)

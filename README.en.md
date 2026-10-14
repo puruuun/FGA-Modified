@@ -14,15 +14,15 @@ This project is maintained separately from the upstream team's official distribu
 ## Download
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[Class/Grand score stable release 0.6.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.6.0)**
+- **[Teapot/Storm Pod stable release 0.7.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.7.0)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.6.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.7.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.6.0 (stable release) |
+| Version | 0.7.0 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -99,21 +99,20 @@ The app checks the existing preferred-support and normal-skill conditions first.
 
 The feature defaults to off. Five ignored slots skip switching. Settings are included in copies, exports and imports. See the [Append Skill guide (Korean)](wiki/scripts/Support-Append-Skills-KR.md) for configuration and the provided KR/JP screenshot results.
 
-### 9. Class score +62 and Grand score +16 — 0.6.0
+### 9. Class score +62 and Grand score +16 — policy updated in 0.7.0
 
-Enable **Require Class score +62** and **Require Grand score +16** independently under **Support Selection → Preferred Servants**. Both the ordinary `+62` display and the quest-specific `+62/+16` display are supported. The field before `/` is Class; the field after it is Grand.
+Enable the two switches independently under **Support Selection → Preferred Servants**. The field before `/` is Class; the field after it is Grand. Both switches always require every applicable condition. The combination selector has been removed; previous combination settings are ignored.
 
-| Settings | Passing condition |
-|---|---|
-| Class only | Class +62 |
-| Grand only | Grand +16, regardless of Class |
-| Both enabled → Both conditions must match | Class +62 and Grand +16 |
-| Both enabled → At least one condition must match | Class +62 or Grand +16 |
-| Both disabled | No score filter |
+| Settings | Ordinary Class-only display (`+62`, `+0`, etc.) | Special Class/Grand display |
+|---|---|---|
+| Class only | Class +62 | Class +62 |
+| Grand only | No score restriction | Grand +16 |
+| Both enabled | Class +62 | Class +62 and Grand +16 |
+| Both disabled | No score restriction | No score restriction |
 
-For example, `+0/+16` passes with Grand only or the OR option. An ordinary `+62` without a Grand field meets only the Class condition. Uncertain fields do not satisfy their condition; disabled fields do not affect selection. Existing +62 settings remain Class checks, and the new Grand toggle defaults to off.
+A confirmed ordinary display ignores the Grand requirement. With both enabled, ordinary `+62` passes and ordinary `+0` fails. With Grand only, confirmed ordinary displays pass regardless of Class. Special `+0/+16` passes with Grand only and fails with both enabled. An uncertain display format never silently disables the Grand requirement.
 
-Score checks still run **before Append Skill checks**. All other preferred-support and Append conditions must also pass. Score-only selection works without Servant or CE images. See the [score guide and validation limits (Korean)](wiki/scripts/Support-Score-62-KR.md).
+Score and NP checks run **before Append Skill checks**. Other preferred-support and Append conditions must also pass. Score-only preferred selection works without Servant/CE images. See the [score guide (Korean)](wiki/scripts/Support-Score-62-KR.md).
 
 ### 10. Fixed attack order for a specific turn
 
@@ -133,6 +132,14 @@ In 0.5.1, failed reads trigger a search at several `Lv.` sizes and OCR with alte
 
 All **44 visible NP levels across 16 submitted KR/JP images were correct (100% on this submitted dataset)**, covering real NP levels 1–5. Both normalization orders passed all 88 reads, 440 minimum-level comparisons and 176 negative checks without the number. Eleven partially hidden top rows used annotated origins. These are desktop image checks; Android/FGO automation and accuracy on other screens remain unverified.
 
+### 12. Automatic Teapot/Storm Pod ON/OFF — 0.7.0
+
+**Play → launcher**, between **AP refill and Limits**, now has **Use Storm Pods / Use Teapots**. Checked enforces ON; unchecked enforces OFF. Choices are remembered per server and shared across battle configurations.
+
+After support and party selection, the app applies the choices before Quest Start. It handles both direct toggles and the item dialog, whose left control is Storm Pod and right control is Teapot, then closes the dialog. **More options → Battle → Ignore Storm Pod/Teapot use** skips all item inspection and changes.
+
+All **9/9 supplied KR/JP game screenshots** and the enlarged ON-button sample passed recognition tests. Live Android/FGO interaction remains unverified. Fast repeat flows that skip party confirmation retain the game's existing settings. See the [full guide](wiki/scripts/Quest-Items.md).
+
 ## Updates through Obtainium
 
 1. Install [Obtainium](https://obtainium.imranr.dev/).
@@ -140,7 +147,7 @@ All **44 visible NP levels across 16 submitted KR/JP images were correct (100% o
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.6.0 with Class/Grand score filters is a stable release and works with the existing Obtainium configuration.
+Version 0.7.0 with Teapot/Storm Pod controls and the updated score policy is a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
 

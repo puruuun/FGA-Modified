@@ -121,6 +121,11 @@ fun battleLauncher(
     var shouldLimitCEs by remember { mutableStateOf(perServerConfigPref.shouldLimitCEs) }
     var limitCEs by remember { mutableIntStateOf(perServerConfigPref.limitCEs) }
     var waitApRegen by remember { mutableStateOf(perServerConfigPref.waitForAPRegen) }
+    var useStormPod by remember { mutableStateOf(perServerConfigPref.useStormPod) }
+    var useTeapot by remember { mutableStateOf(perServerConfigPref.useTeapot) }
+    val ignoreQuestItemUsage = remember { prefs.ignoreQuestItemUsage }
+    val questItemsSupported = remember { prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr }
+    val questItemsEnabled = !ignoreQuestItemUsage && questItemsSupported
 
     var resetAllButton by remember { mutableStateOf(false) }
 
@@ -138,6 +143,8 @@ fun battleLauncher(
             perServerConfigPref.goldApple = goldApple
             perServerConfigPref.rainbowApple = rainbowApple
             perServerConfigPref.waitForAPRegen = waitApRegen
+            perServerConfigPref.useStormPod = useStormPod
+            perServerConfigPref.useTeapot = useTeapot
             if (refillResources.isNotEmpty()) {
                 perServerConfigPref.selectedApple = refillResources.first()
             }
@@ -216,7 +223,7 @@ fun battleLauncher(
                     horizontal = false,
                     knobColor = MaterialTheme.colorScheme.secondary,
                     // needs to be adjusted when adding new items
-                    fixedKnobRatio = 0.70f
+                    fixedKnobRatio = 0.55f
                 )
                 .padding(start = 5.dp),
             state = mainConfigState
@@ -291,6 +298,27 @@ fun battleLauncher(
                     )
                 }
 
+                HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
+            }
+
+            item {
+                Text(
+                    stringResource(R.string.p_quest_item_usage),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                QuestItemCheckbox(useStormPod, questItemsEnabled, stringResource(R.string.p_use_storm_pod)) { useStormPod = it }
+                QuestItemCheckbox(useTeapot, questItemsEnabled, stringResource(R.string.p_use_teapot)) { useTeapot = it }
+                Text(
+                    stringResource(when {
+                        ignoreQuestItemUsage -> R.string.p_quest_item_usage_ignored
+                        !questItemsSupported -> R.string.p_quest_item_usage_servers
+                        else -> R.string.p_quest_item_usage_summary
+                    }),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+                )
                 HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
             }
 
@@ -383,9 +411,22 @@ fun battleLauncher(
     return ScriptLauncherResponseBuilder(
         canBuild = { selectedConfigIndex != -1 },
         build = {
+            perServerConfigPref.useStormPod = useStormPod
+            perServerConfigPref.useTeapot = useTeapot
             ScriptLauncherResponse.Battle
         }
     )
+}
+
+@Composable
+private fun QuestItemCheckbox(checked: Boolean, enabled: Boolean, text: String, onChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onChange(!checked) }
+    ) {
+        Checkbox(checked = checked, enabled = enabled, onCheckedChange = onChange, modifier = Modifier.padding(end = 5.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.alpha(if (enabled) 1f else 0.5f))
+    }
 }
 
 @Composable

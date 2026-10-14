@@ -73,6 +73,7 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.SupportSelectionManual -> stringResource(R.string.support_selection_manual)
     AutoBattle.ExitReason.SupportSelectionPreferredNotSet -> stringResource(R.string.support_selection_preferred_not_set)
     AutoBattle.ExitReason.SupportSkillDisplayFailed -> stringResource(R.string.support_skill_display_failed)
+    AutoBattle.ExitReason.QuestItemSettingFailed -> stringResource(R.string.quest_item_setting_failed)
     is AutoBattle.ExitReason.DirectCardsUnavailable -> stringResource(R.string.direct_cards_unavailable, sequence)
     is AutoBattle.ExitReason.SkillCommandParseError -> "AutoSkill Parse error:\n\n${cause?.message}"
     is AutoBattle.ExitReason.CardPriorityParseError -> msg

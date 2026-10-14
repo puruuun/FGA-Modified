@@ -13,7 +13,7 @@ import io.github.fate_grand_automata.scripts.modules.Battle
 import io.github.fate_grand_automata.scripts.modules.CEDropsTracker
 import io.github.fate_grand_automata.scripts.modules.ConnectionRetry
 import io.github.fate_grand_automata.scripts.modules.MaterialsTracker
-import io.github.fate_grand_automata.scripts.modules.PartySelection
+import io.github.fate_grand_automata.scripts.modules.QuestLaunch
 import io.github.fate_grand_automata.scripts.modules.Refill
 import io.github.fate_grand_automata.scripts.modules.ScreenshotDrops
 import io.github.fate_grand_automata.scripts.modules.Support
@@ -51,7 +51,7 @@ class AutoBattle @Inject constructor(
     private val battle: Battle,
     private val support: Support,
     private val withdraw: Withdraw,
-    private val partySelection: PartySelection,
+    private val questLaunch: QuestLaunch,
     private val screenshotDrops: ScreenshotDrops,
     private val connectionRetry: ConnectionRetry,
     private val refill: Refill,
@@ -72,6 +72,7 @@ class AutoBattle @Inject constructor(
         data object SupportSelectionManual : ExitReason()
         data object SupportSelectionPreferredNotSet : ExitReason()
         data object SupportSkillDisplayFailed : ExitReason()
+        data object QuestItemSettingFailed : ExitReason()
         class DirectCardsUnavailable(val sequence: String) : ExitReason()
         class SkillCommandParseError(cause: Exception) : ExitReason(cause)
         class CardPriorityParseError(val msg: String) : ExitReason()
@@ -493,17 +494,12 @@ class AutoBattle @Inject constructor(
     /**
      * Starts the quest after the support has already been selected. The following features are done optionally:
      * 1. The configured party is selected if it is set in the selected AutoSkill config
+     * Teapot/Storm Pod settings are confirmed after party selection and before Quest Start.
      * 2. A boost item is selected if [IPreferences.boostItemSelectionMode] is set (needed in some events)
      * 3. The story is skipped if [IPreferences.storySkip] is activated
      */
-    private
-
-    fun startQuest() {
-        partySelection.selectParty()
-
-        locations.menuStartQuestClick.click()
-
-        2.seconds.wait()
+    private fun startQuest() {
+        questLaunch.start()
 
         useBoostItem()
         storySkipPossible = true

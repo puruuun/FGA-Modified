@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.prefs.core.QuestItemPrefsCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.SpamConfigCore
 import io.github.fate_grand_automata.prefs.core.ShuffleConfigCore
@@ -11,7 +12,6 @@ import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
-import io.github.fate_grand_automata.scripts.enums.SupportScoreMatchMode
 import io.github.fate_grand_automata.scripts.models.NpSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
@@ -210,25 +210,42 @@ class ExecutionProfileCoreTest {
         val result = SupportPrefsCore(PrefMaker(storage))
         assertThat(result.score62Check.get()).isEqualTo(true)
         assertThat(result.grandScore16Check.get()).isEqualTo(false)
-        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.All)
     }
 
     @Test
-    fun `grand only and score combination mode survive export import independently`() {
+    fun `grand only survives export import independently and old Any setting is ignored`() {
         val storage = MemoryPrefs()
         val support = SupportPrefsCore(PrefMaker(storage))
+        storage.data["support_score_match_mode"] = "Any" // Ignored by the current policy.
         support.grandScore16Check.set(true)
-        support.scoreMatchMode.set(SupportScoreMatchMode.Any)
         support.npLevelCheck.set(true)
         val restored = MemoryPrefs()
         restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(storage.all))) }.apply()
         val result = SupportPrefsCore(PrefMaker(restored))
         assertThat(result.score62Check.get()).isEqualTo(false)
         assertThat(result.grandScore16Check.get()).isEqualTo(true)
-        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.Any)
         result.score62Check.set(true)
         result.grandScore16Check.set(false)
-        assertThat(result.scoreMatchMode.get()).isEqualTo(SupportScoreMatchMode.Any)
         assertThat(result.npLevelCheck.get()).isEqualTo(true)
+    }
+
+    @Test
+    fun `launcher item choices default off persist independently and stay in separate server stores`() {
+        val krStore = MemoryPrefs()
+        val jpStore = MemoryPrefs()
+        val kr = QuestItemPrefsCore(PrefMaker(krStore))
+        val jp = QuestItemPrefsCore(PrefMaker(jpStore))
+        assertThat(kr.useStormPod.get()).isEqualTo(false)
+        assertThat(kr.useTeapot.get()).isEqualTo(false)
+        kr.useTeapot.set(true)
+        jp.useStormPod.set(true)
+        val restoredKr = QuestItemPrefsCore(PrefMaker(krStore))
+        val restoredJp = QuestItemPrefsCore(PrefMaker(jpStore))
+        assertThat(restoredKr.useStormPod.get()).isEqualTo(false)
+        assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
+        assertThat(restoredJp.useStormPod.get()).isEqualTo(true)
+        assertThat(restoredJp.useTeapot.get()).isEqualTo(false)
+        restoredKr.useStormPod.set(true)
+        assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
     }
 }

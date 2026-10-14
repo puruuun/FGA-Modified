@@ -23,6 +23,8 @@ internal class PerServerConfigPrefs(
 
 
     override var waitForAPRegen by prefs.waitAPRegen
+    override var useStormPod by prefs.questItems.useStormPod
+    override var useTeapot by prefs.questItems.useTeapot
 
     override var selectedApple by prefs.selectedApple
     override var currentAppleCount: Int

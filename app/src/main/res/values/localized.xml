@@ -125,9 +125,6 @@ Skills"</string>
     <string name="p_append_skill_check">Check Append Skills</string>
     <string name="p_score_62_check">Require Class score +62</string>
     <string name="p_grand_score_16_check">Require Grand score +16</string>
-    <string name="p_score_match_mode">Score conditions</string>
-    <string name="p_score_match_all">Both conditions must match</string>
-    <string name="p_score_match_any">At least one condition must match</string>
     <string name="p_np_level_check">Check support NP level</string>
     <string name="p_np_level_check_summary">Choose a support with at least the required NP level. Skip unreadable candidates.</string>
     <string name="p_np_min_level">Minimum NP level</string>
@@ -641,4 +638,16 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="command_start_duplicate_targets">Choose different Servants for the first and second conditions.</string>
     <string name="command_start_targets_unavailable">Neither configured target is deployed. Command start cancelled.</string>
     <string name="command_start_second_disabled">Not used</string>
+
+    <!-- Launcher item controls; Korean labels requested for this modified build. -->
+    <string name="p_quest_item_usage">Item auto-use</string>
+    <string name="p_use_storm_pod">Use Storm Pods</string>
+    <string name="p_use_teapot">Use Teapots</string>
+    <string name="p_ignore_quest_item_usage">Ignore Storm Pod/Teapot use</string>
+    <string name="p_ignore_quest_item_usage_summary">Skip checking or changing the game’s item auto-use settings.</string>
+    <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
+    <string name="p_quest_item_usage_ignored">Item auto-use is ignored in More options → Battle.</string>
+    <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
+    <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start. Check the game screen, or enable Ignore Storm Pod/Teapot use in More options → Battle.</string>
+    <string name="p_grand_score_16_check_summary">Ignored on ordinary Class-only score displays. With both switches on, every applicable condition must match.</string>
 </resources>

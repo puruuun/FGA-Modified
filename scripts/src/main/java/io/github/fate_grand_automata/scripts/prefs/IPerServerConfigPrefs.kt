@@ -16,6 +16,9 @@ interface IPerServerConfigPrefs {
 
     var waitForAPRegen: Boolean
 
+    var useStormPod: Boolean
+    var useTeapot: Boolean
+
     var selectedApple: RefillResourceEnum
 
     var currentAppleCount: Int

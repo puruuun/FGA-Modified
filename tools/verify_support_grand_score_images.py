@@ -37,6 +37,7 @@ class Reader:
                         'OCR_SCALE','OCR_LARGE_SCALE','OCR_THRESHOLD','OCR_BRIGHT_THRESHOLD','OCR_PADDING']}
         self.similarity = constants(SCRIPTS/'supportSelection/SupportScoreSelection.kt')['SCORE_SIMILARITY']
         self.regex = re.compile(re.search(r'compoundScore = Regex\("""([^\"]+)"""\)',src)[1])
+        self.ordinary_regex = re.compile(re.search(r'ordinaryScore = Regex\("""([^\"]+)"""\)',src)[1])
         self.whitelist = re.search(r'allowedCharacters = "([^"]+)"',src)[1]
         s = self.settings
         self.profiles = [(int(s['OCR_SCALE']),s['OCR_THRESHOLD']), (int(s['OCR_SCALE']),s['OCR_BRIGHT_THRESHOLD']),
@@ -46,10 +47,10 @@ class Reader:
 
     def read(self, roi, server, check_class, check_grand):
         if not check_class and not check_grand:
-            return {'class':None,'grand':None,'readings':[]}
-        legacy = check_class and bool(matches(roi,self.templates[server],self.similarity))
+            return {'class':None,'grand':None,'display':'Unknown','readings':[]}
+        legacy = bool(matches(roi,self.templates[server],self.similarity))
         if legacy and not check_grand:
-            return {'class':62,'grand':None,'readings':[],'legacy':True}
+            return {'class':62,'grand':None,'display':'Ordinary','readings':[],'legacy':True}
         readings=[]
         for scale,threshold in self.profiles:
             up=cv2.resize(roi,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
@@ -61,25 +62,28 @@ class Reader:
             text,confidence=self.api.GetUTF8Text().strip(),self.api.MeanTextConf()
             self.api.Clear()
             match=self.regex.fullmatch(re.sub(r'\s+','',text))
-            parsed=tuple(map(int,match.groups())) if match and confidence>=self.settings['MIN_OCR_CONFIDENCE'] else None
-            readings.append({'scale':scale,'threshold':threshold,'text':text,'confidence':confidence,'parsed':parsed})
+            ordinary=self.ordinary_regex.fullmatch(re.sub(r'\s+','',text))
+            parsed=(tuple(map(int,match.groups())) if match else (int(ordinary[1]),None) if ordinary else None) if confidence>=self.settings['MIN_OCR_CONFIDENCE'] else None
+            readings.append({'scale':scale,'threshold':threshold,'text':text,'confidence':confidence,'parsed':parsed,
+                             'display':'Compound' if match else 'Ordinary' if ordinary else 'Unknown'})
+        compound=any('/' in r['text'] for r in readings)
+        display='Compound' if compound else 'Ordinary'
         def field(i):
-            known=[r for r in readings if r['parsed'] is not None]
+            known=[r for r in readings if r['parsed'] is not None and r['display']==display and r['parsed'][i] is not None]
             distinct={r['parsed'][i] for r in known}
             if len(distinct)!=1:return None
             n=next(iter(distinct))
             return n if sum(r['confidence']>=self.settings['MIN_CONFIRM_CONFIDENCE'] and r['parsed'][i]==n for r in known)>=self.settings['MIN_AGREEMENT'] else None
-        result={'class':field(0),'grand':field(1),'readings':readings,'legacy':bool(legacy)}
-        if result['class'] is None and result['grand'] is None and legacy and not any('/' in r['text'] for r in readings):
-            result['class']=62
+        result={'class':field(0),'grand':field(1),'display':display,'readings':readings,'legacy':bool(legacy)}
+        if result['class'] is None and result['grand'] is None:
+            if compound: result['display']='Compound'
+            elif legacy: result['class']=62; result['display']='Ordinary'
+            else: result['display']='Unknown'
         return result
 
 
-def policy(scores, class_on, grand_on, mode):
-    selected=[]
-    if class_on:selected.append(scores['class']==62)
-    if grand_on:selected.append(scores['grand']==16)
-    return not selected or (all(selected) if mode=='All' else any(selected))
+def policy(scores, class_on, grand_on):
+    return (not class_on or scores['class']==62) and (not grand_on or scores['display']=='Ordinary' or scores['grand']==16)
 
 
 def main():
@@ -111,14 +115,14 @@ def main():
                     y=rounded(row_y+reader.layout['SCORE_Y']/2)
                     w,h=rounded(reader.layout['SCORE_WIDTH']/2),rounded(reader.layout['SCORE_HEIGHT']/2)
                     roi=gray[y:y+h,x:x+w]
-                    # All and Any exercise the actual new reader even on ordinary displays.
-                    for class_on,grand_on,mode in [(True,False,'All'),(False,True,'All'),(True,True,'All'),(True,True,'Any')]:
+                    # Grand is ignored only when the ordinary display is confirmed.
+                    for class_on,grand_on in [(False,False),(True,False),(False,True),(True,True)]:
                         result=reader.read(roi,server,class_on,grand_on)
-                        detected=policy(result,class_on,grand_on,mode)
-                        wanted=expected==62 and class_on and (not grand_on or mode=='Any')
-                        assert detected==wanted,(name,method,row_y,expected,class_on,grand_on,mode,result)
+                        detected=policy(result,class_on,grand_on)
+                        wanted=not class_on or expected==62
+                        assert detected==wanted,(name,method,row_y,expected,class_on,grand_on,result)
                         report['legacy'].append({'file':name,'normalization':method,'row_y':row_y,'expected_class':expected,
-                                                 'class_on':class_on,'grand_on':grand_on,'mode':mode,'detected':result,'passed':True})
+                                                 'class_on':class_on,'grand_on':grand_on,'detected':result,'passed':True})
         # The score box is about 50px wide at matching resolution. Normalize the
         # supplied enlarged crop at compatible 0.28/0.30 rates, then pad the numeric
         # line into the production 55x30px ROI. This is OCR validation, not row detection.
@@ -133,12 +137,12 @@ def main():
                 assert line.shape[1]<=w and line.shape[0]<=h
                 dx,dy=w-line.shape[1],h-line.shape[0]
                 roi=cv2.copyMakeBorder(line,dy//2,dy-dy//2,dx//2,dx-dx//2,cv2.BORDER_CONSTANT,value=int(line[0].mean()))
-                for class_on,grand_on,mode in [(True,False,'All'),(False,True,'All'),(True,True,'All'),(True,True,'Any')]:
+                for class_on,grand_on in [(True,False),(False,True),(True,True)]:
                     result=reader.read(roi,'Jp',class_on,grand_on)
                     assert result['class']==62 and result['grand']==16,(rate,method,result)
-                    assert policy(result,class_on,grand_on,mode)
+                    assert policy(result,class_on,grand_on)
                     report['compound'].append({'rate':rate,'normalization':method,'class_on':class_on,'grand_on':grand_on,
-                                                'mode':mode,'detected':result,'passed':True})
+                                                'detected':result,'passed':True})
     report['summary']={'legacy_full_screens':5,'legacy_numeric_regions':26,'legacy_policy_checks':len(report['legacy']),
                        'compound_real_samples':1,'compound_resampling_variants':4,'compound_policy_checks':len(report['compound']),'passed':True}
     args.report.parent.mkdir(parents=True,exist_ok=True)

@@ -1,0 +1,218 @@
+{
+  "docs/reference-images/Kr/quest-items-teapot-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-teapot-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-storm-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-storm-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-teapot-on-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-teapot-on-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-teapot-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-teapot-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-storm-on-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-storm-on-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-storm-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-storm-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-dialog-on-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-dialog-on-dialog.png": {
+    "region_720p": [
+      515,
+      365,
+      350,
+      82
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-dialog-on-heading.png": {
+    "region_720p": [
+      380,
+      80,
+      520,
+      80
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-dialog-on-close.png": {
+    "region_720p": [
+      485,
+      520,
+      310,
+      87
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-on-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-on-dialog.png": {
+    "region_720p": [
+      515,
+      365,
+      350,
+      82
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-on-heading.png": {
+    "region_720p": [
+      380,
+      80,
+      520,
+      80
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-on-close.png": {
+    "region_720p": [
+      485,
+      520,
+      310,
+      87
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-off-dialog.png": {
+    "region_720p": [
+      515,
+      365,
+      350,
+      82
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-off-heading.png": {
+    "region_720p": [
+      380,
+      80,
+      520,
+      80
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Jp/quest-items-dialog-off-close.png": {
+    "region_720p": [
+      485,
+      520,
+      310,
+      87
+    ],
+    "source_normalization": "crop then resize; game area 1280x720"
+  }
+}
