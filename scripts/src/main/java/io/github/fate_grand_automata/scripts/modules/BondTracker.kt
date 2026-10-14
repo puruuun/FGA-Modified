@@ -34,6 +34,9 @@ class BondTracker @Inject constructor(
     /** Two agreeing fresh frames per value prevent reading the result counting animation. */
     fun process(): BondFrame {
         if (!enabled) return BondFrame.Other
+        // The result's gain counters animate for 1.5 seconds. Read a fresh frame afterwards;
+        // faster user wait settings must not shorten the game's fixed animation time.
+        1500.milliseconds.wait(applyMultiplier = false)
         val readGains = config.trackBond
         var frame = reader.read(readGains)
         if (frame is BondFrame.Normal) {

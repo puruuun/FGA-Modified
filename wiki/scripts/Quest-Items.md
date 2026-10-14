@@ -1,10 +1,10 @@
-# Automatic Teapot / Storm Pod use — 0.7.0
+# Automatic Teapot / Storm Pod use — 0.9.2
 
 ## Configuration
 
-On KR or JP, tap **Play**. In the launcher, between **AP refill and Limits**, choose **Use Storm Pods** and **Use Teapots** independently. Checked enforces ON; unchecked enforces OFF. Both default to unchecked. Choices are remembered per server and shared across battle configurations; they are not included in an exported battle configuration.
+First opt in under **More options → Additional features → Enable Teapot/Storm Pod control**. Control defaults off when no explicit choice was saved. On KR or JP, tap **Play**. In the launcher, between **AP refill and Limits**, choose **Use Storm Pods** and **Use Teapots** independently. Checked enforces ON; unchecked enforces OFF. Both default to unchecked. Choices are remembered per server and shared across battle configurations; they are not included in an exported battle configuration.
 
-**More options → Additional features → Ignore Storm Pod/Teapot use** bypasses every item read and change. The launcher retains the selections and disables the controls while this is enabled. Other servers currently bypass item control.
+With control off, every item read and change is bypassed. The launcher retains the item selections and disables their checkboxes. Enabling control applies those choices before Quest Start. Explicit enable/bypass choices saved in earlier versions retain their behavior; otherwise the default is off. Other servers currently bypass item control.
 
 ## Behavior
 

@@ -8,6 +8,8 @@ import io.github.fate_grand_automata.scripts.modules.*
 import io.github.lib_automata.OcrText
 import io.mockk.*
 import kotlin.test.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 class BondTrackingTest {
     private val gain = BondValue.Gain(4748, 2660)
@@ -128,6 +130,29 @@ class BondTrackingTest {
         every { f.reader.read() } returns normal(10)
         f.tracker.process(); f.tracker.process()
         assertTrue(f.tracker.summary()!!.slots.all { it.total == 10L && it.readRuns == 1 && it.missedRuns == 0 })
+    }
+
+    @Test fun `each result waits out the counter animation before its first OCR even with faster waits`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        var elapsed = Duration.ZERO
+        val readTimes = mutableListOf<Duration>()
+        every { with(f.api) { 1500.milliseconds.wait(false) } } answers { elapsed += 1500.milliseconds }
+        every { with(f.api) { 350.milliseconds.wait(true) } } answers { elapsed += 35.milliseconds }
+        every { f.reader.read(true) } answers {
+            readTimes += elapsed
+            // Early frames can agree on an intermediate value before the animation finishes.
+            BondFrame.Normal(List(5) { if (elapsed < 1500.milliseconds) BondValue.Gain(100, 0) else gain })
+        }
+        repeat(2) {
+            elapsed = Duration.ZERO
+            f.tracker.beginBattle()
+            f.tracker.process()
+            f.tracker.finishResult()
+            f.state.nextRun()
+        }
+        assertTrue(readTimes.all { it >= 1500.milliseconds })
+        assertTrue(f.tracker.summary()!!.slots.all { it.total == 14816L && it.readRuns == 2 && it.missedRuns == 0 })
     }
 
     @Test fun `disabled tracking and unsupported servers do not inspect results or OCR`() {

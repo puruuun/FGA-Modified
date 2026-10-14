@@ -568,10 +568,8 @@
     <string name="p_quest_item_usage">아이템 자동 사용</string>
     <string name="p_use_storm_pod">스톰포드 사용</string>
     <string name="p_use_teapot">티포트 사용</string>
-    <string name="p_ignore_quest_item_usage">스톰포드·티포트 사용 무시</string>
-    <string name="p_ignore_quest_item_usage_summary">게임의 아이템 자동 사용 상태를 검사하거나 변경하지 않습니다.</string>
     <string name="p_quest_item_usage_summary">체크하면 ON, 해제하면 OFF로 맞춘 뒤 퀘스트를 시작합니다.</string>
-    <string name="p_quest_item_usage_ignored">더 많은 옵션 → 배틀에서 사용 무시가 켜져 있습니다.</string>
+    <string name="p_quest_item_usage_ignored">더 많은 옵션 → 추가기능에서 티포트·스톰포드 자동 설정 사용을 켜면 선택할 수 있습니다.</string>
     <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본 서버에서 지원합니다.</string>
     <string name="quest_item_setting_failed">스톰포드·티포트 설정 또는 설정창 닫기를 확인하지 못해 퀘스트 시작 전에 중단했습니다. 게임 화면을 확인하거나 더 많은 옵션 → 배틀에서 스톰포드·티포트 사용 무시를 켜세요.</string>
     <string name="p_grand_score_16_check_summary">일반 클래스 스코어 표시에서는 무시합니다. 두 토글을 켜면 표시된 조건을 모두 만족해야 합니다.</string>
@@ -595,4 +593,6 @@
     <string name="github_update_message">설치된 버전: %1$s\n새 버전: %2$s\nGitHub에서 업데이트 APK를 다운로드할 수 있습니다.</string>
     <string name="github_update_open">릴리스 열기</string>
     <string name="github_update_later">나중에</string>
+    <string name="p_enable_quest_item_control">티포트·스톰포드 자동 설정 사용</string>
+    <string name="p_enable_quest_item_control_summary">퀘스트 시작 전 실행 창의 아이템 ON/OFF 선택을 검사하고 적용합니다. 기본값은 꺼짐입니다.</string>
 </resources>

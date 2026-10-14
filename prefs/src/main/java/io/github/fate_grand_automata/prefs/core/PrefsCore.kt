@@ -52,7 +52,7 @@ class PrefsCore @Inject constructor(
     val checkForUpdates = maker.bool("check_for_updates", true)
 
     val hideSQInAPResources = maker.bool("hide_sq_in_ap_resources", true)
-    val ignoreQuestItemUsage = maker.bool("ignore_teapot_storm_pod_usage")
+    val questItemControl = QuestItemControlPrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")
     val limitFP = maker.int("fp_limit", 1)

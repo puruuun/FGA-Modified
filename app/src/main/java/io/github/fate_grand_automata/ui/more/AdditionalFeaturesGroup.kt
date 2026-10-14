@@ -9,9 +9,9 @@ import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 
 fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore) {
     item {
-        prefs.ignoreQuestItemUsage.SwitchPreference(
-            title = stringResource(R.string.p_ignore_quest_item_usage),
-            summary = stringResource(R.string.p_ignore_quest_item_usage_summary),
+        prefs.questItemControl.enabled.SwitchPreference(
+            title = stringResource(R.string.p_enable_quest_item_control),
+            summary = stringResource(R.string.p_enable_quest_item_control_summary),
             icon = icon(R.drawable.ic_gift)
         )
     }

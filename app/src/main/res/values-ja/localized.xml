@@ -563,4 +563,7 @@
     <string name="github_update_message">インストール済み: %1$s\n新しいバージョン: %2$s\nGitHubから更新APKをダウンロードできます。</string>
     <string name="github_update_open">リリースを開く</string>
     <string name="github_update_later">後で</string>
+    <string name="p_enable_quest_item_control">ティーポット・ストームポッドの自動設定を使用</string>
+    <string name="p_enable_quest_item_control_summary">クエスト開始前に実行画面のアイテムON/OFF設定を確認して適用します。初期設定は無効です。</string>
+    <string name="p_quest_item_usage_ignored">詳細オプション → 追加機能でティーポット・ストームポッドの自動設定を有効にしてください。</string>
 </resources>

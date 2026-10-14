@@ -5,6 +5,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
 import io.github.fate_grand_automata.prefs.core.QuestItemPrefsCore
+import io.github.fate_grand_automata.prefs.core.QuestItemControlPrefsCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.SpamConfigCore
 import io.github.fate_grand_automata.prefs.core.ShuffleConfigCore
@@ -248,6 +249,35 @@ class ExecutionProfileCoreTest {
         restoredKr.useStormPod.set(true)
         assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
     }
+    @Test
+    fun `item control defaults off and toggling its opt in preserves launcher item choices`() {
+        val store = MemoryPrefs()
+        val control = QuestItemControlPrefsCore(PrefMaker(store))
+        val items = QuestItemPrefsCore(PrefMaker(store))
+        items.useTeapot.set(true)
+        assertThat(control.enabled.get()).isEqualTo(false)
+        assertThat(control.ignore.get()).isEqualTo(true)
+        control.enabled.set(true)
+        assertThat(QuestItemControlPrefsCore(PrefMaker(store)).ignore.get()).isEqualTo(false)
+        assertThat(items.useTeapot.get()).isEqualTo(true)
+        control.enabled.set(false)
+        val restored = QuestItemControlPrefsCore(PrefMaker(store))
+        assertThat(restored.enabled.get()).isEqualTo(false)
+        assertThat(restored.ignore.get()).isEqualTo(true)
+        assertThat(items.useTeapot.get()).isEqualTo(true)
+    }
+
+    @Test
+    fun `explicit old item bypass choices retain behavior under the positive switch`() {
+        for (ignored in listOf(true, false)) {
+            val store = MemoryPrefs()
+            store.data["ignore_teapot_storm_pod_usage"] = ignored
+            val result = QuestItemControlPrefsCore(PrefMaker(store))
+            assertThat(result.ignore.get()).isEqualTo(ignored)
+            assertThat(result.enabled.get()).isEqualTo(!ignored)
+        }
+    }
+
     @Test
     fun `bond settings stay per script and preserve all five result choices through copy and export`() {
         val first = MemoryPrefs()
