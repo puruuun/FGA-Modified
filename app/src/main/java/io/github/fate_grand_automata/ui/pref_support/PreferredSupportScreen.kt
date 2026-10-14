@@ -168,7 +168,6 @@ private fun PreferredSupport(
                         val appendEnabled by config.appendSkillCheck.remember()
                         AnimatedVisibility(appendEnabled) {
                             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                Text(stringResource(R.string.p_append_skills_max))
                                 Row(modifier = Modifier.padding(top = 8.dp)) {
                                     MaxSkills(config.appendSkillsMax, compact = true)
                                 }

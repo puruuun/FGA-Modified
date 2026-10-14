@@ -34,7 +34,7 @@ internal class BattleConfig(
 
     override val trackBond by prefs.bond.track
     override val stopOnBondMax by prefs.bond.stopOnMax
-    override val bondMaxStopCharacters by prefs.bond.stopCharacters
+    override val bondMaxIgnoredCharacters by prefs.bond.ignoredCharacters
 
     override val shuffleCards by prefs.shuffleCards
     override val shuffleCardsWave by prefs.shuffleCardsWave

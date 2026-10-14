@@ -255,13 +255,13 @@ class ExecutionProfileCoreTest {
         val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(first))
         assertThat(bond.track.get()).isEqualTo(false)
         assertThat(bond.stopOnMax.get()).isEqualTo(false)
-        assertThat(bond.stopCharacters.get()).isEqualTo((1..5).toSet())
+        assertThat(bond.ignoredCharacters.get()).isEqualTo(emptySet())
         bond.track.set(true)
         bond.stopOnMax.set(true)
-        bond.stopCharacters.set(setOf(1, 3, 5))
+        bond.ignoredCharacters.set(setOf(1, 3, 5))
         val other = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(second))
         assertThat(other.track.get()).isEqualTo(false)
-        assertThat(other.stopCharacters.get()).isEqualTo((1..5).toSet())
+        assertThat(other.ignoredCharacters.get()).isEqualTo(emptySet())
         val copied = MemoryPrefs()
         copied.edit().also { it.import(first.all) }.apply()
         val restored = MemoryPrefs()
@@ -270,11 +270,11 @@ class ExecutionProfileCoreTest {
             val result = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(store))
             assertThat(result.track.get()).isEqualTo(true)
             assertThat(result.stopOnMax.get()).isEqualTo(true)
-            assertThat(result.stopCharacters.get()).isEqualTo(setOf(1, 3, 5))
-            result.stopCharacters.set(emptySet())
-            assertThat(result.stopCharacters.get()).isEqualTo(emptySet())
+            assertThat(result.ignoredCharacters.get()).isEqualTo(setOf(1, 3, 5))
+            result.ignoredCharacters.set(emptySet())
+            assertThat(result.ignoredCharacters.get()).isEqualTo(emptySet())
         }
-        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(1, 3, 5))
+        assertThat(bond.ignoredCharacters.get()).isEqualTo(setOf(1, 3, 5))
     }
 
     @Test
@@ -287,8 +287,22 @@ class ExecutionProfileCoreTest {
         assertThat(bond.track.get()).isEqualTo(false)
         assertThat(bond.stopOnMax.get()).isEqualTo(false)
         store.data["bond_result_stop_characters"] = "0,1,5,6,abc"
-        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(1, 5))
-        bond.stopCharacters.set(setOf(0, 2, 6))
-        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(2))
+        assertThat(bond.ignoredCharacters.get()).isEqualTo(setOf(2, 3, 4))
+        bond.ignoredCharacters.set(setOf(0, 2, 6))
+        assertThat(bond.ignoredCharacters.get()).isEqualTo(setOf(2))
     }
+    @Test
+    fun `version 090 watched selections keep stop behavior when displayed as ignore checkboxes`() {
+        for (watched in listOf(setOf(2), (1..5).toSet(), emptySet())) {
+            val store = MemoryPrefs()
+            store.data["bond_result_stop_characters"] = watched.sorted().joinToString(",")
+            val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(store))
+            assertThat(bond.ignoredCharacters.get()).isEqualTo((1..5).toSet() - watched)
+            val restored = MemoryPrefs()
+            restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(store.all))) }.apply()
+            assertThat(io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(restored)).ignoredCharacters.get())
+                .isEqualTo((1..5).toSet() - watched)
+        }
+    }
+
 }

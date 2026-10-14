@@ -78,7 +78,7 @@ class BondTracker @Inject constructor(
 
     private fun checkStop() {
         if (!config.stopOnBondMax) return
-        val watchedMax = ledger.maxPositions(state.runs).intersect(config.bondMaxStopCharacters)
+        val watchedMax = ledger.maxPositions(state.runs) - config.bondMaxIgnoredCharacters
         if (watchedMax.isNotEmpty()) {
             state.nextRun() // This quest has cleared even though we stop before the reward clicks.
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.BondMax(watchedMax.sorted()))

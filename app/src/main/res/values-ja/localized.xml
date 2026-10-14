@@ -543,15 +543,11 @@
     <string name="p_np_level_check_summary">指定した宝具レベル以上のサポートを選択します。判読できない候補はスキップします。</string>
     <string name="p_np_min_level">宝具レベルの下限</string>
     <string name="p_np_min_level_entry">Lv.%1$d以上</string>
-    <string name="repository">GitHub リポジトリ</string>
     <string name="p_additional_features">追加機能</string>
     <string name="p_bond">絆ポイント</string>
     <string name="p_bond_track">獲得絆ポイントを集計</string>
     <string name="p_bond_stop">絆MAXを確認したら停止</string>
-    <string name="p_bond_stop_characters">MAXで停止するキャラクター</string>
     <string name="p_bond_position">キャラクター %1$d</string>
-    <string name="p_bond_servers">絆の認識は日本・韓国サーバーに対応しています。</string>
-    <string name="p_bond_summary">リザルト画面の左からキャラクター1～5です。選択を外したキャラクターのMAXでは停止しません。今回の実行中の獲得量を合計し、隠れた数値や読めなかった数値は未取得として表示します。位置が不明なレベルアップは次のクエストで再確認します。開始前の編成確認は不要です。</string>
     <string name="bond_max_stop">リザルト画面のキャラクター %1$s の絆MAXを確認して停止しました。</string>
     <string name="bond_totals">今回の獲得絆ポイント</string>
     <string name="bond_slot_total">キャラクター %1$d: %2$s ポイント</string>
@@ -560,4 +556,11 @@
     <string name="bond_totals_note">確認できた獲得量のみの合計です。未取得は0獲得を意味しません。</string>
     <string name="bond_unmapped_popups">位置または到達レベルが不明のため、レベルアップ %1$d 回の判定を見送りました。</string>
     <string name="bond_no_results">まだリザルトを取得していません。</string>
+    <string name="p_check_for_updates">アップデートを確認</string>
+    <string name="p_check_for_updates_summary">アプリ起動時にFGA-ModifiedのGitHub正式リリースを確認し、新しいバージョンがあれば案内します。</string>
+    <string name="p_bond_ignore_characters">MAXで停止しないキャラクター</string>
+    <string name="github_update_title">FGA(mod)のアップデート</string>
+    <string name="github_update_message">インストール済み: %1$s\n新しいバージョン: %2$s\nGitHubから更新APKをダウンロードできます。</string>
+    <string name="github_update_open">リリースを開く</string>
+    <string name="github_update_later">後で</string>
 </resources>

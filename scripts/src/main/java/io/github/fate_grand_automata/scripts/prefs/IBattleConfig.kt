@@ -22,8 +22,8 @@ interface IBattleConfig : IExecutionProfile {
     var spam: List<ServantSpamConfig>
     val trackBond: Boolean
     val stopOnBondMax: Boolean
-    /** Watched result columns, from left to right (1..5). */
-    val bondMaxStopCharacters: Set<Int>
+    /** Result columns whose MAX is ignored, from left to right (1..5). */
+    val bondMaxIgnoredCharacters: Set<Int>
     val shuffleCards: ShuffleCardsEnum
     val shuffleCardsWave: Int
 

@@ -59,6 +59,7 @@ fun FgaApp(
         } else null
 
     FgaScreen {
+        AppUpdateDialog(vm)
         CompositionLocalProvider(LocalNavigateBack provides navigateBack) {
             NavDisplay(
                 backStack = backStack,
@@ -114,9 +115,6 @@ fun FgaApp(
                                         context.openLinkIntent(R.string.link_releases)
                                     }
 
-                                    MainScreenDestinations.Repository -> {
-                                        context.openLinkIntent(R.string.link_repository)
-                                    }
                                 }
                             }
                         )

@@ -129,7 +129,6 @@ Skills"</string>
     <string name="p_np_level_check_summary">Choose a support with at least the required NP level. Skip unreadable candidates.</string>
     <string name="p_np_min_level">Minimum NP level</string>
     <string name="p_np_min_level_entry">Lv.%1$d or higher</string>
-    <string name="p_append_skills_max">Append Skill max levels (1 → 5)</string>
     <string name="support_skill_display_failed">Could not confirm the support skill display. Restore the normal skill display and retry.</string>
     <string name="p_game_server">"Game Server"</string>
     <string name="p_game_server_auto_detect">"Auto-detect"</string>
@@ -174,8 +173,8 @@ Copy or rename it if you want to keep it."</string>
     <string name="p_root_screenshot_summary">"Useful on Nox (Android 7). Toggle service after changing this."</string>
     <string name="p_auto_start_service">"Auto-start service"</string>
     <string name="p_thresholded_stage_counter">"Thresholded stage counter detection"</string>
-    <string name="p_check_for_updates">"Check for updates"</string>
-    <string name="p_check_for_updates_summary">"Offer to install a new version when one is available on Google Play"</string>
+    <string name="p_check_for_updates">Check for updates</string>
+    <string name="p_check_for_updates_summary">Check FGA-Modified GitHub releases when the app starts and offer to open a newer stable release.</string>
     <string name="p_fine_tune">"Fine-tune"</string>
     <string name="p_fine_tune_support">"Support"</string>
     <string name="p_fine_tune_support_swipes_per_update">"Swipes per Update"</string>
@@ -654,8 +653,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_bond_track">Track bond point gains</string>
     <string name="p_bond_stop">Stop when bond MAX is confirmed</string>
     <string name="p_bond_position">Character %1$d</string>
-    <string name="p_bond_summary">Characters 1–5 are the result screen columns from left to right. Uncheck a character to ignore its MAX. Gains are summed for this script session. Hidden or unreadable gains are marked as missing; uncertain level-up popups are rechecked next quest. No party screen check is required.</string>
-    <string name="p_bond_servers">Bond recognition currently supports the Korean and Japanese servers.</string>
     <string name="bond_max_stop">Bond MAX confirmed for result character(s): %1$s</string>
     <string name="bond_totals">Bond points — totals read this script run</string>
     <string name="bond_slot_total">Character %1$d: %2$s points</string>
@@ -664,7 +661,10 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="bond_totals_note">Base and bonus are added. Totals exclude unreadable/obscured gains; missing values are not counted as real zero.</string>
     <string name="bond_unmapped_popups">Unmapped/unreadable level-up quests: %1$d. Those popups were skipped; normal MAX is checked next quest.</string>
     <string name="bond_no_results">No bond results have been recorded yet.</string>
-    <string name="repository">GitHub repository</string>
     <string name="p_additional_features">Additional features</string>
-    <string name="p_bond_stop_characters">Stop on MAX for these characters</string>
+    <string name="p_bond_ignore_characters">Ignore MAX for checked characters</string>
+    <string name="github_update_title">FGA(mod) update available</string>
+    <string name="github_update_message">Installed: %1$s\nNew version: %2$s\nOpen GitHub to download the update APK.</string>
+    <string name="github_update_open">Open release</string>
+    <string name="github_update_later">Later</string>
 </resources>

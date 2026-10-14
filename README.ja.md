@@ -25,7 +25,7 @@ Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています
 | [サポートの宝具レベル](wiki/scripts/Modified-Features-JA.md#support-np) | 指定した最低宝具レベル以上を選びます。 |
 | [攻撃順の直接指定](wiki/scripts/Modified-Features-JA.md#direct-cards) | 通常カード・宝具の3枚の選択順を指定します。 |
 | [ティーポット・ストームポッド](wiki/scripts/Modified-Features-JA.md#quest-items) | クエスト開始前に指定したON/OFFへ切り替えます。 |
-| [絆ポイント集計・MAX停止](wiki/scripts/Modified-Features-JA.md#bond-tracking) | 結果欄のキャラクター1～5ごとに集計し、MAXで停止する対象を選びます。 |
+| [絆ポイント集計・MAX停止](wiki/scripts/Modified-Features-JA.md#bond-tracking) | 結果欄のキャラクター1～5ごとに集計し、MAX停止を無視する対象を選びます。 |
 
 設定方法・動作ルール・検証範囲は[詳細ガイド](wiki/scripts/Modified-Features-JA.md)をご覧ください。
 

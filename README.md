@@ -25,7 +25,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [서포트 보구 레벨](wiki/scripts/Modified-Features-KR.md#support-np) | 설정한 최소 보구 레벨 이상을 선택합니다. |
 | [공격 순서 직접 지정](wiki/scripts/Modified-Features-KR.md#direct-cards) | 일반 카드·보구 세 장의 순서를 지정합니다. |
 | [티포트·스톰포드](wiki/scripts/Modified-Features-KR.md#quest-items) | 퀘스트 시작 전에 지정한 ON/OFF 상태로 맞춥니다. |
-| [인연포인트·MAX 정지](wiki/scripts/Modified-Features-KR.md#bond-tracking) | 결과창 캐릭터 1~5별 획득량과 MAX 정지 대상을 설정합니다. |
+| [인연포인트·MAX 정지](wiki/scripts/Modified-Features-KR.md#bond-tracking) | 결과창 캐릭터 1~5별 획득량과 MAX 정지 예외를 설정합니다. |
 
 설정 방법·동작 규칙·검증 범위는 [전체 상세 안내](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 

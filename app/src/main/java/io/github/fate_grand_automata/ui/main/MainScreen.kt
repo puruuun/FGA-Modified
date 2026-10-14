@@ -209,7 +209,6 @@ private fun toggleOverlayService(
 
 sealed class MainScreenDestinations {
     object Releases : MainScreenDestinations()
-    object Repository : MainScreenDestinations()
     object BattleConfigs : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
@@ -236,13 +235,6 @@ private fun MainScreenContent(
                         text = "Build: ${BuildConfig.VERSION_NAME}",
                         onClick = { navigate(MainScreenDestinations.Releases) }
                     )
-
-                    HeadingButton(
-                        text = stringResource(R.string.repository),
-                        icon = icon(Icons.Default.Language),
-                        onClick = { navigate(MainScreenDestinations.Repository) }
-                    )
-
                 }
 
             }

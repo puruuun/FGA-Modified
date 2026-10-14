@@ -1,0 +1,14 @@
+{
+  "tag_name": "v0.9.0",
+  "html_url": "https://github.com/puruuun/FGA-Modified/releases/tag/v0.9.0",
+  "draft": false,
+  "prerelease": false,
+  "assets": [
+    {
+      "name": "FGA-mod-0.9.0-arm.apk",
+      "browser_download_url": "https://github.com/puruuun/FGA-Modified/releases/download/v0.9.0/FGA-mod-0.9.0-arm.apk",
+      "state": "uploaded",
+      "size": 65845536
+    }
+  ]
+}

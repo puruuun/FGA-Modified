@@ -143,9 +143,9 @@ All **9/9 supplied KR/JP game screenshots** and the enlarged ON-button sample pa
 
 <a id="bond-tracking"></a>
 
-### 13. Bond gain tracking and MAX stop — 0.9.0
+### 13. Bond gain tracking and MAX stop — 0.9.1
 
-In each script’s editor, **Bond points** sits between Command start conditions and Card shuffle. Base plus bonus is counted once per quest for result characters 1–5 from left to right. The exit screen shows totals and read/missing counts. Choose five watched MAX targets; unchecked characters are ignored for stopping. A watched MAX stops at that cleared quest’s result screen before another quest starts.
+In each script’s editor, **Bond points** sits between Command start conditions and Card shuffle. Base plus bonus is counted once per quest for result characters 1–5 from left to right. The exit screen shows totals and read/missing counts. Choose MAX exceptions in a horizontal row with names above the checkboxes. Checking character 2 ignores its MAX and keeps farming. A MAX on an unchecked character stops at that cleared quest’s result screen before another quest starts.
 
 Party/support prechecks and original party-position mapping have been removed. The user maintains result-column consistency. Settings are per script and included in copying/export/import. Re-enable them in each script after upgrading from 0.8.0; launcher settings are not migrated to the new numbering.
 
@@ -153,22 +153,26 @@ Level-up popups skip hidden gains/MAX. A confirmed result column reaching at lea
 
 ### 14. App interface
 
-The home screen links to the modified GitHub repository and shows the installed version, for example **Build: 0.9.0**. The version button opens modified releases. Troubleshooting, Discord and donation buttons have been removed. **More options → Additional features**, next to Advanced, now contains Ignore Storm Pod/Teapot use.
+The home screen shows only the installed-version button, for example **Build: 0.9.1**, linking to modified releases. The repository, troubleshooting, Discord and donation buttons are removed. Bond server/help text and the Append Skill maximum-level heading have also been removed. **More options → Additional features**, next to Advanced, now contains Ignore Storm Pod/Teapot use.
+
+### 15. GitHub update checks
+
+Enable **More options → Advanced → Check for updates** to compare the installed version with the latest stable FGA-Modified GitHub release when the app starts. A newer release with an uploaded ARM APK opens an update prompt with a link to its release page. Prereleases are excluded. Network failures leave the installed app usable. There is no background polling, closed-app notification or automatic APK installation. The release endpoint follows the [GitHub REST API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release).
 
 <a id="installation"></a>
 
 ## Installation
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[Bond tracking / MAX stop stable release 0.9.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.9.0)**
+- **[Bond tracking / MAX stop stable release 0.9.1](https://github.com/puruuun/FGA-Modified/releases/tag/v0.9.1)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.9.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.9.1-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.9.0 (stable release) |
+| Version | 0.9.1 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -182,6 +186,6 @@ It installs separately from official FGA and upstream CI builds. The package and
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.9.0 simplifies bond tracking and updates the interface as a stable release and works with the existing Obtainium configuration.
+Version 0.9.1 simplifies bond tracking and updates the interface as a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](../../obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).

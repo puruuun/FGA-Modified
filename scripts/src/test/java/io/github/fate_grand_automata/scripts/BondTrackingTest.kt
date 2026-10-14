@@ -90,7 +90,7 @@ class BondTrackingTest {
             every { api.prefs.gameServer } returns GameServer.Kr
             every { config.trackBond } returns true
             every { config.stopOnBondMax } returns true
-            every { config.bondMaxStopCharacters } returns (1..5).toSet()
+            every { config.bondMaxIgnoredCharacters } returns emptySet()
         }
         fun start() { tracker.beginBattle() }
     }
@@ -98,7 +98,7 @@ class BondTrackingTest {
     @Test fun `normal and popup MAX respect watched result characters`() {
         for (popup in listOf(false, true)) for (ignored in listOf(false, true)) {
             val f = Fixture(); f.start()
-            every { f.config.bondMaxStopCharacters } returns if (ignored) setOf(1, 2, 4, 5) else (1..5).toSet()
+            every { f.config.bondMaxIgnoredCharacters } returns if (ignored) setOf(3) else emptySet()
             every { f.reader.read() } returns if (popup) BondFrame.LevelUp(12, 2) else
                 BondFrame.Normal(List(5) { if (it == 2) BondValue.Max else BondValue.Gain(1, 2) })
             if (ignored) { f.tracker.process(); assertEquals(0, f.state.runs) }
@@ -147,7 +147,7 @@ class BondTrackingTest {
     @Test fun `MAX only mode skips gain OCR and does not present a tracking summary`() {
         val f = Fixture()
         every { f.config.trackBond } returns false
-        every { f.config.bondMaxStopCharacters } returns emptySet()
+        every { f.config.bondMaxIgnoredCharacters } returns (1..5).toSet()
         every { f.reader.read(false) } returns BondFrame.Normal(List(5) { BondValue.Max })
         f.start(); f.tracker.process()
         assertNull(f.tracker.summary())
@@ -166,7 +166,7 @@ class BondTrackingTest {
     @Test fun `each of the five watched result columns can independently stop the cleared quest`() {
         for (character in 1..5) {
             val f = Fixture()
-            every { f.config.bondMaxStopCharacters } returns setOf(character)
+            every { f.config.bondMaxIgnoredCharacters } returns (1..5).toSet() - character
             every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Max })
             val error = assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
             assertEquals(listOf(character), (error.reason as AutoBattle.ExitReason.BondMax).positions)
@@ -194,6 +194,23 @@ class BondTrackingTest {
         assertEquals(listOf(32L, 34L, 36L, 38L, 40L), f.tracker.summary()!!.slots.map { it.total })
         assertTrue(f.tracker.summary()!!.slots.all { it.readRuns == 2 && it.missedRuns == 0 })
         assertTrue(Fixture().tracker.summary()!!.slots.isEmpty())
+    }
+
+    @Test fun `checked character two ignores only its MAX while its gains still accumulate`() {
+        val f = Fixture()
+        every { f.config.bondMaxIgnoredCharacters } returns setOf(2)
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Gain(10, 2) })
+        f.tracker.process()
+        f.state.nextRun()
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { if (it == 1) BondValue.Max else BondValue.Gain(20, 3) })
+        f.tracker.process()
+        assertEquals(1, f.state.runs)
+        assertEquals(12L, f.tracker.summary()!!.slots[1].total)
+        f.state.nextRun()
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { if (it == 0) BondValue.Max else BondValue.Gain(1, 0) })
+        val error = assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
+        assertEquals(listOf(1), (error.reason as AutoBattle.ExitReason.BondMax).positions)
+        assertEquals(3, f.state.runs)
     }
 
 }

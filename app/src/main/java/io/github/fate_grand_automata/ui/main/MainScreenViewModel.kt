@@ -4,16 +4,21 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.util.StorageProvider
-import kotlinx.coroutines.CoroutineScope
+import io.github.fate_grand_automata.util.GitHubUpdate
+import io.github.fate_grand_automata.util.GitHubUpdateChecker
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -24,16 +29,33 @@ import javax.inject.Inject
 class MainScreenViewModel @Inject constructor(
     val prefsCore: PrefsCore,
     val prefs: IPreferences,
-    val storageProvider: StorageProvider
+    val storageProvider: StorageProvider,
+    private val updateChecker: GitHubUpdateChecker
 ) : ViewModel() {
+
+    val availableUpdate = mutableStateOf<GitHubUpdate?>(null)
+
+    fun dismissUpdate() { availableUpdate.value = null }
 
     init {
         // init the perServerConfigs
-        CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch(Dispatchers.IO) {
             GameServers.values.filterNot {
                 it.betterFgo
             }.forEach { server ->
                 prefs.addPerServerConfigPref(server)
+            }
+        }
+        viewModelScope.launch {
+            if (!prefsCore.checkForUpdates.get()) return@launch
+            try {
+                val update = updateChecker.findUpdate(BuildConfig.VERSION_NAME)
+                if (prefsCore.checkForUpdates.get()) availableUpdate.value = update
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Offline, rate limited or malformed response: continue using the installed app.
+                Timber.w(e, "GitHub update check failed")
             }
         }
     }

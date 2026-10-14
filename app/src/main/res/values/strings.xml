@@ -23,5 +23,4 @@
     <string name="language_zhTW" translatable="false">中文（台湾）</string>
     <string name="language_ko" translatable="false">한국어</string>
     <string name="language_vi" translatable="false">Tiếng Việt</string>
-    <string name="link_repository" translatable="false">https://github.com/puruuun/FGA-Modified</string>
 </resources>
