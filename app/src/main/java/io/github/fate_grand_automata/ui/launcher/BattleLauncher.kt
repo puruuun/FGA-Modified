@@ -123,9 +123,6 @@ fun battleLauncher(
     var waitApRegen by remember { mutableStateOf(perServerConfigPref.waitForAPRegen) }
     var useStormPod by remember { mutableStateOf(perServerConfigPref.useStormPod) }
     var useTeapot by remember { mutableStateOf(perServerConfigPref.useTeapot) }
-    var trackBond by remember { mutableStateOf(perServerConfigPref.trackBond) }
-    var stopOnBondMax by remember { mutableStateOf(perServerConfigPref.stopOnBondMax) }
-    var bondIgnored by remember { mutableStateOf(perServerConfigPref.bondMaxIgnoredPositions) }
     val ignoreQuestItemUsage = remember { prefs.ignoreQuestItemUsage }
     val questItemsSupported = remember { prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr }
     val questItemsEnabled = !ignoreQuestItemUsage && questItemsSupported
@@ -148,9 +145,6 @@ fun battleLauncher(
             perServerConfigPref.waitForAPRegen = waitApRegen
             perServerConfigPref.useStormPod = useStormPod
             perServerConfigPref.useTeapot = useTeapot
-            perServerConfigPref.trackBond = trackBond
-            perServerConfigPref.stopOnBondMax = stopOnBondMax
-            perServerConfigPref.bondMaxIgnoredPositions = bondIgnored
             if (refillResources.isNotEmpty()) {
                 perServerConfigPref.selectedApple = refillResources.first()
             }
@@ -329,12 +323,6 @@ fun battleLauncher(
             }
 
             item {
-                BondOptions(trackBond, stopOnBondMax, bondIgnored, questItemsSupported,
-                    { trackBond = it }, { stopOnBondMax = it }, { bondIgnored = it })
-                HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
-            }
-
-            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -425,9 +413,6 @@ fun battleLauncher(
         build = {
             perServerConfigPref.useStormPod = useStormPod
             perServerConfigPref.useTeapot = useTeapot
-            perServerConfigPref.trackBond = trackBond
-            perServerConfigPref.stopOnBondMax = stopOnBondMax
-            perServerConfigPref.bondMaxIgnoredPositions = bondIgnored
             ScriptLauncherResponse.Battle
         }
     )

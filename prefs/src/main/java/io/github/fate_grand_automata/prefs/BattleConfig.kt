@@ -32,6 +32,10 @@ internal class BattleConfig(
     override val party by prefs.party
     override val materials by prefs.materials
 
+    override val trackBond by prefs.bond.track
+    override val stopOnBondMax by prefs.bond.stopOnMax
+    override val bondMaxStopCharacters by prefs.bond.stopCharacters
+
     override val shuffleCards by prefs.shuffleCards
     override val shuffleCardsWave by prefs.shuffleCardsWave
 

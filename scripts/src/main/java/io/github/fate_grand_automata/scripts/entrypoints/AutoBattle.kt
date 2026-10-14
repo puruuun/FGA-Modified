@@ -77,7 +77,6 @@ class AutoBattle @Inject constructor(
         data object SupportSelectionPreferredNotSet : ExitReason()
         data object SupportSkillDisplayFailed : ExitReason()
         data object QuestItemSettingFailed : ExitReason()
-        data object BondPartyUnavailable : ExitReason()
         class BondMax(val positions: List<Int>) : ExitReason()
         class DirectCardsUnavailable(val sequence: String) : ExitReason()
         class SkillCommandParseError(cause: Exception) : ExitReason(cause)

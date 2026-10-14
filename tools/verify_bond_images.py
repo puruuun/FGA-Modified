@@ -1,4 +1,4 @@
-"""Verify bond OCR and screen/party layout against supplied 720p KR/JP references.
+"""Verify bond OCR and result screens against supplied 720p KR/JP references.
 
 Uses shipped assets and reads coordinates, match thresholds and OCR profiles from Kotlin.
 This is desktop OpenCV/Tesseract validation, not Android gesture/device verification.
@@ -120,14 +120,6 @@ class Reader:
                 value, readings = ('MAX', []) if score >= self.similarity else self.text(im, self.region('gain', width, i), server=server)
                 rows.append(dict(value=value, max_score=score, readings=readings))
             return dict(kind='normal', headings=headings, rows=rows)
-        if match('bond_party_heading', 'partyHeading')[0] >= self.similarity:
-            levels = ['bond_party_level','bond_party_level_bronze','bond_party_level_kr','bond_party_level_plain']
-            present = [i for i in range(6) if max(match(name,'partyLevel',i)[0] for name in levels) >= self.similarity]
-            support = [i for i in range(6) if match('bond_party_support','partySupport',i)[0] >= self.similarity]
-            own = [i+1 for i in present if i not in support]
-            vacant = [i for i in range(6) if self.crop(im,self.region('partyVacant',width,i)).max() <= 55]
-            valid = all(i in present or i in vacant for i in range(6)) and len(support) <= 1 and all(i in present for i in support) and 1 <= len(own) <= 5
-            return dict(kind='party', headings=headings, owned=own if valid else None, present=present, support=support)
         return dict(kind='other', headings=headings)
 
 
@@ -147,7 +139,7 @@ def main():
             elif case['kind'] == 'popup': passed &= actual.get('level') == case['expected_level'] and actual.get('column') == case['expected_column']
             else: passed &= actual.get('owned') == case['expected']
             results.append(dict(case=case, sha256=hashlib.sha256(p.read_bytes()).hexdigest(), actual=actual, passed=passed))
-        # Blank controls must neither become a result nor a filled party.
+        # Blank controls must not become a result.
         import numpy as np
         for server in ['Kr','Jp']:
             actual=reader.read(np.zeros((720,1280),dtype=np.uint8),server)
@@ -155,7 +147,7 @@ def main():
     finally:
         reader.api.End()
     report = dict(scope='Full-frame desktop tests with shipped assets, source coordinates and bundled eng OCR data. No Android device validation.',
-                  summary=dict(cases=len(results), passed=sum(r['passed'] for r in results), normal_slots=15, gain_lines=6, max_lines=9, popup_levels=5, party_maps=3), results=results)
+                  summary=dict(cases=len(results), passed=sum(r['passed'] for r in results), normal_slots=15, gain_lines=6, max_lines=9, popup_levels=5, non_result_party_screens=3), results=results)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps(report['summary']))

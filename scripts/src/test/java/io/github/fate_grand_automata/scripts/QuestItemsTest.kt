@@ -21,7 +21,6 @@ class QuestItemsTest {
     private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val party = mockk<PartySelection>()
-        val bonds = mockk<BondTracker>(relaxed = true)
         val loc = mockk<QuestItemLocations>()
         val main = Region(1420, 1268, 520, 158)
         val left = Region(1030, 730, 200, 164)
@@ -127,7 +126,7 @@ class QuestItemsTest {
             }
             reader = QuestItemReader(api)
             items = QuestItems(api, reader)
-            launch = QuestLaunch(api, party, items, bonds)
+            launch = QuestLaunch(api, party, items)
         }
         fun wanted(storm: Boolean, tea: Boolean) {
             every { api.prefs.selectedServerConfigPref.useStormPod } returns storm
@@ -255,12 +254,9 @@ class QuestItemsTest {
         assertThat(wrong.trace).isEqualTo(listOf("party", "main", "close"))
     }
     @Test
-    fun `bond party capture failure prevents quest start after item settings are settled`() {
+    fun `quest launch needs no bond party capture after item settings are settled`() {
         val f = Fixture()
-        every { f.bonds.captureParty() } throws AutoBattle.BattleExitException(AutoBattle.ExitReason.BondPartyUnavailable)
-        val error = assertFailsWith<AutoBattle.BattleExitException> { f.launch.start() }
-        assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.BondPartyUnavailable)
-        assertFalse("quest" in f.trace)
-        assertThat(f.trace).isEqualTo(listOf("party", "main", "close"))
+        f.launch.start()
+        assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
     }
 }

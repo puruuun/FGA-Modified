@@ -10,7 +10,7 @@
     <string name="game_server_jp_bfgo" translatable="false">JP (Better FGO)</string>
 
     <string name="link_troubleshoot" translatable="false">https://github.com/Fate-Grand-Automata/FGA/wiki/Troubleshooting</string>
-    <string name="link_releases" translatable="false">https://github.com/Fate-Grand-Automata/FGA/releases</string>
+    <string name="link_releases" translatable="false">https://github.com/puruuun/FGA-Modified/releases</string>
     <string name="link_discord" translatable="false">https://tinyurl.com/2z2d6wuz</string>
     <string name="discord" translatable="false">Discord</string>
     <string name="link_youtube" translatable="false">https://www.youtube.com/watch?v=JOwupZ4W8AQ&amp;t=4m10s</string>
@@ -23,4 +23,5 @@
     <string name="language_zhTW" translatable="false">中文（台湾）</string>
     <string name="language_ko" translatable="false">한국어</string>
     <string name="language_vi" translatable="false">Tiếng Việt</string>
+    <string name="link_repository" translatable="false">https://github.com/puruuun/FGA-Modified</string>
 </resources>

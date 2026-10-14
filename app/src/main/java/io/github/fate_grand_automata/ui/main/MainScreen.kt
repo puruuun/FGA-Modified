@@ -209,9 +209,7 @@ private fun toggleOverlayService(
 
 sealed class MainScreenDestinations {
     object Releases : MainScreenDestinations()
-    object TroubleshootingGuide : MainScreenDestinations()
-    object Discord : MainScreenDestinations()
-    object Donate : MainScreenDestinations()
+    object Repository : MainScreenDestinations()
     object BattleConfigs : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
@@ -235,25 +233,14 @@ private fun MainScreenContent(
             item {
                 Heading(stringResource(R.string.app_name)) {
                     HeadingButton(
-                        text = "Build: ${BuildConfig.VERSION_CODE}",
+                        text = "Build: ${BuildConfig.VERSION_NAME}",
                         onClick = { navigate(MainScreenDestinations.Releases) }
                     )
 
                     HeadingButton(
-                        text = stringResource(R.string.troubleshoot),
-                        onClick = { navigate(MainScreenDestinations.TroubleshootingGuide) }
-                    )
-
-                    HeadingButton(
-                        text = stringResource(R.string.discord),
-                        icon = icon(R.drawable.ic_discord),
-                        onClick = { navigate(MainScreenDestinations.Discord) }
-                    )
-
-                    HeadingButton(
-                        text = stringResource(R.string.donate),
-                        icon = icon(R.drawable.ic_donate),
-                        onClick = { navigate(MainScreenDestinations.Donate) }
+                        text = stringResource(R.string.repository),
+                        icon = icon(Icons.Default.Language),
+                        onClick = { navigate(MainScreenDestinations.Repository) }
                     )
 
                 }

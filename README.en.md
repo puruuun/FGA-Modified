@@ -25,7 +25,7 @@ Supports Android 7+ ARM devices (arm64-v8a / armeabi-v7a). Existing modified bui
 | [Support NP level](wiki/scripts/Modified-Features.md#support-np) | Select supports at or above the configured minimum NP level. |
 | [Fixed attack order](wiki/scripts/Modified-Features.md#direct-cards) | Specify the order of three face cards and NPs. |
 | [Teapots / Storm Pods](wiki/scripts/Modified-Features.md#quest-items) | Apply the requested ON/OFF states before Quest Start. |
-| [Bond tracking / MAX stop](wiki/scripts/Modified-Features.md#bond-tracking) | Total gains read by party position, with MAX stop and exceptions. |
+| [Bond tracking / MAX stop](wiki/scripts/Modified-Features.md#bond-tracking) | Track gains for result characters 1–5 and choose MAX stop targets. |
 
 See the [full guide](wiki/scripts/Modified-Features.md) for setup, behavior and validation scope.
 

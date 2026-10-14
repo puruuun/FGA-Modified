@@ -97,42 +97,24 @@
     "file": "docs/reference-images/Jp/bond-jp16.png"
   },
   {
-    "name": "party-kr1",
+    "name": "party-kr1-not-a-bond-result",
+    "kind": "other",
     "server": "Kr",
-    "kind": "party",
-    "expected": [
-      2,
-      3,
-      4,
-      5,
-      6
-    ],
+    "expected": null,
     "file": "docs/reference-images/Kr/bond-party-kr1.png"
   },
   {
-    "name": "party-jp1",
+    "name": "party-jp1-not-a-bond-result",
+    "kind": "other",
     "server": "Jp",
-    "kind": "party",
-    "expected": [
-      2,
-      3,
-      4,
-      5,
-      6
-    ],
+    "expected": null,
     "file": "docs/reference-images/Jp/bond-party-jp1.png"
   },
   {
-    "name": "party-jp3",
+    "name": "party-jp3-not-a-bond-result",
+    "kind": "other",
     "server": "Jp",
-    "kind": "party",
-    "expected": [
-      1,
-      2,
-      4,
-      5,
-      6
-    ],
+    "expected": null,
     "file": "docs/reference-images/Jp/bond-party-jp3.png"
   }
 ]

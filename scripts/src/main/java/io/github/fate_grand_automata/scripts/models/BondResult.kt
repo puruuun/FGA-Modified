@@ -14,12 +14,5 @@ sealed interface BondFrame {
     data object Other : BondFrame
 }
 
-data class BondParty(val ownedPositions: List<Int>) {
-    init {
-        require(ownedPositions.isNotEmpty() && ownedPositions.size <= 5)
-        require(ownedPositions == ownedPositions.distinct().sorted() && ownedPositions.all { it in 1..6 })
-    }
-}
-
 data class BondSlotSummary(val position: Int, val total: Long, val readRuns: Int, val missedRuns: Int, val maxObserved: Boolean)
 data class BondSummary(val slots: List<BondSlotSummary>, val unmappedLevelUpRuns: Int)

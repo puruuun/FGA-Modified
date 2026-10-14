@@ -340,6 +340,10 @@ private fun BattleConfigContent(
                 }
 
                 item {
+                    BondGroup(config.bond)
+                }
+
+                item {
                     ShuffleCardsGroup(config)
                 }
             }

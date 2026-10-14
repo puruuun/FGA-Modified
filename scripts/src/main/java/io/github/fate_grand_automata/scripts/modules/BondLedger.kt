@@ -2,21 +2,22 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.models.*
 
-/** One entry per completed quest and original party position, independent of screen retries. */
+/** One entry per quest and result column (1..5), independent of screen retries. */
 class BondLedger {
     private data class Cell(var gain: Long? = null, var max: Boolean = false)
     private val quests = linkedMapOf<Int, MutableMap<Int, Cell>>()
     private val unmapped = mutableSetOf<Int>()
 
-    fun ensure(run: Int, party: BondParty) {
-        quests.getOrPut(run) { party.ownedPositions.associateWith { Cell() }.toMutableMap() }
+    fun ensure(run: Int) {
+        quests.getOrPut(run) { (1..5).associateWith { Cell() }.toMutableMap() }
     }
 
-    fun normal(run: Int, party: BondParty, values: List<BondValue>) {
-        ensure(run, party)
-        // Unconfirmed layouts must not shift a MAX onto a different party position.
-        if (values.size < party.ownedPositions.size || values.drop(party.ownedPositions.size).any { it != BondValue.Unknown }) return
-        party.ownedPositions.zip(values).forEach { (position, value) ->
+    fun normal(run: Int, values: List<BondValue>) {
+        ensure(run)
+        // Keep each value in its result column, even when another column is unreadable.
+        if (values.size != 5) return
+        values.forEachIndexed { index, value ->
+            val position = index + 1
             val cell = quests.getValue(run).getValue(position)
             when (value) {
                 is BondValue.Gain -> if (cell.gain == null) cell.gain = value.total
@@ -26,9 +27,9 @@ class BondLedger {
         }
     }
 
-    fun levelUp(run: Int, party: BondParty, reached: Int?, index: Int?) {
-        ensure(run, party)
-        val position = index?.let { party.ownedPositions.getOrNull(it) }
+    fun levelUp(run: Int, reached: Int?, index: Int?) {
+        ensure(run)
+        val position = index?.takeIf { it in 0..4 }?.plus(1)
         if (position == null || reached == null) {
             // User policy: skip the obscured popup and recheck normal MAX next quest.
             unmapped += run

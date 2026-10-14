@@ -61,19 +61,6 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
     fun isScreen(): Boolean = matches(locations.bond.popupTitle, Images.BondPopupTitle).isNotEmpty() ||
         matches(locations.bond.resultTitle, Images.BondResultTitle).isNotEmpty()
 
-    fun readParty(): BondParty? = useSameSnapIn {
-        if (matches(locations.bond.partyHeading, Images.BondPartyHeading).isEmpty()) return@useSameSnapIn null
-        val support = (0..5).filter { matches(locations.bond.partySupport(it), Images.BondPartySupport).isNotEmpty() }
-        if (support.size > 1) return@useSameSnapIn null
-        val levelTemplates = listOf(Images.BondPartyLevel, Images.BondPartyLevelBronze, Images.BondPartyLevelKr, Images.BondPartyLevelPlain)
-        val present = (0..5).filter { index -> levelTemplates.any { matches(locations.bond.partyLevel(index), it).isNotEmpty() } }
-        // A missing label alone does not prove an empty slot. Do not compress an unreadable member away.
-        if ((0..5).any { it !in present && !locations.bond.partyVacant(it).isBlack() }) return@useSameSnapIn null
-        if (support.any { it !in present }) return@useSameSnapIn null
-        val owned = (present - support.toSet()).map { it + 1 }
-        owned.takeIf { it.isNotEmpty() && it.size <= 5 }?.let(::BondParty)
-    }
-
     /** All text and image evidence belongs to this one frame. Never reuse across a click. */
     fun read(readGains: Boolean = true): BondFrame = useSameSnapIn {
         if (matches(locations.bond.popupTitle, Images.BondPopupTitle).isNotEmpty()) {

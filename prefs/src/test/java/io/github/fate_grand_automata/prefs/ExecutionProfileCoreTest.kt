@@ -249,26 +249,46 @@ class ExecutionProfileCoreTest {
         assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
     }
     @Test
-    fun `bond choices persist independently of item choices and other server stores`() {
-        val storage = MemoryPrefs()
-        val maker = PrefMaker(storage)
-        val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(maker)
-        val items = QuestItemPrefsCore(maker)
+    fun `bond settings stay per script and preserve all five result choices through copy and export`() {
+        val first = MemoryPrefs()
+        val second = MemoryPrefs()
+        val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(first))
         assertThat(bond.track.get()).isEqualTo(false)
         assertThat(bond.stopOnMax.get()).isEqualTo(false)
-        assertThat(bond.ignoredPositions.get()).isEqualTo(emptySet())
-        items.useTeapot.set(true)
+        assertThat(bond.stopCharacters.get()).isEqualTo((1..5).toSet())
         bond.track.set(true)
         bond.stopOnMax.set(true)
-        bond.ignoredPositions.set(setOf("1", "4"))
-        val restored = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(storage))
-        assertThat(restored.track.get()).isEqualTo(true)
-        assertThat(restored.stopOnMax.get()).isEqualTo(true)
-        assertThat(restored.ignoredPositions.get()).isEqualTo(setOf("1", "4"))
-        assertThat(items.useTeapot.get()).isEqualTo(true)
-        assertThat(items.useStormPod.get()).isEqualTo(false)
-        val otherServer = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(MemoryPrefs()))
-        assertThat(otherServer.track.get()).isEqualTo(false)
-        assertThat(otherServer.ignoredPositions.get()).isEqualTo(emptySet())
+        bond.stopCharacters.set(setOf(1, 3, 5))
+        val other = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(second))
+        assertThat(other.track.get()).isEqualTo(false)
+        assertThat(other.stopCharacters.get()).isEqualTo((1..5).toSet())
+        val copied = MemoryPrefs()
+        copied.edit().also { it.import(first.all) }.apply()
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(first.all))) }.apply()
+        for (store in listOf(copied, restored)) {
+            val result = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(store))
+            assertThat(result.track.get()).isEqualTo(true)
+            assertThat(result.stopOnMax.get()).isEqualTo(true)
+            assertThat(result.stopCharacters.get()).isEqualTo(setOf(1, 3, 5))
+            result.stopCharacters.set(emptySet())
+            assertThat(result.stopCharacters.get()).isEqualTo(emptySet())
+        }
+        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(1, 3, 5))
+    }
+
+    @Test
+    fun `legacy launcher exceptions are not interpreted as result characters and invalid positions are excluded`() {
+        val store = MemoryPrefs()
+        store.data["bond_track"] = true
+        store.data["bond_stop_on_max"] = true
+        store.data["bond_max_ignored_positions"] = setOf("1", "6")
+        val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(store))
+        assertThat(bond.track.get()).isEqualTo(false)
+        assertThat(bond.stopOnMax.get()).isEqualTo(false)
+        store.data["bond_result_stop_characters"] = "0,1,5,6,abc"
+        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(1, 5))
+        bond.stopCharacters.set(setOf(0, 2, 6))
+        assertThat(bond.stopCharacters.get()).isEqualTo(setOf(2))
     }
 }

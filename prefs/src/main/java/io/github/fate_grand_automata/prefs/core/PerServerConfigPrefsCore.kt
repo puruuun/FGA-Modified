@@ -27,7 +27,6 @@ class PerServerConfigPrefsCore(
 
     val waitAPRegen = maker.bool("wait_for_ap_regeneration")
     val questItems = QuestItemPrefsCore(maker)
-    val bond = BondPrefsCore(maker)
 
 
     val selectedApple = maker.serialized(

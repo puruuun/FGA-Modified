@@ -579,17 +579,18 @@
     <string name="p_bond">인연포인트</string>
     <string name="p_bond_track">인연포인트 획득량 추적</string>
     <string name="p_bond_stop">인연 MAX 확인 시 정지</string>
-    <string name="p_bond_ignore">MAX 정지 예외 (원래 파티 위치):</string>
-    <string name="p_bond_position">%1$d번</string>
-    <string name="p_bond_summary">서포트는 자동 제외합니다. 번호는 전투 전 파티 위치입니다. 레벨업 창의 가려진 획득량은 누락으로 기록하며, 위치 미확정 시 다음 퀘스트에서 MAX를 재확인합니다.</string>
+    <string name="p_bond_position">캐릭터 %1$d</string>
+    <string name="p_bond_summary">결과창 왼쪽부터 캐릭터 1~5입니다. 체크를 해제한 캐릭터는 MAX여도 계속합니다. 이번 스크립트 실행 중 획득량을 합산하며 가려지거나 읽지 못한 획득량은 누락으로 표시합니다. 위치가 불확실한 레벨업 창은 다음 퀘스트에서 재확인합니다. 시작 전 편성 확인은 하지 않습니다.</string>
     <string name="p_bond_servers">인연 판독은 한국·일본 서버를 지원합니다.</string>
-    <string name="bond_party_unavailable">인연 추적에 사용할 파티 위치를 확인하지 못했습니다. 퀘스트 목록 또는 서포트 선택부터 시작하여 퀘스트 개시 전 편성 화면을 확인할 수 있게 해주세요.</string>
-    <string name="bond_max_stop">파티 %1$s번의 인연 MAX를 확인하여 정지했습니다.</string>
+    <string name="bond_max_stop">결과창 캐릭터 %1$s의 인연 MAX를 확인하여 정지했습니다.</string>
     <string name="bond_totals">이번 스크립트 인연포인트 판독 합계</string>
-    <string name="bond_slot_total">파티 %1$d번: %2$s 포인트</string>
+    <string name="bond_slot_total">캐릭터 %1$d: %2$s 포인트</string>
     <string name="bond_slot_reads">집계 %1$d회 · 누락 %2$d회</string>
     <string name="bond_max_observed">MAX 확인</string>
     <string name="bond_totals_note">기본값과 보너스를 합산합니다. 판독하지 못했거나 가려진 획득량은 합계에서 제외합니다.</string>
     <string name="bond_unmapped_popups">위치·레벨 미확정 레벨업이 있던 퀘스트: %1$d회. 해당 창은 건너뛰고 다음 퀘스트의 일반 MAX 표시로 재확인합니다.</string>
     <string name="bond_no_results">아직 기록한 인연 결과가 없습니다.</string>
+    <string name="repository">GitHub 레포지토리</string>
+    <string name="p_additional_features">추가기능</string>
+    <string name="p_bond_stop_characters">MAX 시 정지할 캐릭터</string>
 </resources>

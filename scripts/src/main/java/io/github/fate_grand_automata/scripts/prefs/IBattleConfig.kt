@@ -20,6 +20,10 @@ interface IBattleConfig : IExecutionProfile {
     val secondaryExecution: IExecutionProfile
     /** Skill and NP automatic use is shared by both start conditions. */
     var spam: List<ServantSpamConfig>
+    val trackBond: Boolean
+    val stopOnBondMax: Boolean
+    /** Watched result columns, from left to right (1..5). */
+    val bondMaxStopCharacters: Set<Int>
     val shuffleCards: ShuffleCardsEnum
     val shuffleCardsWave: Int
 

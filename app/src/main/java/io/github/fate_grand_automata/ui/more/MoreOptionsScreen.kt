@@ -85,6 +85,10 @@ private fun MoreOptionsContent(
                                 }
                             }
 
+                            MoreSettingsGroup.AdditionalFeatures -> {
+                                additionalFeaturesGroup(vm.prefsCore)
+                            }
+
                             MoreSettingsGroup.Advanced -> {
                                 advancedGroup(
                                     vm.prefsCore,
@@ -102,12 +106,13 @@ private fun MoreOptionsContent(
 }
 
 private enum class MoreSettingsGroup {
-    Battle, Storage, Advanced;
+    Battle, Storage, Advanced, AdditionalFeatures;
 
     val stringRes
         get() = when (this) {
             Battle -> R.string.p_script_mode_battle
             Storage -> R.string.p_storage
             Advanced -> R.string.p_advanced
+            AdditionalFeatures -> R.string.p_additional_features
         }
 }

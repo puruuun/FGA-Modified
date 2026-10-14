@@ -53,6 +53,7 @@ class BattleConfigCore(
     val secondaryStartEnabled = maker.bool("secondary_start_enabled")
     val secondaryStartServant = maker.int("secondary_start_servant", 2)
     val secondaryStartCardCount = maker.int("secondary_start_card_count", 2)
+    val bond = BondPrefsCore(maker)
     val notes = maker.string("autoskill_notes")
 
     val party = maker.stringAsInt("autoskill_party", -1)

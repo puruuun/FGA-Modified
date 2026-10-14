@@ -114,16 +114,8 @@ fun FgaApp(
                                         context.openLinkIntent(R.string.link_releases)
                                     }
 
-                                    MainScreenDestinations.TroubleshootingGuide -> {
-                                        context.openLinkIntent(R.string.link_troubleshoot)
-                                    }
-
-                                    MainScreenDestinations.Discord -> {
-                                        context.openLinkIntent(R.string.link_discord)
-                                    }
-
-                                    MainScreenDestinations.Donate -> {
-                                        context.openLinkIntent(R.string.link_donate)
+                                    MainScreenDestinations.Repository -> {
+                                        context.openLinkIntent(R.string.link_repository)
                                     }
                                 }
                             }

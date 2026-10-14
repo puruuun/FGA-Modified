@@ -10,7 +10,6 @@ import io.mockk.*
 import kotlin.test.*
 
 class BondTrackingTest {
-    private val party = BondParty(listOf(1, 2, 4, 5, 6))
     private val gain = BondValue.Gain(4748, 2660)
 
     @Test fun `gain parsing sums base and bonus and never uses NEXT`() {
@@ -31,57 +30,53 @@ class BondTrackingTest {
         assertNull(BondReader.confirmedLevel(listOf(OcrText("9 > 10", 99), OcrText("9 > 10", 99))))
     }
 
-    @Test fun `support compression preserves all six possible original positions`() {
-        for (support in 1..6) {
-            val p = BondParty((1..6).filter { it != support })
-            val ledger = BondLedger()
-            ledger.normal(0, p, List(5) { BondValue.Gain(it + 1, 10) })
-            assertEquals(p.ownedPositions, ledger.summary().slots.map { it.position })
-            assertEquals(listOf(11L, 12L, 13L, 14L, 15L), ledger.summary().slots.map { it.total })
-        }
+    @Test fun `result columns are always characters one through five with no party mapping`() {
+        val ledger = BondLedger()
+        ledger.normal(0, List(5) { BondValue.Gain(it + 1, 10) })
+        assertEquals((1..5).toList(), ledger.summary().slots.map { it.position })
+        assertEquals(listOf(11L, 12L, 13L, 14L, 15L), ledger.summary().slots.map { it.total })
     }
 
     @Test fun `retrying or revisiting the same result does not double count`() {
         val ledger = BondLedger()
-        repeat(5) { ledger.normal(0, party, List(5) { gain }) }
-        ledger.normal(1, party, List(5) { BondValue.Gain(25, 6) })
+        repeat(5) { ledger.normal(0, List(5) { gain }) }
+        ledger.normal(1, List(5) { BondValue.Gain(25, 6) })
         assertTrue(ledger.summary().slots.all { it.total == 7439L && it.readRuns == 2 && it.missedRuns == 0 })
     }
 
     @Test fun `obscured level up never fabricates a gain and only ten or above sets MAX`() {
         for (level in listOf(7, 9, 10, 11, 12, 16)) {
-            val ledger = BondLedger(); ledger.levelUp(0, party, level, 2)
-            assertEquals(if (level >= 10) setOf(4) else emptySet(), ledger.maxPositions(0))
+            val ledger = BondLedger(); ledger.levelUp(0, level, 2)
+            assertEquals(if (level >= 10) setOf(3) else emptySet(), ledger.maxPositions(0))
             assertTrue(ledger.summary().slots.all { it.missedRuns == 1 && it.readRuns == 0 })
         }
     }
 
     @Test fun `unknown popup position waits for a normal MAX in the next quest`() {
         val ledger = BondLedger()
-        ledger.levelUp(0, party, 10, null)
-        ledger.levelUp(0, party, 10, null)
+        ledger.levelUp(0, 10, null)
+        ledger.levelUp(0, 10, null)
         assertTrue(ledger.maxPositions(0).isEmpty())
         assertEquals(1, ledger.summary().unmappedLevelUpRuns)
-        ledger.normal(1, party, listOf(gain, gain, BondValue.Max, gain, gain))
-        assertEquals(setOf(4), ledger.maxPositions(1))
-        val slot = ledger.summary().slots.single { it.position == 4 }
+        ledger.normal(1, listOf(gain, gain, BondValue.Max, gain, gain))
+        assertEquals(setOf(3), ledger.maxPositions(1))
+        val slot = ledger.summary().slots.single { it.position == 3 }
         assertEquals(0L, slot.total); assertEquals(1, slot.readRuns); assertEquals(1, slot.missedRuns)
     }
 
     @Test fun `an unmapped new cap cannot turn its obscured gain into a measured zero`() {
         val ledger = BondLedger()
-        ledger.normal(0, party, List(5) { BondValue.Max })
-        ledger.levelUp(0, party, 10, null)
+        ledger.normal(0, List(5) { BondValue.Max })
+        ledger.levelUp(0, 10, null)
         assertTrue(ledger.summary().slots.all { it.readRuns == 0 && it.missedRuns == 1 })
     }
 
     @Test fun `partial OCR does not shift columns or count unknown as real zero`() {
         val ledger = BondLedger()
-        ledger.normal(0, party, listOf(gain, BondValue.Unknown, BondValue.Max, gain, BondValue.Unknown))
+        ledger.normal(0, listOf(gain, BondValue.Unknown, BondValue.Max, gain, BondValue.Unknown))
         assertEquals(listOf(7408L, 0, 0, 7408, 0), ledger.summary().slots.map { it.total })
         assertEquals(listOf(0, 1, 0, 0, 1), ledger.summary().slots.map { it.missedRuns })
-        // A four-member mapping with five visible values is not a confirmed result layout.
-        val short = BondLedger(); short.normal(0, BondParty(listOf(1, 2, 4, 5)), List(5) { BondValue.Max })
+        val short = BondLedger(); short.normal(0, List(4) { BondValue.Max })
         assertTrue(short.maxPositions(0).isEmpty())
     }
 
@@ -89,28 +84,27 @@ class BondTrackingTest {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val reader = mockk<BondReader>()
         val state = BattleState()
-        val party = BondParty(listOf(1, 2, 4, 5, 6))
-        val tracker = BondTracker(api, reader, state)
+        val config = mockk<io.github.fate_grand_automata.scripts.prefs.IBattleConfig>()
+        val tracker = BondTracker(api, reader, state, config)
         init {
             every { api.prefs.gameServer } returns GameServer.Kr
-            every { api.prefs.selectedServerConfigPref.trackBond } returns true
-            every { api.prefs.selectedServerConfigPref.stopOnBondMax } returns true
-            every { api.prefs.selectedServerConfigPref.bondMaxIgnoredPositions } returns emptySet()
-            every { reader.readParty() } returns party
+            every { config.trackBond } returns true
+            every { config.stopOnBondMax } returns true
+            every { config.bondMaxStopCharacters } returns (1..5).toSet()
         }
-        fun start() { tracker.captureParty(); tracker.beginBattle() }
+        fun start() { tracker.beginBattle() }
     }
 
-    @Test fun `normal and popup MAX respect exceptions at original position`() {
+    @Test fun `normal and popup MAX respect watched result characters`() {
         for (popup in listOf(false, true)) for (ignored in listOf(false, true)) {
             val f = Fixture(); f.start()
-            every { f.api.prefs.selectedServerConfigPref.bondMaxIgnoredPositions } returns if (ignored) setOf(4) else emptySet()
+            every { f.config.bondMaxStopCharacters } returns if (ignored) setOf(1, 2, 4, 5) else (1..5).toSet()
             every { f.reader.read() } returns if (popup) BondFrame.LevelUp(12, 2) else
                 BondFrame.Normal(List(5) { if (it == 2) BondValue.Max else BondValue.Gain(1, 2) })
             if (ignored) { f.tracker.process(); assertEquals(0, f.state.runs) }
             else {
                 val error = assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
-                assertEquals(listOf(4), (error.reason as AutoBattle.ExitReason.BondMax).positions)
+                assertEquals(listOf(3), (error.reason as AutoBattle.ExitReason.BondMax).positions)
                 assertEquals(1, f.state.runs)
             }
         }
@@ -126,7 +120,7 @@ class BondTrackingTest {
 
     @Test fun `counting animation is not accumulated until fresh readings agree`() {
         val f = Fixture(); f.start()
-        every { f.api.prefs.selectedServerConfigPref.stopOnBondMax } returns false
+        every { f.config.stopOnBondMax } returns false
         fun normal(value: Int) = BondFrame.Normal(List(5) { BondValue.Gain(value, 0) })
         every { f.reader.read() } returnsMany listOf(normal(1), normal(2), normal(3), normal(4))
         f.tracker.process()
@@ -136,15 +130,15 @@ class BondTrackingTest {
         assertTrue(f.tracker.summary()!!.slots.all { it.total == 10L && it.readRuns == 1 && it.missedRuns == 0 })
     }
 
-    @Test fun `disabled tracking and unsupported servers do not capture or OCR`() {
+    @Test fun `disabled tracking and unsupported servers do not inspect results or OCR`() {
         for (server in listOf(GameServer.En.Original, GameServer.Jp.Original)) {
             val f = Fixture()
             every { f.api.prefs.gameServer } returns server
             if (server is GameServer.Jp) {
-                every { f.api.prefs.selectedServerConfigPref.trackBond } returns false
-                every { f.api.prefs.selectedServerConfigPref.stopOnBondMax } returns false
+                every { f.config.trackBond } returns false
+                every { f.config.stopOnBondMax } returns false
             }
-            f.tracker.captureParty(); f.tracker.beginBattle(); f.tracker.finishResult()
+            f.tracker.beginBattle(); f.tracker.finishResult()
             assertFalse(f.tracker.isScreen()); assertNull(f.tracker.summary())
             verify { f.reader wasNot Called }
         }
@@ -152,12 +146,54 @@ class BondTrackingTest {
 
     @Test fun `MAX only mode skips gain OCR and does not present a tracking summary`() {
         val f = Fixture()
-        every { f.api.prefs.selectedServerConfigPref.trackBond } returns false
-        every { f.api.prefs.selectedServerConfigPref.bondMaxIgnoredPositions } returns setOf(1, 2, 4, 5, 6)
+        every { f.config.trackBond } returns false
+        every { f.config.bondMaxStopCharacters } returns emptySet()
         every { f.reader.read(false) } returns BondFrame.Normal(List(5) { BondValue.Max })
         f.start(); f.tracker.process()
         assertNull(f.tracker.summary())
         verify(exactly = 4) { f.reader.read(false) }
         verify(exactly = 0) { f.reader.read(true) }
     }
+    @Test fun `tracking can begin directly on the result screen without seeing a battle or party`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Gain(it + 10, 1) })
+        f.tracker.process()
+        assertEquals(listOf(11L, 12L, 13L, 14L, 15L), f.tracker.summary()!!.slots.map { it.total })
+        verify(exactly = 4) { f.reader.read(true) }
+    }
+
+    @Test fun `each of the five watched result columns can independently stop the cleared quest`() {
+        for (character in 1..5) {
+            val f = Fixture()
+            every { f.config.bondMaxStopCharacters } returns setOf(character)
+            every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Max })
+            val error = assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
+            assertEquals(listOf(character), (error.reason as AutoBattle.ExitReason.BondMax).positions)
+            assertEquals(1, f.state.runs)
+        }
+    }
+
+    @Test fun `a confirmed MAX is not lost when the result changes during a later capture`() {
+        val f = Fixture()
+        val normal = BondFrame.Normal(List(5) { BondValue.Max })
+        every { f.reader.read() } returnsMany listOf(normal, normal, BondFrame.Other)
+        assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
+        assertEquals(1, f.state.runs)
+    }
+
+    @Test fun `two consecutive quest results accumulate five columns independently and session totals reset`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        f.start()
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Gain(it + 1, 10) })
+        f.tracker.process(); f.tracker.process(); f.tracker.finishResult()
+        f.state.nextRun(); f.tracker.beginBattle()
+        every { f.reader.read() } returns BondFrame.Normal(List(5) { BondValue.Gain(it + 1, 20) })
+        f.tracker.process(); f.tracker.finishResult()
+        assertEquals(listOf(32L, 34L, 36L, 38L, 40L), f.tracker.summary()!!.slots.map { it.total })
+        assertTrue(f.tracker.summary()!!.slots.all { it.readRuns == 2 && it.missedRuns == 0 })
+        assertTrue(Fixture().tracker.summary()!!.slots.isEmpty())
+    }
+
 }

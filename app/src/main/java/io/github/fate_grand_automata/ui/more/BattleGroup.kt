@@ -96,14 +96,6 @@ fun LazyListScope.battleGroup(
     }
 
     item {
-        prefs.ignoreQuestItemUsage.SwitchPreference(
-            title = stringResource(R.string.p_ignore_quest_item_usage),
-            summary = stringResource(R.string.p_ignore_quest_item_usage_summary),
-            icon = icon(R.drawable.ic_gift)
-        )
-    }
-
-    item {
         prefs.boostItemSelectionMode.SingleSelectChipPreference(
             title = stringResource(R.string.p_boost_item),
             icon = icon(Icons.Default.OfflineBolt),
