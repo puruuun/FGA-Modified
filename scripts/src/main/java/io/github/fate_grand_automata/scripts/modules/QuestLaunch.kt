@@ -9,11 +9,13 @@ import kotlin.time.Duration.Companion.seconds
 class QuestLaunch @Inject constructor(
     api: IFgoAutomataApi,
     private val partySelection: PartySelection,
-    private val items: QuestItems
+    private val items: QuestItems,
+    private val bondTracker: BondTracker
 ) : IFgoAutomataApi by api {
     fun start() {
         partySelection.selectParty()
         items.prepare()
+        bondTracker.captureParty()
         // A failed setting/close confirmation throws before this point.
         locations.menuStartQuestClick.click()
         2.seconds.wait()

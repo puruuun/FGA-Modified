@@ -1,0 +1,138 @@
+[
+  {
+    "name": "normal-kr-old",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      [
+        25,
+        6
+      ],
+      "MAX",
+      "MAX",
+      [
+        25,
+        1
+      ],
+      [
+        25,
+        1
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-normal-kr-old.png"
+  },
+  {
+    "name": "normal-kr",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      "MAX",
+      [
+        1098,
+        263
+      ],
+      "MAX",
+      [
+        1098,
+        43
+      ],
+      "MAX"
+    ],
+    "file": "docs/reference-images/Kr/bond-normal-kr.png"
+  },
+  {
+    "name": "normal-jp",
+    "server": "Jp",
+    "kind": "normal",
+    "expected": [
+      [
+        1755,
+        1400
+      ],
+      "MAX",
+      "MAX",
+      "MAX",
+      "MAX"
+    ],
+    "file": "docs/reference-images/Jp/bond-normal-jp.png"
+  },
+  {
+    "name": "kr7",
+    "server": "Kr",
+    "kind": "popup",
+    "expected_level": 7,
+    "expected_column": null,
+    "file": "docs/reference-images/Kr/bond-kr7.png"
+  },
+  {
+    "name": "kr10",
+    "server": "Kr",
+    "kind": "popup",
+    "expected_level": 10,
+    "expected_column": null,
+    "file": "docs/reference-images/Kr/bond-kr10.png"
+  },
+  {
+    "name": "kr11",
+    "server": "Kr",
+    "kind": "popup",
+    "expected_level": 11,
+    "expected_column": null,
+    "file": "docs/reference-images/Kr/bond-kr11.png"
+  },
+  {
+    "name": "jp12",
+    "server": "Jp",
+    "kind": "popup",
+    "expected_level": 12,
+    "expected_column": 2,
+    "file": "docs/reference-images/Jp/bond-jp12.png"
+  },
+  {
+    "name": "jp16",
+    "server": "Jp",
+    "kind": "popup",
+    "expected_level": 16,
+    "expected_column": null,
+    "file": "docs/reference-images/Jp/bond-jp16.png"
+  },
+  {
+    "name": "party-kr1",
+    "server": "Kr",
+    "kind": "party",
+    "expected": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "file": "docs/reference-images/Kr/bond-party-kr1.png"
+  },
+  {
+    "name": "party-jp1",
+    "server": "Jp",
+    "kind": "party",
+    "expected": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "file": "docs/reference-images/Jp/bond-party-jp1.png"
+  },
+  {
+    "name": "party-jp3",
+    "server": "Jp",
+    "kind": "party",
+    "expected": [
+      1,
+      2,
+      4,
+      5,
+      6
+    ],
+    "file": "docs/reference-images/Jp/bond-party-jp3.png"
+  }
+]

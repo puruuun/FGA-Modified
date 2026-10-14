@@ -207,9 +207,10 @@ class DroidCvPattern(
         Imgproc.resize(mat, enlarged, CvSize(width * options.scale.toDouble(), height * options.scale.toDouble()),
             0.0, 0.0, Imgproc.INTER_CUBIC)
         return DroidCvPattern(enlarged).use { scaled ->
-            scaled.threshold(options.threshold).use { binary ->
+            (if (options.rawGrayscale) scaled.copy() else scaled.threshold(options.threshold)).use { binary ->
                 val text = if (options.fillOutline) binary.fillText() else binary.copy()
                 text.use {
+                    if (options.invert) Core.bitwise_not((it as DroidCvPattern).mat, it.mat)
                     val padded = Mat()
                     Core.copyMakeBorder((it as DroidCvPattern).mat, padded,
                         options.padding, options.padding, options.padding, options.padding,

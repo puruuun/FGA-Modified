@@ -32,6 +32,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
+import io.github.fate_grand_automata.scripts.models.BondSummary
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.FgaScreen
@@ -43,6 +44,7 @@ import io.github.fate_grand_automata.util.KnownException
 import io.github.fate_grand_automata.util.stringRes
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import java.text.NumberFormat
 
 private val Duration.stringify: String
     get() =
@@ -74,6 +76,8 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.SupportSelectionPreferredNotSet -> stringResource(R.string.support_selection_preferred_not_set)
     AutoBattle.ExitReason.SupportSkillDisplayFailed -> stringResource(R.string.support_skill_display_failed)
     AutoBattle.ExitReason.QuestItemSettingFailed -> stringResource(R.string.quest_item_setting_failed)
+    AutoBattle.ExitReason.BondPartyUnavailable -> stringResource(R.string.bond_party_unavailable)
+    is AutoBattle.ExitReason.BondMax -> stringResource(R.string.bond_max_stop, positions.joinToString(", "))
     is AutoBattle.ExitReason.DirectCardsUnavailable -> stringResource(R.string.direct_cards_unavailable, sequence)
     is AutoBattle.ExitReason.SkillCommandParseError -> "AutoSkill Parse error:\n\n${cause?.message}"
     is AutoBattle.ExitReason.CardPriorityParseError -> msg
@@ -195,6 +199,10 @@ private fun LazyListScope.battleExitContent(
         }
     }
 
+    state.bond?.let { bond ->
+        item { BondSummaryContent(bond) }
+    }
+
     if (state.withdrawCount > 0) {
         item {
             Text(
@@ -204,6 +212,24 @@ private fun LazyListScope.battleExitContent(
                     .padding(16.dp, 5.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun BondSummaryContent(summary: BondSummary) {
+    Column(Modifier.padding(16.dp, 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        HorizontalDivider()
+        Text(stringResource(R.string.bond_totals), color = MaterialTheme.colorScheme.secondary)
+        if (summary.slots.isEmpty()) Text(stringResource(R.string.bond_no_results), style = MaterialTheme.typography.bodySmall)
+        summary.slots.forEach { slot ->
+            Text(stringResource(R.string.bond_slot_total, slot.position, NumberFormat.getIntegerInstance().format(slot.total)))
+            Text(stringResource(R.string.bond_slot_reads, slot.readRuns, slot.missedRuns) +
+                if (slot.maxObserved) " · " + stringResource(R.string.bond_max_observed) else "",
+                style = MaterialTheme.typography.bodySmall)
+        }
+        Text(stringResource(R.string.bond_totals_note), style = MaterialTheme.typography.bodySmall)
+        if (summary.unmappedLevelUpRuns > 0) Text(stringResource(R.string.bond_unmapped_popups, summary.unmappedLevelUpRuns),
+            style = MaterialTheme.typography.bodySmall)
     }
 }
 

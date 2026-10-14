@@ -25,6 +25,11 @@ internal class PerServerConfigPrefs(
     override var waitForAPRegen by prefs.waitAPRegen
     override var useStormPod by prefs.questItems.useStormPod
     override var useTeapot by prefs.questItems.useTeapot
+    override var trackBond by prefs.bond.track
+    override var stopOnBondMax by prefs.bond.stopOnMax
+    override var bondMaxIgnoredPositions: Set<Int>
+        get() = prefs.bond.ignoredPositions.get().mapNotNull { it.toIntOrNull()?.takeIf { it in 1..6 } }.toSet()
+        set(value) = prefs.bond.ignoredPositions.set(value.filter { it in 1..6 }.map { it.toString() }.toSet())
 
     override var selectedApple by prefs.selectedApple
     override var currentAppleCount: Int

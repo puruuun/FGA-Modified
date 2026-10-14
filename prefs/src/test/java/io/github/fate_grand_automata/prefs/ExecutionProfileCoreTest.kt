@@ -248,4 +248,27 @@ class ExecutionProfileCoreTest {
         restoredKr.useStormPod.set(true)
         assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
     }
+    @Test
+    fun `bond choices persist independently of item choices and other server stores`() {
+        val storage = MemoryPrefs()
+        val maker = PrefMaker(storage)
+        val bond = io.github.fate_grand_automata.prefs.core.BondPrefsCore(maker)
+        val items = QuestItemPrefsCore(maker)
+        assertThat(bond.track.get()).isEqualTo(false)
+        assertThat(bond.stopOnMax.get()).isEqualTo(false)
+        assertThat(bond.ignoredPositions.get()).isEqualTo(emptySet())
+        items.useTeapot.set(true)
+        bond.track.set(true)
+        bond.stopOnMax.set(true)
+        bond.ignoredPositions.set(setOf("1", "4"))
+        val restored = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(storage))
+        assertThat(restored.track.get()).isEqualTo(true)
+        assertThat(restored.stopOnMax.get()).isEqualTo(true)
+        assertThat(restored.ignoredPositions.get()).isEqualTo(setOf("1", "4"))
+        assertThat(items.useTeapot.get()).isEqualTo(true)
+        assertThat(items.useStormPod.get()).isEqualTo(false)
+        val otherServer = io.github.fate_grand_automata.prefs.core.BondPrefsCore(PrefMaker(MemoryPrefs()))
+        assertThat(otherServer.track.get()).isEqualTo(false)
+        assertThat(otherServer.ignoredPositions.get()).isEqualTo(emptySet())
+    }
 }

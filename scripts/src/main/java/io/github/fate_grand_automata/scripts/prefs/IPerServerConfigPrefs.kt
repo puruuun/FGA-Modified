@@ -18,6 +18,9 @@ interface IPerServerConfigPrefs {
 
     var useStormPod: Boolean
     var useTeapot: Boolean
+    var trackBond: Boolean
+    var stopOnBondMax: Boolean
+    var bondMaxIgnoredPositions: Set<Int>
 
     var selectedApple: RefillResourceEnum
 

@@ -10,6 +10,9 @@ import io.github.fate_grand_automata.scripts.models.BoostItem
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.Battle
+import io.github.fate_grand_automata.scripts.modules.BondTracker
+import io.github.fate_grand_automata.scripts.models.BondFrame
+import io.github.fate_grand_automata.scripts.models.BondSummary
 import io.github.fate_grand_automata.scripts.modules.CEDropsTracker
 import io.github.fate_grand_automata.scripts.modules.ConnectionRetry
 import io.github.fate_grand_automata.scripts.modules.MaterialsTracker
@@ -56,7 +59,8 @@ class AutoBattle @Inject constructor(
     private val connectionRetry: ConnectionRetry,
     private val refill: Refill,
     private val matTracker: MaterialsTracker,
-    private val ceDropsTracker: CEDropsTracker
+    private val ceDropsTracker: CEDropsTracker,
+    private val bonds: BondTracker
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     sealed class ExitReason(val cause: Exception? = null) {
         data object Abort : ExitReason()
@@ -73,6 +77,8 @@ class AutoBattle @Inject constructor(
         data object SupportSelectionPreferredNotSet : ExitReason()
         data object SupportSkillDisplayFailed : ExitReason()
         data object QuestItemSettingFailed : ExitReason()
+        data object BondPartyUnavailable : ExitReason()
+        class BondMax(val positions: List<Int>) : ExitReason()
         class DirectCardsUnavailable(val sequence: String) : ExitReason()
         class SkillCommandParseError(cause: Exception) : ExitReason(cause)
         class CardPriorityParseError(val msg: String) : ExitReason()
@@ -162,7 +168,8 @@ class AutoBattle @Inject constructor(
         val averageTimePerRun: Duration,
         val minTurnsPerRun: Int,
         val maxTurnsPerRun: Int,
-        val averageTurnsPerRun: Double
+        val averageTurnsPerRun: Double,
+        val bond: BondSummary? = null
     )
 
     private fun makeExitState(): ExitState {
@@ -178,7 +185,8 @@ class AutoBattle @Inject constructor(
             averageTimePerRun = state.averageTimePerRun,
             minTurnsPerRun = state.minTurnsPerRun,
             maxTurnsPerRun = state.maxTurnsPerRun,
-            averageTurnsPerRun = state.averageTurnsPerRun
+            averageTurnsPerRun = state.averageTurnsPerRun,
+            bond = bonds.summary()
         )
     }
 
@@ -190,10 +198,12 @@ class AutoBattle @Inject constructor(
             { battle.isIdle() } to {
                 storySkipPossible = false
                 isInBattle = true
+                bonds.beginBattle()
                 battle.performBattle()
             },
             { isInMenu() } to { menu() },
             { isStartingNp() } to { skipNp() },
+            { bonds.isScreen() } to { trackedBondResult() },
             { isInBondScreen() } to { handleBondScreen() },
             { isInResult() } to { result() },
             { isInDropsScreen() } to { dropScreen() },
@@ -291,6 +301,21 @@ class AutoBattle @Inject constructor(
         result()
     }
 
+    private fun trackedBondResult() {
+        isInBattle = false
+        val frame = bonds.process()
+        if (frame is BondFrame.Other) return
+        if (frame is BondFrame.LevelUp) {
+            canScreenshotBondCE = true
+            if (prefs.screenshotBond) {
+                screenshotDrops.screenshotBond()
+                messages.notify(ScriptNotify.BondLevelUp)
+            }
+        }
+        // Advance one screen so a following level-up popup cannot be skipped.
+        result()
+    }
+
     private fun isBond10CEReward() =
         locations.resultCeRewardRegion.exists(images[Images.Bond10Reward], similarity = 0.75)
 
@@ -316,6 +341,7 @@ class AutoBattle @Inject constructor(
             .count { it.exists(images[Images.ServantExist], similarity = 0.70) } in 1..2
 
     private fun ceRewardDetails() {
+        bonds.finishResult()
         if (prefs.stopOnCEGet) {
             // Count the current run
             state.nextRun()
@@ -330,9 +356,10 @@ class AutoBattle @Inject constructor(
      * Clicks through the reward screens.
      */
     private fun result() {
+        bonds.finishResult()
         isInBattle = false
         locations.resultClick.click(
-            times = if (prefs.screenshotBond) 5 else 15
+            times = if (bonds.enabled) 1 else if (prefs.screenshotBond) 5 else 15
         )
         storySkipPossible = true
     }
@@ -341,6 +368,7 @@ class AutoBattle @Inject constructor(
         images[Images.MatRewards] in locations.resultMatRewardsRegion
 
     private fun dropScreen() {
+        bonds.finishResult()
         canScreenshotBondCE = false
 
         ceDropsTracker.lookForCEDrops()
@@ -379,6 +407,7 @@ class AutoBattle @Inject constructor(
     private fun isRepeatScreen() = findRepeatButton() != null
 
     private fun repeatQuest() {
+        bonds.finishResult()
         // Needed to show we don't need to enter the "StartQuest" function
         isContinuing = true
         storySkipPossible = false
@@ -428,6 +457,7 @@ class AutoBattle @Inject constructor(
      * Handles the quest rewards screen.
      */
     private fun questReward() {
+        bonds.finishResult()
         if (prefs.stopOnFirstClearRewards) {
             // Count the current run
             state.nextRun()

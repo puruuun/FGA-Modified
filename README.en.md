@@ -14,15 +14,15 @@ This project is maintained separately from the upstream team's official distribu
 ## Download
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[Teapot/Storm Pod stable release 0.7.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.7.0)**
+- **[Bond tracking / MAX stop stable release 0.8.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.8.0)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](wiki/scripts/Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.7.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.8.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.7.0 (stable release) |
+| Version | 0.8.0 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -140,6 +140,12 @@ After support and party selection, the app applies the choices before Quest Star
 
 All **9/9 supplied KR/JP game screenshots** and the enlarged ON-button sample passed recognition tests. Live Android/FGO interaction remains unverified. Fast repeat flows that skip party confirmation retain the game's existing settings. See the [full guide](wiki/scripts/Quest-Items.md).
 
+### 13. Bond gain tracking and MAX stop — 0.8.0
+
+The launcher has independent **Track bond point gains / Stop when a party member reaches MAX** controls and exceptions by original party position. The support is excluded. Base plus bonus is accumulated once per quest, with totals read and missing counts shown at exit.
+
+Level-up popups skip obscured background gains/MAX. A confirmed position reaching 10 or above applies the MAX stop rule; uncertain popups defer to normal MAX on the next quest. Gems and NEXT are not read. [Settings and validation scope](wiki/scripts/Bond-Tracking.md).
+
 ## Updates through Obtainium
 
 1. Install [Obtainium](https://obtainium.imranr.dev/).
@@ -147,7 +153,7 @@ All **9/9 supplied KR/JP game screenshots** and the enlarged ON-button sample pa
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.7.0 with Teapot/Storm Pod controls and the updated score policy is a stable release and works with the existing Obtainium configuration.
+Version 0.8.0 adds bond tracking and MAX stop as a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
 

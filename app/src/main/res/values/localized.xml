@@ -650,4 +650,20 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start. Check the game screen, or enable Ignore Storm Pod/Teapot use in More options → Battle.</string>
     <string name="p_grand_score_16_check_summary">Ignored on ordinary Class-only score displays. With both switches on, every applicable condition must match.</string>
+    <string name="p_bond">Bond points</string>
+    <string name="p_bond_track">Track bond point gains</string>
+    <string name="p_bond_stop">Stop when a party member reaches MAX</string>
+    <string name="p_bond_ignore">MAX stop exceptions (original party positions):</string>
+    <string name="p_bond_position">Slot %1$d</string>
+    <string name="p_bond_summary">Support is excluded automatically. Positions refer to the party before battle. Level-up popups skip hidden gains; an uncertain position is rechecked next quest.</string>
+    <string name="p_bond_servers">Bond recognition currently supports the Korean and Japanese servers.</string>
+    <string name="bond_party_unavailable">Could not confirm the party positions for bond tracking. Start from the quest list/support selection with the party screen visible before Quest Start.</string>
+    <string name="bond_max_stop">Bond MAX confirmed in party slot(s): %1$s</string>
+    <string name="bond_totals">Bond points — totals read this script run</string>
+    <string name="bond_slot_total">Party slot %1$d: %2$s points</string>
+    <string name="bond_slot_reads">Read: %1$d quests · Missing: %2$d quests</string>
+    <string name="bond_max_observed">MAX confirmed</string>
+    <string name="bond_totals_note">Base and bonus are added. Totals exclude unreadable/obscured gains; missing values are not counted as real zero.</string>
+    <string name="bond_unmapped_popups">Unmapped/unreadable level-up quests: %1$d. Those popups were skipped; normal MAX is checked next quest.</string>
+    <string name="bond_no_results">No bond results have been recorded yet.</string>
 </resources>

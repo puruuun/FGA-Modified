@@ -18,11 +18,14 @@ data class TextLineOcrOptions(
     val threshold: Double = 0.5,
     val fillOutline: Boolean = false,
     val padding: Int = 0,
-    val allowedCharacters: String = ""
+    val allowedCharacters: String = "",
+    val invert: Boolean = false,
+    val rawGrayscale: Boolean = false
 ) {
     init {
         require(scale > 0)
         require(threshold in 0.0..1.0)
         require(padding >= 0)
+        require(!rawGrayscale || !fillOutline)
     }
 }

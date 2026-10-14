@@ -15,15 +15,15 @@ kr jp 서버 한정으로 테스트되었습니다. 다른서버는 몰루
 ## 다운로드
 
 - **[최신 수정판 APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[티포트·스톰포드 정규 버전 0.7.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.7.0)**
+- **[인연 추적·MAX 정지 정규 버전 0.8.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.8.0)**
 - **[Obtainium에 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[자세한 설치·설정 안내](wiki/scripts/Card-Count-Start-KR.md)**
 
-릴리스의 `FGA-mod-0.7.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
+릴리스의 `FGA-mod-0.8.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
 
 | 항목 | 수정판 정보 |
 |---|---|
-| 버전 | 0.7.0 (정규 버전) |
+| 버전 | 0.8.0 (정규 버전) |
 | 앱 이름 | FGA(mod) |
 | 아이콘 | 파란색 Arts |
 | 패키지 | `io.github.fate_grand_automata.cardcount` |
@@ -141,6 +141,12 @@ kr jp 서버 한정으로 테스트되었습니다. 다른서버는 몰루
 
 제공된 한국·일본 게임 화면 **9/9장**과 확대 ON 버튼의 판독이 통과했습니다. 실제 Android/FGO 조작은 아직 확인하지 않았습니다. 게임의 빠른 연속 주회가 파티 확인 화면을 생략하면 유지된 설정을 그대로 사용합니다. [자세한 동작 및 검증](wiki/scripts/Quest-Items-KR.md).
 
+### 13. 인연포인트 누적·MAX 정지 — 0.8.0
+
+실행 창의 **인연포인트 획득량 추적 / 인연 MAX 확인 시 정지**를 각각 선택할 수 있습니다. 서포트를 제외한 원래 파티 위치별로 기본값+보너스를 한 번씩 합산하고, 종료 화면에 판독 합계·집계 횟수·누락 횟수를 표시합니다. MAX여도 계속 돌릴 위치는 **MAX 정지 예외**로 체크합니다.
+
+레벨업 창의 가려진 증가량·MAX는 읽지 않습니다. 도달 레벨이 10 이상이고 위치가 확정되면 정지 조건에 적용하며, 미확정이면 다음 퀘스트의 일반 MAX 표시로 재확인합니다. 보석과 NEXT는 읽지 않습니다. [설정과 검증 범위](wiki/scripts/Bond-Tracking-KR.md).
+
 ## Obtainium으로 업데이트
 
 1. [Obtainium](https://obtainium.imranr.dev/)을 설치합니다.
@@ -148,7 +154,7 @@ kr jp 서버 한정으로 테스트되었습니다. 다른서버는 몰루
 3. 사전 릴리스 포함은 끈 상태로 추가합니다. 릴리스에는 ARM APK 한 개만 있으므로 별도 APK 필터가 필요 없습니다.
 4. 앱 화면에서 업데이트를 확인하거나, Obtainium 설정에서 백그라운드 확인 주기를 정합니다. 새 정규 버전이 올라오면 APK를 받을 수 있습니다.
 
-티포트·스톰포드 제어와 스코어 규칙 변경을 포함한 0.7.0은 정규 릴리즈이므로 기존 Obtainium 설정으로 업데이트할 수 있습니다.
+인연 추적·MAX 정지를 추가한 0.8.0도 정규 릴리즈이므로 기존 Obtainium 설정으로 업데이트할 수 있습니다.
 
 설정 파일은 [obtainium.json](obtainium.json)입니다. 패키지와 서명을 유지하고 버전 코드를 올리므로 기존 수정판을 업데이트할 수 있습니다. 자동 설치 여부는 Android와 Obtainium의 권한·설정에 따라 달라집니다. [추가 방법](https://wiki.obtainium.imranr.dev/ui_overview/), [업데이트 동작](https://wiki.obtainium.imranr.dev/app_tracking/).
 
