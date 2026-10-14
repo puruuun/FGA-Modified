@@ -153,26 +153,32 @@
 
 ### 14. 앱 화면 정리
 
-홈에는 설치된 수정판 버전의 **Build: 0.9.2** 버튼만 표시하며 수정판 릴리스로 연결됩니다. 레포지토리·문제해결·Discord·기부 버튼을 제거했습니다. 인연 기능 아래 서버 안내·긴 설명과 어펜드 스킬 선택의 최대 레벨 제목도 제거했습니다. **더 많은 옵션 → 고급 옆의 추가기능**에서 기본 꺼짐인 티포트·스톰포드 자동 설정을 켤 수 있습니다.
+홈에는 설치된 수정판 버전의 **Build: 0.10.0** 버튼만 표시하며 수정판 릴리스로 연결됩니다. 레포지토리·문제해결·Discord·기부 버튼을 제거했습니다. 인연 기능 아래 서버 안내·긴 설명과 어펜드 스킬 선택의 최대 레벨 제목도 제거했습니다. **더 많은 옵션 → 고급 옆의 추가기능**에서 기본 꺼짐인 티포트·스톰포드 자동 설정을 켤 수 있습니다.
 
 ### 15. GitHub 업데이트 확인
 
 **더 많은 옵션 → 고급 → 업데이트 확인**을 켜면 앱 실행 시 FGA-Modified의 최신 정규 릴리스를 설치 버전과 비교합니다. 새 버전의 ARM APK 업로드가 완료되어 있으면 현재·새 버전을 표시하고, **릴리스 열기**로 해당 GitHub 페이지를 엽니다. 사전 릴리스는 제외하고 네트워크 오류 시 기존 앱을 계속 사용합니다. 앱이 꺼진 상태의 검사·알림이나 자동 APK 설치는 하지 않습니다.
+
+<a id="chaldea-import"></a>
+
+### 16. Chaldea 공유 링크로 커맨드 입력 — 0.10.0
+
+커맨드 오른쪽에서 터미널 아이콘 왼쪽의 **링크로 입력**을 누르고 Chaldea 공유 주소를 붙여넣은 뒤 **변환하여 입력**을 누릅니다. 기존 커맨드가 대체된다는 안내를 표시하고, 변환·문법 검증에 성공했을 때만 해당 커맨드를 대체합니다. 첫 번째·두 번째 커맨드 모두 사용할 수 있습니다. 다른 편성·서포트·카드 설정은 가져오지 않습니다. [사용 방법과 검증 범위](Chaldea-Import-KR.md).
 
 <a id="installation"></a>
 
 ## 설치
 
 - **[최신 수정판 APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[인연 추적·MAX 정지 정규 버전 0.9.2](https://github.com/puruuun/FGA-Modified/releases/tag/v0.9.2)**
+- **[Chaldea 링크 입력 정규 버전 0.10.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.10.0)**
 - **[Obtainium에 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[자세한 설치·설정 안내](Card-Count-Start-KR.md)**
 
-릴리스의 `FGA-mod-0.9.2-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
+릴리스의 `FGA-mod-0.10.0-arm.apk`를 설치하세요. Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다.
 
 | 항목 | 수정판 정보 |
 |---|---|
-| 버전 | 0.9.2 (정규 버전) |
+| 버전 | 0.10.0 (정규 버전) |
 | 앱 이름 | FGA(mod) |
 | 아이콘 | 파란색 Arts |
 | 패키지 | `io.github.fate_grand_automata.cardcount` |
@@ -186,6 +192,6 @@
 3. 사전 릴리스 포함은 끈 상태로 추가합니다. 릴리스에는 ARM APK 한 개만 있으므로 별도 APK 필터가 필요 없습니다.
 4. 앱 화면에서 업데이트를 확인하거나, Obtainium 설정에서 백그라운드 확인 주기를 정합니다. 새 정규 버전이 올라오면 APK를 받을 수 있습니다.
 
-결과창 기준 인연 추적과 UI를 정리한 0.9.2도 정규 릴리즈이므로 기존 Obtainium 설정으로 업데이트할 수 있습니다.
+Chaldea 링크 입력을 추가한 0.10.0도 정규 릴리즈이므로 기존 Obtainium 설정으로 업데이트할 수 있습니다.
 
 설정 파일은 [obtainium.json](../../obtainium.json)입니다. 패키지와 서명을 유지하고 버전 코드를 올리므로 기존 수정판을 업데이트할 수 있습니다. 자동 설치 여부는 Android와 Obtainium의 권한·설정에 따라 달라집니다. [추가 방법](https://wiki.obtainium.imranr.dev/ui_overview/), [업데이트 동작](https://wiki.obtainium.imranr.dev/app_tracking/).

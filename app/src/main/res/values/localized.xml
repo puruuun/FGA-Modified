@@ -667,4 +667,16 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="github_update_later">Later</string>
     <string name="p_enable_quest_item_control">Enable Teapot/Storm Pod control</string>
     <string name="p_enable_quest_item_control_summary">Check and apply the launcher’s item ON/OFF choices before Quest Start. Disabled by default.</string>
+    <string name="chaldea_import_button">Import from link</string>
+    <string name="chaldea_import_title">Import Chaldea command</string>
+    <string name="chaldea_import_url">Chaldea share URL</string>
+    <string name="chaldea_import_replace_warning">Applying the converted command replaces the existing command.</string>
+    <string name="chaldea_import_apply">Convert and apply</string>
+    <string name="chaldea_import_loading">Converting command…</string>
+    <string name="chaldea_import_error_link">Paste a full Chaldea share URL containing embedded battle data.</string>
+    <string name="chaldea_import_error_data">The shared battle data is damaged or incomplete. Copy the link again from Chaldea.</string>
+    <string name="chaldea_import_error_actions">This link contains no usable commands. Share a battle with recorded skill and attack actions.</string>
+    <string name="chaldea_import_error_network">Could not load game data. Check your connection and try again. The existing command has been kept.</string>
+    <string name="chaldea_import_error_metadata">Could not find the skills or Noble Phantasms used in this link. The existing command has been kept.</string>
+    <string name="chaldea_import_error_unsupported">This battle includes an action or choice that FGA cannot import. The existing command has been kept.</string>
 </resources>

@@ -18,6 +18,7 @@ Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています
 
 | 機能 | 概要 |
 |---|---|
+| [Chaldeaリンクから入力](wiki/scripts/Modified-Features-JA.md#chaldea-import) | 戦闘共有リンクをコマンドに変換して入力します。 |
 | [カード枚数によるコマンド開始](wiki/scripts/Modified-Features-JA.md#card-start) | サーヴァントの通常カード枚数に応じて、2つの設定から実行する設定を選びます。 |
 | [初ターンのシャッフル](wiki/scripts/Modified-Features-JA.md#first-turn-shuffle) | 開始条件を満たさない場合、シャッフル後に再判定します。 |
 | [サポートのアペンドスキル](wiki/scripts/Modified-Features-JA.md#support-append) | 指定したアペンド枠がLv.10か確認します。 |

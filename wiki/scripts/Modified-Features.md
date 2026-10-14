@@ -153,26 +153,32 @@ The first read begins 1.5 seconds after detecting a bond result, using a fresh c
 
 ### 14. App interface
 
-The home screen shows only the installed-version button, for example **Build: 0.9.2**, linking to modified releases. The repository, troubleshooting, Discord and donation buttons are removed. Bond server/help text and the Append Skill maximum-level heading have also been removed. **More options → Additional features**, next to Advanced, contains Enable Teapot/Storm Pod control, which defaults off.
+The home screen shows only the installed-version button, for example **Build: 0.10.0**, linking to modified releases. The repository, troubleshooting, Discord and donation buttons are removed. Bond server/help text and the Append Skill maximum-level heading have also been removed. **More options → Additional features**, next to Advanced, contains Enable Teapot/Storm Pod control, which defaults off.
 
 ### 15. GitHub update checks
 
 Enable **More options → Advanced → Check for updates** to compare the installed version with the latest stable FGA-Modified GitHub release when the app starts. A newer release with an uploaded ARM APK opens an update prompt with a link to its release page. Prereleases are excluded. Network failures leave the installed app usable. There is no background polling, closed-app notification or automatic APK installation. The release endpoint follows the [GitHub REST API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release).
+
+<a id="chaldea-import"></a>
+
+### 16. Chaldea command import — 0.10.0
+
+Use the link icon immediately to the left of the terminal icon beside either command. Paste a Chaldea battle share URL and choose **Convert and apply**. The dialog warns that the existing command will be replaced. Only a successful conversion that passes FGA syntax validation changes the selected command; cancelling or errors preserve it. Party, support and card settings are not imported. Skill/NP/Mystic Code metadata is loaded from Atlas Academy JP and cached. Conversion follows the default fgo-converter rules, including its `,#,` boundaries and normal-card/gimmick limitations. Two- and three-option skills are supported; unsupported actions fail without replacing the command. There are 35 reference-output parity cases, including the supplied real order-change example. Device UI and live FGO execution still need verification. [Detailed guide (Korean)](Chaldea-Import-KR.md).
 
 <a id="installation"></a>
 
 ## Installation
 
 - **[Latest modified APK](https://github.com/puruuun/FGA-Modified/releases/latest)**
-- **[Bond tracking / MAX stop stable release 0.9.2](https://github.com/puruuun/FGA-Modified/releases/tag/v0.9.2)**
+- **[Bond tracking / MAX stop stable release 0.10.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.10.0)**
 - **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)**
 - **[Detailed installation and configuration guide (Korean)](Card-Count-Start-KR.md)**
 
-Install `FGA-mod-0.9.2-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
+Install `FGA-mod-0.10.0-arm.apk` from the release. It supports Android 7 or later on ARM devices (arm64-v8a / armeabi-v7a).
 
 | Item | Modified build |
 |---|---|
-| Version | 0.9.2 (stable release) |
+| Version | 0.10.0 (stable release) |
 | App name | FGA(mod) |
 | Icon | Blue Arts |
 | Package | `io.github.fate_grand_automata.cardcount` |
@@ -186,6 +192,6 @@ It installs separately from official FGA and upstream CI builds. The package and
 3. Leave prereleases disabled. Each release has one ARM APK, so no extra APK filter is needed.
 4. Check for updates on the app page, or configure background checks in Obtainium. New stable releases provide downloadable APKs.
 
-Version 0.9.2 simplifies bond tracking and updates the interface as a stable release and works with the existing Obtainium configuration.
+Version 0.10.0 simplifies bond tracking and updates the interface as a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](../../obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).

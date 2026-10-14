@@ -18,6 +18,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 간단한 설명 |
 |---|---|
+| [Chaldea 링크로 커맨드 입력](wiki/scripts/Modified-Features-KR.md#chaldea-import) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Modified-Features-KR.md#card-start) | 서번트별 카드 수에 따라 두 설정 중 하나를 실행합니다. |
 | [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 시작 조건이 부족하면 셔플 후 다시 검사합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Modified-Features-KR.md#support-append) | 지정한 어펜드 슬롯의 10레벨 여부를 확인합니다. |

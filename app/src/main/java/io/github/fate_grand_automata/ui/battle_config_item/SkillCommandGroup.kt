@@ -10,6 +10,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +49,17 @@ fun SkillCommandGroup(
         runCatching { SkillMakerModel(cmd).skillCommand.drop(1) }.getOrDefault(emptyList())
     }
     var editing by remember { mutableStateOf(false) }
+    var importing by remember { mutableStateOf(false) }
+
+    if (importing) {
+        ChaldeaImportDialog(
+            onDismiss = { importing = false },
+            onImported = {
+                cmd = it
+                importing = false
+            }
+        )
+    }
 
     val invalidCommandMessage = stringResource(R.string.battle_config_cmd_invalid)
 
@@ -93,13 +107,16 @@ fun SkillCommandGroup(
             },
             onClick = openSkillMaker
         ) {
-            IconButton(
-                onClick = { editing = true }
-            ) {
-                DimmedIcon(
-                    icon(R.drawable.ic_terminal),
-                    contentDescription = "Show Textbox for editing Skill command"
-                )
+            Row {
+                IconButton(onClick = { importing = true }) {
+                    Icon(Icons.Default.Link, contentDescription = stringResource(R.string.chaldea_import_button))
+                }
+                IconButton(onClick = { editing = true }) {
+                    DimmedIcon(
+                        icon(R.drawable.ic_terminal),
+                        contentDescription = "Show Textbox for editing Skill command"
+                    )
+                }
             }
         }
     }
