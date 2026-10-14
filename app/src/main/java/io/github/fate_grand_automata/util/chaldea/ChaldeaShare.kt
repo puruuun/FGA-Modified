@@ -16,7 +16,7 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 import kotlin.io.encoding.Base64
 
-enum class ChaldeaImportError { LINK, DATA, NO_ACTIONS, METADATA, NETWORK, UNSUPPORTED }
+enum class ChaldeaImportError { LINK, DATA, TARGETING, NO_ACTIONS, METADATA, NETWORK, UNSUPPORTED }
 
 class ChaldeaImportException(val error: ChaldeaImportError, val detail: String = "") : Exception(error.name)
 

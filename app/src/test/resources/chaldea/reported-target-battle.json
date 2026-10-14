@@ -1,0 +1,584 @@
+{
+  "name": "reported-sparse-enemy-slots",
+  "metadata": {
+    "svt-301300": {
+      "id": 301300,
+      "skills": [
+        {
+          "id": 123551,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 127000,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptOne"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 124450,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 127025,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptOne"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "ptOne"
+            },
+            {
+              "funcType": "gainNp",
+              "funcTargetType": "ptOne"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "ptOne"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 124650,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        }
+      ],
+      "noblePhantasms": [
+        {
+          "id": 301301,
+          "effectFlags": [
+            "attackEnemyOne"
+          ],
+          "functions": [
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "damageNp",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "instantDeath",
+              "funcTargetType": "enemy"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 301302,
+          "effectFlags": [
+            "attackEnemyOne"
+          ],
+          "functions": [
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "damageNp",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "instantDeath",
+              "funcTargetType": "enemy"
+            }
+          ],
+          "script": {}
+        }
+      ]
+    },
+    "svt-300400": {
+      "id": 300400,
+      "skills": [
+        {
+          "id": 148550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemy"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 149550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 150000,
+          "functions": [
+            {
+              "funcType": "gainNp",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 2466650,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 2247000,
+          "functions": [
+            {
+              "funcType": "gainNp",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "gainStar",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        }
+      ],
+      "noblePhantasms": [
+        {
+          "id": 300401,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpIndividual",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 300402,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpIndividual",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        }
+      ]
+    },
+    "svt-301600": {
+      "id": 301600,
+      "skills": [
+        {
+          "id": 77351,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 111350,
+          "functions": [
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "delayNpturn",
+              "funcTargetType": "enemy"
+            },
+            {
+              "funcType": "lossNp",
+              "funcTargetType": "enemy"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 12450,
+          "functions": [
+            {
+              "funcType": "subState",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "gainHp",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 698550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "ptAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 2419550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            },
+            {
+              "funcType": "subState",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "gainHp",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "gainNp",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        }
+      ],
+      "noblePhantasms": [
+        {
+          "id": 301601,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpPierce",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 301602,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpPierce",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        }
+      ]
+    },
+    "svt-300500": {
+      "id": 300500,
+      "skills": [
+        {
+          "id": 5350,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 45550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemy"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 41450,
+          "functions": [
+            {
+              "funcType": "addState",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 295550,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptOther"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 943450,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "subState",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 2576550,
+          "functions": [
+            {
+              "funcType": "addState",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "gainNp",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "hastenNpturn",
+              "funcTargetType": "self"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "self"
+            }
+          ],
+          "script": {}
+        }
+      ],
+      "noblePhantasms": [
+        {
+          "id": 300501,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpPierce",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 300502,
+          "effectFlags": [
+            "attackEnemyAll"
+          ],
+          "functions": [
+            {
+              "funcType": "damageNpPierce",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemyAll"
+            },
+            {
+              "funcType": "addState",
+              "funcTargetType": "enemyAll"
+            }
+          ],
+          "script": {}
+        }
+      ]
+    },
+    "MC-210": {
+      "id": 210,
+      "skills": [
+        {
+          "id": 980073,
+          "functions": [
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            },
+            {
+              "funcType": "addStateShort",
+              "funcTargetType": "ptAll"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 980074,
+          "functions": [
+            {
+              "funcType": "gainHp",
+              "funcTargetType": "ptOne"
+            },
+            {
+              "funcType": "subState",
+              "funcTargetType": "ptOne"
+            }
+          ],
+          "script": {}
+        },
+        {
+          "id": 980075,
+          "functions": [
+            {
+              "funcType": "replaceMember",
+              "funcTargetType": "ptselectOneSub"
+            }
+          ],
+          "script": {}
+        }
+      ]
+    }
+  },
+  "expectedIgnoringTargets": "defab1cgix31hgj54",
+  "referenceCommand": "t-1defab1cgix31hgj54"
+}

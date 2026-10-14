@@ -14,9 +14,10 @@ import kotlinx.serialization.json.intOrNull
  * Party stats, damage results, CE artwork, rewards and simulator options aren't imported.
  */
 class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
-    suspend fun convert(link: String): String = convert(ChaldeaShare.decode(link))
+    suspend fun convert(link: String, ignoreEnemyTargeting: Boolean = false): String =
+        convert(ChaldeaShare.decode(link), ignoreEnemyTargeting)
 
-    internal suspend fun convert(data: JsonObject): String = coroutineScope {
+    internal suspend fun convert(data: JsonObject, ignoreEnemyTargeting: Boolean = false): String = coroutineScope {
         val team = data.obj("team") ?: fail(ChaldeaImportError.DATA)
         val formation = (team.array("onFieldSvts") ?: fail(ChaldeaImportError.DATA)) +
             (team.array("backupSvts") ?: fail(ChaldeaImportError.DATA))
@@ -32,7 +33,7 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
             val id = share.int("svtId") ?: return@map null
             Member(share, servants.getValue(id).await())
         }
-        val command = Conversion(data, members, mc?.await()).run()
+        val command = Conversion(data, members, mc?.await(), ignoreEnemyTargeting).run()
         if (command.isBlank()) fail(ChaldeaImportError.NO_ACTIONS)
         try {
             AutoSkillCommand.parse(command)
@@ -61,7 +62,12 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
             ?: np?.array("effectFlags")?.any { (it as? JsonPrimitive)?.content == "attackEnemyOne" } == true
     }
 
-    private class Conversion(val data: JsonObject, members: List<Member?>, val mc: JsonObject?) {
+    private class Conversion(
+        val data: JsonObject,
+        members: List<Member?>,
+        val mc: JsonObject?,
+        val ignoreEnemyTargeting: Boolean
+    ) {
         val front = members.take(3).toMutableList()
         var back = members.drop(3).toMutableList()
         val delegate = data.obj("delegate")
@@ -98,9 +104,12 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
         }
 
         fun targetEnemy(action: JsonObject, needsTarget: Boolean) {
+            // Omit all enemy-selection commands at their source, including unsupported slots.
+            // Ally/choice targets and the skill itself are still converted normally.
+            if (ignoreEnemyTargeting) return
             val target = action.obj("options")?.int("enemyTarget") ?: return
             if (needsTarget && target != enemy) {
-                if (target !in 0..2) fail(ChaldeaImportError.DATA)
+                if (target !in 0..2) fail(ChaldeaImportError.TARGETING)
                 enemy = target
                 result.append('t').append(3 - target)
             }

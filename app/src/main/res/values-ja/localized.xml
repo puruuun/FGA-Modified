@@ -572,8 +572,8 @@
     <string name="chaldea_import_replace_warning">適用すると既存のコマンドが変換後のコマンドに置き換わります。</string>
     <string name="chaldea_import_apply">変換して入力</string>
     <string name="chaldea_import_loading">コマンドを変換しています…</string>
-    <string name="chaldea_import_error_link">戦闘情報を含むChaldea共有リンク全体を貼り付けてください。</string>
-    <string name="chaldea_import_error_data">共有データが破損しているか、不完全です。Chaldeaからリンクをもう一度コピーしてください。</string>
+    <string name="chaldea_import_ignore_enemy_targeting">エネミーターゲット情報を無視</string>
+    <string name="chaldea_import_error_data">リンクが破損しているか、コマンドに変換できない特殊なエネミーターゲット情報が含まれているため、取り込みに失敗しました。リンクを確認するか、「エネミーターゲット情報を無視」を有効にして再試行してください。</string>
     <string name="chaldea_import_error_actions">変換できるコマンドがありません。スキル・攻撃の行動記録を含む戦闘を共有してください。</string>
     <string name="chaldea_import_error_network">ゲームデータを取得できませんでした。接続を確認して再試行してください。既存のコマンドは保持されています。</string>
     <string name="chaldea_import_error_metadata">使用したスキル・宝具の情報が見つかりません。既存のコマンドは保持されています。</string>

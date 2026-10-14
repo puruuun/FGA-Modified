@@ -15,3 +15,12 @@ Real skill metadata was read from the public Atlas Academy JP `nice/svt` and
 Synthetic metadata covers behavior branches without downloading data in unit tests.
 These are output compatibility tests; they do not assert that the reference
 converter handles every game gimmick or party transition correctly in-game.
+
+`reported-target-share-url.txt` is the second user-supplied link, for quest 94146807.
+Its enemy target is index 4 in a six-slot layout with only slots 1, 3 and 5 occupied.
+The reference produces `t-1defab1cgix31hgj54`, which isn't valid FGA syntax. The
+`reported-target-battle.json` fixture retains the relevant real JP metadata.
+With the ignore-enemy-targeting option enabled, the expected command is
+`defab1cgix31hgj54`; with it disabled, import returns a targeting error.
+All 35 baseline cases also test omission of enemy commands without changes to
+skills, ally targets, choices, party changes or attacks.

@@ -601,8 +601,8 @@
     <string name="chaldea_import_replace_warning">적용하면 기존 커맨드가 변환된 커맨드로 대체됩니다.</string>
     <string name="chaldea_import_apply">변환하여 입력</string>
     <string name="chaldea_import_loading">커맨드를 변환하고 있습니다…</string>
-    <string name="chaldea_import_error_link">전투 정보가 포함된 Chaldea 공유 링크 전체를 붙여넣어 주세요.</string>
-    <string name="chaldea_import_error_data">공유 전투 정보가 손상되었거나 불완전합니다. Chaldea에서 링크를 다시 복사해 주세요.</string>
+    <string name="chaldea_import_ignore_enemy_targeting">에너미 타겟팅 정보 무시</string>
+    <string name="chaldea_import_error_data">링크가 손상되었거나 커맨드로 지정할 수 없는 특수 에너미 타겟팅 정보가 포함되어 불러오기에 실패했습니다. 링크를 다시 확인하거나 ‘에너미 타겟팅 정보 무시’를 체크한 후 다시 시도해 주세요.</string>
     <string name="chaldea_import_error_actions">변환할 커맨드가 없습니다. 스킬·공격 행동이 기록된 전투의 링크를 공유해 주세요.</string>
     <string name="chaldea_import_error_network">게임 데이터를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요. 기존 커맨드는 유지됩니다.</string>
     <string name="chaldea_import_error_metadata">링크에서 사용한 스킬·보구 정보를 찾지 못했습니다. 기존 커맨드는 유지됩니다.</string>

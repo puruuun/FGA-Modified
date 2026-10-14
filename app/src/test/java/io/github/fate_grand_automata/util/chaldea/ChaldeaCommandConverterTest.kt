@@ -23,6 +23,8 @@ class ChaldeaCommandConverterTest {
     private val fixtures = Json.parseToJsonElement(javaClass.getResource("/chaldea/converter-parity.json")!!.readText()).jsonArray
     private val user = fixtures.first().jsonObject
     private val userUrl = javaClass.getResource("/chaldea/user-share-url.txt")!!.readText()
+    private val reported = Json.parseToJsonElement(javaClass.getResource("/chaldea/reported-target-battle.json")!!.readText()).jsonObject
+    private val reportedUrl = javaClass.getResource("/chaldea/reported-target-share-url.txt")!!.readText()
 
     private fun converter(fixture: JsonObject = user) = ChaldeaCommandConverter(object : ChaldeaMetadata {
         val metadata = fixture.getValue("metadata").jsonObject
@@ -46,6 +48,63 @@ class ChaldeaCommandConverterTest {
     @Test fun `user supplied link produces exactly the supplied command`() = runBlocking {
         assertEquals(15, ChaldeaShare.decode(userUrl).array("actions")!!.size)
         assertEquals("ghi1x31ih3gt2acbdefj654", converter().convert(userUrl))
+    }
+
+    @TestFactory
+    fun `ignoring targets removes every enemy command while preserving other actions`() = fixtures.map { entry ->
+        val fixture = entry.jsonObject
+        dynamicTest("ignore targets: ${fixture.text("name")}") {
+            runBlocking {
+                val actual = converter(fixture).convert(encode(fixture.getValue("data").toString()), ignoreEnemyTargeting = true)
+                assertEquals(fixture.text("expected")!!.replace(Regex("t[123]"), ""), actual)
+                assertTrue('t' !in actual)
+                assertEquals(actual, SkillMakerModel(actual).toString())
+            }
+        }
+    }
+
+    @Test fun `reported special enemy slot is rejected when targeting is enabled`() = runBlocking {
+        assertEquals(13, ChaldeaShare.decode(reportedUrl).array("actions")!!.size)
+        assertEquals(ChaldeaImportError.TARGETING, assertFailsWith<ChaldeaImportException> {
+            converter(reported).convert(reportedUrl)
+        }.error)
+    }
+
+    @Test fun `reported link imports skills and attacks successfully with targeting ignored`() = runBlocking {
+        val command = converter(reported).convert(reportedUrl, ignoreEnemyTargeting = true)
+        assertEquals("defab1cgix31hgj54", command)
+        assertEquals(reported.text("expectedIgnoringTargets"), command)
+        assertTrue('t' !in command)
+        assertEquals(command, SkillMakerModel(command).toString())
+    }
+
+    @Test fun `ignore option is per import and does not leak into later conversions`() = runBlocking {
+        val converter = converter()
+        assertEquals("ghi1x31ih3gacbdefj654", converter.convert(userUrl, ignoreEnemyTargeting = true))
+        assertEquals("ghi1x31ih3gt2acbdefj654", converter.convert(userUrl))
+    }
+
+    @Test fun `all special enemy target values are omitted without dropping enemy skills`() = runBlocking {
+        val fixture = fixtures.first { it.jsonObject.text("name") == "enemy-target-reuse-and-change" }.jsonObject
+        val data = fixture.getValue("data").jsonObject
+        for (target in listOf(-10, -1, 0, 1, 2, 3, 4, 5, 99)) {
+            val actions = data.array("actions")!!.map { element ->
+                val action = element.jsonObject
+                JsonObject(action + ("options" to JsonObject(action.obj("options")!! + ("enemyTarget" to JsonPrimitive(target)))))
+            }
+            val changed = JsonObject(data + ("actions" to JsonArray(actions)))
+            assertEquals("ccc4", converter(fixture).convert(encode(changed.toString()), ignoreEnemyTargeting = true))
+        }
+    }
+
+    @Test fun `ignoring targets still rejects corrupt links and missing order change data`() = runBlocking {
+        assertEquals(ChaldeaImportError.DATA, assertFailsWith<ChaldeaImportException> {
+            converter().convert("https://link.chaldea.center/?data=Gbad", ignoreEnemyTargeting = true)
+        }.error)
+        val data = JsonObject(user.getValue("data").jsonObject - "delegate")
+        assertEquals(ChaldeaImportError.DATA, assertFailsWith<ChaldeaImportException> {
+            converter().convert(encode(data.toString()), ignoreEnemyTargeting = true)
+        }.error)
     }
 
     @Test fun `old gzip unpadded URL safe and zlib links preserve the command`() = runBlocking {

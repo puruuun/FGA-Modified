@@ -2,11 +2,14 @@ package io.github.fate_grand_automata.ui.battle_config_item
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,8 +22,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -45,6 +50,7 @@ fun ChaldeaImportDialog(onDismiss: () -> Unit, onImported: (String) -> Unit) {
     }
     val scope = rememberCoroutineScope()
     var url by rememberSaveable { mutableStateOf("") }
+    var ignoreEnemyTargeting by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<ChaldeaImportError?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
@@ -69,12 +75,24 @@ fun ChaldeaImportDialog(onDismiss: () -> Unit, onImported: (String) -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                     modifier = Modifier.fillMaxWidth()
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth().toggleable(
+                        value = ignoreEnemyTargeting,
+                        enabled = !busy,
+                        role = Role.Checkbox,
+                        onValueChange = { ignoreEnemyTargeting = it; error = null }
+                    ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(checked = ignoreEnemyTargeting, onCheckedChange = null, enabled = !busy)
+                    Text(stringResource(R.string.chaldea_import_ignore_enemy_targeting), modifier = Modifier.weight(1f))
+                }
                 Text(stringResource(R.string.chaldea_import_replace_warning), style = MaterialTheme.typography.bodySmall)
                 if (busy) Text(stringResource(R.string.chaldea_import_loading))
                 error?.let { reason ->
                     val message = when (reason) {
-                        ChaldeaImportError.LINK -> R.string.chaldea_import_error_link
-                        ChaldeaImportError.DATA -> R.string.chaldea_import_error_data
+                        ChaldeaImportError.LINK, ChaldeaImportError.DATA,
+                        ChaldeaImportError.TARGETING -> R.string.chaldea_import_error_data
                         ChaldeaImportError.NO_ACTIONS -> R.string.chaldea_import_error_actions
                         ChaldeaImportError.NETWORK -> R.string.chaldea_import_error_network
                         ChaldeaImportError.METADATA -> R.string.chaldea_import_error_metadata
@@ -92,9 +110,12 @@ fun ChaldeaImportDialog(onDismiss: () -> Unit, onImported: (String) -> Unit) {
                     busy = true
                     error = null
                     val submittedUrl = url
+                    val submittedIgnoreTargeting = ignoreEnemyTargeting
                     job = scope.launch {
                         try {
-                            val command = withContext(Dispatchers.Default) { converter.convert(submittedUrl) }
+                            val command = withContext(Dispatchers.Default) {
+                                converter.convert(submittedUrl, ignoreEnemyTargeting = submittedIgnoreTargeting)
+                            }
                             ensureActive()
                             onImported(command)
                         } catch (e: CancellationException) {
