@@ -49,7 +49,7 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch {
             if (!prefsCore.checkForUpdates.get()) return@launch
             try {
-                val update = updateChecker.findUpdate(BuildConfig.VERSION_NAME)
+                val update = updateChecker.findUpdate(BuildConfig.VERSION_NAME, beta = BuildConfig.BUILD_TYPE == "beta")
                 if (prefsCore.checkForUpdates.get()) availableUpdate.value = update
             } catch (e: CancellationException) {
                 throw e

@@ -61,4 +61,29 @@ class GitHubUpdateCheckerTest {
             assertNull(GitHubUpdateChecker.newerRelease(json, "0.8.0"))
         }
     }
+
+    private fun betaRelease(version: String = "1.0.2-beta.2") = """{
+        "draft": false, "prerelease": true, "tag_name": "v$version",
+        "html_url": "https://github.com/puruuun/FGA-Modified/releases/tag/v$version",
+        "assets": [{"name":"FGA-beta-$version-arm.apk", "state":"uploaded", "size":123,
+          "browser_download_url":"https://github.com/puruuun/FGA-Modified/releases/download/v$version/FGA-beta-$version-arm.apk"}]
+    }"""
+
+    @Test fun `beta checks stay on the beta channel and choose the newest numeric beta`() {
+        val releases = "[${betaRelease()},${betaRelease("1.0.2-beta.10")},$published]"
+        assertEquals("1.0.2-beta.10", GitHubUpdateChecker.newerBetaRelease(releases, "1.0.2-beta.1")?.version)
+        assertNull(GitHubUpdateChecker.newerBetaRelease(releases, "1.0.2-beta.10"))
+        assertNull(GitHubUpdateChecker.newerRelease(betaRelease(), "1.0.1"))
+        assertNull(GitHubUpdateChecker.newerBetaRelease("[$published]", "1.0.2-beta.1"))
+    }
+
+    @Test fun `beta checks reject missing APK assets drafts and mismatched URLs`() {
+        for (release in listOf(
+            betaRelease().replace("\"draft\": false", "\"draft\": true"),
+            betaRelease().replace("FGA-beta-", "FGA-mod-"),
+            betaRelease().replace("\"uploaded\"", "\"new\""),
+            betaRelease().replace("puruuun/FGA-Modified", "other/repository"),
+            betaRelease().replace("\"size\":123", "\"size\":0")
+        )) assertNull(GitHubUpdateChecker.newerBetaRelease("[$release]", "1.0.2-beta.1"))
+    }
 }

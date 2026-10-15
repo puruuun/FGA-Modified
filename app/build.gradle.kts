@@ -141,6 +141,11 @@ android {
                 abiFilters.add("arm64-v8a")
             }
         }
+        create("beta") {
+            initWith(getByName("ci"))
+            applicationIdSuffix = ".beta"
+            matchingFallbacks += listOf("ci", "release")
+        }
     }
     lint {
         abortOnError = false
