@@ -705,4 +705,23 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="original_import_error_file">Could not read or save data. Check folder permissions and available storage.</string>
     <string name="original_import_error_overlap">The destination is inside the source image folder. Choose separate storage folders.</string>
     <string name="original_import_more_errors">%1$d additional errors are not shown.</string>
+    <string name="portrait_import_title">Support images by servant number</string>
+    <string name="portrait_import_summary">Generate support images for every ascension and costume using a collection number.</string>
+    <string name="portrait_import_description">Enter the servant collection number. All available ascension and costume portraits are downloaded from Atlas Academy and saved as FGA support images. Uses the latest JP collection; an internet connection is required.</string>
+    <string name="portrait_import_number">Servant collection number</string>
+    <string name="portrait_import_destination">Save in %1$s/support/servant/No.number</string>
+    <string name="portrait_import_start">Generate and save</string>
+    <string name="portrait_import_retry">Generate again</string>
+    <string name="portrait_import_close">Close</string>
+    <string name="portrait_import_loading">Looking up servant portraits…</string>
+    <string name="portrait_import_progress">%1$s: %2$d / %3$d images</string>
+    <string name="portrait_import_result">%1$s\nSaved: %2$d · Failed: %3$d</string>
+    <string name="portrait_import_use">In battle settings → Support → Preferred servant, select the %1$s folder to match all saved ascensions and costumes.</string>
+    <string name="portrait_import_partial">Some images could not be generated or saved. Check the connection and storage folder, then generate again to retry.</string>
+    <string name="portrait_import_error_number">Enter a collection number from 1 to 9999.</string>
+    <string name="portrait_import_error_not_found">That collection number was not found in the JP servant data.</string>
+    <string name="portrait_import_error_network">Could not download the servant data. Check your connection and try again.</string>
+    <string name="portrait_import_error_metadata">The servant image data could not be read. Check the collection number or try again later.</string>
+    <string name="portrait_import_error_image">The downloaded portrait is not a supported image.</string>
+    <string name="portrait_import_error_storage">Could not save support images. Select a writable storage folder.</string>
 </resources>

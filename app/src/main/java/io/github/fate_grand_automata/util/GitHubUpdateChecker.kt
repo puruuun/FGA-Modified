@@ -19,8 +19,8 @@ data class GitHubUpdate(val version: String, val releaseUrl: String)
 
 /** Only called by the foreground app. No worker, background polling or APK installation. */
 class GitHubUpdateChecker @Inject constructor() {
-    suspend fun findUpdate(installedVersion: String): GitHubUpdate? = withContext(Dispatchers.IO) {
-        val connection = URL(LATEST_RELEASE_API).openConnection() as HttpURLConnection
+    suspend fun findUpdate(installedVersion: String, beta: Boolean = false): GitHubUpdate? = withContext(Dispatchers.IO) {
+        val connection = URL(if (beta) BETA_RELEASES_API else LATEST_RELEASE_API).openConnection() as HttpURLConnection
         try {
             connection.connectTimeout = 5_000
             connection.readTimeout = 5_000
@@ -33,7 +33,7 @@ class GitHubUpdateChecker @Inject constructor() {
             val json = connection.inputStream.bufferedReader(Charsets.UTF_8).use {
                 it.readTextLimited()
             }
-            newerRelease(json, installedVersion)
+            if (beta) newerBetaRelease(json, installedVersion) else newerRelease(json, installedVersion)
         } finally {
             connection.disconnect()
         }
@@ -52,8 +52,47 @@ class GitHubUpdateChecker @Inject constructor() {
 
     companion object {
         const val LATEST_RELEASE_API = "https://api.github.com/repos/puruuun/FGA-Modified/releases/latest"
+        const val BETA_RELEASES_API = "https://api.github.com/repos/puruuun/FGA-Modified/releases?per_page=30"
         private const val REPOSITORY_PATH = "/puruuun/FGA-Modified/releases/"
         private val stableVersion = Regex("""v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\+[0-9A-Za-z.-]+)?""")
+        private val betaVersion = Regex("""v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-beta\.([1-9]\d*)""")
+
+        private fun betaParts(version: String): List<Int>? {
+            val match = betaVersion.matchEntire(version) ?: return null
+            return match.groupValues.drop(1).map { it.toIntOrNull() ?: return null }
+        }
+
+        internal fun isNewerBeta(candidate: String, installed: String): Boolean {
+            val next = betaParts(candidate) ?: return false
+            val current = betaParts(installed) ?: return false
+            return next.zip(current).firstOrNull { (a, b) -> a != b }?.let { (a, b) -> a > b } ?: false
+        }
+
+        internal fun newerBetaRelease(json: String, installedVersion: String): GitHubUpdate? = runCatching {
+            Json.parseToJsonElement(json).jsonArray.mapNotNull { item ->
+                runCatching {
+                    val release = item.jsonObject
+                    if (release["draft"]?.jsonPrimitive?.booleanOrNull != false ||
+                        release["prerelease"]?.jsonPrimitive?.booleanOrNull != true) return@mapNotNull null
+                    val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    if (!isNewerBeta(tag, installedVersion)) return@mapNotNull null
+                    val url = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    if (!repositoryUrl(url, "${REPOSITORY_PATH}tag/$tag")) return@mapNotNull null
+                    val version = tag.removePrefix("v")
+                    val apkName = "FGA-beta-$version-arm.apk"
+                    val hasApk = release["assets"]?.jsonArray?.any { assetItem ->
+                        val asset = assetItem.jsonObject
+                        asset["name"]?.jsonPrimitive?.contentOrNull == apkName &&
+                            asset["state"]?.jsonPrimitive?.contentOrNull == "uploaded" &&
+                            (asset["size"]?.jsonPrimitive?.longOrNull ?: 0) > 0 &&
+                            asset["browser_download_url"]?.jsonPrimitive?.contentOrNull?.let {
+                                repositoryUrl(it, "${REPOSITORY_PATH}download/$tag/$apkName")
+                            } == true
+                    } == true
+                    if (hasApk) GitHubUpdate(version, url) else null
+                }.getOrNull()
+            }.reduceOrNull { latest, next -> if (isNewerBeta(next.version, latest.version)) next else latest }
+        }.getOrNull()
 
         private fun versionParts(version: String): List<Int>? {
             val match = stableVersion.matchEntire(version) ?: return null

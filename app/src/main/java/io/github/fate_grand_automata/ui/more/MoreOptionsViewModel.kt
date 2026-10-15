@@ -15,6 +15,11 @@ import io.github.fate_grand_automata.util.migration.ImportSelection
 import io.github.fate_grand_automata.util.migration.OriginalFgaImportService
 import io.github.fate_grand_automata.util.migration.OriginalImportProgress
 import io.github.fate_grand_automata.util.migration.OriginalImportReport
+import io.github.fate_grand_automata.util.portraits.PortraitImportError
+import io.github.fate_grand_automata.util.portraits.PortraitImportException
+import io.github.fate_grand_automata.util.portraits.PortraitImportProgress
+import io.github.fate_grand_automata.util.portraits.PortraitImportReport
+import io.github.fate_grand_automata.util.portraits.ServantPortraitImporter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -30,13 +35,48 @@ import javax.inject.Inject
 class MoreOptionsViewModel @Inject constructor(
     val storageProvider: StorageProvider,
     val prefsCore: PrefsCore,
-    private val originalImporter: OriginalFgaImportService
+    private val originalImporter: OriginalFgaImportService,
+    private val portraitImporter: ServantPortraitImporter
 ) : ViewModel() {
     val storageSummary: MutableState<String?> = mutableStateOf(null)
     val extractSummary: MutableState<String> = mutableStateOf("")
 
     private val _originalImport = MutableStateFlow(OriginalImportState())
     val originalImport = _originalImport.asStateFlow()
+
+    private val _portraitImport = MutableStateFlow(PortraitImportState())
+    val portraitImport = _portraitImport.asStateFlow()
+
+    fun openPortraitImport() { _portraitImport.value = PortraitImportState(open = true) }
+    fun closePortraitImport() {
+        if (!_portraitImport.value.busy) _portraitImport.update { it.copy(open = false) }
+    }
+    fun changePortraitNumber(number: String) {
+        if (!_portraitImport.value.busy && number.length <= 4 && number.all { it in '0'..'9' }) {
+            _portraitImport.update { it.copy(number = number, error = null, report = null) }
+        }
+    }
+    fun importPortraits() {
+        val request = _portraitImport.value
+        if (!request.canStart || storageProvider.rootDirName == null) return
+        val number = request.number.toIntOrNull() ?: return
+        _portraitImport.update { it.copy(busy = true, error = null, report = null, progress = null) }
+        viewModelScope.launch {
+            try {
+                val report = portraitImporter.run(number) { progress ->
+                    _portraitImport.update { it.copy(progress = progress) }
+                }
+                _portraitImport.update { it.copy(report = report) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Servant portrait import failed")
+                _portraitImport.update { it.copy(error = (e as? PortraitImportException)?.reason ?: PortraitImportError.Network) }
+            } finally {
+                _portraitImport.update { it.copy(busy = false) }
+            }
+        }
+    }
 
     fun openOriginalImport() { _originalImport.value = OriginalImportState(open = true) }
     fun closeOriginalImport() {
@@ -106,6 +146,17 @@ class MoreOptionsViewModel @Inject constructor(
             storageSummary.value = storageProvider.rootDirName
         }
     }
+}
+
+data class PortraitImportState(
+    val open: Boolean = false,
+    val number: String = "",
+    val busy: Boolean = false,
+    val progress: PortraitImportProgress? = null,
+    val report: PortraitImportReport? = null,
+    val error: PortraitImportError? = null
+) {
+    val canStart get() = !busy && number.toIntOrNull()?.let { it in 1..9999 } == true
 }
 
 data class OriginalImportState(
