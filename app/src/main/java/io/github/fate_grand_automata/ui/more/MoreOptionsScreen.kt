@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.Tabbed
@@ -30,6 +31,25 @@ fun MoreOptionsScreen(
 ) {
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.pickedDirectory(it)
+    }
+    val originalImport by vm.originalImport.collectAsStateWithLifecycle()
+    val importScripts = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
+        vm.selectImportFolder(scripts = true, uri = it)
+    }
+    val importImages = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
+        vm.selectImportFolder(scripts = false, uri = it)
+    }
+    if (originalImport.open) {
+        OriginalFgaImportDialog(
+            state = originalImport,
+            destinationName = vm.storageProvider.rootDirName,
+            onDismiss = vm::closeOriginalImport,
+            onSelection = vm::selectImportMode,
+            onPickScripts = { importScripts.launch(originalImport.scripts ?: Uri.EMPTY) },
+            onPickImages = { importImages.launch(originalImport.images ?: Uri.EMPTY) },
+            onOverwrite = vm::overwriteImportedImages,
+            onImport = vm::importOriginalData
+        )
     }
 
     MoreOptionsContent(
@@ -86,7 +106,7 @@ private fun MoreOptionsContent(
                             }
 
                             MoreSettingsGroup.AdditionalFeatures -> {
-                                additionalFeaturesGroup(vm.prefsCore)
+                                additionalFeaturesGroup(vm.prefsCore, vm::openOriginalImport)
                             }
 
                             MoreSettingsGroup.Advanced -> {

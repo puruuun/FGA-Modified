@@ -11,17 +11,72 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.SupportImageExtractor
+import io.github.fate_grand_automata.util.migration.ImportSelection
+import io.github.fate_grand_automata.util.migration.OriginalFgaImportService
+import io.github.fate_grand_automata.util.migration.OriginalImportProgress
+import io.github.fate_grand_automata.util.migration.OriginalImportReport
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class MoreOptionsViewModel @Inject constructor(
     val storageProvider: StorageProvider,
-    val prefsCore: PrefsCore
+    val prefsCore: PrefsCore,
+    private val originalImporter: OriginalFgaImportService
 ) : ViewModel() {
     val storageSummary: MutableState<String?> = mutableStateOf(null)
     val extractSummary: MutableState<String> = mutableStateOf("")
+
+    private val _originalImport = MutableStateFlow(OriginalImportState())
+    val originalImport = _originalImport.asStateFlow()
+
+    fun openOriginalImport() { _originalImport.value = OriginalImportState(open = true) }
+    fun closeOriginalImport() {
+        if (!_originalImport.value.busy) _originalImport.update { it.copy(open = false) }
+    }
+    fun selectImportMode(selection: ImportSelection) {
+        if (!_originalImport.value.busy) _originalImport.update { it.copy(selection = selection, error = false) }
+    }
+    fun selectImportFolder(scripts: Boolean, uri: Uri?) {
+        if (uri == null || _originalImport.value.busy) return
+        _originalImport.update {
+            if (scripts) it.copy(scripts = uri, error = false) else it.copy(images = uri, error = false)
+        }
+    }
+    fun overwriteImportedImages(overwrite: Boolean) {
+        if (!_originalImport.value.busy) _originalImport.update { it.copy(overwriteImages = overwrite) }
+    }
+    fun importOriginalData() {
+        val request = _originalImport.value
+        if (!request.canStart) return
+        _originalImport.update { it.copy(busy = true, error = false) }
+        viewModelScope.launch {
+            try {
+                val report = withContext(Dispatchers.IO) {
+                    originalImporter.run(request.selection, request.scripts, request.images, request.overwriteImages) { progress ->
+                        ensureActive()
+                        _originalImport.update { it.copy(progress = progress) }
+                    }
+                }
+                _originalImport.update { it.copy(report = report) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Original FGA import failed")
+                _originalImport.update { it.copy(error = true) }
+            } finally {
+                _originalImport.update { it.copy(busy = false) }
+            }
+        }
+    }
 
     init {
         storageSummary.value = storageProvider.rootDirName
@@ -51,4 +106,19 @@ class MoreOptionsViewModel @Inject constructor(
             storageSummary.value = storageProvider.rootDirName
         }
     }
+}
+
+data class OriginalImportState(
+    val open: Boolean = false,
+    val selection: ImportSelection = ImportSelection.Both,
+    val scripts: Uri? = null,
+    val images: Uri? = null,
+    val overwriteImages: Boolean = false,
+    val busy: Boolean = false,
+    val progress: OriginalImportProgress? = null,
+    val report: OriginalImportReport? = null,
+    val error: Boolean = false
+) {
+    val canStart get() = !busy && report == null &&
+        (!selection.scripts || scripts != null) && (!selection.images || images != null)
 }

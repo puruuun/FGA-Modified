@@ -195,3 +195,9 @@
 Chaldea 링크 입력을 추가한 0.10.1도 정규 릴리즈이므로 기존 Obtainium 설정으로 업데이트할 수 있습니다.
 
 설정 파일은 [obtainium.json](../../obtainium.json)입니다. 패키지와 서명을 유지하고 버전 코드를 올리므로 기존 수정판을 업데이트할 수 있습니다. 자동 설치 여부는 Android와 Obtainium의 권한·설정에 따라 달라집니다. [추가 방법](https://wiki.obtainium.imranr.dev/ui_overview/), [업데이트 동작](https://wiki.obtainium.imranr.dev/app_tracking/).
+
+<a id="original-fga-import"></a>
+
+### 원본 FGA 데이터 가져오기
+
+[사용 방법](Original-FGA-Import-KR.md): 더 많은 옵션 → 추가기능에서 스크립트만·서포트 이미지만·둘 다를 선택합니다.

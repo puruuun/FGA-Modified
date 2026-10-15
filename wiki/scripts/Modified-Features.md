@@ -195,3 +195,9 @@ It installs separately from official FGA and upstream CI builds. The package and
 Version 0.10.1 simplifies bond tracking and updates the interface as a stable release and works with the existing Obtainium configuration.
 
 The configuration is also available in [obtainium.json](../../obtainium.json). Updates retain the package and signing certificate and use increasing Android version codes. Automatic installation depends on Android and Obtainium permissions and settings. [Adding apps](https://wiki.obtainium.imranr.dev/ui_overview/), [update behavior](https://wiki.obtainium.imranr.dev/app_tracking/).
+
+<a id="original-fga-import"></a>
+
+### Import original FGA data
+
+[Instructions](Original-FGA-Import.md): More options → Additional features lets you import scripts, support images, or both.

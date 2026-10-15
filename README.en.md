@@ -18,6 +18,7 @@ Supports Android 7+ ARM devices (arm64-v8a / armeabi-v7a). Existing modified bui
 
 | Feature | Summary |
 |---|---|
+| [Import original FGA data](wiki/scripts/Original-FGA-Import.md) | Import scripts, support images, or both in bulk. |
 | [Chaldea command import](wiki/scripts/Modified-Features.md#chaldea-import) | Convert a battle share link directly into script commands. |
 | [Card-count command start](wiki/scripts/Modified-Features.md#card-start) | Choose between two settings based on a Servant’s face-card count. |
 | [First-turn shuffle](wiki/scripts/Modified-Features.md#first-turn-shuffle) | Shuffle and recheck when the start conditions are not met. |
