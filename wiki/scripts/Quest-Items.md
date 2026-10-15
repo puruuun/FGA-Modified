@@ -28,3 +28,5 @@ python tools/verify_quest_item_images.py \
 ```
 
 [Stable release 0.7.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.7.0). [한국어 안내](Quest-Items-KR.md).
+
+Each Teapot/Storm Pod control tap, including dialog close, waits an additional fixed 0.1 seconds before checking the next frame.

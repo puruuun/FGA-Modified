@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -9,6 +11,13 @@ import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 
 fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: () -> Unit) {
+    item {
+        prefs.checkForUpdates.SwitchPreference(
+            title = stringResource(R.string.p_check_for_updates),
+            summary = stringResource(R.string.p_check_for_updates_summary),
+            icon = icon(Icons.Default.SystemUpdate)
+        )
+    }
     item {
         Preference(
             title = stringResource(R.string.original_import_title),

@@ -16,8 +16,25 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class QuestItemsTest {
+    @Test
+    fun `every item tap including dialog close gets an extra fixed 100 milliseconds`() {
+        for (dialog in listOf(true, false)) {
+            val f = Fixture(dialogMode = dialog)
+            f.wanted(true, true)
+            val settledTaps = mutableListOf<String>()
+            every { with(f.api) { 100.milliseconds.wait(false) } } answers {
+                settledTaps += f.trace.last()
+            }
+            f.launch.start()
+            assertThat(settledTaps).isEqualTo(f.trace.filter { it in listOf("main", "storm", "tea", "close") })
+            assertTrue(settledTaps.isNotEmpty())
+            assertThat(settledTaps.last()).isEqualTo(if (dialog) "close" else "main")
+        }
+    }
+
     private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val party = mockk<PartySelection>()

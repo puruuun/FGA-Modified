@@ -112,8 +112,8 @@ class BondTrackingTest {
         }
     }
 
-    @Test fun `seven and unmapped ten continue while unknown gains remain missing`() {
-        for (frame in listOf(BondFrame.LevelUp(7, 2), BondFrame.LevelUp(10, null), BondFrame.LevelUp(null, 2))) {
+    @Test fun `levels below ten and unmapped ten continue while unknown gains remain missing`() {
+        for (frame in listOf(BondFrame.LevelUp(7, 2), BondFrame.LevelUp(9, 2), BondFrame.LevelUp(10, null), BondFrame.LevelUp(null, 2))) {
             val f = Fixture(); f.start(); every { f.reader.read() } returns frame
             f.tracker.process(); assertEquals(0, f.state.runs)
             assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 1 })
@@ -137,12 +137,12 @@ class BondTrackingTest {
         every { f.config.stopOnBondMax } returns false
         var elapsed = Duration.ZERO
         val readTimes = mutableListOf<Duration>()
-        every { with(f.api) { 1500.milliseconds.wait(false) } } answers { elapsed += 1500.milliseconds }
+        every { with(f.api) { 1200.milliseconds.wait(false) } } answers { elapsed += 1200.milliseconds }
         every { with(f.api) { 350.milliseconds.wait(true) } } answers { elapsed += 35.milliseconds }
         every { f.reader.read(true) } answers {
             readTimes += elapsed
             // Early frames can agree on an intermediate value before the animation finishes.
-            BondFrame.Normal(List(5) { if (elapsed < 1500.milliseconds) BondValue.Gain(100, 0) else gain })
+            BondFrame.Normal(List(5) { if (elapsed < 1200.milliseconds) BondValue.Gain(100, 0) else gain })
         }
         repeat(2) {
             elapsed = Duration.ZERO
@@ -151,7 +151,7 @@ class BondTrackingTest {
             f.tracker.finishResult()
             f.state.nextRun()
         }
-        assertTrue(readTimes.all { it >= 1500.milliseconds })
+        assertTrue(readTimes.all { it >= 1200.milliseconds })
         assertTrue(f.tracker.summary()!!.slots.all { it.total == 14816L && it.readRuns == 2 && it.missedRuns == 0 })
     }
 

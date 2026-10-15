@@ -1,0 +1,136 @@
+kind,entry,template,asset_type,asset,correlation,best_scale,best_x,best_y,master_faceX,master_faceY
+servant,Arcueid,f_23005000.png,Faces,f_23005000.png,0.991684,1.227,3,47,444,86
+servant,Arcueid,f_23005001.png,Faces,f_23005001.png,0.988828,1.227,3,47,440,118
+servant,Arcueid,f_23005002.png,Faces,f_23005002.png,0.989933,1.227,3,47,438,90
+servant,Arcueid,f_23005003.png,Faces,f_23005003.png,0.991247,1.227,3,47,,
+servant,Artoria (Caster),Artoria Caster1.png,Faces,f_5045000.png,0.991522,1.234,2,47,384,84
+servant,Artoria (Caster),Artoria Caster2.png,Faces,f_5045001.png,0.993444,1.234,2,47,384,96
+servant,Artoria (Caster),Artoria Caster3.png,Faces,f_5045002.png,0.993994,1.234,2,47,402,153
+servant,Artoria (Caster),Artoria Caster4.png,Faces,f_5045003.png,0.989317,1.233,2,47,,
+servant,BB Dubai,f_23006000.png,Faces,f_23006000.png,0.979156,1.227,3,47,384,155
+servant,BB Dubai,f_23006001.png,Faces,f_23006001.png,0.979755,1.227,3,47,968,162
+servant,BB Dubai,f_23006002.png,Faces,f_23006002.png,0.984279,1.227,3,47,863,164
+servant,BB Dubai,f_23006003.png,Faces,f_23006003.png,0.972494,1.227,3,47,,
+servant,Chloe (Avenger),asc1.png,Faces,f_11016000.png,0.983579,1.236,3,47,376,128
+servant,Chloe (Avenger),asc2.png,Faces,f_11016001.png,0.972466,1.232,3,47,382,128
+servant,Chloe (Avenger),asc3.png,Faces,f_11016002.png,0.986784,1.233,3,47,381,148
+servant,Chloe (Avenger),asc4.png,Faces,f_11016003.png,0.983858,1.234,3,47,,
+servant,Chloe (Avenger),costume.png,Faces,f_11016300.png,0.985916,1.232,7,55,382,128
+servant,Ciel,f_23009000.png,Faces,f_23009000.png,0.991577,1.227,3,47,389,155
+servant,Ciel,f_23009001.png,Faces,f_23009001.png,0.98831,1.227,3,47,331,163
+servant,Ciel,f_23009002.png,Faces,f_23009002.png,0.982914,1.227,3,47,881,144
+servant,Ciel,f_23009003.png,Faces,f_23009003.png,0.98072,1.227,3,47,,
+servant,Ciel,f_23009300.png,Faces,f_23009300.png,0.991569,1.227,3,47,389,155
+servant,Ciel,f_23009400.png,Faces,f_23009400.png,0.990884,1.227,3,47,385,129
+servant,Douman,asc1.png,Faces,f_10010001.png,0.987073,1.231,3,47,336,96
+servant,Douman,asc2.png,Faces,f_10010000.png,0.989112,1.231,3,47,336,32
+servant,Douman,asc3.png,Faces,f_10010002.png,0.994999,1.233,3,47,256,0
+servant,Douman,asc4.png,Faces,f_10010003.png,0.995332,1.222,2,46,,
+servant,Douman,costume1.png,Faces,f_10010300.png,0.992218,1.233,3,47,262,0
+servant,Flora,f_10020002.png,Faces,f_10020002.png,0.98152,1.227,3,47,379,163
+servant,Flora,f_10020003.png,Faces,f_10020003.png,0.976758,1.227,3,47,,
+servant,Jalter,f_11003000.png,Faces,f_11003000.png,0.994738,1.227,3,47,369,142
+servant,Jalter,f_11003001.png,Faces,f_11003001.png,0.993866,1.227,3,47,368,147
+servant,Jalter,f_11003002.png,Faces,f_11003002.png,0.994933,1.227,3,47,368,147
+servant,Jalter,f_11003003.png,Faces,f_11003003.png,0.994538,1.227,3,47,,
+servant,Jalter,f_11003300.png,Faces,f_11003300.png,0.992205,1.227,3,47,367,148
+servant,Kazuradrop,asc1.png,Faces,f_10018000.png,0.981161,1.237,3,46,389,165
+servant,Kazuradrop,asc2.png,Faces,f_10018001.png,0.980848,1.238,3,47,388,167
+servant,Kazuradrop,asc3.png,Faces,f_10018002.png,0.971074,1.235,3,46,374,157
+servant,Kazuradrop,asc4.png,Faces,f_10018003.png,0.981014,1.224,2,46,,
+servant,Kazuradrop,murian.png,Faces,f_10018300.png,0.979674,1.236,3,46,360,236
+servant,Koyanskaya,asc1.png,Faces,f_6042000.png,0.991725,1.234,3,47,368,150
+servant,Koyanskaya,asc2.png,Faces,f_6042001.png,0.989306,1.234,3,47,377,152
+servant,Koyanskaya,asc3.png,Faces,f_6042002.png,0.986861,1.236,3,47,386,95
+servant,Koyanskaya,asc4.png,Faces,f_6042003.png,0.981138,1.236,3,47,,
+servant,Koyanskaya of the Darkness (Foreigner),asc1.png,Faces,f_25009000.png,0.979799,1.231,3,47,304,80
+servant,Koyanskaya of the Darkness (Foreigner),asc2.png,Faces,f_25009001.png,0.991967,1.234,3,47,302,80
+servant,Koyanskaya of the Darkness (Foreigner),asc3.png,Faces,f_25009002.png,0.989006,1.233,3,47,364,174
+servant,Koyanskaya of the Darkness (Foreigner),asc4.png,Faces,f_25009003.png,0.993806,1.233,3,47,,
+servant,Lady Avalon,asc1.png,Faces,f_28003000.png,0.985785,1.236,3,47,383,147
+servant,Lady Avalon,asc2.png,Faces,f_28003001.png,0.95326,1.236,7,56,371,144
+servant,Lady Avalon,asc4.png,Faces,f_28003003.png,0.984516,1.234,3,47,,
+servant,Mash,f_8001002.png,Faces,f_8001002.png,0.991507,1.227,3,47,441,149
+servant,Mash,f_8001003.png,Faces,f_8001003.png,0.99027,1.227,3,47,,
+servant,Mash,f_8001300.png,Faces,f_8001300.png,0.984506,1.227,3,47,384,149
+servant,Mash,f_8001400.png,Faces,f_8001400.png,0.998135,1.227,3,47,445,171
+servant,Mash,f_8001500.png,Faces,f_8001500.png,0.993757,1.227,3,47,447,152
+servant,Mash,f_8001510.png,Faces,f_8001510.png,0.994327,1.227,3,47,,
+servant,Mash,f_8001600.png,Faces,f_8001600.png,0.989979,1.227,3,47,379,143
+servant,Mash,f_8001700.png,Faces,f_8001700.png,0.990343,1.227,3,47,412,168
+servant,Mash,f_8001900.png,Faces,f_8001900.png,0.985808,1.227,3,47,921,154
+servant,Mash,f_8002000.png,Faces,f_8002000.png,0.986161,1.227,3,47,,
+servant,Merlin,merlin1.png,Faces,f_5008000.png,0.987936,1.226,2,43,345,149
+servant,Merlin,merlin23.png,Faces,f_5008002.png,0.987408,1.224,1,45,357,150
+servant,Merlin,merlin4.png,Faces,f_5008003.png,0.965095,1.234,0,43,,
+servant,Merlin,merlin_c.png,Faces,f_5008300.png,0.990194,1.228,3,46,379,131
+servant,Nero (Bride),Nero Bride 1.png,Faces,f_1006000.png,0.985951,1.233,2,46,369,129
+servant,Nero (Bride),Nero Bride 2.png,Faces,f_1006000.png,0.988214,1.234,2,47,369,129
+servant,Nero (Bride),Nero Bride 3.png,Faces,f_1006002.png,0.978123,1.232,2,46,366,101
+servant,Nero (Bride),Nero Bride 4.png,Faces,f_1006003.png,0.97801,1.232,2,46,,
+servant,Oberon,asc1.png,Faces,f_28001000.png,0.98861,1.227,3,47,394,148
+servant,Oberon,asc2.png,Faces,f_28001001.png,0.986934,1.227,3,47,378,176
+servant,Oberon,asc3.png,Faces,f_28001002.png,0.994293,1.227,3,47,409,195
+servant,Oberon,asc4.png,Faces,f_28001003.png,0.996516,1.227,3,47,,
+servant,Oberon,costume1.png,Faces,f_28001300.png,0.989065,1.227,3,47,381,135
+servant,Oberon,costume2.png,Faces,f_28001400.png,0.994655,1.227,3,47,437,152
+servant,Omii-san,f_6052000.png,Faces,f_6052000.png,0.994194,1.227,3,47,386,154
+servant,Omii-san,f_6052001.png,Faces,f_6052001.png,0.996096,1.227,3,47,379,135
+servant,Omii-san,f_6052002.png,Faces,f_6052002.png,0.986772,1.227,3,47,385,155
+servant,Omii-san,f_6052003.png,Faces,f_6052003.png,0.985653,1.227,3,47,,
+servant,Sima Yi (Reines),asc1.png,Faces,f_4032000.png,0.973299,1.24,16,49,362,136
+servant,Sima Yi (Reines),asc2.png,Faces,f_4032001.png,0.984055,1.233,3,47,365,133
+servant,Sima Yi (Reines),asc3.png,Faces,f_4032002.png,0.989601,1.235,3,48,362,137
+servant,Sima Yi (Reines),asc4.png,Faces,f_4032003.png,0.985314,1.232,3,47,,
+servant,Skadi,skadi1.png,Faces,f_5039000.png,0.996543,1.233,4,45,375,122
+servant,Skadi,skadi2.png,Faces,f_5039001.png,0.995781,1.236,2,44,375,122
+servant,Skadi,skadi3.png,Faces,f_5039002.png,0.99458,1.235,2,44,375,165
+servant,Skadi,skadi4.png,Faces,f_5039003.png,0.994591,1.237,2,44,,
+servant,Skadi (Ruler),Skadi Ruler 1.png,Faces,f_9014000.png,0.993888,1.227,3,47,368,62
+servant,Skadi (Ruler),Skadi Ruler 2.png,Faces,f_9014001.png,0.994022,1.227,3,47,382,137
+servant,Skadi (Ruler),Skadi Ruler 3.png,Faces,f_9014002.png,0.995582,1.227,3,47,398,58
+servant,Skadi (Ruler),Skadi Ruler 4.png,Faces,f_9014003.png,0.988529,1.227,3,47,,
+servant,Skadi (Ruler),costume.png,Faces,f_9014300.png,0.994512,1.227,3,47,375,132
+servant,Tamamo,tamamo1.png,Faces,f_5003000.png,0.990057,1.237,2,47,386,152
+servant,Tamamo,tamamo3.png,Faces,f_5003002.png,0.989823,1.236,2,47,383,152
+servant,Tamamo,tamamo4.png,Faces,f_5003003.png,0.989482,1.235,2,47,,
+servant,Tiamat Summer,f_2054000.png,Faces,f_2054000.png,0.976312,1.227,3,47,407,147
+servant,Tiamat Summer,f_2054001.png,Faces,f_2054001.png,0.989611,1.227,3,47,377,173
+servant,Tiamat Summer,f_2054002.png,Faces,f_2054002.png,0.974714,1.226,3,47,904,131
+servant,Tiamat Summer,f_2054003.png,Faces,f_2054003.png,0.978374,1.227,3,47,,
+servant,U-Olga Marie,f_40001000.png,Faces,f_40001000.png,0.990627,1.227,3,47,901,94
+servant,U-Olga Marie,f_40001001.png,Faces,f_40001001.png,0.989765,1.227,3,47,895,102
+servant,U-Olga Marie,f_40001002.png,Faces,f_40001002.png,0.977162,1.225,2,47,912,104
+servant,U-Olga Marie,f_40001003.png,Faces,f_40001003.png,0.987807,1.227,3,47,,
+servant,Waver,waver1.png,Faces,f_5019000.png,0.993618,1.235,0,43,394,133
+servant,Waver,waver2.png,Faces,f_5019001.png,0.986645,1.233,0,44,387,118
+servant,Waver,waver3.png,Faces,f_5019002.png,0.996902,1.233,3,43,366,162
+servant,Waver,waver4.png,Faces,f_5019003.png,0.992933,1.233,0,43,,
+ce,Aerial Drive,Aerial Drive.png,EquipFaces,f_94027500.png,0.968195,1.052,0,13,,
+ce,Bella Lisa,Bella Lisa.png,EquipFaces,f_94036900.png,0.997372,1.053,2,14,,
+ce,Beyond the Night Without the Snow Flower,Beyond the Night Without the Snow Flower.png,EquipFaces,f_94051700.png,0.944615,1.045,6,21,,
+ce,Black Grail,Black Grail.png,EquipFaces,f_94004800.png,0.972432,1.053,1,14,,
+ce,Blessed Bride,Blessed Bride.png,EquipFaces,f_94085900.png,0.992326,1.053,3,14,,
+ce,Chaldea Dinnertime,Chaldea Dinnertime.png,EquipFaces,f_94041800.png,0.92613,1.044,6,21,,
+ce,Chaldea Lunchtime,Chaldea Lunchtime.png,EquipFaces,f_94019700.png,0.92536,1.054,0,14,,
+ce,Chaldea Morning,Chaldea Morning.png,EquipFaces,f_94077400.png,0.973099,1.053,3,14,,
+ce,Chaldea Teatime,Chaldea Teatime.png,EquipFaces,f_94035200.png,0.953836,1.05,5,15,,
+ce,Detective Fou,Detective Fou.png,EquipFaces,f_94039900.png,0.962772,1.044,6,21,,
+ce,Foreign God,Foreign God.png,EquipFaces,f_94088000.png,0.990305,1.053,3,14,,
+ce,From NFF with Love,From NFF with Love.png,EquipFaces,f_94074800.png,0.988566,1.053,3,14,,
+ce,Golden Sumo,Golden Sumo.png,EquipFaces,f_94016400.png,0.97777,1.056,1,14,,
+ce,Great Library of Memories,Great Library of Memories.png,EquipFaces,f_94092100.png,0.994255,1.046,0,17,,
+ce,GudaGuda Poster Girl,GudaGuda Poster Girl.png,EquipFaces,f_94006200.png,0.994785,1.053,1,14,,
+ce,Gun Dealer,Gun Dealer.png,EquipFaces,f_94094900.png,0.9646,1.044,6,22,,
+ce,Holy Night Supper,Holy Night Supper.png,EquipFaces,f_94020900.png,0.99488,1.053,0,13,,
+ce,Kaleidoscope,Kaleidoscope.png,EquipFaces,f_94003400.png,0.983769,1.053,2,14,,
+ce,Marshal of the Sorcerors,Marshal of the Sorcerors.png,EquipFaces,f_94053200.png,0.975553,1.053,3,14,,
+ce,Mona Lisa,Mona Lisa.png,EquipFaces,f_94007800.png,0.964756,1.053,0,14,,
+ce,Needle of Sincerity,Needle of Sincerity.png,EquipFaces,f_94083900.png,0.991887,1.053,3,14,,
+ce,Painting Summer,Painting Summer.png,EquipFaces,f_94033400.png,0.991595,1.052,2,13,,
+ce,Report Check,Report Check.png,EquipFaces,f_94078500.png,0.991152,1.053,3,14,,
+ce,Rising Against the Azure Sky,Rising Against the Azure Sky.png,EquipFaces,f_94062000.png,0.997515,1.057,7,21,,
+ce,Secret Mission,Secret Mission.png,EquipFaces,f_94082200.png,0.992483,1.052,3,14,,
+ce,Sword Saints of Wandering,Sword Saints of Wandering.png,EquipFaces,f_94093200.png,0.970352,1.056,7,22,,
+ce,The Chaldean,The Chaldean.png,EquipFaces,f_94089900.png,0.994258,1.052,3,14,,
+ce,Wings of Manuscript,Wings of Manuscript.png,EquipFaces,f_94080600.png,0.996375,1.053,3,14,,

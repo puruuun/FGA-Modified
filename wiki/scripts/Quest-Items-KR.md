@@ -42,3 +42,5 @@ python tools/verify_quest_item_images.py \
 ```
 
 [정규 릴리즈 0.7.0](https://github.com/puruuun/FGA-Modified/releases/tag/v0.7.0)에서 APK 하나를 설치하거나 Obtainium으로 업데이트하세요. [English guide](Quest-Items.md).
+
+티포트·스톰포드 설정 과정에서 버튼을 누른 뒤마다 일반 대기 배율과 무관하게 0.1초를 추가로 기다립니다. 설정창 닫기도 포함합니다.

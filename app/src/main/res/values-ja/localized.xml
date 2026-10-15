@@ -580,13 +580,11 @@
     <string name="chaldea_import_error_unsupported">FGAが取り込めない行動または選択肢が含まれています。既存のコマンドは保持されています。</string>
     <string name="original_import_title">オリジナルFGAのデータを取り込む</string>
     <string name="original_import_summary">エクスポートしたスクリプトとサポート画像をまとめて取り込みます。</string>
-    <string name="original_import_instructions">取り込む項目を選んでください。スクリプトは先にオリジナルFGAですべてエクスポートし、.fgaファイルの保存先フォルダーを選択してください。既存のスクリプトは保持されます。</string>
+    <string name="original_import_instructions">オリジナルFGAの保存先フォルダーを1つ選び、取り込む項目を指定してください。スクリプトは先に.fgaファイルとして、そのフォルダーまたはサブフォルダーへエクスポートしてください。既存スクリプトは保持されます。</string>
     <string name="original_import_scripts_only">スクリプトのみ</string>
     <string name="original_import_images_only">サポート画像のみ</string>
     <string name="original_import_both">スクリプトとサポート画像の両方</string>
-    <string name="original_import_script_folder">エクスポートしたスクリプトのフォルダーを選択</string>
-    <string name="original_import_image_folder">元のサポート画像フォルダーを選択</string>
-    <string name="original_import_image_hint">オリジナルFGAの保存先、またはその中のsupportフォルダーを選んでください。画像は現在のFGA(mod)の保存先にコピーされます。</string>
+    <string name="original_import_image_hint">選択したフォルダー内の.fgaファイルと、support/servant・support/ce・support/friendの画像を自動で探します。画像は現在のFGA(mod)の保存先にコピーされます。</string>
     <string name="original_import_need_destination">画像を取り込む前に、その他のオプション → ストレージでFGA(mod)のフォルダーを設定してください。</string>
     <string name="original_import_destination">画像のコピー先：%1$s</string>
     <string name="original_import_overwrite">同名の既存画像を上書きする</string>
@@ -604,4 +602,5 @@
     <string name="original_import_error_file">データの読み込み、または保存に失敗しました。フォルダーのアクセス権限と空き容量を確認してください。</string>
     <string name="original_import_error_overlap">コピー先が元の画像フォルダー内にあります。別の保存先フォルダーを選択してください。</string>
     <string name="original_import_more_errors">その他%1$d件のエラーは省略しています。</string>
+    <string name="original_import_source_folder">オリジナルFGAの保存先フォルダーを選択</string>
 </resources>

@@ -11,7 +11,7 @@ There is no pre-battle party read, support detection or mapping to original part
 
 ## Reading and missing data
 
-After detecting the bond result, wait **1.5 seconds before capturing the first reading** so the gain animation can finish. Faster wait settings do not shorten this delay. Strong OCR readings must agree, as must successive fresh frames. Each quest/column contributes at most once; unreadable columns never shift the others. MAX on a normal result is a measured zero. Hidden or unreadable gains are missing, so a total with missing runs may understate the actual amount.
+After detecting the bond result, wait **1.2 seconds before capturing the first reading** so the gain animation can finish. Faster wait settings do not shorten this delay. Strong OCR readings must agree, as must successive fresh frames. Each quest/column contributes at most once; unreadable columns never shift the others. MAX on a normal result is a measured zero. Hidden or unreadable gains are missing, so a total with missing runs may understate the actual amount.
 
 Level-up popups skip obscured background gains/MAX. Only the reached level to the right of the arrow is read. A confirmed result-column LEVEL UP marker and reached level of at least 10 apply the watched MAX rule. Levels below 10 continue. Unknown level/column defers to normal MAX next quest, which can allow one extra quest. Gems and NEXT are not read.
 

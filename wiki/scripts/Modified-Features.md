@@ -149,15 +149,15 @@ In each script’s editor, **Bond points** sits between Command start conditions
 
 Party/support prechecks and original party-position mapping have been removed. The user maintains result-column consistency. Settings are per script and included in copying/export/import. Re-enable them in each script after upgrading from 0.8.0; launcher settings are not migrated to the new numbering.
 
-The first read begins 1.5 seconds after detecting a bond result, using a fresh capture. Faster wait settings do not shorten this delay. Level-up popups skip hidden gains/MAX. A confirmed result column reaching at least 10 applies the MAX stop rule; uncertain popups defer to normal MAX next quest. Gems and NEXT are not read. [Settings and validation scope](Bond-Tracking.md).
+The first read begins 1.2 seconds after detecting a bond result, using a fresh capture. Faster wait settings do not shorten this delay. Level-up popups skip hidden gains/MAX. A confirmed result column reaching at least 10 applies the MAX stop rule; uncertain popups defer to normal MAX next quest. Gems and NEXT are not read. [Settings and validation scope](Bond-Tracking.md).
 
 ### 14. App interface
 
-The home screen shows only the installed-version button, for example **Build: 0.10.1**, linking to modified releases. The repository, troubleshooting, Discord and donation buttons are removed. Bond server/help text and the Append Skill maximum-level heading have also been removed. **More options → Additional features**, next to Advanced, contains Enable Teapot/Storm Pod control, which defaults off.
+The home screen shows only the installed-version button, for example **Build: 1.0.0**, linking to modified releases. The repository, troubleshooting, Discord and donation buttons are removed. Bond server/help text and the Append Skill maximum-level heading have also been removed. **More options → Additional features**, next to Advanced, contains Enable Teapot/Storm Pod control, which defaults off.
 
 ### 15. GitHub update checks
 
-Enable **More options → Advanced → Check for updates** to compare the installed version with the latest stable FGA-Modified GitHub release when the app starts. A newer release with an uploaded ARM APK opens an update prompt with a link to its release page. Prereleases are excluded. Network failures leave the installed app usable. There is no background polling, closed-app notification or automatic APK installation. The release endpoint follows the [GitHub REST API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release).
+Enable **More options → Additional features → Check for updates** to compare the installed version with the latest stable FGA-Modified GitHub release when the app starts. A newer release with an uploaded ARM APK opens an update prompt with a link to its release page. Prereleases are excluded. Network failures leave the installed app usable. There is no background polling, closed-app notification or automatic APK installation. The release endpoint follows the [GitHub REST API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release).
 
 <a id="chaldea-import"></a>
 

@@ -33,20 +33,14 @@ fun MoreOptionsScreen(
         vm.pickedDirectory(it)
     }
     val originalImport by vm.originalImport.collectAsStateWithLifecycle()
-    val importScripts = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
-        vm.selectImportFolder(scripts = true, uri = it)
-    }
-    val importImages = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
-        vm.selectImportFolder(scripts = false, uri = it)
-    }
+    val importSource = rememberLauncherForActivityResult(OpenDocTreePersistable(), vm::selectImportFolder)
     if (originalImport.open) {
         OriginalFgaImportDialog(
             state = originalImport,
             destinationName = vm.storageProvider.rootDirName,
             onDismiss = vm::closeOriginalImport,
             onSelection = vm::selectImportMode,
-            onPickScripts = { importScripts.launch(originalImport.scripts ?: Uri.EMPTY) },
-            onPickImages = { importImages.launch(originalImport.images ?: Uri.EMPTY) },
+            onPickSource = { importSource.launch(originalImport.source ?: Uri.EMPTY) },
             onOverwrite = vm::overwriteImportedImages,
             onImport = vm::importOriginalData
         )

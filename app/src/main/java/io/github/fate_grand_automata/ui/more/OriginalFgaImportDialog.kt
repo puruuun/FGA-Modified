@@ -36,8 +36,7 @@ fun OriginalFgaImportDialog(
     destinationName: String?,
     onDismiss: () -> Unit,
     onSelection: (ImportSelection) -> Unit,
-    onPickScripts: () -> Unit,
-    onPickImages: () -> Unit,
+    onPickSource: () -> Unit,
     onOverwrite: (Boolean) -> Unit,
     onImport: () -> Unit
 ) {
@@ -95,11 +94,8 @@ fun OriginalFgaImportDialog(
                             }
                         }
                     }
-                    if (state.selection.scripts) {
-                        ImportFolderButton(R.string.original_import_script_folder, state.scripts, !state.busy, onPickScripts)
-                    }
+                    ImportFolderButton(R.string.original_import_source_folder, state.source, !state.busy, onPickSource)
                     if (state.selection.images) {
-                        ImportFolderButton(R.string.original_import_image_folder, state.images, !state.busy, onPickImages)
                         Text(stringResource(R.string.original_import_image_hint), style = MaterialTheme.typography.bodySmall)
                         Text(
                             if (destinationName == null) stringResource(R.string.original_import_need_destination)
