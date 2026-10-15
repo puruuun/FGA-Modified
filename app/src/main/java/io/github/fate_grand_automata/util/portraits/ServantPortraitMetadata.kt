@@ -15,7 +15,7 @@ data class ServantPortraitMetadata(
     val name: String,
     val portraits: List<ServantPortrait>
 ) {
-    val folderName get() = "No.$collectionNo"
+    val folderName get() = ServantPortraitFolder.name(collectionNo, name)
 
     companion object {
         fun parse(text: String, requestedNo: Int): ServantPortraitMetadata {
@@ -56,6 +56,34 @@ data class ServantPortraitMetadata(
 
         private fun invalid(): Nothing = throw PortraitImportException(PortraitImportError.Metadata)
     }
+}
+
+object ServantPortraitFolder {
+    private val generatedFolder = Regex("No\\.([1-9][0-9]{0,3})(?: .+)?")
+
+    fun name(number: Int, servantName: String): String {
+        val safeName = servantName.map { char ->
+            if (char.isISOControl() || char in "\\/:*?\"<>|") ' ' else char
+        }.joinToString("")
+            .replace(Regex("\\s+"), " ")
+            .trim(' ', '.')
+            .take(80)
+            .dropLastWhile { it.isHighSurrogate() }
+            .trimEnd(' ', '.')
+            .ifBlank { "Servant" }
+        return "No.$number $safeName"
+    }
+
+    fun number(folder: String): Int? = generatedFolder.matchEntire(folder)?.groupValues?.get(1)?.toIntOrNull()
+
+    fun resolve(requested: String, folders: List<String>): String? {
+        if (requested in folders) return requested
+        val collectionNo = number(requested) ?: return null
+        return folders.firstOrNull { number(it) == collectionNo }
+    }
+
+    fun renameSelections(selected: Set<String>, collectionNo: Int, folder: String): Set<String> =
+        selected.map { if (number(it) == collectionNo) folder else it }.toSet()
 }
 
 enum class PortraitImportError { Number, NotFound, Network, Metadata, Image, Storage }

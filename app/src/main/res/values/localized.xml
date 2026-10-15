@@ -709,7 +709,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="portrait_import_summary">Generate support images for every ascension and costume using a collection number.</string>
     <string name="portrait_import_description">Enter the servant collection number. All available ascension and costume portraits are downloaded from Atlas Academy and saved as FGA support images. Uses the latest JP collection; an internet connection is required.</string>
     <string name="portrait_import_number">Servant collection number</string>
-    <string name="portrait_import_destination">Save in %1$s/support/servant/No.number</string>
+    <string name="portrait_import_destination">Save in %1$s/support/servant/No.number servant name</string>
     <string name="portrait_import_start">Generate and save</string>
     <string name="portrait_import_retry">Generate again</string>
     <string name="portrait_import_close">Close</string>

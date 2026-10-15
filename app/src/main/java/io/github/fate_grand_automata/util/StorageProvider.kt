@@ -11,6 +11,8 @@ import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.GameServer
+import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
+import io.github.fate_grand_automata.util.portraits.ServantPortraitMetadata
 import io.github.lib_automata.Pattern
 import timber.log.Timber
 import java.io.File
@@ -138,7 +140,13 @@ class StorageProvider @Inject constructor(
     }
 
     override fun readSupportImage(kind: SupportImageKind, name: String): List<InputStream> {
-        val file = kind.imageFolder.findFile(name)
+        val folder = kind.imageFolder
+        val file = folder.findFile(name)
+            // Older exported configs can still refer to No.444 after its folder is named.
+            ?: (if (kind == SupportImageKind.Servant && ServantPortraitFolder.number(name) != null) {
+                val resolved = ServantPortraitFolder.resolve(name, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
+                resolved?.let(folder::findFile)
+            } else null)
             ?: throw KnownException(
                 KnownException.Reason.CouldNotOpenSupportFileForReading(kind, name)
             )
@@ -162,6 +170,28 @@ class StorageProvider @Inject constructor(
         .listFiles()
         .mapNotNull { it.name }
         .filterNot { it.lowercase().contains("nomedia") }
+
+    fun prepareServantPortraitFolder(metadata: ServantPortraitMetadata): String {
+        val folderName = metadata.folderName
+        val folder = supportServantFolder
+        val existing = ServantPortraitFolder.resolve(folderName, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
+        if (existing != null && existing != folderName) {
+            val previous = folder.findFile(existing)
+            if (previous == null || !previous.renameTo(folderName)) {
+                throw KnownException(KnownException.Reason.CouldNotCreateDirectory(folderName))
+            }
+        } else {
+            folder.getOrCreateDir(folderName)
+        }
+        // Preserve all battle profiles when a generated folder acquires or changes its name.
+        for (id in prefsCore.battleConfigList.get()) {
+            val preferred = prefsCore.forBattleConfig(id).support.preferredServants
+            val selected = preferred.get()
+            val renamed = ServantPortraitFolder.renameSelections(selected, metadata.collectionNo, folderName)
+            if (selected != renamed) preferred.set(renamed)
+        }
+        return folderName
+    }
 
     private val dropsFolder
         get() = dirRoot.getOrCreateDir("drops")
