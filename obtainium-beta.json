@@ -3,10 +3,5 @@
   "url": "https://github.com/puruuun/FGA-Modified",
   "author": "puruuun",
   "name": "FGA(beta)",
-  "additionalSettings": {
-    "includePrereleases": true,
-    "fallbackToOlderReleases": true,
-    "filterReleaseTitlesByRegEx": "^FGA\\(beta\\)",
-    "apkFilterRegEx": "^FGA-beta-.*-arm\\.apk$"
-  }
+  "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^FGA\\\\(beta\\\\)\",\"apkFilterRegEx\":\"^FGA-beta-.*-arm\\\\.apk$\"}"
 }
