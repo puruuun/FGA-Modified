@@ -22,7 +22,7 @@ class ServantPortraitMetadataTest {
     @Test fun `collection number resolves all portrait families and excludes full card artwork`() {
         val data = ServantPortraitMetadata.parse(example, 90)
         assertEquals(100600, data.servantId)
-        assertEquals("No.90", data.folderName)
+        assertEquals("No.90 Nero Bride", data.folderName)
         assertEquals(listOf("faces_ascension_1", "faces_ascension_2", "faces_costume_100630", "faces_transformGroup_1", "facesChange_ascension_3_1"), data.portraits.map { it.key })
     }
 

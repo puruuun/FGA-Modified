@@ -32,8 +32,9 @@ class ServantPortraitImporter @Inject constructor(private val storage: StoragePr
             } catch (e: Exception) {
                 throw PortraitImportException(PortraitImportError.Metadata)
             }
-            try {
+            val folder = try {
                 storage.createNoMediaFile()
+                storage.prepareServantPortraitFolder(metadata)
             } catch (e: Exception) {
                 throw PortraitImportException(PortraitImportError.Storage)
             }
@@ -46,7 +47,7 @@ class ServantPortraitImporter @Inject constructor(private val storage: StoragePr
                     val png = SupportPortraitTemplate.create(download(portrait.url, 1_048_576))
                     coroutineContext.ensureActive()
                     try {
-                        storage.writeSupportImage(SupportImageKind.Servant, "${metadata.folderName}/${portrait.key}.png").use {
+                        storage.writeSupportImage(SupportImageKind.Servant, "$folder/${portrait.key}.png").use {
                             it.write(png)
                         }
                     } catch (e: Exception) {
@@ -63,7 +64,7 @@ class ServantPortraitImporter @Inject constructor(private val storage: StoragePr
                 }
                 onProgress(PortraitImportProgress(metadata.name, index + 1, metadata.portraits.size))
             }
-            PortraitImportReport(metadata.name, metadata.folderName, saved, failed)
+            PortraitImportReport(metadata.name, folder, saved, failed)
         }
 
     private suspend fun download(url: String, maxBytes: Int, metadata: Boolean = false): ByteArray {
