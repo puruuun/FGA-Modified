@@ -3,8 +3,5 @@
   "url": "https://github.com/puruuun/FGA-Modified",
   "author": "puruuun",
   "name": "FGA(mod)",
-  "additionalSettings": {
-    "includePrereleases": false,
-    "apkFilterRegEx": "^FGA-mod-.*-arm\\.apk$"
-  }
+  "additionalSettings": "{\"includePrereleases\":false,\"apkFilterRegEx\":\"^FGA-mod-.*-arm\\\\.apk$\"}"
 }
