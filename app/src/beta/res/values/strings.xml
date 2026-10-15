@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name" translatable="false">FGA(beta)</string>
+    <string name="link_releases" translatable="false">https://github.com/puruuun/FGA-Modified/releases?q=beta&amp;expanded=true</string>
+</resources>

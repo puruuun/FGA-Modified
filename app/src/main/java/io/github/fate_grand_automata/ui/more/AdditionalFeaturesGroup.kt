@@ -10,7 +10,7 @@ import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 
-fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: () -> Unit) {
+fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: () -> Unit, importPortraits: () -> Unit) {
     item {
         prefs.checkForUpdates.SwitchPreference(
             title = stringResource(R.string.p_check_for_updates),
@@ -24,6 +24,14 @@ fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: 
             summary = stringResource(R.string.original_import_summary),
             icon = icon(R.drawable.ic_folder_edit),
             onClick = importOriginalData
+        )
+    }
+    item {
+        Preference(
+            title = stringResource(R.string.portrait_import_title),
+            summary = stringResource(R.string.portrait_import_summary),
+            icon = icon(R.drawable.ic_folder_edit),
+            onClick = importPortraits
         )
     }
     item {

@@ -33,6 +33,18 @@ fun MoreOptionsScreen(
         vm.pickedDirectory(it)
     }
     val originalImport by vm.originalImport.collectAsStateWithLifecycle()
+    val portraitImport by vm.portraitImport.collectAsStateWithLifecycle()
+    if (portraitImport.open) {
+        val destinationName by vm.storageSummary
+        ServantPortraitImportDialog(
+            state = portraitImport,
+            destinationName = destinationName,
+            onNumber = vm::changePortraitNumber,
+            onStart = vm::importPortraits,
+            onPickDirectory = { pickDirectory.launch(Uri.EMPTY) },
+            onDismiss = vm::closePortraitImport
+        )
+    }
     val importScripts = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.selectImportFolder(scripts = true, uri = it)
     }
@@ -106,7 +118,7 @@ private fun MoreOptionsContent(
                             }
 
                             MoreSettingsGroup.AdditionalFeatures -> {
-                                additionalFeaturesGroup(vm.prefsCore, vm::openOriginalImport)
+                                additionalFeaturesGroup(vm.prefsCore, vm::openOriginalImport, vm::openPortraitImport)
                             }
 
                             MoreSettingsGroup.Advanced -> {
