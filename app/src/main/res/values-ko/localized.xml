@@ -637,7 +637,7 @@
     <string name="portrait_import_summary">도감 번호로 모든 재림·영의의 서포트 인식 이미지를 생성합니다.</string>
     <string name="portrait_import_description">서번트 도감 번호를 입력하면 Atlas Academy에서 모든 재림·영의 초상화를 내려받아 FGA 서포트 이미지로 저장합니다. 일본판 최신 도감 기준이며 인터넷 연결이 필요합니다.</string>
     <string name="portrait_import_number">서번트 도감 번호</string>
-    <string name="portrait_import_destination">저장 위치: %1$s/support/servant/No.번호</string>
+    <string name="portrait_import_destination">저장 위치: %1$s/support/servant/No.번호 서번트 이름</string>
     <string name="portrait_import_start">생성·저장</string>
     <string name="portrait_import_retry">다시 생성</string>
     <string name="portrait_import_close">닫기</string>
