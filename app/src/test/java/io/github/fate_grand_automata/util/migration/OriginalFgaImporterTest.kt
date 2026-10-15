@@ -14,28 +14,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class OriginalFgaImporterTest {
-    @Test fun `one original storage root supports each selected import mode`() {
-        for (selection in ImportSelection.entries) {
-            val source = dir("original-${selection.name}")
-            val dest = dir("modified-${selection.name}")
-            script(source, "scripts/nested/exported.fga")
-            image(source, "support/ce/Custom CE.png")
-            val imported = mutableListOf<Map<String, *>>()
-            val storage = object : ImportedScriptStore {
-                override fun existing() = imported.toList()
-                override fun add(values: Map<String, *>) { imported += values }
-            }
-            val report = OriginalFgaImporter(storage).run(
-                selection, LocalDocument(source), LocalDocument(source), LocalDocument(dest)
-            )
-            assertEquals(if (selection.scripts) 1 else 0, report.scripts.imported)
-            assertEquals(if (selection.images) 1 else 0, report.images.imported)
-            assertEquals(selection.images, File(dest, "support/ce/Custom CE.png").exists())
-            assertEquals(if (selection.scripts) 1 else 0, imported.size)
-            assertEquals(0, report.issueCount)
-        }
-    }
-
     @TempDir lateinit var temp: Path
     private val records = mutableListOf<Map<String, *>>()
     private val store = object : ImportedScriptStore {

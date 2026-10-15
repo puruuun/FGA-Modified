@@ -4,12 +4,11 @@
 
 Open **More options → Additional features → Import original FGA data**. Choose **Scripts only**, **Support images only**, or **Scripts and support images**.
 
-1. Select **one original FGA storage root folder**, then choose scripts, images or both.
-2. For scripts, first use **Export all** in the original FGA battle configuration list and save the `.fga` files into that root or one of its subfolders. Scripts kept only in the original app’s private storage cannot be read directly.
-3. Press **Import**. The importer searches the selected tree for `.fga` files and `support/servant`, `support/ce` and `support/friend` images. Separate source folders are no longer needed.
-4. The result shows imported, skipped and failed counts for each category, with filenames and reasons for errors. A bad file does not prevent other files from importing.
+1. For scripts, first use **Export all** in the original FGA battle configuration list. Select the folder containing the exported `.fga` files in the import dialog. Subfolders are included.
+2. For images, select the original FGA storage folder or its `support` subfolder. Images under `servant`, `ce`, and `friend`, including servant variant subfolders, are copied into the current FGA(mod) storage folder.
+3. Select both folders if importing both categories, then press **Import**. The result shows imported, skipped and failed counts for each category, with filenames and reasons for errors. A bad file does not prevent other files from importing.
 
-Images are copied into the current FGA(mod) storage folder. Set that destination in **More options → Storage** before importing images. Script-only import does not require a destination folder.
+Set the destination folder in **More options → Storage** before importing images. Script-only import does not require an image or destination folder.
 
 Existing scripts are retained. Identical stored configurations, including names, are skipped. Different configurations with the same name are added as separate scripts. Existing images are skipped unless **Overwrite existing images with the same name** is selected. Identical images and source/destination files are not rewritten even with overwriting enabled. A destination nested inside the source images is rejected.
 

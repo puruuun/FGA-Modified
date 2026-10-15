@@ -45,9 +45,11 @@ class MoreOptionsViewModel @Inject constructor(
     fun selectImportMode(selection: ImportSelection) {
         if (!_originalImport.value.busy) _originalImport.update { it.copy(selection = selection, error = false) }
     }
-    fun selectImportFolder(uri: Uri?) {
+    fun selectImportFolder(scripts: Boolean, uri: Uri?) {
         if (uri == null || _originalImport.value.busy) return
-        _originalImport.update { it.copy(source = uri, error = false) }
+        _originalImport.update {
+            if (scripts) it.copy(scripts = uri, error = false) else it.copy(images = uri, error = false)
+        }
     }
     fun overwriteImportedImages(overwrite: Boolean) {
         if (!_originalImport.value.busy) _originalImport.update { it.copy(overwriteImages = overwrite) }
@@ -59,7 +61,7 @@ class MoreOptionsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val report = withContext(Dispatchers.IO) {
-                    originalImporter.run(request.selection, request.source, request.overwriteImages) { progress ->
+                    originalImporter.run(request.selection, request.scripts, request.images, request.overwriteImages) { progress ->
                         ensureActive()
                         _originalImport.update { it.copy(progress = progress) }
                     }
@@ -109,12 +111,14 @@ class MoreOptionsViewModel @Inject constructor(
 data class OriginalImportState(
     val open: Boolean = false,
     val selection: ImportSelection = ImportSelection.Both,
-    val source: Uri? = null,
+    val scripts: Uri? = null,
+    val images: Uri? = null,
     val overwriteImages: Boolean = false,
     val busy: Boolean = false,
     val progress: OriginalImportProgress? = null,
     val report: OriginalImportReport? = null,
     val error: Boolean = false
 ) {
-    val canStart get() = !busy && report == null && source != null
+    val canStart get() = !busy && report == null &&
+        (!selection.scripts || scripts != null) && (!selection.images || images != null)
 }

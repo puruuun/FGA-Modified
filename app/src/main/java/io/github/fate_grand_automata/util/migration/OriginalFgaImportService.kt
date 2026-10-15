@@ -20,7 +20,8 @@ class OriginalFgaImportService @Inject constructor(
 ) {
     fun run(
         selection: ImportSelection,
-        source: Uri?,
+        scripts: Uri?,
+        images: Uri?,
         overwriteImages: Boolean,
         onProgress: (OriginalImportProgress) -> Unit
     ): OriginalImportReport {
@@ -47,8 +48,8 @@ class OriginalFgaImportService @Inject constructor(
             prefsCore.dirRoot.get().takeIf { it.isNotBlank() }?.let { document(Uri.parse(it)) }
         } else null
         return OriginalFgaImporter(store).run(
-            selection, if (selection.scripts) document(source) else null,
-            if (selection.images) document(source) else null, destination, overwriteImages, onProgress
+            selection, if (selection.scripts) document(scripts) else null,
+            if (selection.images) document(images) else null, destination, overwriteImages, onProgress
         )
     }
 }
