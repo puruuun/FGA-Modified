@@ -1,0 +1,66 @@
+name: Stable APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stable-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FGA_VERSION_NAME: 1.1.0
+  FGA_VERSION_CODE: 3082
+  GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+      - name: Run unit tests
+        run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
+      - name: Build stable APK
+        run: ./gradlew :app:assembleCi
+      - name: Verify stable APK identity and signature
+        shell: bash
+        run: |
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          apk=app/build/outputs/apk/ci/app-ci.apk
+          "$build_tools/aapt" dump badging "$apk" > stable-apk-metadata.txt
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          metadata = Path("stable-apk-metadata.txt").read_text()
+          identity = ("package: name='io.github.fate_grand_automata.cardcount' "
+                      f"versionCode='{os.environ['FGA_VERSION_CODE']}' "
+                      f"versionName='{os.environ['FGA_VERSION_NAME']}'")
+          assert metadata.startswith(identity), metadata.splitlines()[0]
+          assert "application-label:'FGA(mod)'" in metadata
+          assert "native-code: 'armeabi-v7a' 'arm64-v8a'" in metadata or "native-code: 'arm64-v8a' 'armeabi-v7a'" in metadata
+          print(identity)
+          PY
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk" > stable-apk-signature.txt
+          cat stable-apk-signature.txt
+      - name: Name APK
+        run: cp app/build/outputs/apk/ci/app-ci.apk FGA-mod-${FGA_VERSION_NAME}-arm.apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: FGA-stable-apk
+          path: FGA-mod-*-arm.apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: stable-apk-verification
+          path: stable-apk-*.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: stable-test-reports
+          path: '**/build/test-results/**/*.xml'

@@ -8,6 +8,8 @@
 
 ## 다운로드·업데이트
 
+**정규판 1.1.0** — 서번트 번호 이미지 생성과 스코어·인연·티포트 개선을 포함합니다. [변경 사항](wiki/releases/1.1.0-KR.md).
+
 | 배포판 | APK | Obtainium |
 |---|---|---|
 | **정규판 FGA(mod)** | [최신 정규판](https://github.com/puruuun/FGA-Modified/releases/latest) | [정규판 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D) |
@@ -15,7 +17,7 @@
 
 정규판과 베타판은 함께 설치할 수 있으며 설정·저장 폴더는 각각 선택합니다. 베타판은 베타 릴리스만, 정규판은 정규 릴리스만 추적합니다. [Obtainium 설정 파일](obtainium-channels.json)을 가져와 두 항목을 함께 등록할 수도 있습니다.
 
-[기존 기능 상세 안내](wiki/scripts/Modified-Features-KR.md#installation) · [베타 서번트 번호 이미지 생성 안내](https://github.com/puruuun/FGA-Modified/blob/beta/servant-portraits/wiki/scripts/Servant-Number-Portraits-KR.md)
+[기존 기능 상세 안내](wiki/scripts/Modified-Features-KR.md#installation) · [서번트 번호 이미지 생성 안내](wiki/scripts/Servant-Number-Portraits-KR.md)
 
 Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 수정판은 업데이트 설치할 수 있습니다.
 
@@ -23,6 +25,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 간단한 설명 |
 |---|---|
+| [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 재림·영의 서포트 이미지를 생성하고 번호·이름 폴더에 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 스크립트·서포트 이미지를 골라 일괄로 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Modified-Features-KR.md#chaldea-import) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Modified-Features-KR.md#card-start) | 서번트별 카드 수에 따라 두 설정 중 하나를 실행합니다. |

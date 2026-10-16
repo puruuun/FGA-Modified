@@ -1,10 +1,10 @@
-# 서번트 번호로 서포트 이미지 생성 — FGA(beta)
+# 서번트 번호로 서포트 이미지 생성
 
-배포판: **FGA(beta) 1.0.2-beta.2**, 앱 ID `io.github.fate_grand_automata.beta`.
+배포판: **FGA(mod) 1.1.0 정규판**부터 포함합니다. 정규판 앱 ID는 `io.github.fate_grand_automata.cardcount`이며, 별도로 배포된 FGA(beta)에서도 사용할 수 있습니다.
 
 ## 사용 방법
 
-1. 베타 APK를 설치하고 FGA 저장 폴더를 선택합니다. 정규판과 함께 사용한다면 `FGA-beta` 같은 별도 폴더를 권장합니다.
+1. 정규판 또는 베타 APK를 설치하고 FGA 저장 폴더를 선택합니다. 두 앱을 함께 사용한다면 베타에는 `FGA-beta` 같은 별도 폴더를 권장합니다.
 2. **더 많은 옵션 → 추가 기능 → 서번트 번호로 서포트 이미지 생성**을 엽니다.
 3. 서번트 **도감 번호**를 입력합니다. 예: `90` 네로 브라이드, `444` U-올가마리. 내부 데이터 ID를 입력하는 기능은 아닙니다.
 4. **생성·저장**을 누릅니다. 해당 서번트의 모든 공개 재림·영의·지원되는 특수 초상화가 생성됩니다.
@@ -35,7 +35,7 @@ Obtainium의 베타 설정은 사전 출시 포함, 릴리스 제목 `^FGA\(beta
 
 ## 개발 및 검증
 
-`./gradlew :app:assembleBeta`로 베타 APK를 만들 수 있습니다. 버전은 `FGA_VERSION_NAME`, `FGA_VERSION_CODE` 환경변수를 사용합니다. `.github/workflows/beta.yml`은 단위 테스트 후 ARM APK를 생성하며 정규 릴리스를 자동 게시하지 않습니다.
+`./gradlew :app:assembleCi`로 기존 정규판과 같은 패키지·서명의 APK를, `./gradlew :app:assembleBeta`로 베타 APK를 만들 수 있습니다. `.github/workflows/stable.yml`은 정규판 1.1.0 빌드·테스트와 앱 ID·버전·서명 확인을 수행합니다. 버전은 `FGA_VERSION_NAME`, `FGA_VERSION_CODE` 환경변수를 사용합니다. `.github/workflows/beta.yml`은 단위 테스트 후 ARM APK를 생성하며 정규 릴리스를 자동 게시하지 않습니다.
 
 메타데이터의 번호 일치, 재림·영의·특수 변형 열거, 중복 제거, URL/파일명 검증과 정규/베타 업데이트 분리를 단위 테스트합니다. 실제 기기 검증 결과는 베타 릴리스 노트에 기록합니다.
 
