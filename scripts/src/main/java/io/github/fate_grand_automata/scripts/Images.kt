@@ -116,6 +116,7 @@ enum class Images(val path: String) {
     QuestItemTeapot("quest_item_tea.png"),
     QuestItemStormPod("quest_item_storm.png"),
     QuestItemDialog("quest_item_modal.png"),
+    QuestItemDialogKrNative("quest_item_modal_native.png"),
     QuestItemDialogClose("quest_item_close.png"),
     QuestItemParty("quest_item_party.png"),
 

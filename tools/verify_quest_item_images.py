@@ -12,6 +12,7 @@ import unicodedata
 from pathlib import Path
 sys.dont_write_bytecode = True
 import cv2
+import numpy as np
 from verify_support_append_images import ROOT, SCRIPTS, constants, rounded, score
 from verify_support_np_images import matches
 
@@ -26,6 +27,10 @@ CASES = {
     'jp 버튼 off 클릭시 나오게되는 창.png': ('Jp', 'Teapot', False, (False, False)),
     'jp 버튼 on 클릭시 나오게되는 창.png': ('Jp', 'Teapot', True, (True, True)),
 }
+
+def read_gray(path):
+    # OpenCV imread does not support all Unicode/UNC paths on Windows.
+    return cv2.imdecode(np.frombuffer(Path(path).read_bytes(), np.uint8), cv2.IMREAD_GRAYSCALE)
 
 def normalize(raw, method):
     h, w = raw.shape[:2]
@@ -57,7 +62,7 @@ class Reader:
         if key not in self.cache:
             path = ROOT/'app/src/main/assets'/server/f'quest_item_{name}.png'
             if not path.exists(): path = ROOT/'app/src/main/assets/En'/f'quest_item_{name}.png'
-            self.cache[key] = cv2.imread(str(path), 0)
+            self.cache[key] = read_gray(path)
             assert self.cache[key] is not None, path
         return self.cache[key]
     def values(self, gray, region, names, server):
@@ -80,7 +85,8 @@ class Reader:
     def read(self, gray, server):
         v = {key:self.values(gray,key,['on_modal','on_main','off_modal','off_main'],server)
              for key in ['mainControl','stormPodControl','teapotControl']}
-        title = self.values(gray,'dialogHeading',['modal'],server)['modal'] >= self.settings['SCREEN_SIMILARITY']
+        title_scores = self.values(gray,'dialogHeading',['modal'] + (['modal_native'] if server == 'Kr' else []),server)
+        title = max(title_scores.values()) >= self.settings['SCREEN_SIMILARITY']
         close = self.values(gray,'dialogClose',['close'],server)['close'] >= self.settings['SCREEN_SIMILARITY']
         party = self.values(gray,'partyHeading',['party'],server)['party'] >= self.settings['SCREEN_SIMILARITY']
         icons = self.values(gray,'mainControl',['tea','storm'],server)
@@ -93,20 +99,71 @@ class Reader:
         elif not tea and not storm and all(value < self.settings['STATE_SIMILARITY'] for value in v['mainControl'].values()): view = 'Unavailable'
         else: view = 'Unknown'
         return dict(view=view, main_kind=kind, main_on=main, storm_on=left, tea_on=right, dialog=title, close=close,
-                    similarities=v, icon_similarities=icons)
+                    similarities=v, icon_similarities=icons, title_similarities=title_scores,
+                    launch_screen=party and not close)
+
+def verify_reference_crops(reader, report_path):
+    """Rebuild only the tested ROIs on black canvases, never synthetic full game screens."""
+    manifest = json.loads((ROOT/'docs/reference-images/quest-items-crops.json').read_text(encoding='utf-8'))
+    groups = {}
+    for name, info in manifest.items():
+        path = Path(name)
+        role = next(role for role in ['party-heading','main','heading','dialog','close'] if path.stem.endswith('-'+role))
+        case = path.stem[len('quest-items-'):-len(role)-1]
+        key = path.parent.name, case
+        frame = groups.setdefault(key, np.zeros((720,1280),np.uint8))
+        x,y,w,h = info['region_720p']; crop = read_gray(ROOT/path)
+        assert crop.shape == (h,w), name
+        frame[y:y+h,x:x+w] = crop
+    results = []; negatives = 0
+    for (server,case), gray in sorted(groups.items()):
+        result = reader.read(gray,server)
+        modal = 'dialog' in case
+        expected = 'Unknown' if case.endswith('negative') else 'Dialog' if modal else 'Single'
+        assert result['view'] == expected, (server,case,result)
+        assert result['launch_screen'] == (expected == 'Single'), (server,case,result)
+        if expected == 'Dialog':
+            wanted = case.endswith('-on')
+            assert result['storm_on'] == wanted and result['tea_on'] == wanted, (server,case,result)
+            for region in ['dialogHeading','dialogClose','stormPodControl','teapotControl']:
+                missing=gray.copy();x,y,w,h=reader.regions[region];missing[y:y+h,x:x+w]=0
+                assert reader.read(missing,server)['view']=='Unknown', (server,case,region)
+                negatives += 1
+        elif expected == 'Single':
+            assert result['main_kind'] == ('StormPod' if 'storm' in case else 'Teapot'), (server,case,result)
+            assert result['main_on'] == case.endswith('-on'), (server,case,result)
+            missing=gray.copy();x,y,w,h=reader.regions['mainControl'];missing[y:y+h,x:x+w]=0
+            absent=reader.read(missing,server)
+            assert absent['view']=='Unavailable' and absent['launch_screen'], (server,case,absent)
+            x,y,w,h=reader.regions['partyHeading'];missing[y:y+h,x:x+w]=0
+            invalid=reader.read(missing,server)
+            assert invalid['view']=='Unknown' and not invalid['launch_screen'], (server,case,invalid)
+            negatives += 2
+        results.append(dict(server=server,case=case,expected=expected,detected=result,passed=True))
+    report=dict(passed=True,opencv=cv2.__version__,thresholds=reader.settings,roi_cases=len(results),
+                synthetic_negative_checks=negatives,screens=results,
+                limitations=['Pixel checks of committed screen ROIs on black canvases; not full game screenshots or Android gesture tests.'])
+    report_path.parent.mkdir(parents=True,exist_ok=True)
+    report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    print('PASS:',len(results),'reference ROI cases;',negatives,'synthetic negative checks')
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input-dir',type=Path,required=True)
+    parser.add_argument('--input-dir',type=Path)
+    parser.add_argument('--reference-crops',action='store_true',help='Check the committed KR/JP reference ROIs')
     parser.add_argument('--report',type=Path,required=True)
     args=parser.parse_args()
+    if args.reference_crops:
+        verify_reference_crops(Reader(),args.report)
+        return
+    if args.input_dir is None: parser.error('--input-dir or --reference-crops is required')
     files={unicodedata.normalize('NFC',p.name):p for p in args.input_dir.glob('*.png')}
     reader=Reader(); report=dict(passed=True,opencv=cv2.__version__,thresholds=reader.settings,regions_720p=reader.regions,
         source_inputs={},screens=[],negative_checks=[],limitations=['Desktop screenshot tests; no live Android/FGO interaction.',
         'Provided game screens are near 16:9; wide/notch layouts are not image-tested.',
         'Launcher screenshot is a UI placement reference.'])
     for name,(server,kind,on,dialog) in CASES.items():
-        path=files[name]; raw=cv2.imread(str(path),0); assert raw is not None
+        path=files[name]; raw=read_gray(path); assert raw is not None
         report['source_inputs'][name]={'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'native_size':list(raw.shape[::-1])}
         for method in ['crop_then_resize','resize_then_crop']:
             gray=normalize(raw,method); result=reader.read(gray,server)
@@ -121,7 +178,7 @@ def main():
                 missing=gray.copy();x,y,w,h=reader.regions['mainControl']; missing[y:y+h,x:x+w]=0
                 assert reader.read(missing,server)['view']=='Unavailable'
                 report['negative_checks'].append(dict(file=name,normalization=method,case='synthetic absent main control',passed=True))
-    button_path=files['버튼.png']; button=cv2.imread(str(button_path),0)
+    button_path=files['버튼.png']; button=read_gray(button_path)
     report['cropped_button']=[]
     for rate in [0.30,0.32]:
         scaled=cv2.resize(button,None,fx=rate,fy=rate,interpolation=cv2.INTER_AREA)

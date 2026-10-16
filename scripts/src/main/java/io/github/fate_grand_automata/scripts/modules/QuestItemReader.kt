@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.lib_automata.Location
 import io.github.lib_automata.Match
 import io.github.lib_automata.Region
@@ -30,7 +31,10 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataAp
     /** Each invocation captures one fresh frame. Never retain it across a click. */
     fun read(): View = useSameSnapIn {
         val loc = locations.questItems
-        val dialog = loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = SCREEN_SIMILARITY)
+        val dialog = loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = SCREEN_SIMILARITY) ||
+            // Native KR captures and window-resampled captures have different glyph antialiasing.
+            (prefs.gameServer is GameServer.Kr && loc.dialogHeading.exists(
+                images[Images.QuestItemDialogKrNative], similarity = SCREEN_SIMILARITY))
         val close = loc.dialogClose.findAll(images[Images.QuestItemDialogClose], similarity = SCREEN_SIMILARITY).maxByOrNull { it.score }
         if (dialog || close != null) {
             val storm = button(loc.stormPodControl)

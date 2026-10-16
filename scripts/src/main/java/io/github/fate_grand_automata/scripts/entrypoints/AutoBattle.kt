@@ -207,6 +207,7 @@ class AutoBattle @Inject constructor(
             { isInResult() } to { result() },
             { isInDropsScreen() } to { dropScreen() },
             { isInQuestRewardScreen() } to { questReward() },
+            { questLaunch.isScreen() } to { party() },
             { isInSupport() } to { support() },
             { isRepeatScreen() } to { repeatQuest() },
             { isInOrdealCallOutOfPodsScreen() } to { ordealCallOutOfPods() },
@@ -475,13 +476,16 @@ class AutoBattle @Inject constructor(
 
         if (!isContinuing) {
             4.seconds.wait()
-            startQuest()
-
-            // Wait timer till battle starts.
-            // Uses less battery to wait than to search for images for a few seconds.
-            // Adjust according to device.
-            5.seconds.wait()
+            party()
         }
+    }
+
+    /** Also handles a script started directly on party confirmation, including after a repeat. */
+    private fun party() {
+        canScreenshotBondCE = false
+        startQuest()
+        // Let the transition settle before checking battle screens again.
+        5.seconds.wait()
     }
 
     /**

@@ -214,5 +214,131 @@
       87
     ],
     "source_normalization": "crop then resize; game area 1280x720"
+  },
+  "docs/reference-images/Kr/quest-items-native-dialog-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-native-dialog-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-native-dialog-off-heading.png": {
+    "region_720p": [
+      380,
+      80,
+      520,
+      80
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-native-dialog-off-dialog.png": {
+    "region_720p": [
+      515,
+      365,
+      350,
+      82
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-native-dialog-off-close.png": {
+    "region_720p": [
+      485,
+      520,
+      310,
+      87
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-dialog-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-dialog-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-dialog-off-heading.png": {
+    "region_720p": [
+      380,
+      80,
+      520,
+      80
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-dialog-off-dialog.png": {
+    "region_720p": [
+      515,
+      365,
+      350,
+      82
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-dialog-off-close.png": {
+    "region_720p": [
+      485,
+      520,
+      310,
+      87
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-teapot-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Kr/quest-items-window-teapot-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Jp/quest-items-native-teapot-off-main.png": {
+    "region_720p": [
+      710,
+      634,
+      260,
+      79
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
+  },
+  "docs/reference-images/Jp/quest-items-native-teapot-off-party-heading.png": {
+    "region_720p": [
+      880,
+      0,
+      400,
+      85
+    ],
+    "source_normalization": "native or PC game area resized to 1280x720; see Quest-Items-KR.md"
   }
 }

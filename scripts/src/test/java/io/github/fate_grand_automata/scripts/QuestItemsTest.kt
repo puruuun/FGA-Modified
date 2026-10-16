@@ -5,6 +5,7 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.QuestItemLocations
+import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.Kind
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.View
@@ -35,7 +36,7 @@ class QuestItemsTest {
         }
     }
 
-    private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot) {
+    private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot, val server: GameServer = GameServer.Jp.Original) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val party = mockk<PartySelection>()
         val loc = mockk<QuestItemLocations>()
@@ -46,11 +47,13 @@ class QuestItemsTest {
         val close = Region(970, 1040, 620, 174)
         val partyHeading = Region(1760, 0, 800, 170)
         val quest = Location(2400, 1350)
-        val patterns = Images.entries.filter { it.path.startsWith("quest_item_") }.associateWith { mockk<Pattern>() }
+        val patterns = mutableMapOf<Images, Pattern>()
         val trace = mutableListOf<String>()
         var storm = false
         var tea = false
         var modal = false
+        var nativeHeadingOnly = false
+        var stopAtQuest = false
         var snapshot = false
         var absent = false
         var hideState = false
@@ -79,7 +82,7 @@ class QuestItemsTest {
             if (settleFrames == 0) action() else { pending = action; framesUntilChange = settleFrames }
         }
         init {
-            every { api.prefs.gameServer } returns GameServer.Jp.Original
+            every { api.prefs.gameServer } returns server
             every { api.prefs.ignoreQuestItemUsage } returns false
             every { api.prefs.selectedServerConfigPref.useStormPod } returns false
             every { api.prefs.selectedServerConfigPref.useTeapot } returns false
@@ -91,7 +94,7 @@ class QuestItemsTest {
             every { loc.dialogClose } returns close
             every { loc.partyHeading } returns partyHeading
             every { api.locations.menuStartQuestClick } returns quest
-            patterns.forEach { (image, pattern) -> every { api.images[image, null] } returns pattern }
+            every { api.images[any(), any()] } answers { patterns.getOrPut(firstArg()) { mockk<Pattern>() } }
             every { api.useSameSnapIn<Any?>(any()) } answers {
                 assertFalse(snapshot)
                 if (pending != null && framesUntilChange-- <= 0) { pending!!.invoke(); pending = null }
@@ -103,7 +106,9 @@ class QuestItemsTest {
                 val region = firstArg<Region>()
                 val image = patterns.entries.single { it.value == secondArg<Pattern>() }.key
                 when (image) {
-                    Images.QuestItemDialog -> region == heading && modal
+                    Images.QuestItemDialog -> region == heading && modal && !nativeHeadingOnly
+                    Images.QuestItemDialogKrNative -> region == heading && modal && nativeHeadingOnly
+                    Images.QuestItemDialogClose -> region == close && modal && !partialDialog
                     Images.QuestItemParty -> region == partyHeading
                     Images.QuestItemTeapot -> region == main && !absent && !modal && (kind == Kind.Teapot || ambiguousIcon)
                     Images.QuestItemStormPod -> region == main && !absent && !modal && (kind == Kind.StormPod || ambiguousIcon)
@@ -137,7 +142,10 @@ class QuestItemsTest {
                         trace.add("close")
                         if (!ignoreClose) change { modal = false; if (wrongAfterClose) tea = !tea }
                     }
-                    quest -> { trace.add("quest"); assertFalse(modal) }
+                    quest -> {
+                        trace.add("quest"); assertFalse(modal)
+                        if (stopAtQuest) throw AutoBattle.BattleExitException(AutoBattle.ExitReason.Abort)
+                    }
                     else -> error("Unexpected click")
                 }
             }
@@ -158,9 +166,10 @@ class QuestItemsTest {
 
     @Test
     fun `all four requested combinations are applied independently before closing and starting`() {
-        for (initialStorm in listOf(false, true)) for (initialTea in listOf(false, true))
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original))
+            for (initialStorm in listOf(false, true)) for (initialTea in listOf(false, true))
             for (wantStorm in listOf(false, true)) for (wantTea in listOf(false, true)) {
-                val f = Fixture()
+                val f = Fixture(server = server)
                 f.storm = initialStorm; f.tea = initialTea; f.wanted(wantStorm, wantTea)
                 f.launch.start()
                 assertThat(f.storm).isEqualTo(wantStorm)
@@ -275,5 +284,54 @@ class QuestItemsTest {
         val f = Fixture()
         f.launch.start()
         assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
+    }
+
+    @Test
+    fun `KR native modal heading works without loosening control confirmation`() {
+        val f = Fixture(server = GameServer.Kr); f.nativeHeadingOnly = true
+        f.launch.start()
+        assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
+        val partial = Fixture(server = GameServer.Kr)
+        partial.nativeHeadingOnly = true; partial.modal = true; partial.partialDialog = true
+        partial.failsBeforeQuest()
+        assertThat(partial.trace).isEqualTo(listOf("party"))
+        val jp = Fixture(); jp.nativeHeadingOnly = true; jp.modal = true
+        jp.failsBeforeQuest()
+        verify(exactly = 0) { jp.api.images[Images.QuestItemDialogKrNative, any()] }
+    }
+
+    @Test
+    fun `party detector accepts KR and JP even with item bypass but excludes modal and other screens`() {
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
+            val f = Fixture(server = server)
+            assertTrue(f.api.useSameSnapIn { f.launch.isScreen() })
+            every { f.api.prefs.ignoreQuestItemUsage } returns true
+            assertTrue(f.api.useSameSnapIn { f.launch.isScreen() })
+            f.modal = true
+            assertFalse(f.api.useSameSnapIn { f.launch.isScreen() })
+            f.modal = false
+            every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returns false
+            assertFalse(f.api.useSameSnapIn { f.launch.isScreen() })
+        }
+        val unsupported = Fixture(server = GameServer.En.Original)
+        assertFalse(unsupported.launch.isScreen())
+        verify(exactly = 0) { unsupported.api.images[any(), any()] }
+    }
+
+    @Test
+    fun `battle entry from party confirms items before quest and propagates failure on both servers`() {
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) for (failure in listOf(false, true)) {
+            val f = Fixture(server = server)
+            f.ignoreClose = failure; f.stopAtQuest = true
+            val entry = AutoBattle(
+                mockk(relaxed = true), f.api, BattleState(), mockk(relaxed = true),
+                mockk(relaxed = true), mockk(relaxed = true), f.launch,
+                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)
+            )
+            val error = assertFailsWith<AutoBattle.ExitException> { entry.script() }
+            assertThat(error.reason).isEqualTo(if (failure) AutoBattle.ExitReason.QuestItemSettingFailed else AutoBattle.ExitReason.Abort)
+            assertThat(f.trace).isEqualTo(if (failure) listOf("party", "main", "close") else listOf("party", "main", "close", "quest"))
+        }
     }
 }

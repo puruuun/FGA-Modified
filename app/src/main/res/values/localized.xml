@@ -645,7 +645,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
     <string name="p_quest_item_usage_ignored">Enable Teapot/Storm Pod control in More options → Additional features to use these choices.</string>
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
-    <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start. Check the game screen, or enable Ignore Storm Pod/Teapot use in More options → Battle.</string>
+    <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
     <string name="p_grand_score_16_check_summary">Requires a displayed Grand score of +16. Class-only displays do not pass. With both switches on, Class +62 and Grand +16 must both match.</string>
     <string name="p_bond">Bond points</string>
     <string name="p_bond_track">Track bond point gains</string>
