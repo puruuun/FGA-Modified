@@ -20,6 +20,10 @@ class SupportImageLookupTest {
         val calls = mutableListOf<String>()
         val catalogs = mutableMapOf<String, List<SupportCatalogRecord>>()
         val details = mutableMapOf<String, String?>()
+        val names = mutableMapOf<String, Map<Int, Set<String>>>()
+        override suspend fun servantNames(region: String): Map<Int, Set<String>> {
+            calls += "names:$region"; return names[region].orEmpty()
+        }
         override suspend fun catalog(kind: SupportCatalogKind, region: String): List<SupportCatalogRecord> {
             calls += "catalog:$region"; return catalogs[region].orEmpty()
         }
@@ -142,5 +146,25 @@ class SupportImageLookupTest {
         assertEquals("No.34 Test",ServantPortraitFolder.displayName("No.34 Test.PNG"))
         assertEquals(setOf("No.34 새 이름","Black Grail.png"),ServantPortraitFolder.renameSelections(setOf("No.34 Old","Black Grail.png"),34,"No.34 새 이름"))
         assertEquals("No.34 새 이름",ServantPortraitFolder.resolve("No.34 Old",listOf("No.34 새 이름")))
+    }
+    @Test fun `ascension alias finds both Melusine versions even when a basic name already matches`() = runBlocking {
+        val source = Source()
+        source.catalogs["JP"] = listOf(record(304800,312,"妖精騎士ランスロット","lancer"), record(901700,390,"メリュジーヌ","ruler"))
+        source.catalogs["KR"] = listOf(record(304800,312,"요정기사 랜슬롯","lancer"), record(901700,390,"멜뤼진","ruler"))
+        source.names["JP"] = mapOf(304800 to setOf("メリュジーヌ"))
+        source.names["KR"] = mapOf(304800 to setOf("멜뤼진"), 999999 to setOf("멜뤼진"))
+        val lookup = SupportImageLookup(source)
+        for (query in listOf("멜뤼진", "멜 뤼 진", "멜뤼", "メリュジーヌ")) {
+            assertEquals(setOf(312,390),lookup.search(SupportCatalogKind.Servant,query,"ko","JP").map { it.number }.toSet())
+        }
+        val lancer = lookup.search(SupportCatalogKind.Servant,"요정기사랜슬롯","ko","JP").single()
+        assertEquals(312,lancer.number)
+        assertEquals("요정기사 랜슬롯",lancer.name) // Aliases never rename the folder to the search text.
+    }
+    @Test fun `number and CE lookups never request the extra servant name tables`() = runBlocking {
+        val source = Source();source.catalogs["JP"] = listOf(jp)
+        SupportImageLookup(source).search(SupportCatalogKind.Servant,"９０","ja","JP")
+        SupportImageLookup(source).search(SupportCatalogKind.CE,"ネロ","ja","JP")
+        assertFalse(source.calls.any { it.startsWith("names:") })
     }
 }
