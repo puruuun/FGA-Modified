@@ -68,6 +68,10 @@ class MoreOptionsViewModel @Inject constructor(
             PortraitImportState(open = true, kind = kind, region = it.region)
         }
     }
+    fun changePortraitRegion(region: String) {
+        if (region !in io.github.fate_grand_automata.util.portraits.SupportImageCatalog.regions || _portraitImport.value.busy) return
+        _portraitImport.update { it.copy(region = region, candidates = emptyList(), selected = null, searched = false, report = null, error = null) }
+    }
     fun changePortraitNumber(query: String) {
         if (!_portraitImport.value.busy && query.length <= 120) _portraitImport.update {
             it.copy(query = query, error = null, report = null, candidates = emptyList(), selected = null, searched = false)
@@ -80,7 +84,7 @@ class MoreOptionsViewModel @Inject constructor(
     fun searchPortraits(language: String) {
         val request = _portraitImport.value
         if (!request.canSearch) return
-        val region = portraitRegion()
+        val region = request.region
         _portraitImport.update { it.copy(busy = true, searching = true, error = null, report = null,
             progress = null, selected = null, candidates = emptyList(), searched = false, region = region) }
         viewModelScope.launch {

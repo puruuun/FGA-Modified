@@ -1,0 +1,215 @@
+{
+  "source": "Previous JP live-test support screenshots normalized to 1280x720; cropped to CE art without player names",
+  "cases": [
+    {
+      "name": "Black Grail",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94004800.png",
+      "asset": "f_94004800.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94004800.png",
+      "game_region_720p": [
+        224,
+        548,
+        142,
+        25
+      ],
+      "source_frame": "00640.png"
+    },
+    {
+      "name": "Detective Fou",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94039900.png",
+      "asset": "f_94039900.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94039900.png",
+      "game_region_720p": [
+        224,
+        198,
+        142,
+        25
+      ],
+      "source_frame": "00140.png"
+    },
+    {
+      "name": "Great Library of Memories",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94092100.png",
+      "asset": "f_94092100.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94092100.png",
+      "game_region_720p": [
+        224,
+        258,
+        142,
+        25
+      ],
+      "source_frame": "00480.png"
+    },
+    {
+      "name": "Report Check",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94078500.png",
+      "asset": "f_94078500.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94078500.png",
+      "game_region_720p": [
+        224,
+        337,
+        142,
+        25
+      ],
+      "source_frame": "00080.png"
+    },
+    {
+      "name": "Chaldea Teatime",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94035200.png",
+      "asset": "f_94035200.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94035200.png",
+      "game_region_720p": [
+        224,
+        398,
+        142,
+        25
+      ],
+      "source_frame": "00140.png"
+    },
+    {
+      "name": "Foreign God",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94088000.png",
+      "asset": "f_94088000.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94088000.png",
+      "game_region_720p": [
+        224,
+        663,
+        142,
+        25
+      ],
+      "source_frame": "00520.png"
+    },
+    {
+      "name": "The Chaldean",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94089900.png",
+      "asset": "f_94089900.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94089900.png",
+      "game_region_720p": [
+        224,
+        462,
+        142,
+        25
+      ],
+      "source_frame": "00460.png"
+    },
+    {
+      "name": "Chaldea Lunchtime",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94019700.png",
+      "asset": "f_94019700.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94019700.png",
+      "game_region_720p": [
+        224,
+        182,
+        142,
+        25
+      ],
+      "source_frame": "00280.png"
+    },
+    {
+      "name": "Needle of Sincerity",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94083900.png",
+      "asset": "f_94083900.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94083900.png",
+      "game_region_720p": [
+        224,
+        193,
+        142,
+        25
+      ],
+      "source_frame": "00340.png"
+    },
+    {
+      "name": "Black Grail",
+      "layout": "normal",
+      "reference": "docs/reference-images/Jp/ce-import-normal-f_94004800.png",
+      "asset": "f_94004800.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94004800.png",
+      "game_region_720p": [
+        54,
+        522,
+        142,
+        25
+      ],
+      "source_frame": "00380.png"
+    },
+    {
+      "name": "From NFF with Love",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94074800.png",
+      "asset": "f_94074800.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94074800.png",
+      "game_region_720p": [
+        224,
+        522,
+        142,
+        25
+      ],
+      "source_frame": "00760.png"
+    },
+    {
+      "name": "Aerial Drive",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94027500.png",
+      "asset": "f_94027500.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94027500.png",
+      "game_region_720p": [
+        224,
+        603,
+        142,
+        25
+      ],
+      "source_frame": "00580.png"
+    },
+    {
+      "name": "Kaleidoscope",
+      "layout": "grand",
+      "reference": "docs/reference-images/Jp/ce-import-grand-f_94003400.png",
+      "asset": "f_94003400.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94003400.png",
+      "game_region_720p": [
+        224,
+        609,
+        142,
+        25
+      ],
+      "source_frame": "00600.png"
+    },
+    {
+      "name": "Aerial Drive",
+      "layout": "normal",
+      "reference": "docs/reference-images/Jp/ce-import-normal-f_94027500.png",
+      "asset": "f_94027500.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94027500.png",
+      "game_region_720p": [
+        54,
+        339,
+        142,
+        25
+      ],
+      "source_frame": "00660.png"
+    },
+    {
+      "name": "Golden Sumo",
+      "layout": "normal",
+      "reference": "docs/reference-images/Jp/ce-import-normal-f_94016400.png",
+      "asset": "f_94016400.png",
+      "url": "https://static.atlasacademy.io/JP/EquipFaces/f_94016400.png",
+      "game_region_720p": [
+        54,
+        539,
+        142,
+        25
+      ],
+      "source_frame": "00660.png"
+    }
+  ]
+}
