@@ -302,6 +302,24 @@ class AppendSupportTest {
     }
 
     @Test
+    fun `both score conditions skip ordinary 62 and select the next 62 16 candidate`() {
+        val f = Fixture(enabled = false, scoreEnabled = true, grandScoreEnabled = true)
+        every { f.scoreOcr.detectTextLine(f.scoreCrop, any()) } returnsMany
+            (List(4) { OcrText("+62", 92) } + List(4) { OcrText("+62/+16", 92) })
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 0) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 1) { with(f.api) { f.second.region.click(any()) } }
+    }
+
+    @Test
+    fun `Class only can select ordinary 62 without requiring a Grand field`() {
+        val f = Fixture(enabled = false, scoreEnabled = true)
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
+        verify(exactly = 0) { f.scoreOcr.detectTextLine(any(), any()) }
+    }
+
+    @Test
     fun `disabled score check does not load or match the score template`() {
         val f = Fixture(enabled = false)
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)

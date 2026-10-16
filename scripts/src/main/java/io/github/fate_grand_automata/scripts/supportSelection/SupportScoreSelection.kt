@@ -17,7 +17,7 @@ class SupportScoreSelection @Inject constructor(
 
         fun matches(scores: SupportScores, checkClass: Boolean, checkGrand: Boolean): Boolean =
             (!checkClass || scores.classScore == 62) &&
-                (!checkGrand || scores.display == SupportScoreDisplay.Ordinary || scores.grandScore == 16)
+                (!checkGrand || (scores.display == SupportScoreDisplay.Compound && scores.grandScore == 16))
 
     }
 
@@ -30,7 +30,7 @@ class SupportScoreSelection @Inject constructor(
         val matched = matches(scores, checkClass, checkGrand)
         messages.log(ScriptLog.SupportScoreConditions(
             scores.classScore, scores.grandScore, checkClass, checkGrand,
-            scores.display == SupportScoreDisplay.Ordinary && checkGrand, matched
+            scores.display.name, matched
         ))
         return matched
     }

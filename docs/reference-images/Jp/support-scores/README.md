@@ -10,6 +10,10 @@ a complete compound `Class/+16` field. `compactClass62` is true only for a compl
 and clipped digits are negative examples for these **compound template fallbacks**.
 They are not a test of the unchanged ordinary-score OCR/legacy matcher.
 
+`ordinaryClass62` additionally labels the ordinary +62 examples. The policy checks
+combine the unchanged ordinary +62 matcher and the compound fields: Class only
+accepts both forms, while any enabled Grand condition rejects ordinary displays.
+
 The six Grand templates use crops 000, 037, 027 (two-digit Class font) and
 014, 047, 080 (larger one-digit Class font). The three compact Class templates
 use 000, 037, 027. Other crops are held-out examples; template source examples
@@ -19,9 +23,9 @@ Each Grand template includes `/+16`, and its final `6` must match independently
 inside the same candidate. This prevents the common `/+1` prefix from dominating
 the score for a different final digit. Cropped or uncertain values stay unknown.
 
-Run `python tools/validate_support_scores.py` with numpy and
-`opencv-python-headless==4.11.0.86` (the app uses OpenCV 4.11.0).
-The test evaluates 101 crops / 202 field decisions, including Grand `+0`, ordinary
+Run `python tools/validate_support_scores.py` with
+`tools/np-level-vision-requirements.txt` (OpenCV 4.11.0 and Tesseract 5.5.1).
+The test evaluates 101 crops / 202 field decisions and 404 switch combinations, including Grand `+0`, ordinary
 displays and incomplete images. This is JP screenshot coverage, not an assertion
 that every server, future UI font or device aspect ratio has been validated.
 

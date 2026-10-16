@@ -78,7 +78,7 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `applicable conditions are always AND while Grand is ignored only in confirmed ordinary displays`() {
+    fun `Grand requires a compound display and enabled conditions are always AND`() {
         val cases = listOf(
             SupportScores(62,16) to listOf(true,true,true),
             SupportScores(0,16) to listOf(false,true,false),
@@ -86,8 +86,9 @@ class SupportScoreReaderTest {
             SupportScores(16,62) to listOf(false,false,false),
             SupportScores() to listOf(false,false,false),
             SupportScores(62,null,SupportScoreDisplay.Compound) to listOf(true,false,false),
-            SupportScores(62,null,SupportScoreDisplay.Ordinary) to listOf(true,true,true),
-            SupportScores(0,null,SupportScoreDisplay.Ordinary) to listOf(false,true,false)
+            SupportScores(62,null,SupportScoreDisplay.Ordinary) to listOf(true,false,false),
+            SupportScores(0,null,SupportScoreDisplay.Ordinary) to listOf(false,false,false),
+            SupportScores(62,16,SupportScoreDisplay.Unknown) to listOf(true,false,false)
         )
         for ((scores, expected) in cases) {
             assertThat(SupportScoreSelection.matches(scores,false,false)).isEqualTo(true)
@@ -147,13 +148,15 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `ordinary +62 ignores Grand even when both toggles are on`() {
+    fun `ordinary +62 passes Class only but never a requested Grand condition`() {
         val f=Fixture()
         every { with(f.api) { f.region.exists(f.legacy,any(),any()) } } returns true
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+62",92)
         val scores=f.reader.read(f.bounds,true,true)
         assertThat(scores).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Ordinary))
-        assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,true,false)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(false)
+        assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(false)
     }
 
     @Test
@@ -189,12 +192,12 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `Grand only on ordinary non 62 is ignored but adding Class rejects it`() {
+    fun `ordinary non 62 cannot satisfy Class or Grand`() {
         val f = Fixture()
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+0",92)
         val scores = f.reader.read(f.bounds,false,true)
         assertThat(scores).isEqualTo(SupportScores(0,null,SupportScoreDisplay.Ordinary))
-        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(true)
+        assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(false)
         assertThat(SupportScoreSelection.matches(scores,true,true)).isEqualTo(false)
     }
 

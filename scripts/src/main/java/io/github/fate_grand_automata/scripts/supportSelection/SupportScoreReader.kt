@@ -11,7 +11,7 @@ import javax.inject.Inject
 
 enum class SupportScoreDisplay { Ordinary, Compound, Unknown }
 
-/** Format must be confirmed before an absent Grand field can be ignored. */
+/** Keep the confirmed display format separate from independently read numeric fields. */
 data class SupportScores(
     val classScore: Int? = null,
     val grandScore: Int? = null,

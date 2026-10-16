@@ -4,706 +4,807 @@
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00040_151618_930.jpg",
-    "rowY720": 338
+    "rowY720": 338,
+    "ordinaryClass62": false
   },
   {
     "file": "001.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00045_151629_796.jpg",
-    "rowY720": 459
+    "rowY720": 459,
+    "ordinaryClass62": false
   },
   {
     "file": "002.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00045_151629_796.jpg",
-    "rowY720": 259
+    "rowY720": 259,
+    "ordinaryClass62": false
   },
   {
     "file": "003.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00050_151635_989.jpg",
-    "rowY720": 143
+    "rowY720": 143,
+    "ordinaryClass62": false
   },
   {
     "file": "004.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00050_151635_989.jpg",
-    "rowY720": 343
+    "rowY720": 343,
+    "ordinaryClass62": false
   },
   {
     "file": "005.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00065_151700_862.jpg",
-    "rowY720": 148
+    "rowY720": 148,
+    "ordinaryClass62": false
   },
   {
     "file": "006.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00070_151709_965.jpg",
-    "rowY720": 234
+    "rowY720": 234,
+    "ordinaryClass62": false
   },
   {
     "file": "007.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00070_151709_965.jpg",
-    "rowY720": 434
+    "rowY720": 434,
+    "ordinaryClass62": false
   },
   {
     "file": "008.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00075_151716_906.jpg",
-    "rowY720": 498
+    "rowY720": 498,
+    "ordinaryClass62": false
   },
   {
     "file": "009.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00080_151723_010.jpg",
-    "rowY720": 221
+    "rowY720": 221,
+    "ordinaryClass62": false
   },
   {
     "file": "010.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00080_151723_010.jpg",
-    "rowY720": 421
+    "rowY720": 421,
+    "ordinaryClass62": false
   },
   {
     "file": "011.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00085_151731_017.jpg",
-    "rowY720": 261
+    "rowY720": 261,
+    "ordinaryClass62": false
   },
   {
     "file": "012.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00090_151739_014.jpg",
-    "rowY720": 391
+    "rowY720": 391,
+    "ordinaryClass62": false
   },
   {
     "file": "013.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00095_151745_999.jpg",
-    "rowY720": 173
+    "rowY720": 173,
+    "ordinaryClass62": false
   },
   {
     "file": "014.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00105_151802_067.jpg",
-    "rowY720": 338
+    "rowY720": 338,
+    "ordinaryClass62": false
   },
   {
     "file": "015.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00105_151802_067.jpg",
-    "rowY720": 138
+    "rowY720": 138,
+    "ordinaryClass62": false
   },
   {
     "file": "016.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00110_151807_099.jpg",
-    "rowY720": 179
+    "rowY720": 179,
+    "ordinaryClass62": false
   },
   {
     "file": "017.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00115_151818_101.jpg",
-    "rowY720": 324
+    "rowY720": 324,
+    "ordinaryClass62": false
   },
   {
     "file": "018.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00115_151818_101.jpg",
-    "rowY720": 524
+    "rowY720": 524,
+    "ordinaryClass62": false
   },
   {
     "file": "019.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00115_151818_101.jpg",
-    "rowY720": 124
+    "rowY720": 124,
+    "ordinaryClass62": false
   },
   {
     "file": "020.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00125_151835_061.jpg",
-    "rowY720": 479
+    "rowY720": 479,
+    "ordinaryClass62": false
   },
   {
     "file": "021.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00125_151835_061.jpg",
-    "rowY720": 279
+    "rowY720": 279,
+    "ordinaryClass62": false
   },
   {
     "file": "022.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00130_151840_104.jpg",
-    "rowY720": 179
+    "rowY720": 179,
+    "ordinaryClass62": false
   },
   {
     "file": "023.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00130_151840_104.jpg",
-    "rowY720": 379
+    "rowY720": 379,
+    "ordinaryClass62": false
   },
   {
     "file": "024.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00135_151847_082.jpg",
-    "rowY720": 278
+    "rowY720": 278,
+    "ordinaryClass62": false
   },
   {
     "file": "025.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00140_151852_949.jpg",
-    "rowY720": 509
+    "rowY720": 509,
+    "ordinaryClass62": false
   },
   {
     "file": "026.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00145_151920_492.jpg",
-    "rowY720": 275
+    "rowY720": 275,
+    "ordinaryClass62": false
   },
   {
     "file": "027.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00145_151920_492.jpg",
-    "rowY720": 475
+    "rowY720": 475,
+    "ordinaryClass62": false
   },
   {
     "file": "028.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00160_151935_476.jpg",
-    "rowY720": 400
+    "rowY720": 400,
+    "ordinaryClass62": false
   },
   {
     "file": "029.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00160_151935_476.jpg",
-    "rowY720": 200
+    "rowY720": 200,
+    "ordinaryClass62": false
   },
   {
     "file": "030.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00165_151940_448.jpg",
-    "rowY720": 143
+    "rowY720": 143,
+    "ordinaryClass62": false
   },
   {
     "file": "031.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00170_151945_453.jpg",
-    "rowY720": 379
+    "rowY720": 379,
+    "ordinaryClass62": false
   },
   {
     "file": "032.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00175_151950_529.jpg",
-    "rowY720": 306
+    "rowY720": 306,
+    "ordinaryClass62": false
   },
   {
     "file": "033.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00180_151955_464.jpg",
-    "rowY720": 481
+    "rowY720": 481,
+    "ordinaryClass62": false
   },
   {
     "file": "034.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00180_151955_464.jpg",
-    "rowY720": 281
+    "rowY720": 281,
+    "ordinaryClass62": false
   },
   {
     "file": "035.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00190_152005_512.jpg",
-    "rowY720": 495
+    "rowY720": 495,
+    "ordinaryClass62": false
   },
   {
     "file": "036.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00195_152010_480.jpg",
-    "rowY720": 400
+    "rowY720": 400,
+    "ordinaryClass62": false
   },
   {
     "file": "037.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00195_152010_480.jpg",
-    "rowY720": 200
+    "rowY720": 200,
+    "ordinaryClass62": false
   },
   {
     "file": "038.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00210_152025_491.jpg",
-    "rowY720": 344
+    "rowY720": 344,
+    "ordinaryClass62": false
   },
   {
     "file": "039.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00210_152025_491.jpg",
-    "rowY720": 144
+    "rowY720": 144,
+    "ordinaryClass62": false
   },
   {
     "file": "040.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00240_152055_331.jpg",
-    "rowY720": 286
+    "rowY720": 286,
+    "ordinaryClass62": false
   },
   {
     "file": "041.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00240_152055_331.jpg",
-    "rowY720": 486
+    "rowY720": 486,
+    "ordinaryClass62": false
   },
   {
     "file": "042.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00245_152100_536.jpg",
-    "rowY720": 199
+    "rowY720": 199,
+    "ordinaryClass62": false
   },
   {
     "file": "043.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00250_152105_500.jpg",
-    "rowY720": 301
+    "rowY720": 301,
+    "ordinaryClass62": false
   },
   {
     "file": "044.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00250_152105_500.jpg",
-    "rowY720": 501
+    "rowY720": 501,
+    "ordinaryClass62": true
   },
   {
     "file": "045.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00255_152110_365.jpg",
-    "rowY720": 379
+    "rowY720": 379,
+    "ordinaryClass62": false
   },
   {
     "file": "046.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00255_152110_365.jpg",
-    "rowY720": 179
+    "rowY720": 179,
+    "ordinaryClass62": false
   },
   {
     "file": "047.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00265_152120_551.jpg",
-    "rowY720": 525
+    "rowY720": 525,
+    "ordinaryClass62": false
   },
   {
     "file": "048.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00265_152120_551.jpg",
-    "rowY720": 325
+    "rowY720": 325,
+    "ordinaryClass62": false
   },
   {
     "file": "049.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00270_152125_591.jpg",
-    "rowY720": 489
+    "rowY720": 489,
+    "ordinaryClass62": true
   },
   {
     "file": "050.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00285_152140_573.jpg",
-    "rowY720": 409
+    "rowY720": 409,
+    "ordinaryClass62": false
   },
   {
     "file": "051.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00285_152140_573.jpg",
-    "rowY720": 209
+    "rowY720": 209,
+    "ordinaryClass62": false
   },
   {
     "file": "052.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00290_152145_541.jpg",
-    "rowY720": 150
+    "rowY720": 150,
+    "ordinaryClass62": false
   },
   {
     "file": "053.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00300_152155_565.jpg",
-    "rowY720": 515
+    "rowY720": 515,
+    "ordinaryClass62": false
   },
   {
     "file": "054.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00300_152155_565.jpg",
-    "rowY720": 315
+    "rowY720": 315,
+    "ordinaryClass62": false
   },
   {
     "file": "055.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00305_152200_566.jpg",
-    "rowY720": 340
+    "rowY720": 340,
+    "ordinaryClass62": false
   },
   {
     "file": "056.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00305_152200_566.jpg",
-    "rowY720": 140
+    "rowY720": 140,
+    "ordinaryClass62": false
   },
   {
     "file": "057.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00310_152205_499.jpg",
-    "rowY720": 203
+    "rowY720": 203,
+    "ordinaryClass62": false
   },
   {
     "file": "058.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00315_152210_644.jpg",
-    "rowY720": 274
+    "rowY720": 274,
+    "ordinaryClass62": false
   },
   {
     "file": "059.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00325_152220_654.jpg",
-    "rowY720": 179
+    "rowY720": 179,
+    "ordinaryClass62": false
   },
   {
     "file": "060.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00325_152220_654.jpg",
-    "rowY720": 379
+    "rowY720": 379,
+    "ordinaryClass62": false
   },
   {
     "file": "061.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00330_152225_632.jpg",
-    "rowY720": 299
+    "rowY720": 299,
+    "ordinaryClass62": false
   },
   {
     "file": "062.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00340_152235_667.jpg",
-    "rowY720": 145
+    "rowY720": 145,
+    "ordinaryClass62": false
   },
   {
     "file": "063.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00350_152245_658.jpg",
-    "rowY720": 199
+    "rowY720": 199,
+    "ordinaryClass62": false
   },
   {
     "file": "064.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00355_152250_693.jpg",
-    "rowY720": 303
+    "rowY720": 303,
+    "ordinaryClass62": false
   },
   {
     "file": "065.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00360_152255_603.jpg",
-    "rowY720": 173
+    "rowY720": 173,
+    "ordinaryClass62": false
   },
   {
     "file": "066.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00360_152255_603.jpg",
-    "rowY720": 373
+    "rowY720": 373,
+    "ordinaryClass62": false
   },
   {
     "file": "067.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00375_152310_668.jpg",
-    "rowY720": 410
+    "rowY720": 410,
+    "ordinaryClass62": false
   },
   {
     "file": "068.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00380_152315_639.jpg",
-    "rowY720": 145
+    "rowY720": 145,
+    "ordinaryClass62": false
   },
   {
     "file": "069.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00380_152315_639.jpg",
-    "rowY720": 345
+    "rowY720": 345,
+    "ordinaryClass62": false
   },
   {
     "file": "070.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00385_152320_712.jpg",
-    "rowY720": 531
+    "rowY720": 531,
+    "ordinaryClass62": false
   },
   {
     "file": "071.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00385_152320_712.jpg",
-    "rowY720": 131
+    "rowY720": 131,
+    "ordinaryClass62": false
   },
   {
     "file": "072.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00390_152325_674.jpg",
-    "rowY720": 471
+    "rowY720": 471,
+    "ordinaryClass62": false
   },
   {
     "file": "073.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00395_152330_666.jpg",
-    "rowY720": 485
+    "rowY720": 485,
+    "ordinaryClass62": false
   },
   {
     "file": "074.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00395_152330_666.jpg",
-    "rowY720": 285
+    "rowY720": 285,
+    "ordinaryClass62": false
   },
   {
     "file": "075.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00400_152335_540.jpg",
-    "rowY720": 169
+    "rowY720": 169,
+    "ordinaryClass62": false
   },
   {
     "file": "076.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00400_152335_540.jpg",
-    "rowY720": 369
+    "rowY720": 369,
+    "ordinaryClass62": false
   },
   {
     "file": "077.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00405_152340_661.jpg",
-    "rowY720": 183
+    "rowY720": 183,
+    "ordinaryClass62": false
   },
   {
     "file": "078.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00415_152350_629.jpg",
-    "rowY720": 386
+    "rowY720": 386,
+    "ordinaryClass62": false
   },
   {
     "file": "079.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00415_152350_629.jpg",
-    "rowY720": 186
+    "rowY720": 186,
+    "ordinaryClass62": false
   },
   {
     "file": "080.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00430_152405_702.jpg",
-    "rowY720": 146
+    "rowY720": 146,
+    "ordinaryClass62": false
   },
   {
     "file": "081.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00430_152405_702.jpg",
-    "rowY720": 346
+    "rowY720": 346,
+    "ordinaryClass62": false
   },
   {
     "file": "082.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00435_152410_560.jpg",
-    "rowY720": 183
+    "rowY720": 183,
+    "ordinaryClass62": false
   },
   {
     "file": "083.png",
     "grand16": true,
     "compactClass62": true,
     "sourceFrame": "00445_152420_759.jpg",
-    "rowY720": 300
+    "rowY720": 300,
+    "ordinaryClass62": false
   },
   {
     "file": "084.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00450_152425_674.jpg",
-    "rowY720": 476
+    "rowY720": 476,
+    "ordinaryClass62": false
   },
   {
     "file": "085.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00465_152440_696.jpg",
-    "rowY720": 229
+    "rowY720": 229,
+    "ordinaryClass62": false
   },
   {
     "file": "086.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00485_152500_739.jpg",
-    "rowY720": 508
+    "rowY720": 508,
+    "ordinaryClass62": false
   },
   {
     "file": "087.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00490_152505_642.jpg",
-    "rowY720": 175
+    "rowY720": 175,
+    "ordinaryClass62": false
   },
   {
     "file": "088.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00500_152515_715.jpg",
-    "rowY720": 469
+    "rowY720": 469,
+    "ordinaryClass62": false
   },
   {
     "file": "089.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00505_152520_735.jpg",
-    "rowY720": 398
+    "rowY720": 398,
+    "ordinaryClass62": true
   },
   {
     "file": "090.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00510_152525_795.jpg",
-    "rowY720": 315
+    "rowY720": 315,
+    "ordinaryClass62": false
   },
   {
     "file": "091.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00515_152530_767.jpg",
-    "rowY720": 248
+    "rowY720": 248,
+    "ordinaryClass62": false
   },
   {
     "file": "092.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00520_152535_854.jpg",
-    "rowY720": 268
+    "rowY720": 268,
+    "ordinaryClass62": false
   },
   {
     "file": "093.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00520_152535_854.jpg",
-    "rowY720": 468
+    "rowY720": 468,
+    "ordinaryClass62": false
   },
   {
     "file": "094.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00525_152540_655.jpg",
-    "rowY720": 525
+    "rowY720": 525,
+    "ordinaryClass62": true
   },
   {
     "file": "095.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00620_152715_812.jpg",
-    "rowY720": 383
+    "rowY720": 383,
+    "ordinaryClass62": false
   },
   {
     "file": "096.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00625_152720_806.jpg",
-    "rowY720": 291
+    "rowY720": 291,
+    "ordinaryClass62": false
   },
   {
     "file": "097.png",
     "grand16": false,
     "compactClass62": false,
     "sourceFrame": "00625_152720_806.jpg",
-    "rowY720": 491
+    "rowY720": 491,
+    "ordinaryClass62": false
   },
   {
     "file": "098.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00650_152745_819.jpg",
-    "rowY720": 369
+    "rowY720": 369,
+    "ordinaryClass62": false
   },
   {
     "file": "099.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00655_152750_831.jpg",
-    "rowY720": 361
+    "rowY720": 361,
+    "ordinaryClass62": false
   },
   {
     "file": "100.png",
     "grand16": true,
     "compactClass62": false,
     "sourceFrame": "00705_152840_959.jpg",
-    "rowY720": 196
+    "rowY720": 196,
+    "ordinaryClass62": false
   }
 ]

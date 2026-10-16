@@ -75,6 +75,18 @@ class Reader:
             n=next(iter(distinct))
             return n if sum(r['confidence']>=self.settings['MIN_CONFIRM_CONFIDENCE'] and r['parsed'][i]==n for r in known)>=self.settings['MIN_AGREEMENT'] else None
         result={'class':field(0),'grand':field(1),'display':display,'readings':readings,'legacy':bool(legacy)}
+        known=result['class'] is not None or result['grand'] is not None
+        if known and (display=='Ordinary' or ((not check_class or result['class'] is not None) and
+                                             (not check_grand or result['grand'] is not None))):
+            return result
+        from validate_support_scores import detects, CLASS, GRAND
+        visual_class=check_class and detects(roi,CLASS)
+        visual_grand=check_grand and detects(roi,GRAND,verify_digit=True)
+        if visual_class or visual_grand:
+            if result['class'] is None and visual_class:result['class']=62
+            if result['grand'] is None and visual_grand:result['grand']=16
+            result['display']='Compound'
+            return result
         if result['class'] is None and result['grand'] is None:
             if compound: result['display']='Compound'
             elif legacy: result['class']=62; result['display']='Ordinary'
@@ -83,7 +95,7 @@ class Reader:
 
 
 def policy(scores, class_on, grand_on):
-    return (not class_on or scores['class']==62) and (not grand_on or scores['display']=='Ordinary' or scores['grand']==16)
+    return (not class_on or scores['class']==62) and (not grand_on or (scores['display']=='Compound' and scores['grand']==16))
 
 
 def main():
@@ -115,11 +127,11 @@ def main():
                     y=rounded(row_y+reader.layout['SCORE_Y']/2)
                     w,h=rounded(reader.layout['SCORE_WIDTH']/2),rounded(reader.layout['SCORE_HEIGHT']/2)
                     roi=gray[y:y+h,x:x+w]
-                    # Grand is ignored only when the ordinary display is confirmed.
+                    # A requested Grand field must be present, including on ordinary screens.
                     for class_on,grand_on in [(False,False),(True,False),(False,True),(True,True)]:
                         result=reader.read(roi,server,class_on,grand_on)
                         detected=policy(result,class_on,grand_on)
-                        wanted=not class_on or expected==62
+                        wanted=(not class_on or expected==62) and not grand_on
                         assert detected==wanted,(name,method,row_y,expected,class_on,grand_on,result)
                         report['legacy'].append({'file':name,'normalization':method,'row_y':row_y,'expected_class':expected,
                                                  'class_on':class_on,'grand_on':grand_on,'detected':result,'passed':True})

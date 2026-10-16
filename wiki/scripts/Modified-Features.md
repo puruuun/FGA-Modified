@@ -94,18 +94,18 @@ The feature defaults to off. Five ignored slots skip switching. Settings are inc
 
 <a id="support-score"></a>
 
-### 9. Class score +62 and Grand score +16 — policy updated in 0.7.0
+### 9. Class score +62 and Grand score +16
 
 Enable the two switches independently under **Support Selection → Preferred Servants**. The field before `/` is Class; the field after it is Grand. Both switches always require every applicable condition. The combination selector has been removed; previous combination settings are ignored.
 
 | Settings | Ordinary Class-only display (`+62`, `+0`, etc.) | Special Class/Grand display |
 |---|---|---|
 | Class only | Class +62 | Class +62 |
-| Grand only | No score restriction | Grand +16 |
-| Both enabled | Class +62 | Class +62 and Grand +16 |
+| Grand only | Reject | Grand +16 |
+| Both enabled | Reject | Class +62 and Grand +16 |
 | Both disabled | No score restriction | No score restriction |
 
-A confirmed ordinary display ignores the Grand requirement. With both enabled, ordinary `+62` passes and ordinary `+0` fails. With Grand only, confirmed ordinary displays pass regardless of Class. Special `+0/+16` passes with Grand only and fails with both enabled. An uncertain display format never silently disables the Grand requirement.
+Grand filtering requires an explicitly displayed `/+16`. With both enabled, ordinary `+62` is rejected. Class-only filtering accepts both ordinary `+62` and compound `+62/+16`. Compound `+0/+16` passes with Grand only and fails with both enabled. From 1.0.2-beta.3, this replaces the previous rule that ignored Grand on ordinary displays.
 
 Score and NP checks run **before Append Skill checks**. Other preferred-support and Append conditions must also pass. Score-only preferred selection works without Servant/CE images. See the [score guide (Korean)](Support-Score-62-KR.md).
 

@@ -35,7 +35,7 @@ sealed class ScriptLog {
     class SupportScore62(val matched: Boolean) : ScriptLog()
     class SupportScoreConditions(
         val classScore: Int?, val grandScore: Int?, val checkClass: Boolean,
-        val checkGrand: Boolean, val grandIgnored: Boolean, val matched: Boolean
+        val checkGrand: Boolean, val display: String, val matched: Boolean
     ) : ScriptLog()
     class SupportNpLevel(val required: Int, val detected: Int?, val matched: Boolean) : ScriptLog()
 
