@@ -59,9 +59,10 @@ data class ServantPortraitMetadata(
 }
 
 object ServantPortraitFolder {
-    private val generatedFolder = Regex("No\\.([1-9][0-9]{0,3})(?: .+)?")
+    private val generatedFolder = Regex("(?:(KR|NA)\\.)?No\\.([1-9][0-9]{0,9})(?: .+)?")
 
-    fun name(number: Int, servantName: String): String {
+    fun name(number: Int, servantName: String, region: String? = null): String {
+        require(region == null || region in setOf("KR", "NA"))
         val safeName = servantName.map { char ->
             if (char.isISOControl() || char in "\\/:*?\"<>|") ' ' else char
         }.joinToString("")
@@ -71,22 +72,29 @@ object ServantPortraitFolder {
             .dropLastWhile { it.isHighSurrogate() }
             .trimEnd(' ', '.')
             .ifBlank { "Servant" }
-        return "No.$number $safeName"
+        return "${region?.let { "$it." }.orEmpty()}No.$number $safeName"
     }
 
     fun displayName(entry: String): String =
         if (Regex("(?i)\\.(png|jpg|jpeg|webp|bmp)$").containsMatchIn(entry)) entry.substringBeforeLast('.') else entry
 
-    fun number(folder: String): Int? = generatedFolder.matchEntire(folder)?.groupValues?.get(1)?.toIntOrNull()
+    private fun identity(folder: String): Pair<String, Int>? {
+        val groups = generatedFolder.matchEntire(folder)?.groupValues ?: return null
+        return groups[1] to (groups[2].toIntOrNull() ?: return null)
+    }
+
+    fun number(folder: String): Int? = identity(folder)?.second
 
     fun resolve(requested: String, folders: List<String>): String? {
         if (requested in folders) return requested
-        val collectionNo = number(requested) ?: return null
-        return folders.firstOrNull { number(it) == collectionNo }
+        val requestedId = identity(requested) ?: return null
+        return folders.firstOrNull { identity(it) == requestedId }
     }
 
-    fun renameSelections(selected: Set<String>, collectionNo: Int, folder: String): Set<String> =
-        selected.map { if (number(it) == collectionNo) folder else it }.toSet()
+    fun renameSelections(selected: Set<String>, collectionNo: Int, folder: String): Set<String> {
+        val target = identity(folder)?.takeIf { it.second == collectionNo } ?: return selected
+        return selected.map { if (identity(it) == target) folder else it }.toSet()
+    }
 }
 
 enum class PortraitImportError { Query, Number, NotFound, Network, Metadata, Image, Storage }

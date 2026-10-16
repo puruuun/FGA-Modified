@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
@@ -30,7 +31,7 @@ fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: 
         Preference(
             title = stringResource(R.string.portrait_import_title),
             summary = stringResource(R.string.portrait_import_summary),
-            icon = icon(R.drawable.ic_folder_edit),
+            icon = icon(Icons.Default.Image),
             onClick = importPortraits
         )
     }

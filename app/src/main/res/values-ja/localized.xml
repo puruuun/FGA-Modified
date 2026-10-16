@@ -606,9 +606,9 @@
     <string name="original_import_more_errors">その他%1$d件のエラーは省略しています。</string>
     <string name="portrait_import_title">サポート画像の検索・保存</string>
     <string name="portrait_import_summary">サーヴァント・概念礼装を図鑑番号や名前で検索して保存します。</string>
-    <string name="portrait_import_description">日本版の最新図鑑を検索します。名前はFGAの言語を優先し、情報がない場合は日本語を使用します。インターネット接続が必要です。</string>
+    <string name="portrait_import_description">サーヴァント・概念礼装を検索します。名前はFGAの言語を優先し、情報がない場合は日本語を使用します。インターネット接続が必要です。</string>
     <string name="portrait_import_number">図鑑番号または名前</string>
-    <string name="portrait_import_destination">保存先: %1$s/support/%2$s/No.番号 名前</string>
+    <string name="portrait_import_destination">保存先: %1$s/support/%2$s/</string>
     <string name="portrait_import_start">生成・保存</string>
     <string name="portrait_import_retry">再生成</string>
     <string name="portrait_import_close">閉じる</string>
@@ -617,7 +617,7 @@
     <string name="portrait_import_result">%1$s\n保存 %2$d枚・失敗 %3$d枚</string>
     <string name="portrait_import_use">戦闘設定 → サポート → 優先サーヴァントで%1$sフォルダーを選択してください。</string>
     <string name="portrait_import_partial">一部の画像を保存できませんでした。接続と保存先を確認して再生成してください。</string>
-    <string name="portrait_import_error_number">1～9999の図鑑番号を入力してください。</string>
+    <string name="portrait_import_error_number">1以上の図鑑番号を入力してください。</string>
     <string name="portrait_import_error_not_found">ゲームデータに該当する項目がありません。</string>
     <string name="portrait_import_error_network">ゲームデータを取得できませんでした。接続を確認して再試行してください。</string>
     <string name="portrait_import_error_metadata">画像情報を読み取れませんでした。再検索するか後ほど再試行してください。</string>
@@ -626,9 +626,8 @@
     <string name="portrait_import_servant">サーヴァント</string>
     <string name="portrait_import_ce">概念礼装</string>
     <string name="portrait_import_search">検索</string>
-    <string name="portrait_import_region">画像の基準サーバー: %1$s</string>
     <string name="portrait_import_candidates">検索結果 %1$d件 — 保存する項目を選択</string>
-    <string name="portrait_import_no_results">該当なし。正式名、名前の一部、または日本版の図鑑番号で検索してください。</string>
+    <string name="portrait_import_no_results">検索結果がありません。</string>
     <string name="portrait_import_error_query">図鑑番号または名前を入力してください。</string>
     <string name="portrait_import_use_ce">戦闘設定 → サポート → 優先礼装で%1$sフォルダーを選択してください。</string>
     <string name="portrait_class_ruler">ルーラー</string>

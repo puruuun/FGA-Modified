@@ -25,34 +25,45 @@ interface SupportCatalogSource {
 
 /** Pure coordinator, also exercised with deterministic regional fixtures in unit tests. */
 class SupportImageLookup(private val source: SupportCatalogSource) {
-    suspend fun search(kind: SupportCatalogKind, query: String, language: String, gameRegion: String): List<SupportCatalogEntry> {
+    suspend fun search(kind: SupportCatalogKind, query: String, language: String): List<SupportCatalogEntry> {
         // Validate even before downloading a catalog for invalid/empty requests.
         SupportImageCatalog.search(emptyList(), query)
         val nameRegion = SupportImageCatalog.languageRegion(language)
-        require(gameRegion in SupportImageCatalog.regions)
         val catalogs = linkedMapOf<String, List<SupportCatalogRecord>>()
-        for (region in setOf("JP", nameRegion, gameRegion)) catalogs[region] = source.catalog(kind, region)
-        val entries = SupportImageCatalog.merge(kind, catalogs.getValue("JP"),
-            catalogs.getValue(nameRegion), catalogs.getValue(gameRegion))
-        // Number and CE searches need no extra downloads. Fetch all official aliases for name searches,
-        // even when the basic catalog already matches (e.g. Melusine's summer variant).
-        val names = if (kind == SupportCatalogKind.Servant &&
-            !SupportImageCatalog.normalized(query).all { it in '0'..'9' }) {
-            SupportServantNames.merge(catalogs.keys.map { source.servantNames(it) })
-        } else emptyMap()
-        return SupportImageCatalog.search(entries.map { it.copy(aliases = it.aliases + names[it.id].orEmpty()) }, query)
+        suspend fun catalog(region: String) = catalogs[region] ?: source.catalog(kind, region).also { catalogs[region] = it }
+        val jp = catalog("JP")
+        val jpIds = jp.map { it.id }.toSet()
+        val localized = catalog(nameRegion)
+        val nameSearch = kind == SupportCatalogKind.Servant && !SupportImageCatalog.normalized(query).all { it in '0'..'9' }
+        val nameTables = linkedMapOf<String, Map<Int, Set<String>>>()
+        suspend fun includeNames(region: String) {
+            if (nameSearch && region !in nameTables) nameTables[region] = source.servantNames(region)
+        }
+        includeNames("JP")
+        includeNames(nameRegion)
+        for (region in SupportImageCatalog.lookupRegions) {
+            val records = catalog(region)
+            includeNames(region)
+            val names = SupportServantNames.merge(nameTables.values)
+            val entries = SupportImageCatalog.merge(kind, records, localized, jp)
+            val results = SupportImageCatalog.search(entries.map {
+                it.copy(aliases = it.aliases + names[it.id].orEmpty(),
+                    sourceRegion = if (it.id in jpIds) null else region)
+            }, query)
+            if (results.isNotEmpty()) return results
+        }
+        return emptyList()
     }
 
-    suspend fun portraits(entry: SupportCatalogEntry, gameRegion: String): List<ServantPortrait> {
-        require(gameRegion in SupportImageCatalog.regions)
-        val jp = source.detail(entry.kind, "JP", entry.id)
-        val local = if (gameRegion == "JP") null else source.detail(entry.kind, gameRegion, entry.id)
-        if (jp == null && local == null) throw PortraitImportException(PortraitImportError.NotFound)
-        val result = linkedMapOf<String, ServantPortrait>()
-        // Retain JP-only costumes; use actual game-region art for matching common stages.
-        if (jp != null) SupportAssetMetadata.parse(jp, entry, "JP").forEach { result[it.key] = it }
-        if (local != null) SupportAssetMetadata.parse(local, entry, gameRegion).forEach { result[it.key] = it }
-        return result.values.distinctBy { it.url }.ifEmpty { throw PortraitImportException(PortraitImportError.Image) }
+    suspend fun portraits(entry: SupportCatalogEntry): List<ServantPortrait> {
+        var found = false
+        for (region in SupportImageCatalog.lookupRegions) {
+            val data = source.detail(entry.kind, region, entry.id) ?: continue
+            found = true
+            val pictures = SupportAssetMetadata.parse(data, entry, region)
+            if (pictures.isNotEmpty()) return pictures
+        }
+        throw PortraitImportException(if (found) PortraitImportError.Image else PortraitImportError.NotFound)
     }
 }
 

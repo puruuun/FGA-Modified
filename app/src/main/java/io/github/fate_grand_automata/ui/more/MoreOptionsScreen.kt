@@ -42,7 +42,6 @@ fun MoreOptionsScreen(
             destinationName = destinationName,
             onNumber = vm::changePortraitNumber,
             onKind = vm::changePortraitKind,
-            onRegion = vm::changePortraitRegion,
             onSelect = vm::selectPortrait,
             onSearch = { vm.searchPortraits(portraitContext.resources.configuration.locales[0].toLanguageTag()) },
             onStart = vm::importPortraits,

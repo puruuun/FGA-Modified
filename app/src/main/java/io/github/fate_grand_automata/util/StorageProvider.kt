@@ -175,9 +175,9 @@ class StorageProvider @Inject constructor(
     fun prepareServantPortraitFolder(metadata: ServantPortraitMetadata): String =
         prepareSupportPortraitFolder(SupportImageKind.Servant, metadata.collectionNo, metadata.name)
 
-    fun prepareSupportPortraitFolder(kind: SupportImageKind, number: Int, name: String): String {
+    fun prepareSupportPortraitFolder(kind: SupportImageKind, number: Int, name: String, region: String? = null): String {
         require(kind == SupportImageKind.Servant || kind == SupportImageKind.CE)
-        val folderName = ServantPortraitFolder.name(number, name)
+        val folderName = ServantPortraitFolder.name(number, name, region)
         val folder = kind.imageFolder
         val existing = ServantPortraitFolder.resolve(folderName, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
         if (existing != null && existing != folderName) {

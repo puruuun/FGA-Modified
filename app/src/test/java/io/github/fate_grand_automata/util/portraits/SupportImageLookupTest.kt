@@ -63,7 +63,7 @@ class SupportImageLookupTest {
         assertEquals(90, SupportImageCatalog.search(all,"９０").single().number)
         assertEquals(90, SupportImageCatalog.search(all,"ネロ クラウディウス ブライド").single().number)
         assertTrue(SupportImageCatalog.search(all,"9").isEmpty())
-        for (bad in listOf("", "   ", "///", "0", "10000", "99999999999999")) assertFailsWith<PortraitImportException> { SupportImageCatalog.search(all,bad) }
+        for (bad in listOf("", "   ", "///", "0", "2147483648", "99999999999999")) assertFailsWith<PortraitImportException> { SupportImageCatalog.search(all,bad) }
     }
     @Test fun `search does not silently truncate large result sets`() {
         val records = (1..201).map { record(it,it,"Test $it") }
@@ -103,27 +103,27 @@ class SupportImageLookupTest {
     @Test fun `lookup uses only necessary catalogs and invalid queries do no network work`() = runBlocking {
         val source=Source();source.catalogs["JP"]=listOf(jp);source.catalogs["KR"]=listOf(kr)
         val lookup=SupportImageLookup(source)
-        assertEquals("네로 클라우디우스(브라이드)",lookup.search(SupportCatalogKind.Servant,"90","ko-KR","KR").single().name)
+        assertEquals("네로 클라우디우스(브라이드)",lookup.search(SupportCatalogKind.Servant,"90","ko-KR").single().name)
         assertEquals(listOf("catalog:JP","catalog:KR"),source.calls)
         source.calls.clear()
-        assertFailsWith<PortraitImportException> { lookup.search(SupportCatalogKind.CE,"0","ko","KR") }
+        assertFailsWith<PortraitImportException> { lookup.search(SupportCatalogKind.CE,"0","ko") }
         assertTrue(source.calls.isEmpty())
     }
-    @Test fun `game region art wins while JP-only costumes are retained`() = runBlocking {
+    @Test fun `JP art wins and stops before other servers`() = runBlocking {
         val source=Source();source.details["JP"]=detail().replace("}}}}", "},\"2\":{\"2\":\"https://static.atlasacademy.io/JP/Faces/f_1006002.png\"}}}}")
         source.details["KR"]=detail("KR")
-        val pictures=SupportImageLookup(source).portraits(entry(),"KR")
+        val pictures=SupportImageLookup(source).portraits(entry())
         assertEquals(2,pictures.size)
-        assertTrue(pictures.first().url.contains("/KR/"));assertTrue(pictures.last().url.contains("/JP/"))
-        assertEquals(listOf("detail:JP:100600","detail:KR:100600"),source.calls)
+        assertTrue(pictures.all { "/JP/" in it.url })
+        assertEquals(listOf("detail:JP:100600"),source.calls)
     }
-    @Test fun `missing regional entry falls back to JP without losing costumes`() = runBlocking {
+    @Test fun `JP portraits do not require a regional counterpart`() = runBlocking {
         val source=Source();source.details["JP"]=detail()
-        assertTrue(SupportImageLookup(source).portraits(entry(),"KR").single().url.contains("/JP/"))
+        assertTrue(SupportImageLookup(source).portraits(entry()).single().url.contains("/JP/"))
     }
     @Test fun `JP lookup does not fetch its detail twice`() = runBlocking {
         val source=Source();source.details["JP"]=detail()
-        SupportImageLookup(source).portraits(entry(),"JP")
+        SupportImageLookup(source).portraits(entry())
         assertEquals(listOf("detail:JP:100600"),source.calls)
     }
     @Test fun `wrong identity and wrong image families stop before storage`() {
@@ -136,9 +136,9 @@ class SupportImageLookupTest {
     }
     @Test fun `unsupported or empty asset data never generates a speculative crop`() = runBlocking {
         val source=Source();source.details["JP"]="""{"id":100600,"type":"normal","extraAssets":{}}"""
-        assertEquals(PortraitImportError.Image, assertFailsWith<PortraitImportException> { SupportImageLookup(source).portraits(entry(),"JP") }.reason)
+        assertEquals(PortraitImportError.Image, assertFailsWith<PortraitImportException> { SupportImageLookup(source).portraits(entry()) }.reason)
         source.details.clear()
-        assertEquals(PortraitImportError.NotFound,assertFailsWith<PortraitImportException> { SupportImageLookup(source).portraits(entry(),"KR") }.reason)
+        assertEquals(PortraitImportError.NotFound,assertFailsWith<PortraitImportException> { SupportImageLookup(source).portraits(entry()) }.reason)
     }
     @Test fun `generated CE folders and ordinary filenames display without truncating No dot`() {
         assertEquals("No.34 컬라이더스코프",ServantPortraitFolder.displayName("No.34 컬라이더스코프"))
@@ -155,16 +155,73 @@ class SupportImageLookupTest {
         source.names["KR"] = mapOf(304800 to setOf("멜뤼진"), 999999 to setOf("멜뤼진"))
         val lookup = SupportImageLookup(source)
         for (query in listOf("멜뤼진", "멜 뤼 진", "멜뤼", "メリュジーヌ")) {
-            assertEquals(setOf(312,390),lookup.search(SupportCatalogKind.Servant,query,"ko","JP").map { it.number }.toSet())
+            assertEquals(setOf(312,390),lookup.search(SupportCatalogKind.Servant,query,"ko").map { it.number }.toSet())
         }
-        val lancer = lookup.search(SupportCatalogKind.Servant,"요정기사랜슬롯","ko","JP").single()
+        val lancer = lookup.search(SupportCatalogKind.Servant,"요정기사랜슬롯","ko").single()
         assertEquals(312,lancer.number)
         assertEquals("요정기사 랜슬롯",lancer.name) // Aliases never rename the folder to the search text.
     }
     @Test fun `number and CE lookups never request the extra servant name tables`() = runBlocking {
         val source = Source();source.catalogs["JP"] = listOf(jp)
-        SupportImageLookup(source).search(SupportCatalogKind.Servant,"９０","ja","JP")
-        SupportImageLookup(source).search(SupportCatalogKind.CE,"ネロ","ja","JP")
+        SupportImageLookup(source).search(SupportCatalogKind.Servant,"９０","ja")
+        SupportImageLookup(source).search(SupportCatalogKind.CE,"ネロ","ja")
         assertFalse(source.calls.any { it.startsWith("names:") })
+    }
+    @Test fun `missing JP images fall back to KR and stop before NA`() = runBlocking {
+        val source = Source();source.details["KR"] = detail("KR");source.details["NA"] = detail("NA")
+        assertTrue(SupportImageLookup(source).portraits(entry()).single().url.contains("/KR/"))
+        assertEquals(listOf("detail:JP:100600","detail:KR:100600"),source.calls)
+    }
+    @Test fun `empty JP images and missing KR images fall back to NA for both kinds`() = runBlocking {
+        for (kind in SupportCatalogKind.entries) {
+            val target = entry(kind)
+            val source = Source()
+            source.details["JP"] = """{"id":${target.id},"type":"${if(kind==SupportCatalogKind.CE) "servantEquip" else "normal"}","extraAssets":{}}"""
+            source.details["NA"] = detail("NA",kind)
+            assertTrue(SupportImageLookup(source).portraits(target).single().url.contains("/NA/"))
+            assertEquals(listOf("JP","KR","NA"),source.calls.map { it.split(':')[1] })
+        }
+    }
+    @Test fun `invalid JP identity fails without trying another server`() = runBlocking {
+        val source = Source();source.details["JP"] = detail(id=999);source.details["KR"] = detail("KR")
+        assertEquals(PortraitImportError.Metadata,assertFailsWith<PortraitImportException> { SupportImageLookup(source).portraits(entry()) }.reason)
+        assertEquals(listOf("detail:JP:100600"),source.calls)
+    }
+    @Test fun `search falls back to KR only after no JP result and supports regional campaign numbers`() = runBlocking {
+        val source = Source();source.catalogs["JP"] = listOf(jp)
+        source.catalogs["KR"] = listOf(record(90082001,202022,"한국 전용 예장"))
+        val target = SupportImageLookup(source).search(SupportCatalogKind.CE,"202022","ja").single()
+        assertEquals(90082001,target.id);assertEquals("KR.No.202022 한국 전용 예장",target.folderName)
+        assertEquals(listOf("catalog:JP","catalog:KR"),source.calls)
+    }
+    @Test fun `NA is searched last and successful JP results never request NA`() = runBlocking {
+        val source = Source();source.catalogs["JP"] = listOf(jp)
+        source.catalogs["NA"] = listOf(record(555,123,"NA exclusive CE"))
+        val lookup = SupportImageLookup(source)
+        assertEquals(90,lookup.search(SupportCatalogKind.CE,"90","ja").single().number)
+        assertEquals(listOf("catalog:JP"),source.calls)
+        source.calls.clear()
+        assertEquals("NA",lookup.search(SupportCatalogKind.CE,"exclusive","ja").single().sourceRegion)
+        assertEquals(listOf("catalog:JP","catalog:KR","catalog:NA"),source.calls)
+    }
+    @Test fun `all three empty search results stop without CN or TW requests`() = runBlocking {
+        val source = Source()
+        assertTrue(SupportImageLookup(source).search(SupportCatalogKind.CE,"9999","ja").isEmpty())
+        assertEquals(listOf("catalog:JP","catalog:KR","catalog:NA"),source.calls)
+    }
+    @Test fun `fallback search keeps the JP number and localized name for a shared identity`() = runBlocking {
+        val source = Source();source.catalogs["JP"] = listOf(jp);source.catalogs["KR"] = listOf(kr)
+        source.catalogs["NA"] = listOf(record(name="Nero Bride",number=999))
+        val result = SupportImageLookup(source).search(SupportCatalogKind.Servant,"Nero Bride","ko").single()
+        assertEquals(90,result.number);assertEquals("네로 클라우디우스(브라이드)",result.name)
+        assertNull(result.sourceRegion)
+        assertEquals("No.90 네로 클라우디우스(브라이드)",result.folderName)
+    }
+    @Test fun `regional fallback folders never resolve or rename another regions selections`() {
+        val regional = ServantPortraitFolder.name(90,"지역 전용","KR")
+        assertEquals(90,ServantPortraitFolder.number(regional))
+        assertNull(ServantPortraitFolder.resolve(regional,listOf("No.90 기존 이미지","NA.No.90 다른 이미지")))
+        assertEquals(setOf("No.90 기존 이미지",regional),ServantPortraitFolder.renameSelections(setOf("No.90 기존 이미지","KR.No.90 예전 이름"),90,regional))
+        assertEquals("KR.No.202022 새 이름",ServantPortraitFolder.resolve("KR.No.202022",listOf("KR.No.202022 새 이름")))
     }
 }

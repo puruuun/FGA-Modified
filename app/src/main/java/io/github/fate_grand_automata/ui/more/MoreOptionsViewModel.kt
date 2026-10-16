@@ -8,8 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.accessibility.TapperService
-import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.util.portraits.SupportCatalogEntry
 import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -51,26 +49,14 @@ class MoreOptionsViewModel @Inject constructor(
     private val _portraitImport = MutableStateFlow(PortraitImportState())
     val portraitImport = _portraitImport.asStateFlow()
 
-    private fun portraitRegion(): String {
-        val server = GameServers.deserialize(prefsCore.gameServerRaw.get()) ?: TapperService.instance?.detectedFgoServer
-        return when (val name = server?.simple?.uppercase(java.util.Locale.ROOT)) {
-            "EN" -> "NA"
-            "JP", "KR", "CN", "TW" -> name
-            else -> "JP"
-        }
-    }
-    fun openPortraitImport() { _portraitImport.value = PortraitImportState(open = true, region = portraitRegion()) }
+    fun openPortraitImport() { _portraitImport.value = PortraitImportState(open = true) }
     fun closePortraitImport() {
         if (!_portraitImport.value.busy) _portraitImport.update { it.copy(open = false) }
     }
     fun changePortraitKind(kind: SupportCatalogKind) {
         if (!_portraitImport.value.busy) _portraitImport.update {
-            PortraitImportState(open = true, kind = kind, region = it.region)
+            PortraitImportState(open = true, kind = kind)
         }
-    }
-    fun changePortraitRegion(region: String) {
-        if (region !in io.github.fate_grand_automata.util.portraits.SupportImageCatalog.regions || _portraitImport.value.busy) return
-        _portraitImport.update { it.copy(region = region, candidates = emptyList(), selected = null, searched = false, report = null, error = null) }
     }
     fun changePortraitNumber(query: String) {
         if (!_portraitImport.value.busy && query.length <= 120) _portraitImport.update {
@@ -84,12 +70,11 @@ class MoreOptionsViewModel @Inject constructor(
     fun searchPortraits(language: String) {
         val request = _portraitImport.value
         if (!request.canSearch) return
-        val region = request.region
         _portraitImport.update { it.copy(busy = true, searching = true, error = null, report = null,
-            progress = null, selected = null, candidates = emptyList(), searched = false, region = region) }
+            progress = null, selected = null, candidates = emptyList(), searched = false) }
         viewModelScope.launch {
             try {
-                val entries = portraitImporter.search(request.kind, request.query, language, region)
+                val entries = portraitImporter.search(request.kind, request.query, language)
                 _portraitImport.update { it.copy(candidates = entries, selected = entries.singleOrNull(), searched = true) }
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) {
@@ -105,7 +90,7 @@ class MoreOptionsViewModel @Inject constructor(
         _portraitImport.update { it.copy(busy = true, error = null, report = null, progress = null) }
         viewModelScope.launch {
             try {
-                val report = portraitImporter.run(entry, request.region) { progress ->
+                val report = portraitImporter.run(entry) { progress ->
                     _portraitImport.update { it.copy(progress = progress) }
                 }
                 _portraitImport.update { it.copy(report = report) }
@@ -191,7 +176,6 @@ data class PortraitImportState(
     val open: Boolean = false,
     val kind: SupportCatalogKind = SupportCatalogKind.Servant,
     val query: String = "",
-    val region: String = "JP",
     val busy: Boolean = false,
     val searching: Boolean = false,
     val searched: Boolean = false,

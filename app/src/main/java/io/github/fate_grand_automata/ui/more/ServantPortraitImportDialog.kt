@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.ui.more
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
@@ -28,7 +27,6 @@ fun ServantPortraitImportDialog(
     destinationName: String?,
     onNumber: (String) -> Unit,
     onKind: (SupportCatalogKind) -> Unit,
-    onRegion: (String) -> Unit,
     onSelect: (SupportCatalogEntry) -> Unit,
     onSearch: () -> Unit,
     onStart: () -> Unit,
@@ -53,13 +51,6 @@ fun ServantPortraitImportDialog(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { if (state.canSearch) onSearch() }), modifier = Modifier.fillMaxWidth())
                 OutlinedButton(onClick = onSearch, enabled = state.canSearch) { Text(stringResource(R.string.portrait_import_search)) }
-                Text(stringResource(R.string.portrait_import_region, state.region), style = MaterialTheme.typography.bodySmall)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SupportImageCatalog.regions.forEach { region ->
-                        FilterChip(selected = state.region == region, enabled = !state.busy,
-                            onClick = { onRegion(region) }, label = { Text(region) })
-                    }
-                }
                 if (state.searched) {
                     Text(stringResource(if (state.candidates.isEmpty()) R.string.portrait_import_no_results else R.string.portrait_import_candidates, state.candidates.size))
                     if (state.candidates.isNotEmpty()) {

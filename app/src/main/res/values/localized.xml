@@ -707,9 +707,9 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="original_import_more_errors">%1$d additional errors are not shown.</string>
     <string name="portrait_import_title">Search and save support images</string>
     <string name="portrait_import_summary">Find servants and Craft Essences by collection number or name.</string>
-    <string name="portrait_import_description">Search the latest JP collection. Names follow the FGA language, with Japanese as the fallback. An internet connection is required.</string>
+    <string name="portrait_import_description">Search servants and Craft Essences. Names follow the FGA language, with Japanese as the fallback. An internet connection is required.</string>
     <string name="portrait_import_number">Collection number or name</string>
-    <string name="portrait_import_destination">Save in %1$s/support/%2$s/No.number name</string>
+    <string name="portrait_import_destination">Save to: %1$s/support/%2$s/</string>
     <string name="portrait_import_start">Generate and save</string>
     <string name="portrait_import_retry">Generate again</string>
     <string name="portrait_import_close">Close</string>
@@ -718,7 +718,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="portrait_import_result">%1$s\nSaved: %2$d · Failed: %3$d</string>
     <string name="portrait_import_use">In battle settings → Support → Preferred servant, select the %1$s folder to match all saved ascensions and costumes.</string>
     <string name="portrait_import_partial">Some images could not be generated or saved. Check the connection and storage folder, then generate again to retry.</string>
-    <string name="portrait_import_error_number">Enter a collection number from 1 to 9999.</string>
+    <string name="portrait_import_error_number">Enter a positive collection number.</string>
     <string name="portrait_import_error_not_found">This entry could not be found in the game data.</string>
     <string name="portrait_import_error_network">Could not download game data. Check your connection and try again.</string>
     <string name="portrait_import_error_metadata">The image information could not be read. Search again or retry later.</string>
@@ -727,9 +727,8 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="portrait_import_servant">Servant</string>
     <string name="portrait_import_ce">Craft Essence</string>
     <string name="portrait_import_search">Search</string>
-    <string name="portrait_import_region">Image server: %1$s</string>
     <string name="portrait_import_candidates">Results: %1$d — select an entry</string>
-    <string name="portrait_import_no_results">No matches. Try an official name, part of a name, or a JP collection number.</string>
+    <string name="portrait_import_no_results">No search results.</string>
     <string name="portrait_import_error_query">Enter a collection number or name.</string>
     <string name="portrait_import_use_ce">In battle settings → Support → Preferred CE, select the %1$s folder.</string>
     <string name="portrait_class_ruler">Ruler</string>

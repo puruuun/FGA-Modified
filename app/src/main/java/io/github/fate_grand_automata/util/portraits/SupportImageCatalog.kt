@@ -17,12 +17,15 @@ data class SupportCatalogRecord(
 
 data class SupportCatalogEntry(
     val kind: SupportCatalogKind, val id: Int, val number: Int, val name: String,
-    val className: String, val rarity: Int, val face: String?, val aliases: Set<String>
+    val className: String, val rarity: Int, val face: String?, val aliases: Set<String>,
+    val sourceRegion: String? = null
 ) {
-    val folderName get() = ServantPortraitFolder.name(number, name)
+    val folderName get() = ServantPortraitFolder.name(number, name, sourceRegion)
 }
 
 object SupportImageCatalog {
+    val lookupRegions = listOf("JP", "KR", "NA")
+    // Display-name localization is independent of the three image/search sources.
     val regions = setOf("JP", "NA", "KR", "CN", "TW")
 
     fun languageRegion(tag: String): String {
@@ -62,17 +65,17 @@ object SupportImageCatalog {
     }
 
     /** Join by internal identity, since regional collection numbers can differ. */
-    fun merge(kind: SupportCatalogKind, jp: List<SupportCatalogRecord>, localized: List<SupportCatalogRecord>,
-              game: List<SupportCatalogRecord>): List<SupportCatalogEntry> {
-        val japanese = jp.associateBy { it.id }
+    fun merge(kind: SupportCatalogKind, canonical: List<SupportCatalogRecord>, localized: List<SupportCatalogRecord>,
+              japanese: List<SupportCatalogRecord>): List<SupportCatalogEntry> {
+        val jp = japanese.associateBy { it.id }
         val names = localized.associateBy { it.id }
-        val all = (jp + localized + game).groupBy { it.id }
-        return jp.map { canonical ->
-            val id = canonical.id
+        val all = (canonical + localized + japanese).groupBy { it.id }
+        return canonical.map { record ->
+            val id = record.id
             val variants = all.getValue(id)
-            val display = names[id] ?: japanese[id] ?: canonical
-            SupportCatalogEntry(kind, id, canonical.number, display.name, canonical.className,
-                canonical.rarity, canonical.face ?: display.face,
+            val display = names[id] ?: jp[id] ?: record
+            SupportCatalogEntry(kind, id, jp[id]?.number ?: record.number, display.name, record.className,
+                record.rarity, record.face ?: display.face,
                 variants.flatMap { listOf(it.name, it.originalName) }.toSet())
         }
     }
@@ -81,7 +84,7 @@ object SupportImageCatalog {
         val key = normalized(query)
         if (key.isEmpty()) throw PortraitImportException(PortraitImportError.Query)
         val numeric = key.all { it in '0'..'9' }
-        val number = if (numeric) key.toIntOrNull()?.takeIf { it in 1..9999 }
+        val number = if (numeric) key.toIntOrNull()?.takeIf { it > 0 }
             ?: throw PortraitImportException(PortraitImportError.Number) else null
         return entries.mapNotNull { entry ->
             val aliases = entry.aliases.map(::normalized)
