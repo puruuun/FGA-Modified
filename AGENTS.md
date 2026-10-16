@@ -17,6 +17,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 ## Delivery for this repository
 
 - Unless the user explicitly requests a pull request, integrate changes with the latest remote `main`, verify them, and push directly to `main` without creating a new PR.
+- For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use Codex as author, committer, or co-author unless the user requests it. Preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
 
 ## Build & test
