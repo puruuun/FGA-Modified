@@ -13,6 +13,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.util.portraits.ServantPortraitMetadata
+import io.github.fate_grand_automata.util.portraits.SupportFolderRename
 import io.github.lib_automata.Pattern
 import timber.log.Timber
 import java.io.File
@@ -181,7 +182,13 @@ class StorageProvider @Inject constructor(
         val existing = ServantPortraitFolder.resolve(folderName, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
         if (existing != null && existing != folderName) {
             val previous = folder.findFile(existing)
-            if (previous == null || !previous.renameTo(folderName)) {
+            val moved = previous != null && SupportFolderRename.confirmed(
+                source = existing,
+                destination = folderName,
+                exists = { folder.findFile(it) != null },
+                rename = { previous.renameTo(folderName) }
+            )
+            if (!moved || folder.findFile(folderName)?.isDirectory != true) {
                 throw KnownException(KnownException.Reason.CouldNotCreateDirectory(folderName))
             }
         } else {
