@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.SupportClass
 import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
@@ -126,7 +127,7 @@ fun SupportGroup(
                     val cesFormatted by remember {
                         derivedStateOf {
                             ces
-                                .map { File(it).nameWithoutExtension }
+                                .map { ServantPortraitFolder.displayName(it) }
                                 .toSet()
                         }
                     }

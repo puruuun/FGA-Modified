@@ -34,12 +34,16 @@ fun MoreOptionsScreen(
     }
     val originalImport by vm.originalImport.collectAsStateWithLifecycle()
     val portraitImport by vm.portraitImport.collectAsStateWithLifecycle()
+    val portraitContext = LocalContext.current
     if (portraitImport.open) {
         val destinationName by vm.storageSummary
         ServantPortraitImportDialog(
             state = portraitImport,
             destinationName = destinationName,
             onNumber = vm::changePortraitNumber,
+            onKind = vm::changePortraitKind,
+            onSelect = vm::selectPortrait,
+            onSearch = { vm.searchPortraits(portraitContext.resources.configuration.locales[0].toLanguageTag()) },
             onStart = vm::importPortraits,
             onPickDirectory = { pickDirectory.launch(Uri.EMPTY) },
             onDismiss = vm::closePortraitImport

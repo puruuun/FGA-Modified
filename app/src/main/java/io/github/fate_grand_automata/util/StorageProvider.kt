@@ -143,7 +143,7 @@ class StorageProvider @Inject constructor(
         val folder = kind.imageFolder
         val file = folder.findFile(name)
             // Older exported configs can still refer to No.444 after its folder is named.
-            ?: (if (kind == SupportImageKind.Servant && ServantPortraitFolder.number(name) != null) {
+            ?: (if (kind in setOf(SupportImageKind.Servant, SupportImageKind.CE) && ServantPortraitFolder.number(name) != null) {
                 val resolved = ServantPortraitFolder.resolve(name, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
                 resolved?.let(folder::findFile)
             } else null)
@@ -171,9 +171,13 @@ class StorageProvider @Inject constructor(
         .mapNotNull { it.name }
         .filterNot { it.lowercase().contains("nomedia") }
 
-    fun prepareServantPortraitFolder(metadata: ServantPortraitMetadata): String {
-        val folderName = metadata.folderName
-        val folder = supportServantFolder
+    fun prepareServantPortraitFolder(metadata: ServantPortraitMetadata): String =
+        prepareSupportPortraitFolder(SupportImageKind.Servant, metadata.collectionNo, metadata.name)
+
+    fun prepareSupportPortraitFolder(kind: SupportImageKind, number: Int, name: String): String {
+        require(kind == SupportImageKind.Servant || kind == SupportImageKind.CE)
+        val folderName = ServantPortraitFolder.name(number, name)
+        val folder = kind.imageFolder
         val existing = ServantPortraitFolder.resolve(folderName, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
         if (existing != null && existing != folderName) {
             val previous = folder.findFile(existing)
@@ -185,9 +189,10 @@ class StorageProvider @Inject constructor(
         }
         // Preserve all battle profiles when a generated folder acquires or changes its name.
         for (id in prefsCore.battleConfigList.get()) {
-            val preferred = prefsCore.forBattleConfig(id).support.preferredServants
+            val support = prefsCore.forBattleConfig(id).support
+            val preferred = if (kind == SupportImageKind.CE) support.preferredCEs else support.preferredServants
             val selected = preferred.get()
-            val renamed = ServantPortraitFolder.renameSelections(selected, metadata.collectionNo, folderName)
+            val renamed = ServantPortraitFolder.renameSelections(selected, number, folderName)
             if (selected != renamed) preferred.set(renamed)
         }
         return folderName

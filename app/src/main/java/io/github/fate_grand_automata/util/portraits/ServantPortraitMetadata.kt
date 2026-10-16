@@ -74,6 +74,9 @@ object ServantPortraitFolder {
         return "No.$number $safeName"
     }
 
+    fun displayName(entry: String): String =
+        if (Regex("(?i)\\.(png|jpg|jpeg|webp|bmp)$").containsMatchIn(entry)) entry.substringBeforeLast('.') else entry
+
     fun number(folder: String): Int? = generatedFolder.matchEntire(folder)?.groupValues?.get(1)?.toIntOrNull()
 
     fun resolve(requested: String, folders: List<String>): String? {
@@ -86,7 +89,7 @@ object ServantPortraitFolder {
         selected.map { if (number(it) == collectionNo) folder else it }.toSet()
 }
 
-enum class PortraitImportError { Number, NotFound, Network, Metadata, Image, Storage }
+enum class PortraitImportError { Query, Number, NotFound, Network, Metadata, Image, Storage }
 class PortraitImportException(val reason: PortraitImportError) : Exception(reason.name)
 
 /** In 720p image coordinates, measured against the JP support and friend screens. */

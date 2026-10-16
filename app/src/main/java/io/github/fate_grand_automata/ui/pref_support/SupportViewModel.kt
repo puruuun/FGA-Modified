@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.SupportImageExtractor
@@ -57,7 +58,7 @@ class SupportViewModel @Inject constructor(
 
             ces =
                 getSupportImages(context, SupportImageKind.CE)
-                    .associateWith { File(it).nameWithoutExtension }
+                    .associateWith { ServantPortraitFolder.displayName(it) }
 
             friends =
                 getSupportImages(context, SupportImageKind.Friend)

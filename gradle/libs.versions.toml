@@ -110,6 +110,7 @@ compose-material-icons-extended = { group = "androidx.compose.material", name = 
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable_version" }
 
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil_version" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil_version" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil_version" }
 
 [plugins]
