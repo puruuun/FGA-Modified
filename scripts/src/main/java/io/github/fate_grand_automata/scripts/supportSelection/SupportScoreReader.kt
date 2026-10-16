@@ -32,6 +32,16 @@ class SupportScoreReader @Inject constructor(
         const val OCR_THRESHOLD = 100.0 / 255.0
         const val OCR_BRIGHT_THRESHOLD = 110.0 / 255.0
         const val OCR_PADDING = 12
+        // JP screenshot field crops: true matches >= .96; negatives <= .85.
+        // Templates include the slash, so an ordinary +16 or +62 cannot supply a compound field.
+        const val COMPACT_FIELD_SIMILARITY = 0.94
+        val COMPACT_CLASS_TEMPLATES = listOf(
+            Images.SupportCompactClass62A, Images.SupportCompactClass62B, Images.SupportCompactClass62C
+        )
+        val GRAND_TEMPLATES = listOf(
+            Images.SupportGrand16A, Images.SupportGrand16B, Images.SupportGrand16C,
+            Images.SupportGrand16LargeA, Images.SupportGrand16LargeB, Images.SupportGrand16LargeC
+        )
         val OCR_OPTIONS = TextLineOcrOptions(
             scale = OCR_SCALE, threshold = OCR_THRESHOLD, fillOutline = true,
             padding = OCR_PADDING, allowedCharacters = "+/0123456789"
@@ -95,7 +105,43 @@ class SupportScoreReader @Inject constructor(
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else OCR_PROFILES.map { ocr.detectTextLine(pattern, it) }
         }
-        confirmed(results)?.let { return it }
+        // A clipped number is not evidence that Grand is absent.
+        if (results.isEmpty()) return SupportScores()
+        val recognized = confirmed(results)
+        if (recognized != null && (recognized.display == SupportScoreDisplay.Ordinary ||
+                ((!checkClass || recognized.classScore != null) && (!checkGrand || recognized.grandScore != null)))) {
+            return recognized
+        }
+
+        // JP shrinks the entire pair for two-digit Class scores. Reading both tiny fields
+        // as one OCR word can lose the slash/plus or produce low confidence even on +56/+16.
+        // Independently recover only a requested maximum, with a delimiter-bearing template.
+        // Keep any already confirmed numeric field, including a confirmed nonmaximum.
+        fun matches(templates: List<Images>, verifyGrandDigit: Boolean = false) = templates.any { image ->
+            val template = images[image]
+            if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
+            else {
+                val candidates = region.findAll(template, similarity = COMPACT_FIELD_SIMILARITY)
+                if (candidates.isEmpty()) false else {
+                    // The common /+1 prefix must not hide a different final digit.
+                    val pixels = SupportScoreLayout.grandLastDigit(template.width, template.height)
+                    template.crop(pixels).use { digit ->
+                        candidates.any { match ->
+                            SupportScoreLayout.matchedPixels(match.region, template.width, template.height, pixels)
+                                .exists(digit, similarity = COMPACT_FIELD_SIMILARITY)
+                        }
+                    }
+                }
+            }
+        }
+        val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
+        val grand16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
+        if (class62 || grand16) return SupportScores(
+            recognized?.classScore ?: if (class62) 62 else null,
+            recognized?.grandScore ?: if (grand16) 16 else null,
+            SupportScoreDisplay.Compound
+        )
+        recognized?.let { return it }
         // A visible slash with an uncertain pair must not fall back to finding +62 on the
         // Grand side. An ordinary score never supplies a Grand score implicitly.
         return when {

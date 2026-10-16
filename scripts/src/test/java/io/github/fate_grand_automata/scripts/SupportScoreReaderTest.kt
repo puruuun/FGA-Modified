@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreSelection
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScores
 import io.github.lib_automata.OcrService
+import io.github.lib_automata.Match
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
@@ -27,6 +28,9 @@ class SupportScoreReaderTest {
         val bounds = SupportBounds(Region(76, 408, 2356, 428))
         val region = SupportScoreLayout.numberRegion(bounds.region)
         val reader = SupportScoreReader(api, ocr)
+        val visual = (SupportScoreReader.COMPACT_CLASS_TEMPLATES + SupportScoreReader.GRAND_TEMPLATES)
+            .associateWith { mockk<Pattern>() }
+        val digits = SupportScoreReader.GRAND_TEMPLATES.associateWith { mockk<Pattern>(relaxed = true) }
         init {
             every { api.images[Images.SupportScore62, null] } returns legacy
             every { with(api) { region.exists(legacy, any(), any()) } } returns false
@@ -34,6 +38,27 @@ class SupportScoreReaderTest {
             every { crop.width } returns 55
             every { crop.height } returns 30
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
+            visual.forEach { (image, pattern) ->
+                every { api.images[image, null] } returns pattern
+                every { with(api) { region.exists(pattern, any(), any()) } } returns false
+                every { with(api) { region.findAll(pattern, any()) } } returns emptyList()
+                every { pattern.width } returns if ("Large" in image.name) 34 else 29
+                every { pattern.height } returns if ("Large" in image.name) 21 else 19
+            }
+        }
+        fun show(image: Images, correctLastDigit: Boolean = true) {
+            val pattern = visual.getValue(image)
+            if (image !in SupportScoreReader.GRAND_TEMPLATES) {
+                every { with(api) { region.exists(pattern, any(), any()) } } returns true
+            } else {
+                val matched = Region(region.x, region.y, pattern.width * 2, pattern.height * 2)
+                every { with(api) { region.findAll(pattern, any()) } } returns listOf(Match(matched, .98))
+                val pixels = SupportScoreLayout.grandLastDigit(pattern.width, pattern.height)
+                val digit = digits.getValue(image)
+                every { pattern.crop(pixels) } returns digit
+                val digitRegion = SupportScoreLayout.matchedPixels(matched, pattern.width, pattern.height, pixels)
+                every { with(api) { digitRegion.exists(digit, any(), any()) } } returns correctLastDigit
+            }
         }
     }
 
@@ -190,5 +215,98 @@ class SupportScoreReaderTest {
         verify(exactly=0) { f.api.images[any(),any()] }
         verify(exactly=0) { with(f.api) { f.region.getPattern(any()) } }
         verify(exactly=0) { f.ocr.detectTextLine(any(),any()) }
+    }
+
+    @Test
+    fun `real JP 56 16 OCR failure can recover Grand without requiring Class 62`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returnsMany listOf(
+            OcrText("56/416", 33), OcrText("56/ +16", 60), OcrText("+6", 50), OcrText("56/ +16", 55)
+        )
+        f.show(Images.SupportGrand16A)
+        val scores = f.reader.read(f.bounds, false, true)
+        assertThat(scores).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
+        assertThat(SupportScoreSelection.matches(scores, false, true)).isEqualTo(true)
+        SupportScoreReader.COMPACT_CLASS_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+    }
+
+    @Test
+    fun `recovering Grand alone cannot invent Class 62 when both are requested`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("56/+16", 60)
+        f.show(Images.SupportGrand16LargeA)
+        val scores = f.reader.read(f.bounds, true, true)
+        assertThat(scores).isEqualTo(SupportScores(null, 16))
+        assertThat(SupportScoreSelection.matches(scores, true, true)).isEqualTo(false)
+    }
+
+    @Test
+    fun `two visually confirmed compact fields recover both conditions`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/+16", 2)
+        f.show(Images.SupportCompactClass62B)
+        f.show(Images.SupportGrand16C)
+        val scores = f.reader.read(f.bounds, true, true)
+        assertThat(scores).isEqualTo(SupportScores(62, 16))
+        assertThat(SupportScoreSelection.matches(scores, true, true)).isEqualTo(true)
+    }
+
+    @Test
+    fun `compact Class recovery never silently ignores an unreadable Grand`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/+?", 25)
+        f.show(Images.SupportCompactClass62A)
+        val scores = f.reader.read(f.bounds, true, true)
+        assertThat(scores).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        assertThat(SupportScoreSelection.matches(scores, true, true)).isEqualTo(false)
+    }
+
+    @Test
+    fun `compact Class only does not inspect Grand templates`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/+0", 30)
+        f.show(Images.SupportCompactClass62C)
+        assertThat(f.reader.read(f.bounds, true, false)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+    }
+
+    @Test
+    fun `visual recovery retains a confirmed nonmaximum field`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returnsMany listOf(
+            OcrText("56/+0", 92), OcrText("56/+16", 91), OcrText("56/+0", 90), OcrText("56/+16", 89)
+        )
+        f.show(Images.SupportCompactClass62A)
+        f.show(Images.SupportGrand16A)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(56, 16))
+    }
+
+    @Test
+    fun `a confirmed Grand zero is never overridden by visual recovery`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("+62/+0", 92)
+        f.show(Images.SupportGrand16A)
+        assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(62, 0))
+        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+    }
+
+    @Test
+    fun `a clipped score cannot bypass Grand using the ordinary legacy match`() {
+        val f = Fixture()
+        every { with(f.api) { f.region.exists(f.legacy, any(), any()) } } returns true
+        every { f.crop.width } returns 30
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores())
+        verify(exactly = 0) { f.ocr.detectTextLine(any(), any()) }
+        f.visual.keys.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+    }
+
+    @Test
+    fun `a similar prefix cannot supply Grand 16 when the final digit differs`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("56/+18", 20)
+        f.show(Images.SupportGrand16A, correctLastDigit = false)
+        val scores = f.reader.read(f.bounds, false, true)
+        assertThat(SupportScoreSelection.matches(scores, false, true)).isEqualTo(false)
+        verify(exactly = 1) { f.digits.getValue(Images.SupportGrand16A).close() }
     }
 }

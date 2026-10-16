@@ -23,7 +23,8 @@ class AutomataApplication : Application() {
 
     private class FgaTree : Timber.DebugTree() {
         override fun isLoggable(tag: String?, priority: Int): Boolean {
-            return if (BuildConfig.DEBUG) true else priority > Log.INFO
+            return BuildConfig.DEBUG || priority > Log.INFO ||
+                (tag == "FGA.SupportScore" && priority >= Log.INFO)
         }
     }
 }

@@ -15,4 +15,18 @@ object SupportScoreLayout {
         SCORE_WIDTH,
         SCORE_HEIGHT
     )
+
+    /** Pixel coordinates inside a 720p delimiter-bearing Grand template. */
+    fun grandLastDigit(templateWidth: Int, templateHeight: Int): Region {
+        val width = if (templateWidth >= 34) 12 else 10
+        return Region(templateWidth - width, 0, width, templateHeight)
+    }
+
+    /** Map a template's pixel subregion into its matched 1440p script region. */
+    fun matchedPixels(match: Region, templateWidth: Int, templateHeight: Int, pixels: Region) = Region(
+        match.x + pixels.x * match.width / templateWidth,
+        match.y + pixels.y * match.height / templateHeight,
+        pixels.width * match.width / templateWidth,
+        pixels.height * match.height / templateHeight
+    )
 }
