@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.models.*
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.lib_automata.OcrText
+import io.github.lib_automata.TextLineOcrOptions
 import io.mockk.*
 import kotlin.test.*
 import kotlin.time.Duration
@@ -30,6 +31,59 @@ class BondTrackingTest {
         assertNull(BondReader.confirmedGain(listOf(good, good, OcrText("+1,098(+45)", 92))))
         for (level in listOf(7, 10, 12, 16)) assertEquals(level, BondReader.confirmedLevel(List(2) { OcrText("$level", 95) }))
         assertNull(BondReader.confirmedLevel(listOf(OcrText("9 > 10", 99), OcrText("9 > 10", 99))))
+    }
+
+    @Test fun `gain width retry recovers thin digits without lowering confidence`() {
+        val seen = mutableListOf<TextLineOcrOptions>()
+        val result = BondReader.readGain(BondReader.GAIN_PROFILES) { options ->
+            seen += options
+            OcrText("+3,797(+11,267)", if (options.horizontalScale > 1.0) 92 else 84)
+        }
+        assertEquals(BondValue.Gain(3797, 11267), result)
+        assertTrue(seen.any { it.horizontalScale > 1.0 })
+        assertTrue(seen.filter { it.horizontalScale > 1.0 }.all { it.allowedCharacters == "+(),0123456789 " })
+    }
+
+    @Test fun `already confirmed gains skip width retries`() {
+        var calls = 0
+        val result = BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
+            calls++
+            assertEquals(1.0, options.horizontalScale)
+            OcrText("+815(+590)", 95)
+        }
+        assertEquals(BondValue.Gain(815, 590), result)
+        assertEquals(BondReader.JP_GAIN_PROFILES.size, calls)
+    }
+
+    @Test fun `retry keeps primary conflicts and cannot turn one strong read into confirmation`() {
+        var primary = 0
+        assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) { options ->
+            if (options.horizontalScale == 1.0 && primary++ == 0) OcrText("+1,830(+1,970)", 92)
+            else OcrText("+1,830(+1,976)", 95)
+        })
+        var calls = 0
+        assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) {
+            OcrText("+815(+590)", if (calls++ == 0) 95 else 84)
+        })
+        assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) { OcrText("NEXT 1,338,294", 99) })
+    }
+
+    @Test fun `level width retry preserves two strong reads and refuses conflicting cap levels`() {
+        assertEquals(7, BondReader.readLevel { OcrText("7", if (it.horizontalScale > 1.0) 92 else 80) })
+        assertEquals(9, BondReader.readLevel { OcrText(if (it.horizontalScale > 1.0) "10" else "9", 95) })
+        var calls = 0
+        assertNull(BondReader.readLevel { options ->
+            if (options.horizontalScale == 1.0 && calls++ == 0) OcrText("9", 95)
+            else if (options.horizontalScale == 1.0) OcrText("", 0)
+            else OcrText("10", 95)
+        })
+    }
+
+    @Test fun `OCR width correction defaults to one and rejects invalid factors`() {
+        assertEquals(1.0, TextLineOcrOptions().horizontalScale)
+        for (factor in listOf(0.0, -1.0, Double.NaN, Double.POSITIVE_INFINITY)) {
+            assertFailsWith<IllegalArgumentException> { TextLineOcrOptions(horizontalScale = factor) }
+        }
     }
 
     @Test fun `result columns are always characters one through five with no party mapping`() {

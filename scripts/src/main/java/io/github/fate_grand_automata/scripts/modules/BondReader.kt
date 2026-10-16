@@ -26,6 +26,13 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
                 GAIN_PROFILES.first().copy(scale = scale, threshold = threshold / 255.0, rawGrayscale = false)
             }
         }
+        // Only retry inconclusive lines. Widening thin glyphs helps long bonuses and downscaled captures.
+        val GAIN_FALLBACK_PROFILES = listOf(3, 4, 6).flatMap { scale ->
+            listOf(0, 80, 110).map { threshold ->
+                GAIN_PROFILES.first().copy(scale = scale, threshold = threshold / 255.0,
+                    rawGrayscale = threshold == 0, horizontalScale = 1.4)
+            }
+        }
         val LEVEL_PROFILES = JP_GAIN_PROFILES.filter { it.scale != 6 }.map { it.copy(allowedCharacters = "0123456789 ") }
         private val gain = Regex("""\+?(\d{1,3}(?:,\d{3})*|\d+)\(\+?(\d{1,3}(?:,\d{3})*|\d+)\)""")
 
@@ -35,6 +42,18 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
             val bonus = match.groupValues[2].replace(",", "").toIntOrNull() ?: return null
             // A complete pair is mandatory. Never join unrelated numbers from the NEXT row.
             return BondValue.Gain(base, bonus)
+        }
+
+        internal fun readGain(profiles: List<TextLineOcrOptions>, read: (TextLineOcrOptions) -> OcrText): BondValue.Gain? {
+            val readings = profiles.map(read)
+            // Retain primary evidence: a strong conflicting number must still veto the retry.
+            return confirmedGain(readings) ?: confirmedGain(readings + GAIN_FALLBACK_PROFILES.map(read))
+        }
+
+        internal fun readLevel(read: (TextLineOcrOptions) -> OcrText): Int? {
+            val readings = LEVEL_PROFILES.map(read)
+            val fallback = LEVEL_PROFILES.map { it.copy(horizontalScale = GAIN_FALLBACK_PROFILES.first().horizontalScale) }
+            return confirmedLevel(readings) ?: confirmedLevel(readings + fallback.map(read))
         }
 
         fun confirmedGain(readings: List<OcrText>): BondValue.Gain? = consensus(readings, ::parseGain)
@@ -65,7 +84,9 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
     fun read(readGains: Boolean = true): BondFrame = useSameSnapIn {
         if (matches(locations.bond.popupTitle, Images.BondPopupTitle).isNotEmpty()) {
             val arrow = matches(locations.bond.popupArrow, Images.Bond).maxByOrNull { it.score }
-            val level = arrow?.let { number(locations.bond.reachedLevel(it.region), LEVEL_PROFILES, ::confirmedLevel) }
+            val level = arrow?.let { match ->
+                number(locations.bond.reachedLevel(match.region)) { pattern -> readLevel { ocr.detectTextLine(pattern, it) } }
+            }
             val columns = (0..4).filter { matches(locations.bond.levelUpMarker(it), Images.BondLevelUpMarker).isNotEmpty() }
             return@useSameSnapIn BondFrame.LevelUp(level, columns.singleOrNull())
         }
@@ -73,16 +94,18 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
         BondFrame.Normal((0..4).map { index ->
             val region = locations.bond.gain(index)
             if (matches(region, Images.BondMax).isNotEmpty()) BondValue.Max
-            else if (readGains) number(region,
-                if (prefs.gameServer is GameServer.Kr) GAIN_PROFILES else JP_GAIN_PROFILES,
-                ::confirmedGain) ?: BondValue.Unknown
+            else if (readGains) number(locations.bond.gainText(index)) { pattern ->
+                readGain(if (prefs.gameServer is GameServer.Kr) GAIN_PROFILES else JP_GAIN_PROFILES) {
+                    ocr.detectTextLine(pattern, it)
+                }
+            } ?: BondValue.Unknown
             else BondValue.Unknown
         })
     }
 
-    private fun <T> number(region: Region, profiles: List<TextLineOcrOptions>, confirm: (List<OcrText>) -> T?): T? =
+    private fun <T> number(region: Region, read: (Pattern) -> T?): T? =
         region.getPattern("bond_text").use { pattern ->
             if (pattern.width * 2 < region.width - 2 || pattern.height * 2 < region.height - 2) null
-            else confirm(profiles.map { ocr.detectTextLine(pattern, it) })
+            else read(pattern)
         }
 }

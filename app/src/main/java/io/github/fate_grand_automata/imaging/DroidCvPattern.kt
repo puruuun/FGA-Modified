@@ -204,7 +204,7 @@ class DroidCvPattern(
     /** Enlarge a small outlined label without changing the shared OCR preprocessing. */
     fun prepareTextLine(options: TextLineOcrOptions): DroidCvPattern {
         val enlarged = Mat()
-        Imgproc.resize(mat, enlarged, CvSize(width * options.scale.toDouble(), height * options.scale.toDouble()),
+        Imgproc.resize(mat, enlarged, CvSize(width * options.scale * options.horizontalScale, height * options.scale.toDouble()),
             0.0, 0.0, Imgproc.INTER_CUBIC)
         return DroidCvPattern(enlarged).use { scaled ->
             (if (options.rawGrayscale) scaled.copy() else scaled.threshold(options.threshold)).use { binary ->

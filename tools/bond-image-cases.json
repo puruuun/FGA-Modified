@@ -116,5 +116,195 @@
     "server": "Jp",
     "expected": null,
     "file": "docs/reference-images/Jp/bond-party-jp3.png"
+  },
+  {
+    "name": "normal-kr-20261016-164241",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      [
+        3797,
+        3735
+      ],
+      [
+        3797,
+        3735
+      ],
+      [
+        3797,
+        2519
+      ],
+      [
+        3797,
+        2519
+      ],
+      [
+        3797,
+        2519
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-20261016-164241.png"
+  },
+  {
+    "name": "normal-kr-20261016-164840",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      "MAX",
+      [
+        3797,
+        11267
+      ],
+      [
+        3797,
+        8835
+      ],
+      [
+        3797,
+        8835
+      ],
+      [
+        3797,
+        8835
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-20261016-164840.png"
+  },
+  {
+    "name": "normal-kr-20261016-165827",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      [
+        815,
+        649
+      ],
+      [
+        815,
+        649
+      ],
+      [
+        815,
+        590
+      ],
+      [
+        815,
+        590
+      ],
+      [
+        815,
+        590
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-20261016-165827.png"
+  },
+  {
+    "name": "normal-jp-20261016-171109",
+    "server": "Jp",
+    "kind": "normal",
+    "expected": [
+      [
+        4748,
+        6437
+      ],
+      [
+        4748,
+        6437
+      ],
+      [
+        4748,
+        1670
+      ],
+      [
+        4748,
+        5619
+      ],
+      [
+        4748,
+        4632
+      ]
+    ],
+    "file": "docs/reference-images/Jp/bond-20261016-171109.png"
+  },
+  {
+    "name": "normal-jp-20261016-171437",
+    "server": "Jp",
+    "kind": "normal",
+    "expected": [
+      [
+        4748,
+        6437
+      ],
+      [
+        4748,
+        6437
+      ],
+      [
+        4748,
+        1670
+      ],
+      [
+        4748,
+        5619
+      ],
+      [
+        4748,
+        4632
+      ]
+    ],
+    "file": "docs/reference-images/Jp/bond-20261016-171437.png"
+  },
+  {
+    "name": "normal-kr-20261016-185136",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      "MAX",
+      [
+        1830,
+        2708
+      ],
+      [
+        1830,
+        1976
+      ],
+      [
+        1830,
+        1976
+      ],
+      [
+        1830,
+        1976
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-20261016-185136.png"
+  },
+  {
+    "name": "normal-kr-20261016-185717",
+    "server": "Kr",
+    "kind": "normal",
+    "expected": [
+      [
+        815,
+        649
+      ],
+      [
+        815,
+        649
+      ],
+      [
+        815,
+        590
+      ],
+      [
+        815,
+        590
+      ],
+      [
+        815,
+        590
+      ]
+    ],
+    "file": "docs/reference-images/Kr/bond-20261016-185717.png"
   }
 ]

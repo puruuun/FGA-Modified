@@ -20,10 +20,13 @@ data class TextLineOcrOptions(
     val padding: Int = 0,
     val allowedCharacters: String = "",
     val invert: Boolean = false,
-    val rawGrayscale: Boolean = false
+    val rawGrayscale: Boolean = false,
+    /** Additional width correction for narrow game fonts; ordinary OCR keeps its aspect ratio. */
+    val horizontalScale: Double = 1.0
 ) {
     init {
         require(scale > 0)
+        require(horizontalScale.isFinite() && horizontalScale > 0.0)
         require(threshold in 0.0..1.0)
         require(padding >= 0)
         require(!rawGrayscale || !fillOutline)

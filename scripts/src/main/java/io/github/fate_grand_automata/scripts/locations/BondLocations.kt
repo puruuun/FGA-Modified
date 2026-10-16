@@ -12,5 +12,7 @@ class BondLocations @Inject constructor(transforms: IScriptAreaTransforms) : ISc
     val popupArrow = Region(680, 700, 400, 240).xFromCenter()
     fun reachedLevel(arrow: Region) = Region(arrow.right + 22, arrow.y - 24, 180, 110)
     fun gain(index: Int) = Region(-1115 + index * 450, 976, 430, 92).xFromCenter()
+    // Keep the MAX search area, but exclude the top of NEXT from single-line gain OCR.
+    fun gainText(index: Int) = Region(-1115 + index * 450, 976, 430, 76).xFromCenter()
     fun levelUpMarker(index: Int) = Region(-1125 + index * 450, 660, 450, 190).xFromCenter()
 }
