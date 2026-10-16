@@ -297,7 +297,8 @@ class QuestItemsTest {
         assertThat(partial.trace).isEqualTo(listOf("party"))
         val jp = Fixture(); jp.nativeHeadingOnly = true; jp.modal = true
         jp.failsBeforeQuest()
-        verify(exactly = 0) { jp.api.images[Images.QuestItemDialogKrNative, any()] }
+        val loader = jp.api.images
+        verify(exactly = 0) { loader[Images.QuestItemDialogKrNative, any()] }
     }
 
     @Test
