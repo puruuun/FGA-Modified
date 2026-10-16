@@ -22,6 +22,7 @@ import kotlin.test.Test
 class SupportScoreReaderTest {
     private class Fixture {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
+        val images = mockk<IImageLoader>()
         val ocr = mockk<OcrService>()
         val legacy = mockk<Pattern>()
         val crop = mockk<Pattern>(relaxed = true)
@@ -32,14 +33,15 @@ class SupportScoreReaderTest {
             .associateWith { mockk<Pattern>() }
         val digits = SupportScoreReader.GRAND_TEMPLATES.associateWith { mockk<Pattern>(relaxed = true) }
         init {
-            every { api.images[Images.SupportScore62, null] } returns legacy
+            every { api.images } returns images
+            every { images[Images.SupportScore62, null] } returns legacy
             every { with(api) { region.exists(legacy, any(), any()) } } returns false
             every { with(api) { region.getPattern("support_class_grand_scores") } } returns crop
             every { crop.width } returns 55
             every { crop.height } returns 30
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
             visual.forEach { (image, pattern) ->
-                every { api.images[image, null] } returns pattern
+                every { images[image, null] } returns pattern
                 every { with(api) { region.exists(pattern, any(), any()) } } returns false
                 every { with(api) { region.findAll(pattern, any()) } } returns emptyList()
                 every { pattern.width } returns if ("Large" in image.name) 34 else 29
@@ -134,7 +136,7 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+0/+16",92)
         val scores=f.reader.read(f.bounds,false,true)
         assertThat(SupportScoreSelection.matches(scores,false,true)).isEqualTo(true)
-        verify(exactly=1) { f.api.images[Images.SupportScore62,null] }
+        verify(exactly=1) { f.images[Images.SupportScore62,null] }
         verify(exactly=1) { with(f.api) { f.region.exists(any(),any(),any()) } }
     }
 
@@ -215,7 +217,7 @@ class SupportScoreReaderTest {
     fun `both disabled avoid capture matching and OCR`() {
         val f=Fixture()
         assertThat(f.reader.read(f.bounds,false,false)).isEqualTo(SupportScores())
-        verify(exactly=0) { f.api.images[any(),any()] }
+        verify(exactly=0) { f.images[any(),any()] }
         verify(exactly=0) { with(f.api) { f.region.getPattern(any()) } }
         verify(exactly=0) { f.ocr.detectTextLine(any(),any()) }
     }
@@ -230,7 +232,7 @@ class SupportScoreReaderTest {
         val scores = f.reader.read(f.bounds, false, true)
         assertThat(scores).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
         assertThat(SupportScoreSelection.matches(scores, false, true)).isEqualTo(true)
-        SupportScoreReader.COMPACT_CLASS_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+        SupportScoreReader.COMPACT_CLASS_TEMPLATES.forEach { verify(exactly = 0) { f.images[it, null] } }
     }
 
     @Test
@@ -270,7 +272,7 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/+0", 30)
         f.show(Images.SupportCompactClass62C)
         assertThat(f.reader.read(f.bounds, true, false)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
-        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.images[it, null] } }
     }
 
     @Test
@@ -290,7 +292,7 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("+62/+0", 92)
         f.show(Images.SupportGrand16A)
         assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(62, 0))
-        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.images[it, null] } }
     }
 
     @Test
@@ -300,7 +302,7 @@ class SupportScoreReaderTest {
         every { f.crop.width } returns 30
         assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores())
         verify(exactly = 0) { f.ocr.detectTextLine(any(), any()) }
-        f.visual.keys.forEach { verify(exactly = 0) { f.api.images[it, null] } }
+        f.visual.keys.forEach { verify(exactly = 0) { f.images[it, null] } }
     }
 
     @Test
