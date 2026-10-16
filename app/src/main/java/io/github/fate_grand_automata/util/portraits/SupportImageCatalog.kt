@@ -49,7 +49,8 @@ object SupportImageCatalog {
             if (number == 0) return@mapNotNull null
             val id = item["id"]?.jsonPrimitive?.intOrNull ?: invalid()
             val name = item["name"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            if (id <= 0 || number !in 1..9999) invalid()
+            // Regional campaign numbers can exceed four digits; names join by id, not this number.
+            if (id <= 0 || number < 1) invalid()
             val original = item["originalName"]?.jsonPrimitive?.contentOrNull ?: name
             val face = item["face"]?.jsonPrimitive?.contentOrNull?.takeIf {
                 SupportAssetMetadata.validUrl(it, "Faces")

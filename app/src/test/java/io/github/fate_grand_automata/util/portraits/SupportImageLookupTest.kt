@@ -81,6 +81,21 @@ class SupportImageLookupTest {
             val hit=SupportImageCatalog.search(all,query).single();assertEquals(9400340,hit.id);assertEquals("No.34 컬라이더스코프",hit.folderName)
         }
     }
+    @Test fun `large regional campaign numbers do not break the entire CE catalog`() {
+        val japanese = SupportImageCatalog.parse("""[
+            {"id":9400340,"collectionNo":34,"type":"servantEquip","name":"カレイドスコープ"},
+            {"id":9310560,"collectionNo":2397,"type":"servantEquip","name":"藤丸立香はわからない"}
+        ]""", SupportCatalogKind.CE)
+        val korean = SupportImageCatalog.parse("""[
+            {"id":9400340,"collectionNo":34,"type":"servantEquip","name":"컬라이더스코프"},
+            {"id":9310560,"collectionNo":23970,"type":"servantEquip","name":"후지마루 리츠카는 잘 모르겠다"},
+            {"id":90082001,"collectionNo":202022,"type":"servantEquip","name":"5th Anniversary"}
+        ]""", SupportCatalogKind.CE)
+        val entries = SupportImageCatalog.merge(SupportCatalogKind.CE, japanese, korean, emptyList())
+        assertEquals("컬라이더스코프", SupportImageCatalog.search(entries,"34").single().name)
+        assertEquals("후지마루 리츠카는 잘 모르겠다", SupportImageCatalog.search(entries,"2397").single().name)
+        assertEquals(2, entries.size)
+    }
     @Test fun `lookup uses only necessary catalogs and invalid queries do no network work`() = runBlocking {
         val source=Source();source.catalogs["JP"]=listOf(jp);source.catalogs["KR"]=listOf(kr)
         val lookup=SupportImageLookup(source)
