@@ -160,3 +160,19 @@ py -3 tools/device-qa/run.py [--serial 127.0.0.1:5555] [--build] [--suite suppor
 | Python 라벨과 기기 결과가 다름 | 그게 이 작업이 찾으려는 정보입니다. 고치지 말고 케이스 이름, 기대값, 실제값, OCR 원문을 보고합니다. |
 | instrumentation 결과가 잘림 | D-9 요약 형식으로 줄이고, 그래도 크면 suite별로 나눠 실행합니다. |
 | 블루스택 adb 포트가 인스턴스마다 다름 | `--serial` 인자로 받고, 기본값과 함께 `adb devices` 결과를 출력합니다. |
+
+## 8. 구현 중 결정 (2026-10-18, 1·2단계 + 인연 suite 보고 이후)
+
+구현 결과: `fdaa18e1`, `8e826fac`, `4670f5de`. support는 185개 통과·3개 skip, bond는 9개 통과·11개 skip입니다.
+
+- **R-1. 인연 suite의 16:9 아닌 화면도 지원합니다.** skip된 11개(폭 1279~1561px, 높이 720)는 Python 검증이 화면 폭에 맞춰 처리하던 케이스라, 지금 상태로는 동등성이 깨집니다. 실제 사용자 폰도 대부분 16:9가 아닙니다.
+  - `FixtureApi`의 16:9 검사(`picture.width * 9 == picture.height * 16`)를 없앱니다. 프레임은 **높이 720에 맞춰 비율을 유지한 채** 줄입니다.
+  - 좌표 변환은 제품의 `ScriptAreaTransforms`와 **같은 공식**을 씁니다: `scriptArea = Region(0, 0, width720 * 2, 1440)`, `isWide = scriptArea.size.isWide()`(제품 확장 함수를 그대로 import), `xFromCenter = scriptArea.center.x`, `xFromRight = scriptArea.right`, `yFromBottom = scriptArea.bottom`. 공식을 따로 짜지 말고 제품 코드를 참조합니다.
+  - crop 캔버스는 지금처럼 1280×720을 유지합니다. crop 케이스의 원본이 16:9 기준이기 때문입니다.
+  - support suite 결과는 바뀌면 안 됩니다. 전후 `actual`이 같은지 확인합니다.
+- **R-2. 퀘스트 아이템 라벨은 crop 케이스로 옮깁니다.** D-3의 `crop` 형식이 이런 경우를 위해 만든 것입니다. `docs/reference-images/quest-items-crops.json`의 `region_720p`를 `region720`으로 쓰고, 기대 상태(티포트/스톰포드, ON/OFF, 대화상자 여부)는 파일 이름과 `verify_quest_item_images.py`의 라벨에서 가져옵니다. D-4 범위 검사에 걸리는 케이스는 `skip: coverage`로 남깁니다. 저장소에 없는 로컬 원본(한글 파일명 스크린샷)은 옮기지 않고 목록만 보고합니다.
+- **R-3. 음성 검사는 설계서 방식대로 다시 합니다.** 5절의 "`MIN_CONFIRM_CONFIDENCE`를 101로 바꿔 실행"은 **커밋하지 않는 로컬 변경**으로 허용된 검사입니다. 제품 코드 변경 금지 규칙의 예외입니다. 대체로 한 "정책 반전"은 runner의 비교 로직만 검사하고, 실제 판독 경로가 결과에 반영되는지는 검사하지 못합니다. 확인 후 `git diff`가 비어 있는 것까지 보고합니다.
+- **R-4. D-5(`rowY720` 의미)는 crop 케이스에는 해당이 없는 것으로 닫습니다.** crop은 레이아웃 함수로 계산한 위치에 붙이고 판독기도 같은 bounds 기준으로 읽으므로, `rowY720` 값이 무엇이든 결과가 같습니다. 원래 화면 위치와 같은지는 전체 화면 케이스가 생길 때 확인합니다. 체크리스트에는 "해당 없음(이유)"으로 적습니다.
+- **R-5. NP 448×48 skip 3개는 그대로 둡니다.** 원본 전체 화면이 저장소에 없어서 다시 자를 수 없습니다. 이후 KR 서포트 화면을 새로 모을 때 대체합니다.
+- **R-6. `run.py`의 `gradlew.bat` 호출과 기기 파일 전송은 설계 범위 안입니다.** D-6은 서드파티 패키지를 쓰지 말라는 뜻입니다. import가 표준 라이브러리뿐인 것을 확인했습니다.
+- **R-7. 아직 안 한 필수 항목**: D-10(각 `tools/*.py` docstring 한 줄), 4.5의 `docs/reference-images/README.md`, `tools/README.md`의 bond·questItems 실행법, `docs/agents/automation-scripts.md`의 한 줄, 5절의 출처별 라벨 수·케이스 수 표.
