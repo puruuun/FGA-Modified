@@ -1,3 +1,4 @@
+import java.util.Properties
 import javax.inject.Inject
 
 plugins {
@@ -76,6 +77,45 @@ androidComponents {
     }
 }
 
+// Release versions come from version.properties. FGA_VERSION_NAME / FGA_VERSION_CODE override them
+// (PR builds set them to run_number). A malformed file fails the build here, not in CI.
+val versionProperties = Properties().apply {
+    val file = rootProject.file("version.properties")
+    if (!file.isFile) throw GradleException("version.properties is missing at ${file.path}")
+    file.inputStream().use { load(it) }
+}
+
+fun versionProperty(key: String): String =
+    versionProperties.getProperty(key)?.trim() ?: throw GradleException("version.properties has no $key")
+
+val stableVersionName = versionProperty("stable.versionName").also {
+    if (!Regex("""\d+\.\d+\.\d+""").matches(it)) throw GradleException("stable.versionName must be X.Y.Z, got $it")
+}
+val stableVersionCode = versionProperty("stable.versionCode").toInt()
+val betaVersionName = versionProperty("beta.versionName").also {
+    if (!Regex("""\d+\.\d+\.\d+-beta\.\d+""").matches(it)) throw GradleException("beta.versionName must be X.Y.Z-beta.N, got $it")
+}
+val betaVersionCode = versionProperty("beta.versionCode").toInt().also { code ->
+    val (major, minor, patch, beta) = Regex("""(\d+)\.(\d+)\.(\d+)-beta\.(\d+)""").find(betaVersionName)!!.destructured
+    val expected = major.toInt() * 1_000_000 + minor.toInt() * 1000 + patch.toInt() * 100 + beta.toInt()
+    if (code != expected) throw GradleException("beta.versionCode $code does not match $betaVersionName (expected $expected)")
+}
+val envVersionName: String? = System.getenv("FGA_VERSION_NAME")
+val envVersionCode: Int? = System.getenv("FGA_VERSION_CODE")?.toInt()
+
+// AGP has no per-build-type version fields, so the variant outputs get the value for their build type.
+androidComponents {
+    onVariants { variant ->
+        val beta = variant.buildType == "beta" || variant.buildType == "deviceTest"
+        val name = envVersionName ?: if (beta) betaVersionName else stableVersionName
+        val code = envVersionCode ?: if (beta) betaVersionCode else stableVersionCode
+        variant.outputs.forEach { output ->
+            output.versionName.set(name)
+            output.versionCode.set(code)
+        }
+    }
+}
+
 android {
     compileSdk = 37
 
@@ -97,8 +137,8 @@ android {
         applicationId = "io.github.fate_grand_automata"
         minSdk = 24
         targetSdk = 36
-        versionCode = System.getenv("FGA_VERSION_CODE")?.toInt() ?: 1
-        versionName = System.getenv("FGA_VERSION_NAME") ?: System.getenv("FGA_VERSION_CODE") ?: "0.1.0"
+        versionCode = envVersionCode ?: stableVersionCode
+        versionName = envVersionName ?: stableVersionName
         testInstrumentationRunner = "io.github.fate_grand_automata.qa.SupportDeviceTestRunner"
     }
 

@@ -11,8 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FGA_VERSION_NAME: 1.1.0
-  FGA_VERSION_CODE: 3082
   GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
 
 jobs:
@@ -36,12 +34,12 @@ jobs:
           apk=app/build/outputs/apk/ci/app-ci.apk
           "$build_tools/aapt" dump badging "$apk" > stable-apk-metadata.txt
           python3 - <<'PY'
-          import os
           from pathlib import Path
+          props = dict(line.split("=", 1) for line in Path("version.properties").read_text().splitlines() if "=" in line)
           metadata = Path("stable-apk-metadata.txt").read_text()
           identity = ("package: name='io.github.fate_grand_automata.cardcount' "
-                      f"versionCode='{os.environ['FGA_VERSION_CODE']}' "
-                      f"versionName='{os.environ['FGA_VERSION_NAME']}'")
+                      f"versionCode='{props['stable.versionCode']}' "
+                      f"versionName='{props['stable.versionName']}'")
           assert metadata.startswith(identity), metadata.splitlines()[0]
           assert "application-label:'FGA(mod)'" in metadata
           assert "native-code: 'armeabi-v7a' 'arm64-v8a'" in metadata or "native-code: 'arm64-v8a' 'armeabi-v7a'" in metadata
@@ -50,11 +48,16 @@ jobs:
           "$build_tools/apksigner" verify --verbose --print-certs "$apk" > stable-apk-signature.txt
           cat stable-apk-signature.txt
       - name: Name APK
-        run: cp app/build/outputs/apk/ci/app-ci.apk FGA-mod-${FGA_VERSION_NAME}-arm.apk
+        run: |
+          VERSION=$(grep '^stable.versionName=' version.properties | cut -d= -f2)
+          cp app/build/outputs/apk/ci/app-ci.apk "FGA-mod-${VERSION}-arm.apk"
+          sha256sum "FGA-mod-${VERSION}-arm.apk" > "FGA-mod-${VERSION}-arm.apk.sha256"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: FGA-stable-apk
-          path: FGA-mod-*-arm.apk
+          path: |
+            FGA-mod-*-arm.apk
+            FGA-mod-*-arm.apk.sha256
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: stable-apk-verification
