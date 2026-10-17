@@ -99,6 +99,7 @@ android {
         targetSdk = 36
         versionCode = System.getenv("FGA_VERSION_CODE")?.toInt() ?: 1
         versionName = System.getenv("FGA_VERSION_NAME") ?: System.getenv("FGA_VERSION_CODE") ?: "0.1.0"
+        testInstrumentationRunner = "io.github.fate_grand_automata.qa.SupportDeviceTestRunner"
     }
 
     signingConfigs {
@@ -146,13 +147,20 @@ android {
             applicationIdSuffix = ".beta"
             matchingFallbacks += listOf("ci", "release")
         }
+        // Isolated, non-minified target for signed on-device reader tests. No product UI or permissions.
+        create("deviceTest") {
+            initWith(getByName("beta"))
+            applicationIdSuffix = ".qa"
+            isMinifyEnabled = false
+            matchingFallbacks += listOf("beta", "ci", "release")
+        }
     }
     lint {
         abortOnError = false
         disable += "MissingTranslation"
     }
     // run tests in CI builds instad of debug
-    testBuildType = "ci"
+    testBuildType = if (providers.gradleProperty("fgaDeviceTests").orNull == "true") "deviceTest" else "ci"
 
     packaging {
         jniLibs {
