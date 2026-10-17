@@ -68,6 +68,27 @@ class BondTrackingTest {
         assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) { OcrText("NEXT 1,338,294", 99) })
     }
 
+    @Test fun `compact gain retry recovers JP parentheses while preserving confidence and conflicts`() {
+        for (bonus in listOf(372, 374)) {
+            val result = BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
+                if (options.horizontalScale < 1.0) OcrText("+365(+$bonus)", 91)
+                else OcrText("+365(4+$bonus)", 90) // Incomplete pair is never repaired by text substitution.
+            }
+            assertEquals(BondValue.Gain(365, bonus), result)
+        }
+        assertNull(BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
+            OcrText("+365(+372)", if (options.horizontalScale < 1.0) 84 else 40)
+        })
+        var calls = 0
+        assertNull(BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
+            when {
+                calls++ == 0 -> OcrText("+365(+374)", 91)
+                options.horizontalScale < 1.0 -> OcrText("+365(+372)", 91)
+                else -> OcrText("", 0)
+            }
+        })
+    }
+
     @Test fun `level width retry preserves two strong reads and refuses conflicting cap levels`() {
         assertEquals(7, BondReader.readLevel { OcrText("7", if (it.horizontalScale > 1.0) 92 else 80) })
         assertEquals(9, BondReader.readLevel { OcrText(if (it.horizontalScale > 1.0) "10" else "9", 95) })

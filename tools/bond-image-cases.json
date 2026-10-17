@@ -306,5 +306,61 @@
       ]
     ],
     "file": "docs/reference-images/Kr/bond-20261016-185717.png"
+  },
+  {
+    "name": "normal-jp-20261017-mission",
+    "server": "Jp",
+    "kind": "normal",
+    "expected": [
+      [
+        365,
+        372
+      ],
+      [
+        365,
+        372
+      ],
+      [
+        365,
+        374
+      ],
+      [
+        365,
+        261
+      ],
+      [
+        365,
+        261
+      ]
+    ],
+    "file": "docs/reference-images/Jp/bond-20261017-mission.png"
+  },
+  {
+    "name": "normal-jp-20261017-normal",
+    "server": "Jp",
+    "kind": "normal",
+    "expected": [
+      [
+        365,
+        372
+      ],
+      [
+        365,
+        372
+      ],
+      [
+        365,
+        374
+      ],
+      [
+        365,
+        261
+      ],
+      [
+        365,
+        261
+      ]
+    ],
+    "file": "docs/reference-images/Jp/bond-20261017-normal.png"
   }
 ]

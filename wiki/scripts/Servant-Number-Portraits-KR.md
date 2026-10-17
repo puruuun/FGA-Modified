@@ -42,16 +42,16 @@
 |---|---|---|
 | 앱 이름 | FGA(mod) | FGA(beta) |
 | 앱 ID | `io.github.fate_grand_automata.cardcount` | `io.github.fate_grand_automata.beta` |
-| 배포 | 정규 GitHub Release | GitHub Pre-release |
-| Obtainium | [정규판 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D) | [베타판 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.beta%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528beta%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Atrue%252C%255C%2522fallbackToOlderReleases%255C%2522%253Atrue%252C%255C%2522filterReleaseTitlesByRegEx%255C%2522%253A%255C%2522%255EFGA%255C%255C%255C%255C%2528beta%255C%255C%255C%255C%2529%255C%2522%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-beta-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D) |
+| 배포 | 정규 GitHub Release | 로컬 APK 직접 설치 |
+| Obtainium | [정규판 추가](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D) | 직접 설치 |
 
-Obtainium의 베타 설정은 사전 출시 포함, 릴리스 제목 `^FGA\(beta\)` 및 APK 이름 `^FGA-beta-.*-arm\.apk$`로 필터링합니다. 다른 정규판이 나중에 게시돼도 베타를 찾을 수 있도록 이전 릴리스 대체 검색을 켭니다. 두 채널은 앱 ID가 달라 동시에 등록할 수 있습니다.
+Obtainium은 정규판만 제공합니다. 개발 베타 APK는 컴퓨터에 저장하거나 블루스택에 직접 설치합니다.
 
-[정규판 설정](../../obtainium.json) · [베타판 설정](../../obtainium-beta.json) · [두 채널 가져오기 파일](../../obtainium-channels.json)
+[정규판 Obtainium 설정](../../obtainium.json)
 
 ## 개발 및 검증
 
-`./gradlew :app:assembleBeta`로 베타 APK를 만듭니다. `.github/workflows/beta.yml`은 앱·설정·스크립트·라이브러리 단위 테스트 후 APK를 생성합니다. **개발 베타는 별도 요청 없이 GitHub Release에 게시하지 않으며**, 컴퓨터에 저장하거나 블루스택에 업데이트 설치합니다. 기존 공개 베타 릴리스용 Obtainium 설정은 유지하지만 새 로컬 개발 APK를 자동 배포하지는 않습니다.
+`./gradlew :app:assembleBeta`로 베타 APK를 만듭니다. `.github/workflows/beta.yml`은 앱·설정·스크립트·라이브러리 단위 테스트 후 APK를 생성합니다. **개발 베타는 별도 요청 없이 GitHub Release에 게시하지 않으며**, 컴퓨터에 저장하거나 블루스택에 업데이트 설치합니다. 베타용 Obtainium 등록 링크와 설정은 제공하지 않습니다.
 
 단위 테스트는 언어 매핑과 일본어 대체, 내부 ID 기준 이름 연결, 동명 클래스 분리, 번호·부분 이름·전각 정규화, 예장 전용 자산, JP·KR·NA 순서와 첫 결과에서 중단, 지역 전용 폴더 분리, 이미지 URL·메타데이터 검증, 폴더 이름 변경과 이전 선택 호환성을 확인합니다.
 

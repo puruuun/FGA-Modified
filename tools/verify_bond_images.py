@@ -36,6 +36,10 @@ class Reader:
         fallback = source.split('val GAIN_FALLBACK_PROFILES =', 1)[1].split('val LEVEL_PROFILES', 1)[0]
         self.fallback_thresholds = [int(n) for n in re.search(r'listOf\(([^)]+)\)\.map', fallback)[1].split(',')]
         self.horizontal_scale = float(re.search(r'horizontalScale = ([0-9.]+)', fallback)[1])
+        compact = source.split('val GAIN_COMPACT_PROFILES =', 1)[1].split('val LEVEL_PROFILES', 1)[0]
+        self.compact_thresholds = [int(n) for n in re.search(r'listOf\(([^)]+)\)\.map', compact)[1].split(',')]
+        self.compact_scale = int(re.search(r'copy\(scale = ([0-9]+)', compact)[1])
+        self.compact_horizontal_scale = float(re.search(r'horizontalScale = ([0-9.]+)', compact)[1])
         self.api = tesserocr.PyTessBaseAPI(path=str(tessdata or ROOT/'app/src/main/assets/tessdata'), lang='eng', psm=7)
         self.templates = {}
 
@@ -74,8 +78,8 @@ class Reader:
     def text(self, im, box, level=False, server="Kr"):
         roi = self.crop(im, box)
         readings = []
-        def recognize(thresholds, horizontal_scale=1.0):
-            for scale in self.ocr_scales:
+        def recognize(thresholds, horizontal_scale=1.0, scales=None):
+            for scale in scales or self.ocr_scales:
                 if level and scale == 6: continue
                 for threshold in thresholds:
                     up = cv2.resize(roi, (round(roi.shape[1]*scale*horizontal_scale), roi.shape[0]*scale), interpolation=cv2.INTER_CUBIC)
@@ -106,6 +110,9 @@ class Reader:
         value = confirmed()
         if value is None:
             recognize(self.jp_thresholds if level else self.fallback_thresholds, self.horizontal_scale)
+            value = confirmed()
+        if value is None and not level:
+            recognize(self.compact_thresholds, self.compact_horizontal_scale, [self.compact_scale])
             value = confirmed()
         return value, readings
 

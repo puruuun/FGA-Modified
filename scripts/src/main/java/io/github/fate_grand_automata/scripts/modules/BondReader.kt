@@ -33,6 +33,12 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
                     rawGrayscale = threshold == 0, horizontalScale = 1.4)
             }
         }
+        // Compact rendering separates the JP parenthesis/plus glyphs that wide retries can merge.
+        // Use it only after both existing passes fail, and retain all earlier conflict evidence.
+        val GAIN_COMPACT_PROFILES = listOf(0, 60, 140).map { threshold ->
+            GAIN_PROFILES.first().copy(scale = 2, threshold = threshold / 255.0,
+                rawGrayscale = threshold == 0, horizontalScale = 0.8)
+        }
         val LEVEL_PROFILES = JP_GAIN_PROFILES.filter { it.scale != 6 }.map { it.copy(allowedCharacters = "0123456789 ") }
         private val gain = Regex("""\+?(\d{1,3}(?:,\d{3})*|\d+)\(\+?(\d{1,3}(?:,\d{3})*|\d+)\)""")
 
@@ -47,7 +53,9 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
         internal fun readGain(profiles: List<TextLineOcrOptions>, read: (TextLineOcrOptions) -> OcrText): BondValue.Gain? {
             val readings = profiles.map(read)
             // Retain primary evidence: a strong conflicting number must still veto the retry.
-            return confirmedGain(readings) ?: confirmedGain(readings + GAIN_FALLBACK_PROFILES.map(read))
+            confirmedGain(readings)?.let { return it }
+            val widened = readings + GAIN_FALLBACK_PROFILES.map(read)
+            return confirmedGain(widened) ?: confirmedGain(widened + GAIN_COMPACT_PROFILES.map(read))
         }
 
         internal fun readLevel(read: (TextLineOcrOptions) -> OcrText): Int? {
