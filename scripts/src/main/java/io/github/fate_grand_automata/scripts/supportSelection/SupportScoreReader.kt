@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.supportSelection
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
@@ -31,6 +32,7 @@ class SupportScoreReader @Inject constructor(
         const val OCR_LARGE_SCALE = 6
         const val OCR_THRESHOLD = 100.0 / 255.0
         const val OCR_BRIGHT_THRESHOLD = 110.0 / 255.0
+        const val OCR_DARK_THRESHOLD = 80.0 / 255.0
         const val OCR_PADDING = 12
         // JP screenshot field crops: true matches >= .96; negatives <= .85.
         // Templates include the slash, so an ordinary +16 or +62 cannot supply a compound field.
@@ -52,6 +54,11 @@ class SupportScoreReader @Inject constructor(
             OCR_OPTIONS.copy(scale = OCR_LARGE_SCALE),
             OCR_OPTIONS.copy(scale = OCR_LARGE_SCALE, threshold = OCR_BRIGHT_THRESHOLD)
         )
+        // KR blue score panels lose their outlined digits at the primary thresholds.
+        // Retry only inconclusive fields, keeping all primary conflict evidence.
+        val OCR_DARK_PROFILES = listOf(OCR_SCALE, OCR_LARGE_SCALE).map {
+            OCR_OPTIONS.copy(scale = it, threshold = OCR_DARK_THRESHOLD)
+        }
         // At 720p OCR can omit the small plus sign. The slash and both complete
         // numeric fields are mandatory; their order, not the plus glyph, identifies the score.
         private val compoundScore = Regex("""\+?(\d{1,3})/\+?(\d{1,3})""")
@@ -103,7 +110,14 @@ class SupportScoreReader @Inject constructor(
 
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
-            else OCR_PROFILES.map { ocr.detectTextLine(pattern, it) }
+            else {
+                val primary = OCR_PROFILES.map { ocr.detectTextLine(pattern, it) }
+                val known = confirmed(primary)
+                if (known != null && (known.display == SupportScoreDisplay.Ordinary ||
+                        ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null)))) primary
+                else if (prefs.gameServer is GameServer.Kr) primary + OCR_DARK_PROFILES.map { ocr.detectTextLine(pattern, it) }
+                else primary
+            }
         }
         // A clipped number is not evidence that Grand is absent.
         if (results.isEmpty()) return SupportScores()

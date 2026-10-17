@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FGA_VERSION_NAME: 1.2.1-beta.2
-  FGA_VERSION_CODE: 1002102
+  FGA_VERSION_NAME: 1.2.1-beta.3
+  FGA_VERSION_CODE: 1002103
   GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
 
 jobs:

@@ -2,11 +2,15 @@ package io.github.fate_grand_automata.qa
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.view.KeyEvent
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.imaging.DroidCvPattern
 import io.github.fate_grand_automata.imaging.TesseractOcrService
@@ -27,7 +31,8 @@ import kotlin.math.abs
 import kotlin.time.Duration
 
 /** Manual Android tests using the production readers, selectors, ImageLoader and OCR.
- * Only the skill-display switch can inject input, and only in explicitly live cases.
+ * Live reader cases can only tap the skill-display switch. An explicit inputText
+ * fixture can paste Unicode into a focused field for manual name-search tests.
  * The 16:9 capture/coordinate adapter is test code; no test controls ship in the app.
  */
 class SupportDeviceTestRunner : Instrumentation() {
@@ -45,6 +50,19 @@ class SupportDeviceTestRunner : Instrumentation() {
         try {
             check(OpenCVLoader.initLocal())
             val input = JSONObject(fixture(arguments.getString("cases")!!).toString(Charsets.UTF_8))
+            // Unicode test input through Android's normal paste shortcut; no IME or OS setting changes.
+            if (input.has("inputText")) {
+                (targetContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+                    .setPrimaryClip(ClipData.newPlainText("FGA device test", input.getString("inputText")))
+                for (action in listOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+                    val now = SystemClock.uptimeMillis()
+                    check(uiAutomation.injectInputEvent(KeyEvent(now, now, action, KeyEvent.KEYCODE_V, 0,
+                        KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON), true))
+                }
+                report.put("passed", true).put("textPasted", true)
+                finish(Activity.RESULT_OK, Bundle().apply { putString("report", report.toString()) })
+                return
+            }
             val cases = input.getJSONArray("cases"); val results = JSONArray()
             for (index in 0 until cases.length()) {
                 val case = cases.getJSONObject(index)

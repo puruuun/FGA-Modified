@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreDisplay
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
@@ -33,6 +34,7 @@ class SupportScoreReaderTest {
             .associateWith { mockk<Pattern>() }
         val digits = SupportScoreReader.GRAND_TEMPLATES.associateWith { mockk<Pattern>(relaxed = true) }
         init {
+            every { api.prefs.gameServer } returns GameServer.Jp.Original
             every { api.images } returns images
             every { images[Images.SupportScore62, null] } returns legacy
             every { with(api) { region.exists(legacy, any(), any()) } } returns false
@@ -191,6 +193,43 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(any(),any()) } throws IllegalStateException("score OCR failed")
         kotlin.test.assertFailsWith<IllegalStateException> { f.reader.read(f.bounds,false,true) }
         verify(exactly=2) { f.crop.close() }
+    }
+
+    @Test
+    fun `KR dark-panel retry recovers exact ordinary scores without inventing Grand`() {
+        for (number in listOf(0, 61, 62)) {
+            val f = Fixture()
+            every { f.api.prefs.gameServer } returns GameServer.Kr
+            every { f.ocr.detectTextLine(f.crop, any()) } answers {
+                if (secondArg<io.github.lib_automata.TextLineOcrOptions>().threshold == SupportScoreReader.OCR_DARK_THRESHOLD)
+                    OcrText("+$number", 96) else OcrText("", 0)
+            }
+            val scores = f.reader.read(f.bounds, true, true)
+            assertThat(scores).isEqualTo(SupportScores(number, null, SupportScoreDisplay.Ordinary))
+            assertThat(SupportScoreSelection.matches(scores, true, false)).isEqualTo(number == 62)
+            assertThat(SupportScoreSelection.matches(scores, true, true)).isEqualTo(false)
+            verify(exactly = 1) { f.crop.close() }
+        }
+    }
+
+    @Test
+    fun `dark-panel retry retains primary conflicts and requires two strong readings`() {
+        val f = Fixture()
+        every { f.api.prefs.gameServer } returns GameServer.Kr
+        var calls = 0
+        every { f.ocr.detectTextLine(f.crop, any()) } answers {
+            when {
+                calls++ == 0 -> OcrText("+61", 92)
+                secondArg<io.github.lib_automata.TextLineOcrOptions>().threshold == SupportScoreReader.OCR_DARK_THRESHOLD -> OcrText("+62", 96)
+                else -> OcrText("", 0)
+            }
+        }
+        assertThat(SupportScoreSelection.matches(f.reader.read(f.bounds, true, true), true, false)).isEqualTo(false)
+        every { f.ocr.detectTextLine(f.crop, any()) } answers {
+            if (secondArg<io.github.lib_automata.TextLineOcrOptions>().threshold == SupportScoreReader.OCR_DARK_THRESHOLD)
+                OcrText("+62", 84) else OcrText("", 0)
+        }
+        assertThat(SupportScoreSelection.matches(f.reader.read(f.bounds, true, true), true, false)).isEqualTo(false)
     }
 
     @Test

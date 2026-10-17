@@ -34,7 +34,7 @@ class Reader:
         self.layout = constants(SCRIPTS/'locations/SupportScoreLayout.kt')
         src = (SCRIPTS/'supportSelection/SupportScoreReader.kt').read_text()
         self.settings = {n:value(src,n) for n in ['MIN_OCR_CONFIDENCE','MIN_CONFIRM_CONFIDENCE','MIN_AGREEMENT',
-                        'OCR_SCALE','OCR_LARGE_SCALE','OCR_THRESHOLD','OCR_BRIGHT_THRESHOLD','OCR_PADDING']}
+                        'OCR_SCALE','OCR_LARGE_SCALE','OCR_THRESHOLD','OCR_BRIGHT_THRESHOLD','OCR_DARK_THRESHOLD','OCR_PADDING']}
         self.similarity = constants(SCRIPTS/'supportSelection/SupportScoreSelection.kt')['SCORE_SIMILARITY']
         self.regex = re.compile(re.search(r'compoundScore = Regex\("""([^\"]+)"""\)',src)[1])
         self.ordinary_regex = re.compile(re.search(r'ordinaryScore = Regex\("""([^\"]+)"""\)',src)[1])
@@ -42,6 +42,7 @@ class Reader:
         s = self.settings
         self.profiles = [(int(s['OCR_SCALE']),s['OCR_THRESHOLD']), (int(s['OCR_SCALE']),s['OCR_BRIGHT_THRESHOLD']),
                          (int(s['OCR_LARGE_SCALE']),s['OCR_THRESHOLD']), (int(s['OCR_LARGE_SCALE']),s['OCR_BRIGHT_THRESHOLD'])]
+        self.dark_profiles = [(int(s['OCR_SCALE']),s['OCR_DARK_THRESHOLD']), (int(s['OCR_LARGE_SCALE']),s['OCR_DARK_THRESHOLD'])]
         self.templates = {server:cv2.imread(str(ROOT/'app/src/main/assets'/folder/'support_score_62.png'),0)
                           for server,folder in [('Kr','Kr'),('Jp','En')]}
 
@@ -52,33 +53,40 @@ class Reader:
         if legacy and not check_grand:
             return {'class':62,'grand':None,'display':'Ordinary','readings':[],'legacy':True}
         readings=[]
-        for scale,threshold in self.profiles:
-            up=cv2.resize(roi,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
-            prepared=fill_text(cv2.threshold(up,threshold*255,255,cv2.THRESH_BINARY)[1].copy())
-            pad=int(self.settings['OCR_PADDING'])
-            prepared=cv2.copyMakeBorder(prepared,pad,pad,pad,pad,cv2.BORDER_CONSTANT,value=255)
-            self.api.SetVariable('tessedit_char_whitelist',self.whitelist)
-            self.api.SetImage(Image.fromarray(prepared).convert('RGB'))
-            text,confidence=self.api.GetUTF8Text().strip(),self.api.MeanTextConf()
-            self.api.Clear()
-            match=self.regex.fullmatch(re.sub(r'\s+','',text))
-            ordinary=self.ordinary_regex.fullmatch(re.sub(r'\s+','',text))
-            parsed=(tuple(map(int,match.groups())) if match else (int(ordinary[1]),None) if ordinary else None) if confidence>=self.settings['MIN_OCR_CONFIDENCE'] else None
-            readings.append({'scale':scale,'threshold':threshold,'text':text,'confidence':confidence,'parsed':parsed,
-                             'display':'Compound' if match else 'Ordinary' if ordinary else 'Unknown'})
+        def recognize(profiles):
+            for scale,threshold in profiles:
+                up=cv2.resize(roi,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
+                prepared=fill_text(cv2.threshold(up,threshold*255,255,cv2.THRESH_BINARY)[1].copy())
+                pad=int(self.settings['OCR_PADDING'])
+                prepared=cv2.copyMakeBorder(prepared,pad,pad,pad,pad,cv2.BORDER_CONSTANT,value=255)
+                self.api.SetVariable('tessedit_char_whitelist',self.whitelist)
+                self.api.SetImage(Image.fromarray(prepared).convert('RGB'))
+                text,confidence=self.api.GetUTF8Text().strip(),self.api.MeanTextConf()
+                self.api.Clear()
+                match=self.regex.fullmatch(re.sub(r'\s+','',text))
+                ordinary=self.ordinary_regex.fullmatch(re.sub(r'\s+','',text))
+                parsed=(tuple(map(int,match.groups())) if match else (int(ordinary[1]),None) if ordinary else None) if confidence>=self.settings['MIN_OCR_CONFIDENCE'] else None
+                readings.append({'scale':scale,'threshold':threshold,'text':text,'confidence':confidence,'parsed':parsed,
+                                 'display':'Compound' if match else 'Ordinary' if ordinary else 'Unknown'})
+        def consensus():
+            display='Compound' if any('/' in r['text'] for r in readings) else 'Ordinary'
+            def field(i):
+                known=[r for r in readings if r['parsed'] is not None and r['display']==display and r['parsed'][i] is not None]
+                distinct={r['parsed'][i] for r in known}
+                if len(distinct)!=1:return None
+                n=next(iter(distinct))
+                return n if sum(r['confidence']>=self.settings['MIN_CONFIRM_CONFIDENCE'] and r['parsed'][i]==n for r in known)>=self.settings['MIN_AGREEMENT'] else None
+            return {'class':field(0),'grand':field(1),'display':display,'readings':readings,'legacy':bool(legacy)}
+        def known(result):
+            return (result['class'] is not None or result['grand'] is not None) and (result['display']=='Ordinary' or
+                ((not check_class or result['class'] is not None) and (not check_grand or result['grand'] is not None)))
+        recognize(self.profiles)
+        result=consensus()
+        if not known(result) and server == 'Kr':
+            recognize(self.dark_profiles)
+            result=consensus()
+        if known(result):return result
         compound=any('/' in r['text'] for r in readings)
-        display='Compound' if compound else 'Ordinary'
-        def field(i):
-            known=[r for r in readings if r['parsed'] is not None and r['display']==display and r['parsed'][i] is not None]
-            distinct={r['parsed'][i] for r in known}
-            if len(distinct)!=1:return None
-            n=next(iter(distinct))
-            return n if sum(r['confidence']>=self.settings['MIN_CONFIRM_CONFIDENCE'] and r['parsed'][i]==n for r in known)>=self.settings['MIN_AGREEMENT'] else None
-        result={'class':field(0),'grand':field(1),'display':display,'readings':readings,'legacy':bool(legacy)}
-        known=result['class'] is not None or result['grand'] is not None
-        if known and (display=='Ordinary' or ((not check_class or result['class'] is not None) and
-                                             (not check_grand or result['grand'] is not None))):
-            return result
         from validate_support_scores import detects, CLASS, GRAND
         visual_class=check_class and detects(roi,CLASS)
         visual_grand=check_grand and detects(roi,GRAND,verify_digit=True)

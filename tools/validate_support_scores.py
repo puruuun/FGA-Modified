@@ -1,4 +1,4 @@
-"""Pixel regression for anonymous crops from the JP support screen.
+"""Pixel regression for anonymous crops from the JP and KR support screens.
 
 Run with tools/np-level-vision-requirements.txt (OpenCV 4.11.0, Tesseract 5.5.1).
 No emulator connection, image downloads or application changes are performed.
@@ -46,9 +46,13 @@ def main():
     api = tesserocr.PyTessBaseAPI(path=str(ROOT / "app/src/main/assets/tessdata"), lang="eng", psm=7)
     reader = Reader(api)
     samples = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+    regional = ROOT / "docs/reference-images/Kr/support-scores"
+    if regional.exists():
+        samples += [dict(sample, server="Kr") for sample in json.loads((regional / "manifest.json").read_text(encoding="utf-8"))]
     failures = []
     for sample in samples:
-        image = cv2.imread(str(FIXTURES / sample["file"]), cv2.IMREAD_GRAYSCALE)
+        folder = regional if sample.get("server") == "Kr" else FIXTURES
+        image = cv2.imread(str(folder / sample["file"]), cv2.IMREAD_GRAYSCALE)
         assert image is not None and image.shape == (30, 55), sample["file"]
         grand16 = detects(image, GRAND, verify_digit=True)
         class62 = detects(image, CLASS)
@@ -56,8 +60,12 @@ def main():
             if detected != sample[field]:
                 failures.append({"file": sample["file"], "field": field,
                                  "expected": sample[field], "detected": detected})
+        if "classScore" in sample:
+            numeric = reader.read(image, sample.get('server', 'Jp'), True, True)
+            if numeric['class'] != sample['classScore'] or numeric['grand'] is not None:
+                failures.append({"file": sample['file'], "expected_class": sample['classScore'], "actual": numeric})
         for class_on, grand_on in ((False, False), (True, False), (False, True), (True, True)):
-            actual = policy(reader.read(image, 'Jp', class_on, grand_on), class_on, grand_on)
+            actual = policy(reader.read(image, sample.get('server', 'Jp'), class_on, grand_on), class_on, grand_on)
             expected = (not class_on or sample["compactClass62"] or sample["ordinaryClass62"]) and (
                 not grand_on or sample["grand16"])
             if actual != expected:
