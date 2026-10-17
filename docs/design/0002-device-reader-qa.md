@@ -1,6 +1,6 @@
 # 0002 기기 판독 검증 일원화
 
-- 상태: 구현 대기
+- 상태: 완료 (1fb8eff0)
 - 선행: 0001 (Main CI가 동작해야 함)
 - 예상 규모: androidTest 코드 분리·확장, 케이스 파일 추가, 호스트 실행 스크립트 1개. 단계별로 3개 커밋.
 
@@ -176,3 +176,4 @@ py -3 tools/device-qa/run.py [--serial 127.0.0.1:5555] [--build] [--suite suppor
 - **R-5. NP 448×48 skip 3개는 그대로 둡니다.** 원본 전체 화면이 저장소에 없어서 다시 자를 수 없습니다. 이후 KR 서포트 화면을 새로 모을 때 대체합니다.
 - **R-6. `run.py`의 `gradlew.bat` 호출과 기기 파일 전송은 설계 범위 안입니다.** D-6은 서드파티 패키지를 쓰지 말라는 뜻입니다. import가 표준 라이브러리뿐인 것을 확인했습니다.
 - **R-7. 아직 안 한 필수 항목**: D-10(각 `tools/*.py` docstring 한 줄), 4.5의 `docs/reference-images/README.md`, `tools/README.md`의 bond·questItems 실행법, `docs/agents/automation-scripts.md`의 한 줄, 5절의 출처별 라벨 수·케이스 수 표.
+- **R-8. questItems 8건은 skip으로 남깁니다.** 저장소에 없는 원본 전체 화면이 필요합니다. 후속 작업으로 원본을 받아 전체 화면 케이스를 만들 때 대체합니다.

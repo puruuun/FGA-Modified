@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream
 import java.lang.reflect.Proxy
 import kotlin.time.Duration
 
-/** Serves one fixture case to the production readers: a 16:9 screenshot, fixed Region coordinates and a cloned OCR. */
+/** Serves one fixture case to the production readers: a screenshot scaled to 720 high (aspect kept), Region coordinates from the product transform formulas, and a cloned OCR. */
 internal class FixtureApi(
     private val runner: SupportDeviceTestRunner,
     internal val case: JSONObject,
