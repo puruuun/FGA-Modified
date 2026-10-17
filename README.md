@@ -16,6 +16,8 @@
 
 Obtainium은 정규판만 제공합니다. [정규판 설정 파일](obtainium.json)을 가져와 등록할 수 있습니다. 개발 베타 APK는 컴퓨터에 저장하거나 블루스택에 직접 설치합니다.
 
+설치 출처: GitHub Releases와 Obtainium 외의 곳에서 받은 APK는 설치하지 마세요.
+
 [기존 기능 상세 안내](wiki/scripts/Modified-Features-KR.md#installation) · [서번트 번호 이미지 생성 안내](wiki/scripts/Servant-Number-Portraits-KR.md)
 
 Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 수정판은 업데이트 설치할 수 있습니다.

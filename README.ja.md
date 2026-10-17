@@ -14,6 +14,8 @@
 
 Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています。以前の改変版から上書き更新できます。
 
+インストール元: GitHub ReleasesとObtainium以外から入手したAPKはインストールしないでください。
+
 ## 追加・変更した機能
 
 | 機能 | 概要 |

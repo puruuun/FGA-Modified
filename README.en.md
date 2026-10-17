@@ -14,6 +14,8 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 
 Supports Android 7+ ARM devices (arm64-v8a / armeabi-v7a). Existing modified builds can be updated in place.
 
+Install source: do not install APKs from anywhere other than GitHub Releases and Obtainium.
+
 ## Added and modified features
 
 | Feature | Summary |
