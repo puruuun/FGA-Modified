@@ -1,0 +1,525 @@
+{
+  "schema": 1,
+  "suite": "questItems",
+  "cases": [
+    {
+      "name": "Jp-dialog-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-off-close.png",
+          "region720": [
+            485,
+            520,
+            310,
+            87
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-off-dialog.png",
+          "region720": [
+            515,
+            365,
+            350,
+            82
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-off-heading.png",
+          "region720": [
+            380,
+            80,
+            520,
+            80
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Dialog",
+        "storm_on": false,
+        "tea_on": false
+      }
+    },
+    {
+      "name": "Jp-dialog-on",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-on-close.png",
+          "region720": [
+            485,
+            520,
+            310,
+            87
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-on-dialog.png",
+          "region720": [
+            515,
+            365,
+            350,
+            82
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-on-heading.png",
+          "region720": [
+            380,
+            80,
+            520,
+            80
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-dialog-on-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Dialog",
+        "storm_on": true,
+        "tea_on": true
+      }
+    },
+    {
+      "name": "Jp-native-teapot-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-native-teapot-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-native-teapot-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Jp-storm-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-storm-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-storm-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "StormPod",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Jp-storm-on",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-storm-on-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-storm-on-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "StormPod",
+        "on": true
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Jp-teapot-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-teapot-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-teapot-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Jp-teapot-on",
+      "suite": "questItems",
+      "server": "Jp",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Jp/quest-items-teapot-on-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Jp/quest-items-teapot-on-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": true
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Kr-dialog-on",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-dialog-on-close.png",
+          "region720": [
+            485,
+            520,
+            310,
+            87
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-dialog-on-dialog.png",
+          "region720": [
+            515,
+            365,
+            350,
+            82
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-dialog-on-heading.png",
+          "region720": [
+            380,
+            80,
+            520,
+            80
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-dialog-on-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Dialog",
+        "storm_on": true,
+        "tea_on": true
+      }
+    },
+    {
+      "name": "Kr-native-dialog-off",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-close.png",
+          "region720": [
+            485,
+            520,
+            310,
+            87
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-dialog.png",
+          "region720": [
+            515,
+            365,
+            350,
+            82
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-heading.png",
+          "region720": [
+            380,
+            80,
+            520,
+            80
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Dialog",
+        "storm_on": false,
+        "tea_on": false
+      }
+    },
+    {
+      "name": "Kr-storm-off",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-storm-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-storm-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "StormPod",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Kr-teapot-off",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-teapot-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-teapot-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Kr-window-dialog-off",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-close.png",
+          "region720": [
+            485,
+            520,
+            310,
+            87
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-dialog.png",
+          "region720": [
+            515,
+            365,
+            350,
+            82
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-heading.png",
+          "region720": [
+            380,
+            80,
+            520,
+            80
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Dialog",
+        "storm_on": false,
+        "tea_on": false
+      }
+    },
+    {
+      "name": "Kr-window-teapot-off",
+      "suite": "questItems",
+      "server": "Kr",
+      "frame": "crop",
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-teapot-off-main.png",
+          "region720": [
+            710,
+            634,
+            260,
+            79
+          ]
+        },
+        {
+          "file": "docs/reference-images/Kr/quest-items-window-teapot-off-party-heading.png",
+          "region720": [
+            880,
+            0,
+            400,
+            85
+          ]
+        }
+      ],
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      },
+      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    }
+  ]
+}

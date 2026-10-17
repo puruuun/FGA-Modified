@@ -23,8 +23,7 @@
           25,
           1
         ]
-      ],
-      "skip": "aspect: 1296x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      ]
     },
     {
       "name": "normal-kr",
@@ -44,8 +43,7 @@
           43
         ],
         "MAX"
-      ],
-      "skip": "aspect: 1305x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      ]
     },
     {
       "name": "normal-jp",
@@ -62,8 +60,7 @@
         "MAX",
         "MAX",
         "MAX"
-      ],
-      "skip": "aspect: 1287x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      ]
     },
     {
       "name": "kr7",
@@ -72,8 +69,7 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr7.png",
       "expected_level": 7,
-      "expected_column": null,
-      "skip": "aspect: 1284x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected_column": null
     },
     {
       "name": "kr10",
@@ -82,8 +78,7 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr10.png",
       "expected_level": 10,
-      "expected_column": null,
-      "skip": "aspect: 1561x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected_column": null
     },
     {
       "name": "kr11",
@@ -92,8 +87,7 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr11.png",
       "expected_level": 11,
-      "expected_column": null,
-      "skip": "aspect: 1561x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected_column": null
     },
     {
       "name": "jp12",
@@ -102,8 +96,7 @@
       "kind": "popup",
       "file": "docs/reference-images/Jp/bond-jp12.png",
       "expected_level": 12,
-      "expected_column": 2,
-      "skip": "aspect: 1279x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected_column": 2
     },
     {
       "name": "jp16",
@@ -120,8 +113,7 @@
       "server": "Kr",
       "kind": "other",
       "file": "docs/reference-images/Kr/bond-party-kr1.png",
-      "expected": null,
-      "skip": "aspect: 1305x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected": null
     },
     {
       "name": "party-jp1-not-a-bond-result",
@@ -129,8 +121,7 @@
       "server": "Jp",
       "kind": "other",
       "file": "docs/reference-images/Jp/bond-party-jp1.png",
-      "expected": null,
-      "skip": "aspect: 1287x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected": null
     },
     {
       "name": "party-jp3-not-a-bond-result",
@@ -138,8 +129,7 @@
       "server": "Jp",
       "kind": "other",
       "file": "docs/reference-images/Jp/bond-party-jp3.png",
-      "expected": null,
-      "skip": "aspect: 1279x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      "expected": null
     },
     {
       "name": "normal-kr-20261016-164241",
@@ -307,8 +297,7 @@
           1830,
           1976
         ]
-      ],
-      "skip": "aspect: 1311x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+      ]
     },
     {
       "name": "normal-kr-20261016-185717",

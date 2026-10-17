@@ -26,7 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
-KNOWN_SUITES = {"support", "bond"}
+KNOWN_SUITES = {"support", "bond", "questItems"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
@@ -121,6 +121,8 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> tuple[str, 
     for case in staged.get("cases", []):
         if "file" in case and not case["file"].startswith("/"):
             case["file"] = push(case["file"])
+        for piece in case.get("pieces", []):
+            piece["file"] = push(piece["file"])
     for key, files in staged.get("imports", {}).items():
         staged["imports"][key] = [push(f) if not f.startswith("/") else f for f in files]
     local = Path(f"build/device-qa-staged-{case_file.stem}.json")
@@ -169,7 +171,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:
         lines.append(f"| {r['name']} | {r.get('ocrCalls', '-')} | {r.get('ocrMs', '-')} | {r.get('elapsedMs', '-')} |")
-    (out_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (out_dir / f"summary-{suite}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return not report.get("error") and not failed and bool(report.get("passed"))
 
 
@@ -210,8 +212,10 @@ def main() -> int:
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped)
-        print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / 'summary.md'}")
+        print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / f'summary-{suite}.md'}")
         overall = overall and ok
+    # summary.md joins every suite summary so one file shows the whole run.
+    (out_dir / "summary.md").write_text("".join((out_dir / f"summary-{s}.md").read_text(encoding="utf-8") for s in suites), encoding="utf-8")
     return 0 if overall else 1
 
 

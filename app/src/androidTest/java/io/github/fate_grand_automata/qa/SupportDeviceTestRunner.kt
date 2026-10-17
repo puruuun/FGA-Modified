@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.KeyEvent
 import io.github.fate_grand_automata.qa.suites.verifyBond
+import io.github.fate_grand_automata.qa.suites.verifyQuestItems
 import io.github.fate_grand_automata.qa.suites.verifySupport
 import org.json.JSONArray
 import org.json.JSONObject
@@ -59,6 +60,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                     result.put("actual", when (case.optString("suite", "support")) {
                         "support" -> api.verifySupport()
                         "bond" -> api.verifyBond()
+                        "questItems" -> api.verifyQuestItems()
                         else -> error("Unknown suite")
                     })
                     api.checkCoverage()

@@ -50,17 +50,27 @@ internal class FixtureApi(
         (0 until files.length()).map { ByteArrayInputStream(runner.fixture(files.getString(it))) }
     } as IStorageProvider
     override val images = ImageLoader(storage, prefs, runner.targetContext, colors)
+    /** Width of the 720p-high frame, keeping the source aspect ratio. Crops and live captures use 16:9. */
+    private val width720: Int = if (live || isCrop) 1280 else {
+        val bytes = runner.fixture(case.getString("file"))
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        check(options.outWidth > 0 && options.outHeight > 0) { "fixture is not an image" }
+        options.outWidth * 720 / options.outHeight
+    }
+    // Same formulas as ScriptAreaTransforms: the script area is 1440 tall and as wide as the frame.
+    private val area = Region(0, 0, width720 * 2, 1440)
     private val transforms = object : IScriptAreaTransforms {
-        override val scriptArea = Region(0, 0, 2560, 1440)
-        override val isWide = false
+        override val scriptArea = area
+        override val isWide = area.size.isWide()
         override val gameServer = server
         override val canLongSwipe = false
-        override fun Location.xFromCenter() = this + Location(1280, 0)
-        override fun Region.xFromCenter() = this + Location(1280, 0)
-        override fun Location.xFromRight() = this + Location(2560, 0)
-        override fun Region.xFromRight() = this + Location(2560, 0)
-        override fun Location.yFromBottom() = this + Location(0, 1440)
-        override fun Region.yFromBottom() = this + Location(0, 1440)
+        override fun Location.xFromCenter() = this + Location(area.center.x, 0)
+        override fun Region.xFromCenter() = this + Location(area.center.x, 0)
+        override fun Location.xFromRight() = this + Location(area.right, 0)
+        override fun Region.xFromRight() = this + Location(area.right, 0)
+        override fun Location.yFromBottom() = this + Location(0, area.bottom)
+        override fun Region.yFromBottom() = this + Location(0, area.bottom)
     }
     override val locations = Locations(transforms, FPLocations(transforms), LotteryLocations(transforms), SupportScreenLocations(transforms),
         AttackScreenLocations(transforms), BattleScreenLocations(transforms, MasterLocations(transforms, images, this, messages)),
@@ -69,7 +79,7 @@ internal class FixtureApi(
     private fun clearFrame() { gray?.close(); color?.close(); gray = null; color = null; frame = null }
     private fun screenshot(): Pattern {
         if (frame == null) {
-            frame = if (isCrop) composeCrop(runner.fixture(case.getString("file"))) else if (!live) runner.fixture(case.getString("file")) else {
+            frame = if (isCrop) composeCrop() else if (!live) runner.fixture(case.getString("file")) else {
                 val bitmap = checkNotNull(runner.uiAutomation.takeScreenshot())
                 try { ByteArrayOutputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it); it.toByteArray() } }
                 finally { bitmap.recycle() }
@@ -77,8 +87,10 @@ internal class FixtureApi(
         }
         (if (colors.isColor) color else gray)?.let { return it }
         val picture = ByteArrayInputStream(frame!!).use { DroidCvPattern(it, colors.isColor) }
-        check(picture.width * 9 == picture.height * 16) { "Tests require a 16:9 viewport" }
-        val resized = if (picture.width == 1280) picture else picture.use { it.resize(Size(1280, 720)) }
+        // Scale to 720 high and keep the aspect ratio, so 1440p coordinates map the same way as in the app.
+        val targetWidth = picture.width * 720 / picture.height
+        val resized = if (picture.width == targetWidth && picture.height == 720) picture
+            else picture.use { it.resize(Size(targetWidth, 720)) }
         if (colors.isColor) color = resized else gray = resized
         return resized
     }
@@ -117,28 +129,47 @@ internal class FixtureApi(
     override fun Region.detectText(outlinedText: Boolean) = error("Not a support-reader operation")
     override fun Map<Pattern, Region>.exists(timeout: Duration, similarity: Double?, requireAll: Boolean) =
         if (requireAll) all { (p, r) -> r.exists(p, timeout, similarity) } else any { (p, r) -> r.exists(p, timeout, similarity) }
-    /** Places the crop at region720's origin on a black 1280x720 canvas; reads past the region fail in [checkCoverage]. */
-    private fun composeCrop(piece: ByteArray): ByteArray {
-        val region = checkNotNull(region720) { "crop case needs region720" }
-        val bitmap = checkNotNull(BitmapFactory.decodeByteArray(piece, 0, piece.size)) { "crop image unreadable" }
+    /**
+     * Places each crop at its region720 origin on a black 1280x720 canvas. A case with "pieces" composes several
+     * crops of one screen; a single crop uses "file" and "region720". Reads outside every piece fail in [checkCoverage].
+     */
+    private fun composeCrop(): ByteArray {
         val canvas = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
-        Canvas(canvas).apply { drawColor(Color.BLACK); drawBitmap(bitmap, region.x.toFloat(), region.y.toFloat(), null) }
-        bitmap.recycle()
+        Canvas(canvas).drawColor(Color.BLACK)
+        for ((file, region) in cropPieces()) {
+            val bytes = runner.fixture(file)
+            val bitmap = checkNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)) { "crop image unreadable: $file" }
+            // Multi-piece screens are reference ROIs that must match their region exactly; single crops are checked by coverage.
+            if (case.has("pieces")) check(bitmap.width == region.width && bitmap.height == region.height) {
+                "crop $file is ${bitmap.width}x${bitmap.height}, region720 is ${region.width}x${region.height}"
+            }
+            Canvas(canvas).drawBitmap(bitmap, region.x.toFloat(), region.y.toFloat(), null)
+            bitmap.recycle()
+        }
         try { return ByteArrayOutputStream().use { canvas.compress(Bitmap.CompressFormat.PNG, 100, it); it.toByteArray() } }
         finally { canvas.recycle() }
     }
 
-    /** Fails a crop case that read outside region720 or touched a masked area (D-4). */
+    /** (device-relative repo path, region720) for every crop piece of this case. */
+    private fun cropPieces(): List<Pair<String, Region>> =
+        case.optJSONArray("pieces")?.let { list ->
+            (0 until list.length()).map { list.getJSONObject(it).let { p -> p.getString("file") to p.getJSONArray("region720").toRegion() } }
+        } ?: listOf(case.getString("file") to checkNotNull(region720) { "crop case needs region720" })
+
+    /** Fails a crop case that read outside every crop region or touched a masked area (D-4). */
     fun checkCoverage() {
         if (!isCrop) return
-        val region = checkNotNull(region720)
+        val regions = cropPieces().map { it.second }
         for (read in readRegions) {
-            check(read.x >= region.x && read.y >= region.y && read.x + read.width <= region.x + region.width && read.y + read.height <= region.y + region.height) {
-                "fixture does not cover region: read $read outside $region"
+            check(regions.any { it.contains(read) }) {
+                "fixture does not cover region: read $read outside ${regions.joinToString()}"
             }
             for (mask in masked720) check(!read.overlaps(mask)) { "read $read overlaps masked area $mask" }
         }
     }
+
+    private fun Region.contains(other: Region) =
+        other.x >= x && other.y >= y && other.x + other.width <= x + width && other.y + other.height <= y + height
 
     private fun Region.overlaps(other: Region) =
         x < other.x + other.width && other.x < x + width && y < other.y + other.height && other.y < y + height
