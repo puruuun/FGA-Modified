@@ -9,7 +9,6 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
-import android.view.MotionEvent
 import android.view.KeyEvent
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.imaging.DroidCvPattern
@@ -143,11 +142,11 @@ private class DeviceApi(private val runner: SupportDeviceTestRunner, private val
         val bitmap = checkNotNull(runner.uiAutomation.takeScreenshot())
         val screenX = x * bitmap.width / 2560f; val screenY = y * bitmap.height / 1440f
         bitmap.recycle()
-        val now = SystemClock.uptimeMillis()
-        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
-            val event = MotionEvent.obtain(now, SystemClock.uptimeMillis(), action, screenX, screenY, 0)
-            try { check(runner.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
-        }
+        // Android's tap command supplies a touchscreen source and a real press interval;
+        // zero-duration synthetic MotionEvents can be dropped by Unity's frame polling.
+        ParcelFileDescriptor.AutoCloseInputStream(runner.uiAutomation.executeShellCommand(
+            "input tap ${screenX.toInt()} ${screenY.toInt()}"
+        )).use { it.readBytes() }
         clearFrame()
     }
     override fun Region.getPattern(tag: String): Pattern = screenshot().crop(this * 0.5).use { it.copy() }.also { it.tag = tag }
