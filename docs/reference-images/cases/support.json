@@ -1,0 +1,4275 @@
+{
+  "schema": 1,
+  "suite": "support",
+  "imports": {
+    "Servant:No.150 멀린": [
+      "/sdcard/Download/fga-device-qa/import-150-0.png",
+      "/sdcard/Download/fga-device-qa/import-150-1.png",
+      "/sdcard/Download/fga-device-qa/import-150-2.png",
+      "/sdcard/Download/fga-device-qa/import-150-3.png",
+      "/sdcard/Download/fga-device-qa/import-150-4.png",
+      "/sdcard/Download/fga-device-qa/import-150-5.png"
+    ],
+    "Servant:No.351 아키타입 어스": [
+      "/sdcard/Download/fga-device-qa/import-351-0.png",
+      "/sdcard/Download/fga-device-qa/import-351-1.png",
+      "/sdcard/Download/fga-device-qa/import-351-2.png",
+      "/sdcard/Download/fga-device-qa/import-351-3.png"
+    ],
+    "CE:No.2020 칼데아 모닝": [
+      "/sdcard/Download/fga-device-qa/import-2020-0.png"
+    ],
+    "CE:No.48 검은 성배": [
+      "/sdcard/Download/fga-device-qa/import-48-0.png"
+    ]
+  },
+  "cases": [
+    {
+      "name": "Jp-score-000.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/000.png",
+      "region720": [
+        1018,
+        493,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 338,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-001.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/001.png",
+      "region720": [
+        1018,
+        614,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 459,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-002.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/002.png",
+      "region720": [
+        1018,
+        414,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 259,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-003.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/003.png",
+      "region720": [
+        1018,
+        298,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 143,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-004.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/004.png",
+      "region720": [
+        1018,
+        498,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 343,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-005.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/005.png",
+      "region720": [
+        1018,
+        303,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 148,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-006.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/006.png",
+      "region720": [
+        1018,
+        389,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 234,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-007.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/007.png",
+      "region720": [
+        1018,
+        589,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 434,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-008.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/008.png",
+      "region720": [
+        1018,
+        653,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 498,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-009.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/009.png",
+      "region720": [
+        1018,
+        376,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 221,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-010.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/010.png",
+      "region720": [
+        1018,
+        576,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 421,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-011.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/011.png",
+      "region720": [
+        1018,
+        416,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 261,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-012.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/012.png",
+      "region720": [
+        1018,
+        546,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 391,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-013.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/013.png",
+      "region720": [
+        1018,
+        328,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 173,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-014.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/014.png",
+      "region720": [
+        1018,
+        493,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 338,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-015.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/015.png",
+      "region720": [
+        1018,
+        293,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 138,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-016.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/016.png",
+      "region720": [
+        1018,
+        334,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 179,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-017.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/017.png",
+      "region720": [
+        1018,
+        479,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 324,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-018.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/018.png",
+      "region720": [
+        1018,
+        679,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 524,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-019.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/019.png",
+      "region720": [
+        1018,
+        279,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 124,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-020.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/020.png",
+      "region720": [
+        1018,
+        634,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 479,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-021.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/021.png",
+      "region720": [
+        1018,
+        434,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 279,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-022.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/022.png",
+      "region720": [
+        1018,
+        334,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 179,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-023.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/023.png",
+      "region720": [
+        1018,
+        534,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 379,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-024.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/024.png",
+      "region720": [
+        1018,
+        433,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 278,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-025.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/025.png",
+      "region720": [
+        1018,
+        664,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 509,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-026.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/026.png",
+      "region720": [
+        1018,
+        430,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 275,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-027.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/027.png",
+      "region720": [
+        1018,
+        630,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 475,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-028.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/028.png",
+      "region720": [
+        1018,
+        555,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 400,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-029.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/029.png",
+      "region720": [
+        1018,
+        355,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-030.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/030.png",
+      "region720": [
+        1018,
+        298,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 143,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-031.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/031.png",
+      "region720": [
+        1018,
+        534,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 379,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-032.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/032.png",
+      "region720": [
+        1018,
+        461,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 306,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-033.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/033.png",
+      "region720": [
+        1018,
+        636,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 481,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-034.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/034.png",
+      "region720": [
+        1018,
+        436,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 281,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-035.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/035.png",
+      "region720": [
+        1018,
+        650,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 495,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-036.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/036.png",
+      "region720": [
+        1018,
+        555,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 400,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-037.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/037.png",
+      "region720": [
+        1018,
+        355,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-038.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/038.png",
+      "region720": [
+        1018,
+        499,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 344,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-039.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/039.png",
+      "region720": [
+        1018,
+        299,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 144,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-040.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/040.png",
+      "region720": [
+        1018,
+        441,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 286,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-041.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/041.png",
+      "region720": [
+        1018,
+        641,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 486,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-042.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/042.png",
+      "region720": [
+        1018,
+        354,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 199,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-043.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/043.png",
+      "region720": [
+        1018,
+        456,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 301,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-044.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/044.png",
+      "region720": [
+        1018,
+        656,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 501,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-045.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/045.png",
+      "region720": [
+        1018,
+        534,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 379,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-046.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/046.png",
+      "region720": [
+        1018,
+        334,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 179,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-047.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/047.png",
+      "region720": [
+        1018,
+        680,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 525,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-048.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/048.png",
+      "region720": [
+        1018,
+        480,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 325,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-049.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/049.png",
+      "region720": [
+        1018,
+        644,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 489,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-050.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/050.png",
+      "region720": [
+        1018,
+        564,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 409,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-051.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/051.png",
+      "region720": [
+        1018,
+        364,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 209,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-052.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/052.png",
+      "region720": [
+        1018,
+        305,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 150,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-053.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/053.png",
+      "region720": [
+        1018,
+        670,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 515,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-054.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/054.png",
+      "region720": [
+        1018,
+        470,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 315,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-055.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/055.png",
+      "region720": [
+        1018,
+        495,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 340,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-056.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/056.png",
+      "region720": [
+        1018,
+        295,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 140,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-057.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/057.png",
+      "region720": [
+        1018,
+        358,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 203,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-058.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/058.png",
+      "region720": [
+        1018,
+        429,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 274,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-059.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/059.png",
+      "region720": [
+        1018,
+        334,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 179,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-060.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/060.png",
+      "region720": [
+        1018,
+        534,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 379,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-061.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/061.png",
+      "region720": [
+        1018,
+        454,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 299,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-062.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/062.png",
+      "region720": [
+        1018,
+        300,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 145,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-063.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/063.png",
+      "region720": [
+        1018,
+        354,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 199,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-064.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/064.png",
+      "region720": [
+        1018,
+        458,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 303,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-065.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/065.png",
+      "region720": [
+        1018,
+        328,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 173,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-066.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/066.png",
+      "region720": [
+        1018,
+        528,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 373,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-067.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/067.png",
+      "region720": [
+        1018,
+        565,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 410,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-068.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/068.png",
+      "region720": [
+        1018,
+        300,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 145,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-069.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/069.png",
+      "region720": [
+        1018,
+        500,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 345,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-070.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/070.png",
+      "region720": [
+        1018,
+        686,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 531,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-071.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/071.png",
+      "region720": [
+        1018,
+        286,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 131,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-072.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/072.png",
+      "region720": [
+        1018,
+        626,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 471,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-073.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/073.png",
+      "region720": [
+        1018,
+        640,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 485,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-074.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/074.png",
+      "region720": [
+        1018,
+        440,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 285,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-075.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/075.png",
+      "region720": [
+        1018,
+        324,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 169,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-076.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/076.png",
+      "region720": [
+        1018,
+        524,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 369,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-077.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/077.png",
+      "region720": [
+        1018,
+        338,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 183,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-078.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/078.png",
+      "region720": [
+        1018,
+        541,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 386,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-079.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/079.png",
+      "region720": [
+        1018,
+        341,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 186,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-080.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/080.png",
+      "region720": [
+        1018,
+        301,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 146,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-081.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/081.png",
+      "region720": [
+        1018,
+        501,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 346,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-082.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/082.png",
+      "region720": [
+        1018,
+        338,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 183,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-083.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/083.png",
+      "region720": [
+        1018,
+        455,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 300,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-084.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/084.png",
+      "region720": [
+        1018,
+        631,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 476,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-085.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/085.png",
+      "region720": [
+        1018,
+        384,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 229,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-086.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/086.png",
+      "region720": [
+        1018,
+        663,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 508,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-087.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/087.png",
+      "region720": [
+        1018,
+        330,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 175,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-088.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/088.png",
+      "region720": [
+        1018,
+        624,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 469,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-089.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/089.png",
+      "region720": [
+        1018,
+        553,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 398,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-090.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/090.png",
+      "region720": [
+        1018,
+        470,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 315,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-091.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/091.png",
+      "region720": [
+        1018,
+        403,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 248,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-092.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/092.png",
+      "region720": [
+        1018,
+        423,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 268,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-093.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/093.png",
+      "region720": [
+        1018,
+        623,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 468,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-094.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/094.png",
+      "region720": [
+        1018,
+        680,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 525,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-095.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/095.png",
+      "region720": [
+        1018,
+        538,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 383,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-096.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/096.png",
+      "region720": [
+        1018,
+        446,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 291,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-097.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/097.png",
+      "region720": [
+        1018,
+        646,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 491,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-098.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/098.png",
+      "region720": [
+        1018,
+        524,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 369,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-099.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/099.png",
+      "region720": [
+        1018,
+        516,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 361,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-score-100.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores/100.png",
+      "region720": [
+        1018,
+        351,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 196,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-000.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/000.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 62,
+          "grand": null,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-001.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/001.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-002.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/002.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 62,
+          "grand": null,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-003.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/003.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-004.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/004.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-005.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/005.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-006.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/006.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-007.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/007.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-008.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/008.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-009.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/009.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-010.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/010.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-011.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/011.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-012.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/012.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-013.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/013.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-014.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/014.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-015.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/015.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-016.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/016.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-017.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/017.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-018.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/018.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-019.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/019.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-020.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/020.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-021.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/021.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-022.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/022.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-023.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/023.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 61,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-024.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/024.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 0,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-score-025.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-scores/025.png",
+      "region720": [
+        1018,
+        155,
+        55,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "class": 61,
+          "grand": null,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-000.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/000.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-001.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/001.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-002.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/002.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-003.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/003.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-004.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/004.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 4
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-005.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/005.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-006.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/006.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 4
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-007.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/007.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-008.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/008.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 4
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-009.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/009.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-010.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/010.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 4
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-011.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/011.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-012.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/012.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-013.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/013.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-014.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/014.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-015.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/015.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-016.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/016.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-017.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/017.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-018.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/018.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-019.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/019.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-020.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/020.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-021.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/021.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-022.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/022.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-023.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/023.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-024.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/024.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-025.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/025.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-026.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/026.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-027.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/027.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-028.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/028.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-029.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/029.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-030.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/030.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-031.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/031.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-032.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/032.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 2
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-033.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/033.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-034.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/034.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-035.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/035.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-036.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/036.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Kr-np-037.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-20261017/037.png",
+      "region720": [
+        362,
+        130,
+        448,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 3
+        }
+      ]
+    },
+    {
+      "name": "Jp-np-support-np-143344-311.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-np-143344-311.png",
+      "region720": [
+        362,
+        130,
+        448,
+        48
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 1
+        }
+      ],
+      "skip": "coverage: crop is 448x48 but the production name region is 448x52"
+    },
+    {
+      "name": "Jp-np-support-np-143344-512.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-np-143344-512.png",
+      "region720": [
+        362,
+        130,
+        448,
+        48
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ],
+      "skip": "coverage: crop is 448x48 but the production name region is 448x52"
+    },
+    {
+      "name": "Kr-np-support-np-134749-204.png",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/support-np-134749-204.png",
+      "region720": [
+        362,
+        130,
+        448,
+        48
+      ],
+      "rows": [
+        {
+          "rowY720": 0,
+          "np": 5
+        }
+      ],
+      "skip": "coverage: crop is 448x48 but the production name region is 448x52"
+    },
+    {
+      "name": "initial.png",
+      "file": "/sdcard/Download/fga-device-qa/initial.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 183,
+          "np": 3,
+          "class": 62,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 383,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page00-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page00-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 183,
+          "np": 3,
+          "class": 62,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        },
+        {
+          "y": 383,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page01-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/page01-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 225,
+          "np": 4,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 425,
+          "np": 2,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page01-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page01-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 225,
+          "np": 4,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 425,
+          "np": 2,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page02-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/page02-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 245,
+          "np": 4,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 445,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page02-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page02-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 245,
+          "np": 4,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 445,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page03-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/page03-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 328,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 528,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page03-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page03-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 328,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 528,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page04-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/page04-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 358,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page04-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page04-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 358,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page05-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/page05-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 198,
+          "np": 5,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            false
+          ]
+        },
+        {
+          "y": 398,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "page05-append.png",
+      "file": "/sdcard/Download/fga-device-qa/page05-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 198,
+          "np": 5,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 398,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "refreshed00-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/refreshed00-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 183,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ],
+          "matches": [
+            {
+              "kind": "Servant",
+              "name": "No.150 멀린",
+              "expected": true
+            },
+            {
+              "kind": "Servant",
+              "name": "No.351 아키타입 어스",
+              "expected": false
+            },
+            {
+              "kind": "CE",
+              "name": "No.2020 칼데아 모닝",
+              "expected": true
+            },
+            {
+              "kind": "CE",
+              "name": "No.48 검은 성배",
+              "expected": false
+            }
+          ]
+        },
+        {
+          "y": 383,
+          "np": 5,
+          "class": 61,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ],
+          "matches": [
+            {
+              "kind": "Servant",
+              "name": "No.150 멀린",
+              "expected": false
+            },
+            {
+              "kind": "Servant",
+              "name": "No.351 아키타입 어스",
+              "expected": true
+            },
+            {
+              "kind": "CE",
+              "name": "No.2020 칼데아 모닝",
+              "expected": false
+            },
+            {
+              "kind": "CE",
+              "name": "No.48 검은 성배",
+              "expected": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "refreshed00-append.png",
+      "file": "/sdcard/Download/fga-device-qa/refreshed00-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 183,
+          "np": 1,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            true
+          ]
+        },
+        {
+          "y": 383,
+          "np": 5,
+          "class": 61,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout00-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout00-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 139,
+          "np": 5,
+          "class": 61,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 339,
+          "np": 2,
+          "class": 59,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout00-append.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout00-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 139,
+          "np": 5,
+          "class": 61,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        },
+        {
+          "y": 339,
+          "np": 2,
+          "class": 59,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout02-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout02-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 317,
+          "np": 2,
+          "class": 48,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 517,
+          "np": 3,
+          "class": 48,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout02-append.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout02-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 317,
+          "np": 2,
+          "class": 48,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 517,
+          "np": 3,
+          "class": 48,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout03-normal.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout03-normal.png",
+      "server": "Kr",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 212,
+          "np": 5,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 412,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "holdout03-append.png",
+      "file": "/sdcard/Download/fga-device-qa/holdout03-append.png",
+      "server": "Kr",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 212,
+          "np": 5,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        },
+        {
+          "y": 412,
+          "np": 3,
+          "class": 0,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    }
+  ]
+}

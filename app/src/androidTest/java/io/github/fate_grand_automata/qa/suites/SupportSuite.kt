@@ -1,11 +1,11 @@
 package io.github.fate_grand_automata.qa.suites
 
 import io.github.fate_grand_automata.qa.FixtureApi
+import io.github.fate_grand_automata.qa.properties
 import io.github.fate_grand_automata.scripts.*
 import io.github.fate_grand_automata.scripts.enums.*
 import io.github.fate_grand_automata.scripts.prefs.*
 import io.github.fate_grand_automata.scripts.supportSelection.*
-import io.github.fate_grand_automata.qa.properties
 import io.github.lib_automata.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,24 +22,39 @@ private fun supportPrefs(minimum: Int = 2) = properties<ISupportPreferences> {
     }
 }
 
-/** Support-screen suite: reads every expected row with the production readers and compares against the case's labels. */
+/**
+ * Support-screen suite. Full-screen cases read every row with the production readers and compare with the labels.
+ * Crop cases (frame "crop") place one row fragment at a fixed position, so only the reads the case asks for run;
+ * their `policy` expectations use the same rule as tools/validate_support_scores.py.
+ */
 internal fun FixtureApi.verifySupport(): JSONObject {
     val result = JSONObject(); val display = SupportSkillDisplay(this)
-    if (live) display.ensureNormal()
-    val view = display.read(); result.put("view", view.name)
-    if (case.has("view")) check(view.name == case.getString("view")) { "View $view != ${case.getString("view")}" }
-    val bounds = useSameSnapIn { SupportBoundsFinder(this).all() }
-    result.put("bounds", JSONArray(bounds.map { it.region.y / 2.0 }))
+    val full = !isCrop
+    var view = SupportSkillDisplay.View.Normal
+    if (full) {
+        if (live) display.ensureNormal()
+        view = display.read(); result.put("view", view.name)
+        if (case.has("view")) check(view.name == case.getString("view")) { "View $view != ${case.getString("view")}" }
+    }
+    val bounds = if (full) useSameSnapIn { SupportBoundsFinder(this).all() } else emptyList()
+    if (full) result.put("bounds", JSONArray(bounds.map { it.region.y / 2.0 }))
     val expected = case.getJSONArray("rows"); val rows = JSONArray()
     val np = SupportNpLevelReader(this, ocr); val score = SupportScoreReader(this, ocr); val skills = SupportSkillLevelReader(this)
     for (i in 0 until expected.length()) {
-        val row = expected.getJSONObject(i); val y = row.getInt("y")
-        val bound = checkNotNull(bounds.minByOrNull { abs(it.region.y / 2 - y) })
-        check(abs(bound.region.y / 2 - y) <= 2) { "Missing row $y: $bounds" }
+        val row = expected.getJSONObject(i)
+        val y = if (full) row.getInt("y") else row.getInt("rowY720")
+        val bound = if (full) {
+            checkNotNull(bounds.minByOrNull { abs(it.region.y / 2 - y) }).also {
+                check(abs(it.region.y / 2 - y) <= 2) { "Missing row $y: $bounds" }
+            }
+        } else SupportBounds(locations.support.defaultBounds.copy(y = y * 2))
         val values = useSameSnapIn {
-            val n = np.read(bound); val s = score.read(bound, true, true); val k = skills.read(bound, view == SupportSkillDisplay.View.Append)
-            JSONObject().put("np", n ?: JSONObject.NULL).put("class", s.classScore ?: JSONObject.NULL)
-                .put("grand", s.grandScore ?: JSONObject.NULL).put("display", s.display.name).put("skills", JSONArray(k))
+            val n = if (full || row.has("np")) np.read(bound) else null
+            val readsScore = full || row.has("class") || row.has("grand") || row.has("policy")
+            val s = if (readsScore) score.read(bound, true, true) else null
+            val k = if (full || row.has("skills")) skills.read(bound, view == SupportSkillDisplay.View.Append) else emptyList()
+            JSONObject().put("np", n ?: JSONObject.NULL).put("class", s?.classScore ?: JSONObject.NULL)
+                .put("grand", s?.grandScore ?: JSONObject.NULL).put("display", s?.display?.name ?: "Unknown").put("skills", JSONArray(k))
         }
         rows.put(values)
         for (key in listOf("np", "class", "grand")) if (row.has(key))
@@ -55,6 +70,11 @@ internal fun FixtureApi.verifySupport(): JSONObject {
             if (values.isNull("grand")) null else values.getInt("grand"), SupportScoreDisplay.valueOf(values.getString("display")))
         values.put("classOnly", SupportScoreSelection.matches(scores, true, false))
             .put("grandOnly", SupportScoreSelection.matches(scores, false, true)).put("bothScores", SupportScoreSelection.matches(scores, true, true))
+        if (row.has("policy")) {
+            val policy = row.getJSONObject("policy")
+            for (key in listOf("classOnly", "grandOnly", "bothScores"))
+                check(values.getBoolean(key) == policy.getBoolean(key)) { "$key at $y: $values != $policy" }
+        }
         if (live && case.optBoolean("appendCycle")) {
             val pass = AppendSkillSelection(this, supportPrefs(), display, skills).check(bound)
             values.put("appendSlot2", pass).put("restoredView", display.read().name)

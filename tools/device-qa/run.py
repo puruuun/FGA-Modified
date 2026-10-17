@@ -98,10 +98,15 @@ def device_path_for(repo_relative: str) -> str:
     return f"{DEVICE_ROOT}/{repo_relative}"
 
 
-def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> str:
-    """Push a repo-side case file and the images it references; return the device path of the rewritten file."""
+def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> tuple[str, list[str]]:
+    """Push a repo-side case file and the images it references; return the rewritten device path and skipped case names.
+
+    Cases marked "skip" in the case file are left out of the run and reported as skipped.
+    """
     data = load_cases(case_file)
+    skipped = [c["name"] for c in data.get("cases", []) if "skip" in c]
     staged = json.loads(json.dumps(data))
+    staged["cases"] = [c for c in staged.get("cases", []) if "skip" not in c]
     pushed = set()
 
     def push(repo_relative: str) -> str:
@@ -124,7 +129,7 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> str:
     device_case = f"{DEVICE_ROOT}/run/{case_file.stem}.json"
     adb(adb_path, serial, "shell", "mkdir", "-p", f"{DEVICE_ROOT}/run")
     adb(adb_path, serial, "push", str(local), device_case)
-    return device_case
+    return device_case, skipped
 
 
 def instrument(adb_path: str, serial: str, package: str, device_case: str) -> dict:
@@ -139,7 +144,7 @@ def instrument(adb_path: str, serial: str, package: str, device_case: str) -> di
     return json.loads(raw)
 
 
-def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str) -> bool:
+def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str]) -> bool:
     results = report.get("results", [])
     failed = [r for r in results if not r.get("passed")]
     lines = [
@@ -147,7 +152,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
         "",
         f"- 기기: {serial}",
         f"- adb: {adb_version}",
-        f"- 케이스: {len(results)}개, 통과 {len(results) - len(failed)}개, 실패 {len(failed)}개",
+        f"- 케이스: {len(results)}개, 통과 {len(results) - len(failed)}개, 실패 {len(failed)}개, skip {len(skipped)}개",
         f"- 전체 결과: {'통과' if report.get('passed') and not failed else '실패'}",
         "",
     ]
@@ -157,6 +162,8 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
         lines += ["## 실패 케이스", ""]
         for r in failed:
             lines += [f"### {r['name']}", "", "```", (r.get("error") or "")[:2000], "```", ""]
+    if skipped:
+        lines += ["## Skip 케이스 (원본 범위 불일치 등)", ""] + [f"- {name}" for name in skipped] + [""]
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:
@@ -193,13 +200,13 @@ def main() -> int:
             sys.exit(f"unknown suite: {suite}")
         case_file = REPO / (args.cases or f"docs/reference-images/cases/{suite}.json")
         if case_file.exists():
-            device_case = stage_repo_cases(adb_path, args.serial, case_file)
+            device_case, skipped = stage_repo_cases(adb_path, args.serial, case_file)
         else:
             print(f"warning: {case_file.relative_to(REPO)} not found; using legacy device file (0002 stage 1 only)")
-            device_case = LEGACY_DEVICE_CASES[suite]
+            device_case, skipped = LEGACY_DEVICE_CASES[suite], []
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        ok = write_summary(report, out_dir, suite, args.serial, adb_version)
+        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped)
         print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / 'summary.md'}")
         overall = overall and ok
     return 0 if overall else 1

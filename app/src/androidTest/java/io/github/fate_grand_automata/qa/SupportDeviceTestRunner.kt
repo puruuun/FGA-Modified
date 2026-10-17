@@ -56,6 +56,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                 try {
                     api = FixtureApi(this, case, input.optJSONObject("imports") ?: JSONObject())
                     result.put("actual", api.verifySupport())
+                    api.checkCoverage()
                     result.put("passed", true)
                 } catch (error: Throwable) { result.put("passed", false).put("error", error.stackTraceToString()) }
                 finally {

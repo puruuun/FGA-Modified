@@ -1,6 +1,9 @@
 package io.github.fate_grand_automata.qa
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import io.github.fate_grand_automata.IStorageProvider
@@ -12,6 +15,7 @@ import io.github.fate_grand_automata.scripts.locations.*
 import io.github.fate_grand_automata.scripts.prefs.*
 import io.github.fate_grand_automata.util.ImageLoader
 import io.github.lib_automata.*
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -25,6 +29,12 @@ internal class FixtureApi(
     imports: JSONObject,
 ) : IFgoAutomataApi, AutoCloseable {
     internal val live = case.optBoolean("live", false)
+    /** Crop fixtures are placed on a black 1280x720 canvas at region720; they must cover every region the reader touches. */
+    internal val isCrop = case.optString("frame") == "crop"
+    private val region720 = case.optJSONArray("region720")?.let { it.toRegion() }
+    private val masked720 = case.optJSONArray("masked720")?.let { list -> (0 until list.length()).map { list.getJSONArray(it).toRegion() } } ?: emptyList()
+    /** 720p rectangles of every pixel read through the fixture, used for the crop coverage check. */
+    private val readRegions = mutableListOf<Region>()
     private val colors = ColorManager()
     private var sameDepth = 0
     private var frame: ByteArray? = null
@@ -59,7 +69,7 @@ internal class FixtureApi(
     private fun clearFrame() { gray?.close(); color?.close(); gray = null; color = null; frame = null }
     private fun screenshot(): Pattern {
         if (frame == null) {
-            frame = if (!live) runner.fixture(case.getString("file")) else {
+            frame = if (isCrop) composeCrop(runner.fixture(case.getString("file"))) else if (!live) runner.fixture(case.getString("file")) else {
                 val bitmap = checkNotNull(runner.uiAutomation.takeScreenshot())
                 try { ByteArrayOutputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it); it.toByteArray() } }
                 finally { bitmap.recycle() }
@@ -91,8 +101,13 @@ internal class FixtureApi(
         )).use { it.readBytes() }
         clearFrame()
     }
-    override fun Region.getPattern(tag: String): Pattern = screenshot().crop(this * 0.5).use { it.copy() }.also { it.tag = tag }
-    override fun Region.findAll(pattern: Pattern, similarity: Double?): List<Match> = screenshot().crop(this * 0.5).use { cropped ->
+    /** Crops the 720p frame for reads; the crop is recorded so coverage can be checked after the case. */
+    private fun Region.cropFrame(): Pattern {
+        readRegions += this * 0.5
+        return screenshot().crop(this * 0.5)
+    }
+    override fun Region.getPattern(tag: String): Pattern = cropFrame().use { it.copy() }.also { it.tag = tag }
+    override fun Region.findAll(pattern: Pattern, similarity: Double?): List<Match> = cropFrame().use { cropped ->
         cropped.findMatches(pattern, similarity ?: 0.8).map { Match(it.region * 2.0 + location, it.score) }.toList()
     }
     override fun Region.exists(image: Pattern, timeout: Duration, similarity: Double?) = findAll(image, similarity).isNotEmpty()
@@ -102,6 +117,34 @@ internal class FixtureApi(
     override fun Region.detectText(outlinedText: Boolean) = error("Not a support-reader operation")
     override fun Map<Pattern, Region>.exists(timeout: Duration, similarity: Double?, requireAll: Boolean) =
         if (requireAll) all { (p, r) -> r.exists(p, timeout, similarity) } else any { (p, r) -> r.exists(p, timeout, similarity) }
+    /** Places the crop at region720's origin on a black 1280x720 canvas; reads past the region fail in [checkCoverage]. */
+    private fun composeCrop(piece: ByteArray): ByteArray {
+        val region = checkNotNull(region720) { "crop case needs region720" }
+        val bitmap = checkNotNull(BitmapFactory.decodeByteArray(piece, 0, piece.size)) { "crop image unreadable" }
+        val canvas = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
+        Canvas(canvas).apply { drawColor(Color.BLACK); drawBitmap(bitmap, region.x.toFloat(), region.y.toFloat(), null) }
+        bitmap.recycle()
+        try { return ByteArrayOutputStream().use { canvas.compress(Bitmap.CompressFormat.PNG, 100, it); it.toByteArray() } }
+        finally { canvas.recycle() }
+    }
+
+    /** Fails a crop case that read outside region720 or touched a masked area (D-4). */
+    fun checkCoverage() {
+        if (!isCrop) return
+        val region = checkNotNull(region720)
+        for (read in readRegions) {
+            check(read.x >= region.x && read.y >= region.y && read.x + read.width <= region.x + region.width && read.y + read.height <= region.y + region.height) {
+                "fixture does not cover region: read $read outside $region"
+            }
+            for (mask in masked720) check(!read.overlaps(mask)) { "read $read overlaps masked area $mask" }
+        }
+    }
+
+    private fun Region.overlaps(other: Region) =
+        x < other.x + other.width && other.x < x + width && y < other.y + other.height && other.y < y + height
+
+    private fun JSONArray.toRegion() = Region(getInt(0), getInt(1), getInt(2), getInt(3))
+
     override fun close() { clearFrame(); images.clearImageCache(); ocr.close() }
 }
 
