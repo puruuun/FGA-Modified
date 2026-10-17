@@ -26,6 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
+KNOWN_SUITES = {"support", "bond"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
@@ -196,14 +197,16 @@ def main() -> int:
     suites = [s.strip() for s in args.suite.split(",") if s.strip()]
     overall = True
     for suite in suites:
-        if suite not in LEGACY_DEVICE_CASES:
+        if suite not in KNOWN_SUITES:
             sys.exit(f"unknown suite: {suite}")
         case_file = REPO / (args.cases or f"docs/reference-images/cases/{suite}.json")
         if case_file.exists():
             device_case, skipped = stage_repo_cases(adb_path, args.serial, case_file)
-        else:
+        elif suite in LEGACY_DEVICE_CASES:
             print(f"warning: {case_file.relative_to(REPO)} not found; using legacy device file (0002 stage 1 only)")
             device_case, skipped = LEGACY_DEVICE_CASES[suite], []
+        else:
+            sys.exit(f"no case file for suite {suite}: {case_file.relative_to(REPO)}")
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped)

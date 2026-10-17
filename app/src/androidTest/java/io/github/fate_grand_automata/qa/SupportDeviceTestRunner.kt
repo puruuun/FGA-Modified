@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.KeyEvent
+import io.github.fate_grand_automata.qa.suites.verifyBond
 import io.github.fate_grand_automata.qa.suites.verifySupport
 import org.json.JSONArray
 import org.json.JSONObject
@@ -55,7 +56,11 @@ class SupportDeviceTestRunner : Instrumentation() {
                 var api: FixtureApi? = null
                 try {
                     api = FixtureApi(this, case, input.optJSONObject("imports") ?: JSONObject())
-                    result.put("actual", api.verifySupport())
+                    result.put("actual", when (case.optString("suite", "support")) {
+                        "support" -> api.verifySupport()
+                        "bond" -> api.verifyBond()
+                        else -> error("Unknown suite")
+                    })
                     api.checkCoverage()
                     result.put("passed", true)
                 } catch (error: Throwable) { result.put("passed", false).put("error", error.stackTraceToString()) }

@@ -1,0 +1,401 @@
+{
+  "schema": 1,
+  "suite": "bond",
+  "cases": [
+    {
+      "name": "normal-kr-old",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-normal-kr-old.png",
+      "expected": [
+        [
+          25,
+          6
+        ],
+        "MAX",
+        "MAX",
+        [
+          25,
+          1
+        ],
+        [
+          25,
+          1
+        ]
+      ],
+      "skip": "aspect: 1296x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "normal-kr",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-normal-kr.png",
+      "expected": [
+        "MAX",
+        [
+          1098,
+          263
+        ],
+        "MAX",
+        [
+          1098,
+          43
+        ],
+        "MAX"
+      ],
+      "skip": "aspect: 1305x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "normal-jp",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/bond-normal-jp.png",
+      "expected": [
+        [
+          1755,
+          1400
+        ],
+        "MAX",
+        "MAX",
+        "MAX",
+        "MAX"
+      ],
+      "skip": "aspect: 1287x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "kr7",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr7.png",
+      "expected_level": 7,
+      "expected_column": null,
+      "skip": "aspect: 1284x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "kr10",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr10.png",
+      "expected_level": 10,
+      "expected_column": null,
+      "skip": "aspect: 1561x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "kr11",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr11.png",
+      "expected_level": 11,
+      "expected_column": null,
+      "skip": "aspect: 1561x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "jp12",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "popup",
+      "file": "docs/reference-images/Jp/bond-jp12.png",
+      "expected_level": 12,
+      "expected_column": 2,
+      "skip": "aspect: 1279x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "jp16",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "popup",
+      "file": "docs/reference-images/Jp/bond-jp16.png",
+      "expected_level": 16,
+      "expected_column": null
+    },
+    {
+      "name": "party-kr1-not-a-bond-result",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "other",
+      "file": "docs/reference-images/Kr/bond-party-kr1.png",
+      "expected": null,
+      "skip": "aspect: 1305x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "party-jp1-not-a-bond-result",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "other",
+      "file": "docs/reference-images/Jp/bond-party-jp1.png",
+      "expected": null,
+      "skip": "aspect: 1287x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "party-jp3-not-a-bond-result",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "other",
+      "file": "docs/reference-images/Jp/bond-party-jp3.png",
+      "expected": null,
+      "skip": "aspect: 1279x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "normal-kr-20261016-164241",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-20261016-164241.png",
+      "expected": [
+        [
+          3797,
+          3735
+        ],
+        [
+          3797,
+          3735
+        ],
+        [
+          3797,
+          2519
+        ],
+        [
+          3797,
+          2519
+        ],
+        [
+          3797,
+          2519
+        ]
+      ]
+    },
+    {
+      "name": "normal-kr-20261016-164840",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-20261016-164840.png",
+      "expected": [
+        "MAX",
+        [
+          3797,
+          11267
+        ],
+        [
+          3797,
+          8835
+        ],
+        [
+          3797,
+          8835
+        ],
+        [
+          3797,
+          8835
+        ]
+      ]
+    },
+    {
+      "name": "normal-kr-20261016-165827",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-20261016-165827.png",
+      "expected": [
+        [
+          815,
+          649
+        ],
+        [
+          815,
+          649
+        ],
+        [
+          815,
+          590
+        ],
+        [
+          815,
+          590
+        ],
+        [
+          815,
+          590
+        ]
+      ]
+    },
+    {
+      "name": "normal-jp-20261016-171109",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/bond-20261016-171109.png",
+      "expected": [
+        [
+          4748,
+          6437
+        ],
+        [
+          4748,
+          6437
+        ],
+        [
+          4748,
+          1670
+        ],
+        [
+          4748,
+          5619
+        ],
+        [
+          4748,
+          4632
+        ]
+      ]
+    },
+    {
+      "name": "normal-jp-20261016-171437",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/bond-20261016-171437.png",
+      "expected": [
+        [
+          4748,
+          6437
+        ],
+        [
+          4748,
+          6437
+        ],
+        [
+          4748,
+          1670
+        ],
+        [
+          4748,
+          5619
+        ],
+        [
+          4748,
+          4632
+        ]
+      ]
+    },
+    {
+      "name": "normal-kr-20261016-185136",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-20261016-185136.png",
+      "expected": [
+        "MAX",
+        [
+          1830,
+          2708
+        ],
+        [
+          1830,
+          1976
+        ],
+        [
+          1830,
+          1976
+        ],
+        [
+          1830,
+          1976
+        ]
+      ],
+      "skip": "aspect: 1311x720 is not 16:9 (the harness and AGENTS coordinate origin need 16:9)"
+    },
+    {
+      "name": "normal-kr-20261016-185717",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-20261016-185717.png",
+      "expected": [
+        [
+          815,
+          649
+        ],
+        [
+          815,
+          649
+        ],
+        [
+          815,
+          590
+        ],
+        [
+          815,
+          590
+        ],
+        [
+          815,
+          590
+        ]
+      ]
+    },
+    {
+      "name": "normal-jp-20261017-mission",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/bond-20261017-mission.png",
+      "expected": [
+        [
+          365,
+          372
+        ],
+        [
+          365,
+          372
+        ],
+        [
+          365,
+          374
+        ],
+        [
+          365,
+          261
+        ],
+        [
+          365,
+          261
+        ]
+      ]
+    },
+    {
+      "name": "normal-jp-20261017-normal",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/bond-20261017-normal.png",
+      "expected": [
+        [
+          365,
+          372
+        ],
+        [
+          365,
+          372
+        ],
+        [
+          365,
+          374
+        ],
+        [
+          365,
+          261
+        ],
+        [
+          365,
+          261
+        ]
+      ]
+    }
+  ]
+}
