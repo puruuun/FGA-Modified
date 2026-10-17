@@ -1,4 +1,6 @@
-"""Pixel regression for anonymous crops from the JP and KR support screens.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Pixel regression for anonymous crops from the JP and KR support screens.
 
 Run with tools/np-level-vision-requirements.txt (OpenCV 4.11.0, Tesseract 5.5.1).
 No emulator connection, image downloads or application changes are performed.

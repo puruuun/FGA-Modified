@@ -1,4 +1,6 @@
-"""Verify bond OCR and result screens against supplied 720p KR/JP references.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Verify bond OCR and result screens against supplied 720p KR/JP references.
 
 Uses shipped assets and reads coordinates, match thresholds and OCR profiles from Kotlin.
 This is desktop OpenCV/Tesseract validation, not Android gesture/device verification.

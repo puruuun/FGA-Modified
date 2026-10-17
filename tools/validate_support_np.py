@@ -1,4 +1,6 @@
-"""Pixel regression for anonymous KR NP labels and existing JP/KR controls.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Pixel regression for anonymous KR NP labels and existing JP/KR controls.
 
 Uses the pinned OpenCV/Tesseract dependencies in np-level-vision-requirements.txt.
 Original player names and screenshots are not part of these fixtures.

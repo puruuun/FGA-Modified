@@ -1,4 +1,6 @@
-"""Check compound Class/Grand OCR and preserve the original Class +62 matcher.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Check compound Class/Grand OCR and preserve the original Class +62 matcher.
 
 The new source is a cropped score panel, not a full support screen. Its numeric
 line is normalized using the existing 720p panel size; two compatible scales and

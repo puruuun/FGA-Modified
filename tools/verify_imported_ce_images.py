@@ -1,4 +1,6 @@
-"""Check production CE crops against recorded JP support art and other CE assets.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Check production CE crops against recorded JP support art and other CE assets.
 
 Use --assets-dir with downloaded JP EquipFaces PNGs named as in the reference manifest
 and the existing support-template-correlations.csv. Does not send input to the game.

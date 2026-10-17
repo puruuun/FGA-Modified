@@ -1,4 +1,6 @@
-"""Verify production NP recognition against the 16 submitted KR/JP screenshots.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Verify production NP recognition against the 16 submitted KR/JP screenshots.
 
 Uses production layout, recovery constants, templates and bundled eng.traineddata.
 Requires OpenCV 4.11.0 and Tesseract 5.5.1. This is a desktop image test, not an

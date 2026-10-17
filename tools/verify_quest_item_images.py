@@ -1,4 +1,6 @@
-"""Verify Teapot/Storm Pod recognition against local KR/JP screenshots.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Verify Teapot/Storm Pod recognition against local KR/JP screenshots.
 
 Uses shipped templates, Kotlin thresholds and 1440p regions (converted to 720p).
 Full screenshots stay local. The launcher UI is a placement reference, not a game-state test.

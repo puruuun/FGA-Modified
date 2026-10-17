@@ -1,4 +1,6 @@
-"""Verify +62 vs non-62 on the five user-provided KR/JP support screens.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Verify +62 vs non-62 on the five user-provided KR/JP support screens.
 
 Uses the production Kotlin score rectangle and threshold, plus shipped templates.
 The full screenshots remain local; only anonymous score crops are committed.

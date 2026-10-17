@@ -47,3 +47,4 @@ Mix in `IFgoAutomataApi` (delegating to an injected `FgoAutomataApi`) to get `pr
   user-tunable `minSimilarity`, `waitMultiplier`, `swipeMultiplier` (the Fine-Tune screen).
   Explicit `similarity` arguments in `Region.exists` should be rare; anything under ~0.65
   means the template image is wrong.
+- **Reader changes** (`supportSelection/`, `modules/BondReader`, `modules/QuestItemReader`): report the result of `py -3 tools/device-qa/run.py --build --suite support,bond,questItems` with the change, not only the unit tests.

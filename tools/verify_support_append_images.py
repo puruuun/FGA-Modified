@@ -1,4 +1,6 @@
-"""Real OpenCV checks against KR/JP normal and append support screenshots.
+"""Development aid. The authoritative check is `tools/device-qa/run.py`.
+
+Real OpenCV checks against KR/JP normal and append support screenshots.
 
 Uses production Kotlin layout/threshold constants and the bundled templates.
 Full player screenshots stay local; anonymous cropped UI references live in docs/.
