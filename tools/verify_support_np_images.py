@@ -82,7 +82,7 @@ class Reader:
         source = (SCRIPTS/'supportSelection/SupportNpLevelReader.kt').read_text()
         names = ['PREFIX_SIMILARITY', 'MIN_OCR_CONFIDENCE', 'AMBIGUITY_SCORE_GAP',
                  'SAME_PREFIX_DISTANCE', 'OCR_SCALE', 'OCR_THRESHOLD', 'OCR_PADDING',
-                 'RECOVERY_PREFIX_SIMILARITY', 'MIN_RECOVERY_OCR_CONFIDENCE', 'MIN_RECOVERY_AGREEMENT',
+                 'RECOVERY_PREFIX_SIMILARITY', 'KR_RECOVERY_PREFIX_SIMILARITY', 'MIN_RECOVERY_OCR_CONFIDENCE', 'MIN_RECOVERY_AGREEMENT',
                  'RECOVERY_BRIGHT_THRESHOLD', 'RECOVERY_DARK_THRESHOLD', 'RECOVERY_OCR_SCALE']
         self.settings = {name: value(source, name) for name in names}
         self.scales = [float(n) for n in re.search(r'RECOVERY_PREFIX_SCALES = listOf\(([^)]+)\)', source)[1].split(',')]
@@ -159,8 +159,9 @@ class Reader:
                 return {'level': readings[0]['parsed'], 'reason': 'fast', 'candidate': best, 'readings': readings}
         if not recovery:
             return {'level': None, 'reason': 'fast_failed'}
+        recovery_similarity = self.settings['KR_RECOVERY_PREFIX_SIMILARITY' if server == 'Kr' else 'RECOVERY_PREFIX_SIMILARITY']
         found = [(*m, scale) for scale, template in self.recovery_templates[server]
-                 for m in matches(roi, template, self.settings['RECOVERY_PREFIX_SIMILARITY'])]
+                 for m in matches(roi, template, recovery_similarity)]
         if not found:
             return {'level': None, 'reason': 'recovery_no_prefix'}
         best = max(found, key=lambda m: m[0])

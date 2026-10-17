@@ -142,8 +142,8 @@ class SupportNpLevelReaderTest {
     fun `weak prefix requires multiple confident OCR profiles before recovery accepts it`() {
         val f = Fixture()
         every { with(f.api) { f.search.findAll(f.white, SupportNpLevelReader.PREFIX_SIMILARITY) } } returns emptyList()
-        every { with(f.api) { f.search.findAll(f.white, SupportNpLevelReader.RECOVERY_PREFIX_SIMILARITY) } } returns
-            listOf(f.prefix.copy(score = 0.77))
+        every { with(f.api) { f.search.findAll(f.white, SupportNpLevelReader.KR_RECOVERY_PREFIX_SIMILARITY) } } returns
+            listOf(f.prefix.copy(score = 0.73))
         every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.3", 92)
         assertThat(f.reader.read(f.bounds)).isEqualTo(3)
         SupportNpLevelReader.RECOVERY_OCR_OPTIONS.forEach {
@@ -154,6 +154,17 @@ class SupportNpLevelReaderTest {
         verify(exactly = 6) { f.scaledGold.close() }
         verify(exactly = 0) { f.white.close() }
         verify(exactly = 0) { f.gold.close() }
+    }
+
+    @Test
+    fun `KR white marker recovery never accepts weak OCR consensus`() {
+        val f = Fixture()
+        every { with(f.api) { f.search.findAll(f.white, SupportNpLevelReader.PREFIX_SIMILARITY) } } returns emptyList()
+        every { with(f.api) { f.search.findAll(f.white, SupportNpLevelReader.KR_RECOVERY_PREFIX_SIMILARITY) } } returns
+            listOf(f.prefix.copy(score = 0.73))
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.1", 84)
+        assertThat(f.reader.read(f.bounds)).isNull()
+        verify(exactly = 1) { f.captured.close() }
     }
 
     @Test

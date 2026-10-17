@@ -35,6 +35,9 @@ class SupportNpLevelReader @Inject constructor(
         // Recover smaller NP-name fonts and resampling differences only after the fast read fails.
         // The lower search threshold proposes a crop; it never accepts an NP level on its own.
         const val RECOVERY_PREFIX_SIMILARITY = 0.75
+        // KR white Lv markers have different outline sampling on the blue name panel.
+        // This only proposes a suffix; two exact, high-confidence OCR reads still decide.
+        const val KR_RECOVERY_PREFIX_SIMILARITY = 0.72
         const val MIN_RECOVERY_OCR_CONFIDENCE = 85
         const val MIN_RECOVERY_AGREEMENT = 2
         const val RECOVERY_BRIGHT_THRESHOLD = 110.0 / 255.0
@@ -80,12 +83,14 @@ class SupportNpLevelReader @Inject constructor(
             parse(results.single())?.let { return it }
         }
 
+        val recoverySimilarity = if (prefs.gameServer is GameServer.Kr)
+            KR_RECOVERY_PREFIX_SIMILARITY else RECOVERY_PREFIX_SIMILARITY
         val recoveryMatches = prefixes.flatMap { template ->
             RECOVERY_PREFIX_SCALES.flatMap { scale ->
-                if (scale == 1.0) search.findAll(template, similarity = RECOVERY_PREFIX_SIMILARITY)
+                if (scale == 1.0) search.findAll(template, similarity = recoverySimilarity)
                 else template.resize(template.size * scale).use {
                     // Image-loader templates are borrowed; only resized copies belong to this reader.
-                    search.findAll(it, similarity = RECOVERY_PREFIX_SIMILARITY)
+                    search.findAll(it, similarity = recoverySimilarity)
                 }
             }
         }
