@@ -1,8 +1,6 @@
 name: Beta APK
 
 on:
-  push:
-    branches: [beta/servant-portraits]
   workflow_dispatch:
 
 permissions:

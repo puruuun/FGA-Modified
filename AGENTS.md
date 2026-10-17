@@ -19,6 +19,9 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - Unless the user explicitly requests a pull request, integrate changes with the latest remote `main`, verify them, and push directly to `main` without creating a new PR.
 - For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use Codex as author, committer, or co-author unless the user requests it. Preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
+- Before pushing, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
+- After pushing, check the `Main CI` run for that commit. If it fails, fix it before any other work.
+- Do not build beta or stable APKs from a commit whose `Main CI` run failed.
 
 - Development beta APKs are not published as GitHub Releases unless the user explicitly requests publication. Save build APKs locally or update BlueStacks; CI build artifacts may be used for building and downloading them.
 
@@ -26,6 +29,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ```bash
 ./gradlew :app:compileDebugKotlin # Compiles the kotlin code for the android app.
+./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test # Full unit test suite, same as Main CI.
 ./gradlew :scripts:test          # the only unit tests in the repo (JUnit 5 + assertk + mockk)
 ./gradlew :scripts:test --tests '*SupportSelectionTest'          # single test class
 ./gradlew :scripts:test --tests '*SupportSelectionTest.someName' # single test method

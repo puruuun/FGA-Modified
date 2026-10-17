@@ -1,0 +1,54 @@
+name: Main CI
+
+on:
+  push:
+    branches: [main]
+    # Same list as pr-build.yml. .github/workflows/** is deliberately not ignored so
+    # commits that change a workflow are still checked.
+    paths-ignore:
+      - '.idea/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/instructions/**'
+      - '.github/copilot-instructions.md'
+      - '.gitattributes'
+      - '.gitignore'
+      - '*.md'
+      - 'LICENSE'
+      - 'custom-game-area/**'
+      - 'wiki/**'
+      - 'docs/**'
+      - '.claude/**'
+      - '**/AGENTS.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+      - name: Run unit tests
+        run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
+      - name: Build CI APK
+        run: ./gradlew :app:assembleCi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: main-ci-test-reports
+          path: '**/build/test-results/**/*.xml'
+          retention-days: 14
