@@ -34,9 +34,10 @@ class SupportDeviceTestRunner : Instrumentation() {
     private lateinit var arguments: Bundle
     override fun onCreate(arguments: Bundle) { super.onCreate(arguments); this.arguments = arguments; start() }
     internal fun fixture(path: String): ByteArray {
-        require(path.startsWith("/sdcard/Download/fga-device-qa/") && ".." !in path)
+        require(Regex("/sdcard/Download/fga-device-qa/[A-Za-z0-9._/-]+").matches(path) && ".." !in path)
         return ParcelFileDescriptor.AutoCloseInputStream(
-            uiAutomation.executeShellCommand("cat '" + path.replace("'", "'\\''") + "'")
+            // UiAutomation tokenizes a command directly; shell quotes would become part of the path.
+            uiAutomation.executeShellCommand("cat $path")
         ).use { it.readBytes() }
     }
     override fun onStart() {
