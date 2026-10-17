@@ -91,8 +91,12 @@
 ### 4.2 호스트 스크립트 `tools/device-qa/run.py` (1단계)
 
 ```
-python tools/device-qa/run.py [--serial 127.0.0.1:5555] [--build] [--suite support,bond,questItems] [--server Kr,Jp]
+py -3 tools/device-qa/run.py [--serial 127.0.0.1:5555] [--build] [--suite support,bond,questItems] [--server Kr,Jp]
 ```
+
+이 PC의 실행 환경(2026-10-18 확인):
+- Python 3.13은 `py -3`로 실행합니다. `python`은 Windows 스토어의 빈 실행 파일(`WindowsApps\python.exe`)이 먼저 잡혀서 실행되지 않습니다. 문서와 `tools/README.md`의 예시 명령도 `py -3 tools/device-qa/run.py …`로 적습니다.
+- adb가 세 군데에 있습니다: `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`, `C:\platform-tools\adb.exe`, `C:\Program Files\BlueStacks_nxt\HD-Adb.exe`. 버전이 다른 adb를 섞어 쓰면 서로 adb 서버를 종료시킵니다. 그래서 2단계의 탐색 순서대로 **하나만** 골라 끝까지 쓰고, 고른 경로와 `adb version`을 보고서에 적습니다.
 
 1. `--build`면 `./gradlew -PfgaDeviceTests=true :app:assembleDeviceTest :app:assembleDeviceTestAndroidTest`를 실행합니다(Windows는 `gradlew.bat`).
 2. adb를 찾습니다. 순서: `ANDROID_HOME/platform-tools`, `PATH`, 블루스택 기본 설치 경로의 `HD-Adb.exe`. 찾은 경로를 출력합니다.
@@ -133,7 +137,7 @@ python tools/device-qa/run.py [--serial 127.0.0.1:5555] [--build] [--suite suppo
 
 ## 5. 완료 기준
 
-- [ ] 1단계: `python tools/device-qa/run.py --build --suite support` 한 번으로 기존 서포트 케이스가 실행되고 `summary.md`가 생성됩니다.
+- [ ] 1단계: `py -3 tools/device-qa/run.py --build --suite support` 한 번으로 기존 서포트 케이스가 실행되고 `summary.md`가 생성됩니다.
 - [ ] 2단계: JP·KR 점수와 KR 보구 crop 라벨이 전부 케이스로 옮겨졌습니다. 출처별 라벨 수와 케이스 수(skip 포함)를 표로 보고합니다.
 - [ ] 3단계: 인연과 티포트 suite가 추가되었고, `bond-image-cases.json`과 퀘스트 아이템 라벨이 전부 옮겨졌습니다.
 - [ ] 전체 실행이 KR·JP 모두 통과합니다. 실패가 있으면 임계값을 고치지 않고 실패 목록을 보고합니다(이 경우 미통과로 표시).
