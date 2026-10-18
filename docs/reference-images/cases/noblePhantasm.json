@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "_comment": "0006 NP name cases. Frames and templates: docs/reference-images/Jp/np-20261018 (owner JP screens, 2026-10-18, friend names and comments masked). rowIndex is the order of the support rows on the frame (SupportBoundsFinder). The templates are 720p crops of the NP line, from icon to just before Lv., cut by the D-2 rule with the 720p halves of the 1440p margins.",
+  "imports": {
+    "NoblePhantasm:Melusine Arts": ["docs/reference-images/Jp/np-20261018/melusine-arts.png"],
+    "NoblePhantasm:Melusine Buster": ["docs/reference-images/Jp/np-20261018/melusine-buster.png"]
+  },
+  "cases": [
+    {
+      "name": "np-now-row0-melusine-arts",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/now-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 0,
+          "matches": [
+            {"entry": "Melusine Arts", "expected": true},
+            {"entry": "Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-now-row1-melusine-buster",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/now-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 1,
+          "matches": [
+            {"entry": "Melusine Arts", "expected": false},
+            {"entry": "Melusine Buster", "expected": true}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-owner-150647-row0-shared-name",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/owner-150647-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 0,
+          "matches": [
+            {"entry": "Melusine Arts", "expected": true},
+            {"entry": "Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-owner-150647-row1-other-np",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/owner-150647-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 1,
+          "matches": [
+            {"entry": "Melusine Arts", "expected": false},
+            {"entry": "Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    }
+  ]
+}

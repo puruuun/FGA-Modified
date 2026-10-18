@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.KeyEvent
 import io.github.fate_grand_automata.qa.suites.verifyBond
+import io.github.fate_grand_automata.qa.suites.verifyNoblePhantasm
 import io.github.fate_grand_automata.qa.suites.verifyQuestItems
 import io.github.fate_grand_automata.qa.suites.verifySupport
 import org.json.JSONArray
@@ -61,6 +62,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                         "support" -> api.verifySupport()
                         "bond" -> api.verifyBond()
                         "questItems" -> api.verifyQuestItems()
+                        "noblePhantasm" -> api.verifyNoblePhantasm()
                         else -> error("Unknown suite")
                     })
                     api.checkCoverage()
