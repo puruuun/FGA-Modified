@@ -26,4 +26,10 @@ interface IStorageProvider {
     fun dump(name: String, image: Pattern)
     
     fun createNoMediaFile()
+
+    /**
+     * Writes one diagnostic file below the FGA storage root. [path] uses "/" separators, and
+     * missing folders are created. The stream is closed after [write] returns.
+     */
+    fun writeDiagnosticFile(path: String, mimeType: String, write: (OutputStream) -> Unit)
 }

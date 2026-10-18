@@ -262,4 +262,15 @@ class StorageProvider @Inject constructor(
     override fun createNoMediaFile() {
         supportImageFolder.getOrCreateFile(".nomedia")
     }
+
+    override fun writeDiagnosticFile(path: String, mimeType: String, write: (OutputStream) -> Unit) {
+        val names = path.split('/')
+        var folder: DocumentFile? = dirRoot.getOrCreateDir("diagnostics")
+        for (name in names.dropLast(1)) {
+            folder = folder.getOrCreateDir(name)
+        }
+        val file = folder.getOrCreateFile(names.last(), mimeType)
+        resolver.openOutputStream(file.uri)?.use(write)
+            ?: error("Could not open diagnostic file: $path")
+    }
 }

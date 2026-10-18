@@ -25,6 +25,9 @@ class PreferredSupportSelection @Inject constructor(
     private val ces = supportPrefs.preferredCEs
     private val friendNames = supportPrefs.friendNames
 
+    // Diagnostics only: numbers each select() pass of the run, so records from one run never share a name.
+    private var screenCount = 0
+
     private data class ScrollBarState(
         val topScrollbar: Boolean = false,
         val movedScrollbar: Boolean = false,
@@ -43,7 +46,8 @@ class PreferredSupportSelection @Inject constructor(
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
 
-        if (appendSelection.enabled) return selectWithAppendSkills()
+        val screen = ++screenCount
+        if (appendSelection.enabled) return selectWithAppendSkills(screen)
 
         return useSameSnapIn {
             if (supportPrefs.friendsOnly && !friendChecker.isFriend()) {
@@ -52,7 +56,8 @@ class PreferredSupportSelection @Inject constructor(
             }
 
             val matched = boundsFinder.all()
-                .firstNotNullOfOrNull { isMatch(it) }
+                .withIndex()
+                .firstNotNullOfOrNull { (row, bounds) -> isMatch(bounds, screen, row) }
 
             if (matched != null) {
                 matched.click()
@@ -64,15 +69,15 @@ class PreferredSupportSelection @Inject constructor(
         }
     }
 
-    private fun selectWithAppendSkills(): SupportSelectionResult {
+    private fun selectWithAppendSkills(screen: Int): SupportSelectionResult {
         appendSelection.ensureNormal()
         val bounds = useSameSnapIn {
             if (supportPrefs.friendsOnly && !friendChecker.isFriend()) null else boundsFinder.all()
         } ?: return SupportSelectionResult.Refresh
 
-        for (bound in bounds) {
+        for ((row, bound) in bounds.withIndex()) {
             // Pure normal-screen checks finish before any display mutation; refresh the next candidate's frame.
-            val matched = useSameSnapIn { isMatch(bound) } ?: continue
+            val matched = useSameSnapIn { isMatch(bound, screen, row) } ?: continue
             if (appendSelection.check(bound)) {
                 matched.click()
                 return SupportSelectionResult.Done
@@ -92,14 +97,14 @@ class PreferredSupportSelection @Inject constructor(
         )
     }
 
-    private fun isMatch(bounds: SupportBounds): Region? {
+    private fun isMatch(bounds: SupportBounds, screen: Int, row: Int): Region? {
         if (supportPrefs.friendsOnly && !friendChecker.isFriend(bounds)) {
             return null
         }
 
         return if (
             servantSelection.check(servants, bounds) &&
-            scoreSelection.check(bounds) &&
+            scoreSelection.check(bounds, screen, row) &&
             ceSelection.check(ces, bounds) &&
             (!supportPrefs.friendsOnly || friendSelection.check(friendNames, bounds)) &&
             // All snapshot-only conditions must finish before the slow Append display cycle.

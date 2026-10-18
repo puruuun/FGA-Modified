@@ -38,6 +38,7 @@ sealed class ScriptLog {
         val checkGrand: Boolean, val display: String, val matched: Boolean
     ) : ScriptLog()
     class SupportNpLevel(val required: Int, val detected: Int?, val matched: Boolean) : ScriptLog()
+    class SupportDiagnosticsLimit(val limit: Int) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()
     class ClickingCards(val cards: Iterable<CommandCard.Face>) : ScriptLog()

@@ -24,6 +24,7 @@ interface IPreferences {
     val screenshotDrops: Boolean
     val screenshotDropsUnmodified: Boolean
     val screenshotBond: Boolean
+    val supportReaderDiagnostics: Boolean
     var hidePlayButton: Boolean
     val hideSQInAPResources: Boolean
     val ignoreQuestItemUsage: Boolean

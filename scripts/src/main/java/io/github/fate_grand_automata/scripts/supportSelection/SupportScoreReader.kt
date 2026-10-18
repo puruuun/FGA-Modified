@@ -2,13 +2,23 @@ package io.github.fate_grand_automata.scripts.supportSelection
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.ScriptLog
+import io.github.fate_grand_automata.scripts.diagnostics.DiagnosticJson
+import io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics
+import io.github.fate_grand_automata.scripts.diagnostics.NoReaderDiagnostics
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
+import io.github.lib_automata.Pattern
+import io.github.lib_automata.Region
 import io.github.lib_automata.TextLineOcrOptions
 import io.github.lib_automata.dagger.ScriptScope
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.max
 
 enum class SupportScoreDisplay { Ordinary, Compound, Unknown }
 
@@ -22,7 +32,8 @@ data class SupportScores(
 @ScriptScope
 class SupportScoreReader @Inject constructor(
     api: IFgoAutomataApi,
-    private val ocr: OcrService
+    private val ocr: OcrService,
+    private val diagnostics: IReaderDiagnostics = NoReaderDiagnostics
 ) : IFgoAutomataApi by api {
     companion object {
         const val MIN_OCR_CONFIDENCE = 75
@@ -65,6 +76,18 @@ class SupportScoreReader @Inject constructor(
 
         private val ordinaryScore = Regex("""\+?(\d{1,3})""")
 
+        /** Diagnostics stop recording after this many candidates in one run. */
+        const val MAX_DIAGNOSTIC_CANDIDATES = 500
+
+        /** Folder under the diagnostics root. */
+        const val DIAGNOSTIC_READER = "support-score"
+
+        /** Widening of the score region on each side, in 1440p script pixels. */
+        const val DIAGNOSTIC_MARGIN = 20
+
+        private const val DIAGNOSTIC_SCORE_TAG = "support_score_diagnostic"
+        private const val DIAGNOSTIC_WIDE_TAG = "support_score_diagnostic_wide"
+
         fun parse(result: OcrText): SupportScores? {
             if (result.confidence < MIN_OCR_CONFIDENCE) return null
             val text = result.text.trim().replace(Regex("""\s+"""), "")
@@ -98,24 +121,103 @@ class SupportScoreReader @Inject constructor(
         }
     }
 
+    private var diagnosticCandidates = 0
+    private var diagnosticLimitLogged = false
+
+    /**
+     * Evidence for the diagnostic record. Only allocated while diagnostics are on; the decisions in
+     * [readScores] never read it.
+     */
+    private class ReadEvidence {
+        val ocr = mutableListOf<Map<String, Any?>>()
+        val templates = linkedMapOf<String, Boolean>()
+    }
+
     /** Read-only within the caller's candidate snapshot, before any Append display switch. */
-    fun read(bounds: SupportBounds, checkClass: Boolean, checkGrand: Boolean): SupportScores {
+    fun read(bounds: SupportBounds, checkClass: Boolean, checkGrand: Boolean, screen: Int = -1, row: Int = -1): SupportScores {
         if (!checkClass && !checkGrand) return SupportScores()
+        if (!diagnostics.enabled) return readScores(bounds, checkClass, checkGrand, null)
+        if (diagnosticCandidates >= MAX_DIAGNOSTIC_CANDIDATES) {
+            if (!diagnosticLimitLogged) {
+                diagnosticLimitLogged = true
+                messages.log(ScriptLog.SupportDiagnosticsLimit(MAX_DIAGNOSTIC_CANDIDATES))
+            }
+            return readScores(bounds, checkClass, checkGrand, null)
+        }
+
+        val evidence = ReadEvidence()
+        val started = System.nanoTime()
+        val scores = readScores(bounds, checkClass, checkGrand, evidence)
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000
+
+        // Both images come from the same snapshot as the reading above, so they show what it saw.
+        val region = SupportScoreLayout.numberRegion(bounds.region)
+        region.getPattern(DIAGNOSTIC_SCORE_TAG).use { score ->
+            region.widened(DIAGNOSTIC_MARGIN).getPattern(DIAGNOSTIC_WIDE_TAG).use { wide ->
+                val json = DiagnosticJson.write(linkedMapOf(
+                    "schema" to 1,
+                    "reader" to "supportScore",
+                    "server" to prefs.gameServer.simple,
+                    "time" to timestamp(),
+                    "run" to diagnostics.runId,
+                    "screen" to screen,
+                    "row" to row,
+                    "rowY1440" to bounds.region.y,
+                    // Score crop size at 720p, so the frame scale can be checked from the record.
+                    "cropSize" to listOf(score.width, score.height),
+                    // The reader never runs inside useColor, so its crops are always grayscale.
+                    "colorMode" to "gray",
+                    "checkClass" to checkClass,
+                    "checkGrand" to checkGrand,
+                    "ocr" to evidence.ocr,
+                    "templates" to evidence.templates,
+                    "result" to linkedMapOf(
+                        "class" to scores.classScore,
+                        "grand" to scores.grandScore,
+                        "display" to scores.display.name
+                    ),
+                    "matched" to SupportScoreSelection.matches(scores, checkClass, checkGrand),
+                    "elapsedMs" to elapsedMs
+                ))
+                diagnostics.record(
+                    DIAGNOSTIC_READER,
+                    "$screen-$row",
+                    // "" and "-wide" are file suffixes; see IReaderDiagnostics.record.
+                    mapOf("" to score, "-wide" to wide),
+                    json
+                )
+            }
+        }
+        ++diagnosticCandidates
+        return scores
+    }
+
+    private fun readScores(
+        bounds: SupportBounds,
+        checkClass: Boolean,
+        checkGrand: Boolean,
+        evidence: ReadEvidence?
+    ): SupportScores {
         val region = SupportScoreLayout.numberRegion(bounds.region)
         // Preserve the validated ordinary +62 matcher; compact +62/+16 uses a different font.
-        val legacyClass62 = region.exists(
-            images[Images.SupportScore62], similarity = SupportScoreSelection.SCORE_SIMILARITY
+        val legacyClass62 = evidence.template(
+            Images.SupportScore62,
+            region.exists(images[Images.SupportScore62], similarity = SupportScoreSelection.SCORE_SIMILARITY)
         )
         if (legacyClass62 && !checkGrand) return SupportScores(classScore = 62, display = SupportScoreDisplay.Ordinary)
 
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
-                val primary = OCR_PROFILES.map { ocr.detectTextLine(pattern, it) }
+                val primary = OCR_PROFILES.mapIndexed { profile, options ->
+                    detect(pattern, options, "primary", profile, evidence)
+                }
                 val known = confirmed(primary)
                 if (known != null && (known.display == SupportScoreDisplay.Ordinary ||
                         ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null)))) primary
-                else if (prefs.gameServer is GameServer.Kr) primary + OCR_DARK_PROFILES.map { ocr.detectTextLine(pattern, it) }
+                else if (prefs.gameServer is GameServer.Kr) primary + OCR_DARK_PROFILES.mapIndexed { profile, options ->
+                    detect(pattern, options, "dark", profile, evidence)
+                }
                 else primary
             }
         }
@@ -133,7 +235,7 @@ class SupportScoreReader @Inject constructor(
         // Keep any already confirmed numeric field, including a confirmed nonmaximum.
         fun matches(templates: List<Images>, verifyGrandDigit: Boolean = false) = templates.any { image ->
             val template = images[image]
-            if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
+            val hit = if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
             else {
                 val candidates = region.findAll(template, similarity = COMPACT_FIELD_SIMILARITY)
                 if (candidates.isEmpty()) false else {
@@ -147,6 +249,7 @@ class SupportScoreReader @Inject constructor(
                     }
                 }
             }
+            evidence.template(image, hit)
         }
         val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
         val grand16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
@@ -164,4 +267,36 @@ class SupportScoreReader @Inject constructor(
             else -> SupportScores()
         }
     }
+
+    private fun detect(
+        pattern: Pattern,
+        options: TextLineOcrOptions,
+        stage: String,
+        profile: Int,
+        evidence: ReadEvidence?
+    ): OcrText {
+        val result = ocr.detectTextLine(pattern, options)
+        evidence?.ocr?.add(mapOf(
+            "stage" to stage,
+            "profile" to profile,
+            "text" to result.text,
+            "confidence" to result.confidence
+        ))
+        return result
+    }
+
+    private fun ReadEvidence?.template(image: Images, hit: Boolean): Boolean {
+        this?.templates?.set(image.name, hit)
+        return hit
+    }
+
+    private fun Region.widened(margin: Int) = Region(
+        max(0, x - margin),
+        max(0, y - margin),
+        width + 2 * margin,
+        height + 2 * margin
+    )
+
+    private fun timestamp() =
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(Date())
 }

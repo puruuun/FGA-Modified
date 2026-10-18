@@ -88,6 +88,8 @@ class PreferencesImpl @Inject constructor(
 
     override val screenshotBond by prefs.screenshotBond
 
+    override val supportReaderDiagnostics by prefs.supportReaderDiagnostics
+
     override var hidePlayButton by prefs.hidePlayButton
 
     override val hideSQInAPResources by prefs.hideSQInAPResources

@@ -74,6 +74,9 @@ class ScriptMessages @Inject constructor(
             )
             is ScriptLog.SupportNpLevel -> Timber.d("Support NP: %s, minimum: %d, matched: %s",
                 item.detected ?: "unreadable", item.required, item.matched)
+            is ScriptLog.SupportDiagnosticsLimit -> Timber.tag("FGA.Diagnostics").w(
+                "Support score diagnostics stopped after %d candidates in this run", item.limit
+            )
 
             ScriptLog.DefaultMasterOffset -> {
                 Timber.d("Defaulting master offset")

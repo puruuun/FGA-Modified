@@ -6,9 +6,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import io.github.fate_grand_automata.accessibility.AccessibilityGestures
 import io.github.fate_grand_automata.imaging.TesseractOcrService
+import io.github.fate_grand_automata.util.StorageReaderDiagnostics
 import io.github.fate_grand_automata.scripts.FgoAutomataApi
 import io.github.fate_grand_automata.scripts.FgoGameAreaManager
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics
 import io.github.fate_grand_automata.scripts.locations.IScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.locations.ScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.modules.RealSupportScreen
@@ -51,4 +53,8 @@ abstract class ScriptsModule {
     @ScriptScope
     @Binds
     abstract fun bindOcrService(ocrService: TesseractOcrService): OcrService
+
+    @ScriptScope
+    @Binds
+    abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
 }

@@ -48,6 +48,7 @@ class PrefsCore @Inject constructor(
     val screenshotBond = maker.bool("screenshot_bond")
     val hidePlayButton = maker.bool("hide_play_button")
     val debugMode = maker.bool("debug_mode")
+    val supportReaderDiagnostics = maker.bool("support_reader_diagnostics")
     val autoStartService = maker.bool("auto_start_service")
     val checkForUpdates = maker.bool("check_for_updates", true)
 
