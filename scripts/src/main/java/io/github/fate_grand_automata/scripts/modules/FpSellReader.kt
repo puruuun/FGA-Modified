@@ -39,13 +39,32 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         val SELECTION_TEAL = MeanColor(92.0, 245.0, 190.0)
         const val SELECTED_MAX_DISTANCE = 25.0
         const val UNSELECTED_MIN_DISTANCE = 45.0
-        /** Strip offsets (720p px from the card's left edge) tried to absorb sub-pixel column drift. */
-        val SELECTION_OFFSETS = -2..4
+        /** Chromatic ratios keep the dimmed owner stop frame readable without accepting gray as teal. */
+        private fun normalized(color: MeanColor): MeanColor? = if (color.green >= 20.0)
+            MeanColor(color.red * 245.0 / color.green, 245.0, color.blue * 245.0 / color.green) else null
+
+        fun frameTier(colors: List<MeanColor?>): FpSellPolicy.Tier? {
+            val tiers = colors.mapNotNull { color ->
+                val c = color?.let { normalized(it) } ?: return@mapNotNull null
+                when {
+                    // Silver needs a bright neutral frame: dark gray and near-silver artwork are not a tier.
+                    color.green >= 155 && abs(c.red - 245) <= 16 && abs(c.blue - 245) <= 16 -> FpSellPolicy.Tier.Silver
+                    abs(c.red - 278) <= 30 && abs(c.blue - 55) <= 45 -> FpSellPolicy.Tier.Gold
+                    abs(c.red - 278) <= 28 && abs(c.blue - 215) <= 22 -> FpSellPolicy.Tier.Bronze
+                    else -> null
+                }
+            }.distinct()
+            return tiers.singleOrNull()
+        }
 
         /** Smallest RGB distance to the teal frame colour over the strips, or null when any strip carries no colour. */
         fun selectionDistance(strips: List<MeanColor?>): Double? {
             if (strips.isEmpty() || strips.any { it == null }) return null
-            return strips.filterNotNull().minOf {
+            // FGA's pure-blue debug marker can cover one band. It is not a frame hue;
+            // require a usable independent band rather than treating that overlay as a negative selection.
+            val colors = strips.filterNotNull().mapNotNull { normalized(it) }
+            if (colors.isEmpty()) return null
+            return colors.minOf {
                 sqrt((it.red - SELECTION_TEAL.red).pow(2) + (it.green - SELECTION_TEAL.green).pow(2) +
                     (it.blue - SELECTION_TEAL.blue).pow(2))
             }
@@ -128,10 +147,10 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
     fun readPage(): List<PageTile> = useSameSnapIn {
         if (!onSellScreen() || !isSevenColumns()) return@useSameSnapIn emptyList()
         (0..6).flatMap { column -> labelMatches(column).map { label ->
-            val card = loc.card(column, label.region.y)
+            val card = loc.card(label.region)
             when {
                 card.y < loc.grid.y + 28 -> PageTile(column, card, "gridTop", null, emptyList(), 0.0)
-                card.bottom > loc.grid.bottom -> PageTile(column, card, "gridBottom", null, emptyList(), 0.0)
+                !loc.labelInsideGrid(label.region) -> PageTile(column, card, "gridBottom", null, emptyList(), 0.0)
                 else -> {
                     val cell = readCard(card)
                     PageTile(column, card, null, cell, rarityScores(card, cell.kind), newScore(card),
@@ -147,18 +166,43 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
      * Distance of the card's frame to the teal selection colour, read from a fresh colour frame.
      * Call it outside [useSameSnapIn]: the strips need a colour capture, and a cached gray frame carries no hue.
      */
-    fun selectionDistance(card: Region): Double? = useColor {
+    fun frameColors(card: Region): List<MeanColor?> = useColor {
         useSameSnapIn {
-            selectionDistance(SELECTION_OFFSETS.map { offset ->
-                loc.selectionStrip(card, offset).getPattern().use { it.meanColor() }
-            })
+            loc.frameBands.map { band ->
+                val samples = loc.frameOffsets.map { offset ->
+                    loc.frameStrip(card, offset, band).getPattern().use { it.meanColor() }
+                }
+                if (samples.any { it == null }) null else {
+                    val colors = samples.filterNotNull()
+                    // Find the leading outside->frame brightness rise, then use the next pixel inside the frame.
+                    // The search covers only the narrow edge neighborhood, including accumulated pitch drift.
+                    val edge = (1 until colors.size).maxByOrNull { i ->
+                        val a = colors[i - 1]; val b = colors[i]
+                        maxOf(0.0, b.red - a.red) + maxOf(0.0, b.green - a.green) + maxOf(0.0, b.blue - a.blue)
+                    } ?: 0
+                    colors[minOf(edge + 1, colors.lastIndex)]
+                }
+            }
         }
     }
+
+    fun selectionDistance(card: Region): Double? = selectionDistance(frameColors(card))
+
+    fun tier(card: Region): FpSellPolicy.Tier? {
+        val colors = frameColors(card)
+        if (selectionState(selectionDistance(colors)) != false) return null
+        return frameTier(colors)
+    }
+
+    fun tierStars(card: Region): Int? = FpSellPolicy.starsFromTier(tier(card), useSameSnapIn { starSlotScores(card) })
 
     /** Selected state of the card from a fresh frame; null when borderline (D-19). Never inside [useSameSnapIn]. */
     fun selection(card: Region): Boolean? = selectionState(selectionDistance(card))
 
-    /** Gray reads only: [FpSellPolicy.Cell.selected] stays null here and is filled by [confirmed] from [selection]. */
+    /**
+     * Gray diagnostics only: selected state stays null and legacy strip rarity is retained for existing reports.
+     * Every candidate decision must use [confirmed], which replaces servant rarity with D-24 frame-tier rarity.
+     */
     fun readCard(card: Region): FpSellPolicy.Cell {
         val servant = listOf(Images.FpSellServant, Images.FpSellServantSelected, Images.FpSellServantSelectedBronze).any {
             loc.label(card).exists(images[it], similarity = LABEL_SIMILARITY) }
@@ -235,6 +279,13 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
             0.3.seconds.wait()
             useSameSnapIn { readCard(card) }.let { it.copy(new = it.new == true) }
         }
-        return cell.copy(selected = selection(card))
+        val selected = selection(card)
+        // Teal tiles are already selected; no tier is needed and they are never tapped again.
+        return cell.copy(selected = selected, stars = when {
+            cell.kind != FpSellPolicy.Kind.Servant -> cell.stars
+            selected == true -> null
+            selected == false -> tierStars(card)
+            else -> null
+        })
     }
 }

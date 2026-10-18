@@ -12,6 +12,9 @@ interface GestureService : AutoCloseable {
      */
     fun swipe(start: Location, end: Location)
 
+    /** Scroll without a release fling; implementations must stop at the endpoint before lifting. */
+    fun scroll(start: Location, end: Location)
+
     /**
      * Clicks on a given [location].
      *

@@ -18,6 +18,13 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
         "banner" -> FpBannerReturn(this, reader.loc).readDots().let {
             JSONObject().put("active", it?.active ?: -1).put("count", it?.count ?: 0)
         }
+        "selection" -> {
+            val box = case.getJSONArray("card720")
+            val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
+            val distance = reader.selectionDistance(card)
+            JSONObject().put("selected", FpSellReader.selectionState(distance) ?: "unknown")
+                .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
+        }
         "page" -> {
             val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
                 FpSellPolicy.Category.Servant3, FpSellPolicy.Category.Servant4)
@@ -27,12 +34,14 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
             for (tile in reader.readPage()) {
                 val row = JSONObject().put("col", tile.column).put("x", tile.region.x / 2).put("y", tile.region.y / 2)
                     .put("skip", tile.skip ?: "")
-                val cell = tile.cell
-                if (cell != null) {
+                val grayCell = tile.cell
+                if (grayCell != null) {
+                    val cell = reader.confirmed(tile.region)
                     val distance = reader.selectionDistance(tile.region)
                     val selected = FpSellReader.selectionState(distance)
                     val chosen = FpSellPolicy.select(cell.copy(selected = selected), options)
                     row.put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
+                        .put("tier", reader.tier(tile.region)?.name ?: "Unknown")
                         .put("starScores", tile.stars.take(2).joinToString(" ") { "${it.first}:${Math.round(it.second * 1000) / 1000.0}" })
                         .put("slots", reader.starSlotScores(tile.region).joinToString(" ") { "${Math.round(it * 100) / 100.0}" })
                         .put("new", cell.new ?: false).put("newScore", Math.round(tile.newScore * 1000) / 1000.0)
@@ -42,20 +51,29 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
                 } else summary.append('-')
                 rows.put(row)
             }
+            val page = reader.readPage()
+            val evaluated = FpSellPolicy.evaluatedRows(page)
             JSONObject().put("tiles", rows).put("tileCount", rows.length()).put("selectMap", summary.toString())
+                .put("evaluatedRows", evaluated.size)
+                .put("bottomEvaluatedColumns", page.count { it.skip == null &&
+                    evaluated.lastOrNull()?.let { y -> kotlin.math.abs(it.region.y - y) < 24 } == true })
         }
         else -> {
             val box = case.getJSONArray("card720")
             val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
-            val cell = useSameSnapIn { reader.readCard(card) }
+            val grayCell = useSameSnapIn { reader.readCard(card) }
             // The selection is read from its own colour frame, never inside a snapshot (D-19).
             val distance = reader.selectionDistance(card)
             val selected = FpSellReader.selectionState(distance)
+            // Preserve existing diagnostic rarity on already-selected tiles; candidates use production D-24 rarity.
+            val cell = if (grayCell.kind == FpSellPolicy.Kind.Servant && selected == false)
+                grayCell.copy(stars = reader.tierStars(card)) else grayCell
             val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
                 FpSellPolicy.Category.Exp4, FpSellPolicy.Category.Exp5)
             val every = FpSellPolicy.Category.entries.toSet()
             // A borderline read is reported as "unknown" so an expectation of true or false fails instead of passing by default.
             JSONObject().put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
+                .put("tier", reader.tier(card)?.name ?: "Unknown")
                 .put("new", cell.new ?: false).put("selected", selected ?: "unknown")
                 .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
                 .put("lock", cell.lock.name).put("excluded", cell.excluded)

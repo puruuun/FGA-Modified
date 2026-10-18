@@ -194,7 +194,8 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for apk in (app_apk, test_apk):
-        adb(adb_path, args.serial, "install", "-r", "-t", str(apk))
+        # File-backed install avoids a stalled streamed-install pipe on BlueStacks TCP transports.
+        adb(adb_path, args.serial, "install", "--no-streaming", "-r", "-t", str(apk))
 
     suites = [s.strip() for s in args.suite.split(",") if s.strip()]
     overall = True

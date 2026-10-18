@@ -95,7 +95,9 @@ class FpAutoSell @Inject constructor(
                 rows
             }
             fun row(tile: FpSellReader.PageTile) = rowYs.indexOfFirst { kotlin.math.abs(it - tile.region.y) < 24 }
-            log("page=$page tiles=${tiles.size} evaluated=${tiles.count { it.skip == null }}")
+            val evaluatedRows = FpSellPolicy.evaluatedRows(tiles)
+            val distance = FpSellPolicy.swipeDistance(evaluatedRows) ?: stop("no fully evaluated rows on page $page")
+            log("page=$page tiles=${tiles.size} evaluated=${tiles.count { it.skip == null }} rows=$evaluatedRows swipe=$distance")
             for (tile in tiles) {
                 if (tile.skip != null) {
                     log(FpSellPolicy.tileLine(page, row(tile), tile.column, null, tile.skip, emptyList(), emptyList(), 0.0, "skip:${tile.skip}"))
@@ -104,7 +106,7 @@ class FpAutoSell @Inject constructor(
                 if (counts.values.sum() >= 999) { ended = true; break }
                 val cell = reader.confirmed(tile.region)
                 val decision = FpSellPolicy.decision(cell, options)
-                log(FpSellPolicy.tileLine(page, row(tile), tile.column, cell, null, tile.stars, tile.slots, tile.newScore, decision))
+                log(FpSellPolicy.tileLine(page, row(tile), tile.column, cell, null, tile.stars, tile.slots, tile.newScore, decision) + " tier=${if (cell.kind == FpSellPolicy.Kind.Servant && cell.selected == false) reader.tier(tile.region) else null}")
                 if (decision != "select") continue
                 tile.region.click()
                 // Count only a visibly acknowledged selection; never retry a possibly toggled tap (D-20).
@@ -116,11 +118,11 @@ class FpAutoSell @Inject constructor(
             }
             if (ended) break
             loc.grid.getPattern().use { before ->
-                swipe(loc.swipeStart, loc.swipeEnd)
+                swipe.scroll(loc.swipeStart, loc.swipeEnd(distance))
                 0.7.seconds.wait()
                 val same = loc.grid.exists(before, similarity = 0.995)
                 unchanged = if (same) unchanged + 1 else 0
-                log("page=$page swiped unchanged=$unchanged selected=$selectedSoFar")
+                log("page=$page swiped distance=$distance rows=$evaluatedRows unchanged=$unchanged selected=$selectedSoFar")
             }
             if (unchanged >= 2) { ended = true; break }
         }

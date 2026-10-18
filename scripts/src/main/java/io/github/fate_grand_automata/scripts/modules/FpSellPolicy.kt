@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 /** Pure decisions for the FP auto-sell loop. No screen access here, so every rule is unit-tested. */
 object FpSellPolicy {
     enum class Kind { Servant, Exp }
+    enum class Tier { Bronze, Silver, Gold }
 
     /** Lock state of one tile. Locked is a positive signal; Unknown means the lock template could not be checked. */
     enum class Lock { Locked, Unlocked, Unknown }
@@ -57,10 +58,10 @@ object FpSellPolicy {
         select(cell, options) -> "select"
         cell.excluded -> "skip:excluded"
         cell.lock == Lock.Locked -> "skip:locked"
+        cell.selected == true -> "skip:already-selected"
         cell.category == null -> if (cell.kind == null) "skip:kind-unknown" else "skip:stars-unknown"
         cell.category !in options.enabled -> "skip:category-off"
         cell.selected == null -> "skip:selection-unknown"
-        cell.selected -> "skip:already-selected"
         cell.new == null -> "skip:new-unknown"
         options.newOnly && cell.new != true -> "skip:not-new"
         else -> "skip:lock-unknown"
@@ -126,6 +127,40 @@ object FpSellPolicy {
         val limit = if (count == 4) STAR_ABSENT_FIFTH else STAR_ABSENT
         // The slot after the last star must be clearly empty, and no later slot may look like a star.
         return count.takeIf { scores[count] <= limit && scores.drop(count + 1).all { it < STAR_PRESENT } }
+    }
+
+    /** D-24: frame tier constrains rarity; the star artwork cannot promote a bronze tile or admit a 5-star servant. */
+    fun starsFromTier(tier: Tier?, slots: List<Double>): Int? = when (tier) {
+        Tier.Silver -> 3
+        Tier.Bronze -> {
+            if (slots.size < 2 || slots.take(2).any { !it.isFinite() || it !in 0.0..1.01 } || slots[0] < STAR_PRESENT) null
+            else {
+                val ratio = slots[1] / slots[0]
+                when {
+                    ratio <= 0.65 -> 1
+                    slots[1] >= STAR_PRESENT && ratio >= 0.80 -> 2
+                    else -> null
+                }
+            }
+        }
+        Tier.Gold -> if (slots.size >= STAR_SLOTS && slots.take(STAR_SLOTS).all { it.isFinite() && it in 0.0..1.01 } &&
+            slots.take(4).all { it >= STAR_PRESENT } && slots[4] <= STAR_ABSENT_FIFTH) 4 else null
+        null -> null
+    }
+
+    /** Distinct label rows, tolerating the few pixels of label antialiasing within one row (1440p). */
+    fun evaluatedRows(tiles: List<FpSellReader.PageTile>): List<Int> = tiles.filter { it.skip == null }
+        .map { it.region.y }.sorted().fold(mutableListOf()) { rows, y ->
+            if (rows.none { kotlin.math.abs(it - y) < 24 }) rows.add(y)
+            rows
+        }
+
+    /** D-23: retain the last evaluated row as overlap. With just one row, move at most one pitch. */
+    fun swipeDistance(rows: List<Int>): Int? {
+        if (rows.isEmpty()) return null
+        val pitch = rows.zipWithNext { a, b -> b - a }.minOrNull()?.coerceAtMost(284) ?: 284
+        return minOf(560, if (rows.size == 1) pitch else rows.last() - rows.first(), pitch * maxOf(1, rows.size - 1))
+            .takeIf { it > 0 }
     }
 
     /** D-17: the size toggle cycles 5 -> 6 -> 7 -> 5, so the number of presses needed to reach 7 columns. */

@@ -118,6 +118,28 @@ class AccessibilityGestures @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun scroll8(start: Location, end: Location) {
+        // One exact path avoids accumulating integer rounding from swipe8's tiny steps.
+        var stroke = GestureDescription.StrokeDescription(Path().moveTo(start), 0, 200, true)
+        performGesture(stroke)
+        stroke = stroke.continueStroke(Path().moveTo(start).lineTo(end), 0,
+            maxOf(600L, gesturePrefs.swipeDuration.inWholeMilliseconds), true)
+        performGesture(stroke)
+        performGesture(stroke.continueStroke(Path().moveTo(end), 0, 400, false))
+    }
+
+    override fun scroll(start: Location, end: Location) = runBlocking {
+        // Continued gestures already hold at the endpoint for 400 ms. Android 7 has no continued strokes:
+        // use a very slow drag there, so release velocity cannot fling the inventory past evaluated rows.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) scroll8(start, end) else {
+            val path = Path().moveTo(start).lineTo(end)
+            performGesture(GestureDescription.StrokeDescription(path, 0,
+                maxOf(2000L, gesturePrefs.swipeDuration.inWholeMilliseconds)))
+            wait(gesturePrefs.swipeWaitTime)
+        }
+    }
+
     override fun swipe(start: Location, end: Location) = runBlocking {
         Timber.d("swipe $start, $end")
 

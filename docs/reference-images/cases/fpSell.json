@@ -3590,6 +3590,1770 @@
         "new": false,
         "candidate": false
       }
+    },
+    {
+      "name": "JP-47-r1-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        78,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-48-r1-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        78,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        211,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-48-r1-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        211,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        345,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-48-r1-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        345,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        478,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-48-r1-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        478,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        612,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-48-r1-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        612,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        745,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-48-r1-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        745,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r1-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        879,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-48-r1-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        879,
+        153,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r2-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        78,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r2-c1-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        78,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r2-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        78,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r2-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        211,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-48-r2-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        211,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r2-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        345,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-48-r2-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        345,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r2-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        478,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-47-r2-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        612,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r2-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        745,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r2-c6-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        745,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-47-r2-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        879,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r2-c7-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        879,
+        295,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-47-r3-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        78,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c1-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        78,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        78,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        211,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c2-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        211,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        211,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        345,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c3-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        345,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        345,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        478,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c4-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        478,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        478,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        612,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c5-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        612,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        612,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        745,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c6-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        745,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        745,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r3-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        879,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r3-c7-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        879,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r3-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        879,
+        437,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        78,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c1-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        78,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c1-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        78,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c1-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        78,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        211,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c2-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        211,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c2-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        211,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c2-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        211,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        345,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c3-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        345,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c3-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        345,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c3-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        345,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        478,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c4-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        478,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c4-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        478,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c4-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        478,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        612,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c5-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        612,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c5-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        612,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c5-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        612,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        745,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c6-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        745,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c6-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        745,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c6-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        745,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-r4-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "selection",
+      "card720": [
+        879,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-47-r4-c7-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "cell",
+      "card720": [
+        879,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      }
+    },
+    {
+      "name": "JP-48-r4-c7-beta5-selection",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "selection",
+      "card720": [
+        879,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-48-r4-c7-beta5-cell",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "view": "cell",
+      "card720": [
+        879,
+        579,
+        116,
+        126
+      ],
+      "expected": {
+        "tier": "Bronze",
+        "stars": 1,
+        "selected": false,
+        "kind": "Servant"
+      },
+      "frame": "crop",
+      "region720": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "masked720": [
+        [
+          366,
+          270,
+          548,
+          180
+        ]
+      ]
+    },
+    {
+      "name": "JP-47-bottom-label-row-evaluated",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "view": "page",
+      "expected": {
+        "evaluatedRows": 3,
+        "bottomEvaluatedColumns": 7
+      }
     }
   ]
 }

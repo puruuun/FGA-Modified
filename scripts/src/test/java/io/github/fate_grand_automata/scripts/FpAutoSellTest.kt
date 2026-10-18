@@ -211,6 +211,7 @@ class FpAutoSellTest {
             every { with(api) { grid.exists(before, any(), any()) } } returns true
             every { reader.loc } returns loc
             every { reader.hasLockTemplate } returns false
+            every { reader.tier(card) } returns FpSellPolicy.Tier.Bronze
             every { reader.onSellHeading() } returns true
             every { reader.onServantTab() } returns true
             every { reader.onSellScreen() } returns true

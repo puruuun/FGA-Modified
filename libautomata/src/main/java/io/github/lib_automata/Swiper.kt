@@ -10,6 +10,9 @@ interface Swiper {
      * @param end the [Location] where the swipe should end
      */
     operator fun invoke(start: Location, end: Location)
+
+    /** Bounded scroll: exact displacement, no user multiplier, and a stationary hold before release. */
+    fun scroll(start: Location, end: Location)
 }
 
 class RealSwiper @Inject constructor(
@@ -17,6 +20,10 @@ class RealSwiper @Inject constructor(
     private val platformImpl: PlatformImpl,
     private val transform: Transformer
 ): Swiper {
+    override fun scroll(start: Location, end: Location) {
+        gestureService.scroll(transform.toScreen(start), transform.toScreen(end))
+    }
+
     override fun invoke(start: Location, end: Location) {
         val endX = lerp(
             start.x,

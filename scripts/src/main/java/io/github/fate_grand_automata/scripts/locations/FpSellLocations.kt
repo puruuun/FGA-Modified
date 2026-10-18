@@ -16,7 +16,7 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val servantTab = Region(-1250, 185, 340, 140).xFromCenter()
     /** Tapped to bring the servant tab forward when the sell screen opens on the Craft Essence tab (D-17). */
     val servantTabClick = Location(-1120, 254).xFromCenter()
-    val grid = Region(-1130, 338, 1850, 1094).xFromCenter()
+    val grid = Region(-1130, 338, 1850, 1102).xFromCenter()
     val sizeSwitch = Location(-1180, 1320).xFromCenter()
     val confirm = Region(820, 1240, 440, 180).xFromCenter()
     val convertHeading = Region(-180, 40, 400, 120).xFromCenter()
@@ -34,12 +34,16 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val leftArrow = Location(-1230, 720).xFromCenter()
     val rightArrow = Location(1230, 720).xFromCenter()
     val swipeStart = Location(0, 1310).xFromCenter()
-    val swipeEnd = Location(0, 470).xFromCenter()
+    /** D-23: the end depends on how many rows were fully evaluated, never on a fixed three-row jump. */
+    fun swipeEnd(distance: Int) = swipeStart - Location(0, distance)
     // Card top-left X for small icons. Width 232, pitch 267; labels establish Y after scrolling.
     fun columnX(column: Int) = Location(-1124 + column * 267, 0).xFromCenter().x
-    fun labelColumn(column: Int) = Region(columnX(column) + 65, 342, 110, 1086)
+    fun labelColumn(column: Int) = Region(columnX(column) + 65, 338, 110, 1102)
     fun newColumn(column: Int) = Region(columnX(column) + 48, 342, 140, 1086)
     fun card(column: Int, labelY: Int) = Region(columnX(column), labelY - 230, 232, 252)
+    /** Label text is centered in its card: avoid accumulating a rounded column pitch (D-25). */
+    fun card(label: Region) = Region(label.center.x - 116, label.y - 230, 232, 252)
+    fun labelInsideGrid(label: Region) = label.bottom <= grid.bottom
     fun label(card: Region) = Region(card.x + 65, card.bottom - 24, 110, 24)
     fun stars(card: Region) = Region(card.x + 94, card.bottom - 68, 128, 40)
     /**
@@ -48,12 +52,10 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
      */
     fun starSlot(card: Region, slot: Int) = Region(card.x + 186 - 22 * slot, card.bottom - 66, 36, 36)
     fun newLabel(card: Region) = Region(card.x + 48, card.y - 28, 140, 46)
-    /**
-     * A 3 px (720p) wide, 40 px tall strip of the selection frame's left edge, below the class badge and above the
-     * lower-left number badge. [offset] is in 720p pixels from the card's left edge; the teal band covers about -1..4.
-     * Only frame pixels are read, never card art (D-19).
-     */
-    fun selectionStrip(card: Region, offset: Int) = Region(card.x + offset * 2, card.y + 72, 6, 80)
+    val frameOffsets = -8..8
+    val frameBands = listOf(72, 160)
+    /** Single-pixel columns across the outer edge, at two bands clear of class/number badges and card art. */
+    fun frameStrip(card: Region, offset: Int, band: Int) = Region(card.x + offset * 2, card.y + band, 2, 32)
     /** The padlock sits on the left edge of a locked tile, and the overlay words cover the tile. */
     fun lock(card: Region) = Region(card.x - 32, card.y, card.width + 32, card.height)
 }
