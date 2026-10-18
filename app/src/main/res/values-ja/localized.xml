@@ -640,4 +640,6 @@
     <string name="portrait_class_pretender">プリテンダー</string>
     <string name="portrait_class_shielder">シールダー</string>
     <string name="portrait_class_beast">ビースト</string>
+    <string name="p_grand_score_16_jp_only">現在JPサーバー専用</string>
+    <string name="grand_score_not_supported">このサーバーにはグランドスコアがないため、+16の条件を無視します。</string>
 </resources>

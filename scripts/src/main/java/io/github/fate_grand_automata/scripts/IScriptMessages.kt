@@ -12,6 +12,7 @@ sealed class ScriptNotify {
     class FailedToDetermineCards(val cards: List<CommandCard.Face>,
                                  val unknownCardTypes: Boolean, val unknownServants: Boolean) : ScriptNotify()
     class SupportListUpdatingIn(val time: Duration) : ScriptNotify()
+    data object GrandScoreNotSupported : ScriptNotify()
     class BetweenRuns(val refills: Int, val runs: Int, val ceDrops: Int) : ScriptNotify()
     data object BondLevelUp : ScriptNotify()
     class CommandStartWaiting(val servant: Int, val count: Int, val required: Int) : ScriptNotify()
@@ -39,6 +40,7 @@ sealed class ScriptLog {
     ) : ScriptLog()
     class SupportNpLevel(val required: Int, val detected: Int?, val matched: Boolean) : ScriptLog()
     class SupportDiagnosticsLimit(val limit: Int) : ScriptLog()
+    class GrandScoreIgnored(val server: String) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()
     class ClickingCards(val cards: Iterable<CommandCard.Face>) : ScriptLog()

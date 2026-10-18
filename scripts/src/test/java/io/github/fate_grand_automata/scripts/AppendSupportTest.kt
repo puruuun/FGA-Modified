@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.scripts
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportSkillLayout
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.lib_automata.OcrService
@@ -58,6 +59,8 @@ class AppendSupportTest {
         val preferred: PreferredSupportSelection
 
         init {
+            // These fixtures test the JP Grand score path; servers without Grand scores ignore +16 (0005 D-10).
+            every { api.prefs.gameServer } returns GameServer.Jp.Original
             every { prefs.appendSkillCheck } returns enabled
             every { prefs.appendSkillsMax } returns required
             every { prefs.preferredServants } returns characters

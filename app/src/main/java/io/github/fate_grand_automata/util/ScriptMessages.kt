@@ -74,6 +74,9 @@ class ScriptMessages @Inject constructor(
             )
             is ScriptLog.SupportNpLevel -> Timber.d("Support NP: %s, minimum: %d, matched: %s",
                 item.detected ?: "unreadable", item.required, item.matched)
+            is ScriptLog.GrandScoreIgnored -> Timber.tag("FGA.SupportScore").i(
+                "Grand score is not shown on %s servers, so the +16 condition is ignored", item.server
+            )
             is ScriptLog.SupportDiagnosticsLimit -> Timber.tag("FGA.Diagnostics").w(
                 "Support score diagnostics stopped after %d candidates in this run", item.limit
             )
@@ -134,6 +137,10 @@ class ScriptMessages @Inject constructor(
                 toast(
                     context.getString(R.string.support_list_updated_in, action.time.toString(DurationUnit.SECONDS, 2))
                 )
+            }
+
+            ScriptNotify.GrandScoreNotSupported -> {
+                toast(context.getString(R.string.grand_score_not_supported))
             }
 
             is ScriptNotify.WaitForAPRegen -> {
