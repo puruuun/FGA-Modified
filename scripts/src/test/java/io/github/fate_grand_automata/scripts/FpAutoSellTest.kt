@@ -215,7 +215,7 @@ class FpAutoSellTest {
             every { reader.onServantTab() } returns true
             every { reader.onSellScreen() } returns true
             every { reader.isSevenColumns() } returns sevenColumns
-            every { reader.read() } returns listOf(FpSellReader.ReadCell(card, unselected))
+            every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null, unselected, emptyList(), 0.0))
             // The second page shows the same tile, now selected, so it must not be tapped or counted again.
             every { reader.confirmed(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
             if (selections.isNotEmpty()) every { reader.selection(card) } returnsMany selections
@@ -301,5 +301,59 @@ class FpAutoSellTest {
         assertNull(state(null), "grayscale capture carries no colour")
         assertNull(state(strip(0.0, 0.0, 0.0), null))
         assertNull(FpSellReader.selectionState(null))
+    }
+
+    /** Frame 46 (JP, scrolled): the strip templates read 0.0 there, the per-slot star count reads one star. */
+    @Test fun `star slots count right-aligned stars and leave borderline rows unknown`() {
+        assertEquals(1, FpSellPolicy.starsFromSlots(listOf(0.83, 0.40, 0.0, 0.0, 0.0)))
+        assertEquals(1, FpSellPolicy.starsFromSlots(listOf(0.60, 0.26, 0.05, 0.18, 0.09)))
+        assertEquals(2, FpSellPolicy.starsFromSlots(listOf(0.71, 0.64, 0.12, 0.34, 0.0)))
+        assertEquals(3, FpSellPolicy.starsFromSlots(listOf(0.85, 0.80, 0.68, 0.34, 0.41)))
+        assertEquals(4, FpSellPolicy.starsFromSlots(listOf(0.83, 0.75, 0.69, 0.77, 0.41)))
+        // The slot after the last star must be clearly empty; a borderline one is not a category.
+        assertNull(FpSellPolicy.starsFromSlots(listOf(0.83, 0.46, 0.0, 0.0, 0.0)))
+        // No star at all, five stars, a gap followed by a star, or a missing slot: unknown, never a guess.
+        assertNull(FpSellPolicy.starsFromSlots(listOf(0.42, 0.33, 0.0, 0.0, 0.36)))
+        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.9, 0.9, 0.9, 0.9)))
+        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.1, 0.9, 0.0, 0.0)))
+        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.1)))
+    }
+
+    @Test fun `decision names the first reason and is select exactly when the policy selects`() {
+        val owner = Options(setOf(Category.Servant1, Category.Servant2, Category.Servant3, Category.Servant4), true, true)
+        val tile = Cell(Kind.Servant, 1, true, Lock.Unlocked, false)
+        assertEquals("select", FpSellPolicy.decision(tile, owner))
+        assertEquals("skip:not-new", FpSellPolicy.decision(tile.copy(new = false), owner))
+        assertEquals("skip:new-unknown", FpSellPolicy.decision(tile.copy(new = null), owner))
+        assertEquals("skip:already-selected", FpSellPolicy.decision(tile.copy(selected = true), owner))
+        assertEquals("skip:selection-unknown", FpSellPolicy.decision(tile.copy(selected = null), owner))
+        assertEquals("skip:stars-unknown", FpSellPolicy.decision(tile.copy(stars = null), owner))
+        assertEquals("skip:kind-unknown", FpSellPolicy.decision(tile.copy(kind = null), owner))
+        assertEquals("skip:category-off", FpSellPolicy.decision(tile.copy(kind = Kind.Exp, stars = 4), owner))
+        assertEquals("skip:excluded", FpSellPolicy.decision(tile.copy(excluded = true), owner))
+        assertEquals("skip:locked", FpSellPolicy.decision(tile.copy(lock = Lock.Locked), owner))
+        assertEquals("skip:lock-unknown", FpSellPolicy.decision(tile.copy(lock = Lock.Unknown), owner.copy(dryRun = false)))
+        for (kind in listOf(Kind.Servant, Kind.Exp, null)) for (stars in listOf(1, 4, null)) for (new in listOf(true, false, null))
+            for (lock in Lock.entries) for (selected in listOf(true, false, null)) for (excluded in listOf(true, false))
+                for (dry in listOf(true, false)) for (newOnly in listOf(true, false)) {
+                    val cell = Cell(kind, stars, new, lock, selected, excluded)
+                    val options = Options(allCategories, newOnly, dry)
+                    assertEquals(FpSellPolicy.select(cell, options), FpSellPolicy.decision(cell, options) == "select", cell.toString())
+                }
+    }
+
+    @Test fun `tile log line carries page, position, reads, scores and the decision`() {
+        val line = FpSellPolicy.tileLine(2, 0, 3, Cell(Kind.Servant, 1, true, Lock.Unlocked, false), null,
+            listOf(1 to 0.0, 2 to 0.0), listOf(0.83, 0.4, 0.0, 0.0, 0.0), 0.932, "select")
+        assertEquals("page=2 r1c4 kind=Servant stars=1(strip 1:0.0/2:0.0 slots 0.83,0.4,0.0,0.0,0.0) " +
+            "new=true(0.93) lock=Unlocked excluded=false selected=false decision=select", line)
+        assertEquals("page=0 r1c1 decision=skip:gridTop",
+            FpSellPolicy.tileLine(0, 0, 0, null, "gridTop", emptyList(), emptyList(), 0.0, "skip:gridTop"))
+    }
+
+    @Test fun `new tag bands accept the weakest observed real tag and keep a gap above the search floor`() {
+        assertTrue(0.858 >= FpSellReader.NEW_PRESENT)
+        assertTrue(FpSellReader.NEW_ABSENT > 0.75)
+        assertTrue(FpSellReader.NEW_ABSENT < FpSellReader.NEW_PRESENT)
     }
 }

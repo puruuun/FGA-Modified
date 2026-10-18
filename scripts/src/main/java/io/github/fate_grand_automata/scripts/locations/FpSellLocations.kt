@@ -42,6 +42,11 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     fun card(column: Int, labelY: Int) = Region(columnX(column), labelY - 230, 232, 252)
     fun label(card: Region) = Region(card.x + 65, card.bottom - 24, 110, 24)
     fun stars(card: Region) = Region(card.x + 94, card.bottom - 68, 128, 40)
+    /**
+     * Slot [slot] (0 = rightmost) of the rarity star row: an 18x18 px (720p) window around a 12 px star. Stars sit 11 px
+     * apart and end 4 px from the strip's right edge, so the window absorbs about 3 px of column drift.
+     */
+    fun starSlot(card: Region, slot: Int) = Region(card.x + 186 - 22 * slot, card.bottom - 66, 36, 36)
     fun newLabel(card: Region) = Region(card.x + 48, card.y - 28, 140, 46)
     /**
      * A 3 px (720p) wide, 40 px tall strip of the selection frame's left edge, below the class badge and above the

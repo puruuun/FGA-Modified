@@ -3269,6 +3269,327 @@
       "expected": {
         "selected": false
       }
+    },
+    {
+      "name": "JP-46-page-owner-options",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "page",
+      "expected": {
+        "tileCount": 28,
+        "selectMap": "-------111111111111111111111"
+      }
+    },
+    {
+      "name": "JP-46-r2-c1-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        78,
+        303,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r2-c4-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        478,
+        303,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r2-c5-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        612,
+        303,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r2-c7-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        879,
+        303,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r3-c1-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        78,
+        445,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r3-c4-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        478,
+        445,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r3-c5-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        612,
+        445,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r3-c7-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        879,
+        445,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r4-c1-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        78,
+        587,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r4-c4-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        478,
+        587,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r4-c5-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        612,
+        587,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r4-c7-new-1star",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        879,
+        587,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "excluded": false,
+        "candidate": true,
+        "candidateReal": true
+      }
+    },
+    {
+      "name": "JP-46-r1-c1-top-row-no-new",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        78,
+        161,
+        116,
+        126
+      ],
+      "expected": {
+        "new": false,
+        "candidate": false
+      }
+    },
+    {
+      "name": "JP-46-r1-c7-top-row-no-new",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "view": "cell",
+      "card720": [
+        879,
+        161,
+        116,
+        126
+      ],
+      "expected": {
+        "new": false,
+        "candidate": false
+      }
     }
   ]
 }

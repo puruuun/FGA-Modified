@@ -25,6 +25,8 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    /** A line for `adb logcat -s FpSell`: one per evaluated sell tile, plus the stop step and reason. */
+    class FpSell(val message: String) : ScriptLog()
     class FpSellSelection(val summary: io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Summary) : ScriptLog()
     object DefaultSupportBounds : ScriptLog()
     object DefaultMasterOffset : ScriptLog()

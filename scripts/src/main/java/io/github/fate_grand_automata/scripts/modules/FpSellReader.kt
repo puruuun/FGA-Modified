@@ -22,6 +22,12 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
          * (a missed padlock is the dangerous error; a false padlock only skips a tile).
          */
         const val EXCLUSION_SIMILARITY = 0.8
+        /**
+         * NEW! tag score bands. Real tags score 0.858-0.95 (the tag sits on the card row above, whose art varies;
+         * lower rows read lower), tiles without a tag stay under the 0.75 search floor, so 0.85 keeps a gap on both sides.
+         */
+        const val NEW_PRESENT = 0.85
+        const val NEW_ABSENT = 0.8
         /** The NEW! tag sits 128 px (720p) above the label of the same tile, i.e. 256 in 1440p. */
         const val NEW_TAG_TO_LABEL = 256
 
@@ -107,13 +113,35 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
             result
         }
 
-    fun read(): List<ReadCell> = useSameSnapIn {
+    /** One label match on a page. [skip] names the geometry filter that dropped it, or is null for an evaluated tile. */
+    data class PageTile(
+        val column: Int,
+        val region: Region,
+        val skip: String?,
+        val cell: FpSellPolicy.Cell?,
+        val stars: List<Pair<Int, Double>>,
+        val newScore: Double,
+        val slots: List<Double> = emptyList(),
+    )
+
+    /** Every tile found on the current page, including the ones dropped by the grid filters (for diagnosis and logs). */
+    fun readPage(): List<PageTile> = useSameSnapIn {
         if (!onSellScreen() || !isSevenColumns()) return@useSameSnapIn emptyList()
-        (0..6).flatMap { column -> labelMatches(column).mapNotNull { label ->
+        (0..6).flatMap { column -> labelMatches(column).map { label ->
             val card = loc.card(column, label.region.y)
-            if (card.y < loc.grid.y + 28 || card.bottom > loc.grid.bottom) null else ReadCell(card, readCard(card))
+            when {
+                card.y < loc.grid.y + 28 -> PageTile(column, card, "gridTop", null, emptyList(), 0.0)
+                card.bottom > loc.grid.bottom -> PageTile(column, card, "gridBottom", null, emptyList(), 0.0)
+                else -> {
+                    val cell = readCard(card)
+                    PageTile(column, card, null, cell, rarityScores(card, cell.kind), newScore(card),
+                        if (cell.kind == FpSellPolicy.Kind.Servant) starSlotScores(card) else emptyList())
+                }
+            }
         } }.sortedWith(compareBy({ it.region.y }, { it.region.x }))
     }
+
+    fun read(): List<ReadCell> = readPage().filter { it.skip == null }.map { ReadCell(it.region, it.cell!!) }
 
     /**
      * Distance of the card's frame to the teal selection colour, read from a fresh colour frame.
@@ -150,7 +178,8 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         return FpSellPolicy.Cell(kind, stars, new, lock, selected = null, excluded = padlock || words)
     }
 
-    private fun rarity(card: Region, kind: FpSellPolicy.Kind?): Int? {
+    /** Best template score per star count, strongest first; empty when the kind is unknown. */
+    fun rarityScores(card: Region, kind: FpSellPolicy.Kind?): List<Pair<Int, Double>> {
         val candidates = when (kind) {
             FpSellPolicy.Kind.Servant -> listOf(
                 1 to listOf(Images.FpSellRarity1),
@@ -161,20 +190,42 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
                 4 to listOf(Images.FpSellRarity4, Images.FpSellRarity4R0c1))
             FpSellPolicy.Kind.Exp -> listOf(4 to listOf(Images.FpSellRarityExp4, Images.FpSellRarityExp4Dark),
                 5 to listOf(Images.FpSellRarityExp5, Images.FpSellRarityExp5Dark))
-            null -> return null
+            null -> return emptyList()
         }
-        val scores = candidates.map { (stars, templates) -> stars to templates.maxOf {
+        return candidates.map { (stars, templates) -> stars to templates.maxOf {
             loc.stars(card).findAll(images[it], similarity = 0.8).maxOfOrNull { match -> match.score } ?: 0.0
         } }.sortedByDescending { it.second }
-        return scores.first().takeIf { it.second >= 0.9 && it.second - scores[1].second >= 0.08 }?.first
     }
 
-    fun newState(card: Region): Boolean? {
-        val score = listOf(Images.FpSellNewBright, Images.FpSellNewDark, Images.FpSellNewOrange,
+    /**
+     * Best score of one gold star per slot, rightmost first (five slots; a servant has at most four stars).
+     * Unlike the strip templates, a single star carries almost no card art, so it matches on any tile (JP 1-star, frame 46).
+     */
+    fun starSlotScores(card: Region): List<Double> {
+        val star = images[Images.FpSellRarityStar]
+        return (0 until FpSellPolicy.STAR_SLOTS).map { slot ->
+            loc.starSlot(card, slot).findAll(star, similarity = 0.3).maxOfOrNull { it.score } ?: 0.0
+        }
+    }
+
+    private fun rarity(card: Region, kind: FpSellPolicy.Kind?): Int? {
+        val scores = rarityScores(card, kind)
+        if (scores.size < 2) return null
+        val stripStars = scores.first().takeIf { it.second >= 0.9 && it.second - scores[1].second >= 0.08 }?.first
+        // The strip templates are cut from KR card art and never reach 0.9 on other art. Only a servant falls back to
+        // the slot-wise count; an uncertain count stays null, so the tile is not selected.
+        return stripStars ?: if (kind == FpSellPolicy.Kind.Servant) FpSellPolicy.starsFromSlots(starSlotScores(card)) else null
+    }
+
+    /** Best NEW! tag score in the band above the card. */
+    fun newScore(card: Region): Double = listOf(Images.FpSellNewBright, Images.FpSellNewDark, Images.FpSellNewOrange,
             Images.FpSellNewSelected, Images.FpSellNewSelectedRight, Images.FpSellNewOrangeRight).maxOf {
             loc.newLabel(card).findAll(images[it], similarity = 0.75).maxOfOrNull { it.score } ?: 0.0
         }
-        return when { score >= 0.88 -> true; score >= 0.8 -> null; else -> false }
+
+    fun newState(card: Region): Boolean? {
+        val score = newScore(card)
+        return when { score >= NEW_PRESENT -> true; score >= NEW_ABSENT -> null; else -> false }
     }
 
     /** A borderline NEW read is retried from a fresh frame, once, after its shimmer changes. */

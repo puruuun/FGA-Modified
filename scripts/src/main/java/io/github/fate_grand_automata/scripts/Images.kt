@@ -28,6 +28,7 @@ enum class Images(val path: String) {
     FpSellDotOff("fp_sell_dot_off.png"),
     FpSellLock("fp_sell_lock.png"),
     FpSellRarity1("fp_sell_rarity1.png"),
+    FpSellRarityStar("fp_sell_rarity_star.png"),
     FpSellRarity2("fp_sell_rarity2.png"),
     FpSellRarity3("fp_sell_rarity3.png"),
     FpSellRarity4("fp_sell_rarity4.png"),

@@ -38,6 +38,8 @@ RECIPES = [
     ("En", "fp_sell_lock.png", "Kr", "38.png", 202, 334, 28, 30),
     ("En", "fp_sell_party.png", "Kr", "38.png", 628, 546, 76, 22),
     ("Jp", "fp_sell_party.png", "Jp", "37.png", 765, 617, 72, 20),
+    # Single gold rarity star (12x12) for the slot-wise star count; the whole-strip rarity templates carry card art.
+    ("En", "fp_sell_rarity_star.png", "Kr", "27.png", 174, 278, 12, 12),
     # JP "Exp. UP" label: the KR template scores 0.78-0.85 on JP cards. The Servant label matches JP as is.
     ("Jp", "fp_sell_exp.png", "Jp", "29.png", 119, 299, 35, 9),
 ]

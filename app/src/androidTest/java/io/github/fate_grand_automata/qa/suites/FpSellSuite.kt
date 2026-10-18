@@ -18,6 +18,32 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
         "banner" -> FpBannerReturn(this, reader.loc).readDots().let {
             JSONObject().put("active", it?.active ?: -1).put("count", it?.count ?: 0)
         }
+        "page" -> {
+            val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
+                FpSellPolicy.Category.Servant3, FpSellPolicy.Category.Servant4)
+            val options = FpSellPolicy.Options(enabled, true, true)
+            val rows = org.json.JSONArray()
+            val summary = StringBuilder()
+            for (tile in reader.readPage()) {
+                val row = JSONObject().put("col", tile.column).put("x", tile.region.x / 2).put("y", tile.region.y / 2)
+                    .put("skip", tile.skip ?: "")
+                val cell = tile.cell
+                if (cell != null) {
+                    val distance = reader.selectionDistance(tile.region)
+                    val selected = FpSellReader.selectionState(distance)
+                    val chosen = FpSellPolicy.select(cell.copy(selected = selected), options)
+                    row.put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
+                        .put("starScores", tile.stars.take(2).joinToString(" ") { "${it.first}:${Math.round(it.second * 1000) / 1000.0}" })
+                        .put("slots", reader.starSlotScores(tile.region).joinToString(" ") { "${Math.round(it * 100) / 100.0}" })
+                        .put("new", cell.new ?: false).put("newScore", Math.round(tile.newScore * 1000) / 1000.0)
+                        .put("lock", cell.lock.name).put("excluded", cell.excluded)
+                        .put("selected", selected ?: "unknown").put("select", chosen)
+                    summary.append(if (chosen) '1' else '0')
+                } else summary.append('-')
+                rows.put(row)
+            }
+            JSONObject().put("tiles", rows).put("tileCount", rows.length()).put("selectMap", summary.toString())
+        }
         else -> {
             val box = case.getJSONArray("card720")
             val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
@@ -33,6 +59,8 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
                 .put("new", cell.new ?: false).put("selected", selected ?: "unknown")
                 .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
                 .put("lock", cell.lock.name).put("excluded", cell.excluded)
+                .put("newScore", Math.round(reader.newScore(card) * 1000) / 1000.0)
+                .put("slots", reader.starSlotScores(card).joinToString(" ") { "${Math.round(it * 100) / 100.0}" })
                 .put("candidate", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(enabled, true, true)))
                 // Strongest setting: every category, NEW! not required, real selling. Excluded tiles must stay false here.
                 .put("candidateReal", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(every, false, false)))

@@ -52,6 +52,39 @@ object FpSellPolicy {
         return options.dryRun || cell.lock == Lock.Unlocked
     }
 
+    /** The reason [select] says no, or "select". Written out for the logcat line so a skipped tile explains itself. */
+    fun decision(cell: Cell, options: Options): String = when {
+        select(cell, options) -> "select"
+        cell.excluded -> "skip:excluded"
+        cell.lock == Lock.Locked -> "skip:locked"
+        cell.category == null -> if (cell.kind == null) "skip:kind-unknown" else "skip:stars-unknown"
+        cell.category !in options.enabled -> "skip:category-off"
+        cell.selected == null -> "skip:selection-unknown"
+        cell.selected -> "skip:already-selected"
+        cell.new == null -> "skip:new-unknown"
+        options.newOnly && cell.new != true -> "skip:not-new"
+        else -> "skip:lock-unknown"
+    }
+
+    private fun score(value: Double) = (Math.round(value * 100) / 100.0).toString()
+
+    /**
+     * One logcat line for one evaluated tile (tag FpSell). [strip] holds the two strongest strip-template star scores,
+     * [slots] the per-slot star scores, [newScore] the NEW! tag score.
+     */
+    fun tileLine(
+        page: Int, row: Int, column: Int, cell: Cell?, skip: String?,
+        strip: List<Pair<Int, Double>>, slots: List<Double>, newScore: Double, decision: String
+    ): String {
+        val position = "page=$page r${row + 1}c${column + 1}"
+        if (cell == null) return "$position decision=skip:${skip ?: "unread"}"
+        val stripText = strip.take(2).joinToString("/") { "${it.first}:${score(it.second)}" }
+        val slotText = slots.joinToString(",") { score(it) }
+        return "$position kind=${cell.kind ?: "?"} stars=${cell.stars ?: "?"}(strip $stripText slots $slotText) " +
+            "new=${cell.new ?: "?"}(${score(newScore)}) lock=${cell.lock} excluded=${cell.excluded} " +
+            "selected=${cell.selected ?: "?"} decision=$decision"
+    }
+
     /**
      * D-13: real selling is allowed once the device QA (fpSell suite, 142 fixtures) proved that no locked, unselectable,
      * Grand Servant or PARTY tile is a candidate, even in dry run.
@@ -74,6 +107,26 @@ object FpSellPolicy {
             .zip(Category.entries).filter { it.first }.map { it.second }.toSet(),
         prefs.fpSellNewOnly,
         prefs.fpSellDryRun || !realSellAllowed(prefs.gameServer, hasLockTemplate))
+
+    const val STAR_SLOTS = 5
+    /** A star slot scoring at least this is a star (KR 2-4 star tiles: 0.58-0.93, JP 1-star: 0.6-0.93). */
+    const val STAR_PRESENT = 0.55
+    /** The slot after the last star must score at most this (observed 0.02-0.46; 0.5 for the fifth slot of a 4-star tile). */
+    const val STAR_ABSENT = 0.40
+    const val STAR_ABSENT_FIFTH = 0.50
+
+    /**
+     * Servant stars counted slot by slot from the right. Null unless every counted slot is clearly a star and the next
+     * one is clearly empty, so a borderline read never becomes a category. Five stars is not a category: null.
+     */
+    fun starsFromSlots(scores: List<Double>): Int? {
+        if (scores.size < STAR_SLOTS) return null
+        val count = scores.takeWhile { it >= STAR_PRESENT }.size
+        if (count !in 1..4) return null
+        val limit = if (count == 4) STAR_ABSENT_FIFTH else STAR_ABSENT
+        // The slot after the last star must be clearly empty, and no later slot may look like a star.
+        return count.takeIf { scores[count] <= limit && scores.drop(count + 1).all { it < STAR_PRESENT } }
+    }
 
     /** D-17: the size toggle cycles 5 -> 6 -> 7 -> 5, so the number of presses needed to reach 7 columns. */
     fun sizeTogglesToSeven(columns: Int): Int? = when (columns) {

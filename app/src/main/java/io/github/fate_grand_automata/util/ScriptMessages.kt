@@ -16,6 +16,9 @@ import timber.log.Timber
 import javax.inject.Inject
 import kotlin.time.DurationUnit
 
+/** Fixed logcat tag of the FP auto-sell run: `adb logcat -s FpSell`. */
+const val FP_SELL_TAG = "FpSell"
+
 @ServiceScoped
 class ScriptMessages @Inject constructor(
     service: Service,
@@ -42,6 +45,7 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.FpSell -> Timber.tag(FP_SELL_TAG).i(item.message)
             is ScriptLog.FpSellSelection -> Timber.i(fpSellSummary(context, item.summary))
             ScriptLog.DefaultSupportBounds -> {
                 Timber.d("Default Region being returned")
