@@ -1,6 +1,6 @@
 # FGA 1.4.0-beta.1 검증 보고서
 
-상태: FP 자동 판매 구현, 전체 단위 테스트, 전체 기기 QA 통과. 아래 "남은 일"은 커밋·푸시·CI·APK 설치 뒤에 기록합니다.
+상태: FP 자동 판매 구현, 전체 단위 테스트, 전체 기기 QA 통과. 커밋 `eaf7217` 푸시, Main CI #11 성공, BlueStacks 업데이트 설치 완료.
 
 - 설계: `docs/design/0007-fp-gacha-auto-sell.md`, §1~§7 및 §8(D-10), §9(D-1 변경, D-11~D-17) 전부 반영.
 - 베타: `1.4.0-beta.1` / `1004001`. 정규판 `1.2.1` / `3083` 유지.
@@ -49,3 +49,10 @@
 fpSell 구성: 레이아웃(KR 18·19·20·27·28, JP 29·37, KR 38, JP 42·43 개념예장 탭), 서번트 경고(KR 17, JP 40 참, JP 39 거짓), 점 줄(KR 15·25·26), 칸 판독(KR 18·20·27·28, JP 29 비잠금 칸 보호, 잠금 칸 KR 38 20칸, JP 37 잠금·그랜드·선택 불가·PARTY 칸). 모든 잠금 칸에서 `candidateReal`, `candidateDryAll`이 false입니다.
 
 한계: 레이아웃 판별은 오버레이로 라벨이 가려진 JP 37에서 NEW! 태그로 보완했습니다. 기기 QA는 저장 화면 판독이며, 게임을 조작하는 실전 QA는 하지 않았습니다.
+
+## 배포
+
+- 커밋: `eaf7217` (`main`에 푸시). Main CI #11 성공.
+- APK: `C:\Users\rl\Documents\Codex\FGA-Modified-builds\FGA-beta-1.4.0-beta.1-arm.apk`
+- SHA-256: `21bf513c254c3fce226783fad92fcf9b56fc46ab706fc8a2b71a67662255fb7e`
+- 설치: `adb -s emulator-5554 install -r` 업데이트 성공. 설치 후 `io.github.fate_grand_automata.beta`, versionCode 1004001, versionName 1.4.0-beta.1 확인.
