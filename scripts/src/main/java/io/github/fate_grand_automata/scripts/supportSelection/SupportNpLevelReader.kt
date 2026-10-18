@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.scripts.locations.SupportNpLayout
 import io.github.lib_automata.Match
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
+import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.lib_automata.TextLineOcrOptions
 import io.github.lib_automata.dagger.ScriptScope
@@ -70,11 +71,7 @@ class SupportNpLevelReader @Inject constructor(
     /** Pure read of the caller's candidate snapshot. No taps, waits or display changes. */
     fun read(bounds: SupportBounds): Int? {
         val search = SupportNpLayout.nameRegion(bounds.region)
-        val servers = if (prefs.gameServer is GameServer.Jp)
-            listOf(prefs.gameServer, GameServers.default) else listOf(prefs.gameServer)
-        val prefixes = servers.flatMap { server ->
-            listOf(Images.SupportNpLevelPrefix, Images.SupportNpLevelPrefixGold).map { images[it, server] }
-        }
+        val prefixes = prefixTemplates()
         val matches = prefixes.flatMap { search.findAll(it, similarity = PREFIX_SIMILARITY) }
         val best = matches.maxByOrNull { it.score }
         if (best != null) {
@@ -83,9 +80,39 @@ class SupportNpLevelReader @Inject constructor(
             parse(results.single())?.let { return it }
         }
 
+        val recoveryMatches = recoveryMatches(search, prefixes)
+        val recoveryBest = recoveryMatches.maxByOrNull { it.score } ?: return null
+        if (ambiguous(recoveryMatches, recoveryBest)) return null
+        return readSuffix(search, recoveryBest, RECOVERY_OCR_OPTIONS)?.let(::recoveryLevel)
+    }
+
+    /**
+     * Finds the "Lv." marker of a row without reading the level. The NP image maker uses it to
+     * decide where the NP name image ends (0006 D-2). Same search as [read], without OCR.
+     */
+    fun findLevelPrefix(bounds: SupportBounds): Region? {
+        val search = SupportNpLayout.nameRegion(bounds.region)
+        val prefixes = prefixTemplates()
+        val matches = prefixes.flatMap { search.findAll(it, similarity = PREFIX_SIMILARITY) }
+        val best = matches.maxByOrNull { it.score }
+        if (best != null) return if (ambiguous(matches, best)) null else best.region
+        val recoveryMatches = recoveryMatches(search, prefixes)
+        val recoveryBest = recoveryMatches.maxByOrNull { it.score } ?: return null
+        return if (ambiguous(recoveryMatches, recoveryBest)) null else recoveryBest.region
+    }
+
+    private fun prefixTemplates(): List<Pattern> {
+        val servers = if (prefs.gameServer is GameServer.Jp)
+            listOf(prefs.gameServer, GameServers.default) else listOf(prefs.gameServer)
+        return servers.flatMap { server ->
+            listOf(Images.SupportNpLevelPrefix, Images.SupportNpLevelPrefixGold).map { images[it, server] }
+        }
+    }
+
+    private fun recoveryMatches(search: Region, prefixes: List<Pattern>): List<Match> {
         val recoverySimilarity = if (prefs.gameServer is GameServer.Kr)
             KR_RECOVERY_PREFIX_SIMILARITY else RECOVERY_PREFIX_SIMILARITY
-        val recoveryMatches = prefixes.flatMap { template ->
+        return prefixes.flatMap { template ->
             RECOVERY_PREFIX_SCALES.flatMap { scale ->
                 if (scale == 1.0) search.findAll(template, similarity = recoverySimilarity)
                 else template.resize(template.size * scale).use {
@@ -94,9 +121,6 @@ class SupportNpLevelReader @Inject constructor(
                 }
             }
         }
-        val recoveryBest = recoveryMatches.maxByOrNull { it.score } ?: return null
-        if (ambiguous(recoveryMatches, recoveryBest)) return null
-        return readSuffix(search, recoveryBest, RECOVERY_OCR_OPTIONS)?.let(::recoveryLevel)
     }
 
     private fun ambiguous(matches: List<Match>, best: Match): Boolean {

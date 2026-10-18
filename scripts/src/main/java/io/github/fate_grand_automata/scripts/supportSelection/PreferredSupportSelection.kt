@@ -19,11 +19,13 @@ class PreferredSupportSelection @Inject constructor(
     private val friendSelection: FriendSelection,
     private val appendSelection: AppendSkillSelection,
     private val scoreSelection: SupportScoreSelection,
-    private val npSelection: SupportNpSelection
+    private val npSelection: SupportNpSelection,
+    private val noblePhantasmSelection: NoblePhantasmSelection
 ) : SupportSelectionProvider, IFgoAutomataApi by api {
     private val servants = supportPrefs.preferredServants
     private val ces = supportPrefs.preferredCEs
     private val friendNames = supportPrefs.friendNames
+    private val noblePhantasms = supportPrefs.preferredNoblePhantasms
 
     // Diagnostics only: numbers each select() pass of the run, so records from one run never share a name.
     private var screenCount = 0
@@ -41,7 +43,7 @@ class PreferredSupportSelection @Inject constructor(
     }
 
     override fun select(): SupportSelectionResult {
-        if (servants.isEmpty() && ces.isEmpty() && !supportPrefs.score62Check &&
+        if (servants.isEmpty() && ces.isEmpty() && noblePhantasms.isEmpty() && !supportPrefs.score62Check &&
             !supportPrefs.grandScore16Check && !supportPrefs.npLevelCheck) {
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SupportSelectionPreferredNotSet)
         }
@@ -104,6 +106,7 @@ class PreferredSupportSelection @Inject constructor(
 
         return if (
             servantSelection.check(servants, bounds) &&
+            noblePhantasmSelection.check(noblePhantasms, bounds) &&
             scoreSelection.check(bounds, screen, row) &&
             ceSelection.check(ces, bounds) &&
             (!supportPrefs.friendsOnly || friendSelection.check(friendNames, bounds)) &&

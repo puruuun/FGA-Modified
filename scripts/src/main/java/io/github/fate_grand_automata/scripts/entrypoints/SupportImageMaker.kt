@@ -3,7 +3,10 @@ package io.github.fate_grand_automata.scripts.entrypoints
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.locations.SupportNpLayout
 import io.github.fate_grand_automata.scripts.modules.Support
+import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
+import io.github.fate_grand_automata.scripts.supportSelection.SupportNpLevelReader
 import io.github.fate_grand_automata.scripts.supportSelection.SupportSelectionGrandChecker
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
@@ -18,7 +21,8 @@ class SupportImageMaker @Inject constructor(
     storageProvider: IStorageProvider,
     exitManager: ExitManager,
     api: IFgoAutomataApi,
-    private val grandChecker: SupportSelectionGrandChecker
+    private val grandChecker: SupportSelectionGrandChecker,
+    private val npLevelReader: SupportNpLevelReader
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     companion object {
         fun getServantImgPath(dir: File, Index: Int): File {
@@ -31,6 +35,10 @@ class SupportImageMaker @Inject constructor(
 
         fun getFriendImgPath(dir: File, Index: Int): File {
             return File(dir, "friend_${Index}.png")
+        }
+
+        fun getNpImgPath(dir: File, Index: Int): File {
+            return File(dir, "np_${Index}.png")
         }
     }
 
@@ -49,39 +57,46 @@ class SupportImageMaker @Inject constructor(
         val isInSupport = isInSupport()
 
         // At max two Servant+CE are completely on screen, so only use those
-        val regionArray = locations.scriptArea
+        val rows = locations.scriptArea
             .findAll(
                 images[Images.SupportConfirmSetupButton],
                 Support.supportRegionToolSimilarity
             )
             .map {
-                Region(
-                    if (isInSupport) -2072 else -2064,
-                    // in the friend screen, the "Confirm Support Setup" button is higher
-                    if (isInSupport) 66 else 82,
-                    284,
-                    220
-                ) + it.region.location
+                Pair(
+                    Region(
+                        if (isInSupport) -2072 else -2064,
+                        // in the friend screen, the "Confirm Support Setup" button is higher
+                        if (isInSupport) 66 else 82,
+                        284,
+                        220
+                    ) + it.region.location,
+                    it.region
+                )
             }
-            .filter { it in locations.scriptArea }
+            .filter { it.first in locations.scriptArea }
             .take(2)
-            .sorted()
+            .sortedBy { it.first }
 
-        for ((i, region) in regionArray.withIndex()) {
+        for ((i, row) in rows.withIndex()) {
+            val (region, button) = row
             region.getPattern().use {
                 extractServantImage(it, i)
 
-                if (isGrandServant(region)) {
+                val grand = isGrandServant(region)
+                if (grand) {
                     extractGrandCeImage(region, i)
                     extractGrandFriendNameImage(region, i)
                 } else {
                     extractCeImage(it, i*3)
                     extractFriendNameImage(region, isInSupport, i)
                 }
+                // The NP band is read from the same row bounds the selection uses (0006 D-2).
+                extractNoblePhantasmImage(SupportBounds(locations.support.defaultBounds.copy(y = button.y - 70)), grand, i)
             }
         }
 
-        if (regionArray.isEmpty()) {
+        if (rows.isEmpty()) {
             throw ExitException(ExitReason.NotFound)
         }
 
@@ -145,5 +160,16 @@ class SupportImageMaker @Inject constructor(
 
         val friendPattern = friendBound.getPattern()
         friendPattern.save(getFriendImgPath(dir, i))
+    }
+
+    /**
+     * Saves the NP name of one row (0006 D-2). Rows without a readable "Lv." marker are skipped.
+     * The servant, CE and friend images are still saved for them.
+     */
+    private fun extractNoblePhantasmImage(bounds: SupportBounds, grand: Boolean, i: Int) {
+        val prefix = npLevelReader.findLevelPrefix(bounds) ?: return
+        val crop = SupportNpLayout.noblePhantasmCrop(bounds.region, grand, prefix)
+        if (crop !in locations.scriptArea) return
+        crop.getPattern().save(getNpImgPath(dir, i))
     }
 }

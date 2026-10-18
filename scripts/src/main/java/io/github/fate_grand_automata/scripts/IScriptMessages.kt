@@ -41,6 +41,7 @@ sealed class ScriptLog {
     class SupportNpLevel(val required: Int, val detected: Int?, val matched: Boolean) : ScriptLog()
     class SupportDiagnosticsLimit(val limit: Int) : ScriptLog()
     class GrandScoreIgnored(val server: String) : ScriptLog()
+    class SupportNoblePhantasm(val matched: Boolean, val bestScore: Double?) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()
     class ClickingCards(val cards: Iterable<CommandCard.Face>) : ScriptLog()

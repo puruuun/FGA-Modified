@@ -64,6 +64,7 @@ class AppendSupportTest {
             every { prefs.appendSkillCheck } returns enabled
             every { prefs.appendSkillsMax } returns required
             every { prefs.preferredServants } returns characters
+            every { prefs.preferredNoblePhantasms } returns emptyList()
             every { prefs.preferredCEs } returns ceNames
             every { prefs.score62Check } returns scoreEnabled
             every { prefs.grandScore16Check } returns grandScoreEnabled
@@ -137,7 +138,8 @@ class AppendSupportTest {
             display = SupportSkillDisplay(api)
             selector = AppendSkillSelection(api, prefs, display, reader)
             preferred = PreferredSupportSelection(prefs, api, boundsFinder, mockk(relaxed = true), servants, ces, mockk(relaxed = true), selector,
-                SupportScoreSelection(api, prefs, SupportScoreReader(api, scoreOcr)), SupportNpSelection(api, prefs, npReader))
+                SupportScoreSelection(api, prefs, SupportScoreReader(api, scoreOcr)), SupportNpSelection(api, prefs, npReader),
+                NoblePhantasmSelection(api))
         }
     }
 
