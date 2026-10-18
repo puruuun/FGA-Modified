@@ -91,3 +91,9 @@
 ## 검증 범위
 
 지정된 SDK adb와 `-s emulator-5554`만 사용했다. 읽기 전용 1920×1080 screencap 및 오프라인 판독 instrumentation으로 검증했다. 게임 입력·게임 실행/종료·FGA 스크립트 실행·태블릿 접근은 하지 않았다. 실제 게임에서 이미지 메이커와 선호 선택을 실행하는 확인은 소유자가 직접 해야 한다. NA·CN·TW 화면과 태블릿 해상도는 이번 검증 범위에 포함하지 않았다.
+
+## GitHub 사전 출시 (2026-10-18)
+
+- [v1.3.0-beta.3](https://github.com/puruuun/FGA-Modified/releases/tag/v1.3.0-beta.3): 태그 → `5e62059a`, pre-release, latest 아님(정규판 latest는 v1.2.1 유지).
+- 첨부: `FGA-beta-1.3.0-beta.3-arm.apk`(66,065,444 바이트, SHA-256 `8a2c5dfc…49131d4`), `.sha256`.
+- 소유자 요청으로 설계자(Claude)가 API로 게시했습니다.
