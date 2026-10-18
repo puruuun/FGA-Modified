@@ -24,3 +24,7 @@
 - SHA-256: `fa1ca6eca43256fb0965883ed21b2ddabff98987b44f74402383d4d95934be9c`
 - 설치: **보류**. `adb devices`에 `emulator-5554`가 나타나지 않아 `adb install -r`이 실패했습니다. ADB 서버 재시작이나 재연결은 하지 않았습니다. BlueStacks를 다시 연결한 뒤 설치하고 versionCode 1004002를 확인해야 합니다.
 - fpSell 기기 QA 재실행도 같은 이유로 아직 하지 않았습니다.
+
+## 설치 완료 (2026-10-18 23:45)
+- 블루스택을 다시 켠 뒤 adb 목록에 `emulator-5554`가 나타나지 않아 `adb connect 127.0.0.1:5555`로 연결했습니다(모델 PIXEL_2_XL, 같은 블루스택 인스턴스).
+- `adb -s 127.0.0.1:5555 install -r FGA-beta-1.4.0-beta.2-arm.apk`: **Success**. 설치 후 versionCode 1004002 / versionName 1.4.0-beta.2, firstInstallTime 2026-10-15 23:24:59 유지(업데이트 설치).
