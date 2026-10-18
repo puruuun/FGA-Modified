@@ -25,6 +25,7 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    class FpSellSelection(val summary: io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Summary) : ScriptLog()
     object DefaultSupportBounds : ScriptLog()
     object DefaultMasterOffset : ScriptLog()
     class CurrentParty(val party: Int?) : ScriptLog()

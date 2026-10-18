@@ -1,0 +1,2826 @@
+{
+  "schema": 1,
+  "suite": "fpSell",
+  "cases": [
+    {
+      "name": "KR-18-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-19-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/19.png",
+      "view": "layout",
+      "expected": {
+        "seven": false,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-20-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-27-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-28-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-15-banner-dots",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/15.png",
+      "view": "banner",
+      "expected": {
+        "active": 14,
+        "count": 17
+      }
+    },
+    {
+      "name": "KR-25-banner-dots",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/25.png",
+      "view": "banner",
+      "expected": {
+        "active": 0,
+        "count": 17
+      }
+    },
+    {
+      "name": "KR-26-banner-dots",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/26.png",
+      "view": "banner",
+      "expected": {
+        "active": 14,
+        "count": 17
+      }
+    },
+    {
+      "name": "KR-18-r1-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r1-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r2-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-18-r3-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r1-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r2-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 3,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": true,
+        "lock": "Unlocked",
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-20-r3-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 2,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Servant",
+        "stars": 1,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        182,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r1-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        180,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r2-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        322,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-27-r3-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        464,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r1-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 5,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r2-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        328,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        211,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c3",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        345,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c4",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        478,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c5",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        612,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c6",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        745,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-28-r3-c7",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "view": "cell",
+      "expected": {
+        "kind": "Exp",
+        "stars": 4,
+        "new": true,
+        "selected": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "excluded": false
+      },
+      "card720": [
+        879,
+        470,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "KR-no-new-on-banner",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/15.png",
+      "view": "cell",
+      "expected": {
+        "new": false,
+        "candidate": false,
+        "excluded": false
+      },
+      "card720": [
+        78,
+        186,
+        116,
+        126
+      ]
+    },
+    {
+      "name": "JP-29-layout",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "JP-37-layout",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-38-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "JP-42-craft-essence-tab",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/42-jp-5col.png",
+      "view": "layout",
+      "expected": {
+        "seven": false,
+        "sellScreen": false
+      }
+    },
+    {
+      "name": "JP-43-craft-essence-tab",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/43-jp-6col.png",
+      "view": "layout",
+      "expected": {
+        "seven": false,
+        "sellScreen": false
+      }
+    },
+    {
+      "name": "KR-17-servant-warning",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/17.png",
+      "view": "fullDialog",
+      "expected": {
+        "servantWarning": true
+      }
+    },
+    {
+      "name": "JP-40-servant-warning",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/40.png",
+      "view": "fullDialog",
+      "expected": {
+        "servantWarning": true
+      }
+    },
+    {
+      "name": "JP-39-craft-essence-warning",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/39.png",
+      "view": "fullDialog",
+      "expected": {
+        "servantWarning": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c1-status-up",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        78,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Unknown",
+        "candidateDryAll": false,
+        "candidateReal": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c2-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        211,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c3-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        345,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c4-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        478,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c5-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        612,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c6-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        745,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r1-c7-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        879,
+        298,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c1-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        78,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c2-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        211,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c3-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        345,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c4-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        478,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c5-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        612,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c6-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        745,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r2-c7-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        879,
+        440,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c1-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        78,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c2-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        211,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c3-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        345,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c4-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        478,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c5-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        612,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c6-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        745,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "KR-38-r3-c7-locked",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "view": "cell",
+      "card720": [
+        879,
+        582,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        78,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        211,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        345,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        478,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        879,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c1-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        78,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c2-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        211,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c3-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        345,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c4-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        478,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c5-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        612,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c6-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        745,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r1-c7-exp",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        879,
+        184,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Exp",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c1-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        78,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c2-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        211,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c4-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        478,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c5-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        612,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c6-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        745,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-29-r3-c7-servant",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "view": "cell",
+      "card720": [
+        879,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "kind": "Servant",
+        "lock": "Unlocked",
+        "excluded": false
+      }
+    },
+    {
+      "name": "JP-37-locked-c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        612,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    },
+    {
+      "name": "JP-37-party-c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "view": "cell",
+      "card720": [
+        745,
+        507,
+        116,
+        126
+      ],
+      "expected": {
+        "excluded": true,
+        "lock": "Locked",
+        "candidateReal": false,
+        "candidateDryAll": false
+      }
+    }
+  ]
+}

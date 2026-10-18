@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.ui.launcher
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,7 @@ fun fpLauncher(
 
     Column(
         modifier = modifier
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
             .padding(top = 5.dp)
     ) {
@@ -77,8 +80,21 @@ fun fpLauncher(
                 enabled = shouldLimit
             )
         }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text(stringResource(R.string.fp_sell_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
+        fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it }
+        fpSellSwitch(R.string.fp_sell_servant1, prefs.fpSellServant1) { prefs.fpSellServant1 = it }
+        fpSellSwitch(R.string.fp_sell_servant2, prefs.fpSellServant2) { prefs.fpSellServant2 = it }
+        fpSellSwitch(R.string.fp_sell_servant3, prefs.fpSellServant3) { prefs.fpSellServant3 = it }
+        fpSellSwitch(R.string.fp_sell_servant4, prefs.fpSellServant4) { prefs.fpSellServant4 = it }
+        fpSellSwitch(R.string.fp_sell_exp4, prefs.fpSellExp4) { prefs.fpSellExp4 = it }
+        fpSellSwitch(R.string.fp_sell_exp5, prefs.fpSellExp5) { prefs.fpSellExp5 = it }
+        fpSellSwitch(R.string.fp_sell_new_only, prefs.fpSellNewOnly) { prefs.fpSellNewOnly = it }
+        fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
     }
 
+    // Keep the sale options with the FP launch controls.
     return ScriptLauncherResponseBuilder(
         canBuild = { true },
         build = {
@@ -87,4 +103,13 @@ fun fpLauncher(
             )
         }
     )
+}
+@Composable
+private fun fpSellSwitch(label: Int, initial: Boolean, save: (Boolean) -> Unit) {
+    var value by remember { mutableStateOf(initial) }
+    Row(Modifier.fillMaxWidth().clickable { value = !value; save(value) },
+        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(label), modifier = Modifier.weight(1f))
+        Switch(value, onCheckedChange = { value = it; save(it) })
+    }
 }

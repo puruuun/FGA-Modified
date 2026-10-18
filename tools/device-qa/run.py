@@ -26,7 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
-KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm"}
+KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
@@ -179,7 +179,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--serial", default=DEFAULT_SERIAL)
     parser.add_argument("--build", action="store_true", help="build the deviceTest APKs first")
-    parser.add_argument("--suite", default="support", help="comma-separated suites: support")
+    parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     args = parser.parse_args()
 

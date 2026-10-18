@@ -200,6 +200,12 @@ class ScriptManager @Inject constructor(
             is AutoFriendGacha.ExitException -> {
                 val msg = when (val reason = e.reason) {
                     AutoFriendGacha.ExitReason.InventoryFull -> context.getString(R.string.inventory_full)
+                    AutoFriendGacha.ExitReason.InventoryFullNothingToSell -> context.getString(R.string.fp_sell_nothing)
+                    AutoFriendGacha.ExitReason.InventoryFullNotServant -> context.getString(R.string.fp_sell_not_servant)
+                    AutoFriendGacha.ExitReason.BannerNotFound -> context.getString(R.string.fp_sell_banner_missing)
+                    AutoFriendGacha.ExitReason.SellScreenUnknown -> context.getString(R.string.fp_sell_screen_unknown)
+                    is AutoFriendGacha.ExitReason.SellDryRunDone -> context.getString(R.string.fp_sell_dry_done) + "\n" +
+                        io.github.fate_grand_automata.util.fpSellSummary(context, reason.summary)
                     is AutoFriendGacha.ExitReason.Limit -> context.getString(R.string.times_rolled, reason.count)
                 }
 

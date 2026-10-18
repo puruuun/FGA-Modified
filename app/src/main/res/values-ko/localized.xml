@@ -674,4 +674,23 @@
     <string name="portrait_class_pretender">프리텐더</string>
     <string name="portrait_class_shielder">실더</string>
     <string name="portrait_class_beast">비스트</string>
+
+    <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
+    <string name="fp_sell_title">자동 판매</string>
+    <string name="fp_sell_safety">잠금, 선택 불가, 그랜드 서번트, PARTY 칸은 시험 모드에서도 선택하지 않습니다. 시험 모드는 선택만 하고 확인을 누르지 않습니다.</string>
+    <string name="fp_auto_sell">자동 판매 켜기</string>
+    <string name="fp_sell_servant1">1★ 서번트</string>
+    <string name="fp_sell_servant2">2★ 서번트</string>
+    <string name="fp_sell_servant3">3★ 서번트</string>
+    <string name="fp_sell_servant4">4★ 서번트</string>
+    <string name="fp_sell_exp4">4★ 경험치 카드</string>
+    <string name="fp_sell_exp5">5★ 경험치 카드</string>
+    <string name="fp_sell_new_only">NEW!만 판매</string>
+    <string name="fp_sell_dry_run">시험 모드 (선택만)</string>
+    <string name="fp_sell_nothing">직전 판매 수가 0이며 서번트칸이 다시 가득 찼습니다.</string>
+    <string name="fp_sell_not_servant">서번트칸 경고가 아니어서(개념예장, 커맨드 코드 등) 판매하지 않고 정지했습니다.</string>
+    <string name="fp_sell_banner_missing">원래 FP 배너를 찾지 못해 소환 전에 정지했습니다.</string>
+    <string name="fp_sell_screen_unknown">판매 화면을 확인하지 못해 판매하지 않고 정지했습니다.</string>
+    <string name="fp_sell_dry_done">시험 모드 완료. 선택만 하고 판매하지 않았습니다.</string>
+    <string name="fp_sell_summary">선택 %1$d칸\n서번트 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\n경험치 4★ %6$d / 5★ %7$d\n잠금 판별 안 됨 %8$d칸</string>
 </resources>

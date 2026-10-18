@@ -42,6 +42,7 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.FpSellSelection -> Timber.i(fpSellSummary(context, item.summary))
             ScriptLog.DefaultSupportBounds -> {
                 Timber.d("Default Region being returned")
             }

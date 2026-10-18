@@ -37,6 +37,16 @@ interface IPreferences {
 
     var shouldLimitFP: Boolean
     var limitFP: Int
+    var fpAutoSell: Boolean
+    var fpSellServant1: Boolean
+    var fpSellServant2: Boolean
+    var fpSellServant3: Boolean
+    var fpSellServant4: Boolean
+    var fpSellExp4: Boolean
+    var fpSellExp5: Boolean
+    var fpSellNewOnly: Boolean
+    var fpSellDryRun: Boolean
+
     var receiveEmbersWhenGiftBoxFull: Boolean
 
     val stageCounterSimilarity: Double

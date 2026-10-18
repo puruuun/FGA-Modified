@@ -746,4 +746,23 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="portrait_class_pretender">Pretender</string>
     <string name="portrait_class_shielder">Shielder</string>
     <string name="portrait_class_beast">Beast</string>
+
+    <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
+    <string name="fp_sell_title">Auto-sell</string>
+    <string name="fp_sell_safety">Locked, unselectable, Grand Servant and PARTY cards are never selected, even in dry run. Dry run only selects and never presses Confirm.</string>
+    <string name="fp_auto_sell">Enable auto-sell</string>
+    <string name="fp_sell_servant1">1★ servants</string>
+    <string name="fp_sell_servant2">2★ servants</string>
+    <string name="fp_sell_servant3">3★ servants</string>
+    <string name="fp_sell_servant4">4★ servants</string>
+    <string name="fp_sell_exp4">4★ EXP cards</string>
+    <string name="fp_sell_exp5">5★ EXP cards</string>
+    <string name="fp_sell_new_only">NEW! only</string>
+    <string name="fp_sell_dry_run">Dry-run (select only)</string>
+    <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
+    <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
+    <string name="fp_sell_banner_missing">Original FP banner not found. Stopped before summoning.</string>
+    <string name="fp_sell_screen_unknown">The sell screen could not be verified. Stopped without selling.</string>
+    <string name="fp_sell_dry_done">Dry-run complete. Cards were selected only; nothing was sold.</string>
+    <string name="fp_sell_summary">Selected %1$d cells\nServants 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\nEXP 4★ %6$d / 5★ %7$d\nLock state unknown: %8$d cells</string>
 </resources>

@@ -117,6 +117,16 @@ class PreferencesImpl @Inject constructor(
 
     override var shouldLimitFP by prefs.shouldLimitFP
     override var limitFP by prefs.limitFP
+    override var fpAutoSell by prefs.fpAutoSell
+    override var fpSellServant1 by prefs.fpSellServant1
+    override var fpSellServant2 by prefs.fpSellServant2
+    override var fpSellServant3 by prefs.fpSellServant3
+    override var fpSellServant4 by prefs.fpSellServant4
+    override var fpSellExp4 by prefs.fpSellExp4
+    override var fpSellExp5 by prefs.fpSellExp5
+    override var fpSellNewOnly by prefs.fpSellNewOnly
+    override var fpSellDryRun by prefs.fpSellDryRun
+
 
     override var receiveEmbersWhenGiftBoxFull by prefs.receiveEmbersWhenGiftBoxFull
 

@@ -645,4 +645,23 @@
     <string name="portrait_class_beast">ビースト</string>
     <string name="p_grand_score_16_jp_only">現在JPサーバー専用</string>
     <string name="grand_score_not_supported">このサーバーにはグランドスコアがないため、+16の条件を無視します。</string>
+
+    <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
+    <string name="fp_sell_title">自動売却</string>
+    <string name="fp_sell_safety">ロック中・選択不可・グランドサーヴァント・PARTYのカードは、テストモードでも選択しません。テストモードは選択のみで決定は押しません。</string>
+    <string name="fp_auto_sell">自動売却を有効にする</string>
+    <string name="fp_sell_servant1">★1サーヴァント</string>
+    <string name="fp_sell_servant2">★2サーヴァント</string>
+    <string name="fp_sell_servant3">★3サーヴァント</string>
+    <string name="fp_sell_servant4">★4サーヴァント</string>
+    <string name="fp_sell_exp4">★4経験値カード</string>
+    <string name="fp_sell_exp5">★5経験値カード</string>
+    <string name="fp_sell_new_only">NEW!のみ</string>
+    <string name="fp_sell_dry_run">試験モード（選択のみ）</string>
+    <string name="fp_sell_nothing">直前の売却数が0で、所持枠が再び一杯になりました。</string>
+    <string name="fp_sell_not_servant">サーヴァント枠の警告ではないため（概念礼装・コマンドコード等）、販売せずに停止しました。</string>
+    <string name="fp_sell_banner_missing">元のFP召喚バナーが見つからず、召喚前に停止しました。</string>
+    <string name="fp_sell_screen_unknown">販売画面を確認できなかったため、販売せずに停止しました。</string>
+    <string name="fp_sell_dry_done">試験モード完了。選択のみで売却していません。</string>
+    <string name="fp_sell_summary">選択 %1$d枠\nサーヴァント ★1 %2$d / ★2 %3$d / ★3 %4$d / ★4 %5$d\n経験値 ★4 %6$d / ★5 %7$d\nロック判別不能 %8$d枠</string>
 </resources>
