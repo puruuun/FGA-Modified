@@ -27,26 +27,42 @@ object SupportNpLayout {
     // must cover that: 10 px at 1440p (5 px at 720p). 6 px would cut the top of the icon.
     const val CROP_VERTICAL_MARGIN = 10
 
+    // The servant-name line sits above the NP line inside the same blue panel (0006 D-9/D-10).
+    // Measured on owner JP grand rows (2026-10-18): the top of the servant label text is 31 px at
+    // 720p (62 px at 1440p) above the top of "Lv." in every row checked: 3 frames of rows with a
+    // friend comment and one row without a comment (152245.png, 1920 wide: 47 px both ways, which
+    // is 62.7 px at 1440p). The offset does not depend on the friend comment or on the row's CE column.
+    const val NAME_LINE_OFFSET = 62
+    // Band extension above the servant-name line, so the whole two-line block is searched.
+    const val BAND_TOP_MARGIN = 10
+
     fun nameRegion(bounds: Region) = Region(
         bounds.x + NAME_X, bounds.y + NAME_Y, NAME_WIDTH, NAME_HEIGHT
     )
 
-    /** Search band for the NP name image on both row layouts (0006 D-1). */
-    fun noblePhantasmBand(bounds: Region) = Region(
-        bounds.x + BAND_X, bounds.y + NAME_Y, BAND_WIDTH, NAME_HEIGHT
-    )
+    /**
+     * Search band for the NP block (0006 D-1, D-10): the servant-name line and the NP line, on both
+     * row layouts. The top edge is above the servant-name line, so the NP image is a two-line block.
+     */
+    fun noblePhantasmBand(bounds: Region): Region {
+        val top = NAME_Y - NAME_LINE_OFFSET - BAND_TOP_MARGIN
+        return Region(
+            bounds.x + BAND_X, bounds.y + top, BAND_WIDTH, NAME_HEIGHT + NAME_Y - top
+        )
+    }
 
     /**
-     * NP image crop (0006 D-2): from the card icon up to just before "Lv.", vertically around the
-     * "Lv." prefix. The "Lv.N" text and the upgrade mark are left out so the same NP name matches at
-     * any NP level.
+     * NP block crop (0006 D-2, D-9): from the card icon to just before "Lv.", vertically from the top
+     * of the servant-name line to the bottom of the NP line. The "Lv.N" text and the upgrade mark are
+     * left out, so the same servant and NP name match at any NP level.
      */
     fun noblePhantasmCrop(bounds: Region, grand: Boolean, levelPrefix: Region): Region {
         val iconX = if (grand) GRAND_ICON_X else NORMAL_ICON_X
         val left = bounds.x + iconX - ICON_CROP_MARGIN
         val right = levelPrefix.x - LEVEL_CROP_GAP
-        val top = levelPrefix.y - CROP_VERTICAL_MARGIN
-        return Region(left, top, right - left, levelPrefix.height + CROP_VERTICAL_MARGIN * 2)
+        val top = levelPrefix.y - NAME_LINE_OFFSET - CROP_VERTICAL_MARGIN
+        val bottom = levelPrefix.y + levelPrefix.height + CROP_VERTICAL_MARGIN
+        return Region(left, top, right - left, bottom - top)
     }
 
     fun suffixRegion(prefix: Region) = Region(

@@ -18,8 +18,14 @@ class NoblePhantasmLayoutTest {
         assertThat(band.x <= normalIcon - SupportNpLayout.ICON_CROP_MARGIN).isEqualTo(true)
         assertThat(band.x + band.width > grandIcon).isEqualTo(true)
         assertThat(band.right).isEqualTo(nameRegion.right)
-        assertThat(band.y).isEqualTo(nameRegion.y)
-        assertThat(band.height).isEqualTo(nameRegion.height)
+        assertThat(band.bottom).isEqualTo(nameRegion.bottom)
+    }
+
+    @Test
+    fun `the band reaches above the servant-name line so the whole two-line block is searched`() {
+        val servantLineTop = nameRegion.y - SupportNpLayout.NAME_LINE_OFFSET
+        assertThat(band.y <= servantLineTop - SupportNpLayout.BAND_TOP_MARGIN).isEqualTo(true)
+        assertThat(band.y).isEqualTo(servantLineTop - SupportNpLayout.BAND_TOP_MARGIN)
     }
 
     @Test
@@ -30,13 +36,13 @@ class NoblePhantasmLayoutTest {
     }
 
     @Test
-    fun `the crop starts at the icon, stops before Lv and follows the Lv vertical extent`() {
+    fun `the block crop starts at the icon, stops before Lv and starts at the servant-name line`() {
         val prefix = Region(row.x + 1431, row.y + 280, 60, 40)
         val grand = SupportNpLayout.noblePhantasmCrop(row, true, prefix)
         assertThat(grand.x).isEqualTo(row.x + SupportNpLayout.GRAND_ICON_X - SupportNpLayout.ICON_CROP_MARGIN)
         assertThat(grand.right).isEqualTo(prefix.x - SupportNpLayout.LEVEL_CROP_GAP)
-        assertThat(grand.y).isEqualTo(prefix.y - SupportNpLayout.CROP_VERTICAL_MARGIN)
-        assertThat(grand.height).isEqualTo(prefix.height + SupportNpLayout.CROP_VERTICAL_MARGIN * 2)
+        assertThat(grand.y).isEqualTo(prefix.y - SupportNpLayout.NAME_LINE_OFFSET - SupportNpLayout.CROP_VERTICAL_MARGIN)
+        assertThat(grand.bottom).isEqualTo(prefix.bottom + SupportNpLayout.CROP_VERTICAL_MARGIN)
 
         val normal = SupportNpLayout.noblePhantasmCrop(row, false, prefix)
         assertThat(normal.x).isEqualTo(row.x + SupportNpLayout.NORMAL_ICON_X - SupportNpLayout.ICON_CROP_MARGIN)
