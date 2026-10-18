@@ -160,22 +160,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/support_img_friend_1" />
 
-    <TextView
-        android:id="@+id/np_hint"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/support_img_namer_np_hint"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/np_txt" />
-
     <!-- NP 0 -->
     <include
         layout="@layout/support_img_namer_item"
         android:id="@+id/support_img_np_0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/np_hint"
+        app:layout_constraintTop_toBottomOf="@id/np_txt"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

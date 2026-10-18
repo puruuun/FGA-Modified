@@ -15,13 +15,18 @@ object SupportNpLayout {
     // so the band starts left of the normal-row card icon and ends where the name band ends.
     // Measured on a grand row (owner frame, 2026-10-18, row 1): panel left edge 772, card icon
     // left edge 897, "Lv." left edge 1507 (1440p, screen x) with the row at x = 76.
-    // The normal-row icon is NOT measured yet: it is derived from the same panel shift the design
-    // gives (360 vs 580 at 1920 wide, 220 px = 293 px at 1440p). Confirm with a normal-row fixture.
+    // Normal rows: owner 7/8/10/11.webp (0006-r3), game area normalized to 1280x720:
+    // icon left x = 336 in all eight rows. Row origin x = 38 at 720p, so (336 - 38) * 2 = 596.
     const val BAND_X = 500
     const val BAND_WIDTH = NAME_X + NAME_WIDTH - BAND_X
     const val GRAND_ICON_X = 821
-    const val NORMAL_ICON_X = 528
+    const val NORMAL_ICON_X = 596
     const val ICON_CROP_MARGIN = 6
+    // D-17: the labels/spacing differ, but name glyph widths agree within 1 px. Start at the
+    // text, 29 px (720p) from the icon left: grand x=478, normal x=365 after rounding.
+    // Olga cross-layout similarity improves from 0.932 (icon) to 0.970 (text). Keep the wide
+    // horizontal band so beta.1/2 icon-inclusive templates remain usable.
+    const val TEXT_START_OFFSET = 58
     const val LEVEL_CROP_GAP = 8
     // The card icon rises about 4 px (720p) above "Lv." on the measured row, so the vertical margin
     // must cover that: 10 px at 1440p (5 px at 720p). 6 px would cut the top of the icon.
@@ -35,6 +40,9 @@ object SupportNpLayout {
     const val NAME_LINE_OFFSET = 62
     // Band extension above the servant-name line, so the whole two-line block is searched.
     const val BAND_TOP_MARGIN = 10
+    // Owner 10.webp has a crop bottom 1 px below nameRegion at 720p. Include the maker's
+    // bottom padding in the search band so its whole saved template fits without clipping.
+    const val BAND_BOTTOM_MARGIN = CROP_VERTICAL_MARGIN
 
     fun nameRegion(bounds: Region) = Region(
         bounds.x + NAME_X, bounds.y + NAME_Y, NAME_WIDTH, NAME_HEIGHT
@@ -47,18 +55,18 @@ object SupportNpLayout {
     fun noblePhantasmBand(bounds: Region): Region {
         val top = NAME_Y - NAME_LINE_OFFSET - BAND_TOP_MARGIN
         return Region(
-            bounds.x + BAND_X, bounds.y + top, BAND_WIDTH, NAME_HEIGHT + NAME_Y - top
+            bounds.x + BAND_X, bounds.y + top, BAND_WIDTH, NAME_HEIGHT + NAME_Y - top + BAND_BOTTOM_MARGIN
         )
     }
 
     /**
-     * NP block crop (0006 D-2, D-9): from the card icon to just before "Lv.", vertically from the top
+     * NP block crop (0006 D-17): from the name text to just before "Lv.", vertically from the top
      * of the servant-name line to the bottom of the NP line. The "Lv.N" text and the upgrade mark are
      * left out, so the same servant and NP name match at any NP level.
      */
     fun noblePhantasmCrop(bounds: Region, grand: Boolean, levelPrefix: Region): Region {
         val iconX = if (grand) GRAND_ICON_X else NORMAL_ICON_X
-        val left = bounds.x + iconX - ICON_CROP_MARGIN
+        val left = bounds.x + iconX + TEXT_START_OFFSET
         val right = levelPrefix.x - LEVEL_CROP_GAP
         val top = levelPrefix.y - NAME_LINE_OFFSET - CROP_VERTICAL_MARGIN
         val bottom = levelPrefix.y + levelPrefix.height + CROP_VERTICAL_MARGIN

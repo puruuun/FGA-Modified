@@ -117,9 +117,8 @@ Skills"</string>
     <string name="bond_ce_effect_np">"NP charge"</string>
     <string name="p_battle_config_support_pref_ces">"Preferred CEs"</string>
     <string name="p_battle_config_support_pref_nps">"Re-ascension (servant + NP name)"</string>
-    <string name="p_battle_config_support_pref_nps_hint">"Matches the servant-name + NP-name image made by the Support Image Maker. Images made before (NP name only) cannot tell re-ascensions apart, so make them again. Pair with the servant preference."</string>
+    <string name="p_battle_config_support_pref_nps_hint">"Matches the servant-name + NP-name image made by the Support Image Maker."</string>
     <string name="support_img_namer_np_names">"Servant + NP name (re-ascension)"</string>
-    <string name="support_img_namer_np_hint">"Save the servant-name line and the NP line together. NP-name-only images made before cannot tell re-ascensions apart, so make them again."</string>
     <string name="p_battle_config_support_mlb">"Max-limit broken"</string>
     <string name="p_battle_config_support_friend_names">"Friend names"</string>
     <string name="p_battle_config_support_friends_only">"Friends Only"</string>

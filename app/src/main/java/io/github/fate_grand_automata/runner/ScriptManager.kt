@@ -168,7 +168,7 @@ class ScriptManager @Inject constructor(
                         messageBox.show(scriptExitedString, msg)
                     }
 
-                    SupportImageMaker.ExitReason.Success -> showSupportImageNamer(context, storageProvider)
+                    SupportImageMaker.ExitReason.Success -> showSupportImageNamer(context, storageProvider, preferences)
                 }
             }
 

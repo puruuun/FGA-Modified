@@ -8,6 +8,7 @@ import android.widget.ScrollView
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.scripts.entrypoints.SupportImageMaker
+import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.dayNightThemed
 import io.github.fate_grand_automata.util.showOverlayDialog
@@ -119,7 +120,7 @@ private fun getSupportEntries(
     return listOf(servant0, servant1, ce0, ce1, ce2, ce3, ce4, ce5, friend0, friend1, np0, np1)
 }
 
-suspend fun showSupportImageNamer(context: Context, storageProvider: StorageProvider) = withContext(Dispatchers.Main) {
+suspend fun showSupportImageNamer(context: Context, storageProvider: StorageProvider, prefs: IPreferences) = withContext(Dispatchers.Main) {
     val themedContext = context.dayNightThemed()
     val frame = FrameLayout(themedContext)
 
@@ -140,7 +141,7 @@ suspend fun showSupportImageNamer(context: Context, storageProvider: StorageProv
                 .setView(content)
                 .setPositiveButton(context.getString(R.string.support_img_namer_done)) { dialog, _ ->
                     if (entryList.all { it.isValid() }) {
-                        if (entryList.all { it.rename(storageProvider) }) {
+                        if (entryList.all { it.rename(storageProvider, prefs.gameServer) }) {
                             dialog.dismiss()
                         }
                     }

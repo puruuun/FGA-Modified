@@ -144,6 +144,17 @@ class StorageProvider @Inject constructor(
             )
     }
 
+    /** NP naming saves append to an entry instead of truncating an earlier image (0006 D-14). */
+    fun appendNoblePhantasmImage(name: String): OutputStream {
+        val folder = supportNpFolder.getOrCreateDir(name.substringBefore('/'))
+        val stem = if ('/' in name) name.substringAfter('/') else "image"
+        val fileName = SupportImageNaming.nextFileName(folder.listFiles().mapNotNull { it.name }.toSet(), stem)
+        val file = folder.createFile(mimePng, fileName)
+            ?: throw KnownException(KnownException.Reason.CouldNotCreateFile(fileName))
+        return resolver.openOutputStream(file.uri)
+            ?: throw KnownException(KnownException.Reason.CouldNotOpenSupportFileForWriting(SupportImageKind.NoblePhantasm, name))
+    }
+
     override fun readSupportImage(kind: SupportImageKind, name: String): List<InputStream> {
         val folder = kind.imageFolder
         val file = folder.findFile(name)

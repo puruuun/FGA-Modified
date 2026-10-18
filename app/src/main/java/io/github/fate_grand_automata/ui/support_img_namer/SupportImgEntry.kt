@@ -8,7 +8,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.SupportImageKind
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.util.StorageProvider
+import io.github.fate_grand_automata.util.SupportImageNaming
 import java.io.File
 
 class SupportImgEntry(
@@ -94,7 +96,7 @@ class SupportImgEntry(
         return true
     }
 
-    fun rename(storageProvider: StorageProvider): Boolean {
+    fun rename(storageProvider: StorageProvider, server: GameServer): Boolean {
         errorTxt.visibility = View.GONE
 
         if (!checkBox.isChecked) {
@@ -110,7 +112,11 @@ class SupportImgEntry(
         }
 
         try {
-            storageProvider.writeSupportImage(kind, "$newFileName.png").use { outStream ->
+            val storedName = SupportImageNaming.storedName(kind, newFileName, server)
+            val stream = if (kind == SupportImageKind.NoblePhantasm) {
+                storageProvider.appendNoblePhantasmImage(storedName)
+            } else storageProvider.writeSupportImage(kind, "$storedName.png")
+            stream.use { outStream ->
                 oldPath.inputStream().use { inStream ->
                     inStream.copyTo(outStream)
                 }

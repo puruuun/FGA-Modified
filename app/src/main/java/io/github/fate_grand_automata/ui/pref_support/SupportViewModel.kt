@@ -68,7 +68,7 @@ class SupportViewModel @Inject constructor(
 
             noblePhantasms =
                 getSupportImages(context, SupportImageKind.NoblePhantasm)
-                    .associateWith { File(it).nameWithoutExtension }
+                    .associateWith { it }
         }
     }
 

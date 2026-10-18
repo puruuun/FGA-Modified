@@ -18,7 +18,7 @@ class NoblePhantasmLayoutTest {
         assertThat(band.x <= normalIcon - SupportNpLayout.ICON_CROP_MARGIN).isEqualTo(true)
         assertThat(band.x + band.width > grandIcon).isEqualTo(true)
         assertThat(band.right).isEqualTo(nameRegion.right)
-        assertThat(band.bottom).isEqualTo(nameRegion.bottom)
+        assertThat(band.bottom).isEqualTo(nameRegion.bottom + SupportNpLayout.BAND_BOTTOM_MARGIN)
     }
 
     @Test
@@ -30,22 +30,22 @@ class NoblePhantasmLayoutTest {
 
     @Test
     fun `the grand row icon sits to the right of the normal row icon by the panel shift`() {
-        // The NP panel shifts by about 220 px at 1920 wide, i.e. 293 px at 1440p (0006 D-1 background).
+        // Owner normal rows measured at x=336, grand x=448.5 (720p), relative to row origin x=38.
         val shift = SupportNpLayout.GRAND_ICON_X - SupportNpLayout.NORMAL_ICON_X
-        assertThat(shift).isEqualTo(293)
+        assertThat(shift).isEqualTo(225)
     }
 
     @Test
-    fun `the block crop starts at the icon, stops before Lv and starts at the servant-name line`() {
+    fun `the block crop starts at the name text, stops before Lv and starts at the servant-name line`() {
         val prefix = Region(row.x + 1431, row.y + 280, 60, 40)
         val grand = SupportNpLayout.noblePhantasmCrop(row, true, prefix)
-        assertThat(grand.x).isEqualTo(row.x + SupportNpLayout.GRAND_ICON_X - SupportNpLayout.ICON_CROP_MARGIN)
+        assertThat(grand.x).isEqualTo(row.x + SupportNpLayout.GRAND_ICON_X + SupportNpLayout.TEXT_START_OFFSET)
         assertThat(grand.right).isEqualTo(prefix.x - SupportNpLayout.LEVEL_CROP_GAP)
         assertThat(grand.y).isEqualTo(prefix.y - SupportNpLayout.NAME_LINE_OFFSET - SupportNpLayout.CROP_VERTICAL_MARGIN)
         assertThat(grand.bottom).isEqualTo(prefix.bottom + SupportNpLayout.CROP_VERTICAL_MARGIN)
 
         val normal = SupportNpLayout.noblePhantasmCrop(row, false, prefix)
-        assertThat(normal.x).isEqualTo(row.x + SupportNpLayout.NORMAL_ICON_X - SupportNpLayout.ICON_CROP_MARGIN)
+        assertThat(normal.x).isEqualTo(row.x + SupportNpLayout.NORMAL_ICON_X + SupportNpLayout.TEXT_START_OFFSET)
         assertThat(normal.right).isEqualTo(grand.right)
     }
 
@@ -54,5 +54,13 @@ class NoblePhantasmLayoutTest {
         val prefix = Region(row.x + 1431, row.y + 280, 60, 40)
         val crop = SupportNpLayout.noblePhantasmCrop(row, true, prefix)
         assertThat(crop.right <= prefix.x).isEqualTo(true)
+    }
+
+    @Test
+    fun `owner normal row with a low Lv marker keeps the whole maker crop inside the band`() {
+        // 10.webp row 0 at 720p: row y=215, Lv=(641,368,38,25), crop bottom=398.
+        val bounds = Region(76, 430, 2356, 428)
+        val crop = SupportNpLayout.noblePhantasmCrop(bounds, false, Region(1282, 736, 76, 50))
+        assertThat(crop in SupportNpLayout.noblePhantasmBand(bounds)).isEqualTo(true)
     }
 }

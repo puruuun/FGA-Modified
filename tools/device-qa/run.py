@@ -186,7 +186,7 @@ def main() -> int:
     if args.build:
         gradle_build()
     adb_path = find_adb()
-    adb_version = run([adb_path, "version"]).stdout.splitlines()[0]
+    adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
     app_apk, test_apk = find_apk("app"), find_apk("test")
     package = test_package(test_apk)

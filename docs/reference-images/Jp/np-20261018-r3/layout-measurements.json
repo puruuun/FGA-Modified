@@ -1,0 +1,173 @@
+{
+  "method": "OpenCV TM_CCOEFF_NORMED on 720p grayscale, INTER_AREA normalization; no horizontal scale search.",
+  "gameRectangles": {
+    "4-grand-olga.webp": [
+      1,
+      49,
+      1920,
+      1080
+    ],
+    "7,8,10,11,9,12,13.webp": [
+      1,
+      49,
+      1937,
+      1089
+    ]
+  },
+  "widthMeasurement": "Pixel bounds of grayscale >160 in manually isolated element ROIs; icon uses outer colored frame.",
+  "widths720": {
+    "servantLabel": [
+      69,
+      93
+    ],
+    "servantName": [
+      311,
+      311
+    ],
+    "npLabel": [
+      24,
+      32
+    ],
+    "cardIcon": [
+      21,
+      21
+    ],
+    "npName": [
+      220,
+      221
+    ],
+    "iconToFirstBrightGlyphGap": [
+      11,
+      11
+    ]
+  },
+  "columnOrder": [
+    "Grand",
+    "normal"
+  ],
+  "normalIconEvidence": {
+    "files": [
+      "7.webp",
+      "8.webp",
+      "10.webp",
+      "11.webp"
+    ],
+    "rowsPerFile": 2,
+    "iconLeft720": 336,
+    "rowOrigin720": 38,
+    "NORMAL_ICON_X": 596
+  },
+  "comparisons": {
+    "icon": {
+      "cropGrand720": [
+        446,
+        445,
+        260,
+        66
+      ],
+      "cropNormal720": [
+        333,
+        315,
+        259,
+        66
+      ],
+      "grandToNormal": 0.9319109320640564,
+      "normalToGrand": 0.9318726062774658,
+      "selfGrand": 1.0,
+      "selfNormal": 1.0,
+      "otherServants": {
+        "grand Solomon": {
+          "grandTemplate": 0.19804872572422028,
+          "normalTemplate": 0.1457633674144745
+        },
+        "normal Lady Avalon": {
+          "grandTemplate": 0.2270364761352539,
+          "normalTemplate": 0.29511335492134094
+        }
+      }
+    },
+    "text": {
+      "cropGrand720": [
+        478,
+        445,
+        228,
+        66
+      ],
+      "cropNormal720": [
+        365,
+        315,
+        227,
+        66
+      ],
+      "grandToNormal": 0.9691485166549683,
+      "normalToGrand": 0.9691600799560547,
+      "selfGrand": 1.0,
+      "selfNormal": 0.9999992251396179,
+      "otherServants": {
+        "grand Solomon": {
+          "grandTemplate": 0.11313179135322571,
+          "normalTemplate": 0.10375137627124786
+        },
+        "normal Lady Avalon": {
+          "grandTemplate": 0.19532881677150726,
+          "normalTemplate": 0.23259887099266052
+        }
+      }
+    }
+  },
+  "brightBounds720": {
+    "Grand": {
+      "servantLabel": [
+        400,
+        449,
+        69,
+        18
+      ],
+      "servantName": [
+        480,
+        447,
+        311,
+        19
+      ],
+      "npLabel": [
+        400,
+        483,
+        24,
+        18
+      ],
+      "npName": [
+        481,
+        483,
+        220,
+        20
+      ]
+    },
+    "normal": {
+      "servantLabel": [
+        255,
+        319,
+        93,
+        18
+      ],
+      "servantName": [
+        367,
+        317,
+        311,
+        19
+      ],
+      "npLabel": [
+        255,
+        353,
+        32,
+        18
+      ],
+      "npName": [
+        368,
+        353,
+        221,
+        20
+      ]
+    }
+  },
+  "roundingNote": "Position and size each round independently from 1440p: Grand text crop width 228, normal 227. Only the new Grand fixture width was corrected; no glyph scaling."
+}

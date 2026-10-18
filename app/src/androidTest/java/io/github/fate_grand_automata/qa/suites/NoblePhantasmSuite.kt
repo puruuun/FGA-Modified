@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.locations.SupportNpLayout
 import io.github.fate_grand_automata.scripts.supportSelection.NoblePhantasmSelection
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBoundsFinder
+import io.github.fate_grand_automata.scripts.supportSelection.SupportNpLevelReader
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
@@ -25,6 +26,16 @@ internal fun FixtureApi.verifyNoblePhantasm(): JSONObject {
     for (i in 0 until expected.length()) {
         val row = expected.getJSONObject(i)
         val bound = findRow(bounds, row)
+        if (row.has("crop720")) {
+            useSameSnapIn {
+                val prefix = checkNotNull(SupportNpLevelReader(this, ocr).findLevelPrefix(bound)) { "Missing Lv. marker" }
+                val crop = SupportNpLayout.noblePhantasmCrop(bound.region, row.getBoolean("grand"), prefix) * 0.5
+                val expectedCrop = row.getJSONArray("crop720")
+                check(listOf(crop.x, crop.y, crop.width, crop.height) == (0..3).map(expectedCrop::getInt)) {
+                    "Maker crop $crop differs from fixture $expectedCrop"
+                }
+            }
+        }
         val matches = JSONArray()
         val items = row.getJSONArray("matches")
         for (j in 0 until items.length()) {

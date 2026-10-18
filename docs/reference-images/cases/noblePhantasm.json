@@ -6,7 +6,16 @@
     "NoblePhantasm:Melusine Buster": ["docs/reference-images/Jp/np-20261018/melusine-buster.png"],
     "NoblePhantasm:Block Lancelot Arts": ["docs/reference-images/Jp/np-20261018/block-lancelot-arts.png"],
     "NoblePhantasm:Block Melusine Arts": ["docs/reference-images/Jp/np-20261018/block-melusine-arts.png"],
-    "NoblePhantasm:Block Melusine Buster": ["docs/reference-images/Jp/np-20261018/block-melusine-buster.png"]
+    "NoblePhantasm:Block Melusine Buster": ["docs/reference-images/Jp/np-20261018/block-melusine-buster.png"],
+    "NoblePhantasm:R3 4-grand-olga row1": ["docs/reference-images/Jp/np-20261018-r3/4-grand-olga-row1-text.png"],
+    "NoblePhantasm:R3 7 row0": ["docs/reference-images/Jp/np-20261018-r3/7-row0-text.png"],
+    "NoblePhantasm:R3 7 row1": ["docs/reference-images/Jp/np-20261018-r3/7-row1-text.png"],
+    "NoblePhantasm:R3 8 row0": ["docs/reference-images/Jp/np-20261018-r3/8-row0-text.png"],
+    "NoblePhantasm:R3 8 row1": ["docs/reference-images/Jp/np-20261018-r3/8-row1-text.png"],
+    "NoblePhantasm:R3 10 row0": ["docs/reference-images/Jp/np-20261018-r3/10-row0-text.png"],
+    "NoblePhantasm:R3 10 row1": ["docs/reference-images/Jp/np-20261018-r3/10-row1-text.png"],
+    "NoblePhantasm:R3 11 row0": ["docs/reference-images/Jp/np-20261018-r3/11-row0-text.png"],
+    "NoblePhantasm:R3 11 row1": ["docs/reference-images/Jp/np-20261018-r3/11-row1-text.png"]
   },
   "cases": [
     {
@@ -156,6 +165,466 @@
             {"entry": "Block Melusine Buster", "expected": false}
           ]
         }
+      ]
+    },
+    {
+      "name": "np-r3-owner-4-grand-olga-row1",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/4-grand-olga-masked720.png",
+      "rows": [
+        {
+          "rowY720": 341,
+          "grand": true,
+          "crop720": [
+            478,
+            445,
+            228,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": true
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": true
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          170,
+          600,
+          65
+        ],
+        [
+          220,
+          328,
+          600,
+          107
+        ],
+        [
+          220,
+          528,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-7-row0",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/7-masked720.png",
+      "rows": [
+        {
+          "rowY720": 225,
+          "grand": false,
+          "crop720": [
+            365,
+            329,
+            227,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 7 row0",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          212,
+          600,
+          107
+        ],
+        [
+          220,
+          412,
+          600,
+          107
+        ],
+        [
+          220,
+          612,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-7-row1",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/7-masked720.png",
+      "rows": [
+        {
+          "rowY720": 425,
+          "grand": false,
+          "crop720": [
+            365,
+            529,
+            71,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 7 row1",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          212,
+          600,
+          107
+        ],
+        [
+          220,
+          412,
+          600,
+          107
+        ],
+        [
+          220,
+          612,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-8-row0",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/8-masked720.png",
+      "rows": [
+        {
+          "rowY720": 211,
+          "grand": false,
+          "crop720": [
+            365,
+            315,
+            227,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 8 row0",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": true
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          198,
+          600,
+          107
+        ],
+        [
+          220,
+          398,
+          600,
+          107
+        ],
+        [
+          220,
+          598,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-8-row1",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/8-masked720.png",
+      "rows": [
+        {
+          "rowY720": 411,
+          "grand": false,
+          "crop720": [
+            365,
+            515,
+            227,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 8 row1",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          198,
+          600,
+          107
+        ],
+        [
+          220,
+          398,
+          600,
+          107
+        ],
+        [
+          220,
+          598,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-10-row0",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/10-masked720.png",
+      "rows": [
+        {
+          "rowY720": 215,
+          "grand": false,
+          "crop720": [
+            365,
+            332,
+            272,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 10 row0",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          202,
+          600,
+          107
+        ],
+        [
+          220,
+          402,
+          600,
+          107
+        ],
+        [
+          220,
+          602,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-10-row1",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/10-masked720.png",
+      "rows": [
+        {
+          "rowY720": 415,
+          "grand": false,
+          "crop720": [
+            365,
+            532,
+            206,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 10 row1",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          202,
+          600,
+          107
+        ],
+        [
+          220,
+          402,
+          600,
+          107
+        ],
+        [
+          220,
+          602,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-11-row0",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/11-masked720.png",
+      "rows": [
+        {
+          "rowY720": 208,
+          "grand": false,
+          "crop720": [
+            365,
+            311,
+            206,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 11 row0",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          195,
+          600,
+          107
+        ],
+        [
+          220,
+          395,
+          600,
+          107
+        ],
+        [
+          220,
+          595,
+          600,
+          107
+        ]
+      ]
+    },
+    {
+      "name": "np-r3-owner-11-row1",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018-r3/11-masked720.png",
+      "rows": [
+        {
+          "rowY720": 408,
+          "grand": false,
+          "crop720": [
+            365,
+            511,
+            206,
+            66
+          ],
+          "matches": [
+            {
+              "entry": "R3 11 row1",
+              "expected": true
+            },
+            {
+              "entry": "R3 4-grand-olga row1",
+              "expected": false
+            },
+            {
+              "entry": "R3 8 row0",
+              "expected": false
+            }
+          ]
+        }
+      ],
+      "masked720": [
+        [
+          220,
+          195,
+          600,
+          107
+        ],
+        [
+          220,
+          395,
+          600,
+          107
+        ],
+        [
+          220,
+          595,
+          600,
+          107
+        ]
       ]
     }
   ]
