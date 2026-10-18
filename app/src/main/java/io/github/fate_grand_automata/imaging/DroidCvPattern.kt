@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.imaging
 
 import android.graphics.Bitmap
 import io.github.lib_automata.Match
+import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
@@ -179,6 +180,13 @@ class DroidCvPattern(
         val minMaxLocResult = Core.minMaxLoc(mat)
         // 0 = black, 255 = white
         return minMaxLocResult.maxVal <= 55
+    }
+
+    // Colour mats are BGR (decoded with IMREAD_COLOR or converted from the RGBA capture).
+    override fun meanColor(): MeanColor? {
+        if (mat.empty() || mat.channels() < 3) return null
+        val mean = Core.mean(mat)
+        return MeanColor(red = mean.`val`[2], green = mean.`val`[1], blue = mean.`val`[0])
     }
 
     override fun floodFill(x: Double, y: Double, maxDiff: Double, newValue: Double): Pattern {

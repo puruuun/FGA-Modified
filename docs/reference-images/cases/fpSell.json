@@ -2821,6 +2821,454 @@
         "candidateReal": false,
         "candidateDryAll": false
       }
+    },
+    {
+      "name": "JP-45-r1-c1-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        78,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c2-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        211,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c3-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        345,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c4-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        478,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c5-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        612,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c6-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        745,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r1-c7-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        879,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c1-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        78,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c2-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        211,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c3-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        345,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c4-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        478,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c5-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        612,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c6-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        745,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r2-c7-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        879,
+        329,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r3-c1-selected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        78,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": true
+      }
+    },
+    {
+      "name": "JP-45-r3-c2-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        211,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r3-c3-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        345,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r3-c4-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        478,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r3-c5-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        612,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r3-c6-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        745,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r3-c7-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        879,
+        472,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c1-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        78,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c2-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        211,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c3-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        345,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c4-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        478,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c5-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        612,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c6-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        745,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
+    },
+    {
+      "name": "JP-45-r4-c7-unselected",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "view": "cell",
+      "card720": [
+        879,
+        615,
+        116,
+        126
+      ],
+      "expected": {
+        "selected": false
+      }
     }
   ]
 }

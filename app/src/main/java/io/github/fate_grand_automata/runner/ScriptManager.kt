@@ -204,6 +204,16 @@ class ScriptManager @Inject constructor(
                     AutoFriendGacha.ExitReason.InventoryFullNotServant -> context.getString(R.string.fp_sell_not_servant)
                     AutoFriendGacha.ExitReason.BannerNotFound -> context.getString(R.string.fp_sell_banner_missing)
                     AutoFriendGacha.ExitReason.SellScreenUnknown -> context.getString(R.string.fp_sell_screen_unknown)
+                    is AutoFriendGacha.ExitReason.SellStopped -> {
+                        val text = when (reason) {
+                            is AutoFriendGacha.ExitReason.SellEntryFailed -> R.string.fp_sell_stop_entry
+                            is AutoFriendGacha.ExitReason.ColumnSwitchFailed -> R.string.fp_sell_stop_columns
+                            is AutoFriendGacha.ExitReason.SelectionNotConfirmed -> R.string.fp_sell_stop_selection
+                            is AutoFriendGacha.ExitReason.SellFlowFailed -> R.string.fp_sell_stop_flow
+                        }
+                        val state = context.getString(if (reason.dryRun) R.string.fp_sell_state_on else R.string.fp_sell_state_off)
+                        context.getString(text) + "\n" + context.getString(R.string.fp_sell_stop_state, state, reason.selected)
+                    }
                     is AutoFriendGacha.ExitReason.SellDryRunDone -> context.getString(R.string.fp_sell_dry_done) + "\n" +
                         io.github.fate_grand_automata.util.fpSellSummary(context, reason.summary)
                     is AutoFriendGacha.ExitReason.Limit -> context.getString(R.string.times_rolled, reason.count)

@@ -690,7 +690,14 @@
     <string name="fp_sell_nothing">직전 판매 수가 0이며 서번트칸이 다시 가득 찼습니다.</string>
     <string name="fp_sell_not_servant">서번트칸 경고가 아니어서(개념예장, 커맨드 코드 등) 판매하지 않고 정지했습니다.</string>
     <string name="fp_sell_banner_missing">원래 FP 배너를 찾지 못해 소환 전에 정지했습니다.</string>
-    <string name="fp_sell_screen_unknown">판매 화면을 확인하지 못해 판매하지 않고 정지했습니다.</string>
+    <string name="fp_sell_screen_unknown">소환 중 알려진 화면을 오래 확인하지 못해 정지했습니다.</string>
+    <string name="fp_sell_stop_entry">판매 화면에 들어가지 못했습니다(판매 버튼, 제목 또는 서번트 탭을 찾지 못함). 판매하지 않고 정지했습니다.</string>
+    <string name="fp_sell_stop_columns">판매 화면을 7열로 바꾸지 못했습니다. 판매하지 않고 정지했습니다.</string>
+    <string name="fp_sell_stop_selection">누른 칸이 선택된 것으로 확인되지 않았습니다(또는 선택 중 판매 화면을 잃었습니다). 같은 칸을 다시 누르지 않고 판매 없이 정지했습니다.</string>
+    <string name="fp_sell_stop_flow">판매 진행 중 결정, 변환 또는 닫기 단계에서 정지했습니다. 게임 화면을 확인하세요. 이미 판매되었을 수 있습니다.</string>
+    <string name="fp_sell_stop_state">시험 모드: %1$s / 선택된 칸: %2$d</string>
+    <string name="fp_sell_state_on">켬</string>
+    <string name="fp_sell_state_off">끔</string>
     <string name="fp_sell_dry_done">시험 모드 완료. 선택만 하고 판매하지 않았습니다.</string>
     <string name="fp_sell_summary">선택 %1$d칸\n서번트 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\n경험치 4★ %6$d / 5★ %7$d\n잠금 판별 안 됨 %8$d칸</string>
 </resources>

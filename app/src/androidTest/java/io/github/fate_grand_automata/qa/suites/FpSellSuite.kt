@@ -20,17 +20,23 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
         }
         else -> {
             val box = case.getJSONArray("card720")
-            val cell = useSameSnapIn { reader.readCard(Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0) }
+            val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
+            val cell = useSameSnapIn { reader.readCard(card) }
+            // The selection is read from its own colour frame, never inside a snapshot (D-19).
+            val distance = reader.selectionDistance(card)
+            val selected = FpSellReader.selectionState(distance)
             val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
                 FpSellPolicy.Category.Exp4, FpSellPolicy.Category.Exp5)
             val every = FpSellPolicy.Category.entries.toSet()
+            // A borderline read is reported as "unknown" so an expectation of true or false fails instead of passing by default.
             JSONObject().put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
-                .put("new", cell.new ?: false).put("selected", cell.selected ?: false)
+                .put("new", cell.new ?: false).put("selected", selected ?: "unknown")
+                .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
                 .put("lock", cell.lock.name).put("excluded", cell.excluded)
-                .put("candidate", FpSellPolicy.select(cell, FpSellPolicy.Options(enabled, true, true)))
+                .put("candidate", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(enabled, true, true)))
                 // Strongest setting: every category, NEW! not required, real selling. Excluded tiles must stay false here.
-                .put("candidateReal", FpSellPolicy.select(cell, FpSellPolicy.Options(every, false, false)))
-                .put("candidateDryAll", FpSellPolicy.select(cell, FpSellPolicy.Options(every, false, true)))
+                .put("candidateReal", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(every, false, false)))
+                .put("candidateDryAll", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(every, false, true)))
         }
     }
     val expected = case.getJSONObject("expected")

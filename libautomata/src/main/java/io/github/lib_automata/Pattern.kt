@@ -61,7 +61,16 @@ interface Pattern : AutoCloseable {
     fun floodFill(x: Double, y: Double, maxDiff: Double, newValue: Double): Pattern
 
     fun fillText(): Pattern
+
+    /**
+     * Mean colour of the whole image, or `null` when the image is not a colour image
+     * (grayscale captures carry no hue; take the screenshot inside [AutomataApi.useColor]).
+     */
+    fun meanColor(): MeanColor?
 }
+
+/** Mean colour of an image, each channel in 0..255. */
+data class MeanColor(val red: Double, val green: Double, val blue: Double)
 
 /**
  * Gets the width and height in the form of a [Size] object.

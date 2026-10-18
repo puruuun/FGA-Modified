@@ -762,7 +762,14 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
     <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
     <string name="fp_sell_banner_missing">Original FP banner not found. Stopped before summoning.</string>
-    <string name="fp_sell_screen_unknown">The sell screen could not be verified. Stopped without selling.</string>
+    <string name="fp_sell_screen_unknown">No known game screen was seen for too long while summoning. Stopped.</string>
+    <string name="fp_sell_stop_entry">Could not enter the sell screen (sell button, title or servant tab not found). Stopped without selling.</string>
+    <string name="fp_sell_stop_columns">Could not switch the sell screen to 7 columns. Stopped without selling.</string>
+    <string name="fp_sell_stop_selection">A tapped card was not confirmed as selected (or the sell screen was lost while selecting). The same card was not tapped again. Stopped without selling.</string>
+    <string name="fp_sell_stop_flow">The sell flow stopped at the confirm, convert or close step. Check the game screen: a sale may already have happened.</string>
+    <string name="fp_sell_stop_state">Dry-run: %1$s / Selected cards: %2$d</string>
+    <string name="fp_sell_state_on">on</string>
+    <string name="fp_sell_state_off">off</string>
     <string name="fp_sell_dry_done">Dry-run complete. Cards were selected only; nothing was sold.</string>
     <string name="fp_sell_summary">Selected %1$d cells\nServants 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\nEXP 4★ %6$d / 5★ %7$d\nLock state unknown: %8$d cells</string>
 </resources>

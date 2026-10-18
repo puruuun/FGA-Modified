@@ -183,45 +183,123 @@ class FpAutoSellTest {
         verify(exactly = 0) { banner.remember(); banner.restore() }
     }
 
-    @Test fun `dry run selects an unknown lock, counts it, and stops before confirm`() {
+    /** One sell run on mocks: a single unlocked 1-star candidate and a reader whose selection reads are scripted. */
+    private class SellRun(val selections: List<Boolean?>, val sellFound: Boolean = true, val sevenColumns: Boolean = true) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
-        val prefs = mockk<IPreferences>(relaxed = true)
-        every { api.prefs } returns prefs
-        every { prefs.gameServer } returns GameServer.Kr
-        every { prefs.fpSellServant1 } returns true
-        every { prefs.fpSellNewOnly } returns true
-        every { prefs.fpSellDryRun } returns true
-        every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
-        val loc = mockk<FpSellLocations>(relaxed = true)
-        val sell = Region(10, 10, 20, 20)
-        val grid = Region(100, 100, 100, 100)
         val card = Region(110, 110, 20, 20)
-        every { loc.fullSell } returns sell
-        every { loc.grid } returns grid
-        val template = mockk<Pattern>()
-        val before = mockk<Pattern>(relaxed = true)
-        every { api.images[Images.FpSellSell, any()] } returns template
-        every { with(api) { sell.find(template, any()) } } returns Match(sell, 1.0)
-        every { with(api) { grid.getPattern(any()) } } returns before
-        every { with(api) { grid.exists(before, any(), any()) } } returns true
+        val sell = Region(10, 10, 20, 20)
         val reader = mockk<FpSellReader>()
-        every { reader.loc } returns loc
-        every { reader.hasLockTemplate } returns false
-        every { reader.onSellHeading() } returns true
-        every { reader.onServantTab() } returns true
-        every { reader.onSellScreen() } returns true
-        every { reader.isSevenColumns() } returns true
         val unselected = Cell(Kind.Servant, 1, true, Lock.Unknown, false)
-        every { reader.read() } returns listOf(FpSellReader.ReadCell(card, unselected))
-        every { reader.confirmed(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
-        every { reader.readCard(card) } returns unselected.copy(selected = true)
-        val error = assertFailsWith<AutoFriendGacha.ExitException> { FpAutoSell(api, reader, mockk(relaxed = true)).run() }
+
+        init {
+            val prefs = mockk<IPreferences>(relaxed = true)
+            every { api.prefs } returns prefs
+            every { prefs.gameServer } returns GameServer.Kr
+            every { prefs.fpSellServant1 } returns true
+            every { prefs.fpSellNewOnly } returns true
+            every { prefs.fpSellDryRun } returns true
+            every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
+            val loc = mockk<FpSellLocations>(relaxed = true)
+            val grid = Region(100, 100, 100, 100)
+            every { loc.fullSell } returns sell
+            every { loc.grid } returns grid
+            val template = mockk<Pattern>()
+            val before = mockk<Pattern>(relaxed = true)
+            every { api.images[Images.FpSellSell, any()] } returns template
+            every { with(api) { sell.find(template, any()) } } returns if (sellFound) Match(sell, 1.0) else null
+            every { with(api) { grid.getPattern(any()) } } returns before
+            every { with(api) { grid.exists(before, any(), any()) } } returns true
+            every { reader.loc } returns loc
+            every { reader.hasLockTemplate } returns false
+            every { reader.onSellHeading() } returns true
+            every { reader.onServantTab() } returns true
+            every { reader.onSellScreen() } returns true
+            every { reader.isSevenColumns() } returns sevenColumns
+            every { reader.read() } returns listOf(FpSellReader.ReadCell(card, unselected))
+            // The second page shows the same tile, now selected, so it must not be tapped or counted again.
+            every { reader.confirmed(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
+            if (selections.isNotEmpty()) every { reader.selection(card) } returnsMany selections
+        }
+
+        fun run(): AutoFriendGacha.ExitException =
+            assertFailsWith<AutoFriendGacha.ExitException> { FpAutoSell(api, reader, mockk(relaxed = true)).run() }
+    }
+
+    @Test fun `dry run selects an unknown lock, counts it, and stops before confirm`() {
+        val run = SellRun(listOf(true))
+        val error = run.run()
         val summary = assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(error.reason).summary
         assertEquals(1, summary.total)
         assertEquals(1, summary.unknownLock)
         assertEquals(mapOf(Category.Servant1 to 1), summary.counts)
-        verify(exactly = 1) { with(api) { card.click(1) } }
-        val imageLoader = api.images
+        verify(exactly = 1) { with(run.api) { run.card.click(1) } }
+        val imageLoader = run.api.images
         verify(exactly = 0) { imageLoader[Images.FpSellConfirm, any()] }
+    }
+
+    @Test fun `a selection confirmed on a later fresh frame counts once and never taps the tile again`() {
+        val run = SellRun(listOf(null, false, null, true))
+        val error = run.run()
+        assertEquals(1, assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(error.reason).summary.total)
+        verify(exactly = 1) { with(run.api) { run.card.click(1) } }
+        verify(exactly = 4) { run.reader.selection(run.card) }
+    }
+
+    @Test fun `a selection never confirmed stops after about 1_5 s of fresh frames without a second tap`() {
+        val run = SellRun(List(FpAutoSell.SELECTION_POLLS) { if (it % 2 == 0) null else false })
+        val reason = assertIs<AutoFriendGacha.ExitReason.SelectionNotConfirmed>(run.run().reason)
+        assertTrue(reason.dryRun)
+        assertEquals(0, reason.selected)
+        assertEquals(1.5, FpAutoSell.SELECTION_POLLS * FpAutoSell.SELECTION_POLL.inWholeMilliseconds / 1000.0, 0.01)
+        verify(exactly = 1) { with(run.api) { run.card.click(any()) } }
+        verify(exactly = FpAutoSell.SELECTION_POLLS) { run.reader.selection(run.card) }
+    }
+
+    @Test fun `a missing sell button stops as an entry failure before any tile is touched`() {
+        val run = SellRun(emptyList(), sellFound = false)
+        val reason = assertIs<AutoFriendGacha.ExitReason.SellEntryFailed>(run.run().reason)
+        assertTrue(reason.dryRun)
+        assertEquals(0, reason.selected)
+        verify(exactly = 0) { with(run.api) { run.card.click(any()) } }
+    }
+
+    @Test fun `failing to reach seven columns stops as a column switch failure`() {
+        val run = SellRun(emptyList(), sevenColumns = false)
+        assertIs<AutoFriendGacha.ExitReason.ColumnSwitchFailed>(run.run().reason)
+        verify(exactly = 0) { with(run.api) { run.card.click(any()) } }
+    }
+
+    @Test fun `each sell step maps to its own stop reason carrying dry run and selected count`() {
+        val expected = mapOf(
+            AutoFriendGacha.SellStep.Entry to AutoFriendGacha.ExitReason.SellEntryFailed::class,
+            AutoFriendGacha.SellStep.Columns to AutoFriendGacha.ExitReason.ColumnSwitchFailed::class,
+            AutoFriendGacha.SellStep.Selection to AutoFriendGacha.ExitReason.SelectionNotConfirmed::class,
+            AutoFriendGacha.SellStep.Flow to AutoFriendGacha.ExitReason.SellFlowFailed::class)
+        assertEquals(AutoFriendGacha.SellStep.entries.toSet(), expected.keys)
+        for ((step, type) in expected) for (dry in listOf(true, false)) {
+            val reason = AutoFriendGacha.sellStop(step, dry, 7)
+            assertEquals(type, reason::class, "$step")
+            assertEquals(dry, reason.dryRun)
+            assertEquals(7, reason.selected)
+        }
+        assertEquals(4, expected.values.toSet().size, "reasons are distinct")
+        assertNotEquals<Any>(AutoFriendGacha.ExitReason.SellScreenUnknown::class, AutoFriendGacha.ExitReason.SellEntryFailed::class)
+    }
+
+    @Test fun `teal frame reads selected, other frame colours read unselected, and borderline reads unknown`() {
+        val teal = FpSellReader.SELECTION_TEAL
+        fun strip(dr: Double, dg: Double, db: Double) = MeanColor(teal.red + dr, teal.green + dg, teal.blue + db)
+        fun state(vararg strips: MeanColor?) = FpSellReader.selectionState(FpSellReader.selectionDistance(strips.toList()))
+        assertEquals(true, state(strip(0.0, 0.0, 0.0)))
+        assertEquals(true, state(strip(100.0, -100.0, 0.0), strip(8.0, -6.0, 5.0)), "best strip wins")
+        assertEquals(false, state(MeanColor(254.0, 224.0, 28.0)), "gold")
+        assertEquals(false, state(MeanColor(200.0, 200.0, 200.0)), "silver")
+        assertEquals(false, state(MeanColor(150.0, 120.0, 100.0)), "bronze")
+        assertEquals(false, state(MeanColor(60.0, 60.0, 60.0)), "dark gray")
+        assertNull(state(strip(30.0, 0.0, 0.0)), "borderline")
+        assertNull(state(strip(0.0, 0.0, -35.0)), "borderline")
+        assertNull(state(null), "grayscale capture carries no colour")
+        assertNull(state(strip(0.0, 0.0, 0.0), null))
+        assertNull(FpSellReader.selectionState(null))
     }
 }

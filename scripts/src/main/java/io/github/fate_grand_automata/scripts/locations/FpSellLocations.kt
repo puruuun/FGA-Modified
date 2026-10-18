@@ -43,7 +43,12 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     fun label(card: Region) = Region(card.x + 65, card.bottom - 24, 110, 24)
     fun stars(card: Region) = Region(card.x + 94, card.bottom - 68, 128, 40)
     fun newLabel(card: Region) = Region(card.x + 48, card.y - 28, 140, 46)
-    fun selection(card: Region) = Region(card.x - 6, card.y - 6, 28, 34)
+    /**
+     * A 3 px (720p) wide, 40 px tall strip of the selection frame's left edge, below the class badge and above the
+     * lower-left number badge. [offset] is in 720p pixels from the card's left edge; the teal band covers about -1..4.
+     * Only frame pixels are read, never card art (D-19).
+     */
+    fun selectionStrip(card: Region, offset: Int) = Region(card.x + offset * 2, card.y + 72, 6, 80)
     /** The padlock sits on the left edge of a locked tile, and the overlay words cover the tile. */
     fun lock(card: Region) = Region(card.x - 32, card.y, card.width + 32, card.height)
 }
