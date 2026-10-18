@@ -16,3 +16,11 @@
 
 - `./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test :app:compileCiKotlin` 통과.
 - `py -3 tools/device-qa/run.py --serial emulator-5554 --suite fpSell`: 142 케이스 판독 결과를 확인했습니다. 판독 로직은 바뀌지 않았습니다.
+
+## 배포 상태
+
+- 커밋: `2b47b5c` (`main`에 푸시). Main CI #12 성공.
+- APK: `C:\Users\rl\Documents\Codex\FGA-Modified-builds\FGA-beta-1.4.0-beta.2-arm.apk`, aapt: package `io.github.fate_grand_automata.beta`, versionCode 1004002, versionName 1.4.0-beta.2.
+- SHA-256: `fa1ca6eca43256fb0965883ed21b2ddabff98987b44f74402383d4d95934be9c`
+- 설치: **보류**. `adb devices`에 `emulator-5554`가 나타나지 않아 `adb install -r`이 실패했습니다. ADB 서버 재시작이나 재연결은 하지 않았습니다. BlueStacks를 다시 연결한 뒤 설치하고 versionCode 1004002를 확인해야 합니다.
+- fpSell 기기 QA 재실행도 같은 이유로 아직 하지 않았습니다.
