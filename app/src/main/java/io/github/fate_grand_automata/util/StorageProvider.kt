@@ -112,11 +112,15 @@ class StorageProvider @Inject constructor(
     private val supportFriendFolder
         get() = supportImageFolder.getOrCreateDir("friend")
 
+    private val supportNpFolder
+        get() = supportImageFolder.getOrCreateDir("np")
+
     private val SupportImageKind.imageFolder
         get() = when (this) {
             SupportImageKind.Servant -> supportServantFolder
             SupportImageKind.CE -> supportCEFolder
             SupportImageKind.Friend -> supportFriendFolder
+            SupportImageKind.NoblePhantasm -> supportNpFolder
         }
 
     override fun writeSupportImage(kind: SupportImageKind, name: String): OutputStream {

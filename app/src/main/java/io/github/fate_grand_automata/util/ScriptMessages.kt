@@ -74,6 +74,9 @@ class ScriptMessages @Inject constructor(
             )
             is ScriptLog.SupportNpLevel -> Timber.d("Support NP: %s, minimum: %d, matched: %s",
                 item.detected ?: "unreadable", item.required, item.matched)
+            is ScriptLog.SupportNoblePhantasm -> Timber.tag("FGA.SupportNp").i(
+                "NP name best score: %s, matched: %s", item.bestScore ?: "none", item.matched
+            )
             is ScriptLog.GrandScoreIgnored -> Timber.tag("FGA.SupportScore").i(
                 "Grand score is not shown on %s servers, so the +16 condition is ignored", item.server
             )

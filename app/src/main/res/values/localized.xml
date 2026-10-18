@@ -116,6 +116,9 @@ Skills"</string>
     <string name="bond_ce_effect_default">"Default effects"</string>
     <string name="bond_ce_effect_np">"NP charge"</string>
     <string name="p_battle_config_support_pref_ces">"Preferred CEs"</string>
+    <string name="p_battle_config_support_pref_nps">"Re-ascension (NP name)"</string>
+    <string name="p_battle_config_support_pref_nps_hint">"Uses NP name images made by the Support Image Maker. Re-ascensions that share the same NP name and card cannot be told apart."</string>
+    <string name="support_img_namer_np_names">"NP name (re-ascension)"</string>
     <string name="p_battle_config_support_mlb">"Max-limit broken"</string>
     <string name="p_battle_config_support_friend_names">"Friend names"</string>
     <string name="p_battle_config_support_friends_only">"Friends Only"</string>

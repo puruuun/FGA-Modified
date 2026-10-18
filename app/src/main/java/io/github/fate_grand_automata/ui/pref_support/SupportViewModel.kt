@@ -30,6 +30,8 @@ class SupportViewModel @Inject constructor(
         private set
     var friends: Map<String, String> by mutableStateOf(emptyMap())
         private set
+    var noblePhantasms: Map<String, String> by mutableStateOf(emptyMap())
+        private set
 
     private suspend fun getSupportImages(
         context: Context,
@@ -62,6 +64,10 @@ class SupportViewModel @Inject constructor(
 
             friends =
                 getSupportImages(context, SupportImageKind.Friend)
+                    .associateWith { File(it).nameWithoutExtension }
+
+            noblePhantasms =
+                getSupportImages(context, SupportImageKind.NoblePhantasm)
                     .associateWith { File(it).nameWithoutExtension }
         }
     }

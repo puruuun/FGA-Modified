@@ -187,6 +187,9 @@
     <string name="p_battle_config_support_max_ascended">"最終再臨"</string>
     <string name="p_battle_config_support_mlb">"最大進化"</string>
     <string name="p_battle_config_support_pref_ces">"選択する概念礼装"</string>
+    <string name="p_battle_config_support_pref_nps">"再臨の区別（宝具名）"</string>
+    <string name="p_battle_config_support_pref_nps_hint">"サポート画像メーカーで作った宝具名画像で再臨を区別します。再臨が違っても宝具名とカードが同じなら区別できません。"</string>
+    <string name="support_img_namer_np_names">"宝具名（再臨の区別）"</string>
     <string name="p_battle_config_support_pref_servants">"選択するサーヴァント"</string>
     <string name="p_battle_config_support_require_both_normal_and_reward_match">"通常礼装＆報酬アップ(絆/FP/QP/EXP)礼装の両方に一致"</string>
     <string name="p_battle_config_support_selection_mode">"選択モード"</string>

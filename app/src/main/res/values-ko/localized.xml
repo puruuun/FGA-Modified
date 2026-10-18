@@ -190,6 +190,9 @@
     <string name="p_battle_config_support_max_ascended">"최종재림"</string>
     <string name="p_battle_config_support_mlb">"최대해방 / 풀돌"</string>
     <string name="p_battle_config_support_pref_ces">"개념예장 선호"</string>
+    <string name="p_battle_config_support_pref_nps">"재림 구분 (보구 이름)"</string>
+    <string name="p_battle_config_support_pref_nps_hint">"서포트 이미지 메이커로 만든 보구 이름 이미지로 재림을 구분합니다. 재림이 달라도 보구 이름과 카드가 같으면 구분할 수 없습니다."</string>
+    <string name="support_img_namer_np_names">"보구 이름 (재림 구분)"</string>
     <string name="p_battle_config_support_pref_servants">"서번트 선호"</string>
     <string name="p_battle_config_support_selection_mode">"선택 모드"</string>
     <string name="p_battle_config_use_servant_priority">"서번트 우선순위 사용"</string>

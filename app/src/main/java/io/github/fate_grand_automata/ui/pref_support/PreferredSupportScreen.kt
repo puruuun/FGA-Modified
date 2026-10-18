@@ -116,6 +116,17 @@ private fun PreferredSupport(
                         entries = servantEntries
                     )
 
+                    // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
+                    config.preferredNoblePhantasms.SupportSelectPreference(
+                        title = stringResource(R.string.p_battle_config_support_pref_nps),
+                        entries = vm.noblePhantasms
+                    )
+                    Text(
+                        text = stringResource(R.string.p_battle_config_support_pref_nps_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+
                     if (prefServants.isNotEmpty()) {
                         config.maxAscended.SwitchPreference(
                             title = stringResource(R.string.p_battle_config_support_max_ascended)

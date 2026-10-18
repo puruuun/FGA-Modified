@@ -104,7 +104,19 @@ private fun getSupportEntries(
         frame.findViewById(R.id.support_img_friend_1)
     )
 
-    return listOf(servant0, servant1, ce0, ce1, ce2, ce3, ce4, ce5, friend0, friend1)
+    // Noble Phantasm name images (0006). Hidden when the maker did not find an "Lv." marker for the row.
+    val np0 = SupportImgEntry(
+        SupportImageMaker.getNpImgPath(tempDir, 0),
+        SupportImageKind.NoblePhantasm,
+        frame.findViewById(R.id.support_img_np_0)
+    )
+    val np1 = SupportImgEntry(
+        SupportImageMaker.getNpImgPath(tempDir, 1),
+        SupportImageKind.NoblePhantasm,
+        frame.findViewById(R.id.support_img_np_1)
+    )
+
+    return listOf(servant0, servant1, ce0, ce1, ce2, ce3, ce4, ce5, friend0, friend1, np0, np1)
 }
 
 suspend fun showSupportImageNamer(context: Context, storageProvider: StorageProvider) = withContext(Dispatchers.Main) {

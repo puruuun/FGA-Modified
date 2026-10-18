@@ -20,6 +20,8 @@ class SupportImageExtractor(
             SupportImageKind.Servant -> "servant"
             SupportImageKind.CE -> "ce"
             SupportImageKind.Friend -> "friend"
+            // No built-in NP images ship; NP images are always made by the user (0006 D-3).
+            SupportImageKind.NoblePhantasm -> "np"
         }
 
     private fun extract(kind: SupportImageKind) {
