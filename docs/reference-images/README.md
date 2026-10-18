@@ -9,7 +9,7 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 | `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), the device-side full screens (20) | 188 |
 | `cases/bond.json` | bond | `tools/bond-image-cases.json` (20) | 20 |
 | `cases/questItems.json` | questItems | `quest-items-crops.json` (38 crops, 13 screens) | 13 |
-| `cases/noblePhantasm.json` | noblePhantasm | `Jp/np-20261018/` (owner JP screens, friend names and comments masked; NP name templates cut by the 0006 D-2 rule) | 4 |
+| `cases/noblePhantasm.json` | noblePhantasm | `Jp/np-20261018/` (owner JP screens, friend names and comments masked; NP-only and servant+NP block templates cut by the 0006 D-2 and D-9 rules; block 3x3 matrix plus NP-only cases) | 9 |
 
 Run one suite or all of them:
 

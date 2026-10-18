@@ -1,9 +1,12 @@
 {
   "schema": 1,
-  "_comment": "0006 NP name cases. Frames and templates: docs/reference-images/Jp/np-20261018 (owner JP screens, 2026-10-18, friend names and comments masked). rowIndex is the order of the support rows on the frame (SupportBoundsFinder). The templates are 720p crops of the NP line, from icon to just before Lv., cut by the D-2 rule with the 720p halves of the 1440p margins.",
+  "_comment": "0006 NP cases. Frames and templates: docs/reference-images/Jp/np-20261018 (owner JP screens, 2026-10-18; friend names and comments masked). Each row is named by rowIndex (order of SupportBoundsFinder) or rowY720 (row top in 720p, +-3 px). NP-only cases (beta.1) use the 304x31 Lv.-free name images; block cases (beta.2, 0006 D-9) use the 304x59 two-line block (servant line + NP line, from the icon to before Lv.). The 3x3 matrix is the three ascensions: 1st = servant 妖精騎士ランスロット + Arts, 2nd = メリュジーヌ + Arts, 3rd = メリュジーヌ + Buster. Source frame of each template: block-lancelot-arts <- owner-150647 row 0; block-melusine-arts <- now row 0; block-melusine-buster <- now row 1.",
   "imports": {
     "NoblePhantasm:Melusine Arts": ["docs/reference-images/Jp/np-20261018/melusine-arts.png"],
-    "NoblePhantasm:Melusine Buster": ["docs/reference-images/Jp/np-20261018/melusine-buster.png"]
+    "NoblePhantasm:Melusine Buster": ["docs/reference-images/Jp/np-20261018/melusine-buster.png"],
+    "NoblePhantasm:Block Lancelot Arts": ["docs/reference-images/Jp/np-20261018/block-lancelot-arts.png"],
+    "NoblePhantasm:Block Melusine Arts": ["docs/reference-images/Jp/np-20261018/block-melusine-arts.png"],
+    "NoblePhantasm:Block Melusine Buster": ["docs/reference-images/Jp/np-20261018/block-melusine-buster.png"]
   },
   "cases": [
     {
@@ -66,6 +69,91 @@
           "matches": [
             {"entry": "Melusine Arts", "expected": false},
             {"entry": "Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-block-matrix-now-row0-2nd",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/now-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 0,
+          "matches": [
+            {"entry": "Block Lancelot Arts", "expected": false},
+            {"entry": "Block Melusine Arts", "expected": true},
+            {"entry": "Block Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-block-matrix-now-row1-3rd",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/now-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 1,
+          "matches": [
+            {"entry": "Block Lancelot Arts", "expected": false},
+            {"entry": "Block Melusine Arts", "expected": false},
+            {"entry": "Block Melusine Buster", "expected": true}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-block-matrix-owner-150647-row0-1st",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/owner-150647-masked720.png",
+      "masked720": [[380, 190, 450, 92], [380, 396, 450, 80], [380, 598, 450, 90]],
+      "rows": [
+        {
+          "rowIndex": 0,
+          "matches": [
+            {"entry": "Block Lancelot Arts", "expected": true},
+            {"entry": "Block Melusine Arts", "expected": false},
+            {"entry": "Block Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-block-owner-152245-abiba-no-comment-1st",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/owner-152245-masked720.png",
+      "masked720": [[380, 286, 320, 44], [380, 486, 320, 70]],
+      "rows": [
+        {
+          "rowY720": 259,
+          "matches": [
+            {"entry": "Block Lancelot Arts", "expected": true},
+            {"entry": "Block Melusine Arts", "expected": false},
+            {"entry": "Block Melusine Buster", "expected": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "np-block-owner-152245-kuromu-with-comment-1st",
+      "suite": "noblePhantasm",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/np-20261018/owner-152245-masked720.png",
+      "masked720": [[380, 286, 320, 44], [380, 486, 320, 70]],
+      "rows": [
+        {
+          "rowY720": 459,
+          "matches": [
+            {"entry": "Block Lancelot Arts", "expected": true},
+            {"entry": "Block Melusine Arts", "expected": false},
+            {"entry": "Block Melusine Buster", "expected": false}
           ]
         }
       ]
