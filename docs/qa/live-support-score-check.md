@@ -6,7 +6,7 @@
 | 역할 | 기기 | adb 시리얼 | 게임 서버 (패키지) | 결과 폴더 |
 |---|---|---|---|---|
 | **QA-JP** | 블루스택 (PC) | `emulator-5554` | JP (`com.aniplex.fategrandorder`) | `build/live-qa/jp-bluestacks/<YYYYMMDD-HHMMSS>/` |
-| **QA-KR** | 소유자 태블릿 Lenovo Legion Y700 (2025) | 시작 시 확인 (2절) | KR (`com.netmarble.fgok`) | `build/live-qa/kr-tablet/<YYYYMMDD-HHMMSS>/` |
+| **QA-KR** | 소유자 태블릿 Lenovo Legion Y700 (2025), 모델 TB322FC, 3040×1904, density 440 | `HA29GCWH` | KR (`com.netmarble.fgok`) | `build/live-qa/kr-tablet/<YYYYMMDD-HHMMSS>/` |
 
 두 기기 모두 소유자의 실제 게임 계정이 로그인되어 있습니다. **3절 "금지 행동"을 어기는 조작은 어떤 이유로도 하지 않습니다.** 판단이 애매하면 멈추고 소유자에게 묻습니다.
 
@@ -34,7 +34,7 @@
   1. USB 케이블이 충전 전용이 아닌 데이터 케이블인지, 태블릿의 USB 모드가 "파일 전송"인지
   2. 태블릿 화면에 뜨는 "USB 디버깅을 허용하시겠습니까?"에서 허용을 눌렀는지
   3. 무선 디버깅을 쓰는 경우, 소유자가 직접 페어링하고 `IP:포트`를 알려 주기
-- 2026-10-18 설계자 확인 시점에는 PC에서 태블릿이 보이지 않았습니다(USB 장치 목록에도 없음).
+- 2026-10-18 설계자 확인: `HA29GCWH`로 연결됨. 태블릿의 FGA는 정규판 `io.github.fate_grand_automata.cardcount` 1.2.1입니다(베타 미설치). 원본 FGA(`io.github.fate_grand_automata`)도 설치되어 있으니 **헷갈리지 말고 cardcount를 씁니다.**
 
 ## 3. 금지 행동
 
