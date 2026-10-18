@@ -9,6 +9,7 @@
 ## ダウンロード・更新
 
 - [最新APK](https://github.com/puruuun/FGA-Modified/releases/latest)
+- 正規版 1.2.1: [変更内容（韓国語）](wiki/releases/1.2.1-KR.md)
 - [Obtainiumに追加](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%257B%2522includePrereleases%2522%253Afalse%257D%257D)
 - [詳細](wiki/scripts/Modified-Features-JA.md#installation)
 
