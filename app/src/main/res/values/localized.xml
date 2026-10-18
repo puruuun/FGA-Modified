@@ -166,6 +166,8 @@ NOTE: You might have to use 'Show Internal Storage' in your device's file picker
     <string name="p_advanced">"Advanced"</string>
     <string name="p_debug_mode">"Debug mode"</string>
     <string name="p_debug_mode_summary">"Highlight the regions being matched"</string>
+    <string name="p_support_reader_diagnostics">"Save support score diagnostics"</string>
+    <string name="p_support_reader_diagnostics_summary">"Save the score image and the reader's evidence for each support checked. Off by default. Files go to the diagnostics folder in the FGA storage folder."</string>
     <string name="p_record_screen">"Record Screen"</string>
     <string name="p_record_screen_summary">"A file named 'record.mp4' will be saved to output folder.
 Copy or rename it if you want to keep it."</string>

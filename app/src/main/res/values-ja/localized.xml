@@ -211,6 +211,8 @@
     <string name="p_choose_folder_title">"フォルダ選択"</string>
     <string name="p_debug_mode">"デバッグモード"</string>
     <string name="p_debug_mode_summary">"一致した箇所をハイライトします"</string>
+    <string name="p_support_reader_diagnostics">"サポート判定の診断を保存"</string>
+    <string name="p_support_reader_diagnostics_summary">"確認したサポートごとに、得点欄の画像と判定の根拠を保存します。初期値はオフです。保存先はFGAの保存フォルダ内のdiagnosticsフォルダです。"</string>
     <string name="p_enable_withdraw">"全滅時に撤退"</string>
     <string name="p_fine_tune">"微調整"</string>
     <string name="p_fine_tune_click_delay">"マルチクリック間隔"</string>

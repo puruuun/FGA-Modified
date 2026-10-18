@@ -211,6 +211,8 @@
     <string name="p_choose_folder_title">"폴더 선택"</string>
     <string name="p_debug_mode">"디버그 모드"</string>
     <string name="p_debug_mode_summary">"대조되고 있는 부분 표시하기"</string>
+    <string name="p_support_reader_diagnostics">"서포트 판독 진단 저장"</string>
+    <string name="p_support_reader_diagnostics_summary">"확인한 서포트마다 점수 이미지와 판독 근거를 저장합니다. 기본값은 꺼짐이며, FGA 저장 폴더의 diagnostics 폴더에 저장됩니다."</string>
     <string name="p_enable_withdraw">"퇴각 활성화"</string>
     <string name="p_fine_tune">"미세 조정"</string>
     <string name="p_fine_tune_click_delay">"반복 터치 사이 딜레이 (ms)"</string>
