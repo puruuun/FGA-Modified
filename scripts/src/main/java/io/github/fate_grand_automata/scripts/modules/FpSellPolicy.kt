@@ -58,6 +58,12 @@ object FpSellPolicy {
      */
     const val REAL_SELL_VALIDATED = true
 
+    /**
+     * Dry run is on by default. Real selling only happens after the owner turns dry run off explicitly,
+     * because the live confirm, convert and close flow has not yet run in the game.
+     */
+    const val DEFAULT_DRY_RUN = true
+
     /** Real selling needs a validated server and a lock template. Otherwise the run is dry-run only. */
     fun realSellAllowed(server: GameServer, hasLockTemplate: Boolean): Boolean =
         REAL_SELL_VALIDATED && hasLockTemplate && (server is GameServer.Kr || server is GameServer.Jp)

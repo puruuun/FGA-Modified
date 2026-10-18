@@ -47,6 +47,23 @@ class FpAutoSellTest {
         assertFalse(FpSellPolicy.realSellAllowed(GameServer.Kr, hasLockTemplate = false))
     }
 
+    @Test fun `dry run is on by default and real sale needs it turned off explicitly`() {
+        assertTrue(FpSellPolicy.DEFAULT_DRY_RUN)
+        val prefs = mockk<IPreferences>()
+        every { prefs.fpSellServant1 } returns true
+        every { prefs.fpSellServant2 } returns false
+        every { prefs.fpSellServant3 } returns false
+        every { prefs.fpSellServant4 } returns false
+        every { prefs.fpSellExp4 } returns false
+        every { prefs.fpSellExp5 } returns false
+        every { prefs.fpSellNewOnly } returns true
+        every { prefs.gameServer } returns GameServer.Kr
+        every { prefs.fpSellDryRun } returns FpSellPolicy.DEFAULT_DRY_RUN
+        assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = true).dryRun, "default keeps dry run")
+        every { prefs.fpSellDryRun } returns false
+        assertFalse(FpSellPolicy.options(prefs, hasLockTemplate = true).dryRun, "explicit opt-out allows real sale")
+    }
+
     @Test fun `dry run is forced whenever real sale is not allowed`() {
         val prefs = mockk<IPreferences>()
         every { prefs.fpSellServant1 } returns true

@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.prefs.core
 
 import android.content.Context
+import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import com.fredporciuncula.flow.preferences.Serializer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -65,7 +66,7 @@ class PrefsCore @Inject constructor(
     val fpSellExp4 = maker.bool("fpSellExp4", false)
     val fpSellExp5 = maker.bool("fpSellExp5", false)
     val fpSellNewOnly = maker.bool("fpSellNewOnly", true)
-    val fpSellDryRun = maker.bool("fpSellDryRun", false)
+    val fpSellDryRun = maker.bool("fpSellDryRun", FpSellPolicy.DEFAULT_DRY_RUN)
 
     val receiveEmbersWhenGiftBoxFull = maker.bool("receive_embers_when_gift_box_full")
 
