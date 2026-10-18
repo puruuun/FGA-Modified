@@ -95,6 +95,12 @@ QA agent 두 개가 동시에 진행합니다(2026-10-18 소유자 결정).
   }
   ```
   `ocr`와 `templates`는 판독기가 실제로 계산한 값만 넣습니다. 진단을 위해 추가로 계산하지 않습니다(성능 영향을 막기 위해서입니다).
+
+  **구현 반영 (3e9f292e, 2026-10-18 설계자 승인):**
+  - `templates`는 유사도 점수가 아니라 `Images` 이름별 참/거짓입니다. `Region.exists`가 Boolean만 돌려주기 때문입니다. C-2를 검토할 때 점수가 필요하면 그때 따로 추가합니다.
+  - `frameSize` 대신 720p 점수 영역 크기 `cropSize`를 기록합니다.
+  - 이미지는 OCR에 넘긴 객체 그 자체가 아니라, 같은 스냅샷에서 같은 영역을 다시 잘라 낸 것입니다. 픽셀은 같습니다.
+  - `screen`은 실행 중 `PreferredSupportSelection.select()`의 호출 순번이고, `row`는 `boundsFinder.all()`의 인덱스입니다. 서번트 조건을 통과한 후보만 점수 판독까지 가므로 기록도 그 후보들만 남습니다.
 - **D-4. 저장 위치는 FGA 저장 폴더 아래 `diagnostics/support-score/<실행 시각>/`입니다.** 파일 이름은 `<screen>-<row>.png`, `<screen>-<row>-wide.png`, `<screen>-<row>.json`입니다. 실행 하나당 최대 500개 후보로 제한하고, 넘으면 저장을 멈추고 로그를 남깁니다.
 - **D-5. 설정 위치.** 더 많은 옵션 → 고급의 "디버그 모드" 근처에 "서포트 판독 진단 저장" 스위치를 둡니다(`PrefsCore` → `IPreferences`에 `supportReaderDiagnostics`). 기본값은 꺼짐이고, 정규판에도 포함합니다. 사용자에게 받은 화면도 같은 방식으로 수집할 수 있게 하기 위해서입니다.
 - **D-6. 모듈 경계.** `scripts`에는 인터페이스만 둡니다: `IReaderDiagnostics { val enabled: Boolean; fun record(reader: String, images: Map<String, Pattern>, json: String) }`. 구현은 `app`에 두고 `IStorageProvider`에 진단 파일 쓰기 함수를 추가합니다. 기존 `dump()`는 debug 빌드에서만 동작하므로 쓰지 않습니다. 진단이 꺼져 있으면 판독기는 `record`를 부르지도, JSON을 만들지도 않습니다.
