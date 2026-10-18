@@ -59,13 +59,6 @@ class PrefsCore @Inject constructor(
     val shouldLimitFP = maker.bool("should_fp_limit")
     val limitFP = maker.int("fp_limit", 1)
     val fpAutoSell = maker.bool("fpAutoSell", false)
-    val fpSellServant1 = maker.bool("fpSellServant1", true)
-    val fpSellServant2 = maker.bool("fpSellServant2", true)
-    val fpSellServant3 = maker.bool("fpSellServant3", false)
-    val fpSellServant4 = maker.bool("fpSellServant4", false)
-    val fpSellExp4 = maker.bool("fpSellExp4", false)
-    val fpSellExp5 = maker.bool("fpSellExp5", false)
-    val fpSellNewOnly = maker.bool("fpSellNewOnly", true)
     val fpSellDryRun = maker.bool("fpSellDryRun", FpSellPolicy.DEFAULT_DRY_RUN)
 
     val receiveEmbersWhenGiftBoxFull = maker.bool("receive_embers_when_gift_box_full")

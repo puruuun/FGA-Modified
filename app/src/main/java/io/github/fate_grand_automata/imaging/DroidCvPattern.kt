@@ -189,6 +189,11 @@ class DroidCvPattern(
         return MeanColor(red = mean.`val`[2], green = mean.`val`[1], blue = mean.`val`[0])
     }
 
+    override fun grayPixels(): ByteArray? {
+        if (mat.empty() || mat.channels() != 1) return null
+        return ByteArray(width * height).also { mat.get(0, 0, it) }
+    }
+
     override fun floodFill(x: Double, y: Double, maxDiff: Double, newValue: Double): Pattern {
         val point = Point(x, y)
         this.mat.floodFill(point, maxDiff, newValue)

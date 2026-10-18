@@ -11,7 +11,7 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Sells the configured tiles from the sell screen of a servant-slot warning, then leaves the screen.
+ * Selects all visible safe tiles from the sell screen of a servant-slot warning, then leaves the screen.
  * Returns the number of tiles sold. Dry run stops with [ExitReason.SellDryRunDone] before Confirm.
  */
 class FpAutoSell @Inject constructor(
@@ -19,31 +19,18 @@ class FpAutoSell @Inject constructor(
     private val reader: FpSellReader,
     private val swipe: Swiper
 ) : IFgoAutomataApi by api {
-    companion object {
-        const val SELECTION_POLLS = 10
-        val SELECTION_POLL = 0.15.seconds
-    }
-
     private val loc get() = reader.loc
     // Which step a stop belongs to, the dry-run state and the tiles selected so far, for the exit message (D-21).
     private var step = SellStep.Entry
     private var dryRun = true
     private var selectedSoFar = 0
+    private var unknownLockSoFar = 0
     private fun log(message: String) = messages.log(ScriptLog.FpSell(message))
 
     /** Every stop names its step and the reason in logcat (tag FpSell) before the exit message is shown. */
     private fun stop(reason: String): Nothing {
-        log("stop step=$step reason=$reason selected=$selectedSoFar dryRun=$dryRun")
-        throw ExitException(AutoFriendGacha.sellStop(step, dryRun, selectedSoFar))
-    }
-
-    /** D-20: poll fresh frames for about 1.5 s. The tile is tapped once by the caller and never again. */
-    private fun awaitSelected(card: Region): Boolean {
-        repeat(SELECTION_POLLS) {
-            SELECTION_POLL.wait()
-            if (reader.selection(card) == true) return true
-        }
-        return false
+        log("stop step=$step reason=$reason selected=$selectedSoFar unknownLock=$unknownLockSoFar dryRun=$dryRun")
+        throw ExitException(AutoFriendGacha.sellStop(step, dryRun, selectedSoFar, unknownLockSoFar))
     }
 
     private fun awaitScreen(what: String, test: () -> Boolean) {
@@ -62,7 +49,7 @@ class FpAutoSell @Inject constructor(
         step = SellStep.Entry
         dryRun = options.dryRun
         selectedSoFar = 0
-        log("start dryRun=${options.dryRun} enabled=${options.enabled.joinToString(",")} newOnly=${options.newOnly}")
+        log("start dryRun=$dryRun")
         click(loc.fullSell, Images.FpSellSell)
         awaitScreen("sell heading") { reader.onSellHeading() }
         // The sell screen may open on the Craft Essence tab. Only the servant tab is read (D-17).
@@ -81,40 +68,43 @@ class FpAutoSell @Inject constructor(
             awaitScreen("sell screen after size switch") { reader.onSellScreen() }
         }
         step = SellStep.Selection
-        val counts = mutableMapOf<FpSellPolicy.Category, Int>()
-        var unknown = 0
+        var anchorRetry = false
+        unknownLockSoFar = 0
         var unchanged = 0
         var ended = false
         // Bounded even when screenshots or a scroll gesture stop making progress.
         for (page in 0 until 500) {
-            if (!useSameSnapIn { reader.onSellScreen() && reader.isSevenColumns() }) stop("sell screen or seven columns lost on page $page")
+            if (!useSameSnapIn { reader.onSellScreen() }) stop("sell screen lost on page $page")
             val tiles = reader.readPage()
-            // Row numbers are the distinct label rows of this page, counted from the top.
+            // Row numbers are the distinct grid rows of this page, counted from the top.
             val rowYs = tiles.map { it.region.y }.sorted().fold(mutableListOf<Int>()) { rows, y ->
                 if (rows.none { kotlin.math.abs(it - y) < 24 }) rows.add(y)
                 rows
             }
             fun row(tile: FpSellReader.PageTile) = rowYs.indexOfFirst { kotlin.math.abs(it - tile.region.y) < 24 }
             val evaluatedRows = FpSellPolicy.evaluatedRows(tiles)
-            val distance = FpSellPolicy.swipeDistance(evaluatedRows) ?: stop("no fully evaluated rows on page $page")
+            val plannedDistance = FpSellPolicy.swipeDistance(evaluatedRows)
+            if (plannedDistance == null) {
+                if (anchorRetry) stop("grid rows unavailable after reanchor and overlap scroll on page $page")
+                anchorRetry = true
+                log("page=$page rows=$evaluatedRows swipe=284 reanchor=true")
+                swipe.scroll(loc.swipeStart, loc.swipeEnd(284))
+                0.7.seconds.wait()
+                continue
+            }
+            val distance = plannedDistance
+            anchorRetry = false
             log("page=$page tiles=${tiles.size} evaluated=${tiles.count { it.skip == null }} rows=$evaluatedRows swipe=$distance")
             for (tile in tiles) {
-                if (tile.skip != null) {
-                    log(FpSellPolicy.tileLine(page, row(tile), tile.column, null, tile.skip, emptyList(), emptyList(), 0.0, "skip:${tile.skip}"))
-                    continue
-                }
-                if (counts.values.sum() >= 999) { ended = true; break }
-                val cell = reader.confirmed(tile.region)
-                val decision = FpSellPolicy.decision(cell, options)
-                log(FpSellPolicy.tileLine(page, row(tile), tile.column, cell, null, tile.stars, tile.slots, tile.newScore, decision) + " tier=${if (cell.kind == FpSellPolicy.Kind.Servant && cell.selected == false) reader.tier(tile.region) else null}")
+                val cell = if (tile.skip == null) reader.readCard(tile.region)
+                    else FpSellPolicy.Cell(false, FpSellPolicy.Lock.Unknown, null)
+                val decision = if (tile.skip != null) "skip:${tile.skip}" else FpSellPolicy.decision(cell, options)
+                log(FpSellPolicy.tileLine(page, row(tile), tile.column, cell, decision))
                 if (decision != "select") continue
+                if (selectedSoFar >= 999) { ended = true; break }
                 tile.region.click()
-                // Count only a visibly acknowledged selection; never retry a possibly toggled tap (D-20).
-                if (!awaitSelected(tile.region)) stop("tapped tile page=$page r${row(tile) + 1}c${tile.column + 1} did not read as selected")
-                val category = cell.category ?: stop("selected tile has no category")
-                counts[category] = (counts[category] ?: 0) + 1
-                selectedSoFar = counts.values.sum()
-                if (cell.lock == FpSellPolicy.Lock.Unknown) unknown++
+                selectedSoFar++
+                if (cell.lock == FpSellPolicy.Lock.Unknown) unknownLockSoFar++
             }
             if (ended) break
             loc.grid.getPattern().use { before ->
@@ -128,10 +118,10 @@ class FpAutoSell @Inject constructor(
         }
         if (!ended) stop("page limit reached without the list ending")
         log("end of list selected=$selectedSoFar")
-        val summary = FpSellPolicy.Summary(counts.toMap(), unknown)
+        val summary = FpSellPolicy.Summary(selectedSoFar, unknownLockSoFar)
         messages.log(ScriptLog.FpSellSelection(summary))
         // This guard precedes EVERY path to the confirmation button. Dry run and not-yet-validated servers stop here.
-        if (options.dryRun) log("dry run done selected=${summary.total}")
+        if (options.dryRun) log("stop step=$step reason=dry-run-complete selected=${summary.total} unknownLock=$unknownLockSoFar dryRun=true")
         if (options.dryRun) throw ExitException(ExitReason.SellDryRunDone(summary))
         if (summary.total == 0) return 0
         step = SellStep.Flow

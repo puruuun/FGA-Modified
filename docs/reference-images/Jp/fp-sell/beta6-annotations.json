@@ -1,0 +1,1371 @@
+[
+  {
+    "server": "Kr",
+    "file": "docs/reference-images/Kr/fp-sell/18.png",
+    "firstFullTop": 186,
+    "selected": [],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Kr",
+    "file": "docs/reference-images/Kr/fp-sell/20.png",
+    "firstFullTop": 186,
+    "selected": [
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Kr",
+    "file": "docs/reference-images/Kr/fp-sell/27.png",
+    "firstFullTop": 178,
+    "selected": [],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Kr",
+    "file": "docs/reference-images/Kr/fp-sell/28.png",
+    "firstFullTop": 186,
+    "selected": [],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Kr",
+    "file": "docs/reference-images/Kr/fp-sell/38.png",
+    "firstFullTop": 298,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/29.png",
+    "firstFullTop": 186,
+    "selected": [],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/37.png",
+    "firstFullTop": 223,
+    "selected": [],
+    "blocked": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+    "firstFullTop": 186,
+    "selected": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/46.png",
+    "firstFullTop": 303,
+    "selected": [],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/47.png",
+    "firstFullTop": 295,
+    "selected": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ]
+    ],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/48.png",
+    "firstFullTop": 295,
+    "selected": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        6
+      ]
+    ],
+    "blocked": [],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023440-448-watch.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023451-308-watch.png",
+    "firstFullTop": 280,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023502-070-watch.png",
+    "firstFullTop": 232,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023512-711-watch.png",
+    "firstFullTop": 282,
+    "selected": [
+      [
+        0,
+        1
+      ]
+    ],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        2
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023523-435-watch.png",
+    "firstFullTop": 183,
+    "selected": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "blocked": [],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023534-233-watch.png",
+    "firstFullTop": 281,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "masked": null
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023544-989-watch.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023551-342-stopped-dialog.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023555-510-watch.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023606-019-watch.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023616-563-watch.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": [
+      [
+        366,
+        270,
+        548,
+        180
+      ]
+    ]
+  },
+  {
+    "server": "Jp",
+    "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023618-706-final-game-selection-9.png",
+    "firstFullTop": 183,
+    "selected": [],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "masked": null
+  }
+]

@@ -679,13 +679,6 @@
     <string name="fp_sell_title">자동 판매</string>
     <string name="fp_sell_safety">잠금, 선택 불가, 그랜드 서번트, PARTY 칸은 시험 모드에서도 선택하지 않습니다. 시험 모드는 선택만 하고 확인을 누르지 않습니다.</string>
     <string name="fp_auto_sell">자동 판매 켜기</string>
-    <string name="fp_sell_servant1">1★ 서번트</string>
-    <string name="fp_sell_servant2">2★ 서번트</string>
-    <string name="fp_sell_servant3">3★ 서번트</string>
-    <string name="fp_sell_servant4">4★ 서번트</string>
-    <string name="fp_sell_exp4">4★ 경험치 카드</string>
-    <string name="fp_sell_exp5">5★ 경험치 카드</string>
-    <string name="fp_sell_new_only">NEW!만 판매</string>
     <string name="fp_sell_dry_run">시험 모드 (선택만)</string>
     <string name="fp_sell_nothing">직전 판매 수가 0이며 서번트칸이 다시 가득 찼습니다.</string>
     <string name="fp_sell_not_servant">서번트칸 경고가 아니어서(개념예장, 커맨드 코드 등) 판매하지 않고 정지했습니다.</string>
@@ -693,11 +686,13 @@
     <string name="fp_sell_screen_unknown">소환 중 알려진 화면을 오래 확인하지 못해 정지했습니다.</string>
     <string name="fp_sell_stop_entry">판매 화면에 들어가지 못했습니다(판매 버튼, 제목 또는 서번트 탭을 찾지 못함). 판매하지 않고 정지했습니다.</string>
     <string name="fp_sell_stop_columns">판매 화면을 7열로 바꾸지 못했습니다. 판매하지 않고 정지했습니다.</string>
-    <string name="fp_sell_stop_selection">누른 칸이 선택된 것으로 확인되지 않았습니다(또는 선택 중 판매 화면을 잃었습니다). 같은 칸을 다시 누르지 않고 판매 없이 정지했습니다.</string>
     <string name="fp_sell_stop_flow">판매 진행 중 결정, 변환 또는 닫기 단계에서 정지했습니다. 게임 화면을 확인하세요. 이미 판매되었을 수 있습니다.</string>
-    <string name="fp_sell_stop_state">시험 모드: %1$s / 선택된 칸: %2$d</string>
+    <string name="fp_sell_stop_state">시험 모드: %1$s / 선택된 칸: %2$d\n잠금 판별 안 됨 %3$d칸</string>
     <string name="fp_sell_state_on">켬</string>
     <string name="fp_sell_state_off">끔</string>
     <string name="fp_sell_dry_done">시험 모드 완료. 선택만 하고 판매하지 않았습니다.</string>
-    <string name="fp_sell_summary">선택 %1$d칸\n서번트 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\n경험치 4★ %6$d / 5★ %7$d\n잠금 판별 안 됨 %8$d칸</string>
+    <string name="fp_sell_summary">선택 %1$d칸\n잠금 판별 안 됨 %2$d칸</string>
+    <string name="fp_sell_warning">판매 화면에 보이는 서번트·경험치 카드·포우 카드 중 잠금이 아닌 칸을 모두 선택해 판매합니다. 시작 전에 판매 화면의 필터 설정을 꼭 확인하세요.</string>
+    <string name="fp_sell_filter_hint">예: ★1~★3, 서번트만. 잠금·선택 불가·그랜드·PARTY 칸은 고르지 않습니다.</string>
+    <string name="fp_sell_stop_grid">선택 중 판매 화면 또는 격자를 읽지 못해 판매하지 않고 정지했습니다.</string>
 </resources>

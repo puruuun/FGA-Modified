@@ -751,13 +751,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_title">Auto-sell</string>
     <string name="fp_sell_safety">Locked, unselectable, Grand Servant and PARTY cards are never selected, even in dry run. Dry run only selects and never presses Confirm.</string>
     <string name="fp_auto_sell">Enable auto-sell</string>
-    <string name="fp_sell_servant1">1★ servants</string>
-    <string name="fp_sell_servant2">2★ servants</string>
-    <string name="fp_sell_servant3">3★ servants</string>
-    <string name="fp_sell_servant4">4★ servants</string>
-    <string name="fp_sell_exp4">4★ EXP cards</string>
-    <string name="fp_sell_exp5">5★ EXP cards</string>
-    <string name="fp_sell_new_only">NEW! only</string>
     <string name="fp_sell_dry_run">Dry-run (select only)</string>
     <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
     <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
@@ -765,11 +758,13 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_screen_unknown">No known game screen was seen for too long while summoning. Stopped.</string>
     <string name="fp_sell_stop_entry">Could not enter the sell screen (sell button, title or servant tab not found). Stopped without selling.</string>
     <string name="fp_sell_stop_columns">Could not switch the sell screen to 7 columns. Stopped without selling.</string>
-    <string name="fp_sell_stop_selection">A tapped card was not confirmed as selected (or the sell screen was lost while selecting). The same card was not tapped again. Stopped without selling.</string>
     <string name="fp_sell_stop_flow">The sell flow stopped at the confirm, convert or close step. Check the game screen: a sale may already have happened.</string>
-    <string name="fp_sell_stop_state">Dry-run: %1$s / Selected cards: %2$d</string>
+    <string name="fp_sell_stop_state">Dry-run: %1$s / Selected cards: %2$d\nLock state unknown: %3$d cells</string>
     <string name="fp_sell_state_on">on</string>
     <string name="fp_sell_state_off">off</string>
     <string name="fp_sell_dry_done">Dry-run complete. Cards were selected only; nothing was sold.</string>
-    <string name="fp_sell_summary">Selected %1$d cells\nServants 1★ %2$d / 2★ %3$d / 3★ %4$d / 4★ %5$d\nEXP 4★ %6$d / 5★ %7$d\nLock state unknown: %8$d cells</string>
+    <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
+    <string name="fp_sell_warning">Every visible unlocked servant, EXP card and Fou card on the sell screen will be selected and sold. Check the sell-screen filter before starting.</string>
+    <string name="fp_sell_filter_hint">Example: 1★–3★, servants only. Locked, unselectable, Grand Servant and PARTY cards are never selected.</string>
+    <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>
 </resources>

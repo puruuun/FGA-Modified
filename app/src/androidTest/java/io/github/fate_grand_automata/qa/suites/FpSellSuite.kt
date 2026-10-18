@@ -2,87 +2,62 @@ package io.github.fate_grand_automata.qa.suites
 
 import io.github.fate_grand_automata.qa.FixtureApi
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
-import io.github.fate_grand_automata.scripts.modules.FpSellReader
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
+import io.github.fate_grand_automata.scripts.modules.FpSellReader
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import io.github.lib_automata.Region
 import org.json.JSONObject
+import org.json.JSONArray
 
-/** Offline fixtures only: the exact production reader and selection policy, without gestures. */
+/** Offline fixtures only: production geometry, lock/exclusion, selected state and policy, without gestures. */
 internal fun FixtureApi.verifyFpSell(): JSONObject {
     check(!live) { "FP sell QA must never operate a live game" }
     val reader = FpSellReader(this, FpSellLocations(locations))
+    fun cell(card: Region): JSONObject {
+        val value = reader.readCard(card)
+        return JSONObject().put("present", value.present).put("lock", value.lock.name).put("excluded", value.excluded)
+            .put("selected", value.selected ?: "unknown")
+            .put("candidate", FpSellPolicy.select(value, FpSellPolicy.Options(true)))
+            .put("candidateReal", FpSellPolicy.select(value, FpSellPolicy.Options(false)))
+    }
     val actual = when (case.getString("view")) {
         "layout" -> JSONObject().put("seven", reader.isSevenColumns()).put("sellScreen", useSameSnapIn { reader.onSellScreen() })
-        "fullDialog" -> JSONObject().put("servantWarning", reader.servantFullWarning())
-        "banner" -> FpBannerReturn(this, reader.loc).readDots().let {
-            JSONObject().put("active", it?.active ?: -1).put("count", it?.count ?: 0)
+        "bannerTitle" -> fixturePattern(case.getJSONArray("pieces").getJSONObject(0).getString("file")).use {
+            JSONObject().put("matches", useSameSnapIn { FpBannerReturn(this, reader.loc).matches(it) })
         }
+        "fullDialog" -> JSONObject().put("servantWarning", reader.servantFullWarning())
         "selection" -> {
-            val box = case.getJSONArray("card720")
-            val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
+            val b = case.getJSONArray("card720")
+            val card = Region(b.getInt(0), b.getInt(1), b.getInt(2), b.getInt(3)) * 2.0
             val distance = reader.selectionDistance(card)
             JSONObject().put("selected", FpSellReader.selectionState(distance) ?: "unknown")
-                .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
+                .put("selectionDistance", distance ?: -1.0)
         }
         "page" -> {
-            val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
-                FpSellPolicy.Category.Servant3, FpSellPolicy.Category.Servant4)
-            val options = FpSellPolicy.Options(enabled, true, true)
-            val rows = org.json.JSONArray()
-            val summary = StringBuilder()
-            for (tile in reader.readPage()) {
-                val row = JSONObject().put("col", tile.column).put("x", tile.region.x / 2).put("y", tile.region.y / 2)
-                    .put("skip", tile.skip ?: "")
-                val grayCell = tile.cell
-                if (grayCell != null) {
-                    val cell = reader.confirmed(tile.region)
-                    val distance = reader.selectionDistance(tile.region)
-                    val selected = FpSellReader.selectionState(distance)
-                    val chosen = FpSellPolicy.select(cell.copy(selected = selected), options)
-                    row.put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
-                        .put("tier", reader.tier(tile.region)?.name ?: "Unknown")
-                        .put("starScores", tile.stars.take(2).joinToString(" ") { "${it.first}:${Math.round(it.second * 1000) / 1000.0}" })
-                        .put("slots", reader.starSlotScores(tile.region).joinToString(" ") { "${Math.round(it * 100) / 100.0}" })
-                        .put("new", cell.new ?: false).put("newScore", Math.round(tile.newScore * 1000) / 1000.0)
-                        .put("lock", cell.lock.name).put("excluded", cell.excluded)
-                        .put("selected", selected ?: "unknown").put("select", chosen)
-                    summary.append(if (chosen) '1' else '0')
-                } else summary.append('-')
-                rows.put(row)
+            val tiles = reader.readPage()
+            val rows = JSONArray()
+            tiles.forEach { tile ->
+                rows.put((if (tile.skip == null) cell(tile.region) else JSONObject())
+                    .put("col", tile.column).put("x", tile.region.x / 2).put("y", tile.region.y / 2)
+                    .put("skip", tile.skip ?: ""))
             }
-            val page = reader.readPage()
-            val evaluated = FpSellPolicy.evaluatedRows(page)
-            JSONObject().put("tiles", rows).put("tileCount", rows.length()).put("selectMap", summary.toString())
-                .put("evaluatedRows", evaluated.size)
-                .put("bottomEvaluatedColumns", page.count { it.skip == null &&
-                    evaluated.lastOrNull()?.let { y -> kotlin.math.abs(it.region.y - y) < 24 } == true })
+            val evaluated = FpSellPolicy.evaluatedRows(tiles)
+            JSONObject().put("tiles", rows).put("evaluatedRows", evaluated.size)
+                .put("bottomEvaluatedColumns", tiles.count { it.skip == null && it.region.y == evaluated.lastOrNull() })
+                .put("tileCount", tiles.size)
         }
         else -> {
-            val box = case.getJSONArray("card720")
-            val card = Region(box.getInt(0), box.getInt(1), box.getInt(2), box.getInt(3)) * 2.0
-            val grayCell = useSameSnapIn { reader.readCard(card) }
-            // The selection is read from its own colour frame, never inside a snapshot (D-19).
-            val distance = reader.selectionDistance(card)
-            val selected = FpSellReader.selectionState(distance)
-            // Preserve existing diagnostic rarity on already-selected tiles; candidates use production D-24 rarity.
-            val cell = if (grayCell.kind == FpSellPolicy.Kind.Servant && selected == false)
-                grayCell.copy(stars = reader.tierStars(card)) else grayCell
-            val enabled = setOf(FpSellPolicy.Category.Servant1, FpSellPolicy.Category.Servant2,
-                FpSellPolicy.Category.Exp4, FpSellPolicy.Category.Exp5)
-            val every = FpSellPolicy.Category.entries.toSet()
-            // A borderline read is reported as "unknown" so an expectation of true or false fails instead of passing by default.
-            JSONObject().put("kind", cell.kind?.name ?: "Unknown").put("stars", cell.stars ?: 0)
-                .put("tier", reader.tier(card)?.name ?: "Unknown")
-                .put("new", cell.new ?: false).put("selected", selected ?: "unknown")
-                .put("selectionDistance", distance?.let { Math.round(it * 10) / 10.0 } ?: -1.0)
-                .put("lock", cell.lock.name).put("excluded", cell.excluded)
-                .put("newScore", Math.round(reader.newScore(card) * 1000) / 1000.0)
-                .put("slots", reader.starSlotScores(card).joinToString(" ") { "${Math.round(it * 100) / 100.0}" })
-                .put("candidate", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(enabled, true, true)))
-                // Strongest setting: every category, NEW! not required, real selling. Excluded tiles must stay false here.
-                .put("candidateReal", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(every, false, false)))
-                .put("candidateDryAll", FpSellPolicy.select(cell.copy(selected = selected), FpSellPolicy.Options(every, false, true)))
+            val b = case.getJSONArray("card720")
+            val card = Region(b.getInt(0), b.getInt(1), b.getInt(2), b.getInt(3)) * 2.0
+            val fitted = if (case.optBoolean("checkGrid")) reader.readPage().firstOrNull {
+                it.skip == null && it.column == case.getInt("column") && kotlin.math.abs(it.region.y - card.y) <= 16
+            }?.region else null
+            val result = cell(fitted ?: card)
+            // Coverage checks require every expected fully visible tile to be part of the page's fitted grid.
+            if (case.optBoolean("checkGrid")) result.put("inGrid", reader.readPage().any {
+                it.skip == null && it.column == case.getInt("column") && kotlin.math.abs(it.region.y - card.y) <= 16
+            })
+            result
         }
     }
     val expected = case.getJSONObject("expected")

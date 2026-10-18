@@ -208,11 +208,11 @@ class ScriptManager @Inject constructor(
                         val text = when (reason) {
                             is AutoFriendGacha.ExitReason.SellEntryFailed -> R.string.fp_sell_stop_entry
                             is AutoFriendGacha.ExitReason.ColumnSwitchFailed -> R.string.fp_sell_stop_columns
-                            is AutoFriendGacha.ExitReason.SelectionNotConfirmed -> R.string.fp_sell_stop_selection
+                            is AutoFriendGacha.ExitReason.SelectionScreenLost -> R.string.fp_sell_stop_grid
                             is AutoFriendGacha.ExitReason.SellFlowFailed -> R.string.fp_sell_stop_flow
                         }
                         val state = context.getString(if (reason.dryRun) R.string.fp_sell_state_on else R.string.fp_sell_state_off)
-                        context.getString(text) + "\n" + context.getString(R.string.fp_sell_stop_state, state, reason.selected)
+                        context.getString(text) + "\n" + context.getString(R.string.fp_sell_stop_state, state, reason.selected, reason.unknownLock)
                     }
                     is AutoFriendGacha.ExitReason.SellDryRunDone -> context.getString(R.string.fp_sell_dry_done) + "\n" +
                         io.github.fate_grand_automata.util.fpSellSummary(context, reason.summary)

@@ -34,15 +34,15 @@ class AutoFriendGacha @Inject constructor(
         /** The summon loop saw no known screen for too long (not a sell step). */
         object SellScreenUnknown : ExitReason()
         /** A sell step stopped without selling. Every one carries the dry-run state and the tiles selected so far (D-21). */
-        sealed class SellStopped(val dryRun: Boolean, val selected: Int) : ExitReason()
+        sealed class SellStopped(val dryRun: Boolean, val selected: Int, val unknownLock: Int) : ExitReason()
         /** The sell button, heading or servant tab was not found. */
-        class SellEntryFailed(dryRun: Boolean, selected: Int) : SellStopped(dryRun, selected)
+        class SellEntryFailed(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
         /** The seven-column layout was not reached. */
-        class ColumnSwitchFailed(dryRun: Boolean, selected: Int) : SellStopped(dryRun, selected)
-        /** A tapped tile did not read as selected within the wait, or the screen was lost while selecting. */
-        class SelectionNotConfirmed(dryRun: Boolean, selected: Int) : SellStopped(dryRun, selected)
+        class ColumnSwitchFailed(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
+        /** The sell screen or grid could not be read while selecting. */
+        class SelectionScreenLost(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
         /** The confirm, convert or close step of the real sale did not appear. */
-        class SellFlowFailed(dryRun: Boolean, selected: Int) : SellStopped(dryRun, selected)
+        class SellFlowFailed(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
         class SellDryRunDone(val summary: FpSellPolicy.Summary) : ExitReason()
         class Limit(val count: Int) : ExitReason()
     }
@@ -53,11 +53,11 @@ class AutoFriendGacha @Inject constructor(
     enum class SellStep { Entry, Columns, Selection, Flow }
 
     companion object {
-        fun sellStop(step: SellStep, dryRun: Boolean, selected: Int): ExitReason.SellStopped = when (step) {
-            SellStep.Entry -> ExitReason.SellEntryFailed(dryRun, selected)
-            SellStep.Columns -> ExitReason.ColumnSwitchFailed(dryRun, selected)
-            SellStep.Selection -> ExitReason.SelectionNotConfirmed(dryRun, selected)
-            SellStep.Flow -> ExitReason.SellFlowFailed(dryRun, selected)
+        fun sellStop(step: SellStep, dryRun: Boolean, selected: Int, unknownLock: Int = 0): ExitReason.SellStopped = when (step) {
+            SellStep.Entry -> ExitReason.SellEntryFailed(dryRun, selected, unknownLock)
+            SellStep.Columns -> ExitReason.ColumnSwitchFailed(dryRun, selected, unknownLock)
+            SellStep.Selection -> ExitReason.SelectionScreenLost(dryRun, selected, unknownLock)
+            SellStep.Flow -> ExitReason.SellFlowFailed(dryRun, selected, unknownLock)
         }
     }
 

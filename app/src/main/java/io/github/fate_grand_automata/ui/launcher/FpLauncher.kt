@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.Stepper
@@ -84,13 +85,9 @@ fun fpLauncher(
         Text(stringResource(R.string.fp_sell_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
         fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it }
-        fpSellSwitch(R.string.fp_sell_servant1, prefs.fpSellServant1) { prefs.fpSellServant1 = it }
-        fpSellSwitch(R.string.fp_sell_servant2, prefs.fpSellServant2) { prefs.fpSellServant2 = it }
-        fpSellSwitch(R.string.fp_sell_servant3, prefs.fpSellServant3) { prefs.fpSellServant3 = it }
-        fpSellSwitch(R.string.fp_sell_servant4, prefs.fpSellServant4) { prefs.fpSellServant4 = it }
-        fpSellSwitch(R.string.fp_sell_exp4, prefs.fpSellExp4) { prefs.fpSellExp4 = it }
-        fpSellSwitch(R.string.fp_sell_exp5, prefs.fpSellExp5) { prefs.fpSellExp5 = it }
-        fpSellSwitch(R.string.fp_sell_new_only, prefs.fpSellNewOnly) { prefs.fpSellNewOnly = it }
+        Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.fp_sell_filter_hint), style = MaterialTheme.typography.bodySmall)
         fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
     }
 

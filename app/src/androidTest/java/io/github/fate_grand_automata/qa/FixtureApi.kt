@@ -76,6 +76,9 @@ internal class FixtureApi(
         AttackScreenLocations(transforms), BattleScreenLocations(transforms, MasterLocations(transforms, images, this, messages)),
         ServantLevelLocations(transforms), QuestItemLocations(transforms), BondLocations(transforms))
     internal val ocr = MeasuredOcr(TesseractOcrService(runner.targetContext))
+    internal fun fixturePattern(file: String): Pattern =
+        ByteArrayInputStream(runner.fixture(file)).use { DroidCvPattern(it, false) }
+
     private fun clearFrame() { gray?.close(); color?.close(); gray = null; color = null; frame = null }
     private fun screenshot(): Pattern {
         if (frame == null) {

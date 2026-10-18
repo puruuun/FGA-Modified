@@ -28,33 +28,21 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val menu = Region(890, 1210, 380, 200).xFromCenter()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */
     val summonMenu = Region(-260, 1180, 340, 180).xFromCenter()
-    /** Two dot rows at most (JP): one row near 720p y 686, the other near 703. */
-    val dots = Region(-530, 1360, 1070, 64).xFromCenter()
     val bannerTitle = Region(-650, 600, 1300, 260).xFromCenter()
     val leftArrow = Location(-1230, 720).xFromCenter()
-    val rightArrow = Location(1230, 720).xFromCenter()
     val swipeStart = Location(0, 1310).xFromCenter()
     /** D-23: the end depends on how many rows were fully evaluated, never on a fixed three-row jump. */
     fun swipeEnd(distance: Int) = swipeStart - Location(0, distance)
-    // Card top-left X for small icons. Width 232, pitch 267; labels establish Y after scrolling.
-    fun columnX(column: Int) = Location(-1124 + column * 267, 0).xFromCenter().x
-    fun labelColumn(column: Int) = Region(columnX(column) + 65, 338, 110, 1102)
-    fun newColumn(column: Int) = Region(columnX(column) + 48, 342, 140, 1086)
-    fun card(column: Int, labelY: Int) = Region(columnX(column), labelY - 230, 232, 252)
-    /** Label text is centered in its card: avoid accumulating a rounded column pitch (D-25). */
-    fun card(label: Region) = Region(label.center.x - 116, label.y - 230, 232, 252)
-    fun labelInsideGrid(label: Region) = label.bottom <= grid.bottom
-    fun label(card: Region) = Region(card.x + 65, card.bottom - 24, 110, 24)
-    fun stars(card: Region) = Region(card.x + 94, card.bottom - 68, 128, 40)
-    /**
-     * Slot [slot] (0 = rightmost) of the rarity star row: an 18x18 px (720p) window around a 12 px star. Stars sit 11 px
-     * apart and end 4 px from the strip's right edge, so the window absorbs about 3 px of column drift.
-     */
-    fun starSlot(card: Region, slot: Int) = Region(card.x + 186 - 22 * slot, card.bottom - 66, 36, 36)
-    fun newLabel(card: Region) = Region(card.x + 48, card.y - 28, 140, 46)
+    // Fixed seven-column pitch (133.25 px at 720p); one row phase is fitted per page.
+    fun columnX(column: Int) = Location(-1124 + kotlin.math.round(column * 266.5).toInt(), 0).xFromCenter().x
+    val rowPitch = 284
+    val cardWidth = 232
+    val cardHeight = 252
+    fun card(column: Int, top: Int) = Region(columnX(column), top, cardWidth, cardHeight)
+    fun presence(card: Region) = Region(card.x - 16, card.y + 24, card.width + 32, 184)
     val frameOffsets = -8..8
-    val frameBands = listOf(72, 160)
-    /** Single-pixel columns across the outer edge, at two bands clear of class/number badges and card art. */
+    val frameBands = listOf(72, 120, 160)
+    /** Single-pixel columns across the outer edge, at independent bands clear of class/number badges and card art. */
     fun frameStrip(card: Region, offset: Int, band: Int) = Region(card.x + offset * 2, card.y + band, 2, 32)
     /** The padlock sits on the left edge of a locked tile, and the overlay words cover the tile. */
     fun lock(card: Region) = Region(card.x - 32, card.y, card.width + 32, card.height)

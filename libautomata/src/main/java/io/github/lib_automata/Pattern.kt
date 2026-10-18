@@ -67,6 +67,9 @@ interface Pattern : AutoCloseable {
      * (grayscale captures carry no hue; take the screenshot inside [AutomataApi.useColor]).
      */
     fun meanColor(): MeanColor?
+
+    /** Row-major 8-bit grayscale pixels; null for a colour image. The returned buffer is an independent copy. */
+    fun grayPixels(): ByteArray?
 }
 
 /** Mean colour of an image, each channel in 0..255. */

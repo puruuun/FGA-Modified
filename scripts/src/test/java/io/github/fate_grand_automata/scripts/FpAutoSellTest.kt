@@ -4,9 +4,7 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
 import io.github.fate_grand_automata.scripts.modules.*
-import io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Category
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Cell
-import io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Kind
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Lock
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Options
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
@@ -15,27 +13,16 @@ import io.mockk.*
 import kotlin.test.*
 
 class FpAutoSellTest {
-    private val allCategories = Category.entries.toSet()
-
-    /** D-2, D-10, D-12 as one table: every combination is decided by the same rule written out here. */
-    @Test fun `tile policy never selects excluded or locked tiles and only dry run takes unknown locks`() {
-        for (kind in Kind.entries) for (stars in 1..5) for (new in listOf(true, false, null))
-            for (lock in Lock.entries) for (selected in listOf(true, false, null)) for (excluded in listOf(true, false))
-                for (dry in listOf(true, false)) for (newOnly in listOf(true, false)) {
-                    val cell = Cell(kind, stars, new, lock, selected, excluded)
-                    val category = Cell(kind, stars, new, lock, selected).category
-                    val expected = !excluded && lock != Lock.Locked && category != null && selected == false && new != null &&
-                        (!newOnly || new) && (lock == Lock.Unlocked || dry)
-                    assertEquals(expected, FpSellPolicy.select(cell, Options(allCategories, newOnly, dry)), cell.toString())
+    @Test fun `every tile combination follows D29 with only dry run admitting an unknown lock`() {
+        for (present in listOf(true, false)) for (lock in Lock.entries)
+            for (selected in listOf(true, false, null)) for (excluded in listOf(true, false))
+                for (dry in listOf(true, false)) {
+                    val cell = Cell(present, lock, selected, excluded)
+                    val expected = present && lock != Lock.Locked && !excluded && selected == false &&
+                        (dry || lock == Lock.Unlocked)
+                    assertEquals(expected, FpSellPolicy.select(cell, Options(dry)), cell.toString())
+                    assertEquals(expected, FpSellPolicy.decision(cell, Options(dry)) == "select")
                 }
-    }
-
-    @Test fun `disabled categories and unknown kind or stars are never selected`() {
-        assertFalse(FpSellPolicy.select(Cell(Kind.Servant, 1, true, Lock.Unlocked, false), Options(emptySet(), true, true)))
-        assertFalse(FpSellPolicy.select(Cell(null, 1, true, Lock.Unlocked, false), Options(allCategories, true, true)))
-        assertFalse(FpSellPolicy.select(Cell(Kind.Servant, null, true, Lock.Unlocked, false), Options(allCategories, true, true)))
-        // 5-star servants are never a category, even when every switch is on.
-        assertFalse(FpSellPolicy.select(Cell(Kind.Servant, 5, true, Lock.Unlocked, false), Options(allCategories, true, false)))
     }
 
     @Test fun `real sale needs a validated build, a lock template, and a KR or JP server`() {
@@ -50,13 +37,6 @@ class FpAutoSellTest {
     @Test fun `dry run is on by default and real sale needs it turned off explicitly`() {
         assertTrue(FpSellPolicy.DEFAULT_DRY_RUN)
         val prefs = mockk<IPreferences>()
-        every { prefs.fpSellServant1 } returns true
-        every { prefs.fpSellServant2 } returns false
-        every { prefs.fpSellServant3 } returns false
-        every { prefs.fpSellServant4 } returns false
-        every { prefs.fpSellExp4 } returns false
-        every { prefs.fpSellExp5 } returns false
-        every { prefs.fpSellNewOnly } returns true
         every { prefs.gameServer } returns GameServer.Kr
         every { prefs.fpSellDryRun } returns FpSellPolicy.DEFAULT_DRY_RUN
         assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = true).dryRun, "default keeps dry run")
@@ -66,13 +46,6 @@ class FpAutoSellTest {
 
     @Test fun `dry run is forced whenever real sale is not allowed`() {
         val prefs = mockk<IPreferences>()
-        every { prefs.fpSellServant1 } returns true
-        every { prefs.fpSellServant2 } returns false
-        every { prefs.fpSellServant3 } returns false
-        every { prefs.fpSellServant4 } returns false
-        every { prefs.fpSellExp4 } returns false
-        every { prefs.fpSellExp5 } returns false
-        every { prefs.fpSellNewOnly } returns true
         every { prefs.fpSellDryRun } returns false
         every { prefs.gameServer } returns GameServer.Kr
         assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = false).dryRun, "no lock template")
@@ -82,24 +55,6 @@ class FpAutoSellTest {
         every { prefs.gameServer } returns GameServer.Kr
         every { prefs.fpSellDryRun } returns true
         assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = true).dryRun, "user dry run")
-    }
-
-    @Test fun `banner ordinal difference chooses direction and count and rejects incompatible dots`() {
-        for (from in 0..16) for (to in 0..16)
-            assertEquals(to - from, FpBannerReturn.steps(FpBannerReturn.Dots(from, 17), FpBannerReturn.Dots(to, 17)))
-        assertNull(FpBannerReturn.steps(FpBannerReturn.Dots(0, 16), FpBannerReturn.Dots(14, 17)))
-        assertNull(FpBannerReturn.steps(FpBannerReturn.Dots(-1, 17), FpBannerReturn.Dots(14, 17)))
-    }
-
-    @Test fun `two dot rows are numbered row by row`() {
-        // KR style: one row of 17 dots. JP style: rows of 30 and 12 dots.
-        assertEquals(FpBannerReturn.Dots(5, 17), FpBannerReturn.rowMajor(listOf(17), 0, 5))
-        assertEquals(FpBannerReturn.Dots(30, 42), FpBannerReturn.rowMajor(listOf(30, 12), 1, 0))
-        assertEquals(FpBannerReturn.Dots(41, 42), FpBannerReturn.rowMajor(listOf(30, 12), 1, 11))
-        assertEquals(FpBannerReturn.Dots(0, 42), FpBannerReturn.rowMajor(listOf(30, 12), 0, 0))
-        assertNull(FpBannerReturn.rowMajor(listOf(30, 12), 1, 12))
-        assertNull(FpBannerReturn.rowMajor(listOf(10, 10, 10), 0, 0))
-        assertNull(FpBannerReturn.rowMajor(emptyList(), 0, 0))
     }
 
     @Test fun `size toggle reaches seven columns in at most two presses on the 5-6-7 cycle`() {
@@ -184,19 +139,17 @@ class FpAutoSellTest {
     }
 
     /** One sell run on mocks: a single unlocked 1-star candidate and a reader whose selection reads are scripted. */
-    private class SellRun(val selections: List<Boolean?>, val sellFound: Boolean = true, val sevenColumns: Boolean = true) {
+    private class SellRun(val sellFound: Boolean = true, val sevenColumns: Boolean = true) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val card = Region(110, 110, 20, 20)
         val sell = Region(10, 10, 20, 20)
         val reader = mockk<FpSellReader>()
-        val unselected = Cell(Kind.Servant, 1, true, Lock.Unknown, false)
+        val unselected = Cell(true, Lock.Unknown, false)
 
         init {
             val prefs = mockk<IPreferences>(relaxed = true)
             every { api.prefs } returns prefs
             every { prefs.gameServer } returns GameServer.Kr
-            every { prefs.fpSellServant1 } returns true
-            every { prefs.fpSellNewOnly } returns true
             every { prefs.fpSellDryRun } returns true
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
             val loc = mockk<FpSellLocations>(relaxed = true)
@@ -211,62 +164,46 @@ class FpAutoSellTest {
             every { with(api) { grid.exists(before, any(), any()) } } returns true
             every { reader.loc } returns loc
             every { reader.hasLockTemplate } returns false
-            every { reader.tier(card) } returns FpSellPolicy.Tier.Bronze
             every { reader.onSellHeading() } returns true
             every { reader.onServantTab() } returns true
             every { reader.onSellScreen() } returns true
             every { reader.isSevenColumns() } returns sevenColumns
-            every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null, unselected, emptyList(), 0.0))
+            every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null))
             // The second page shows the same tile, now selected, so it must not be tapped or counted again.
-            every { reader.confirmed(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
-            if (selections.isNotEmpty()) every { reader.selection(card) } returnsMany selections
+            every { reader.readCard(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
         }
 
         fun run(): AutoFriendGacha.ExitException =
             assertFailsWith<AutoFriendGacha.ExitException> { FpAutoSell(api, reader, mockk(relaxed = true)).run() }
     }
 
-    @Test fun `dry run selects an unknown lock, counts it, and stops before confirm`() {
-        val run = SellRun(listOf(true))
-        val error = run.run()
-        val summary = assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(error.reason).summary
-        assertEquals(1, summary.total)
-        assertEquals(1, summary.unknownLock)
-        assertEquals(mapOf(Category.Servant1 to 1), summary.counts)
+    @Test fun `dry run taps once without confirmation and overlap skips selected tiles`() {
+        val run = SellRun()
+        val summary = assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(run.run().reason).summary
+        assertEquals(FpSellPolicy.Summary(1, 1), summary)
         verify(exactly = 1) { with(run.api) { run.card.click(1) } }
+        verify(exactly = 0) { run.reader.selection(any()) }
         val imageLoader = run.api.images
         verify(exactly = 0) { imageLoader[Images.FpSellConfirm, any()] }
     }
 
-    @Test fun `a selection confirmed on a later fresh frame counts once and never taps the tile again`() {
-        val run = SellRun(listOf(null, false, null, true))
-        val error = run.run()
-        assertEquals(1, assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(error.reason).summary.total)
-        verify(exactly = 1) { with(run.api) { run.card.click(1) } }
-        verify(exactly = 4) { run.reader.selection(run.card) }
-    }
-
-    @Test fun `a selection never confirmed stops after about 1_5 s of fresh frames without a second tap`() {
-        val run = SellRun(List(FpAutoSell.SELECTION_POLLS) { if (it % 2 == 0) null else false })
-        val reason = assertIs<AutoFriendGacha.ExitReason.SelectionNotConfirmed>(run.run().reason)
-        assertTrue(reason.dryRun)
-        assertEquals(0, reason.selected)
-        assertEquals(1.5, FpAutoSell.SELECTION_POLLS * FpAutoSell.SELECTION_POLL.inWholeMilliseconds / 1000.0, 0.01)
-        verify(exactly = 1) { with(run.api) { run.card.click(any()) } }
-        verify(exactly = FpAutoSell.SELECTION_POLLS) { run.reader.selection(run.card) }
-    }
-
-    @Test fun `a missing sell button stops as an entry failure before any tile is touched`() {
-        val run = SellRun(emptyList(), sellFound = false)
-        val reason = assertIs<AutoFriendGacha.ExitReason.SellEntryFailed>(run.run().reason)
-        assertTrue(reason.dryRun)
-        assertEquals(0, reason.selected)
+    @Test fun `unknown selection never taps`() {
+        val run = SellRun()
+        every { run.reader.readCard(run.card) } returns run.unselected.copy(selected = null)
+        assertEquals(0, assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(run.run().reason).summary.total)
         verify(exactly = 0) { with(run.api) { run.card.click(any()) } }
     }
 
-    @Test fun `failing to reach seven columns stops as a column switch failure`() {
-        val run = SellRun(emptyList(), sevenColumns = false)
-        assertIs<AutoFriendGacha.ExitReason.ColumnSwitchFailed>(run.run().reason)
+    @Test fun `missing entry and columns keep distinct stop messages`() {
+        assertIs<AutoFriendGacha.ExitReason.SellEntryFailed>(SellRun(sellFound = false).run().reason)
+        assertIs<AutoFriendGacha.ExitReason.ColumnSwitchFailed>(SellRun(sevenColumns = false).run().reason)
+    }
+
+    @Test fun `no rows retries once then stops with the grid reason`() {
+        val run = SellRun()
+        every { run.reader.readPage() } returns emptyList()
+        assertIs<AutoFriendGacha.ExitReason.SelectionScreenLost>(run.run().reason)
+        verify(exactly = 2) { run.reader.readPage() }
         verify(exactly = 0) { with(run.api) { run.card.click(any()) } }
     }
 
@@ -274,7 +211,7 @@ class FpAutoSellTest {
         val expected = mapOf(
             AutoFriendGacha.SellStep.Entry to AutoFriendGacha.ExitReason.SellEntryFailed::class,
             AutoFriendGacha.SellStep.Columns to AutoFriendGacha.ExitReason.ColumnSwitchFailed::class,
-            AutoFriendGacha.SellStep.Selection to AutoFriendGacha.ExitReason.SelectionNotConfirmed::class,
+            AutoFriendGacha.SellStep.Selection to AutoFriendGacha.ExitReason.SelectionScreenLost::class,
             AutoFriendGacha.SellStep.Flow to AutoFriendGacha.ExitReason.SellFlowFailed::class)
         assertEquals(AutoFriendGacha.SellStep.entries.toSet(), expected.keys)
         for ((step, type) in expected) for (dry in listOf(true, false)) {
@@ -304,57 +241,24 @@ class FpAutoSellTest {
         assertNull(FpSellReader.selectionState(null))
     }
 
-    /** Frame 46 (JP, scrolled): the strip templates read 0.0 there, the per-slot star count reads one star. */
-    @Test fun `star slots count right-aligned stars and leave borderline rows unknown`() {
-        assertEquals(1, FpSellPolicy.starsFromSlots(listOf(0.83, 0.40, 0.0, 0.0, 0.0)))
-        assertEquals(1, FpSellPolicy.starsFromSlots(listOf(0.60, 0.26, 0.05, 0.18, 0.09)))
-        assertEquals(2, FpSellPolicy.starsFromSlots(listOf(0.71, 0.64, 0.12, 0.34, 0.0)))
-        assertEquals(3, FpSellPolicy.starsFromSlots(listOf(0.85, 0.80, 0.68, 0.34, 0.41)))
-        assertEquals(4, FpSellPolicy.starsFromSlots(listOf(0.83, 0.75, 0.69, 0.77, 0.41)))
-        // The slot after the last star must be clearly empty; a borderline one is not a category.
-        assertNull(FpSellPolicy.starsFromSlots(listOf(0.83, 0.46, 0.0, 0.0, 0.0)))
-        // No star at all, five stars, a gap followed by a star, or a missing slot: unknown, never a guess.
-        assertNull(FpSellPolicy.starsFromSlots(listOf(0.42, 0.33, 0.0, 0.0, 0.36)))
-        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.9, 0.9, 0.9, 0.9)))
-        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.1, 0.9, 0.0, 0.0)))
-        assertNull(FpSellPolicy.starsFromSlots(listOf(0.9, 0.1)))
+    @Test fun `banner checks in place and after each of at most ten left presses`() {
+        for (foundAfter in 0..10) {
+            var presses = 0
+            var reads = 0
+            assertTrue(FpBannerReturn.search({ reads++; presses == foundAfter }, { presses++ }))
+            assertEquals(foundAfter, presses)
+            assertEquals(foundAfter + 1, reads)
+        }
+        var presses = 0
+        var reads = 0
+        assertFalse(FpBannerReturn.search({ reads++; false }, { presses++ }))
+        assertEquals(10, presses)
+        assertEquals(11, reads)
     }
 
-    @Test fun `decision names the first reason and is select exactly when the policy selects`() {
-        val owner = Options(setOf(Category.Servant1, Category.Servant2, Category.Servant3, Category.Servant4), true, true)
-        val tile = Cell(Kind.Servant, 1, true, Lock.Unlocked, false)
-        assertEquals("select", FpSellPolicy.decision(tile, owner))
-        assertEquals("skip:not-new", FpSellPolicy.decision(tile.copy(new = false), owner))
-        assertEquals("skip:new-unknown", FpSellPolicy.decision(tile.copy(new = null), owner))
-        assertEquals("skip:already-selected", FpSellPolicy.decision(tile.copy(selected = true), owner))
-        assertEquals("skip:selection-unknown", FpSellPolicy.decision(tile.copy(selected = null), owner))
-        assertEquals("skip:stars-unknown", FpSellPolicy.decision(tile.copy(stars = null), owner))
-        assertEquals("skip:kind-unknown", FpSellPolicy.decision(tile.copy(kind = null), owner))
-        assertEquals("skip:category-off", FpSellPolicy.decision(tile.copy(kind = Kind.Exp, stars = 4), owner))
-        assertEquals("skip:excluded", FpSellPolicy.decision(tile.copy(excluded = true), owner))
-        assertEquals("skip:locked", FpSellPolicy.decision(tile.copy(lock = Lock.Locked), owner))
-        assertEquals("skip:lock-unknown", FpSellPolicy.decision(tile.copy(lock = Lock.Unknown), owner.copy(dryRun = false)))
-        for (kind in listOf(Kind.Servant, Kind.Exp, null)) for (stars in listOf(1, 4, null)) for (new in listOf(true, false, null))
-            for (lock in Lock.entries) for (selected in listOf(true, false, null)) for (excluded in listOf(true, false))
-                for (dry in listOf(true, false)) for (newOnly in listOf(true, false)) {
-                    val cell = Cell(kind, stars, new, lock, selected, excluded)
-                    val options = Options(allCategories, newOnly, dry)
-                    assertEquals(FpSellPolicy.select(cell, options), FpSellPolicy.decision(cell, options) == "select", cell.toString())
-                }
-    }
-
-    @Test fun `tile log line carries page, position, reads, scores and the decision`() {
-        val line = FpSellPolicy.tileLine(2, 0, 3, Cell(Kind.Servant, 1, true, Lock.Unlocked, false), null,
-            listOf(1 to 0.0, 2 to 0.0), listOf(0.83, 0.4, 0.0, 0.0, 0.0), 0.932, "select")
-        assertEquals("page=2 r1c4 kind=Servant stars=1(strip 1:0.0/2:0.0 slots 0.83,0.4,0.0,0.0,0.0) " +
-            "new=true(0.93) lock=Unlocked excluded=false selected=false decision=select", line)
-        assertEquals("page=0 r1c1 decision=skip:gridTop",
-            FpSellPolicy.tileLine(0, 0, 0, null, "gridTop", emptyList(), emptyList(), 0.0, "skip:gridTop"))
-    }
-
-    @Test fun `new tag bands accept the weakest observed real tag and keep a gap above the search floor`() {
-        assertTrue(0.858 >= FpSellReader.NEW_PRESENT)
-        assertTrue(FpSellReader.NEW_ABSENT > 0.75)
-        assertTrue(FpSellReader.NEW_ABSENT < FpSellReader.NEW_PRESENT)
+    @Test fun `summary and tile log have one selected count and safety signals only`() {
+        assertEquals(7, FpSellPolicy.Summary(7, 2).total)
+        assertEquals("page=2 r1c4 present=true lock=Unlocked excluded=false selected=false decision=select",
+            FpSellPolicy.tileLine(2, 0, 3, Cell(true, Lock.Unlocked, false), "select"))
     }
 }
