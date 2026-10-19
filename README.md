@@ -6,6 +6,8 @@
 
 [Fate/Grand Automata(FGA)](https://github.com/Fate-Grand-Automata/FGA)에 기능을 추가한 수정판입니다. 원본 공식 배포판과 별도로 관리합니다.
 
+**📖 [사용 설명서 사이트](https://puruuun.github.io/FGA-Modified/)** — 기능별 사용법을 정리했습니다.
+
 ## 다운로드·업데이트
 
 **정규판 1.2.1** — 서포트 검색·이미지 서버 자동 선택, 판독 개선, 서포트 판독 진단 저장(기본 꺼짐), +16 조건 JP 전용을 포함합니다. [변경 사항](wiki/releases/1.2.1-KR.md).
