@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.qa.suites
 import io.github.fate_grand_automata.qa.FixtureApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
+import io.github.fate_grand_automata.scripts.modules.FpSellButtons
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.fate_grand_automata.scripts.modules.FpSellReader
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
@@ -22,6 +23,8 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
             .put("candidateReal", FpSellPolicy.select(value, FpSellPolicy.Options(false)))
     }
     val actual = when (case.getString("view")) {
+        "workshopButtons" -> JSONObject().put("menu",
+            useSameSnapIn { FpSellButtons(this).visible(reader.loc.menu, Images.FpSellMenu) })
         "finalButtons" -> JSONObject()
             .put("heading", reader.loc.convertHeading.exists(images[Images.FpSellConvertHeading], similarity = 0.9))
             .put("cancelLeft", reader.loc.cancel.exists(images[Images.FpSellCancel], similarity = 0.9))

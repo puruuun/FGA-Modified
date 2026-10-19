@@ -682,7 +682,10 @@
     <string name="fp_sell_dry_run">시험 모드 (최종 판매 취소)</string>
     <string name="fp_sell_nothing">직전 판매 수가 0이며 서번트칸이 다시 가득 찼습니다.</string>
     <string name="fp_sell_not_servant">서번트칸 경고가 아니어서(개념예장, 커맨드 코드 등) 판매하지 않고 정지했습니다.</string>
-    <string name="fp_sell_banner_missing">원래 FP 배너를 찾지 못해 소환 전에 정지했습니다.</string>
+    <string name="fp_sell_return_workshop">판매 또는 취소 후 공방으로 돌아오지 못해 정지했습니다.</string>
+    <string name="fp_sell_return_menu">공방 MENU를 열지 못해 소환 전에 정지했습니다.</string>
+    <string name="fp_sell_return_summon">소환 화면을 열거나 소환 버튼을 찾지 못해 정지했습니다.</string>
+    <string name="fp_sell_return_title">왼쪽으로 최대 10번 탐색했지만 원래 FP 배너 제목을 찾지 못해 소환 전에 정지했습니다.</string>
     <string name="fp_sell_screen_unknown">소환 중 알려진 화면을 오래 확인하지 못해 정지했습니다.</string>
     <string name="fp_sell_stop_entry">판매 화면에 들어가지 못했습니다(판매 버튼, 제목 또는 서번트 탭을 찾지 못함). 판매하지 않고 정지했습니다.</string>
     <string name="fp_sell_stop_columns">판매 화면을 7열로 바꾸지 못했습니다. 판매하지 않고 정지했습니다.</string>

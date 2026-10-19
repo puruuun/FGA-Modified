@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
+import io.github.fate_grand_automata.scripts.modules.FpSellButtons
 import io.github.fate_grand_automata.scripts.modules.FpAutoSell
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
@@ -31,7 +32,11 @@ class AutoFriendGacha @Inject constructor(
         object InventoryFullNothingToSell : ExitReason()
         /** The full warning is not for the servant slots (Craft Essence, command code or an unknown dialog). */
         object InventoryFullNotServant : ExitReason()
-        object BannerNotFound : ExitReason()
+        sealed class BannerReturnStopped(val label: String) : ExitReason()
+        object WorkshopNotReached : BannerReturnStopped("workshop")
+        object WorkshopMenuFailed : BannerReturnStopped("menu")
+        object SummonMenuFailed : BannerReturnStopped("summon")
+        object BannerTitleNotFound : BannerReturnStopped("title")
         /** The summon loop saw no known screen for too long (not a sell step). */
         object SellScreenUnknown : ExitReason()
         /** A sell step stopped without selling. Every one carries the dry-run state and the tiles selected so far (D-21). */
@@ -62,6 +67,7 @@ class AutoFriendGacha @Inject constructor(
         }
     }
 
+    private val returnButtons = FpSellButtons(api)
     private var saleStarted = false
     private var returning = false
     private var previousSale: FpAutoSell.Result? = null
@@ -150,6 +156,7 @@ class AutoFriendGacha @Inject constructor(
     private fun resumeSummon() {
         countNext()
         banner.summonAgain()
+        isInLoop = true
         returning = false
         initialScreen = true
         val previous = checkNotNull(previousSale)
@@ -159,14 +166,15 @@ class AutoFriendGacha @Inject constructor(
             return
         }
         // Real mode preserves the ordinary summon confirmation, but matches the button before tapping it.
-        repeat(40) {
-            if (useSameSnapIn { isInventoryFull() || reader.servantFullWarning() }) return
-            val ok = useSameSnapIn { reader.loc.summonOk.find(images[Images.Ok], similarity = 0.9) }
-            if (ok != null) { ok.region.click(); return }
-            if (useSameSnapIn { isSummonButtonVisible() }) return
-            0.5.seconds.wait()
+        var ok: io.github.lib_automata.Match? = null
+        val reached = returnButtons.awaitSignal(FpSellButtons.BUTTON_POLLS) {
+            if (isInventoryFull() || reader.servantFullWarning() || isSummonButtonVisible()) true else {
+                ok = reader.loc.summonOk.find(images[Images.Ok], similarity = 0.9)
+                ok != null
+            }
         }
-        throw ExitException(ExitReason.SellFlowFailed(false, previous.summary.total, previous.summary.unknownLock))
+        if (!reached) throw ExitException(ExitReason.SellFlowFailed(false, previous.summary.total, previous.summary.unknownLock))
+        ok?.region?.click()
     }
 
     private fun rollFPAgain() {

@@ -202,7 +202,12 @@ class ScriptManager @Inject constructor(
                     AutoFriendGacha.ExitReason.InventoryFull -> context.getString(R.string.inventory_full)
                     AutoFriendGacha.ExitReason.InventoryFullNothingToSell -> context.getString(R.string.fp_sell_nothing)
                     AutoFriendGacha.ExitReason.InventoryFullNotServant -> context.getString(R.string.fp_sell_not_servant)
-                    AutoFriendGacha.ExitReason.BannerNotFound -> context.getString(R.string.fp_sell_banner_missing)
+                    is AutoFriendGacha.ExitReason.BannerReturnStopped -> context.getString(when (reason) {
+                        AutoFriendGacha.ExitReason.WorkshopNotReached -> R.string.fp_sell_return_workshop
+                        AutoFriendGacha.ExitReason.WorkshopMenuFailed -> R.string.fp_sell_return_menu
+                        AutoFriendGacha.ExitReason.SummonMenuFailed -> R.string.fp_sell_return_summon
+                        AutoFriendGacha.ExitReason.BannerTitleNotFound -> R.string.fp_sell_return_title
+                    })
                     AutoFriendGacha.ExitReason.SellScreenUnknown -> context.getString(R.string.fp_sell_screen_unknown)
                     is AutoFriendGacha.ExitReason.SellStopped -> {
                         val text = when (reason) {

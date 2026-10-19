@@ -16798,6 +16798,46 @@
         "arrow": true,
         "summon": true
       }
+    },
+    {
+      "name": "JP-beta8-workshop-fade-22",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta8/flow-detail-22.png",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": false
+      }
+    },
+    {
+      "name": "JP-beta8-workshop-fade-23",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta8/flow-detail-23.png",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "JP-beta8-workshop-fade-25",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta8/flow-detail-25.png",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "JP-beta8-workshop-fade-30",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta8/flow-detail-30.png",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
     }
   ]
 }

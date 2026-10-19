@@ -19,6 +19,10 @@ class FpBannerReturnTest {
         val banner: FpBannerReturn
         init {
             every { loc.bannerTitle } returns titleRegion
+            every { loc.screenClose } returns Region(0,0,40,20)
+            every { loc.shop } returns Region(100,0,40,20)
+            every { loc.menu } returns Region(100,700,40,20)
+            every { loc.summonMenu } returns Region(400,700,40,20)
             every { loc.leftArrow } returns left
             every { loc.leftArrowRegion } returns Region(10, 690, 20, 20)
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
@@ -44,7 +48,7 @@ class FpBannerReturnTest {
 
     @Test fun `title mismatch stops after ten left presses without summoning`() {
         val run = Run(11)
-        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+        assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,
             assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
         assertEquals(10, run.presses)
         assertEquals(11, run.titleReads)
@@ -52,7 +56,7 @@ class FpBannerReturnTest {
 
     @Test fun `matching title without FP button never permits a return`() {
         val run = Run(0, fpVisible = false)
-        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+        assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,
             assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
         assertEquals(10, run.presses)
     }
@@ -67,7 +71,7 @@ class FpBannerReturnTest {
     @Test fun `missing close or arrow template never taps a guessed button`() {
         val run = Run(1)
         every { with(run.api) { run.loc.leftArrowRegion.find(any<Pattern>(),any()) } } returns null
-        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+        assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,
             assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
         assertEquals(0,run.presses)
     }
@@ -75,12 +79,12 @@ class FpBannerReturnTest {
     @Test fun `resummon requires the saved title FP label and an actual button match`() {
         for ((step,fp) in listOf(1 to true,0 to false)) {
             val run=Run(step,fp)
-            assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+            assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,
                 assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
         }
         val run=Run(0)
         every { with(run.api) { any<Region>().find(any<Pattern>(),any()) } } returns null
-        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+        assertSame(AutoFriendGacha.ExitReason.SummonMenuFailed,
             assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
     }
 
@@ -91,5 +95,36 @@ class FpBannerReturnTest {
         run.banner.summonAgain()
         verify(exactly=1) { with(run.api) { button.click(1) } }
         assertEquals(0,run.presses)
+    }
+    @Test fun `workshop MENU summon and title failures each log their own stop step`() {
+        val reasons = listOf(AutoFriendGacha.ExitReason.WorkshopNotReached,
+            AutoFriendGacha.ExitReason.WorkshopMenuFailed, AutoFriendGacha.ExitReason.SummonMenuFailed)
+        for (reason in reasons) {
+            val run = Run(0)
+            val region = when (reason) {
+                AutoFriendGacha.ExitReason.WorkshopNotReached -> run.loc.shop
+                AutoFriendGacha.ExitReason.WorkshopMenuFailed -> run.loc.summonMenu
+                else -> run.loc.leftArrowRegion
+            }
+            every { with(run.api) { region.exists(any(),any(),any()) } } returns false
+            assertSame(reason, assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
+            verify(exactly=1) { run.api.messages.log(match { it is ScriptLog.FpSell && it.message == "stop step=bannerReturn reason=${reason.label}" }) }
+        }
+        val run=Run(11)
+        assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }
+        verify(exactly=1) { run.api.messages.log(match { it is ScriptLog.FpSell && it.message == "stop step=bannerReturn reason=title" }) }
+    }
+
+    @Test fun `fading workshop MENU waits for a fresh match and taps once`() {
+        val run=Run(0)
+        var reads=0
+        val menu=run.loc.menu
+        every { with(run.api) { menu.find(any<Pattern>(),any()) } } answers {
+            reads++
+            if (reads < 8) null else Match(menu,1.0)
+        }
+        run.banner.restore()
+        assertEquals(8,reads)
+        verify(exactly=1) { with(run.api) { menu.click(1) } }
     }
 }

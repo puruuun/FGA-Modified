@@ -20,13 +20,18 @@ class FpAutoSell @Inject constructor(
     private var step = SellStep.Entry
     private var dryRun = true
     private var progress: FpSellProgress? = null
+    private val buttons = FpSellButtons(api)
+    private var summaryLogged = false
     private val selectedSoFar get() = progress?.selected ?: 0
     private val unknownLockSoFar get() = progress?.unknownLock ?: 0
     private fun log(message: String) = messages.log(ScriptLog.FpSell(message))
 
     fun logFinalSummary() {
-        progress?.let { log("final-summary pages=${it.pages} taps=${it.taps} rejected=${it.rejected} " +
-            "selected=${it.selected} unknownLock=${it.unknownLock} dryRun=$dryRun") }
+        progress?.takeUnless { summaryLogged }?.let {
+            summaryLogged = true
+            log("final-summary pages=${it.pages} taps=${it.taps} rejected=${it.rejected} " +
+                "selected=${it.selected} unknownLock=${it.unknownLock} dryRun=$dryRun")
+        }
     }
 
     private fun stop(reason: String): Nothing {
@@ -34,13 +39,15 @@ class FpAutoSell @Inject constructor(
         throw ExitException(AutoFriendGacha.sellStop(step, dryRun, selectedSoFar, unknownLockSoFar))
     }
     private fun awaitScreen(what: String, test: () -> Boolean) {
+        if (step == SellStep.Flow) {
+            if (!buttons.awaitSignal(FpSellButtons.BUTTON_POLLS, test)) stop("screen not reached after 2s: $what")
+            return
+        }
         repeat(40) { if (useSameSnapIn(test)) return; 0.5.seconds.wait() }
         stop("screen not reached: $what")
     }
     private fun click(region: Region, image: Images) {
-        val pattern = runCatching { images[image] }.getOrNull() ?: stop("template missing: $image")
-        val match = region.find(pattern, similarity = 0.9) ?: stop("button not found: $image")
-        match.region.click()
+        buttons.click(region, image) { stop("button not found after 2s: $image") }
         0.5.seconds.wait()
     }
 
@@ -49,7 +56,7 @@ class FpAutoSell @Inject constructor(
         step = SellStep.Entry
         dryRun = options.dryRun
         progress = FpSellProgress(loc.rowPitch)
-        return try { selectAndFinish(options) } finally { logFinalSummary() }
+        return selectAndFinish(options)
     }
 
     private fun selectAndFinish(options: FpSellPolicy.Options): Result {

@@ -754,7 +754,10 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_dry_run">Dry-run (cancel final sale)</string>
     <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
     <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
-    <string name="fp_sell_banner_missing">Original FP banner not found. Stopped before summoning.</string>
+    <string name="fp_sell_return_workshop">Could not return to the workshop after selling or canceling. Stopped.</string>
+    <string name="fp_sell_return_menu">Could not open the workshop MENU. Stopped before summoning.</string>
+    <string name="fp_sell_return_summon">Could not open the summon screen or find its summon button. Stopped.</string>
+    <string name="fp_sell_return_title">Original FP banner title not found within 10 left presses. Stopped before summoning.</string>
     <string name="fp_sell_screen_unknown">No known game screen was seen for too long while summoning. Stopped.</string>
     <string name="fp_sell_stop_entry">Could not enter the sell screen (sell button, title or servant tab not found). Stopped without selling.</string>
     <string name="fp_sell_stop_columns">Could not switch the sell screen to 7 columns. Stopped without selling.</string>

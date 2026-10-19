@@ -151,7 +151,7 @@ class FpAutoSellTest {
         val reader = mockk<FpSellReader>()
         val unselected = Cell(true, lock, false)
         val logs = mutableListOf<String>()
-        private val sale: FpAutoSell
+        val sale: FpAutoSell
         init {
             val prefs = mockk<IPreferences>(relaxed = true)
             every { api.prefs } returns prefs
@@ -180,7 +180,7 @@ class FpAutoSellTest {
             every { reader.readCard(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
             sale = FpAutoSell(api, reader, mockk(relaxed = true))
         }
-        fun result() = sale.run()
+        fun result() = try { sale.run() } finally { sale.logFinalSummary() }
         fun failure() = assertFailsWith<AutoFriendGacha.ExitException> { result() }
     }
 
@@ -304,5 +304,70 @@ class FpAutoSellTest {
         assertEquals(7, FpSellPolicy.Summary(7, 2).total)
         assertEquals("page=2 r1c4 present=true lock=Unlocked excluded=false selected=false decision=select",
             FpSellPolicy.tileLine(2, 0, 3, Cell(true, Lock.Unlocked, false), "select"))
+    }
+    @Test fun `final summary is printed once across normal completion and outer cleanup`() {
+        val run=SellRun()
+        run.result()
+        run.sale.logFinalSummary()
+        run.sale.logFinalSummary()
+        assertEquals(1,run.logs.count { it.startsWith("final-summary ") })
+    }
+
+    @Test fun `delayed sell buttons are each tapped once with no retry`() {
+        for (dry in listOf(true,false)) {
+            val run=SellRun(dry=dry,lock=Lock.Unlocked)
+            val counts=mutableMapOf<Region,Int>()
+            for (region in listOf(run.confirm,run.cancel,run.convert,run.close)) {
+                every { with(run.api) { region.find(any<Pattern>(),any()) } } answers {
+                    val count=(counts[region] ?: 0)+1
+                    counts[region]=count
+                    if (count < 5) null else Match(region,1.0)
+                }
+            }
+            run.result()
+            verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
+            verify(exactly=if(dry) 1 else 0) { with(run.api) { run.cancel.click(1) } }
+            verify(exactly=if(dry) 0 else 1) { with(run.api) { run.convert.click(1);run.close.click(1) } }
+        }
+    }
+    @Test fun `sale does not print final summary before script cleanup even across multiple cycles`() {
+        val run=SellRun()
+        run.sale.run()
+        run.sale.run()
+        assertEquals(0,run.logs.count { it.startsWith("final-summary ") })
+        run.sale.logFinalSummary()
+        run.sale.logFinalSummary()
+        assertEquals(1,run.logs.count { it.startsWith("final-summary ") })
+    }
+    @Test fun `failed screen after confirm cancel or convert never causes another tap`() {
+        for (button in listOf("confirm","cancel","convert")) {
+            val run=SellRun(dry=button!="convert",lock=Lock.Unlocked)
+            when (button) {
+                "confirm" -> every { with(run.api) { run.cancel.exists(any(),any(),any()) } } returns false
+                "cancel" -> {
+                    var canceled=false
+                    every { with(run.api) { run.cancel.click(any()) } } answers { canceled=true }
+                    every { run.reader.onSellScreen() } answers { !canceled }
+                }
+                else -> {
+                    val done=Region(900,800,40,30)
+                    val loc=run.reader.loc
+                    every { loc.done } returns done
+                    every { with(run.api) { done.exists(any(),any(),any()) } } returns false
+                }
+            }
+            assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
+            verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
+            verify(exactly=if(button=="cancel") 1 else 0) { with(run.api) { run.cancel.click(1) } }
+            verify(exactly=if(button=="convert") 1 else 0) { with(run.api) { run.convert.click(1) } }
+        }
+    }
+    @Test fun `missing final confirmation button stops within the two second flow window`() {
+        val run=SellRun()
+        every { with(run.api) { run.cancel.exists(any(),any(),any()) } } returns false
+        assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
+        verify(exactly=20) { with(run.api) { FpSellButtons.POLL.wait() } }
+        verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
+        verify(exactly=0) { with(run.api) { run.cancel.click(any());run.convert.click(any()) } }
     }
 }
