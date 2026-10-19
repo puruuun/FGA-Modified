@@ -1,0 +1,76 @@
+# User manual site, published to GitHub Pages by .github/workflows/pages.yml.
+# The pages are the files in wiki/ (the same source as the GitHub wiki); the navigation is built
+# from them by tools/docs-site/hooks.py, so a new wiki page shows up without editing this file.
+site_name: FGA(mod) 사용 설명서
+site_description: Fate/Grand Automata 수정판 FGA(mod)의 기능별 사용 설명서
+site_url: https://puruuun.github.io/FGA-Modified/
+repo_url: https://github.com/puruuun/FGA-Modified
+repo_name: puruuun/FGA-Modified
+edit_uri: edit/main/wiki/
+
+docs_dir: wiki
+site_dir: build/site
+
+exclude_docs: |
+  _Sidebar.md
+  _Footer.md
+  scripts/_Sidebar.md
+
+hooks:
+  - tools/docs-site/hooks.py
+
+theme:
+  name: material
+  language: ko
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: 어두운 화면
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: 밝은 화면
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)'
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/puruuun/FGA-Modified
+
+copyright: Fate/Grand Order is Copyright Aniplex Inc., DELiGHTWORKS and their partners. FGA(mod) is not affiliated with them.

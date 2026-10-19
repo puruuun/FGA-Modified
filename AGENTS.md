@@ -13,6 +13,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Automation logic in `scripts/`, or the Hilt wiring in `app/di/` and `app/runner/`** — [`docs/agents/automation-scripts.md`](docs/agents/automation-scripts.md). Every run gets its own Hilt component, and `script()` never returns normally.
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
 - **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`; the translated `values-*` copies are synced from POEditor.
+- **Any user-facing feature or change, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated; the GitHub Pages manual picks it up automatically.
 
 ## Delivery for this repository
 
@@ -56,5 +57,5 @@ app  ──▶ scripts ──▶ libautomata
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
 - Hilt + KSP for DI; Compose (BOM-managed) with several `ExperimentalX` opt-ins already enabled in `app/build.gradle.kts`.
 - Dependencies live in `gradle/libs.versions.toml` — always add/bump there, never inline coordinates.
-- `wiki/` is the source of the GitHub wiki (published by `.github/workflows/publish-wiki.yml`) — user-facing docs go there, not in the README.
+- `wiki/` is the source of the GitHub wiki and of the GitHub Pages manual (`.github/workflows/pages.yml`) — user-facing docs go there, not in the README.
 - Agent guidance: keep this file to what's true repo-wide and put path-specific rules in [`docs/agents/`](docs/agents), following [`docs/agents/README.md`](docs/agents/README.md).
