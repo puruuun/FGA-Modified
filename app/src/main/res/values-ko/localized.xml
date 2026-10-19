@@ -696,4 +696,27 @@
     <string name="fp_sell_stop_grid">선택 중 판매 화면 또는 격자를 읽지 못해 판매하지 않고 정지했습니다.</string>
     <string name="p_license">라이선스</string>
     <string name="license_header">FGA(mod)는 Fate/Grand Automata를 기반으로 하며 MIT 라이선스로 배포됩니다.</string>
+    <string name="p_script_mode_skill_level">스킬 자동 강화</string>
+    <string name="p_script_mode_append_level">어펜드 스킬 자동 강화</string>
+    <string name="skill_level_safety">칸마다 목표 레벨까지만 올리고 그 이상은 올리지 않습니다. 0 = 끔. 강화는 QP와 재료를 씁니다. 잠긴 어펜드 칸은 해방하지 않습니다. 서번트를 먼저 선택하세요.</string>
+    <string name="skill_level_slot_target">%1$d번 칸 목표 레벨</string>
+    <string name="skill_level_off">끔</string>
+    <string name="skill_level_select_servant">서번트가 선택되지 않았습니다. 스킬 강화 화면에서 서번트를 먼저 선택하세요.</string>
+    <string name="skill_level_wrong_screen">스킬 강화 / 어펜드 스킬 강화 화면이 아니어서 정지했습니다.</string>
+    <string name="skill_level_unsupported_server">스킬 자동 강화는 KR, JP 서버에서만 지원합니다.</string>
+    <string name="skill_level_nothing_selected">모든 칸이 꺼져 있어 할 일이 없습니다.</string>
+    <string name="skill_level_done">완료했습니다.</string>
+    <string name="skill_level_stopped">도중에 정지했습니다.</string>
+    <string name="skill_level_aborted">사용자가 정지했습니다.</string>
+    <string name="skill_level_slot_line">%1$d번 칸: Lv.%2$s → Lv.%3$s (목표 %4$d) %5$s</string>
+    <string name="skill_level_stop_off">끔</string>
+    <string name="skill_level_stop_reached">목표 도달</string>
+    <string name="skill_level_stop_max">최대 레벨</string>
+    <string name="skill_level_stop_shortage">재료·QP·코인 부족</string>
+    <string name="skill_level_stop_cannot">강화 불가</string>
+    <string name="skill_level_stop_locked">잠김, 건너뜀</string>
+    <string name="skill_level_stop_unreadable">레벨 확인 실패, 강화하지 않음</string>
+    <string name="skill_level_stop_no_increase">레벨이 오르지 않아 정지</string>
+    <string name="skill_level_stop_dialog">예상 밖의 확인창, 취소함</string>
+    <string name="skill_level_stop_stuck">게임이 강화 화면으로 돌아오지 않았습니다. 화면을 확인하세요. 강화가 이미 일어났을 수 있습니다.</string>
 </resources>

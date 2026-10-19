@@ -768,4 +768,27 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>
     <string name="p_license">License</string>
     <string name="license_header">FGA(mod) is based on Fate/Grand Automata and distributed under the MIT License.</string>
+    <string name="p_script_mode_skill_level">Auto Skill Level</string>
+    <string name="p_script_mode_append_level">Auto Append Skill Level</string>
+    <string name="skill_level_safety">Raises each slot to its target level and never above it. 0 = off. Enhancing spends QP and materials. Locked append slots are never unlocked. Select the servant first.</string>
+    <string name="skill_level_slot_target">Slot %1$d target level</string>
+    <string name="skill_level_off">Off</string>
+    <string name="skill_level_select_servant">No servant is selected. Select a servant on the skill enhancement screen first.</string>
+    <string name="skill_level_wrong_screen">The skill / append skill enhancement screen is not showing. Stopped.</string>
+    <string name="skill_level_unsupported_server">Auto skill level supports the KR and JP servers only.</string>
+    <string name="skill_level_nothing_selected">Every slot is off. Nothing to do.</string>
+    <string name="skill_level_done">Finished.</string>
+    <string name="skill_level_stopped">Stopped early.</string>
+    <string name="skill_level_aborted">Stopped by the user.</string>
+    <string name="skill_level_slot_line">Slot %1$d: Lv.%2$s → Lv.%3$s (target %4$d) %5$s</string>
+    <string name="skill_level_stop_off">off</string>
+    <string name="skill_level_stop_reached">target reached</string>
+    <string name="skill_level_stop_max">max level</string>
+    <string name="skill_level_stop_shortage">short of materials, QP or coins</string>
+    <string name="skill_level_stop_cannot">cannot enhance</string>
+    <string name="skill_level_stop_locked">locked, skipped</string>
+    <string name="skill_level_stop_unreadable">level not read, nothing was enhanced</string>
+    <string name="skill_level_stop_no_increase">level did not go up, stopped</string>
+    <string name="skill_level_stop_dialog">unexpected dialog, canceled</string>
+    <string name="skill_level_stop_stuck">the game did not return to the enhancement screen. Check it: an enhancement may have happened.</string>
 </resources>

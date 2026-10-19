@@ -14,6 +14,7 @@ import io.github.fate_grand_automata.qa.suites.verifyNoblePhantasm
 import io.github.fate_grand_automata.qa.suites.verifyQuestItems
 import io.github.fate_grand_automata.qa.suites.verifySupport
 import io.github.fate_grand_automata.qa.suites.verifyFpSell
+import io.github.fate_grand_automata.qa.suites.verifySkillLevel
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -65,6 +66,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                         "questItems" -> api.verifyQuestItems()
                         "noblePhantasm" -> api.verifyNoblePhantasm()
                         "fpSell" -> api.verifyFpSell()
+                        "skillLevel" -> api.verifySkillLevel()
                         else -> error("Unknown suite")
                     })
                     api.checkCoverage()

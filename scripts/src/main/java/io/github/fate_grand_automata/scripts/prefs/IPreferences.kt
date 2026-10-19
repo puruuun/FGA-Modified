@@ -57,6 +57,8 @@ interface IPreferences {
 
     val servant: IServantEnhancementPreferences
 
+    val skillLevel: ISkillLevelPreferences
+
     fun getPerServerConfigPref(server: GameServer): IPerServerConfigPrefs
 
     fun addPerServerConfigPref(server: GameServer): IPerServerConfigPrefs

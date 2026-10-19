@@ -17,6 +17,10 @@ sealed class ScriptLauncherResponse {
     data object Battle : ScriptLauncherResponse()
 
     data object ServantEnhancement : ScriptLauncherResponse()
+
+    /** Target level per slot, 0 = off. */
+    data class SkillLevel(val targets: List<Int>) : ScriptLauncherResponse()
+    data class AppendLevel(val targets: List<Int>) : ScriptLauncherResponse()
 }
 
 class ScriptLauncherResponseBuilder(

@@ -1,0 +1,757 @@
+{
+  "schema": 1,
+  "suite": "skillLevel",
+  "cases": [
+    {
+      "name": "JP-01-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/01.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "JP-02-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/02.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-03-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/03.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-04-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/04.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-05-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/05.png",
+      "view": "mode",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "JP-06-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/06.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-07-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/07.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-08-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/08.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-09-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/09.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-10-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/10.png",
+      "view": "mode",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-11-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/11.png",
+      "view": "mode",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-12-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/12.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-13-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/13.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-14-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/14.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-15-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/15.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-16-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/16.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-17-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/17.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-18-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/18.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-19-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/19.png",
+      "view": "mode",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "JP-20-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/20.png",
+      "view": "mode",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "JP-21-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/21.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-22-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/22.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-23-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/23.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-24-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/24.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-02-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/02.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-03-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/03.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-06-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/06.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-07-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/07.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": true
+      }
+    },
+    {
+      "name": "JP-08-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/08.png",
+      "view": "band",
+      "expected": {
+        "band": "Unlock",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-13-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/13.png",
+      "view": "band",
+      "expected": {
+        "band": "Unlock",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-14-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/14.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-15-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/15.png",
+      "view": "band",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-21-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/21.png",
+      "view": "band",
+      "expected": {
+        "band": "Unlock",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-22-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/22.png",
+      "view": "band",
+      "expected": {
+        "band": "Shortage",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-23-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/23.png",
+      "view": "band",
+      "expected": {
+        "band": "Shortage",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-24-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/24.png",
+      "view": "band",
+      "expected": {
+        "band": "Unlock",
+        "unlockButton": true,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-04-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/04.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-16-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/16.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-17-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/17.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-18-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/18.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-02-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/02.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-15-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/15.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "JP-08-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/08.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "KR-13-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/13.png",
+      "view": "dialog",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-04-levels",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/04.png",
+      "view": "levels",
+      "expected": {
+        "current": 4,
+        "next": 5
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-16-levels",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/16.png",
+      "view": "levels",
+      "expected": {
+        "current": 3,
+        "next": 4
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-17-levels",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/17.png",
+      "view": "levels",
+      "expected": {
+        "current": 5,
+        "next": 6
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-18-levels",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/18.png",
+      "view": "levels",
+      "expected": {
+        "current": 1,
+        "next": 2
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-08-locks",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/08.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          false,
+          false,
+          true,
+          false
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "KR-13-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/13.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "KR-14-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/14.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-21-locks",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/21.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-22-locks",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/22.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "KR-23-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/23.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "KR-24-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/24.png",
+      "view": "locks",
+      "expected": {
+        "locks": [
+          false,
+          false,
+          false,
+          true,
+          true
+        ]
+      },
+      "slotMode": "Append"
+    },
+    {
+      "name": "JP-05-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/05.png",
+      "view": "result",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "KR-11-result",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/11.png",
+      "view": "result",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "KR-19-result",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/19.png",
+      "view": "result",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "JP-20-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/20.png",
+      "view": "result",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "JP-02-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/02.png",
+      "view": "result",
+      "expected": {
+        "result": false
+      }
+    },
+    {
+      "name": "KR-15-result",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/15.png",
+      "view": "result",
+      "expected": {
+        "result": false
+      }
+    },
+    {
+      "name": "KR-10-result",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/10.png",
+      "view": "result",
+      "expected": {
+        "result": false
+      }
+    },
+    {
+      "name": "JP-04-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/04.png",
+      "view": "result",
+      "expected": {
+        "result": false
+      }
+    }
+  ]
+}

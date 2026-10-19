@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
+import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.FgaScreen
 
@@ -40,6 +41,8 @@ fun ScriptLauncher(
                 ScriptModeEnum.PresentBox -> giftBoxLauncher(prefs, modifier)
                 ScriptModeEnum.CEBomb -> ceBombLauncher(prefs, modifier)
                 ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
+                ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
+                ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
             }
 
             HorizontalDivider()

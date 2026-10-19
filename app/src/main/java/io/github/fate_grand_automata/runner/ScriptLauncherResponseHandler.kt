@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.runner
 
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
+import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncherResponse
 import javax.inject.Inject
@@ -53,6 +54,18 @@ class ScriptLauncherResponseHandler @Inject constructor(
 
             is ScriptLauncherResponse.ServantEnhancement -> {
                 ScriptModeEnum.ServantLevel
+            }
+
+            is ScriptLauncherResponse.SkillLevel -> {
+                prefs.skillLevel.setTargets(SkillLevelMode.Skill, resp.targets)
+
+                ScriptModeEnum.SkillLevel
+            }
+
+            is ScriptLauncherResponse.AppendLevel -> {
+                prefs.skillLevel.setTargets(SkillLevelMode.Append, resp.targets)
+
+                ScriptModeEnum.AppendLevel
             }
         }
     }

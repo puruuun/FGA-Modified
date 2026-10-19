@@ -20,6 +20,8 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.entrypoints.AutoGiftBox
 import io.github.fate_grand_automata.scripts.entrypoints.AutoLottery
 import io.github.fate_grand_automata.scripts.entrypoints.AutoServantLevel
+import io.github.fate_grand_automata.scripts.entrypoints.SkillLevelScript
+import io.github.fate_grand_automata.scripts.modules.SlotStop
 import io.github.fate_grand_automata.scripts.entrypoints.SupportImageMaker
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
@@ -38,6 +40,7 @@ import io.github.fate_grand_automata.util.ScriptState
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.messageAndStackTrace
 import io.github.fate_grand_automata.util.set
+import io.github.fate_grand_automata.util.skillLevelSummary
 import io.github.fate_grand_automata.util.showOverlayDialog
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.OcrService
@@ -268,6 +271,27 @@ class ScriptManager @Inject constructor(
                 messageBox.show(scriptExitedString, msg)
             }
 
+            is SkillLevelScript.ExitException -> {
+                val msg = when (val reason = e.reason) {
+                    is SkillLevelScript.ExitReason.Done ->
+                        context.getString(if (reason.results.any { it.stop == SlotStop.Stuck }) R.string.skill_level_stopped else R.string.skill_level_done) + "\n" + skillLevelSummary(context, reason.results)
+
+                    SkillLevelScript.ExitReason.NoServantSelected -> context.getString(R.string.skill_level_select_servant)
+                    SkillLevelScript.ExitReason.WrongScreen -> context.getString(R.string.skill_level_wrong_screen)
+                    SkillLevelScript.ExitReason.UnsupportedServer -> context.getString(R.string.skill_level_unsupported_server)
+                    SkillLevelScript.ExitReason.NothingSelected -> context.getString(R.string.skill_level_nothing_selected)
+                    is SkillLevelScript.ExitReason.Abort ->
+                        context.getString(R.string.skill_level_aborted) + "\n" + skillLevelSummary(context, reason.results)
+
+                    is SkillLevelScript.ExitReason.Unexpected ->
+                        "${context.getString(R.string.unexpected_error)}: ${reason.exception.message}\n" +
+                            skillLevelSummary(context, reason.results)
+                }
+
+                messages.notify(msg)
+                messageBox.show(scriptExitedString, msg)
+            }
+
             is ScriptAbortException -> {
                 // user aborted. do nothing
             }
@@ -311,6 +335,8 @@ class ScriptManager @Inject constructor(
             ScriptModeEnum.SupportImageMaker -> entryPoint.supportImageMaker()
             ScriptModeEnum.CEBomb -> entryPoint.ceBomb()
             ScriptModeEnum.ServantLevel -> entryPoint.servantLevel()
+            ScriptModeEnum.SkillLevel -> entryPoint.skillLevel()
+            ScriptModeEnum.AppendLevel -> entryPoint.appendLevel()
         }
 
     enum class PauseAction {
@@ -401,6 +427,21 @@ class ScriptManager @Inject constructor(
                 releaseOcrService()
 
                 messageBox.show(context.getString(R.string.unexpected_error), msg)
+
+                return@launch
+            }
+
+            // D-10: no settings dialog on a skill / append screen that has no servant selected.
+            if ((detectedMode == ScriptModeEnum.SkillLevel || detectedMode == ScriptModeEnum.AppendLevel) &&
+                !hiltEntryPoint.autoDetect().skillServantSelected()
+            ) {
+                uiStateHolder.isPlayButtonEnabled = true
+                releaseOcrService()
+
+                messageBox.show(
+                    context.getString(R.string.script_exited),
+                    context.getString(R.string.skill_level_select_servant)
+                )
 
                 return@launch
             }

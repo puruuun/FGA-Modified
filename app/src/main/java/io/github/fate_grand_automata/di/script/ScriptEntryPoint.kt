@@ -17,6 +17,10 @@ interface ScriptEntryPoint {
 
     fun servantLevel(): AutoServantLevel
 
+    fun skillLevel(): AutoSkillLevel
+
+    fun appendLevel(): AutoAppendLevel
+
     fun autoDetect(): AutoDetect
 
     /** Exposed so [ScriptComponent]'s OCR engine can be released when the run ends. */
