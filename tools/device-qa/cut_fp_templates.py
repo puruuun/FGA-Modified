@@ -15,7 +15,6 @@ ASSETS = ROOT / "app/src/main/assets"
 
 # (asset folder, file name, reference folder, reference file, box x, y, w, h)
 RECIPES = [
-    ("En", "fp_resummon_confirm.png", "Kr", "beta11/52-kr-real-sell-resummon-confirm.png", 540, 600, 208, 12),
     ('Jp', 'fp_sell_temporary.png', 'Jp', 'beta7/20261019-104838-653-final-game-selection-407.png', 641, 566, 56, 20),
     ('Jp', 'fp_sell_temporary_servant.png', 'Jp', 'beta7/20261019-104838-653-final-game-selection-407.png', 622, 621, 96, 36),
     ('Jp', 'fp_sell_cancel.png', 'Jp', '30.png', 347, 610, 188, 36),

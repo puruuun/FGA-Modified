@@ -30,20 +30,18 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             (findImage(locations.fp.summonCheck, Images.FriendSummon) ||
                 findImage(locations.fp.initialSummonCheck, Images.FriendSummon))
 
-    /** D-36: title and FP cost label guard the summon button itself, which must also match its template. */
-    fun summonAgain() {
+    /** D-31: guard the original FGA summon taps with the saved title, FP label and visible button. */
+    fun verifySummon() {
         val saved = title ?: stop()
         if (!useSameSnapIn { matches(saved) }) stop()
         val patterns = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
             .mapNotNull { runCatching { images[it] }.getOrNull() }
-        val button = buttons.awaitMatch {
+        buttons.awaitMatch {
             if (!matches(saved)) null else {
                 patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = 0.9) }
                     ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = 0.9) }
             }
         } ?: stop(ExitReason.SummonMenuFailed)
-        button.region.click()
-        FpSellTiming.AFTER_ACTION.wait()
     }
 
     fun restore() {

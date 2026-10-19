@@ -35,11 +35,13 @@ class FpDryRunCycleTest {
         every { sale.run() } returns FpAutoSell.Result(summary,true)
         val banner=mockk<FpBannerReturn>(relaxed=true)
         every { banner.restore() } answers { stage=1 }
-        every { banner.summonAgain() } answers { stage=2 }
-        val okClick = api.locations.fp.okClick
+        every { banner.verifySummon() } just Runs
+        val okClick = Location(100,100)
+        every { api.locations.fp.okClick } returns okClick
+        every { with(api) { okClick.click(any()) } } answers { stage=2 }
         val error=assertFailsWith<AutoFriendGacha.ExitException> { AutoFriendGacha(mockk(),api,sale,banner,reader).script() }
-        verify(exactly=1) { sale.run();banner.restore();banner.summonAgain() }
-        verify(exactly=0) { with(api) { okClick.click(any()) } }
+        verify(exactly=1) { sale.run();banner.restore();banner.verifySummon() }
+        verify(exactly=1) { with(api) { okClick.click(1) } }
         verify(exactly=1) { sale.logFinalSummary() }
         return error.reason
     }
@@ -72,20 +74,19 @@ class FpDryRunCycleTest {
         val reader=mockk<FpSellReader>(relaxed=true)
         every { reader.servantFullWarning() } answers { stage==0 }
         every { api.locations.fp.okClick } returns ok
-        every { reader.resummonConfirmation() } answers { stage==2 }
         every { with(api) { ok.click(any()) } } answers { stage=3 }
         val sale=mockk<FpAutoSell>(relaxed=true)
         every { sale.run() } returns FpAutoSell.Result(FpSellPolicy.Summary(1,0),false)
         val banner=mockk<FpBannerReturn>(relaxed=true)
         every { banner.restore() } answers { stage=1 }
-        every { banner.summonAgain() } answers { stage=2 }
+        every { banner.verifySummon() } just Runs
         val initial=api.locations.fp.first10SummonClick
         val error=assertFailsWith<AutoFriendGacha.ExitException> {
             AutoFriendGacha(mockk(),api,sale,banner,reader).script()
         }
         assertSame(AutoFriendGacha.ExitReason.SellScreenUnknown,error.reason)
-        verify(exactly=1) { banner.summonAgain();with(api) { ok.click(1) } }
-        verify(exactly=0) { with(api) { initial.click(any()) } }
+        verify(exactly=1) { banner.verifySummon();with(api) { ok.click(1) } }
+        verify(exactly=1) { with(api) { initial.click(1) } }
         verify(exactly=1) { sale.logFinalSummary() }
     }
 }

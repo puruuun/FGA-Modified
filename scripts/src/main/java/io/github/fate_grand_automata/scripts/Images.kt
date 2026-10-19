@@ -1,7 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
 enum class Images(val path: String) {
-    FpResummonConfirm("fp_resummon_confirm.png"),
     FpSellTemporary("fp_sell_temporary.png"),
     FpSellTemporaryServant("fp_sell_temporary_servant.png"),
     FpSellCancel("fp_sell_cancel.png"),

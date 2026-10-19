@@ -128,7 +128,6 @@ Skills"</string>
     <string name="p_append_skill_check">Check Append Skills</string>
     <string name="p_score_62_check">Require Class score +62</string>
     <string name="p_grand_score_16_check">Require Grand score +16</string>
-    <string name="p_grand_score_16_jp_only">Currently JP server only</string>
     <string name="grand_score_not_supported">This server has no Grand score, so the +16 condition is ignored.</string>
     <string name="p_np_level_check">Check support NP level</string>
     <string name="p_np_level_check_summary">Choose a support with at least the required NP level. Skip unreadable candidates.</string>
@@ -653,7 +652,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_quest_item_usage_ignored">Enable Teapot/Storm Pod control in More options → Additional features to use these choices.</string>
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
-    <string name="p_grand_score_16_check_summary">Requires a displayed Grand score of +16. Class-only displays do not pass. With both switches on, Class +62 and Grand +16 must both match.</string>
     <string name="p_bond">Bond points</string>
     <string name="p_bond_track">Track bond point gains</string>
     <string name="p_bond_stop">Stop when bond MAX is confirmed</string>
@@ -714,7 +712,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="original_import_more_errors">%1$d additional errors are not shown.</string>
     <string name="portrait_import_title">Search and save support images</string>
     <string name="portrait_import_summary">Find servants and Craft Essences by collection number or name.</string>
-    <string name="portrait_import_description">Search servants and Craft Essences. Names follow the FGA language, with Japanese as the fallback. An internet connection is required.</string>
     <string name="portrait_import_number">Collection number or name</string>
     <string name="portrait_import_destination">Save to: %1$s/support/%2$s/</string>
     <string name="portrait_import_start">Generate and save</string>
@@ -769,5 +766,4 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
     <string name="fp_sell_warning">Every visible unlocked servant, EXP card and Fou card on the sell screen will be selected and sold. Check the sell-screen filter before starting.</string>
     <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>
-    <string name="fp_resummon_confirm_failed">Could not verify the FP summon confirmation after returning. Stopped without pressing OK.</string>
 </resources>

@@ -6,7 +6,6 @@ import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
 import io.github.fate_grand_automata.scripts.modules.FpSellTiming
-import io.github.fate_grand_automata.scripts.modules.FpSellButtons
 import io.github.fate_grand_automata.scripts.modules.FpAutoSell
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
@@ -32,7 +31,6 @@ class AutoFriendGacha @Inject constructor(
         object InventoryFullNothingToSell : ExitReason()
         /** The full warning is not for the servant slots (Craft Essence, command code or an unknown dialog). */
         object InventoryFullNotServant : ExitReason()
-        class ResummonConfirmFailed(val summary: FpSellPolicy.Summary) : ExitReason()
         sealed class BannerReturnStopped(val label: String) : ExitReason()
         object WorkshopNotReached : BannerReturnStopped("workshop")
         object WorkshopMenuFailed : BannerReturnStopped("menu")
@@ -68,7 +66,6 @@ class AutoFriendGacha @Inject constructor(
         }
     }
 
-    private val returnButtons = FpSellButtons(api)
     private var saleStarted = false
     private var returning = false
     private var previousSale: FpAutoSell.Result? = null
@@ -105,21 +102,11 @@ class AutoFriendGacha @Inject constructor(
             },
             { isFirstSummon() } to {
                 if (prefs.fpAutoSell) banner.remember()
-                if (returning) resumeSummon() else {
-                    locations.fp.first10SummonClick.click()
-                    FpSellTiming.SUMMON_CONFIRM.wait()
-                    locations.fp.okClick.click()
-                    initialScreen = true
-                }
+                if (returning) resumeSummon(dailyFree = false) else summon(dailyFree = false)
             },
             { isDailyFree() } to {
                 if (prefs.fpAutoSell) banner.remember()
-                if (returning) resumeSummon() else {
-                    locations.fp.initialSummonClick.click()
-                    FpSellTiming.SUMMON_CONFIRM.wait()
-                    locations.fp.initialSummonContinueClick.click()
-                    initialScreen = true
-                }
+                if (returning) resumeSummon(dailyFree = true) else summon(dailyFree = true)
             },
             { isSummonButtonVisible() } to { rollFPAgain() }
         )
@@ -153,33 +140,21 @@ class AutoFriendGacha @Inject constructor(
         }
     }
 
-    private fun resumeSummon() {
+    /** D-48: first summon and return use exactly the same original FGA taps and delay. */
+    private fun summon(dailyFree: Boolean) {
+        if (dailyFree) locations.fp.initialSummonClick.click() else locations.fp.first10SummonClick.click()
+        FpSellTiming.SUMMON_CONFIRM.wait()
+        if (dailyFree) locations.fp.initialSummonContinueClick.click() else locations.fp.okClick.click()
+        initialScreen = true
+    }
+
+    private fun resumeSummon(dailyFree: Boolean) {
         countNext()
-        banner.summonAgain()
+        banner.verifySummon()
         isInLoop = true
         returning = false
-        initialScreen = true
-        val previous = checkNotNull(previousSale)
-        if (previous.dryRun) {
-            // Preserve the dry-run cycle: the full box must not spend FP.
-            awaitingDryFull = true
-            return
-        }
-        FpSellTiming.BUTTON_SETTLE.wait()
-        var fullWarning = false
-        var confirmed = false
-        val reached = returnButtons.awaitSignal(FpSellTiming.FIND_POLLS) {
-            // A full warning always wins, even if another dialog signal also matches.
-            fullWarning = isInventoryFull() || reader.servantFullWarning()
-            confirmed = !fullWarning && reader.resummonConfirmation()
-            fullWarning || confirmed
-        }
-        if (fullWarning) return // The normal full-warning handler can sell again.
-        if (!reached || !confirmed) {
-            messages.log(ScriptLog.FpSell("stop step=resummon reason=confirmation selected=${previous.summary.total}"))
-            throw ExitException(ExitReason.ResummonConfirmFailed(previous.summary))
-        }
-        locations.fp.okClick.click()
+        awaitingDryFull = checkNotNull(previousSale).dryRun
+        summon(dailyFree)
     }
 
     private fun rollFPAgain() {

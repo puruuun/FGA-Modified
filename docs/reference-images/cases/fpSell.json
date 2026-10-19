@@ -16849,36 +16849,6 @@
         "close": true,
         "workshop": false
       }
-    },
-    {
-      "name": "KR-52-resummon-confirm",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/beta11/52-kr-real-sell-resummon-confirm.png",
-      "view": "resummonConfirm",
-      "expected": {
-        "confirmation": true
-      }
-    },
-    {
-      "name": "KR-banner-not-resummon-confirm",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/15.png",
-      "view": "resummonConfirm",
-      "expected": {
-        "confirmation": false
-      }
-    },
-    {
-      "name": "JP-sale-confirm-not-resummon-confirm",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/30.png",
-      "view": "resummonConfirm",
-      "expected": {
-        "confirmation": false
-      }
     }
   ]
 }

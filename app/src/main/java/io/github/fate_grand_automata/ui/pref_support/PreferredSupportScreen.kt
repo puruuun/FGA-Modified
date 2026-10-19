@@ -169,13 +169,7 @@ private fun PreferredSupport(
                         title = stringResource(R.string.p_score_62_check)
                     )
                     config.grandScore16Check.SwitchPreference(
-                        title = stringResource(R.string.p_grand_score_16_check),
-                        summary = stringResource(R.string.p_grand_score_16_check_summary)
-                    )
-                    Text(
-                        text = stringResource(R.string.p_grand_score_16_jp_only),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        title = stringResource(R.string.p_grand_score_16_check)
                     )
                     if (prefServants.isNotEmpty()) {
                         config.appendSkillCheck.SwitchPreference(

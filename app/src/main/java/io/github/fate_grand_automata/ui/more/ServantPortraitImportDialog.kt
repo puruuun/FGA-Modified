@@ -39,7 +39,6 @@ fun ServantPortraitImportDialog(
         title = { Text(stringResource(R.string.portrait_import_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.portrait_import_description))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SupportCatalogKind.entries.forEach { kind ->
                         FilterChip(selected = state.kind == kind, onClick = { onKind(kind) }, enabled = !state.busy,

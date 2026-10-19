@@ -200,8 +200,6 @@ class ScriptManager @Inject constructor(
             is AutoFriendGacha.ExitException -> {
                 val msg = when (val reason = e.reason) {
                     AutoFriendGacha.ExitReason.InventoryFull -> context.getString(R.string.inventory_full)
-                    is AutoFriendGacha.ExitReason.ResummonConfirmFailed -> context.getString(R.string.fp_resummon_confirm_failed) + "\n" +
-                        io.github.fate_grand_automata.util.fpSellSummary(context, reason.summary)
                     AutoFriendGacha.ExitReason.InventoryFullNothingToSell -> context.getString(R.string.fp_sell_nothing)
                     AutoFriendGacha.ExitReason.InventoryFullNotServant -> context.getString(R.string.fp_sell_not_servant)
                     is AutoFriendGacha.ExitReason.BannerReturnStopped -> context.getString(when (reason) {

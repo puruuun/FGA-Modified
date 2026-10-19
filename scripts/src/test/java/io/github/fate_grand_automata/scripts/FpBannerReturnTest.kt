@@ -82,20 +82,20 @@ class FpBannerReturnTest {
         for ((step,fp) in listOf(1 to true,0 to false)) {
             val run=Run(step,fp)
             assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,
-                assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
+                assertFailsWith<AutoFriendGacha.ExitException> { run.banner.verifySummon() }.reason)
         }
         val run=Run(0)
         every { with(run.api) { any<Region>().find(any<Pattern>(),any()) } } returns null
         assertSame(AutoFriendGacha.ExitReason.SummonMenuFailed,
-            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
+            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.verifySummon() }.reason)
     }
 
-    @Test fun `resummon taps only the matched FP button`() {
+    @Test fun `resummon verification does not tap the matched FP button`() {
         val run=Run(0)
         val button=Region(900,1000,120,50)
         every { with(run.api) { any<Region>().find(any<Pattern>(),any()) } } returns Match(button,1.0)
-        run.banner.summonAgain()
-        verify(exactly=1) { with(run.api) { button.click(1) } }
+        run.banner.verifySummon()
+        verify(exactly=0) { with(run.api) { any<Region>().click(any()); any<Location>().click(any()) } }
         assertEquals(0,run.presses)
     }
     @Test fun `workshop MENU summon and title failures each log their own stop step`() {
@@ -153,14 +153,17 @@ class FpBannerReturnTest {
         verify(exactly=60) { with(run.api) { FpSellTiming.FIND_POLL.wait() } }
     }
 
-    @Test fun `left arrow and FP resummon use the increased post tap delays`() {
+    @Test fun `left arrow retains its delay while resummon verification never taps`() {
         val run=Run(1)
         val summon=Region(900,1000,100,50)
         every { run.loc.summonButton } returns summon
         run.banner.restore()
-        run.banner.summonAgain()
         verify(exactly=1) { with(run.api) { FpSellTiming.AFTER_ARROW.wait() } }
-        verifyOrder { with(run.api) { summon.click(1);FpSellTiming.AFTER_ACTION.wait() } }
+        clearMocks(run.api, answers = false, childMocks = false)
+        run.banner.verifySummon()
+        verify(exactly=0) { with(run.api) { summon.click(any()) } }
+        verify(exactly=1) { with(run.api) { FpSellTiming.BUTTON_SETTLE.wait() } }
+        verify(exactly=1) { with(run.api) { any<kotlin.time.Duration>().wait(any()) } }
     }
 
     @Test fun `summon screen load waits five seconds then polls up to fifteen seconds and never re-taps`() {

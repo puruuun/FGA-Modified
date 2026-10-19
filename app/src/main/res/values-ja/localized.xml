@@ -611,7 +611,6 @@
     <string name="original_import_more_errors">その他%1$d件のエラーは省略しています。</string>
     <string name="portrait_import_title">サポート画像の検索・保存</string>
     <string name="portrait_import_summary">サーヴァント・概念礼装を図鑑番号や名前で検索して保存します。</string>
-    <string name="portrait_import_description">サーヴァント・概念礼装を検索します。名前はFGAの言語を優先し、情報がない場合は日本語を使用します。インターネット接続が必要です。</string>
     <string name="portrait_import_number">図鑑番号または名前</string>
     <string name="portrait_import_destination">保存先: %1$s/support/%2$s/</string>
     <string name="portrait_import_start">生成・保存</string>
@@ -643,7 +642,6 @@
     <string name="portrait_class_pretender">プリテンダー</string>
     <string name="portrait_class_shielder">シールダー</string>
     <string name="portrait_class_beast">ビースト</string>
-    <string name="p_grand_score_16_jp_only">現在JPサーバー専用</string>
     <string name="grand_score_not_supported">このサーバーにはグランドスコアがないため、+16の条件を無視します。</string>
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->

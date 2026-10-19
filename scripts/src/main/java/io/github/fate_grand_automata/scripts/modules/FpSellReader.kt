@@ -65,11 +65,6 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         listOf(Images.FpSellTemporary, Images.FpSellTemporaryServant).mapNotNull { template(it) }
     }
 
-    private val resummonConfirm by lazy { template(Images.FpResummonConfirm) }
-    fun resummonConfirmation(): Boolean = resummonConfirm?.let {
-        loc.resummonConfirm.exists(it, similarity = 0.9)
-    } == true
-
     fun onSellHeading() = loc.heading.exists(images[Images.FpSellHeading], similarity = 0.9)
     fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)
     fun onSellScreen() = onSellHeading() && onServantTab()
