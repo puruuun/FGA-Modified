@@ -38,4 +38,4 @@ Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています
 
 [原版リポジトリ](https://github.com/Fate-Grand-Automata/FGA) · [原版の利用ガイド](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MITライセンス](LICENSE)
 
-公式FGA v3059（[ベースのコミット](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)）を基にしています。原作者の著作権表示を維持しています。
+公式FGA v3059（[ベースのコミット](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)）を基にしています。原作者の著作権表示を維持しています。追加・変更した部分の著作権はpuruuunにあり、同じMITライセンスで配布しています。
