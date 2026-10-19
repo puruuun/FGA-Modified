@@ -30,17 +30,20 @@ abstract class SkillLevelScript(
     val mode: SkillLevelMode
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
 
-    sealed class ExitReason {
+    sealed class ExitReason(
+        /** Readable name for logs. Never derive it from the class: release builds obfuscate class names. */
+        val logName: String
+    ) {
         /** The flow ran through every slot; the per-slot results say how each one ended. */
-        class Done(val results: List<SlotResult>) : ExitReason()
-        data object NoServantSelected : ExitReason()
+        class Done(val results: List<SlotResult>) : ExitReason("Done")
+        data object NoServantSelected : ExitReason("NoServantSelected")
         /** The skill / append enhancement screen is not showing. */
-        data object WrongScreen : ExitReason()
-        data object UnsupportedServer : ExitReason()
+        data object WrongScreen : ExitReason("WrongScreen")
+        data object UnsupportedServer : ExitReason("UnsupportedServer")
         /** Every slot is set to 0 (off). */
-        data object NothingSelected : ExitReason()
-        class Abort(val results: List<SlotResult>) : ExitReason()
-        class Unexpected(val exception: Exception, val results: List<SlotResult>) : ExitReason()
+        data object NothingSelected : ExitReason("NothingSelected")
+        class Abort(val results: List<SlotResult>) : ExitReason("Abort")
+        class Unexpected(val exception: Exception, val results: List<SlotResult>) : ExitReason("Unexpected")
     }
 
     class ExitException(val reason: ExitReason, val mode: SkillLevelMode, val step: SkillLevelStep = SkillLevelStep.Select) : Exception()
@@ -53,7 +56,7 @@ abstract class SkillLevelScript(
         try {
             throw ExitException(start(), mode, flow?.activeStep ?: SkillLevelStep.Select)
         } catch (e: ExitException) {
-            log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${e.step.token} reason=${e.reason::class.simpleName}")
+            log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${e.step.token} reason=${e.reason.logName}")
             throw e
         } catch (e: ScriptAbortException) {
             log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${flow?.activeStep?.token ?: "select"} reason=Abort")

@@ -38,6 +38,7 @@ class SkillLevelDevice(
 
     override fun cancel(): Boolean {
         loc.dialogCancel(mode).click()
+        SkillLevelTiming.AFTER_CANCEL.wait()
         return poll(SkillLevelTiming.CLOSE_POLLS) { !screens.dialogVisible() }
     }
 

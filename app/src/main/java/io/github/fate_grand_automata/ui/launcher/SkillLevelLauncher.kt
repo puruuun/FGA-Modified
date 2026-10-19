@@ -32,7 +32,7 @@ fun skillLevelLauncher(
     mode: SkillLevelMode,
     modifier: Modifier = Modifier
 ): ScriptLauncherResponseBuilder {
-    val targets = remember { mutableStateListOf(*prefs.skillLevel.targets(mode).toTypedArray()) }
+    val targets = remember { mutableStateListOf(*IntArray(mode.slots).toTypedArray()) }
     val off = stringResource(R.string.skill_level_off)
 
     Column(
@@ -51,8 +51,6 @@ fun skillLevelLauncher(
                 .padding(5.dp)
                 .padding(bottom = 8.dp)
         )
-
-        Text(stringResource(R.string.skill_level_safety), style = MaterialTheme.typography.bodySmall)
 
         targets.forEachIndexed { index, value ->
             Row(

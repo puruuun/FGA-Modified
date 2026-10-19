@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.entrypoints.SkillLevelScript
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.lib_automata.*
@@ -24,11 +25,11 @@ class SkillLevelDeviceTest {
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
         }
     }
-    @Test fun `enhance waits half a second after the tap before the unchanged dialog search`() {
+    @Test fun `enhance waits four tenths of a second after the tap before the unchanged dialog search`() {
         val run=Run()
         run.device.pressEnhance()
         assertTrue(run.device.awaitDialog())
-        assertEquals(0.5.seconds,SkillLevelTiming.AFTER_ENHANCE)
+        assertEquals(0.4.seconds,SkillLevelTiming.AFTER_ENHANCE)
         assertEquals(2.seconds,SkillLevelTiming.FIND_POLL*SkillLevelTiming.DIALOG_POLLS)
         assertEquals(20.seconds,SkillLevelTiming.SKIP_INTERVAL*SkillLevelTiming.SKIP_POLLS)
         verifyOrder { with(run.api) { run.enhance.click(1);SkillLevelTiming.AFTER_ENHANCE.wait() };run.screens.dialogVisible() }
@@ -45,5 +46,21 @@ class SkillLevelDeviceTest {
         every { run.screens.unlockButtonVisible() } returns true
         assertFailsWith<IllegalStateException> { run.device.pressEnhance() }
         verify(exactly=0) { with(run.api) { run.enhance.click(any());any<Duration>().wait(any()) } }
+    }
+    @Test fun `cancel waits four tenths of a second after the tap before the close check`() {
+        val run=Run()
+        val cancel=Location(500,600)
+        every { run.loc.dialogCancel(SkillLevelMode.Skill) } returns cancel
+        every { run.screens.dialogVisible() } returns false
+        assertTrue(run.device.cancel())
+        assertEquals(0.4.seconds,SkillLevelTiming.AFTER_CANCEL)
+        verifyOrder { with(run.api) { cancel.click(1);SkillLevelTiming.AFTER_CANCEL.wait() };run.screens.dialogVisible() }
+    }
+    @Test fun `exit reasons log readable names`() {
+        val names=listOf(SkillLevelScript.ExitReason.Done(emptyList()) to "Done",SkillLevelScript.ExitReason.NoServantSelected to "NoServantSelected",
+            SkillLevelScript.ExitReason.WrongScreen to "WrongScreen",SkillLevelScript.ExitReason.UnsupportedServer to "UnsupportedServer",
+            SkillLevelScript.ExitReason.NothingSelected to "NothingSelected",SkillLevelScript.ExitReason.Abort(emptyList()) to "Abort",
+            SkillLevelScript.ExitReason.Unexpected(Exception(),emptyList()) to "Unexpected")
+        names.forEach { (reason,name) -> assertEquals(name,reason.logName) }
     }
 }

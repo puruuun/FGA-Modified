@@ -770,7 +770,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="license_header">FGA(mod) is based on Fate/Grand Automata and distributed under the MIT License.</string>
     <string name="p_script_mode_skill_level">Auto Skill Level</string>
     <string name="p_script_mode_append_level">Auto Append Skill Level</string>
-    <string name="skill_level_safety">Raises each slot to its target level and never above it. 0 = off. Enhancing spends QP and materials. Locked append slots are never unlocked. Select the servant first.</string>
     <string name="skill_level_slot_target">Slot %1$d target level</string>
     <string name="skill_level_off">Off</string>
     <string name="skill_level_select_servant">No servant is selected. Select a servant on the skill enhancement screen first.</string>

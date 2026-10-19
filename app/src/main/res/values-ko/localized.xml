@@ -698,7 +698,6 @@
     <string name="license_header">FGA(mod)는 Fate/Grand Automata를 기반으로 하며 MIT 라이선스로 배포됩니다.</string>
     <string name="p_script_mode_skill_level">스킬 자동 강화</string>
     <string name="p_script_mode_append_level">어펜드 스킬 자동 강화</string>
-    <string name="skill_level_safety">칸마다 목표 레벨까지만 올리고 그 이상은 올리지 않습니다. 0 = 끔. 강화는 QP와 재료를 씁니다. 잠긴 어펜드 칸은 해방하지 않습니다. 서번트를 먼저 선택하세요.</string>
     <string name="skill_level_slot_target">%1$d번 칸 목표 레벨</string>
     <string name="skill_level_off">끔</string>
     <string name="skill_level_select_servant">서번트가 선택되지 않았습니다. 스킬 강화 화면에서 서번트를 먼저 선택하세요.</string>

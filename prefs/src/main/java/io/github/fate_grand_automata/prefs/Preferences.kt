@@ -131,7 +131,7 @@ class PreferencesImpl @Inject constructor(
     override val servant: IServantEnhancementPreferences =
         ServantEnhancementPrefs(prefs.servantEnhancement)
 
-    override val skillLevel: ISkillLevelPreferences = SkillLevelPrefs(prefs.skillLevel)
+    override val skillLevel: ISkillLevelPreferences = SkillLevelPrefs()
 
     override fun forBattleConfig(id: String): IBattleConfig =
         autoSkillMap.getOrPut(id) {

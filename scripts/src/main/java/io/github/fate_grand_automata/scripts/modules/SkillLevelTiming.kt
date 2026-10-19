@@ -7,8 +7,10 @@ import kotlin.time.Duration.Companion.seconds
 object SkillLevelTiming {
     /** After tapping a slot icon, before the instruction band is read and the button is tapped. */
     val SELECT_SETTLE = 1.seconds
-    /** D-15: after enhance, before the existing two-second dialog search. */
-    val AFTER_ENHANCE = 0.5.seconds
+    /** D-17: after enhance, before the existing two-second dialog search. */
+    val AFTER_ENHANCE = 0.4.seconds
+    /** D-17: after tapping cancel in the dialog, before the close check and the next slot. */
+    val AFTER_CANCEL = 0.4.seconds
     val FIND_POLL = 100.milliseconds
     /** Confirm dialog after the button tap: 2 s. */
     const val DIALOG_POLLS = 20
