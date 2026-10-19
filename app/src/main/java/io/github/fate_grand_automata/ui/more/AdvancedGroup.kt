@@ -39,7 +39,8 @@ import io.github.fate_grand_automata.util.stringRes
 
 fun LazyListScope.advancedGroup(
     prefs: PrefsCore,
-    goToFineTune: () -> Unit
+    goToFineTune: () -> Unit,
+    goToLicense: () -> Unit
 ) {
     item {
         Preference(
@@ -132,6 +133,13 @@ fun LazyListScope.advancedGroup(
         )
     }
 
+    item {
+        Preference(
+            title = stringResource(R.string.p_license),
+            icon = icon(R.drawable.ic_info),
+            onClick = goToLicense
+        )
+    }
 }
 
 @Composable

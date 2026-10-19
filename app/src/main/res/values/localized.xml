@@ -766,4 +766,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
     <string name="fp_sell_warning">Every visible unlocked servant, EXP card and Fou card on the sell screen will be selected and sold. Check the sell-screen filter before starting.</string>
     <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>
+    <string name="p_license">License</string>
+    <string name="license_header">FGA(mod) is based on Fate/Grand Automata and distributed under the MIT License.</string>
 </resources>

@@ -77,6 +77,45 @@ androidComponents {
     }
 }
 
+/*
+ * MIT requires the copyright and licence text to ship with every copy, so the root LICENSE is
+ * copied into the APK assets at build time (never by hand) and shown by the licence screen.
+ */
+abstract class CopyLicenseAsset : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val licenseFile: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun copy() {
+        files.sync {
+            from(licenseFile)
+            into(outputDir)
+        }
+    }
+}
+
+val copyLicenseAsset = tasks.register<CopyLicenseAsset>("copyLicenseAsset") {
+    description = "Copies the repository LICENSE into the generated APK assets."
+    licenseFile.set(rootProject.layout.projectDirectory.file("LICENSE"))
+    outputDir.set(layout.buildDirectory.dir("generated/licenseAssets"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            copyLicenseAsset,
+            CopyLicenseAsset::outputDir,
+        )
+    }
+}
+
 // Release versions come from version.properties. FGA_VERSION_NAME / FGA_VERSION_CODE override them
 // (PR builds set them to run_number). A malformed file fails the build here, not in CI.
 val versionProperties = Properties().apply {
@@ -299,6 +338,13 @@ tasks.withType<Test>().configureEach {
      * as soon as the test is run from the IDE instead of Gradle.
      */
     systemProperty("fga.supportAssets", supportAssets.asFile.path)
+
+    // The bundled LICENSE is a generated asset, so tests read the copy the build produced.
+    dependsOn(copyLicenseAsset)
+    systemProperty(
+        "fga.licenseAsset",
+        layout.buildDirectory.file("generated/licenseAssets/LICENSE").get().asFile.path,
+    )
 
     /*
      * Triggers the task when the support assets change, so that the system property above is always

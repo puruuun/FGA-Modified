@@ -36,6 +36,9 @@ sealed interface Route : NavKey {
     data object FineTune : Route
 
     @Serializable
+    data object License : Route
+
+    @Serializable
     data class BattleConfigItem(override val id: String) : BattleConfig
 
     @Serializable

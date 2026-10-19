@@ -24,6 +24,7 @@ import io.github.fate_grand_automata.ui.battle_config_list.BattleConfigListScree
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityScreen
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityViewModel
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
+import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsScreen
 import io.github.fate_grand_automata.ui.onboarding.OnboardingScreen
 import io.github.fate_grand_automata.ui.openLinkIntent
@@ -138,8 +139,12 @@ fun FgaApp(
                     entry<Route.MoreOptions> {
                         MoreOptionsScreen(
                             vm = hiltViewModel(),
-                            navigateToFineTune = { backStack.add(Route.FineTune) }
+                            navigateToFineTune = { backStack.add(Route.FineTune) },
+                            navigateToLicense = { backStack.add(Route.License) }
                         )
+                    }
+                    entry<Route.License> {
+                        LicenseScreen()
                     }
                     entry<Route.FineTune> {
                         FineTuneScreen(

@@ -27,7 +27,8 @@ import io.github.fate_grand_automata.util.OpenDocTreePersistable
 @Composable
 fun MoreOptionsScreen(
     vm: MoreOptionsViewModel = viewModel(),
-    navigateToFineTune: () -> Unit
+    navigateToFineTune: () -> Unit,
+    navigateToLicense: () -> Unit
 ) {
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.pickedDirectory(it)
@@ -71,6 +72,7 @@ fun MoreOptionsScreen(
     MoreOptionsContent(
         vm = vm,
         goToFineTune = navigateToFineTune,
+        goToLicense = navigateToLicense,
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
 }
@@ -79,6 +81,7 @@ fun MoreOptionsScreen(
 private fun MoreOptionsContent(
     vm: MoreOptionsViewModel,
     goToFineTune: () -> Unit,
+    goToLicense: () -> Unit,
     pickDirectory: () -> Unit
 ) {
     Column(
@@ -128,7 +131,8 @@ private fun MoreOptionsContent(
                             MoreSettingsGroup.Advanced -> {
                                 advancedGroup(
                                     vm.prefsCore,
-                                    goToFineTune = goToFineTune
+                                    goToFineTune = goToFineTune,
+                                    goToLicense = goToLicense
                                 )
                             }
                         }
