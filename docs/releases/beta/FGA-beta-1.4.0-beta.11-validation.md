@@ -55,7 +55,7 @@ JP 입력 자료 전체를 검토했으나 **JP FP 사용 확인창 프레임은
 
 - APK `C:\Users\rl\Documents\Codex\FGA-Modified-builds\FGA-beta-1.4.0-beta.11-arm.apk` 및 같은 경로의 `.sha256`.
 - SHA-256 `07e1378057d9ea09fb9ab0bfddbb789bc13dd988104e8fed96cb9f9a07102b99`.
-- aapt: `io.github.fate_grand_automata.beta`, `1004011`, `1.4.0-beta.11`, ARM `arm64-v8a` + `armeabi-v7a`.
+- aapt: `io.github.fate_grand_automata.beta`, `1004011`, `1.4.0-beta.11`, 앱 이름 `FGA(beta)`, ARM `arm64-v8a` + `armeabi-v7a`.
 - apksigner 검증 성공. 저장소 공개 debug 키 인증서 SHA-256 `5acce47e71373dcfe3a6f6400ed3b3f687bd454aab91c7562c8327a3a083ac9d`와 일치.
 - BlueStacks `127.0.0.1:5555`, 모델 `PIXEL 2 XL` 확인 후 `install --no-streaming -r`: **Success**.
 - 설치 후 `versionName=1.4.0-beta.11`, `versionCode=1004011 minSdk=24 targetSdk=36`.

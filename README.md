@@ -28,7 +28,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 간단한 설명 |
 |---|---|
-| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 판매 화면에 보이는 잠금 아닌 카드를 선택·판매하고 FP 배너로 복귀합니다. 시작 전 게임 필터 확인 필수. 기본 꺼짐, 시험 모드 기본 켜짐. |
+| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 판매 화면에 보이는 잠금 아닌 카드를 선택·판매하고 FP 배너로 복귀합니다. 시작 전 게임 필터 확인 필수. 기본 꺼짐. 시험 모드는 베타 전용이며 기본 켜짐. |
 | [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 재림·영의 서포트 이미지를 생성하고 번호·이름 폴더에 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 스크립트·서포트 이미지를 골라 일괄로 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Modified-Features-KR.md#chaldea-import) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
