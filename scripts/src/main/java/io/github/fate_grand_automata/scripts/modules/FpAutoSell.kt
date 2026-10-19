@@ -7,7 +7,6 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.SellSte
 import io.github.lib_automata.Region
 import io.github.lib_automata.Swiper
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 /** D-36: dry run cancels the final confirmation; only real selling can reach Convert. */
 class FpAutoSell @Inject constructor(
@@ -39,16 +38,15 @@ class FpAutoSell @Inject constructor(
         throw ExitException(AutoFriendGacha.sellStop(step, dryRun, selectedSoFar, unknownLockSoFar))
     }
     private fun awaitScreen(what: String, test: () -> Boolean) {
-        if (step == SellStep.Flow) {
-            if (!buttons.awaitSignal(FpSellButtons.BUTTON_POLLS, test)) stop("screen not reached after 2s: $what")
-            return
+        repeat(FpSellTiming.SCREEN_POLLS) {
+            if (useSameSnapIn(test)) return
+            FpSellTiming.SCREEN_POLL.wait()
         }
-        repeat(40) { if (useSameSnapIn(test)) return; 0.5.seconds.wait() }
         stop("screen not reached: $what")
     }
     private fun click(region: Region, image: Images) {
         buttons.click(region, image) { stop("button not found after 2s: $image") }
-        0.5.seconds.wait()
+        FpSellTiming.AFTER_ACTION.wait()
     }
 
     fun run(): Result {
@@ -66,8 +64,9 @@ class FpAutoSell @Inject constructor(
         awaitScreen("sell heading") { reader.onSellHeading() }
         // The sell screen may open on the Craft Essence tab. Only the servant tab is read (D-17).
         if (!useSameSnapIn { reader.onServantTab() }) {
+            FpSellTiming.BUTTON_SETTLE.wait()
             loc.servantTabClick.click()
-            0.5.seconds.wait()
+            FpSellTiming.AFTER_ACTION.wait()
         }
         awaitScreen("servant tab") { reader.onSellScreen() }
         step = SellStep.Columns
@@ -75,8 +74,9 @@ class FpAutoSell @Inject constructor(
         var presses = 0
         while (!useSameSnapIn { reader.isSevenColumns() }) {
             if (presses++ == 2) stop("seven columns not reached after 2 presses")
+            FpSellTiming.BUTTON_SETTLE.wait()
             loc.sizeSwitch.click()
-            0.5.seconds.wait()
+            FpSellTiming.AFTER_ACTION.wait()
             awaitScreen("sell screen after size switch") { reader.onSellScreen() }
         }
         step = SellStep.Selection
@@ -97,7 +97,7 @@ class FpAutoSell @Inject constructor(
                 requestedScroll += loc.rowPitch
                 log("page=$page rows=$evaluatedRows swipe=$requestedScroll reanchor=true")
                 swipe.scroll(loc.swipeStart, loc.swipeEnd(loc.rowPitch))
-                0.7.seconds.wait()
+                FpSellTiming.SELECTION_SCROLL.wait()
                 continue
             }
             anchorRetry = false
@@ -127,7 +127,7 @@ class FpAutoSell @Inject constructor(
             requestedScroll = distance
             swipe.scroll(loc.swipeStart, loc.swipeEnd(distance))
             log("page=$page swiped distance=$distance rows=$evaluatedRows")
-            0.7.seconds.wait()
+            FpSellTiming.SELECTION_SCROLL.wait()
         }
         if (!ended) stop("page limit reached without the list ending")
         val summary = tracker.summary()

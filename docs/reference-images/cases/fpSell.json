@@ -16838,6 +16838,17 @@
       "expected": {
         "menu": true
       }
+    },
+    {
+      "name": "JP-beta9-after-cancel-close-is-visible-not-workshop",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta9/50-jp-beta8-after-cancel.png",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
     }
   ]
 }

@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts
 
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
+import io.github.fate_grand_automata.scripts.modules.FpSellTiming
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.lib_automata.*
 import io.mockk.*
@@ -126,5 +127,38 @@ class FpBannerReturnTest {
         run.banner.restore()
         assertEquals(8,reads)
         verify(exactly=1) { with(run.api) { menu.click(1) } }
+    }
+    @Test fun `ignored first sell close is retried once and workshop arrival permits MENU`() {
+        val run=Run(0)
+        val close=run.loc.screenClose
+        val shop=run.loc.shop
+        var closes=0
+        every { with(run.api) { close.click(any()) } } answers { closes++ }
+        every { with(run.api) { shop.exists(any(),any(),any()) } } answers { closes==2 }
+        run.banner.restore()
+        assertEquals(2,closes)
+        verify(exactly=30) { with(run.api) { FpSellTiming.FIND_POLL.wait() } }
+        verify(exactly=4) { with(run.api) { FpSellTiming.BUTTON_SETTLE.wait() } }
+    }
+
+    @Test fun `sell close stops with workshop reason after its single retry`() {
+        val run=Run(0)
+        val close=run.loc.screenClose
+        val shop=run.loc.shop
+        every { with(run.api) { shop.exists(any(),any(),any()) } } returns false
+        assertSame(AutoFriendGacha.ExitReason.WorkshopNotReached,
+            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
+        verify(exactly=2) { with(run.api) { close.click(1) } }
+        verify(exactly=60) { with(run.api) { FpSellTiming.FIND_POLL.wait() } }
+    }
+
+    @Test fun `left arrow and FP resummon use the increased post tap delays`() {
+        val run=Run(1)
+        val summon=Region(900,1000,100,50)
+        every { run.loc.summonButton } returns summon
+        run.banner.restore()
+        run.banner.summonAgain()
+        verify(exactly=1) { with(run.api) { FpSellTiming.AFTER_ARROW.wait() } }
+        verifyOrder { with(run.api) { summon.click(1);FpSellTiming.AFTER_ACTION.wait() } }
     }
 }

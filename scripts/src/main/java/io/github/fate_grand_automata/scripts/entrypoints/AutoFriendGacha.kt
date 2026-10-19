@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
+import io.github.fate_grand_automata.scripts.modules.FpSellTiming
 import io.github.fate_grand_automata.scripts.modules.FpSellButtons
 import io.github.fate_grand_automata.scripts.modules.FpAutoSell
 import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
@@ -12,7 +13,6 @@ import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import io.github.fate_grand_automata.scripts.modules.FpSellReader
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Continually triggers 10x Summon, intended for FP summons, but could also be used for SQ summons.
@@ -107,7 +107,7 @@ class AutoFriendGacha @Inject constructor(
                 if (returning) resumeSummon() else {
                     // Initial summon behavior is unchanged when auto-sell is off.
                     locations.fp.first10SummonClick.click()
-                    0.3.seconds.wait()
+                    FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
                     locations.fp.okClick.click()
                     initialScreen = true
                 }
@@ -116,7 +116,7 @@ class AutoFriendGacha @Inject constructor(
                 if (prefs.fpAutoSell) banner.remember()
                 if (returning) resumeSummon() else {
                     locations.fp.initialSummonClick.click()
-                    0.3.seconds.wait()
+                    FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
                     locations.fp.initialSummonContinueClick.click()
                     initialScreen = true
                 }
@@ -145,7 +145,7 @@ class AutoFriendGacha @Inject constructor(
                 }
                 val action = actor ?: { if (!awaitingDryFull) locations.fp.skipRapidClick.click(15) }
                 action.invoke()
-                0.5.seconds.wait()
+                FpSellTiming.summonLoop(prefs.fpAutoSell).wait()
             }
         } finally {
             if (saleStarted) autoSell.logFinalSummary()
@@ -167,7 +167,8 @@ class AutoFriendGacha @Inject constructor(
         }
         // Real mode preserves the ordinary summon confirmation, but matches the button before tapping it.
         var ok: io.github.lib_automata.Match? = null
-        val reached = returnButtons.awaitSignal(FpSellButtons.BUTTON_POLLS) {
+        FpSellTiming.BUTTON_SETTLE.wait()
+        val reached = returnButtons.awaitSignal(FpSellTiming.FIND_POLLS) {
             if (isInventoryFull() || reader.servantFullWarning() || isSummonButtonVisible()) true else {
                 ok = reader.loc.summonOk.find(images[Images.Ok], similarity = 0.9)
                 ok != null
@@ -185,9 +186,9 @@ class AutoFriendGacha @Inject constructor(
         countNext()
 
         locations.fp.continueSummonClick.click()
-        0.3.seconds.wait()
+        FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
         locations.fp.okClick.click()
-        3.seconds.wait()
+        FpSellTiming.summonAnimation(prefs.fpAutoSell).wait()
     }
 
     private fun isSummonButtonVisible() = !awaitingDryFull && findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)

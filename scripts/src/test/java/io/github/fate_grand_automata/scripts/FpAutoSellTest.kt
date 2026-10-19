@@ -11,6 +11,8 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.lib_automata.*
 import io.mockk.*
 import kotlin.test.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class FpAutoSellTest {
     @Test fun `every tile combination follows D29 with only dry run admitting an unknown lock`() {
@@ -362,12 +364,52 @@ class FpAutoSellTest {
             verify(exactly=if(button=="convert") 1 else 0) { with(run.api) { run.convert.click(1) } }
         }
     }
-    @Test fun `missing final confirmation button stops within the two second flow window`() {
+    @Test fun `missing final confirmation keeps the half second poll and twenty second cap`() {
         val run=SellRun()
         every { with(run.api) { run.cancel.exists(any(),any(),any()) } } returns false
         assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
-        verify(exactly=20) { with(run.api) { FpSellButtons.POLL.wait() } }
+        verify(exactly=40) { with(run.api) { FpSellTiming.SCREEN_POLL.wait() } }
         verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
         verify(exactly=0) { with(run.api) { run.cancel.click(any());run.convert.click(any()) } }
+    }
+    @Test fun `selection keeps immediate tile taps and exactly the existing two scroll waits`() {
+        val run=SellRun()
+        val second=Region(150,110,20,20)
+        every { run.reader.readPage() } returns listOf(
+            FpSellReader.PageTile(0,run.card,null),FpSellReader.PageTile(1,second,null))
+        every { run.reader.readCard(second) } returnsMany listOf(run.unselected,run.unselected.copy(selected=true))
+        var selecting=false
+        every { run.reader.readPage() } answers {
+            selecting=true
+            listOf(FpSellReader.PageTile(0,run.card,null),FpSellReader.PageTile(1,second,null))
+        }
+        every { run.api.messages.log(any()) } answers {
+            if (firstArg<ScriptLog>() is ScriptLog.FpSellSelection) selecting=false
+        }
+        val selectionWaits=mutableListOf<Duration>()
+        for(delay in listOf(1.seconds,0.7.seconds)) {
+            every { with(run.api) { delay.wait(any()) } } answers { if(selecting) selectionWaits.add(delay) }
+        }
+        assertEquals(2,run.result().summary.total)
+        assertEquals(listOf(0.7.seconds,0.7.seconds),selectionWaits)
+        verify(exactly=8) { with(run.api) { any<Duration>().wait(any()) } }
+        verify(exactly=1) { with(run.api) { run.card.click(1);second.click(1) } }
+        verify(exactly=6) { with(run.api) { 1.seconds.wait(any()) } }
+    }
+
+    @Test fun `servant tab and column switch apply one second settle and increased post tap wait`() {
+        val run=SellRun()
+        val loc=run.reader.loc
+        val tab=Location(20,40)
+        val size=Location(30,50)
+        every { loc.servantTabClick } returns tab
+        every { loc.sizeSwitch } returns size
+        every { run.reader.onServantTab() } returns false
+        every { run.reader.isSevenColumns() } returnsMany listOf(false,true)
+        run.result()
+        verifyOrder { with(run.api) {
+            1.seconds.wait();tab.click(1);1.seconds.wait()
+            1.seconds.wait();size.click(1);1.seconds.wait()
+        } }
     }
 }

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.modules.FpSellTiming
 import io.github.fate_grand_automata.scripts.modules.FpSellButtons
 import io.github.lib_automata.*
 import io.mockk.*
@@ -25,7 +26,7 @@ class FpSellButtonsTest {
         }
         buttons.click(region,Images.FpSellMenu) { throw Missing() }
         assertEquals(21,reads)
-        verify(exactly=20) { with(api) { FpSellButtons.POLL.wait() } }
+        verify(exactly=20) { with(api) { FpSellTiming.FIND_POLL.wait() } }
         verify(exactly=1) { with(api) { region.click(1) } }
     }
 
@@ -42,7 +43,7 @@ class FpSellButtonsTest {
             var signals=0
             buttons.menu(region,image,{ ++signals==32 },{ throw Missing() })
             assertEquals(32,signals)
-            verify(exactly=30) { with(api) { FpSellButtons.POLL.wait() } }
+            verify(exactly=30) { with(api) { FpSellTiming.FIND_POLL.wait() } }
             verify(exactly=2) { with(api) { region.click(1) } }
         }
     }
@@ -53,7 +54,7 @@ class FpSellButtonsTest {
             buttons.menu(region,Images.FpSellMenu,{ signals++;false },{ throw Missing() })
         }
         assertEquals(62,signals)
-        verify(exactly=60) { with(api) { FpSellButtons.POLL.wait() } }
+        verify(exactly=60) { with(api) { FpSellTiming.FIND_POLL.wait() } }
         verify(exactly=2) { with(api) { region.click(1) } }
     }
 
@@ -82,12 +83,31 @@ class FpSellButtonsTest {
         val clock=TestTimeSource()
         val timed=FpSellButtons(api,clock)
         var reads=0
-        assertFalse(timed.awaitSignal(FpSellButtons.BUTTON_POLLS) {
+        assertFalse(timed.awaitSignal(FpSellTiming.FIND_POLLS) {
             reads++
             clock += 700.milliseconds
             false
         })
         assertEquals(3,reads)
-        verify(exactly=2) { with(api) { FpSellButtons.POLL.wait() } }
+        verify(exactly=2) { with(api) { FpSellTiming.FIND_POLL.wait() } }
+    }
+    @Test fun `one second settle happens before the first find and before its short retry window`() {
+        buttons.click(region,Images.FpSellScreenClose) { throw Missing() }
+        verifyOrder {
+            with(api) {
+                FpSellTiming.BUTTON_SETTLE.wait(true)
+                region.find(any<Pattern>(),any())
+                region.click(1)
+            }
+        }
+        verify(exactly=1) { with(api) { FpSellTiming.BUTTON_SETTLE.wait(true) } }
+    }
+
+    @Test fun `sell screen close retries once after three seconds and settles again before the retry`() {
+        var signals=0
+        buttons.closeSell(region,{ ++signals==32 },{ throw Missing() })
+        assertEquals(32,signals)
+        verify(exactly=30) { with(api) { FpSellTiming.FIND_POLL.wait() } }
+        verify(exactly=2) { with(api) { FpSellTiming.BUTTON_SETTLE.wait();region.click(1) } }
     }
 }

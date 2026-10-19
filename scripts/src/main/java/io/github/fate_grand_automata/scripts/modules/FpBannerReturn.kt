@@ -6,7 +6,6 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitRea
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
 import io.github.lib_automata.Pattern
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 /** D-31: remember only the title; compare in place and after each of at most ten left presses. */
 class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: FpSellLocations) : IFgoAutomataApi by api {
@@ -44,15 +43,14 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             }
         } ?: stop(ExitReason.SummonMenuFailed)
         button.region.click()
-        0.5.seconds.wait()
+        FpSellTiming.AFTER_ACTION.wait()
     }
 
     fun restore() {
         val savedTitle = title ?: stop()
-        buttons.click(loc.screenClose, Images.FpSellScreenClose) { stop(ExitReason.WorkshopNotReached) }
-        if (!buttons.awaitSignal(FpSellButtons.BUTTON_POLLS) {
-            buttons.visible(loc.shop, Images.FpSellShop)
-        }) stop(ExitReason.WorkshopNotReached)
+        buttons.closeSell(loc.screenClose,
+            { buttons.visible(loc.shop, Images.FpSellShop) },
+            { stop(ExitReason.WorkshopNotReached) })
         buttons.menu(loc.menu, Images.FpSellMenu,
             { buttons.visible(loc.summonMenu, Images.FpSellSummonMenu) },
             { stop(ExitReason.WorkshopMenuFailed) })
@@ -61,7 +59,7 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             { stop(ExitReason.SummonMenuFailed) })
         if (!search({ useSameSnapIn { matches(savedTitle) } }, {
             buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop() }
-            0.7.seconds.wait()
+            FpSellTiming.AFTER_ARROW.wait()
         })) stop()
     }
 }
