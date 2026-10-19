@@ -719,4 +719,12 @@
     <string name="skill_level_stop_no_increase">레벨이 오르지 않아 정지</string>
     <string name="skill_level_stop_dialog">예상 밖의 확인창, 취소함</string>
     <string name="skill_level_stop_stuck">게임이 강화 화면으로 돌아오지 않았습니다. 화면을 확인하세요. 강화가 이미 일어났을 수 있습니다.</string>
+    <string name="skill_level_step_select">칸 선택</string>
+    <string name="skill_level_step_enhance">강화 버튼</string>
+    <string name="skill_level_step_dialog">확인창</string>
+    <string name="skill_level_step_ocr">레벨 OCR</string>
+    <string name="skill_level_step_confirm">결정·취소</string>
+    <string name="skill_level_step_skip">스킵·복귀</string>
+    <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_error">예상 밖의 오류입니다. 강화가 진행됐는지 확인하세요.</string>
 </resources>

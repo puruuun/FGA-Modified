@@ -21,6 +21,7 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoGiftBox
 import io.github.fate_grand_automata.scripts.entrypoints.AutoLottery
 import io.github.fate_grand_automata.scripts.entrypoints.AutoServantLevel
 import io.github.fate_grand_automata.scripts.entrypoints.SkillLevelScript
+import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SlotStop
 import io.github.fate_grand_automata.scripts.entrypoints.SupportImageMaker
 import io.github.fate_grand_automata.scripts.enums.GameServers
@@ -40,6 +41,7 @@ import io.github.fate_grand_automata.util.ScriptState
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.messageAndStackTrace
 import io.github.fate_grand_automata.util.set
+import io.github.fate_grand_automata.util.skillLevelStepMessage
 import io.github.fate_grand_automata.util.skillLevelSummary
 import io.github.fate_grand_automata.util.showOverlayDialog
 import io.github.lib_automata.EntryPoint
@@ -288,8 +290,9 @@ class ScriptManager @Inject constructor(
                             skillLevelSummary(context, reason.results)
                 }
 
-                messages.notify(msg)
-                messageBox.show(scriptExitedString, msg)
+                val stagedMessage = skillLevelStepMessage(context, e.step, msg)
+                messages.notify(stagedMessage)
+                messageBox.show(scriptExitedString, stagedMessage)
             }
 
             is ScriptAbortException -> {
@@ -440,7 +443,7 @@ class ScriptManager @Inject constructor(
 
                 messageBox.show(
                     context.getString(R.string.script_exited),
-                    context.getString(R.string.skill_level_select_servant)
+                    skillLevelStepMessage(context, SkillLevelStep.Select, context.getString(R.string.skill_level_select_servant))
                 )
 
                 return@launch

@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.lib_automata.ScriptAbortException
+
 /** Skill screen has 3 slots, append screen 5. The loop is the same, only slots, coordinates and titles differ. */
 enum class SkillLevelMode(val slots: Int) {
     Skill(3),
@@ -19,6 +21,10 @@ enum class SkillLevelBand {
 
 /** The two levels read from the confirm dialog (`Lv.current > Lv.next`). Null means not read. */
 data class SkillLevelReading(val current: Int?, val next: Int?)
+
+enum class SkillLevelStep(val token: String) {
+    Select("select"), Enhance("enhance"), Dialog("dialog"), Ocr("ocr"), Confirm("confirm"), Skip("skip")
+}
 
 enum class SlotStop {
     /** Target 0. */
@@ -40,13 +46,16 @@ enum class SlotStop {
     /** The dialog was not an enhancement dialog. */
     UnexpectedDialog,
     /** The game did not return to the skill screen. */
-    Stuck
+    Stuck,
+    Aborted,
+    Error
 }
 
 /**
  * [startLevel] is the first level read in the dialog; [endLevel] the last known one (null when never read).
  */
-data class SlotResult(val slot: Int, val target: Int, val startLevel: Int?, val endLevel: Int?, val stop: SlotStop)
+data class SlotResult(val slot: Int, val target: Int, val startLevel: Int?, val endLevel: Int?, val stop: SlotStop,
+    val step: SkillLevelStep = SkillLevelStep.Select)
 
 /** Everything the loop needs from the game. The real one reads the screen and taps; tests fake it. */
 interface SkillLevelPanel {
@@ -80,35 +89,68 @@ interface SkillLevelPanel {
  */
 class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (String) -> Unit = {}) {
     private val done = mutableListOf<SlotResult>()
-    /** Results so far, also valid after an abort. */
     val results: List<SlotResult> get() = done.toList()
+    var activeSlot = -1
+        private set
+    var activeStep = SkillLevelStep.Select
+        private set
+    private var partial: SlotResult? = null
+
+    private fun line(fields: String) = log("slot=${activeSlot + 1} step=${activeStep.token} $fields")
+    private fun summary(result: SlotResult) = log("summary slot=${result.slot + 1} step=${result.step.token} " +
+        "target=${result.target} start=${result.startLevel ?: "-"} end=${result.endLevel ?: "-"} reason=${result.stop}")
 
     fun runAll(targets: List<Int>): List<SlotResult> {
         for ((slot, target) in targets.withIndex()) {
-            val result = runSlot(slot, target)
+            val result = try {
+                runSlot(slot, target)
+            } catch (e: Exception) {
+                val reason = if (e is ScriptAbortException) SlotStop.Aborted else SlotStop.Error
+                val stopped = checkNotNull(partial).copy(stop = reason, step = activeStep)
+                done += stopped
+                log("stop slot=${slot + 1} step=${activeStep.token} reason=$reason error=${e::class.simpleName}:${e.message?.replace("\n", " ")}")
+                summary(stopped)
+                throw e
+            }
             done += result
-            log("slot=${slot + 1} target=$target start=${result.startLevel ?: "-"} end=${result.endLevel ?: "-"} stop=${result.stop}")
+            summary(result)
             if (result.stop == SlotStop.Stuck) break
         }
         return results
     }
 
     fun runSlot(slot: Int, target: Int): SlotResult {
-        if (target <= 0) return SlotResult(slot, target, null, null, SlotStop.Off)
+        activeSlot = slot
+        activeStep = SkillLevelStep.Select
         var start: Int? = null
         var previous: Int? = null
         var known: Int? = null
-        fun finish(stop: SlotStop) = SlotResult(slot, target, start, known, stop)
+        fun snapshot(stop: SlotStop) = SlotResult(slot, target, start, known, stop, activeStep)
+        fun remember() { partial = snapshot(SlotStop.Error) }
+        fun finish(stop: SlotStop): SlotResult {
+            val result = snapshot(stop)
+            log("stop slot=${slot + 1} step=${activeStep.token} reason=$stop")
+            return result
+        }
         fun reachedByLastConfirm() = known?.let { it >= target } == true
-        // A level cannot be confirmed more than nine times; one more pass reads the final state.
+        remember()
+        if (target <= 0) return finish(SlotStop.Off)
         repeat(MAX_PASSES) {
+            activeStep = SkillLevelStep.Select
             if (panel.isLocked(slot)) return finish(SlotStop.Locked)
             panel.select(slot)
+            line("action=select")
+            activeStep = SkillLevelStep.Enhance
             val band = panel.band()
+            line("band=$band")
             if (band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) return finish(SlotStop.Locked)
             if (band == SkillLevelBand.Shortage) return finish(if (reachedByLastConfirm()) SlotStop.Reached else SlotStop.Shortage)
+            line("action=enhance-tap")
             panel.pressEnhance()
-            if (!panel.awaitDialog()) {
+            activeStep = SkillLevelStep.Dialog
+            val seen = panel.awaitDialog()
+            line("seen=$seen")
+            if (!seen) {
                 return finish(when {
                     reachedByLastConfirm() -> SlotStop.Reached
                     panel.maxButtonVisible() -> SlotStop.Max
@@ -116,25 +158,41 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                 })
             }
             if (!panel.dialogIsEnhance()) return finish(closeDialog(SlotStop.UnexpectedDialog))
+            activeStep = SkillLevelStep.Ocr
             val reading = panel.readLevels()
+            line("current=${reading.current ?: "unread"} next=${reading.next ?: "unread"}")
             val current = reading.current
             if (current == null || current !in 1..9) return finish(closeDialog(SlotStop.Unreadable))
-            // Both values must be unambiguous, and next must be exactly current + 1.
             if (reading.next != current + 1) return finish(closeDialog(SlotStop.Unreadable))
             if (start == null) start = current
             known = current
+            remember()
             if (previous != null && current != previous + 1) return finish(closeDialog(SlotStop.NoIncrease))
             if (current >= target) return finish(closeDialog(SlotStop.Reached))
+            activeStep = SkillLevelStep.Confirm
+            line("action=confirm")
             panel.confirm()
             previous = current
             known = current + 1
-            if (!panel.skipToScreen()) return finish(SlotStop.Stuck)
+            remember()
+            activeStep = SkillLevelStep.Skip
+            val back = panel.skipToScreen()
+            line("return=$back")
+            if (!back) return finish(SlotStop.Stuck)
         }
         return finish(SlotStop.CannotEnhance)
     }
 
-    /** Cancels; when the dialog does not close the screen is stuck and the run stops. */
-    private fun closeDialog(stop: SlotStop) = if (panel.cancel()) stop else SlotStop.Stuck
+    /** Preserve the cause step after a successful cancellation; a failed cancellation is a confirm-step failure. */
+    private fun closeDialog(stop: SlotStop): SlotStop {
+        val cause = activeStep
+        activeStep = SkillLevelStep.Confirm
+        line("action=cancel")
+        val closed = panel.cancel()
+        line("cancelClosed=$closed")
+        if (closed) activeStep = cause
+        return if (closed) stop else SlotStop.Stuck
+    }
 
     companion object {
         const val MAX_PASSES = 11

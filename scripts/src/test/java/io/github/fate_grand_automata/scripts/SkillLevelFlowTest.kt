@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts
 
 import io.github.fate_grand_automata.scripts.modules.SkillLevelBand
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDigits
+import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
 import io.github.fate_grand_automata.scripts.modules.SkillLevelPanel
 import io.github.fate_grand_automata.scripts.modules.SkillLevelReading
@@ -79,7 +80,7 @@ class SkillLevelFlowTest {
         assertEquals(2, panel.confirms)
         assertEquals(1, panel.cancels)
         assertEquals(5, panel.levels[0])
-        assertEquals(SlotResult(0, 5, 3, 5, SlotStop.Reached), result)
+        assertEquals(SlotResult(0, 5, 3, 5, SlotStop.Reached, SkillLevelStep.Ocr), result)
     }
 
     @Test fun `already at the target level cancels without a single confirmation`() {
@@ -177,7 +178,7 @@ class SkillLevelFlowTest {
         val result = run(panel, 10).single()
         assertEquals(1, panel.confirms)
         assertEquals(10, panel.levels[0])
-        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Reached), result)
+        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Reached, SkillLevelStep.Dialog), result)
     }
 
     @Test fun `a slot with target 0 is off and is never touched`() {
@@ -240,7 +241,7 @@ class SkillLevelFlowTest {
         assertEquals(1, panel.confirms)
         assertEquals(0, panel.cancels)
         assertEquals(10, panel.levels[0])
-        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Reached), result)
+        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Reached, SkillLevelStep.Dialog), result)
     }
 
     @Test fun `nine to two digit ten cancels without confirming when the target is nine`() {
@@ -249,7 +250,7 @@ class SkillLevelFlowTest {
         assertEquals(0, panel.confirms)
         assertEquals(1, panel.cancels)
         assertEquals(9, panel.levels[0])
-        assertEquals(SlotResult(0, 9, 9, 9, SlotStop.Reached), result)
+        assertEquals(SlotResult(0, 9, 9, 9, SlotStop.Reached, SkillLevelStep.Ocr), result)
     }
 
     @Test fun `an unread next level cancels even when current is unambiguous`() {
@@ -277,6 +278,62 @@ class SkillLevelFlowTest {
         assertNull(SkillLevelDigits.templateNine(listOf(8 to 1.0, 9 to 0.98)))
         assertNull(SkillLevelDigits.templateNine(listOf(9 to 1.0)))
         assertNull(SkillLevelDigits.templateNine(listOf(9 to Double.NaN, 8 to 0.1)))
+    }
+
+    @Test fun `every successful stage and cancellation is visible in the step log`() {
+        val logs = mutableListOf<String>()
+        val result = SkillLevelFlow(FakePanel(mutableListOf(3)), logs::add).runAll(listOf(4)).single()
+        for (field in listOf("action=select", "band=Enhance", "action=enhance-tap", "seen=true",
+            "current=3 next=4", "action=confirm", "return=true", "action=cancel", "cancelClosed=true")) {
+            assertTrue(logs.any { it.contains(field) }, field)
+        }
+        assertTrue(logs.any { it == "stop slot=1 step=ocr reason=Reached" })
+        assertTrue(logs.last().startsWith("summary slot=1 step=ocr target=4 start=3 end=4 reason=Reached"))
+        assertEquals(SkillLevelStep.Ocr, result.step)
+    }
+
+    @Test fun `exceptions at every step retain the active slot summary and exact failure step`() {
+        for (step in SkillLevelStep.entries) {
+            val base = FakePanel(mutableListOf(3, 3))
+            fun fail(here: SkillLevelStep) { if (here == step) error("failed-${step.token}") }
+            val panel = object : SkillLevelPanel by base {
+                override fun select(slot: Int) { fail(SkillLevelStep.Select);base.select(slot) }
+                override fun pressEnhance() { fail(SkillLevelStep.Enhance);base.pressEnhance() }
+                override fun awaitDialog(): Boolean { fail(SkillLevelStep.Dialog);return base.awaitDialog() }
+                override fun readLevels(): SkillLevelReading { fail(SkillLevelStep.Ocr);return base.readLevels() }
+                override fun confirm() { fail(SkillLevelStep.Confirm);base.confirm() }
+                override fun skipToScreen(): Boolean { fail(SkillLevelStep.Skip);return base.skipToScreen() }
+            }
+            val logs = mutableListOf<String>()
+            val flow = SkillLevelFlow(panel, logs::add)
+            kotlin.test.assertFailsWith<IllegalStateException> { flow.runAll(listOf(5, 5)) }
+            assertEquals(step, flow.results.single().step)
+            assertEquals(SlotStop.Error, flow.results.single().stop)
+            assertTrue(logs.any { it.startsWith("stop slot=1 step=${step.token} reason=Error") })
+            assertTrue(logs.any { it.startsWith("summary slot=1 step=${step.token}") })
+        }
+    }
+
+    @Test fun `manual stop during skip retains the enhanced slot and writes its summary`() {
+        val base = FakePanel(mutableListOf(3))
+        val panel = object : SkillLevelPanel by base {
+            override fun skipToScreen(): Boolean = throw io.github.lib_automata.ScriptAbortException()
+        }
+        val logs = mutableListOf<String>()
+        val flow = SkillLevelFlow(panel, logs::add)
+        kotlin.test.assertFailsWith<io.github.lib_automata.ScriptAbortException> { flow.runAll(listOf(4)) }
+        assertEquals(SlotResult(0,4,3,4,SlotStop.Aborted,SkillLevelStep.Skip),flow.results.single())
+        assertTrue(logs.any { it.startsWith("stop slot=1 step=skip reason=Aborted") })
+        assertTrue(logs.last().startsWith("summary slot=1 step=skip"))
+    }
+
+    @Test fun `cancel failure and skip failure carry distinct steps with the same stuck safety stop`() {
+        val cancel = SkillLevelFlow(FakePanel(mutableListOf(3), cancelCloses=false)).runAll(listOf(3)).single()
+        val skip = SkillLevelFlow(FakePanel(mutableListOf(3), skipReturns=false)).runAll(listOf(4)).single()
+        assertEquals(SlotStop.Stuck,cancel.stop)
+        assertEquals(SkillLevelStep.Confirm,cancel.step)
+        assertEquals(SlotStop.Stuck,skip.stop)
+        assertEquals(SkillLevelStep.Skip,skip.step)
     }
 
 }

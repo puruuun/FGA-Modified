@@ -791,4 +791,12 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="skill_level_stop_no_increase">level did not go up, stopped</string>
     <string name="skill_level_stop_dialog">unexpected dialog, canceled</string>
     <string name="skill_level_stop_stuck">the game did not return to the enhancement screen. Check it: an enhancement may have happened.</string>
+    <string name="skill_level_step_select">Select</string>
+    <string name="skill_level_step_enhance">Enhance</string>
+    <string name="skill_level_step_dialog">Dialog</string>
+    <string name="skill_level_step_ocr">OCR</string>
+    <string name="skill_level_step_confirm">Confirm / cancel</string>
+    <string name="skill_level_step_skip">Skip / return</string>
+    <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_error">Unexpected error. Check whether an enhancement happened.</string>
 </resources>

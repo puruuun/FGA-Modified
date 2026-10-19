@@ -27,6 +27,7 @@ class SkillLevelDevice(
         // Last look before the one button that is also the unlock button.
         check(!screens.unlockButtonVisible() && screens.band() != SkillLevelBand.Unlock) { "refusing to press an unlock button" }
         locations.enhancementClick.click()
+        SkillLevelTiming.AFTER_ENHANCE.wait()
     }
 
     override fun awaitDialog() = poll(SkillLevelTiming.DIALOG_POLLS) { screens.dialogVisible() }

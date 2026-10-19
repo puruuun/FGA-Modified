@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDevice
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDigits
 import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
+import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
 import io.github.fate_grand_automata.scripts.modules.SlotResult
@@ -42,7 +43,7 @@ abstract class SkillLevelScript(
         class Unexpected(val exception: Exception, val results: List<SlotResult>) : ExitReason()
     }
 
-    class ExitException(val reason: ExitReason, val mode: SkillLevelMode) : Exception()
+    class ExitException(val reason: ExitReason, val mode: SkillLevelMode, val step: SkillLevelStep = SkillLevelStep.Select) : Exception()
 
     private var flow: SkillLevelFlow? = null
 
@@ -50,16 +51,16 @@ abstract class SkillLevelScript(
 
     override fun script(): Nothing {
         try {
-            throw ExitException(start(), mode)
+            throw ExitException(start(), mode, flow?.activeStep ?: SkillLevelStep.Select)
         } catch (e: ExitException) {
-            log("stop reason=${e.reason::class.simpleName}")
+            log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${e.step.token} reason=${e.reason::class.simpleName}")
             throw e
         } catch (e: ScriptAbortException) {
-            log("stop reason=Abort")
-            throw ExitException(ExitReason.Abort(flow?.results.orEmpty()), mode)
+            log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${flow?.activeStep?.token ?: "select"} reason=Abort")
+            throw ExitException(ExitReason.Abort(flow?.results.orEmpty()), mode, flow?.activeStep ?: SkillLevelStep.Select)
         } catch (e: Exception) {
-            log("stop reason=Unexpected ${e.message}")
-            throw ExitException(ExitReason.Unexpected(e, flow?.results.orEmpty()), mode)
+            log("stop slot=${flow?.activeSlot?.plus(1) ?: 0} step=${flow?.activeStep?.token ?: "select"} reason=Unexpected error=${e.message}")
+            throw ExitException(ExitReason.Unexpected(e, flow?.results.orEmpty()), mode, flow?.activeStep ?: SkillLevelStep.Select)
         }
     }
 
