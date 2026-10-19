@@ -19,12 +19,8 @@ REPO_BLOB = "https://github.com/puruuun/FGA-Modified/blob/main/"
 GETTING_STARTED = [
     "scripts/Modified-Features-KR.md",
     "scripts/Original-FGA-Import-KR.md",
-    "Running-on-Emulators.md",
-    "Troubleshooting.md",
-    "Game-Area-detection.md",
-    "Fine-tune.md",
 ]
-# Research notes: KR pages whose name contains one of these words go to "참고 자료" instead of the feature list.
+# Research notes: KR pages whose name contains one of these words are left out of the menu.
 REFERENCE_WORDS = ("Study", "Research")
 
 _LINK = re.compile(r"(\]\()([^)\s]+)((?:\s+\"[^\"]*\")?\))")
@@ -63,15 +59,15 @@ def _build_nav(docs: Path) -> list:
 
     getting_started = [entry(p) for p in GETTING_STARTED if p in pages]
     korean = [p for p in pages if p not in used and p.startswith("scripts/") and p.endswith("-KR.md")]
-    reference = [entry(p) for p in korean if any(w in p for w in REFERENCE_WORDS)]
+    used.update(p for p in korean if any(w in p for w in REFERENCE_WORDS))
     features = sorted((entry(p) for p in korean if p not in used), key=lambda e: next(iter(e)))
     releases = [entry(p) for p in sorted((p for p in pages if p.startswith("releases/")), key=_version_key, reverse=True)]
     japanese = [entry(p) for p in pages if p not in used and p.endswith("-JA.md")]
-    english = [entry(p) for p in pages if p not in used]
+    # Original FGA (English) pages and research notes stay reachable by links but are not in the menu or search.
 
     nav = [{"홈": "index.md"}]
     for name, items in (("시작하기", getting_started), ("기능 설명서", features), ("릴리스 노트", releases),
-                        ("참고 자료", reference), ("日本語", japanese), ("English (원본 FGA)", english)):
+                        ("日本語", japanese)):
         if items:
             nav.append({name: items})
     return nav
@@ -84,10 +80,19 @@ def on_config(config):
     global _docs
     _docs = Path(config["docs_dir"])
     config["nav"] = _build_nav(_docs)
+    _in_nav.clear()
+    _collect(config["nav"])
     return config
 
 
 _pages: dict = {}
+_in_nav: set = set()
+
+
+def _collect(items):
+    for item in items:
+        for value in item.values():
+            _collect(value) if isinstance(value, list) else _in_nav.add(value)
 
 
 def on_files(files, config):
@@ -128,5 +133,7 @@ def _relative(dest: PurePosixPath, page_dir: PurePosixPath) -> str:
 
 def on_page_markdown(markdown, page, config, files):
     uri = page.file.src_uri
+    if uri not in _in_nav:
+        page.meta.setdefault("search", {})["exclude"] = True
     markdown = _LINK.sub(lambda m: m.group(1) + _rewrite(m.group(2), uri) + m.group(3), markdown)
     return _IMG_SRC.sub(lambda m: m.group(1) + _rewrite(m.group(2), uri) + m.group(3), markdown)
