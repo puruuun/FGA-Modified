@@ -105,4 +105,53 @@ class FpSellProgressTest {
         assertEquals(0,p.rejected)
         assertEquals(40,p.pages)
     }
+
+    @Test fun `scroll mismatch never infers a rejection and a later unselected normal tile is still tapped`() {
+        val p=FpSellProgress(284)
+        p.beginPage(listOf(364,648,932),0)
+        p.tapped(0,932,FpSellPolicy.Lock.Unlocked)
+        p.finishPage()
+        // Real scroll 470 instead of the requested 560: the tile now at 746 maps to a different list row.
+        p.beginPage(listOf(462,746,1030),560)
+        assertNull(p.seen(0,746,tile.copy(lock=FpSellPolicy.Lock.Unlocked)))
+        p.tapped(0,746,FpSellPolicy.Lock.Unlocked)
+        assertEquals(0,p.rejected)
+        assertEquals(2,p.selected)
+        // Even an identity collision with the earlier tap is not a rejection across a scroll.
+        p.finishPage()
+        p.beginPage(listOf(364,648,932),560)
+        assertNull(p.seen(0,932,tile.copy(lock=FpSellPolicy.Lock.Unlocked)))
+        assertEquals(0,p.rejected)
+    }
+
+    @Test fun `stationary end with a rejected tile never re-taps it`() {
+        val p=FpSellProgress(284)
+        p.beginPage(listOf(578,862,1146),0)
+        p.tapped(2,1146,FpSellPolicy.Lock.Unlocked)
+        p.finishPage()
+        p.beginPage(listOf(574,858,1142),560)
+        assertEquals("tap-rejected",p.seen(2,1142,tile))
+        p.finishPage()
+        p.beginPage(listOf(578,862,1146),560)
+        assertEquals("skip:tap-rejected",p.seen(2,1146,tile))
+        assertEquals("stationary-rows",p.finishPage())
+        assertEquals(FpSellPolicy.Summary(0,0),p.summary())
+        assertEquals(1,p.taps)
+        assertEquals(1,p.rejected)
+    }
+
+    @Test fun `a locked tile is never tap-rejected`() {
+        val p=FpSellProgress(284)
+        p.beginPage(listOf(578,862,1146),0)
+        p.tapped(2,1146,FpSellPolicy.Lock.Unlocked)
+        p.finishPage()
+        p.beginPage(listOf(574,858,1142),560)
+        val locked=FpSellPolicy.Cell(true,FpSellPolicy.Lock.Locked,false)
+        assertNotEquals("tap-rejected",p.seen(2,1142,locked))
+        assertEquals(0,p.rejected)
+        assertEquals(1,p.selected)
+        val excluded=FpSellPolicy.Cell(true,FpSellPolicy.Lock.Unlocked,false,excluded=true)
+        assertNotEquals("tap-rejected",p.seen(2,1142,excluded))
+        assertEquals(0,p.rejected)
+    }
 }

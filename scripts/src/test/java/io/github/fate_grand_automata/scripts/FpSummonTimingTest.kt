@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.seconds
 class FpSummonTimingTest {
     private class Done : RuntimeException()
 
-    @Test fun `summon flow applies the slower constants only with auto sell enabled`() {
+    @Test fun `summon loop keeps the original FGA waits with auto sell on and off`() {
         for (enabled in listOf(true,false)) {
             val api=mockk<IFgoAutomataApi>(relaxed=true)
             every { api.prefs.fpAutoSell } returns enabled
@@ -35,7 +35,7 @@ class FpSummonTimingTest {
             val reader=mockk<FpSellReader>(relaxed=true)
             every { reader.servantFullWarning() } returns false
             val waits=mutableListOf<Duration>()
-            val animation=if(enabled) 3.5.seconds else 3.seconds
+            val animation=3.seconds
             for (delay in listOf(0.3.seconds,0.5.seconds,0.8.seconds,1.seconds,3.seconds,3.5.seconds)) {
                 every { with(api) { delay.wait(any()) } } answers {
                     waits.add(delay)
@@ -45,8 +45,7 @@ class FpSummonTimingTest {
             assertFailsWith<Done> {
                 AutoFriendGacha(mockk(),api,mockk(relaxed=true),mockk(relaxed=true),reader).script()
             }
-            val expected=if(enabled) listOf(0.8.seconds,1.seconds,0.8.seconds,3.5.seconds)
-                else listOf(0.3.seconds,0.5.seconds,0.3.seconds,3.seconds)
+            val expected=listOf(0.3.seconds,0.5.seconds,0.3.seconds,3.seconds)
             assertEquals(expected,waits)
             verify(exactly=4) { with(api) { any<Duration>().wait(any()) } }
         }

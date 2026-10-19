@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.lib_automata.*
 import io.mockk.*
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
 
 class FpBannerReturnTest {
     private class Run(val matchAfter: Int, val fpVisible: Boolean = true) {
@@ -160,5 +161,28 @@ class FpBannerReturnTest {
         run.banner.summonAgain()
         verify(exactly=1) { with(run.api) { FpSellTiming.AFTER_ARROW.wait() } }
         verifyOrder { with(run.api) { summon.click(1);FpSellTiming.AFTER_ACTION.wait() } }
+    }
+
+    @Test fun `summon screen load waits five seconds then polls up to fifteen seconds and never re-taps`() {
+        val run=Run(0)
+        val icon=run.loc.summonMenu
+        val arrow=run.loc.leftArrowRegion
+        var polls=0
+        every { with(run.api) { arrow.exists(any(),any(),any()) } } answers { ++polls > 40 }
+        run.banner.restore()
+        verify(exactly=1) { with(run.api) { icon.click(1) } }
+        verify(exactly=1) { with(run.api) { FpSellTiming.SUMMON_LOAD_WAIT.wait() } }
+        assertEquals(5.seconds,FpSellTiming.SUMMON_LOAD_WAIT)
+        assertEquals(15.seconds,FpSellTiming.FIND_POLL*FpSellTiming.SUMMON_LOAD_POLLS)
+    }
+
+    @Test fun `summon screen missing after the load window stops with the summon reason without a second tap`() {
+        val run=Run(0)
+        val icon=run.loc.summonMenu
+        every { with(run.api) { run.loc.leftArrowRegion.exists(any(),any(),any()) } } returns false
+        assertSame(AutoFriendGacha.ExitReason.SummonMenuFailed,
+            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
+        verify(exactly=1) { with(run.api) { icon.click(1) } }
+        verify(exactly=1) { with(run.api) { FpSellTiming.SUMMON_LOAD_WAIT.wait() } }
     }
 }

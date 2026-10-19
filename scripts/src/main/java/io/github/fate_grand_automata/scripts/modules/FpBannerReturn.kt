@@ -54,9 +54,12 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
         buttons.menu(loc.menu, Images.FpSellMenu,
             { buttons.visible(loc.summonMenu, Images.FpSellSummonMenu) },
             { stop(ExitReason.WorkshopMenuFailed) })
-        buttons.menu(loc.summonMenu, Images.FpSellSummonMenu,
-            { buttons.visible(loc.leftArrowRegion, Images.FpSellLeftArrow) },
-            { stop(ExitReason.SummonMenuFailed) })
+        // D-40: the summon screen loads behind a long black screen. Tap once, wait, poll, never re-tap.
+        buttons.click(loc.summonMenu, Images.FpSellSummonMenu) { stop(ExitReason.SummonMenuFailed) }
+        FpSellTiming.SUMMON_LOAD_WAIT.wait()
+        if (!buttons.awaitSignal(FpSellTiming.SUMMON_LOAD_POLLS) {
+                buttons.visible(loc.leftArrowRegion, Images.FpSellLeftArrow)
+            }) stop(ExitReason.SummonMenuFailed)
         if (!search({ useSameSnapIn { matches(savedTitle) } }, {
             buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop() }
             FpSellTiming.AFTER_ARROW.wait()

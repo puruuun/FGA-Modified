@@ -105,9 +105,8 @@ class AutoFriendGacha @Inject constructor(
             { isFirstSummon() } to {
                 if (prefs.fpAutoSell) banner.remember()
                 if (returning) resumeSummon() else {
-                    // Initial summon behavior is unchanged when auto-sell is off.
                     locations.fp.first10SummonClick.click()
-                    FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
+                    FpSellTiming.SUMMON_CONFIRM.wait()
                     locations.fp.okClick.click()
                     initialScreen = true
                 }
@@ -116,7 +115,7 @@ class AutoFriendGacha @Inject constructor(
                 if (prefs.fpAutoSell) banner.remember()
                 if (returning) resumeSummon() else {
                     locations.fp.initialSummonClick.click()
-                    FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
+                    FpSellTiming.SUMMON_CONFIRM.wait()
                     locations.fp.initialSummonContinueClick.click()
                     initialScreen = true
                 }
@@ -145,7 +144,7 @@ class AutoFriendGacha @Inject constructor(
                 }
                 val action = actor ?: { if (!awaitingDryFull) locations.fp.skipRapidClick.click(15) }
                 action.invoke()
-                FpSellTiming.summonLoop(prefs.fpAutoSell).wait()
+                FpSellTiming.SUMMON_LOOP.wait()
             }
         } finally {
             if (saleStarted) autoSell.logFinalSummary()
@@ -186,9 +185,9 @@ class AutoFriendGacha @Inject constructor(
         countNext()
 
         locations.fp.continueSummonClick.click()
-        FpSellTiming.summonConfirm(prefs.fpAutoSell).wait()
+        FpSellTiming.SUMMON_CONFIRM.wait()
         locations.fp.okClick.click()
-        FpSellTiming.summonAnimation(prefs.fpAutoSell).wait()
+        FpSellTiming.SUMMON_ANIMATION.wait()
     }
 
     private fun isSummonButtonVisible() = !awaitingDryFull && findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)

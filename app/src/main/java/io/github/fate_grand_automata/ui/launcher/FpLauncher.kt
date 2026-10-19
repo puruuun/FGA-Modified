@@ -85,9 +85,8 @@ fun fpLauncher(
         Text(stringResource(R.string.fp_sell_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
         fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it }
-        Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.fp_sell_filter_hint), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
         fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
     }
 

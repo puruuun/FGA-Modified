@@ -8,9 +8,14 @@ object FpSellTiming {
     val BUTTON_SETTLE = 1.seconds
     val AFTER_ACTION = 1.seconds // previously 0.5s
     val AFTER_ARROW = 1.2.seconds // previously 0.7s
-    val SUMMON_CONFIRM = 0.8.seconds // previously 0.3s
-    val SUMMON_ANIMATION = 3.5.seconds // previously 3s
-    val SUMMON_LOOP = 1.seconds // previously 0.5s
+    // D-42: the original FGA FP summon loop keeps its original waits.
+    val SUMMON_CONFIRM = 0.3.seconds
+    val SUMMON_ANIMATION = 3.seconds
+    val SUMMON_LOOP = 0.5.seconds
+
+    // D-40: fixed wait after tapping the summon icon, then poll for the summon screen (no re-tap).
+    val SUMMON_LOAD_WAIT = 5.seconds
+    const val SUMMON_LOAD_POLLS = 150 // 15s at FIND_POLL
 
     val SELECTION_SCROLL = 0.7.seconds // unchanged; no new delay is added between tile taps
     val SCREEN_POLL = 0.5.seconds // unchanged
@@ -18,12 +23,4 @@ object FpSellTiming {
     val FIND_POLL = 100.milliseconds // unchanged
     const val FIND_POLLS = 20 // short 2s find retry after settling
     const val NEXT_SCREEN_POLLS = 30 // unchanged 3s navigation check
-
-    // Auto-sell off retains the original summon behavior.
-    val LEGACY_SUMMON_CONFIRM = 0.3.seconds
-    val LEGACY_SUMMON_ANIMATION = 3.seconds
-    val LEGACY_SUMMON_LOOP = 0.5.seconds
-    fun summonConfirm(autoSell: Boolean) = if (autoSell) SUMMON_CONFIRM else LEGACY_SUMMON_CONFIRM
-    fun summonAnimation(autoSell: Boolean) = if (autoSell) SUMMON_ANIMATION else LEGACY_SUMMON_ANIMATION
-    fun summonLoop(autoSell: Boolean) = if (autoSell) SUMMON_LOOP else LEGACY_SUMMON_LOOP
 }
