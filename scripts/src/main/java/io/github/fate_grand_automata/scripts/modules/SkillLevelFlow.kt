@@ -119,8 +119,8 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             val reading = panel.readLevels()
             val current = reading.current
             if (current == null || current !in 1..9) return finish(closeDialog(SlotStop.Unreadable))
-            // The next level is a second opinion on the OCR; when it was read it must agree.
-            if (reading.next != null && reading.next != current + 1) return finish(closeDialog(SlotStop.Unreadable))
+            // Both values must be unambiguous, and next must be exactly current + 1.
+            if (reading.next != current + 1) return finish(closeDialog(SlotStop.Unreadable))
             if (start == null) start = current
             known = current
             if (previous != null && current != previous + 1) return finish(closeDialog(SlotStop.NoIncrease))

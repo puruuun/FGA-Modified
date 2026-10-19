@@ -41,6 +41,20 @@ RECIPES = [
     # Result screen prompt (touch the screen), the same for skill and append.
     ("Jp", "skill_level_result.png", "Jp", "05.png", 413, 658, 455, 36),
     ("Kr", "skill_level_result.png", "Kr", "11.png", 475, 658, 324, 30),
+    # Isolated digit candidates for the conservative nine fallback (owner frames only).
+    ("En", "skill_level_digit_0.png", "Jp", "31.png", 794, 312, 34, 48),
+    ("En", "skill_level_digit_1.png", "Jp", "18.png", 540, 268, 18, 41),
+    ("En", "skill_level_digit_2.png", "Jp", "18.png", 755, 262, 34, 48),
+    ("En", "skill_level_digit_3.png", "Kr", "16.png", 538, 318, 29, 41),
+    ("En", "skill_level_digit_4.png", "Jp", "04.png", 539, 318, 29, 41),
+    ("En", "skill_level_digit_5.png", "Jp", "25.png", 539, 319, 28, 41),
+    ("En", "skill_level_digit_6.png", "Kr", "26.png", 539, 319, 28, 41),
+    ("En", "skill_level_digit_7.png", "Kr", "28.png", 539, 319, 28, 41),
+    ("En", "skill_level_digit_8.png", "Kr", "27.png", 539, 319, 28, 41),
+    ("En", "skill_level_digit_9.png", "Jp", "31.png", 538, 319, 29, 41),
+    ("En", "skill_level_digit_9_kr.png", "Kr", "29.png", 538, 319, 29, 41),
+    ("En", "skill_level_digit_9_next.png", "Jp", "32.png", 754, 312, 34, 49),
+
 ]
 
 

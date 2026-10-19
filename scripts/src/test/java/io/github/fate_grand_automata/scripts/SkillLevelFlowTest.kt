@@ -234,4 +234,49 @@ class SkillLevelFlowTest {
         assertFalse(SkillLevelScreens.isShortageColor(MeanColor(22.0, 67.0, 76.0)))
         assertFalse(SkillLevelScreens.isShortageColor(null))
     }
+    @Test fun `nine to two digit ten confirms exactly once when the target is ten`() {
+        val panel = FakePanel(mutableListOf(9), read = { SkillLevelReading(9, 10) })
+        val result = run(panel, 10).single()
+        assertEquals(1, panel.confirms)
+        assertEquals(0, panel.cancels)
+        assertEquals(10, panel.levels[0])
+        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Reached), result)
+    }
+
+    @Test fun `nine to two digit ten cancels without confirming when the target is nine`() {
+        val panel = FakePanel(mutableListOf(9), read = { SkillLevelReading(9, 10) })
+        val result = run(panel, 9).single()
+        assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
+        assertEquals(9, panel.levels[0])
+        assertEquals(SlotResult(0, 9, 9, 9, SlotStop.Reached), result)
+    }
+
+    @Test fun `an unread next level cancels even when current is unambiguous`() {
+        val panel = FakePanel(mutableListOf(9), read = { SkillLevelReading(9, null) })
+        val result = run(panel, 10).single()
+        assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
+        assertEquals(9, panel.levels[0])
+        assertEquals(SlotStop.Unreadable, result.stop)
+    }
+
+    @Test fun `template fallback never replaces confident invalid or conflicting primary digits`() {
+        assertTrue(SkillLevelDigits.needsTemplateFallback(listOf(OcrText("", 0), OcrText("9", 69))))
+        assertFalse(SkillLevelDigits.needsTemplateFallback(listOf(OcrText("9", 95))))
+        assertFalse(SkillLevelDigits.needsTemplateFallback(listOf(OcrText("0", 95))))
+        assertFalse(SkillLevelDigits.needsTemplateFallback(listOf(OcrText("123", 95))))
+        assertFalse(SkillLevelDigits.needsTemplateFallback(listOf(OcrText("9", 95), OcrText("6", 95))))
+        assertNull(SkillLevelDigits.consensus(listOf(OcrText("9", 95), OcrText("6", 95)), 1..9))
+    }
+
+    @Test fun `nine template fallback requires a clear match and margin against competing digits`() {
+        assertEquals(9, SkillLevelDigits.templateNine(listOf(9 to 0.99, 8 to 0.75, 0 to 0.8)))
+        assertNull(SkillLevelDigits.templateNine(listOf(9 to 0.95, 8 to 0.7)))
+        assertNull(SkillLevelDigits.templateNine(listOf(9 to 0.99, 8 to 0.92)))
+        assertNull(SkillLevelDigits.templateNine(listOf(8 to 1.0, 9 to 0.98)))
+        assertNull(SkillLevelDigits.templateNine(listOf(9 to 1.0)))
+        assertNull(SkillLevelDigits.templateNine(listOf(9 to Double.NaN, 8 to 0.1)))
+    }
+
 }

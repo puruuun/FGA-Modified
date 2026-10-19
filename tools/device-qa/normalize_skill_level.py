@@ -15,7 +15,7 @@ GAME_BOX = (0, 48, 1950, 1145)
 
 def main() -> None:
     for path in sorted(SRC.glob("*.webp")):
-        number, suffix = path.stem.split("-")
+        number, suffix, *_ = path.stem.split("-")
         server = {"jp": "Jp", "kr": "Kr"}[suffix]
         out = ROOT / f"docs/reference-images/{server}/skill-level/{number}.png"
         out.parent.mkdir(parents=True, exist_ok=True)
