@@ -13,11 +13,13 @@ import io.github.fate_grand_automata.scripts.prefs.IServantEnhancementPreference
 import io.github.fate_grand_automata.scripts.prefs.ISupportPreferencesCommon
 import io.github.lib_automata.PlatformPrefs
 import javax.inject.Inject
+import javax.inject.Named
 import kotlin.time.Duration.Companion.milliseconds
 
 class PreferencesImpl @Inject constructor(
     val prefs: PrefsCore,
     private val completedRunsHolder: CompletedRunsHolder,
+    @Named("fpSellStableBuild") override val fpSellStableBuild: Boolean = false,
 ) : IPreferences {
     override var scriptMode by prefs.scriptMode
 

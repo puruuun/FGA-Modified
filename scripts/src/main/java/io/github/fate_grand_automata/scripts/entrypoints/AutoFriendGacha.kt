@@ -32,6 +32,7 @@ class AutoFriendGacha @Inject constructor(
         object InventoryFullNothingToSell : ExitReason()
         /** The full warning is not for the servant slots (Craft Essence, command code or an unknown dialog). */
         object InventoryFullNotServant : ExitReason()
+        class ResummonConfirmFailed(val summary: FpSellPolicy.Summary) : ExitReason()
         sealed class BannerReturnStopped(val label: String) : ExitReason()
         object WorkshopNotReached : BannerReturnStopped("workshop")
         object WorkshopMenuFailed : BannerReturnStopped("menu")
@@ -160,21 +161,25 @@ class AutoFriendGacha @Inject constructor(
         initialScreen = true
         val previous = checkNotNull(previousSale)
         if (previous.dryRun) {
-            // The full-box warning appears without spending FP. Never acknowledge another summon dialog in dry run.
+            // Preserve the dry-run cycle: the full box must not spend FP.
             awaitingDryFull = true
             return
         }
-        // Real mode preserves the ordinary summon confirmation, but matches the button before tapping it.
-        var ok: io.github.lib_automata.Match? = null
         FpSellTiming.BUTTON_SETTLE.wait()
+        var fullWarning = false
+        var confirmed = false
         val reached = returnButtons.awaitSignal(FpSellTiming.FIND_POLLS) {
-            if (isInventoryFull() || reader.servantFullWarning() || isSummonButtonVisible()) true else {
-                ok = reader.loc.summonOk.find(images[Images.Ok], similarity = 0.9)
-                ok != null
-            }
+            // A full warning always wins, even if another dialog signal also matches.
+            fullWarning = isInventoryFull() || reader.servantFullWarning()
+            confirmed = !fullWarning && reader.resummonConfirmation()
+            fullWarning || confirmed
         }
-        if (!reached) throw ExitException(ExitReason.SellFlowFailed(false, previous.summary.total, previous.summary.unknownLock))
-        ok?.region?.click()
+        if (fullWarning) return // The normal full-warning handler can sell again.
+        if (!reached || !confirmed) {
+            messages.log(ScriptLog.FpSell("stop step=resummon reason=confirmation selected=${previous.summary.total}"))
+            throw ExitException(ExitReason.ResummonConfirmFailed(previous.summary))
+        }
+        locations.fp.okClick.click()
     }
 
     private fun rollFPAgain() {

@@ -54,6 +54,7 @@ class FpAutoSell @Inject constructor(
         step = SellStep.Entry
         dryRun = options.dryRun
         progress = FpSellProgress(loc.rowPitch)
+        if (!options.allowed) stop("real sale unavailable for this server or missing lock template")
         return selectAndFinish(options)
     }
 
@@ -61,6 +62,7 @@ class FpAutoSell @Inject constructor(
         val tracker = checkNotNull(progress)
         log("start dryRun=$dryRun")
         click(loc.fullSell, Images.FpSellSell)
+        FpSellTiming.SELL_SCREEN_LOAD.wait()
         awaitScreen("sell heading") { reader.onSellHeading() }
         // The sell screen may open on the Craft Essence tab. Only the servant tab is read (D-17).
         if (!useSameSnapIn { reader.onServantTab() }) {
@@ -152,6 +154,7 @@ class FpAutoSell @Inject constructor(
             return
         }
         click(loc.convert, Images.FpSellConvert)
+        FpSellTiming.AFTER_CONVERT_EXTRA.wait()
         awaitScreen("done") { loc.done.exists(images[Images.FpSellDone], similarity = 0.9) }
         click(loc.doneClose, Images.FpSellClose)
         awaitScreen("sell heading after close") { reader.onSellHeading() }

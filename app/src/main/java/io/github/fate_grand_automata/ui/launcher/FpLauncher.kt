@@ -83,11 +83,15 @@ fun fpLauncher(
         }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Text(stringResource(R.string.fp_sell_title), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
+        if (!prefs.fpSellStableBuild) {
+            Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
+        }
         fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it }
         Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-        fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
+        if (!prefs.fpSellStableBuild) {
+            fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
+        }
     }
 
     // Keep the sale options with the FP launch controls.

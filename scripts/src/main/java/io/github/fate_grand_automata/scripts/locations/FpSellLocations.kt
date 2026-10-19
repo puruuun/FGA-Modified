@@ -29,7 +29,7 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val leftArrowRegion = Region(-1280, 600, 150, 250).xFromCenter()
     val summonButton = Region(250, 940, 500, 180).xFromCenter()
     val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
-    val summonOk = Region(100, 1000, 500, 240).xFromCenter()
+    val resummonConfirm = Region(-320, 1170, 640, 100).xFromCenter()
     val shop = Region(550, 0, 710, 160).xFromCenter()
     val menu = Region(890, 1210, 380, 200).xFromCenter()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */

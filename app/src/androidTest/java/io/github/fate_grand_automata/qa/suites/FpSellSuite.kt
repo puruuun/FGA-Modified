@@ -23,6 +23,7 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
             .put("candidateReal", FpSellPolicy.select(value, FpSellPolicy.Options(false)))
     }
     val actual = when (case.getString("view")) {
+        "resummonConfirm" -> JSONObject().put("confirmation", reader.resummonConfirmation())
         "closeTransition" -> useSameSnapIn {
             val buttons = FpSellButtons(this)
             JSONObject().put("close", buttons.visible(reader.loc.screenClose, Images.FpSellScreenClose))

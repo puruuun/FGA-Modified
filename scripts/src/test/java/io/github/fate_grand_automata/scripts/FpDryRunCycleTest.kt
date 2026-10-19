@@ -61,7 +61,7 @@ class FpDryRunCycleTest {
         every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
         val full=Region(10,10,10,10)
         val summon=Region(20,20,10,10)
-        val ok=Region(30,30,10,10)
+        val ok=Location(30,30)
         every { api.locations.inventoryFullRegion } returns full
         every { api.locations.fp.summonCheck } returns summon
         var stage=0
@@ -71,10 +71,8 @@ class FpDryRunCycleTest {
         }
         val reader=mockk<FpSellReader>(relaxed=true)
         every { reader.servantFullWarning() } answers { stage==0 }
-        every { reader.loc.summonOk } returns ok
-        every { with(api) { ok.find(any<Pattern>(),any()) } } answers {
-            if(stage==2) Match(ok,1.0) else null
-        }
+        every { api.locations.fp.okClick } returns ok
+        every { reader.resummonConfirmation() } answers { stage==2 }
         every { with(api) { ok.click(any()) } } answers { stage=3 }
         val sale=mockk<FpAutoSell>(relaxed=true)
         every { sale.run() } returns FpAutoSell.Result(FpSellPolicy.Summary(1,0),false)

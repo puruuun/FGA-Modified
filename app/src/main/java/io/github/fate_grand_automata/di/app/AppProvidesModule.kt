@@ -20,10 +20,16 @@ import dagger.hilt.components.SingletonComponent
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import javax.inject.Singleton
+import javax.inject.Named
+import io.github.fate_grand_automata.BuildConfig
 
 @Module
 @InstallIn(SingletonComponent::class)
 class AppProvidesModule {
+    @Provides
+    @Named("fpSellStableBuild")
+    fun provideFpSellStableBuild(): Boolean = BuildConfig.BUILD_TYPE == "ci" || BuildConfig.BUILD_TYPE == "release"
+
     @Provides
     fun provideMediaProjectionManager(@ApplicationContext context: Context) =
         context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager

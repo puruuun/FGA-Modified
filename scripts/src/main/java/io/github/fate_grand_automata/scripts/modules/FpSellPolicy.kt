@@ -7,11 +7,11 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 object FpSellPolicy {
     enum class Lock { Locked, Unlocked, Unknown }
     data class Cell(val present: Boolean, val lock: Lock, val selected: Boolean?, val excluded: Boolean = false)
-    data class Options(val dryRun: Boolean)
+    data class Options(val dryRun: Boolean, val allowed: Boolean = true)
     data class Summary(val total: Int, val unknownLock: Int)
 
     fun select(cell: Cell, options: Options): Boolean =
-        cell.present && !cell.excluded && cell.lock != Lock.Locked && cell.selected == false &&
+        options.allowed && cell.present && !cell.excluded && cell.lock != Lock.Locked && cell.selected == false &&
             (options.dryRun || cell.lock == Lock.Unlocked)
 
     fun decision(cell: Cell, options: Options): String = when {
@@ -32,8 +32,12 @@ object FpSellPolicy {
     const val DEFAULT_DRY_RUN = true
     fun realSellAllowed(server: GameServer, hasLockTemplate: Boolean): Boolean =
         REAL_SELL_VALIDATED && hasLockTemplate && (server is GameServer.Kr || server is GameServer.Jp)
-    fun options(prefs: IPreferences, hasLockTemplate: Boolean) =
-        Options(prefs.fpSellDryRun || !realSellAllowed(prefs.gameServer, hasLockTemplate))
+    fun options(prefs: IPreferences, hasLockTemplate: Boolean): Options {
+        val realAllowed = realSellAllowed(prefs.gameServer, hasLockTemplate)
+        // Stable ignores the stored switch and cannot fall back to dry run (D-47).
+        return if (prefs.fpSellStableBuild) Options(dryRun = false, allowed = realAllowed)
+            else Options(prefs.fpSellDryRun || !realAllowed)
+    }
 
     /** Distinct fully visible grid rows, tolerating the few pixels of label antialiasing within one row (1440p). */
     fun evaluatedRows(tiles: List<FpSellReader.PageTile>): List<Int> = tiles.filter { it.skip == null }

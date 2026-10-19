@@ -38,7 +38,7 @@ class FpAutoSellTest {
 
     @Test fun `dry run is on by default and real sale needs it turned off explicitly`() {
         assertTrue(FpSellPolicy.DEFAULT_DRY_RUN)
-        val prefs = mockk<IPreferences>()
+        val prefs = mockk<IPreferences>(relaxed = true)
         every { prefs.gameServer } returns GameServer.Kr
         every { prefs.fpSellDryRun } returns FpSellPolicy.DEFAULT_DRY_RUN
         assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = true).dryRun, "default keeps dry run")
@@ -47,7 +47,7 @@ class FpAutoSellTest {
     }
 
     @Test fun `dry run is forced whenever real sale is not allowed`() {
-        val prefs = mockk<IPreferences>()
+        val prefs = mockk<IPreferences>(relaxed = true)
         every { prefs.fpSellDryRun } returns false
         every { prefs.gameServer } returns GameServer.Kr
         assertTrue(FpSellPolicy.options(prefs, hasLockTemplate = false).dryRun, "no lock template")
@@ -392,7 +392,7 @@ class FpAutoSellTest {
         }
         assertEquals(2,run.result().summary.total)
         assertEquals(listOf(0.7.seconds,0.7.seconds),selectionWaits)
-        verify(exactly=8) { with(run.api) { any<Duration>().wait(any()) } }
+        verify(exactly=9) { with(run.api) { any<Duration>().wait(any()) } }
         verify(exactly=1) { with(run.api) { run.card.click(1);second.click(1) } }
         verify(exactly=6) { with(run.api) { 1.seconds.wait(any()) } }
     }
@@ -412,4 +412,31 @@ class FpAutoSellTest {
             1.seconds.wait();size.click(1);1.seconds.wait()
         } }
     }
+    @Test fun `D45 waits after entering sale and adds convert delay only in real mode`() {
+        for (dry in listOf(true, false)) {
+            val run = SellRun(dry = dry, lock = Lock.Unlocked)
+            assertEquals(2.seconds, FpSellTiming.SELL_SCREEN_LOAD)
+            assertEquals(0.3.seconds, FpSellTiming.AFTER_CONVERT_EXTRA)
+            run.result()
+            verifyOrder {
+                with(run.api) { run.sell.click(1); FpSellTiming.SELL_SCREEN_LOAD.wait() }
+                run.reader.onSellHeading()
+            }
+            verify(exactly = if (dry) 0 else 1) { with(run.api) { FpSellTiming.AFTER_CONVERT_EXTRA.wait() } }
+            if (!dry) verifyOrder { with(run.api) {
+                run.convert.click(1); FpSellTiming.AFTER_ACTION.wait(); FpSellTiming.AFTER_CONVERT_EXTRA.wait(); run.close.click(1)
+            } }
+        }
+    }
+
+    @Test fun `stable blocked by real sale gate stops before any gesture and never falls back to dry run`() {
+        val run = SellRun(dry = true)
+        every { run.api.prefs.fpSellStableBuild } returns true
+        every { run.reader.hasLockTemplate } returns false
+        val reason = assertIs<AutoFriendGacha.ExitReason.SellEntryFailed>(run.failure().reason)
+        assertFalse(reason.dryRun)
+        verify(exactly = 0) { with(run.api) { any<Region>().click(any()); any<Location>().click(any()) } }
+        verify(exactly = 0) { run.reader.readPage() }
+    }
+
 }

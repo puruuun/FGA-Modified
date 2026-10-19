@@ -39,6 +39,8 @@ interface IPreferences {
     var limitFP: Int
     var fpAutoSell: Boolean
     var fpSellDryRun: Boolean
+    /** Build policy supplied by the app; never persisted. */
+    val fpSellStableBuild: Boolean
 
     var receiveEmbersWhenGiftBoxFull: Boolean
 
