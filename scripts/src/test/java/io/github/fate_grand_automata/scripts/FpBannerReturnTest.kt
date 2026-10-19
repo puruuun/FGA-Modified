@@ -20,12 +20,13 @@ class FpBannerReturnTest {
         init {
             every { loc.bannerTitle } returns titleRegion
             every { loc.leftArrow } returns left
+            every { loc.leftArrowRegion } returns Region(10, 690, 20, 20)
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
             every { with(api) { titleRegion.getPattern(any()) } } returns saved
             every { with(api) { any<Region>().exists(any(), any(), any()) } } returns true
             every { with(api) { titleRegion.exists(saved, any(), any()) } } answers { titleReads++; presses >= matchAfter }
             every { with(api) { any<Region>().find(any<Pattern>(), any()) } } answers { Match(firstArg<Region>(), 1.0) }
-            every { with(api) { left.click(any()) } } answers { presses++ }
+            every { with(api) { Region(10, 690, 20, 20).click(any()) } } answers { presses++ }
             every { api.findImage(any(), Images.FriendSummon) } returns fpVisible
             banner = FpBannerReturn(api, loc)
             banner.remember()
@@ -62,5 +63,33 @@ class FpBannerReturnTest {
         verify(exactly = 1) { with(run.api) { run.titleRegion.getPattern(any()) } }
         run.banner.release()
         verify(exactly = 1) { run.saved.close() }
+    }
+    @Test fun `missing close or arrow template never taps a guessed button`() {
+        val run = Run(1)
+        every { with(run.api) { run.loc.leftArrowRegion.find(any<Pattern>(),any()) } } returns null
+        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
+        assertEquals(0,run.presses)
+    }
+
+    @Test fun `resummon requires the saved title FP label and an actual button match`() {
+        for ((step,fp) in listOf(1 to true,0 to false)) {
+            val run=Run(step,fp)
+            assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+                assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
+        }
+        val run=Run(0)
+        every { with(run.api) { any<Region>().find(any<Pattern>(),any()) } } returns null
+        assertSame(AutoFriendGacha.ExitReason.BannerNotFound,
+            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.summonAgain() }.reason)
+    }
+
+    @Test fun `resummon taps only the matched FP button`() {
+        val run=Run(0)
+        val button=Region(900,1000,120,50)
+        every { with(run.api) { any<Region>().find(any<Pattern>(),any()) } } returns Match(button,1.0)
+        run.banner.summonAgain()
+        verify(exactly=1) { with(run.api) { button.click(1) } }
+        assertEquals(0,run.presses)
     }
 }

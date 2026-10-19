@@ -16071,6 +16071,733 @@
       "expected": {
         "matches": false
       }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        78,
+        574,
+        116,
+        126
+      ],
+      "column": 0,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        211,
+        574,
+        116,
+        126
+      ],
+      "column": 1,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        344,
+        574,
+        116,
+        126
+      ],
+      "column": 2,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        478,
+        574,
+        116,
+        126
+      ],
+      "column": 3,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        611,
+        574,
+        116,
+        126
+      ],
+      "column": 4,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Unlocked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        744,
+        574,
+        116,
+        126
+      ],
+      "column": 5,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104653-291-end-c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "view": "cell",
+      "card720": [
+        878,
+        574,
+        116,
+        126
+      ],
+      "column": 6,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        78,
+        470,
+        116,
+        126
+      ],
+      "column": 0,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        211,
+        470,
+        116,
+        126
+      ],
+      "column": 1,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        344,
+        470,
+        116,
+        126
+      ],
+      "column": 2,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        478,
+        470,
+        116,
+        126
+      ],
+      "column": 3,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        611,
+        470,
+        116,
+        126
+      ],
+      "column": 4,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Unlocked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        744,
+        470,
+        116,
+        126
+      ],
+      "column": 5,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104713-290-end-c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "view": "cell",
+      "card720": [
+        878,
+        470,
+        116,
+        126
+      ],
+      "column": 6,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        78,
+        574,
+        116,
+        126
+      ],
+      "column": 0,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        211,
+        574,
+        116,
+        126
+      ],
+      "column": 1,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        344,
+        574,
+        116,
+        126
+      ],
+      "column": 2,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        478,
+        574,
+        116,
+        126
+      ],
+      "column": 3,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        611,
+        574,
+        116,
+        126
+      ],
+      "column": 4,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Unlocked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        744,
+        574,
+        116,
+        126
+      ],
+      "column": 5,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104833-291-end-c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "view": "cell",
+      "card720": [
+        878,
+        574,
+        116,
+        126
+      ],
+      "column": 6,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        78,
+        574,
+        116,
+        126
+      ],
+      "column": 0,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        211,
+        574,
+        116,
+        126
+      ],
+      "column": 1,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        344,
+        574,
+        116,
+        126
+      ],
+      "column": 2,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        478,
+        574,
+        116,
+        126
+      ],
+      "column": 3,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Locked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        611,
+        574,
+        116,
+        126
+      ],
+      "column": 4,
+      "checkGrid": true,
+      "expected": {
+        "present": true,
+        "candidate": false,
+        "candidateReal": false,
+        "excluded": true,
+        "lock": "Unlocked",
+        "selected": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        744,
+        574,
+        116,
+        126
+      ],
+      "column": 5,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "JP-beta7-20261019-104838-653-end-c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "view": "cell",
+      "card720": [
+        878,
+        574,
+        116,
+        126
+      ],
+      "column": 6,
+      "checkGrid": true,
+      "expected": {
+        "present": false,
+        "candidate": false,
+        "candidateReal": false,
+        "inGrid": true
+      }
+    },
+    {
+      "name": "Jp-beta7-final-cancel-left",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/30.png",
+      "view": "finalButtons",
+      "expected": {
+        "heading": true,
+        "cancelLeft": true,
+        "convertRight": true
+      }
+    },
+    {
+      "name": "Kr-beta7-final-cancel-left",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/21.png",
+      "view": "finalButtons",
+      "expected": {
+        "heading": true,
+        "cancelLeft": true,
+        "convertRight": true
+      }
+    },
+    {
+      "name": "Jp-beta7-resummon-35",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/35.png",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "Jp-beta7-resummon-36",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/36.png",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "Jp-beta7-resummon-41",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/fp-sell/41.png",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "Kr-beta7-resummon-15",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/15.png",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "Kr-beta7-resummon-26",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/26.png",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
     }
   ]
 }

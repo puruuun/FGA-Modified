@@ -749,9 +749,9 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
     <string name="fp_sell_title">Auto-sell</string>
-    <string name="fp_sell_safety">Locked, unselectable, Grand Servant and PARTY cards are never selected, even in dry run. Dry run only selects and never presses Confirm.</string>
+    <string name="fp_sell_safety">Locked, unselectable, temporary, Grand Servant and PARTY cards are never selected. Dry run cancels the final sale, returns to the FP banner and verifies the next full-box warning.</string>
     <string name="fp_auto_sell">Enable auto-sell</string>
-    <string name="fp_sell_dry_run">Dry-run (select only)</string>
+    <string name="fp_sell_dry_run">Dry-run (cancel final sale)</string>
     <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
     <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
     <string name="fp_sell_banner_missing">Original FP banner not found. Stopped before summoning.</string>
@@ -762,7 +762,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="fp_sell_stop_state">Dry-run: %1$s / Selected cards: %2$d\nLock state unknown: %3$d cells</string>
     <string name="fp_sell_state_on">on</string>
     <string name="fp_sell_state_off">off</string>
-    <string name="fp_sell_dry_done">Dry-run complete. Cards were selected only; nothing was sold.</string>
+    <string name="fp_sell_dry_done">Dry-run complete. Sell flow, banner return and re-summon verified. Cancel was pressed; nothing was sold.</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
     <string name="fp_sell_warning">Every visible unlocked servant, EXP card and Fou card on the sell screen will be selected and sold. Check the sell-screen filter before starting.</string>
     <string name="fp_sell_filter_hint">Example: 1★–3★, servants only. Locked, unselectable, Grand Servant and PARTY cards are never selected.</string>

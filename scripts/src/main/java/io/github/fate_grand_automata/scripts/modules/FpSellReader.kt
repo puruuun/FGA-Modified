@@ -61,6 +61,10 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
             .mapNotNull { template(it) }
     }
 
+    private val temporaryWords by lazy {
+        listOf(Images.FpSellTemporary, Images.FpSellTemporaryServant).mapNotNull { template(it) }
+    }
+
     fun onSellHeading() = loc.heading.exists(images[Images.FpSellHeading], similarity = 0.9)
     fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)
     fun onSellScreen() = onSellHeading() && onServantTab()
@@ -134,13 +138,14 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
             val area = loc.lock(card)
             val padlock = lockTemplate?.let { area.exists(it, similarity = EXCLUSION_SIMILARITY) } == true
             val word = lockedTexts.any { area.exists(it, similarity = EXCLUSION_SIMILARITY) }
+            val temporary = temporaryWords.any { loc.temporary(card).exists(it, similarity = EXCLUSION_SIMILARITY) }
             val excluded = exclusionWords.any { area.exists(it, similarity = EXCLUSION_SIMILARITY) }
             val lock = when {
                 padlock || word || excluded -> FpSellPolicy.Lock.Locked
                 lockTemplate == null -> FpSellPolicy.Lock.Unknown
                 else -> FpSellPolicy.Lock.Unlocked
             }
-            FpSellPolicy.Cell(true, lock, null, padlock || word || excluded)
+            FpSellPolicy.Cell(true, lock, null, padlock || word || excluded || temporary)
         }
         return gray.copy(selected = selection(card))
     }

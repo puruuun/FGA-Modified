@@ -32,16 +32,35 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             (findImage(locations.fp.summonCheck, Images.FriendSummon) ||
                 findImage(locations.fp.initialSummonCheck, Images.FriendSummon))
 
+    private fun click(region: io.github.lib_automata.Region, image: Images) {
+        val pattern = runCatching { images[image] }.getOrNull() ?: stop()
+        (region.find(pattern, similarity = 0.9) ?: stop()).region.click()
+    }
+
+    /** D-36: title and FP cost label guard the summon button itself, which must also match its template. */
+    fun summonAgain() {
+        val saved = title ?: stop()
+        if (!useSameSnapIn { matches(saved) }) stop()
+        val patterns = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
+            .mapNotNull { runCatching { images[it] }.getOrNull() }
+        val button = useSameSnapIn {
+            patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = 0.9) }
+                ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = 0.9) }
+        } ?: stop()
+        button.region.click()
+        0.5.seconds.wait()
+    }
+
     fun restore() {
         val savedTitle = title ?: stop()
-        loc.close.click()
+        click(loc.screenClose, Images.FpSellScreenClose)
         awaitScreen { loc.shop.exists(images[Images.FpSellShop], similarity = 0.9) }
         (loc.menu.find(images[Images.FpSellMenu], similarity = 0.9) ?: stop()).region.click()
         0.5.seconds.wait()
         (loc.summonMenu.find(images[Images.FpSellSummonMenu], similarity = 0.9) ?: stop()).region.click()
         0.8.seconds.wait()
         if (!search({ useSameSnapIn { matches(savedTitle) } }, {
-            loc.leftArrow.click()
+            click(loc.leftArrowRegion, Images.FpSellLeftArrow)
             0.7.seconds.wait()
         })) stop()
     }

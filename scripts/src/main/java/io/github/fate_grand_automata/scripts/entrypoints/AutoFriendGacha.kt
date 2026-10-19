@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.entrypoints
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
 import io.github.fate_grand_automata.scripts.modules.FpAutoSell
@@ -61,8 +62,10 @@ class AutoFriendGacha @Inject constructor(
         }
     }
 
+    private var saleStarted = false
     private var returning = false
-    private var previousSold: Int? = null
+    private var previousSale: FpAutoSell.Result? = null
+    private var awaitingDryFull = false
     private var count = 0
     private var isInLoop = false
     private var initialScreen = false
@@ -80,30 +83,37 @@ class AutoFriendGacha @Inject constructor(
             { isInventoryFull() || (prefs.fpAutoSell && reader.servantFullWarning()) } to {
                 if (!prefs.fpAutoSell) throw ExitException(ExitReason.InventoryFull)
                 if (!reader.servantFullWarning()) throw ExitException(ExitReason.InventoryFullNotServant)
-                if (previousSold == 0) throw ExitException(ExitReason.InventoryFullNothingToSell)
-                previousSold = autoSell.run()
+                previousSale?.let { previous ->
+                    if (previous.summary.total == 0) throw ExitException(ExitReason.InventoryFullNothingToSell)
+                    if (previous.dryRun) {
+                        if (!awaitingDryFull) throw ExitException(ExitReason.SellFlowFailed(true, previous.summary.total, previous.summary.unknownLock))
+                        messages.log(ScriptLog.FpSell("stop reason=dry-run-flow-banner-resummon-verified selected=${previous.summary.total}"))
+                        throw ExitException(ExitReason.SellDryRunDone(previous.summary))
+                    }
+                }
+                saleStarted = true
+                previousSale = autoSell.run()
                 banner.restore()
                 returning = true
             },
             { isFirstSummon() } to {
                 if (prefs.fpAutoSell) banner.remember()
-                if (returning) { countNext(); returning = false }
-                // First 10x or 100x Summon
-                locations.fp.first10SummonClick.click()
-                0.3.seconds.wait()
-                locations.fp.okClick.click()
-
-                initialScreen = true
+                if (returning) resumeSummon() else {
+                    // Initial summon behavior is unchanged when auto-sell is off.
+                    locations.fp.first10SummonClick.click()
+                    0.3.seconds.wait()
+                    locations.fp.okClick.click()
+                    initialScreen = true
+                }
             },
             { isDailyFree() } to {
                 if (prefs.fpAutoSell) banner.remember()
-                if (returning) { countNext(); returning = false }
-                // Daily Free Summon
-                locations.fp.initialSummonClick.click()
-                0.3.seconds.wait()
-                locations.fp.initialSummonContinueClick.click()
-
-                initialScreen = true
+                if (returning) resumeSummon() else {
+                    locations.fp.initialSummonClick.click()
+                    0.3.seconds.wait()
+                    locations.fp.initialSummonContinueClick.click()
+                    initialScreen = true
+                }
             },
             { isSummonButtonVisible() } to { rollFPAgain() }
         )
@@ -120,13 +130,43 @@ class AutoFriendGacha @Inject constructor(
                 }
                 if (prefs.fpAutoSell) {
                     unknownFrames = if (actor == null) unknownFrames + 1 else 0
+                    if (awaitingDryFull && unknownFrames >= 40) {
+                        val summary = checkNotNull(previousSale).summary
+                        messages.log(ScriptLog.FpSell("stop reason=second-full-warning-not-seen selected=${summary.total} dryRun=true"))
+                        throw ExitException(ExitReason.SellFlowFailed(true, summary.total, summary.unknownLock))
+                    }
                     if (unknownFrames >= 120) throw ExitException(ExitReason.SellScreenUnknown)
                 }
-                val action = actor ?: { locations.fp.skipRapidClick.click(15) }
+                val action = actor ?: { if (!awaitingDryFull) locations.fp.skipRapidClick.click(15) }
                 action.invoke()
                 0.5.seconds.wait()
             }
-        } finally { banner.release() }
+        } finally {
+            if (saleStarted) autoSell.logFinalSummary()
+            banner.release()
+        }
+    }
+
+    private fun resumeSummon() {
+        countNext()
+        banner.summonAgain()
+        returning = false
+        initialScreen = true
+        val previous = checkNotNull(previousSale)
+        if (previous.dryRun) {
+            // The full-box warning appears without spending FP. Never acknowledge another summon dialog in dry run.
+            awaitingDryFull = true
+            return
+        }
+        // Real mode preserves the ordinary summon confirmation, but matches the button before tapping it.
+        repeat(40) {
+            if (useSameSnapIn { isInventoryFull() || reader.servantFullWarning() }) return
+            val ok = useSameSnapIn { reader.loc.summonOk.find(images[Images.Ok], similarity = 0.9) }
+            if (ok != null) { ok.region.click(); return }
+            if (useSameSnapIn { isSummonButtonVisible() }) return
+            0.5.seconds.wait()
+        }
+        throw ExitException(ExitReason.SellFlowFailed(false, previous.summary.total, previous.summary.unknownLock))
     }
 
     private fun rollFPAgain() {
@@ -142,16 +182,16 @@ class AutoFriendGacha @Inject constructor(
         3.seconds.wait()
     }
 
-    private fun isSummonButtonVisible() = findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)
+    private fun isSummonButtonVisible() = !awaitingDryFull && findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)
 
     private fun isFirstSummon(): Boolean {
-        if (isInLoop && !returning) return false
+        if (awaitingDryFull || (isInLoop && !returning)) return false
 
         return images[Images.FriendSummon] in locations.fp.summonCheck
     }
 
     private fun isDailyFree(): Boolean {
-        if (isInLoop && !returning) return false
+        if (awaitingDryFull || (isInLoop && !returning)) return false
 
         return images[Images.FriendSummon] in locations.fp.initialSummonCheck
     }

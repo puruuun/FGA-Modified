@@ -1,6 +1,13 @@
 package io.github.fate_grand_automata.scripts
 
 enum class Images(val path: String) {
+    FpSellTemporary("fp_sell_temporary.png"),
+    FpSellTemporaryServant("fp_sell_temporary_servant.png"),
+    FpSellCancel("fp_sell_cancel.png"),
+    FpSellScreenClose("fp_sell_screen_close.png"),
+    FpSellLeftArrow("fp_sell_left_arrow.png"),
+    FpSellSummonButtonFree("fp_sell_summon_button_free.png"),
+    FpSellSummonButton("fp_sell_summon_button.png"),
     FpSellWordServant("fp_sell_word_servant.png"),
     FpSellLockedTextAlt("fp_sell_locked_text_alt.png"),
     FpSellLockedText("fp_sell_locked_text.png"),

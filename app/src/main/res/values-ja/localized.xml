@@ -648,13 +648,10 @@
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
     <string name="fp_sell_title">自動売却</string>
-    <string name="fp_sell_safety">ロック中・選択不可・グランドサーヴァント・PARTYのカードは、テストモードでも選択しません。テストモードは選択のみで決定は押しません。</string>
     <string name="fp_auto_sell">自動売却を有効にする</string>
-    <string name="fp_sell_dry_run">試験モード（選択のみ）</string>
     <string name="fp_sell_nothing">直前の売却数が0で、所持枠が再び一杯になりました。</string>
     <string name="fp_sell_not_servant">サーヴァント枠の警告ではないため（概念礼装・コマンドコード等）、販売せずに停止しました。</string>
     <string name="fp_sell_banner_missing">元のFP召喚バナーが見つからず、召喚前に停止しました。</string>
     <string name="fp_sell_screen_unknown">販売画面を確認できなかったため、販売せずに停止しました。</string>
-    <string name="fp_sell_dry_done">試験モード完了。選択のみで売却していません。</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
 </resources>

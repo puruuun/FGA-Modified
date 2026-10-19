@@ -20,10 +20,16 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val sizeSwitch = Location(-1180, 1320).xFromCenter()
     val confirm = Region(820, 1240, 440, 180).xFromCenter()
     val convertHeading = Region(-180, 40, 400, 120).xFromCenter()
+    val cancel = Region(-680, 1170, 580, 170).xFromCenter()
     val convert = Region(100, 1170, 620, 170).xFromCenter()
     val done = Region(-380, 400, 800, 160).xFromCenter()
     val doneClose = Region(-300, 1170, 600, 170).xFromCenter()
     val close = Location(-1120, 80).xFromCenter()
+    val screenClose = Region(-1280, 0, 380, 180).xFromCenter()
+    val leftArrowRegion = Region(-1280, 600, 150, 250).xFromCenter()
+    val summonButton = Region(250, 940, 500, 180).xFromCenter()
+    val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
+    val summonOk = Region(100, 1000, 500, 240).xFromCenter()
     val shop = Region(550, 0, 710, 160).xFromCenter()
     val menu = Region(890, 1210, 380, 200).xFromCenter()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */
@@ -45,5 +51,6 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** Single-pixel columns across the outer edge, at independent bands clear of class/number badges and card art. */
     fun frameStrip(card: Region, offset: Int, band: Int) = Region(card.x + offset * 2, card.y + band, 2, 32)
     /** The padlock sits on the left edge of a locked tile, and the overlay words cover the tile. */
+    fun temporary(card: Region) = Region(card.x, card.y - 32, card.width, card.height + 32)
     fun lock(card: Region) = Region(card.x - 32, card.y, card.width + 32, card.height)
 }

@@ -15,6 +15,17 @@ ASSETS = ROOT / "app/src/main/assets"
 
 # (asset folder, file name, reference folder, reference file, box x, y, w, h)
 RECIPES = [
+    ('Jp', 'fp_sell_temporary.png', 'Jp', 'beta7/20261019-104838-653-final-game-selection-407.png', 641, 566, 56, 20),
+    ('Jp', 'fp_sell_temporary_servant.png', 'Jp', 'beta7/20261019-104838-653-final-game-selection-407.png', 622, 621, 96, 36),
+    ('Jp', 'fp_sell_cancel.png', 'Jp', '30.png', 347, 610, 188, 36),
+    ('Kr', 'fp_sell_cancel.png', 'Kr', '21.png', 407, 609, 68, 36),
+    ('Jp', 'fp_sell_screen_close.png', 'Jp', '37.png', 64, 22, 84, 38),
+    ('Kr', 'fp_sell_screen_close.png', 'Kr', '18.png', 80, 22, 68, 38),
+    ('En', 'fp_sell_left_arrow.png', 'Jp', '41.png', 29, 340, 16, 40),
+    ('Jp', 'fp_sell_summon_button.png', 'Jp', '41.png', 901, 505, 63, 31),
+    ('Kr', 'fp_sell_summon_button.png', 'Kr', '15.png', 909, 506, 52, 30),
+    ("Jp", "fp_sell_summon_button_free.png", "Jp", "36.png", 658, 503, 64, 33),
+    ("Kr", "fp_sell_summon_button_free.png", "Kr", "../friend_summon_free.png", 674, 505, 50, 31),
     ("Jp", "fp_sell_locked_text_alt.png", "Jp", "qa-beta5/20261019-023512-711-watch.png", 368, 334, 68, 22),
     # Kr: the warning word and the locked label (owner screen 17, 38)
     ("Kr", "fp_sell_word_servant.png", "Kr", "17.png", 422, 150, 118, 34),
