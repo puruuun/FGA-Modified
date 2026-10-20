@@ -20,6 +20,7 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.entrypoints.AutoGiftBox
 import io.github.fate_grand_automata.scripts.entrypoints.AutoLottery
 import io.github.fate_grand_automata.scripts.entrypoints.AutoServantLevel
+import io.github.fate_grand_automata.scripts.entrypoints.AutoWeeklyRoute
 import io.github.fate_grand_automata.scripts.entrypoints.SkillLevelScript
 import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SlotStop
@@ -73,7 +74,8 @@ class ScriptManager @Inject constructor(
     private val clipboardManager: ClipboardManager,
     private val messageBox: ScriptRunnerMessageBox,
     @param:ServiceCoroutineScope private val scope: CoroutineScope,
-    private val launcherResponseHandler: ScriptLauncherResponseHandler
+    private val launcherResponseHandler: ScriptLauncherResponseHandler,
+    private val weeklyRoute: WeeklyRouteFlow
 ) {
     var scriptState: ScriptState = ScriptState.Stopped
         private set
@@ -295,6 +297,22 @@ class ScriptManager @Inject constructor(
                 messageBox.show(scriptExitedString, stagedMessage)
             }
 
+            is AutoWeeklyRoute.ExitException -> {
+                val name = e.target?.name.orEmpty()
+                val ap = e.target?.ap ?: 0
+                val msg = when (val reason = e.reason) {
+                    AutoWeeklyRoute.ExitReason.NoTarget -> context.getString(R.string.weekly_route_stop_no_target)
+                    AutoWeeklyRoute.ExitReason.NotOnPanel -> context.getString(R.string.weekly_route_stop_not_on_panel, name, ap)
+                    AutoWeeklyRoute.ExitReason.NotFreeQuest -> context.getString(R.string.weekly_route_stop_not_free, name, ap)
+                    is AutoWeeklyRoute.ExitReason.ApUnreadable -> context.getString(R.string.weekly_route_stop_ap_unreadable, name, reason.expected)
+                    is AutoWeeklyRoute.ExitReason.ApMismatch -> context.getString(R.string.weekly_route_stop_ap_mismatch, name, reason.expected, reason.read)
+                    is AutoWeeklyRoute.ExitReason.NameMismatch -> context.getString(R.string.weekly_route_stop_name_mismatch, name)
+                }
+
+                messages.notify(msg)
+                messageBox.show(scriptExitedString, msg)
+            }
+
             is ScriptAbortException -> {
                 // user aborted. do nothing
             }
@@ -340,6 +358,7 @@ class ScriptManager @Inject constructor(
             ScriptModeEnum.ServantLevel -> entryPoint.servantLevel()
             ScriptModeEnum.SkillLevel -> entryPoint.skillLevel()
             ScriptModeEnum.AppendLevel -> entryPoint.appendLevel()
+            ScriptModeEnum.WeeklyRoute -> entryPoint.weeklyRoute()
         }
 
     enum class PauseAction {
@@ -451,10 +470,19 @@ class ScriptManager @Inject constructor(
 
             val resp = scriptPicker(context, detectedMode)
 
-            uiStateHolder.isPlayButtonEnabled = true
-            launcherResponseHandler.handle(resp)
+            // The weekly route is confirmed in its own dialog; nothing runs unless that dialog is confirmed.
+            val weeklyConfirmed = if (resp is ScriptLauncherResponse.WeeklyRoute) {
+                uiStateHolder.isPlayButtonEnabled = false
+                weeklyRoute.confirm()
+            } else false
 
-            if (resp !is ScriptLauncherResponse.Cancel) {
+            uiStateHolder.isPlayButtonEnabled = true
+            val effectiveResp = if (resp is ScriptLauncherResponse.WeeklyRoute && !weeklyConfirmed) {
+                ScriptLauncherResponse.Cancel
+            } else resp
+            launcherResponseHandler.handle(effectiveResp)
+
+            if (effectiveResp !is ScriptLauncherResponse.Cancel) {
                 delay(500.milliseconds)
                 runEntryPoint(
                     screenshotService = screenshotService,

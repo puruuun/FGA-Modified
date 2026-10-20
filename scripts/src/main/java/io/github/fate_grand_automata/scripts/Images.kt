@@ -168,6 +168,8 @@ enum class Images(val path: String) {
     QuestItemDialogKrNative("quest_item_modal_native.png"),
     QuestItemDialogClose("quest_item_close.png"),
     QuestItemParty("quest_item_party.png"),
+    /** The English "Free Quest" emblem of a quest panel; identical on every server, so only En has a copy. */
+    FreeQuestLabel("free_quest_label.png"),
 
     GrandCeLabel("grand_ce_label.png"),
     BondCeEffectDefault("bond_ce_effect_default.png"),

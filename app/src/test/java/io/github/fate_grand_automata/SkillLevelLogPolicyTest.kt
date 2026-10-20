@@ -10,6 +10,10 @@ class SkillLevelLogPolicyTest {
         assertTrue(isFgaLoggable(SKILL_LEVEL_TAG,Log.INFO,debug=false))
         assertFalse(isFgaLoggable(SKILL_LEVEL_TAG,Log.DEBUG,debug=false))
     }
+    @Test fun `weekly route info is loggable in the non debug policy`() {
+        assertTrue(isFgaLoggable(WEEKLY_ROUTE_TAG,Log.INFO,debug=false))
+        assertFalse(isFgaLoggable(WEEKLY_ROUTE_TAG,Log.DEBUG,debug=false))
+    }
     @Test fun `the existing tag allowlist and warning policy remain unchanged`() {
         assertTrue(isFgaLoggable(FP_SELL_TAG,Log.INFO,debug=false))
         assertTrue(isFgaLoggable("FGA.SupportScore",Log.INFO,debug=false))

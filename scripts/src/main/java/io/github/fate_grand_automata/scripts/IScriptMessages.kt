@@ -29,6 +29,8 @@ sealed class ScriptLog {
     class FpSell(val message: String) : ScriptLog()
     /** A line for `adb logcat -s SkillLevel`: the start, one per slot decision and the stop. */
     class SkillLevel(val message: String) : ScriptLog()
+    /** A line for `adb logcat -s WeeklyRoute`: the route calculation, the panel check and the stop reason. */
+    class WeeklyRoute(val message: String) : ScriptLog()
     class FpSellSelection(val summary: io.github.fate_grand_automata.scripts.modules.FpSellPolicy.Summary) : ScriptLog()
     object DefaultSupportBounds : ScriptLog()
     object DefaultMasterOffset : ScriptLog()

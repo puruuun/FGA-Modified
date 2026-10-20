@@ -1,0 +1,424 @@
+[
+ {
+  "id": 100472,
+  "startedAt": 1792335600,
+  "endedAt": 1792940399,
+  "closedAt": 1793545199,
+  "script": {},
+  "missions": [
+   {
+    "id": 2003066,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 1,
+    "name": "이번 주 마스터 미션을 모두 클리어",
+    "detail": "이번 주 마스터 미션을 모두 클리어",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002409,
+    "rewardRarity": 0,
+    "notfyPriority": 1,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003505,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "eventMissionClear",
+      "targetIds": [
+       2003067,
+       2003068,
+       2003069,
+       2003070,
+       2003071,
+       2003072
+      ],
+      "targetNum": 6,
+      "conditionMessage": "이번 주 마스터 미션을 모두 클리어",
+      "closedMessage": "",
+      "flag": 0
+     }
+    ]
+   },
+   {
+    "id": 2003067,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 2,
+    "name": "“중립” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+    "detail": "“중립” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002410,
+    "rewardRarity": 0,
+    "notfyPriority": 2,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003506,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002273
+      ],
+      "targetNum": 3,
+      "conditionMessage": "“중립” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002273,
+        "missionTargetId": 100472,
+        "missionCondType": 13,
+        "logicType": 1,
+        "targetIds": [
+         302,
+         1000
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2003068,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 3,
+    "name": "“혼돈” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+    "detail": "“혼돈” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002411,
+    "rewardRarity": 0,
+    "notfyPriority": 3,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003507,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002274
+      ],
+      "targetNum": 3,
+      "conditionMessage": "“혼돈” 속성을 가진 서번트를 3기 처치(배틀 중에 소환된 적은 제외)",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002274,
+        "missionTargetId": 100472,
+        "missionCondType": 13,
+        "logicType": 1,
+        "targetIds": [
+         301,
+         1000
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2003069,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 4,
+    "name": "“천” 의 힘을 가진 적을 15마리 처치(배틀 중에 소환된 적은 제외)",
+    "detail": "“천”의 힘을 가진 적을 15마리 처치(배틀 중에 소환된 적은 제외)",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002412,
+    "rewardRarity": 0,
+    "notfyPriority": 4,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003508,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002275
+      ],
+      "targetNum": 15,
+      "conditionMessage": "“천”의 힘을 가진 적을 15마리 처치(배틀 중에 소환된 적은 제외)",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002275,
+        "missionTargetId": 100472,
+        "missionCondType": 2,
+        "logicType": 1,
+        "targetIds": [
+         200
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2003070,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 5,
+    "name": "“왕” 특성을 가진 적을 5마리 처치(배틀 중에 소환된 적은 제외)",
+    "detail": "“왕” 특성을 가진 적을 5마리 처치(배틀 중에 소환된 적은 제외)",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002413,
+    "rewardRarity": 0,
+    "notfyPriority": 5,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003509,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002276
+      ],
+      "targetNum": 5,
+      "conditionMessage": "“왕” 특성을 가진 적을 5마리 처치(배틀 중에 소환된 적은 제외)",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002276,
+        "missionTargetId": 100472,
+        "missionCondType": 2,
+        "logicType": 1,
+        "targetIds": [
+         2113
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2003071,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 6,
+    "name": "퀘스트를 5회 클리어",
+    "detail": "퀘스트를 5회 클리어",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002414,
+    "rewardRarity": 0,
+    "notfyPriority": 6,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003510,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002277
+      ],
+      "targetNum": 5,
+      "conditionMessage": "퀘스트를 5회 클리어",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002277,
+        "missionTargetId": 100472,
+        "missionCondType": 31,
+        "logicType": 1,
+        "targetIds": [
+         0
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2003072,
+    "flag": 0,
+    "type": "weekly",
+    "missionTargetId": 100472,
+    "dispNo": 7,
+    "name": "퀘스트를 10회 클리어",
+    "detail": "퀘스트를 10회 클리어",
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "closedAt": 1793545199,
+    "rewardType": "gift",
+    "gifts": [
+     {
+      "id": 419,
+      "type": "item",
+      "objectId": 16,
+      "priority": 0,
+      "num": 3,
+      "giftAdds": []
+     }
+    ],
+    "bannerGroup": 0,
+    "priority": 2002415,
+    "rewardRarity": 0,
+    "notfyPriority": 7,
+    "presentMessageId": 1064,
+    "conds": [
+     {
+      "id": 2003512,
+      "missionProgressType": "clear",
+      "priority": 0,
+      "missionTargetId": 100472,
+      "condGroup": 1,
+      "condType": "missionConditionDetail",
+      "targetIds": [
+       2002277
+      ],
+      "targetNum": 10,
+      "conditionMessage": "퀘스트를 10회 클리어",
+      "closedMessage": "",
+      "flag": 0,
+      "details": [
+       {
+        "id": 2002277,
+        "missionTargetId": 100472,
+        "missionCondType": 31,
+        "logicType": 1,
+        "targetIds": [
+         0
+        ],
+        "addTargetIds": [],
+        "targetQuestIndividualities": [],
+        "conditionLinkType": "masterMissionStart",
+        "targetEventIds": []
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "quests": []
+ }
+]

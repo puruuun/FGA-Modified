@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "suite": "weeklyRoute",
+  "cases": [
+    {
+      "name": "JP-01-free-panel-match",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5,
+      "expected": {
+        "free": true,
+        "ap": 5,
+        "verdict": "Match"
+      }
+    },
+    {
+      "name": "JP-01-wrong-ap",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 9,
+      "expected": {
+        "free": true,
+        "ap": 5,
+        "verdict": "ApMismatch"
+      }
+    },
+    {
+      "name": "JP-01-wrong-name",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "targetName": "特異点Fの長い別のクエスト名",
+      "targetAp": 5,
+      "expected": {
+        "free": true,
+        "ap": 5,
+        "verdict": "NameMismatch"
+      }
+    },
+    {
+      "name": "JP-10-mission-quest-on-top",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/10.png",
+      "targetName": "赦免の城",
+      "targetAp": 21,
+      "expected": {
+        "free": false,
+        "verdict": "NotFree"
+      }
+    },
+    {
+      "name": "JP-11-map-without-panel",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5,
+      "expected": {
+        "free": false,
+        "verdict": "NotFree"
+      }
+    },
+    {
+      "name": "KR-30-free-panel-match",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "targetName": "피가 끓어오르는 광연",
+      "targetAp": 19,
+      "expected": {
+        "free": true,
+        "ap": 19,
+        "verdict": "Match"
+      }
+    },
+    {
+      "name": "KR-30-wrong-ap",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "targetName": "피가 끓어오르는 광연",
+      "targetAp": 21,
+      "expected": {
+        "free": true,
+        "ap": 19,
+        "verdict": "ApMismatch"
+      }
+    },
+    {
+      "name": "KR-30-wrong-name",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "targetName": "카멜롯",
+      "targetAp": 19,
+      "expected": {
+        "free": true,
+        "ap": 19,
+        "verdict": "NameMismatch"
+      }
+    }
+  ]
+}

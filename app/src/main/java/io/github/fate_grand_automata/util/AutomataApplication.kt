@@ -31,4 +31,4 @@ class AutomataApplication : Application() {
 /** Same production policy, with an explicit debug flag so non-debug logging is unit-testable. */
 internal fun isFgaLoggable(tag: String?, priority: Int, debug: Boolean): Boolean =
     debug || priority > Log.INFO ||
-        (priority >= Log.INFO && tag in setOf("FGA.SupportScore", FP_SELL_TAG, SKILL_LEVEL_TAG))
+        (priority >= Log.INFO && tag in setOf("FGA.SupportScore", FP_SELL_TAG, SKILL_LEVEL_TAG, WEEKLY_ROUTE_TAG))

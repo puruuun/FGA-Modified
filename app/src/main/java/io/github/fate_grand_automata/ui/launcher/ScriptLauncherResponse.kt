@@ -21,6 +21,9 @@ sealed class ScriptLauncherResponse {
     /** Target level per slot, 0 = off. */
     data class SkillLevel(val targets: List<Int>) : ScriptLauncherResponse()
     data class AppendLevel(val targets: List<Int>) : ScriptLauncherResponse()
+
+    /** The weekly mission route entry: the route is computed and confirmed in a second dialog. */
+    data object WeeklyRoute : ScriptLauncherResponse()
 }
 
 class ScriptLauncherResponseBuilder(

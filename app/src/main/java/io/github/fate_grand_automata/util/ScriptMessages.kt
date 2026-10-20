@@ -19,6 +19,9 @@ import kotlin.time.DurationUnit
 /** Fixed logcat tag of the FP auto-sell run: `adb logcat -s FpSell`. */
 const val FP_SELL_TAG = "FpSell"
 
+/** Fixed logcat tag of the weekly mission route: `adb logcat -s WeeklyRoute`. */
+const val WEEKLY_ROUTE_TAG = "WeeklyRoute"
+
 /** Fixed logcat tag of the skill / append level run: `adb logcat -s SkillLevel`. */
 const val SKILL_LEVEL_TAG = "SkillLevel"
 
@@ -50,6 +53,7 @@ class ScriptMessages @Inject constructor(
         when (item) {
             is ScriptLog.FpSell -> Timber.tag(FP_SELL_TAG).i(item.message)
             is ScriptLog.SkillLevel -> Timber.tag(SKILL_LEVEL_TAG).i(item.message)
+            is ScriptLog.WeeklyRoute -> Timber.tag(WEEKLY_ROUTE_TAG).i(item.message)
             is ScriptLog.FpSellSelection -> Timber.i(fpSellSummary(context, item.summary))
             ScriptLog.DefaultSupportBounds -> {
                 Timber.d("Default Region being returned")

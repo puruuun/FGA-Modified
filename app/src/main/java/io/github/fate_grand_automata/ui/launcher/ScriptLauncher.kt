@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
@@ -43,6 +44,7 @@ fun ScriptLauncher(
                 ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
                 ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
                 ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
+                ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier)
             }
 
             HorizontalDivider()
@@ -55,6 +57,15 @@ fun ScriptLauncher(
                     if (scriptMode == ScriptModeEnum.SupportImageMaker) {
                         TextButton(onClick = { onResponse(ScriptLauncherResponse.SupportImageMaker) }) {
                             Text(stringResource(R.string.p_script_mode_support_image_maker))
+                        }
+                    }
+
+                    // The weekly mission route starts from the same screens as a battle, so it is offered next to it.
+                    if (scriptMode == ScriptModeEnum.Battle &&
+                        (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
+                    ) {
+                        TextButton(onClick = { onResponse(ScriptLauncherResponse.WeeklyRoute) }) {
+                            Text(stringResource(R.string.weekly_route_title))
                         }
                     }
                 }

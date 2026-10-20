@@ -1,0 +1,40 @@
+[
+  {
+    "id": 100,
+    "eventId": 0,
+    "priority": 100,
+    "longName": "特異点F\n炎上汚染都市 冬木",
+    "spots": [
+      {
+        "name": "未確認座標Ｘ－Ｅ",
+        "quests": [
+          {
+            "id": 93000005,
+            "name": "骸彷徨う教会",
+            "type": "free",
+            "consumeType": "ap",
+            "consume": 5,
+            "afterClear": "repeatLast",
+            "openedAt": 946652400,
+            "closedAt": 1893423600
+          }
+        ]
+      },
+      {
+        "name": "未確認座標Ｘ－Ｇ",
+        "quests": [
+          {
+            "id": 93000009,
+            "name": "危険地帯",
+            "type": "free",
+            "consumeType": "ap",
+            "consume": 15,
+            "afterClear": "close",
+            "openedAt": 946652400,
+            "closedAt": 1893423600
+          }
+        ]
+      }
+    ]
+  }
+]

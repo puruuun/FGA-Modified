@@ -21,6 +21,8 @@ interface ScriptEntryPoint {
 
     fun appendLevel(): AutoAppendLevel
 
+    fun weeklyRoute(): AutoWeeklyRoute
+
     fun autoDetect(): AutoDetect
 
     /** Exposed so [ScriptComponent]'s OCR engine can be released when the run ends. */

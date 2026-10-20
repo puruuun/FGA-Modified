@@ -42,29 +42,31 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
+import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.scrollbar
 import io.github.fate_grand_automata.util.stringRes
+
+/** The battle configs usable on the current game server, in the order the launcher lists them. */
+fun eligibleBattleConfigs(prefs: IPreferences): List<IBattleConfig> = prefs.battleConfigs
+    .filter {
+        when (it.server) {
+            // always show if no server is set
+            null -> true
+            // ignore betterFgo for En and Jp
+            is GameServer.En -> prefs.gameServer is GameServer.En
+            is GameServer.Jp -> prefs.gameServer is GameServer.Jp
+            GameServer.Cn, GameServer.Kr, GameServer.Tw -> it.server == prefs.gameServer
+        }
+    }
 
 @Composable
 fun battleLauncher(
     prefs: IPreferences,
     modifier: Modifier = Modifier
 ): ScriptLauncherResponseBuilder {
-    val configs = remember {
-        prefs.battleConfigs
-            .filter {
-                when (it.server) {
-                    // always show if no server is set
-                    null -> true
-                    // ignore betterFgo for En and Jp
-                    is GameServer.En -> prefs.gameServer is GameServer.En
-                    is GameServer.Jp -> prefs.gameServer is GameServer.Jp
-                    GameServer.Cn, GameServer.Kr, GameServer.Tw -> it.server == prefs.gameServer
-                }
-            }
-    }
+    val configs = remember { eligibleBattleConfigs(prefs) }
     // Each config's name lives in its own SharedPreferences file, so reading it per row would mean
     // a locked SharedPreferences access for every item scrolled into view. Snapshot them once.
     val configNames = remember(configs) { configs.map { it.name } }

@@ -56,5 +56,9 @@ abstract class ScriptsModule {
 
     @ScriptScope
     @Binds
+    abstract fun bindWeeklyRouteSession(session: io.github.fate_grand_automata.runner.WeeklyRouteSession): io.github.fate_grand_automata.scripts.weekly.IWeeklyRouteSession
+
+    @ScriptScope
+    @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
 }

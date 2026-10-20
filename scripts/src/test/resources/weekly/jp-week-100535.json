@@ -1,0 +1,360 @@
+[
+  {
+    "id": 100535,
+    "startedAt": 1792335600,
+    "endedAt": 1792940399,
+    "missions": [
+      {
+        "id": 2003724,
+        "name": "今週のマスターミッションをすべてクリアせよ",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004273,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "eventMissionClear",
+            "targetIds": [
+              2003725,
+              2003726,
+              2003727,
+              2003728,
+              2003729,
+              2003730
+            ],
+            "targetNum": 6,
+            "conditionMessage": "今週のマスターミッションをすべてクリアせよ",
+            "closedMessage": "",
+            "flag": 0
+          }
+        ]
+      },
+      {
+        "id": 2003725,
+        "name": "「中立」属性を持つサーヴァントを3騎倒せ(バトル中に召喚された敵は除く)",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004274,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002728
+            ],
+            "targetNum": 3,
+            "conditionMessage": "「中立」属性を持つサーヴァントを3騎倒せ(バトル中に召喚された敵は除く)",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002728,
+                "missionTargetId": 100535,
+                "missionCondType": 13,
+                "logicType": 1,
+                "targetIds": [
+                  302,
+                  1000
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2003726,
+        "name": "「善」属性を持つサーヴァントを3騎倒せ(バトル中に召喚された敵は除く)",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004275,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002729
+            ],
+            "targetNum": 3,
+            "conditionMessage": "「善」属性を持つサーヴァントを3騎倒せ(バトル中に召喚された敵は除く)",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002729,
+                "missionTargetId": 100535,
+                "missionCondType": 13,
+                "logicType": 1,
+                "targetIds": [
+                  303,
+                  1000
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2003727,
+        "name": "敵を20体倒せ(一部ボス、バトル中に召喚された敵などは除く)",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004276,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002730
+            ],
+            "targetNum": 20,
+            "conditionMessage": "敵を20体倒せ(一部ボス、バトル中に召喚された敵などは除く)",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002730,
+                "missionTargetId": 100535,
+                "missionCondType": 2,
+                "logicType": 1,
+                "targetIds": [
+                  5010,
+                  1000
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2003728,
+        "name": "敵を40体倒せ(一部ボス、バトル中に召喚された敵などは除く)",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004277,
+            "missionProgressType": "start",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "eventMissionClear",
+            "targetIds": [
+              2003727
+            ],
+            "targetNum": 1,
+            "conditionMessage": "敵を40体倒せ(一部ボス、バトル中に召喚された敵などは除く)",
+            "closedMessage": "",
+            "flag": 64
+          },
+          {
+            "id": 2004278,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002730
+            ],
+            "targetNum": 40,
+            "conditionMessage": "敵を40体倒せ(一部ボス、バトル中に召喚された敵などは除く)",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002730,
+                "missionTargetId": 100535,
+                "missionCondType": 2,
+                "logicType": 1,
+                "targetIds": [
+                  5010,
+                  1000
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2003729,
+        "name": "戦利品で「輝石」「魔石」「秘石」「ピース」「モニュメント」をどれか2個獲得せよ",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004279,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002731
+            ],
+            "targetNum": 2,
+            "conditionMessage": "戦利品で「輝石」「魔石」「秘石」「ピース」「モニュメント」をどれか2個獲得せよ",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002731,
+                "missionTargetId": 100535,
+                "missionCondType": 12,
+                "logicType": 1,
+                "targetIds": [
+                  6001,
+                  6101,
+                  6201,
+                  6002,
+                  6102,
+                  6202,
+                  6003,
+                  6103,
+                  6203,
+                  6004,
+                  6104,
+                  6204,
+                  6005,
+                  6105,
+                  6205,
+                  6006,
+                  6106,
+                  6206,
+                  6007,
+                  6107,
+                  6207,
+                  7001,
+                  7101,
+                  7002,
+                  7102,
+                  7003,
+                  7103,
+                  7004,
+                  7104,
+                  7005,
+                  7105,
+                  7006,
+                  7106,
+                  7007,
+                  7107
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2003730,
+        "name": "戦利品で「輝石」「魔石」「秘石」「ピース」「モニュメント」をどれか4個獲得せよ",
+        "type": "weekly",
+        "conds": [
+          {
+            "id": 2004280,
+            "missionProgressType": "start",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "eventMissionClear",
+            "targetIds": [
+              2003729
+            ],
+            "targetNum": 1,
+            "conditionMessage": "戦利品で「輝石」「魔石」「秘石」「ピース」「モニュメント」をどれか4個獲得せよ",
+            "closedMessage": "",
+            "flag": 64
+          },
+          {
+            "id": 2004281,
+            "missionProgressType": "clear",
+            "priority": 0,
+            "missionTargetId": 100535,
+            "condGroup": 1,
+            "condType": "missionConditionDetail",
+            "targetIds": [
+              2002731
+            ],
+            "targetNum": 4,
+            "conditionMessage": "戦利品で「輝石」「魔石」「秘石」「ピース」「モニュメント」をどれか4個獲得せよ",
+            "closedMessage": "",
+            "flag": 0,
+            "details": [
+              {
+                "id": 2002731,
+                "missionTargetId": 100535,
+                "missionCondType": 12,
+                "logicType": 1,
+                "targetIds": [
+                  6001,
+                  6101,
+                  6201,
+                  6002,
+                  6102,
+                  6202,
+                  6003,
+                  6103,
+                  6203,
+                  6004,
+                  6104,
+                  6204,
+                  6005,
+                  6105,
+                  6205,
+                  6006,
+                  6106,
+                  6206,
+                  6007,
+                  6107,
+                  6207,
+                  7001,
+                  7101,
+                  7002,
+                  7102,
+                  7003,
+                  7103,
+                  7004,
+                  7104,
+                  7005,
+                  7105,
+                  7006,
+                  7106,
+                  7007,
+                  7107
+                ],
+                "addTargetIds": [],
+                "targetQuestIndividualities": [],
+                "conditionLinkType": "masterMissionStart",
+                "targetEventIds": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

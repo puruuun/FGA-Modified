@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     // api: the @Serializable models are part of this module's public surface
     api(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.dagger.hilt.core)
     ksp(libs.dagger.hilt.compiler)
@@ -59,4 +60,24 @@ listOf(configurations.testCompileClasspath, configurations.testRuntimeClasspath)
             attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
         }
     }
+}
+
+// Official-data report tool, opt-in network access; never run by unit tests or on the game device.
+tasks.register<JavaExec>("weeklyRouteReport") {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.fate_grand_automata.scripts.WeeklyRouteReportKt")
+    args(
+        providers.gradleProperty("atlasCache").getOrElse("${rootProject.layout.buildDirectory.get()}/atlas-weekly"),
+        "${rootProject.layout.buildDirectory.get()}/weekly-report-utf8.txt"
+    )
+    maxHeapSize = "2g"
+}
+
+tasks.register<JavaExec>("weeklyRouteStress") {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.fate_grand_automata.scripts.WeeklyRouteStress")
+    args(providers.gradleProperty("atlasCache").getOrElse("${rootProject.layout.buildDirectory.get()}/atlas-weekly"))
+    maxHeapSize = "2g"
 }

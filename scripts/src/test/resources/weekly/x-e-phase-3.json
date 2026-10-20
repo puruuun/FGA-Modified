@@ -1,0 +1,416 @@
+{
+  "id": 93000005,
+  "warId": 100,
+  "individuality": [
+    {
+      "id": 2121,
+      "name": "fieldBurning"
+    },
+    {
+      "id": 2392,
+      "name": "fieldCity"
+    }
+  ],
+  "phaseIndividuality": [],
+  "stages": [
+    {
+      "enemies": [
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 100,
+              "name": "classSaber"
+            }
+          ],
+          "svt": {
+            "id": 9930100,
+            "classId": 1
+          }
+        },
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 102,
+              "name": "classArcher"
+            }
+          ],
+          "svt": {
+            "id": 9930300,
+            "classId": 2
+          }
+        },
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 102,
+              "name": "classArcher"
+            }
+          ],
+          "svt": {
+            "id": 9930300,
+            "classId": 2
+          }
+        }
+      ]
+    },
+    {
+      "enemies": [
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 100,
+              "name": "classSaber"
+            }
+          ],
+          "svt": {
+            "id": 9930100,
+            "classId": 1
+          }
+        },
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 100,
+              "name": "classSaber"
+            }
+          ],
+          "svt": {
+            "id": 9930100,
+            "classId": 1
+          }
+        },
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 5010,
+              "name": "notBasedOnServant"
+            },
+            {
+              "id": 202,
+              "name": "attributeHuman"
+            },
+            {
+              "id": 1002,
+              "name": "undead"
+            },
+            {
+              "id": 1102,
+              "name": "skeleton"
+            },
+            {
+              "id": 1100,
+              "name": "soldier"
+            },
+            {
+              "id": 2018,
+              "name": "undeadOrDemon"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2019,
+              "name": "demonic"
+            },
+            {
+              "id": 100,
+              "name": "classSaber"
+            }
+          ],
+          "svt": {
+            "id": 9930100,
+            "classId": 1
+          }
+        }
+      ]
+    },
+    {
+      "enemies": [
+        {
+          "deck": "enemy",
+          "traits": [
+            {
+              "id": 5000,
+              "name": "canBeInBattle"
+            },
+            {
+              "id": 400100,
+              "name": "unknown"
+            },
+            {
+              "id": 103,
+              "name": "classRider"
+            },
+            {
+              "id": 2,
+              "name": "genderFemale"
+            },
+            {
+              "id": 201,
+              "name": "attributeEarth"
+            },
+            {
+              "id": 2011,
+              "name": "skyOrEarthServant"
+            },
+            {
+              "id": 2037,
+              "name": "skyOrEarthExceptPseudoAndDemiServant"
+            },
+            {
+              "id": 301,
+              "name": "alignmentChaotic"
+            },
+            {
+              "id": 303,
+              "name": "alignmentGood"
+            },
+            {
+              "id": 2008,
+              "name": "weakToEnumaElish"
+            },
+            {
+              "id": 1000,
+              "name": "servant"
+            },
+            {
+              "id": 2001,
+              "name": "humanoid"
+            },
+            {
+              "id": 403,
+              "name": "threeStarServant"
+            },
+            {
+              "id": 2000,
+              "name": "divine"
+            },
+            {
+              "id": 2009,
+              "name": "riding"
+            },
+            {
+              "id": 1110,
+              "name": "lamia"
+            },
+            {
+              "id": 2040,
+              "name": "divineOrDemonOrUndead"
+            },
+            {
+              "id": 2797,
+              "name": "divineSpirit"
+            },
+            {
+              "id": 2858,
+              "name": "standardClassServant"
+            },
+            {
+              "id": 2883,
+              "name": "FSNServant"
+            },
+            {
+              "id": 1122,
+              "name": "shadow"
+            }
+          ],
+          "svt": {
+            "id": 400100,
+            "classId": 4
+          }
+        }
+      ]
+    }
+  ]
+}

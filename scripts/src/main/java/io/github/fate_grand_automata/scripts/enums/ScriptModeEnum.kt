@@ -10,4 +10,5 @@ enum class ScriptModeEnum {
     ServantLevel,
     SkillLevel,
     AppendLevel,
+    WeeklyRoute,
 }

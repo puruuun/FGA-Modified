@@ -62,6 +62,8 @@ class ScriptLauncherResponseHandler @Inject constructor(
                 ScriptModeEnum.SkillLevel
             }
 
+            ScriptLauncherResponse.WeeklyRoute -> ScriptModeEnum.WeeklyRoute
+
             is ScriptLauncherResponse.AppendLevel -> {
                 prefs.skillLevel.setTargets(SkillLevelMode.Append, resp.targets)
 
