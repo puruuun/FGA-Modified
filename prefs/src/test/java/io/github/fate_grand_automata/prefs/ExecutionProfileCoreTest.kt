@@ -57,6 +57,33 @@ class ExecutionProfileCoreTest {
     }
 
     @Test
+    fun `weekly chapter and quest choices survive reopening and feed solver by server`() {
+        val store = MemoryPrefs()
+        fun settings() = io.github.fate_grand_automata.prefs.core.WeeklyRoutePrefsCore(PrefMaker(store))
+        val q1 = io.github.fate_grand_automata.scripts.weekly.RouteQuest(1, 100, 100, "chapter", "spot", "q1", 2, "free", "repeatLast")
+        val q2 = q1.copy(id = 2, warId = 101, ap = 5)
+        val quests = listOf(q1, q2)
+        val mission = io.github.fate_grand_automata.scripts.weekly.RouteMission(1, "clear", 1,
+            io.github.fate_grand_automata.scripts.weekly.MissionKind.QuestClear)
+        fun solve(server: String) = io.github.fate_grand_automata.scripts.weekly.WeeklyRouteSolver.solve(listOf(mission),
+            io.github.fate_grand_automata.scripts.weekly.WeeklyCandidateSettings.candidates(server, quests, settings().disabled.get()), emptySet())
+        assertThat(settings().disabled.get()).isEqualTo(emptySet())
+        assertThat(solve("JP").totalAp).isEqualTo(2L)
+        val chapter = io.github.fate_grand_automata.scripts.weekly.WeeklyCandidateSettings.chapterKey("JP", 100)
+        val quest = io.github.fate_grand_automata.scripts.weekly.WeeklyCandidateSettings.questKey("JP", 2)
+        settings().disabled.set(setOf(chapter))
+        assertThat(settings().disabled.get()).isEqualTo(setOf(chapter))
+        assertThat(solve("JP").totalAp).isEqualTo(5L)
+        assertThat(solve("KR").totalAp).isEqualTo(2L)
+        settings().disabled.set(setOf(chapter, quest))
+        assertThat(solve("JP").items).isEqualTo(emptyList())
+        assertThat(solve("JP").manual.map { it.id }).isEqualTo(listOf(1))
+        settings().disabled.set(settings().disabled.get() - chapter)
+        assertThat(settings().disabled.get()).isEqualTo(setOf(quest))
+        assertThat(solve("JP").totalAp).isEqualTo(2L)
+    }
+
+    @Test
     fun `legacy primary fields retain their values and secondary defaults are independent`() {
         val prefs = MemoryPrefs()
         prefs.data["autoskill_cmd"] = "a4"

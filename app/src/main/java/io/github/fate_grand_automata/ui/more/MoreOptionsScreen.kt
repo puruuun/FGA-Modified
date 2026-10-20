@@ -28,7 +28,8 @@ import io.github.fate_grand_automata.util.OpenDocTreePersistable
 fun MoreOptionsScreen(
     vm: MoreOptionsViewModel = viewModel(),
     navigateToFineTune: () -> Unit,
-    navigateToLicense: () -> Unit
+    navigateToLicense: () -> Unit,
+    navigateToWeeklySettings: () -> Unit = {}
 ) {
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.pickedDirectory(it)
@@ -73,6 +74,7 @@ fun MoreOptionsScreen(
         vm = vm,
         goToFineTune = navigateToFineTune,
         goToLicense = navigateToLicense,
+        goToWeeklySettings = navigateToWeeklySettings,
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
 }
@@ -82,6 +84,7 @@ private fun MoreOptionsContent(
     vm: MoreOptionsViewModel,
     goToFineTune: () -> Unit,
     goToLicense: () -> Unit,
+    goToWeeklySettings: () -> Unit,
     pickDirectory: () -> Unit
 ) {
     Column(
@@ -126,6 +129,12 @@ private fun MoreOptionsContent(
 
                             MoreSettingsGroup.AdditionalFeatures -> {
                                 additionalFeaturesGroup(vm.prefsCore, vm::openOriginalImport, vm::openPortraitImport)
+                                item {
+                                    io.github.fate_grand_automata.ui.prefs.Preference(
+                                        title = stringResource(R.string.weekly_route_settings),
+                                        onClick = goToWeeklySettings
+                                    )
+                                }
                             }
 
                             MoreSettingsGroup.Advanced -> {

@@ -758,4 +758,12 @@
     <string name="weekly_route_summary_manual">수동 미션: %1$s</string>
     <string name="weekly_route_check_log">WeeklyRoute 로그 확인</string>
     <string name="weekly_route_summary_stopped">주간 미션 경로 실행이 중단되었습니다.</string>
+    <string name="weekly_route_download">다운로드</string>
+    <string name="weekly_route_progress_missions">주간 미션 다운로드 중…</string>
+    <string name="weekly_route_progress_chapters">장 목록 다운로드 중…</string>
+    <string name="weekly_route_progress_quests">퀘스트 적 구성 다운로드 중…</string>
+    <string name="weekly_route_progress_solve">경로 계산 중…</string>
+    <string name="weekly_route_settings">주간 퀘 추적 설정</string>
+    <string name="weekly_route_settings_no_data">먼저 전투 실행 창의 주간 미션 패널에서 이 서버의 데이터를 다운로드하세요.</string>
+    <string name="weekly_route_unsupported_chapter">믹틀란 — 지원 안 함</string>
 </resources>

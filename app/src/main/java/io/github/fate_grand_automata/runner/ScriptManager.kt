@@ -484,16 +484,8 @@ class ScriptManager @Inject constructor(
 
             val resp = scriptPicker(context, detectedMode)
 
-            // The weekly route is confirmed in its own dialog; nothing runs unless that dialog is confirmed.
-            val weeklyConfirmed = if (resp is ScriptLauncherResponse.WeeklyRoute) {
-                uiStateHolder.isPlayButtonEnabled = false
-                weeklyRoute.confirm()
-            } else false
-
             uiStateHolder.isPlayButtonEnabled = true
-            val effectiveResp = if (resp is ScriptLauncherResponse.WeeklyRoute && !weeklyConfirmed) {
-                ScriptLauncherResponse.Cancel
-            } else resp
+            val effectiveResp = resp
             launcherResponseHandler.handle(effectiveResp)
 
             if (effectiveResp !is ScriptLauncherResponse.Cancel) {
@@ -561,6 +553,7 @@ class ScriptManager @Inject constructor(
         suspendCancellableCoroutine<ScriptLauncherResponse> { continuation ->
 
             var dialog: DialogInterface? = null
+            var launcherBaseWidth: Int? = null
 
             val composeView = FakedComposeView(context) {
                 ScriptLauncher(
@@ -570,7 +563,20 @@ class ScriptManager @Inject constructor(
                         dialog?.dismiss()
                     },
                     prefs = preferences,
-                    prefsCore = prefsCore
+                    prefsCore = prefsCore,
+                    prepareWeekly = weeklyRoute::prepare,
+                    onWeeklyExpanded = { expanded ->
+                        val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
+                        val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }
+                        if (base != null) {
+                            launcherBaseWidth = base
+                            val available = service.resources.displayMetrics.widthPixels
+                            window?.setLayout(
+                                if (expanded) minOf(available - 24, (base * 1.7).toInt()) else base,
+                                android.view.WindowManager.LayoutParams.WRAP_CONTENT
+                            )
+                        }
+                    }
                 )
             }
 

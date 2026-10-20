@@ -64,7 +64,8 @@ fun eligibleBattleConfigs(prefs: IPreferences): List<IBattleConfig> = prefs.batt
 @Composable
 fun battleLauncher(
     prefs: IPreferences,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore
 ): ScriptLauncherResponseBuilder {
     val configs = remember { eligibleBattleConfigs(prefs) }
     // Each config's name lives in its own SharedPreferences file, so reading it per row would mean
@@ -128,6 +129,15 @@ fun battleLauncher(
     val ignoreQuestItemUsage = remember { prefs.ignoreQuestItemUsage }
     val questItemsSupported = remember { prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr }
     val questItemsEnabled = !ignoreQuestItemUsage && questItemsSupported
+
+    data class BondDraft(val track: Boolean, val stop: Boolean, val ignored: Set<Int>)
+    val bondDrafts = remember { androidx.compose.runtime.mutableStateMapOf<String, BondDraft>() }
+    val selected = configs.getOrNull(selectedConfigIndex)
+    val bondCore = remember(selected?.id) { selected?.let { prefsCore.forBattleConfig(it.id).bond } }
+    val bond = selected?.let { config -> bondDrafts[config.id] ?: bondCore!!.let {
+        BondDraft(it.track.get(), it.stopOnMax.get(), it.ignoredCharacters.get())
+    } }
+    fun changeBond(value: BondDraft) { selected?.let { bondDrafts[it.id] = value } }
 
     var resetAllButton by remember { mutableStateOf(false) }
 
@@ -325,6 +335,29 @@ fun battleLauncher(
             }
 
             item {
+                if (bond != null) {
+                    Text(stringResource(R.string.p_bond), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
+                    QuestItemCheckbox(bond.track, true, stringResource(R.string.p_bond_track)) { changeBond(bond.copy(track = it)) }
+                    QuestItemCheckbox(bond.stop, true, stringResource(R.string.p_bond_stop)) { changeBond(bond.copy(stop = it)) }
+                    if (bond.stop) {
+                        Text(stringResource(R.string.p_bond_ignore_characters), style = MaterialTheme.typography.bodySmall)
+                        Row {
+                            for (slot in 1..5) {
+                                androidx.compose.foundation.layout.Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(stringResource(R.string.p_bond_position, slot), style = MaterialTheme.typography.bodySmall)
+                                    Checkbox(checked = slot in bond.ignored, onCheckedChange = { checked ->
+                                        changeBond(bond.copy(ignored = if (checked) bond.ignored + slot else bond.ignored - slot))
+                                    })
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                }
+            }
+
+            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -413,6 +446,12 @@ fun battleLauncher(
     return ScriptLauncherResponseBuilder(
         canBuild = { selectedConfigIndex != -1 },
         build = {
+            selected?.let { prefs.selectedBattleConfig = it }
+            bond?.let { draft ->
+                bondCore!!.track.set(draft.track)
+                bondCore.stopOnMax.set(draft.stop)
+                bondCore.ignoredCharacters.set(draft.ignored)
+            }
             perServerConfigPref.useStormPod = useStormPod
             perServerConfigPref.useTeapot = useTeapot
             ScriptLauncherResponse.Battle

@@ -33,6 +33,9 @@ sealed interface Route : NavKey {
     data object MoreOptions : Route
 
     @Serializable
+    data object WeeklyRouteSettings : Route
+
+    @Serializable
     data object FineTune : Route
 
     @Serializable

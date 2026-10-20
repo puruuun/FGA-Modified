@@ -23,7 +23,8 @@ class AtlasRouteRepository(
     private val cache: File,
     /** Writes the response body of an Atlas path into the target file. */
     private val fetch: (path: String, target: File) -> Unit = ::download,
-    private val log: (String) -> Unit = {}
+    private val log: (String) -> Unit = {},
+    private val progress: (stage: String, done: Int, total: Int) -> Unit = { _, _, _ -> }
 ) {
     data class Dataset(val server: String, val week: AtlasWeekly.Week, val quests: List<RouteQuest>,
         val downloadMillis: Long, val mismatched: List<Int>, val missing: List<Int>, val wars: Map<Int, WarInfo> = emptyMap(), val questNames: Set<String> = emptySet())
@@ -33,8 +34,15 @@ class AtlasRouteRepository(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    fun cached(server: String, now: Long = System.currentTimeMillis() / 1000): Dataset? = runCatching {
+        val week = AtlasWeekly.activeWeek(File(cache, "$server-missions.json").readText(), now)
+        val it = json.decodeFromString<Saved>(File(cache, "$server-dataset3-${week.id}.json").readText())
+        Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing, it.wars, it.questNames)
+    }.getOrNull()
+
     fun load(server: String, now: Long = System.currentTimeMillis() / 1000): Dataset {
         require(server in setOf("JP", "KR")) { "unsupported weekly server" }
+        progress("missions", 0, 1)
         val start = System.nanoTime()
         cache.mkdirs()
         val missionFile = File(cache, "$server-missions.json")
@@ -60,6 +68,7 @@ class AtlasRouteRepository(
         try {
             fun file(path: String): File = File(dir, path.replace('/', '_')).also { if (!it.exists()) fetchAtomic(path, it) }
             fun wars(region: String) = file("export/$region/nice_war.json").inputStream().buffered().use { AtlasWeekly.wars(it, now) }
+            progress("chapters", 0, 1)
             val regionalWars = wars(server)
             val regional = regionalWars.quests
             val jpById = (if (server == "JP") regional else wars("JP").quests).associateBy { it.id }
@@ -67,10 +76,13 @@ class AtlasRouteRepository(
             val missing = mutableListOf<Int>()
             val pool = Executors.newFixedThreadPool(8)
             val quests = try {
-                val futures = regional.filter { it.warId != WeeklyRouteSolver.MICTLAN_WAR }.map { q ->
+                val candidates = regional.filter { it.warId != WeeklyRouteSolver.MICTLAN_WAR }
+                val completed = java.util.concurrent.atomic.AtomicInteger()
+                progress("quests", 0, candidates.size)
+                val futures = candidates.map { q ->
                     pool.submit(Callable {
                         val source = jpById[q.id]
-                        when {
+                        val parsedQuest = when {
                             source == null -> { synchronized(missing) { missing += q.id }; log("drop quest=${q.id} reason=jpMissing"); null }
                             source.ap != q.ap -> {
                                 synchronized(mismatch) { mismatch += q.id }
@@ -84,6 +96,8 @@ class AtlasRouteRepository(
                                 } else parsed
                             }
                         }
+                        progress("quests", completed.incrementAndGet(), candidates.size)
+                        parsedQuest
                     })
                 }
                 futures.mapNotNull { it.get() }

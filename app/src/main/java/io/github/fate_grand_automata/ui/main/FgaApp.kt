@@ -140,8 +140,12 @@ fun FgaApp(
                         MoreOptionsScreen(
                             vm = hiltViewModel(),
                             navigateToFineTune = { backStack.add(Route.FineTune) },
-                            navigateToLicense = { backStack.add(Route.License) }
+                            navigateToLicense = { backStack.add(Route.License) },
+                            navigateToWeeklySettings = { backStack.add(Route.WeeklyRouteSettings) }
                         )
+                    }
+                    entry<Route.WeeklyRouteSettings> {
+                        io.github.fate_grand_automata.ui.more.WeeklyRouteSettingsScreen(vm.prefsCore)
                     }
                     entry<Route.License> {
                         LicenseScreen()

@@ -12,6 +12,7 @@ import io.github.fate_grand_automata.scripts.weekly.BattleOutcome
 import io.github.fate_grand_automata.scripts.weekly.ChapterList
 import io.github.fate_grand_automata.scripts.weekly.IPatternFileLoader
 import io.github.fate_grand_automata.scripts.weekly.IWeeklyRouteSession
+import io.github.fate_grand_automata.scripts.weekly.ListSearchDirection
 import io.github.fate_grand_automata.scripts.weekly.MapFit
 import io.github.fate_grand_automata.scripts.weekly.MapLocalizer
 import io.github.fate_grand_automata.scripts.weekly.MapView
@@ -87,7 +88,7 @@ class WeeklyRouteDriver @Inject constructor(
 
     private fun topLeft(image: Images) = images[image] in loc.topLeftButton
 
-    override fun screen(): RouteScreen = WeeklyRouteScreens(this,loc).read()
+    override fun screen(): RouteScreen = WeeklyRouteScreens(this,loc).read().also { log("screen detected=$it") }
 
     private fun waitScreen(vararg wanted: RouteScreen, timeout: Int = SCREEN_TIMEOUT_SECONDS): Boolean {
         repeat(timeout * 2) {
@@ -100,26 +101,35 @@ class WeeklyRouteDriver @Inject constructor(
 
     // ---- lists ---------------------------------------------------------------------------------------------------
 
-    private fun scrollList(down: Boolean) {
-        if (down) swipe.scroll(loc.listScrollStart, loc.listScrollEnd) else swipe.scroll(loc.listScrollEnd, loc.listScrollStart)
+    private fun scrollList(direction: ListSearchDirection, count: Int) {
+        val (startY, endY) = direction.fingerY(loc.listScrollStart.y, loc.listScrollEnd.y)
+        val from = loc.listScrollStart.copy(y = startY)
+        val to = loc.listScrollEnd.copy(y = endY)
+        log("scroll direction=$direction finger=${if (endY < startY) "UP" else "DOWN"} count=$count from=$from to=$to")
+        swipe.scroll(from, to)
         700.milliseconds.wait()
     }
 
     private fun findColor(template: Pattern, similarity: Double): Match? = useColor {
-        useSameSnapIn { loc.listArea.findAll(template, similarity).maxByOrNull { it.score } }
+        useSameSnapIn {
+            val best = loc.listArea.findAll(template, 0.5).maxByOrNull { it.score }
+            log("banner score=${best?.score} threshold=$similarity point=${best?.region?.center}")
+            best?.takeIf { it.score >= similarity }
+        }
     }
 
-    /** Looks at the current list view first, then scrolls to the top and down through the list, at most [MAX_LIST_SCROLLS] steps. */
+    /** Search lower content first, then upper content; never leave the expected list or exceed either bound. */
     private fun scanList(find: () -> Match?): Match? {
         val expected = screen()
-        if (expected !in setOf(RouteScreen.Home,RouteScreen.List)) return null
-        fun checked(): Match? = if (screen()==expected) find() else null
+        if (expected !in setOf(RouteScreen.Home, RouteScreen.List)) return null
+        fun checked(): Match? = if (screen() == expected) find() else null
         checked()?.let { return it }
-        repeat(MAX_LIST_SCROLLS) { if(screen()!=expected) return null; scrollList(down = false) }
-        for (i in 0..MAX_LIST_SCROLLS) {
-            if(screen()!=expected) return null
-            checked()?.let { return it }
-            if (i < MAX_LIST_SCROLLS) scrollList(down = true)
+        for (direction in ListSearchDirection.entries) {
+            repeat(MAX_LIST_SCROLLS) { index ->
+                if (screen() != expected) return null
+                scrollList(direction, index + 1)
+                checked()?.let { return it }
+            }
         }
         return null
     }
@@ -190,15 +200,30 @@ class WeeklyRouteDriver @Inject constructor(
 
     private fun pinchOut(): Boolean {
         if (screen() != RouteScreen.Map) return false
+        log("pinch before screen=Map")
         val ok = swipe.pinch(PinchGesture.zoomOut(loc.pinchBounds))
         1.seconds.wait()
-        log("pinch completed=$ok")
+        log("pinch after completed=$ok")
         return ok
     }
 
     override fun prepareMap(warId: Int): Boolean {
         2.seconds.wait()
+        // Diagnostic fits use the broad scale range so the initial, still zoomed-in map is observable.
+        val quest = run.items.firstOrNull { it.quest.warId == warId }?.quest
+        val war = run.wars[warId]
+        val map = if (war != null && quest != null) mapFor(war, quest.mapId) else null
+        fun measure(stage: String) {
+            val fit = map?.let { pattern ->
+                useSameSnapIn {
+                    loc.scriptArea.getPattern("weekly pinch diagnostic").use { shot -> localizer.localize(shot, pattern) }
+                }
+            }
+            log("pinch $stage war=$warId scale=${fit?.scaleX}/${fit?.scaleY} origin=${fit?.originX},${fit?.originY} score=${fit?.score}")
+        }
+        measure("before")
         repeat(2) { if (!pinchOut()) return false }
+        measure("after")
         log("chapter $warId zoomed out")
         return true
     }
@@ -254,6 +279,7 @@ class WeeklyRouteDriver @Inject constructor(
         val (spot, why) = locateSpot(quest, map, width, height)
         if (spot == null) return SpotOutcome.NotFound(why,skipChapter=why in setOf("map not recognized","pinch failed"))
 
+        log("tap step=spot quest=${quest.id} point=$spot")
         spot.click()
         2.seconds.wait()
         if (!waitScreen(RouteScreen.List, timeout = 4)) {
@@ -268,6 +294,7 @@ class WeeklyRouteDriver @Inject constructor(
             val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, gameServer)
             log("panel quest=${quest.id} slot=$slot free=${panel.free} ap=${panel.ap} name=${panel.nameText} nameCells=${panel.nameCells} verdict=${QuestPanelMatch.label(verdict)}")
             if (verdict == PanelVerdict.Match) {
+                log("tap step=panel quest=${quest.id} point=${panelLoc.tap(slot)}")
                 panelLoc.tap(slot).click()
                 return SpotOutcome.Started
             }

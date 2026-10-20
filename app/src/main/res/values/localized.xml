@@ -830,4 +830,12 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="weekly_route_summary_manual">Manual missions: %1$s</string>
     <string name="weekly_route_check_log">See WeeklyRoute log</string>
     <string name="weekly_route_summary_stopped">Weekly route stopped.</string>
+    <string name="weekly_route_download">Download</string>
+    <string name="weekly_route_progress_missions">Downloading weekly missions…</string>
+    <string name="weekly_route_progress_chapters">Downloading chapters…</string>
+    <string name="weekly_route_progress_quests">Downloading quest enemies…</string>
+    <string name="weekly_route_progress_solve">Computing route…</string>
+    <string name="weekly_route_settings">Weekly quest tracking settings</string>
+    <string name="weekly_route_settings_no_data">Download this server’s data in the battle launcher’s weekly mission panel first.</string>
+    <string name="weekly_route_unsupported_chapter">Mictlan — unsupported</string>
 </resources>

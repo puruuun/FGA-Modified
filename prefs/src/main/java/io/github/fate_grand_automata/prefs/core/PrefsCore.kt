@@ -55,6 +55,7 @@ class PrefsCore @Inject constructor(
 
     val hideSQInAPResources = maker.bool("hide_sq_in_ap_resources", true)
     val questItemControl = QuestItemControlPrefsCore(maker)
+    val weeklyRoute = WeeklyRoutePrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")
     val limitFP = maker.int("fp_limit", 1)

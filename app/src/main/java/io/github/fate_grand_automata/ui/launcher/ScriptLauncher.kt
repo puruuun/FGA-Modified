@@ -9,6 +9,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import io.github.fate_grand_automata.scripts.weekly.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
@@ -24,8 +26,12 @@ fun ScriptLauncher(
     scriptMode: ScriptModeEnum,
     onResponse: (ScriptLauncherResponse) -> Unit,
     prefs: IPreferences,
-    prefsCore: PrefsCore
+    prefsCore: PrefsCore,
+    onWeeklyExpanded: (Boolean) -> Unit = {},
+    prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> }
 ) {
+    var weeklyOpen by remember { mutableStateOf(false) }
+    val weekly = remember { WeeklyPanelState() }
     FgaScreen {
         Column(
             modifier = Modifier
@@ -34,8 +40,9 @@ fun ScriptLauncher(
             val modifier = Modifier.weight(1f)
 
             val responseBuilder = when (scriptMode) {
-                ScriptModeEnum.Battle, ScriptModeEnum.SupportImageMaker ->
-                    battleLauncher(prefs, modifier)
+                ScriptModeEnum.Battle -> expandedBattleLauncher(prefs, prefsCore, weeklyOpen, weekly, prepareWeekly, modifier)
+                ScriptModeEnum.SupportImageMaker ->
+                    battleLauncher(prefs, modifier, prefsCore)
 
                 ScriptModeEnum.FP -> fpLauncher(prefs, modifier)
                 ScriptModeEnum.Lottery -> lotteryLauncher(prefs, modifier)
@@ -44,7 +51,7 @@ fun ScriptLauncher(
                 ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
                 ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
                 ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
-                ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier)
+                ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore)
             }
 
             HorizontalDivider()
@@ -64,7 +71,7 @@ fun ScriptLauncher(
                     if (scriptMode == ScriptModeEnum.Battle &&
                         (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
                     ) {
-                        TextButton(onClick = { onResponse(ScriptLauncherResponse.WeeklyRoute) }) {
+                        TextButton(onClick = { weeklyOpen = !weeklyOpen; onWeeklyExpanded(weeklyOpen) }) {
                             Text(stringResource(R.string.weekly_route_title))
                         }
                     }
@@ -85,4 +92,33 @@ fun ScriptLauncher(
             }
         }
     }
+}
+
+/** Adds a sibling to the unchanged left launcher; both use its original shared OK/Cancel row. */
+@Composable
+private fun expandedBattleLauncher(
+    prefs: IPreferences,
+    core: PrefsCore,
+    open: Boolean,
+    weekly: WeeklyPanelState,
+    prepare: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit,
+    modifier: Modifier
+): ScriptLauncherResponseBuilder {
+    var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
+    Row(modifier) {
+        left = battleLauncher(prefs, Modifier.weight(1f), core)
+        if (open) WeeklyLauncherPanel(if (prefs.gameServer is GameServer.Kr) "KR" else "JP",
+            core, weekly, Modifier.weight(0.7f))
+    }
+    return ScriptLauncherResponseBuilder(
+        canBuild = { left.canBuild() && (!open || !weekly.busy) },
+        build = {
+            val normal = left.build()
+            val data = weekly.data
+            if (data != null && WeeklyLauncherPolicy.weekly(open, weekly.chosen.map { it.count })) {
+                prepare(data, weekly.chosen, weekly.manual)
+                ScriptLauncherResponse.WeeklyRoute
+            } else normal
+        }
+    )
 }

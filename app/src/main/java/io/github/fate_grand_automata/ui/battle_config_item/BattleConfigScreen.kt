@@ -340,7 +340,7 @@ private fun BattleConfigContent(
                 }
 
                 item {
-                    BondGroup(config.bond)
+
                 }
 
                 item {
