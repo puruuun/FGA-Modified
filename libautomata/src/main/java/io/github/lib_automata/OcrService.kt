@@ -22,9 +22,12 @@ data class TextLineOcrOptions(
     val invert: Boolean = false,
     val rawGrayscale: Boolean = false,
     /** Additional width correction for narrow game fonts; ordinary OCR keeps its aspect ratio. */
-    val horizontalScale: Double = 1.0
+    val horizontalScale: Double = 1.0,
+    /** Isolated single-line OCR language. Ordinary OCR stays English. */
+    val language: String = "eng"
 ) {
     init {
+        require(language in setOf("eng","jpn_weekly","kor_weekly"))
         require(scale > 0)
         require(horizontalScale.isFinite() && horizontalScale > 0.0)
         require(threshold in 0.0..1.0)

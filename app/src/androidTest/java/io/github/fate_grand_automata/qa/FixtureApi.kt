@@ -26,7 +26,7 @@ import kotlin.time.Duration
 internal class FixtureApi(
     private val runner: SupportDeviceTestRunner,
     internal val case: JSONObject,
-    imports: JSONObject,
+    internal val imports: JSONObject,
 ) : IFgoAutomataApi, AutoCloseable {
     internal val live = case.optBoolean("live", false)
     /** Crop fixtures are placed on a black 1280x720 canvas at region720; they must cover every region the reader touches. */
@@ -76,8 +76,10 @@ internal class FixtureApi(
         AttackScreenLocations(transforms), BattleScreenLocations(transforms, MasterLocations(transforms, images, this, messages)),
         ServantLevelLocations(transforms), QuestItemLocations(transforms), BondLocations(transforms))
     internal val ocr = MeasuredOcr(TesseractOcrService(runner.targetContext))
-    internal fun fixturePattern(file: String): Pattern =
-        ByteArrayInputStream(runner.fixture(file)).use { DroidCvPattern(it, false) }
+    internal fun fixtureText(file: String): String = runner.fixture(file).toString(Charsets.UTF_8)
+
+    internal fun fixturePattern(file: String, color: Boolean = false): Pattern =
+        ByteArrayInputStream(runner.fixture(file)).use { DroidCvPattern(it, color) }
 
     private fun clearFrame() { gray?.close(); color?.close(); gray = null; color = null; frame = null }
     private fun screenshot(): Pattern {

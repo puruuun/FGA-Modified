@@ -54,6 +54,9 @@ interface Pattern : AutoCloseable {
 
     fun threshold(value: Double): Pattern
 
+    /** Distinctive image correspondences; coordinates are pixels in this image and [scene]. */
+    fun featureMatches(scene: Pattern, sceneRegion: Region): List<ImageFeatureMatch> = emptyList()
+
     fun isWhite(): Boolean
 
     fun isBlack(): Boolean
@@ -79,3 +82,5 @@ data class MeanColor(val red: Double, val green: Double, val blue: Double)
  * Gets the width and height in the form of a [Size] object.
  */
 val Pattern.size get() = Size(width, height)
+/** A matched map/scene keypoint. The matcher never returns coordinates from the game process. */
+data class ImageFeatureMatch(val mapX: Double, val mapY: Double, val screenX: Double, val screenY: Double)

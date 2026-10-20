@@ -9,6 +9,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.weekly.AtlasRouteRepository
+import io.github.fate_grand_automata.scripts.weekly.WeeklyRouteRun
 import io.github.fate_grand_automata.ui.launcher.WeeklyRouteChoice
 import io.github.fate_grand_automata.ui.launcher.WeeklyRouteScreen
 import io.github.fate_grand_automata.util.FakedComposeView
@@ -24,8 +25,8 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 
 /**
- * Weekly mission route, step 1 (design 0009 D-1): loads this week's data from Atlas Academy, shows the route confirm
- * dialog and hands the first route quest to the script run. Every user-visible failure is reported here, so a null
+ * Weekly mission route (design 0009 D-1): loads this week's data from Atlas Academy, shows the route confirm
+ * dialog and hands the confirmed route to the script run. Every user-visible failure is reported here, so a null
  * result always means "nothing to run".
  */
 @ServiceScoped
@@ -76,15 +77,13 @@ class WeeklyRouteFlow @Inject constructor(
             return false
         }
 
-        // The ordinary battle flow runs with the confirmed count; AP and apples follow the saved FGA settings.
+        // The ordinary battle flow runs each quest with its confirmed count (the script sets the run limit per quest);
+        // AP and apples follow the saved FGA settings.
         preferences.selectedBattleConfig = choice.config
-        preferences.selectedServerConfigPref.let {
-            it.shouldLimitRuns = true
-            it.limitRuns = choice.target.count
-        }
         preferences.resetCompletedRuns()
-        session.target = choice.target
-        log("confirmed quest=${choice.target.questId} name=${choice.target.name} ap=${choice.target.ap} count=${choice.target.count} config=${choice.config.id}")
+        session.run = WeeklyRouteRun(server, choice.items, choice.manual, data.wars, File(context.cacheDir, "atlas-weekly"), data.questNames)
+        log("confirmed quests=${choice.items.size} config=${choice.config.id} " +
+            choice.items.joinToString(" ") { "${it.quest.id}x${it.count}" })
         return true
     }
 

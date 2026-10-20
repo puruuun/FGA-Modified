@@ -12,7 +12,7 @@ import io.github.lib_automata.TextLineOcrOptions
 import javax.inject.Inject
 
 /** What the uppermost panel of a spot shows. [nameCells] is the quest name's ink width in full-width glyph cells. */
-data class QuestPanel(val free: Boolean, val ap: Int?, val nameCells: Double?, val nameWidthPx: Int?)
+data class QuestPanel(val free: Boolean, val ap: Int?, val nameCells: Double?, val nameWidthPx: Int?, val nameText: String? = null)
 
 sealed class PanelVerdict {
     data object Match : PanelVerdict()
@@ -24,8 +24,8 @@ sealed class PanelVerdict {
 }
 
 /**
- * Reads the quest panel without OCR of the name: the app only ships English OCR data, so the name is compared by the
- * width of its text in glyph cells (see [QuestPanelMatch.nameCells]). The "Free Quest" emblem and the AP number are exact.
+ * Reads the Free Quest emblem, AP and actual JP/KR name text. Glyph widths remain a preliminary/legacy QA signal;
+ * production navigation also requires exact normalized name characters supported by multiple OCR reads.
  */
 class QuestPanelReader @Inject constructor(
     api: IFgoAutomataApi,
@@ -45,29 +45,96 @@ class QuestPanelReader @Inject constructor(
 
     private fun label(): Pattern? = runCatching { images[Images.FreeQuestLabel] }.getOrNull()
 
-    fun isFree(): Boolean = label()?.let { loc.freeLabel.exists(it, similarity = FREE_SIMILARITY) } == true
+    /** [slot] is the panel's place in the spot's panel list, 0 for the uppermost. */
+    fun isFree(slot: Int = 0): Boolean =
+        label()?.let { loc.slot(loc.freeLabel, slot).exists(it, similarity = FREE_SIMILARITY) } == true
 
     /** Raw OCR readings of the AP number, kept for the QA report. */
-    fun apReadings(): List<OcrText> = loc.apDigits.getPattern("quest_panel_ap").use { pattern ->
+    fun apReadings(slot: Int = 0): List<OcrText> = loc.slot(loc.apDigits, slot).getPattern("quest_panel_ap").use { pattern ->
         AP_PROFILES.map { ocr.detectTextLine(pattern, it) }
     }
 
-    fun readAp(): Int? = QuestPanelMatch.apConsensus(apReadings())
+    fun readAp(slot: Int = 0): Int? = QuestPanelMatch.apConsensus(apReadings(slot))
 
-    fun nameWidthPx(): Int? = loc.name.getPattern("quest_panel_name").use { pattern ->
+    fun nameWidthPx(slot: Int = 0): Int? = loc.slot(loc.name, slot).getPattern("quest_panel_name").use { pattern ->
         val gray = pattern.grayPixels() ?: return null
         QuestPanelMatch.inkExtent(gray, pattern.width, pattern.height)
     }
 
-    fun read(server: GameServer): QuestPanel = useSameSnapIn {
-        val free = isFree()
+    fun nameReadings(server: GameServer, slot: Int = 0): List<OcrText> =
+        loc.slot(loc.name, slot).getPattern("quest_name").use { band ->
+            val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
+            val width=(nameWidthPx(slot) ?: band.width)+8
+            band.crop(Region(0,0,minOf(width,band.width),band.height)).use { pattern ->
+                listOf(2,3).map { scale -> ocr.detectTextLine(pattern,
+                    TextLineOcrOptions(scale=scale,threshold=0.6,invert=true,padding=12,language=lang)) }
+            }
+        }
+
+    fun readName(server: GameServer, slot: Int = 0, questNames: Collection<String> = emptyList()): String? {
+        val reads=nameReadings(server,slot)
+        return if(questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads,questNames)
+    }
+
+    fun read(server: GameServer, slot: Int = 0, questNames: Collection<String> = emptyList()): QuestPanel = useSameSnapIn {
+        val free = isFree(slot)
         if (!free) return@useSameSnapIn QuestPanel(false, null, null, null)
-        val width = nameWidthPx()
-        QuestPanel(true, readAp(), width?.let { QuestPanelMatch.cellsOf(it, server) }, width)
+        val width = nameWidthPx(slot)
+        QuestPanel(true, readAp(slot), width?.let { QuestPanelMatch.cellsOf(it, server) }, width, readName(server,slot,questNames))
     }
 }
 
 object QuestPanelMatch {
+    fun label(verdict: PanelVerdict): String = when(verdict) {
+        PanelVerdict.Match -> "Match"
+        PanelVerdict.NotFree -> "NotFree"
+        PanelVerdict.NoPanel -> "NoPanel"
+        is PanelVerdict.ApUnreadable -> "ApUnreadable"
+        is PanelVerdict.ApMismatch -> "ApMismatch"
+        is PanelVerdict.NameMismatch -> "NameMismatch"
+    }
+
+    fun normalizedName(s: String): String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFKC).filterNot { it.isWhitespace() }
+    fun nameConsensus(readings: List<OcrText>): String? {
+        val confident=readings.filter { it.confidence>=65 && it.text.isNotBlank() }.map { normalizedName(it.text) }
+        return confident.distinct().singleOrNull()?.takeIf { confident.size>=2 && it.isNotEmpty() }
+    }
+    /**
+     * Domain-constrained OCR, against ALL regional quest names rather than the target. At most two character edits,
+     * <= one third of the word, a two-edit margin to every runner-up, and two agreeing readings are required. Unknown
+     * names and close legitimate alternatives are not forced to match the route. Glyph width/AP remain separate guards.
+     */
+    fun canonicalName(readings: List<OcrText>, questNames: Collection<String>): String? {
+        val names=questNames.map(::normalizedName).filter { it.isNotEmpty() }.distinct()
+        if(names.isEmpty()) return null
+        fun distance(a: String,b: String): Int {
+            if(kotlin.math.abs(a.length-b.length)>3) return 4
+            var row=IntArray(b.length+1) { it }
+            for(i in a.indices) {
+                val next=IntArray(b.length+1);next[0]=i+1
+                for(j in b.indices) next[j+1]=minOf(next[j]+1,row[j+1]+1,row[j]+if(a[i]==b[j]) 0 else 1)
+                row=next
+            }
+            return row.last()
+        }
+        val votes=readings.filter { it.confidence>=45 && it.text.isNotBlank() }.mapNotNull { read ->
+            val text=normalizedName(read.text)
+            val ranked=names.map { it to distance(text,it) }.sortedBy { it.second }
+            val best=ranked.first()
+            best.first.takeIf { best.second<=2 && best.second*3<=best.first.length &&
+                (ranked.size==1 || ranked[1].second-best.second>=2) }
+        }
+        return votes.distinct().singleOrNull()?.takeIf { votes.size>=2 }
+    }
+
+    /** Production navigation requires actual name characters, never just a matching glyph count. */
+    fun strictVerdict(panel: QuestPanel, expectedAp: Int, expectedName: String, server: GameServer): PanelVerdict {
+        val basic=verdict(panel,expectedAp,expectedName,server)
+        if (basic != PanelVerdict.Match) return basic
+        return if (panel.nameText != null && normalizedName(panel.nameText)==normalizedName(expectedName)) PanelVerdict.Match
+            else PanelVerdict.NameMismatch(panel.nameCells ?: 0.0,nameCells(expectedName))
+    }
+
     /** Ink width of one full-width glyph at 720p: JP kana and kanji, KR hangul. Measured on the owner captures. */
     private const val JP_CELL_PX = 18.3
     private const val KR_CELL_PX = 16.5

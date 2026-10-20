@@ -60,5 +60,9 @@ abstract class ScriptsModule {
 
     @ScriptScope
     @Binds
+    abstract fun bindPatternFileLoader(loader: io.github.fate_grand_automata.imaging.PatternFileLoader): io.github.fate_grand_automata.scripts.weekly.IPatternFileLoader
+
+    @ScriptScope
+    @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
 }

@@ -26,10 +26,10 @@ class AtlasRouteRepository(
     private val log: (String) -> Unit = {}
 ) {
     data class Dataset(val server: String, val week: AtlasWeekly.Week, val quests: List<RouteQuest>,
-        val downloadMillis: Long, val mismatched: List<Int>, val missing: List<Int>)
+        val downloadMillis: Long, val mismatched: List<Int>, val missing: List<Int>, val wars: Map<Int, WarInfo> = emptyMap(), val questNames: Set<String> = emptySet())
 
     @Serializable
-    private class Saved(val week: Int, val quests: List<RouteQuest>, val millis: Long, val mismatched: List<Int>, val missing: List<Int>)
+    private class Saved(val week: Int, val quests: List<RouteQuest>, val millis: Long, val mismatched: List<Int>, val missing: List<Int>, val wars: Map<Int, WarInfo> = emptyMap(), val questNames: Set<String> = emptySet())
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -48,20 +48,21 @@ class AtlasRouteRepository(
             AtlasWeekly.activeWeek(raw, now).also { replace(fresh, missionFile) }
         }
 
-        val saved = File(cache, "$server-dataset-${week.id}.json")
+        val saved = File(cache, "$server-dataset3-${week.id}.json")
         saved.takeIf { it.exists() }?.let { file ->
             runCatching { json.decodeFromString<Saved>(file.readText()) }.getOrNull()?.let {
                 log("load server=$server week=${week.id} cached quests=${it.quests.size} mismatched=${it.mismatched.size} missing=${it.missing.size}")
-                return Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing)
+                return Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing, it.wars, it.questNames)
             }
         }
 
         val dir = File(cache, "$server-raw-${week.id}").apply { mkdirs() }
         try {
             fun file(path: String): File = File(dir, path.replace('/', '_')).also { if (!it.exists()) fetchAtomic(path, it) }
-            fun wars(region: String) = file("export/$region/nice_war.json").inputStream().buffered().use { AtlasWeekly.quests(it, now) }
-            val regional = wars(server)
-            val jpById = (if (server == "JP") regional else wars("JP")).associateBy { it.id }
+            fun wars(region: String) = file("export/$region/nice_war.json").inputStream().buffered().use { AtlasWeekly.wars(it, now) }
+            val regionalWars = wars(server)
+            val regional = regionalWars.quests
+            val jpById = (if (server == "JP") regional else wars("JP").quests).associateBy { it.id }
             val mismatch = mutableListOf<Int>()
             val missing = mutableListOf<Int>()
             val pool = Executors.newFixedThreadPool(8)
@@ -89,12 +90,13 @@ class AtlasRouteRepository(
             } finally { pool.shutdownNow() }
             val millis = (System.nanoTime() - start) / 1_000_000
             log("load server=$server week=${week.id} quests=${quests.size} mismatched=${mismatch.size} missing=${missing.size} ms=$millis")
-            val result = Dataset(server, week, quests, millis, mismatch.sorted(), missing.sorted())
-            val text = json.encodeToString(Saved(week.id, quests, millis, result.mismatched, result.missing))
+            val warInfo = regionalWars.wars.filterKeys { id -> quests.any { it.warId == id } }
+            val result = Dataset(server, week, quests, millis, mismatch.sorted(), missing.sorted(), warInfo, regional.map { it.name }.toSet())
+            val text = json.encodeToString(Saved(week.id, quests, millis, result.mismatched, result.missing, warInfo, result.questNames))
             val temp = File(cache, saved.name + ".tmp").apply { writeText(text) }
             replace(temp, saved)
             // Only the current week's compact dataset is kept.
-            cache.listFiles { f -> f.name.startsWith("$server-dataset-") && f != saved }?.forEach { it.delete() }
+            cache.listFiles { f -> f.name.startsWith("$server-dataset") && f != saved }?.forEach { it.delete() }
             return result
         } finally {
             dir.deleteRecursively()

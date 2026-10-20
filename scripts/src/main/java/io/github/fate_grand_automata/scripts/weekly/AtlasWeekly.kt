@@ -58,10 +58,14 @@ object AtlasWeekly {
 
     // Typed decoding of the war export: it is about 25 MB, so no JSON tree is built for it.
     @Serializable private class WarDto(
-        val id: Int = 0, val eventId: Int = 0, val priority: Int = 0, val longName: String = "",
-        val spots: List<SpotDto> = emptyList()
+        val id: Int = 0, val eventId: Int = 0, val priority: Int = 0, val longName: String = "", val banner: String = "",
+        val maps: List<MapDto> = emptyList(), val spots: List<SpotDto> = emptyList()
     )
-    @Serializable private class SpotDto(val name: String = "", val quests: List<QuestDto> = emptyList())
+    @Serializable private class MapDto(val id: Int = 0, val mapImage: String = "", val mapImageW: Int = 0, val mapImageH: Int = 0)
+    @Serializable private class SpotDto(
+        val id: Int = 0, val name: String = "", val x: Double = 0.0, val y: Double = 0.0, val mapId: Int = 0,
+        val quests: List<QuestDto> = emptyList()
+    )
     @Serializable private class QuestDto(
         val id: Int = 0, val name: String = "", val type: String = "", val consumeType: String = "",
         val consume: Int = 0, val afterClear: String = "", val openedAt: Long = 0, val closedAt: Long = Long.MAX_VALUE,
@@ -73,13 +77,29 @@ object AtlasWeekly {
     @OptIn(ExperimentalSerializationApi::class)
     fun quests(stream: InputStream, now: Long): List<RouteQuest> = select(lenient.decodeFromStream<List<WarDto>>(stream), now)
 
+    /** The route quests and the chapter data of their wars, read from the same war export. */
+    class Wars(val quests: List<RouteQuest>, val wars: Map<Int, WarInfo>)
+
+    fun wars(json: String, now: Long): Wars = withWars(lenient.decodeFromString<List<WarDto>>(json), now)
+    @OptIn(ExperimentalSerializationApi::class)
+    fun wars(stream: InputStream, now: Long): Wars = withWars(lenient.decodeFromStream<List<WarDto>>(stream), now)
+
+    private fun withWars(wars: List<WarDto>, now: Long): Wars {
+        val quests = select(wars, now)
+        val used = quests.map { it.warId }.toSet()
+        return Wars(quests, wars.filter { it.id in used }.associate { w ->
+            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) })
+        })
+    }
+
     /** Repeatable main-story free quests: AP cost, still open, and not closed by an `afterClear` such as Fuyuki's danger zone. */
     private fun select(wars: List<WarDto>, now: Long): List<RouteQuest> = wars.flatMap { w ->
         if (!mainStoryWar(w.id) || w.eventId != 0) emptyList() else
             w.spots.flatMap { spot -> spot.quests.mapNotNull { q ->
                 if (q.type != "free" || q.consumeType != "ap" || q.afterClear != "repeatLast" || now < q.openedAt || now >= q.closedAt) null
                 else RouteQuest(q.id, w.id, w.priority, w.longName, spot.name, q.name, q.consume, q.type, q.afterClear,
-                    enemyDataAvailable = false, repeatPhase = q.phases.maxOrNull() ?: 0)
+                    enemyDataAvailable = false, repeatPhase = q.phases.maxOrNull() ?: 0,
+                    spotId = spot.id, spotX = spot.x, spotY = spot.y, mapId = spot.mapId)
             } }
     }.distinctBy { it.id }
 

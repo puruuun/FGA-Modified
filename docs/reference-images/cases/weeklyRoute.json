@@ -103,6 +103,1183 @@
         "ap": 19,
         "verdict": "NameMismatch"
       }
+    },
+    {
+      "name": "JP-02-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/02.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "JP-03-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/03.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "JP-12-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/12.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "JP-04-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-05-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-13-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-14-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-15-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-16-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-17-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-18-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-06-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/06.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-07-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/07.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-08-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/08.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-09-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/09.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-11-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-19-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/19.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-20-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/20.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "KR-24-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "KR-25-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "KR-26-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "KR-27-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "KR-28-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "KR-29-navigation-screen",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-03-WeeklyMainRecord1-True",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/03.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord1"
+    },
+    {
+      "name": "JP-03-WeeklyMainRecord15-True",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/03.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord15"
+    },
+    {
+      "name": "JP-12-WeeklyMainRecord2-True",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/12.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord2"
+    },
+    {
+      "name": "KR-24-WeeklyMainRecord1-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord1"
+    },
+    {
+      "name": "KR-24-WeeklyMainRecord15-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord15"
+    },
+    {
+      "name": "JP-05-WeeklyMainRecord1-False",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "button",
+      "expected": {
+        "match": false
+      },
+      "image": "WeeklyMainRecord1"
+    },
+    {
+      "name": "KR-26-WeeklyMainRecord15-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "button",
+      "expected": {
+        "match": false
+      },
+      "image": "WeeklyMainRecord15"
+    },
+    {
+      "name": "JP-04-banner-107",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-107"
+    },
+    {
+      "name": "JP-04-banner-108",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-108"
+    },
+    {
+      "name": "JP-05-banner-100",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-100"
+    },
+    {
+      "name": "JP-05-banner-101",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-101"
+    },
+    {
+      "name": "JP-13-banner-403",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-403"
+    },
+    {
+      "name": "JP-13-banner-404",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-404"
+    },
+    {
+      "name": "JP-13-banner-405",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-405"
+    },
+    {
+      "name": "JP-14-banner-402",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-402"
+    },
+    {
+      "name": "JP-14-banner-311",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-311"
+    },
+    {
+      "name": "JP-15-banner-305",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-305"
+    },
+    {
+      "name": "JP-15-banner-306",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-306"
+    },
+    {
+      "name": "JP-15-banner-308",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-308"
+    },
+    {
+      "name": "JP-16-banner-301",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-301"
+    },
+    {
+      "name": "JP-16-banner-302",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-302"
+    },
+    {
+      "name": "JP-16-banner-303",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-303"
+    },
+    {
+      "name": "JP-17-banner-202",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-202"
+    },
+    {
+      "name": "JP-17-banner-203",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-203"
+    },
+    {
+      "name": "JP-18-banner-102",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-102"
+    },
+    {
+      "name": "JP-18-banner-103",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-103"
+    },
+    {
+      "name": "JP-18-banner-104",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:JP-104"
+    },
+    {
+      "name": "KR-25-banner-401",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-401"
+    },
+    {
+      "name": "KR-25-banner-311",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-311"
+    },
+    {
+      "name": "KR-26-banner-106",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-106"
+    },
+    {
+      "name": "KR-26-banner-107",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-107"
+    },
+    {
+      "name": "KR-27-banner-202",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-202"
+    },
+    {
+      "name": "KR-27-banner-203",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-203"
+    },
+    {
+      "name": "KR-27-banner-204",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "banner",
+      "expected": {
+        "match": true
+      },
+      "asset": "banner:KR-204"
+    },
+    {
+      "name": "JP-04-absent-banner-100",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:JP-100"
+    },
+    {
+      "name": "JP-05-absent-banner-108",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:JP-108"
+    },
+    {
+      "name": "JP-14-absent-banner-305",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:JP-305"
+    },
+    {
+      "name": "JP-17-absent-banner-201",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:JP-201"
+    },
+    {
+      "name": "KR-24-absent-banner-100",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:KR-100"
+    },
+    {
+      "name": "KR-25-absent-banner-308",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "banner",
+      "expected": {
+        "match": false
+      },
+      "asset": "banner:KR-308"
+    },
+    {
+      "name": "JP-06-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/06.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-100",
+      "anchors": [
+        {
+          "id": 10002,
+          "mapX": 778.0,
+          "mapY": 797.0,
+          "screenX": 900,
+          "screenY": 245,
+          "tolerance": 12
+        },
+        {
+          "id": 10007,
+          "mapX": 365.0,
+          "mapY": 885.0,
+          "screenX": 380,
+          "screenY": 355,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-07-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/07.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-100",
+      "anchors": [
+        {
+          "id": 10001,
+          "mapX": 678.0,
+          "mapY": 400.0,
+          "screenX": 775,
+          "screenY": 425,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-08-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/08.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-100",
+      "anchors": [
+        {
+          "id": 10004,
+          "mapX": 1249.0,
+          "mapY": 325.0,
+          "screenX": 520,
+          "screenY": 330,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-09-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/09.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-100",
+      "anchors": [
+        {
+          "id": 10005,
+          "mapX": 1618.0,
+          "mapY": 766.0,
+          "screenX": 980,
+          "screenY": 205,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-11-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-100",
+      "anchors": [
+        {
+          "id": 10001,
+          "mapX": 678.0,
+          "mapY": 400.0,
+          "screenX": 453,
+          "screenY": 192,
+          "tolerance": 12
+        },
+        {
+          "id": 10005,
+          "mapX": 1618.0,
+          "mapY": 766.0,
+          "screenX": 1080,
+          "screenY": 436,
+          "tolerance": 12
+        },
+        {
+          "id": 10007,
+          "mapX": 365.0,
+          "mapY": 885.0,
+          "screenX": 245,
+          "screenY": 515,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-19-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/19.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-101",
+      "anchors": [
+        {
+          "id": 10103,
+          "mapX": 1046.0,
+          "mapY": 517.0,
+          "screenX": 261,
+          "screenY": 226,
+          "tolerance": 12
+        },
+        {
+          "id": 10104,
+          "mapX": 1326.0,
+          "mapY": 582.0,
+          "screenX": 1040,
+          "screenY": 407,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-20-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/20.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:JP-305",
+      "anchors": [
+        {
+          "id": 30503,
+          "mapX": 1622.0,
+          "mapY": 560.0,
+          "screenX": 1015,
+          "screenY": 271,
+          "tolerance": 12
+        },
+        {
+          "id": 30516,
+          "mapX": 1025.0,
+          "mapY": 751.0,
+          "screenX": 642,
+          "screenY": 391,
+          "tolerance": 12
+        },
+        {
+          "id": 30508,
+          "mapX": 381.0,
+          "mapY": 429.0,
+          "screenX": 239,
+          "screenY": 189,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "KR-28-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:KR-106",
+      "anchors": [
+        {
+          "id": 10605,
+          "mapX": 1139.0,
+          "mapY": 635.0,
+          "screenX": 460,
+          "screenY": 147,
+          "tolerance": 12
+        },
+        {
+          "id": 10606,
+          "mapX": 1444.0,
+          "mapY": 693.0,
+          "screenX": 840,
+          "screenY": 220,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "KR-29-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "map",
+      "expected": {
+        "accepted": true
+      },
+      "asset": "map:KR-106",
+      "anchors": [
+        {
+          "id": 10604,
+          "mapX": 857.0,
+          "mapY": 777.0,
+          "screenX": 572,
+          "screenY": 431,
+          "tolerance": 12
+        },
+        {
+          "id": 10619,
+          "mapX": 1457.0,
+          "mapY": 855.0,
+          "screenX": 972,
+          "screenY": 483,
+          "tolerance": 12
+        },
+        {
+          "id": 10617,
+          "mapX": 400.0,
+          "mapY": 468.0,
+          "screenX": 267,
+          "screenY": 224,
+          "tolerance": 12
+        }
+      ]
+    },
+    {
+      "name": "JP-11-wrong-map-101",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "map",
+      "expected": {
+        "accepted": false
+      },
+      "asset": "map:JP-101",
+      "anchors": []
+    },
+    {
+      "name": "JP-19-wrong-map-100",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/19.webp",
+      "view": "map",
+      "expected": {
+        "accepted": false
+      },
+      "asset": "map:JP-100",
+      "anchors": []
+    },
+    {
+      "name": "JP-04-wrong-map-100",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "map",
+      "expected": {
+        "accepted": false
+      },
+      "asset": "map:JP-100",
+      "anchors": []
+    },
+    {
+      "name": "KR-29-wrong-map-100",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "map",
+      "expected": {
+        "accepted": false
+      },
+      "asset": "map:JP-100",
+      "anchors": []
+    },
+    {
+      "name": "JP-01-strict-name-slot0-True",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "view": "strictPanel",
+      "expected": {
+        "match": true
+      },
+      "slot": 0,
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5
+    },
+    {
+      "name": "JP-10-strict-name-slot0-False",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/10.png",
+      "view": "strictPanel",
+      "expected": {
+        "match": false
+      },
+      "slot": 0,
+      "targetName": "ミッションクエスト",
+      "targetAp": 5
+    },
+    {
+      "name": "JP-10-strict-name-slot1-True",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/10.png",
+      "view": "strictPanel",
+      "expected": {
+        "match": true
+      },
+      "slot": 1,
+      "targetName": "赦免の城",
+      "targetAp": 21
+    },
+    {
+      "name": "KR-30-strict-name-slot0-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "strictPanel",
+      "expected": {
+        "match": true
+      },
+      "slot": 0,
+      "targetName": "피가 끓어오르는 광연",
+      "targetAp": 19
+    },
+    {
+      "name": "JP-01-strict-name-slot0-False",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "view": "strictPanel",
+      "expected": {
+        "match": false
+      },
+      "slot": 0,
+      "targetName": "未確認の教会",
+      "targetAp": 5
+    },
+    {
+      "name": "API24-two-stroke-pinch-build-only",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "pinch",
+      "expected": {
+        "strokes": 2,
+        "simultaneous": true,
+        "duration": 700,
+        "converges": true
+      }
     }
-  ]
+  ],
+  "imports": {
+    "banner:JP-107": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-107.png"
+    ],
+    "banner:JP-108": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-108.png"
+    ],
+    "banner:JP-100": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-100.png"
+    ],
+    "banner:JP-101": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-101.png"
+    ],
+    "banner:JP-403": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-403.png"
+    ],
+    "banner:JP-404": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-404.png"
+    ],
+    "banner:JP-405": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-405.png"
+    ],
+    "banner:JP-402": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-402.png"
+    ],
+    "banner:JP-311": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-311.png"
+    ],
+    "banner:JP-305": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-305.png"
+    ],
+    "banner:JP-306": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-306.png"
+    ],
+    "banner:JP-308": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-308.png"
+    ],
+    "banner:JP-301": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-301.png"
+    ],
+    "banner:JP-302": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-302.png"
+    ],
+    "banner:JP-303": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-303.png"
+    ],
+    "banner:JP-202": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-202.png"
+    ],
+    "banner:JP-203": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-203.png"
+    ],
+    "banner:JP-102": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-102.png"
+    ],
+    "banner:JP-103": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-103.png"
+    ],
+    "banner:JP-104": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-104.png"
+    ],
+    "banner:KR-401": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-401.png"
+    ],
+    "banner:KR-311": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-311.png"
+    ],
+    "banner:KR-106": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-106.png"
+    ],
+    "banner:KR-107": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-107.png"
+    ],
+    "banner:KR-202": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-202.png"
+    ],
+    "banner:KR-203": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-203.png"
+    ],
+    "banner:KR-204": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-204.png"
+    ],
+    "banner:JP-201": [
+      "docs/reference-images/atlas/weekly-route/JP-banner-201.png"
+    ],
+    "banner:KR-100": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-100.png"
+    ],
+    "banner:KR-308": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-308.png"
+    ],
+    "map:JP-100": [
+      "docs/reference-images/atlas/weekly-route/JP-map-100.png"
+    ],
+    "map:JP-101": [
+      "docs/reference-images/atlas/weekly-route/JP-map-101.png"
+    ],
+    "map:JP-305": [
+      "docs/reference-images/atlas/weekly-route/JP-map-305.png"
+    ],
+    "map:KR-106": [
+      "docs/reference-images/atlas/weekly-route/KR-map-106.png"
+    ],
+    "names:JP": [
+      "docs/reference-images/atlas/weekly-route/JP-quest-names.json"
+    ],
+    "names:KR": [
+      "docs/reference-images/atlas/weekly-route/KR-quest-names.json"
+    ]
+  }
 }

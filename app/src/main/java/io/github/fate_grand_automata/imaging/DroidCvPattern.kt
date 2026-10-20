@@ -170,6 +170,43 @@ class DroidCvPattern(
         return DroidCvPattern(result, tag = "$tag[threshold=$value]")
     }
 
+    override fun featureMatches(scene: Pattern, sceneRegion: Region): List<io.github.lib_automata.ImageFeatureMatch> {
+        if (scene !is DroidCvPattern || mat.channels() != 1 || scene.mat.channels() != 1) return emptyList()
+        require(sceneRegion.x >= 0 && sceneRegion.y >= 0 && sceneRegion.right <= scene.width && sceneRegion.bottom <= scene.height)
+        val sift = org.opencv.features2d.SIFT.create(5000, 3, 0.025)
+        val matcher = org.opencv.features2d.BFMatcher.create(Core.NORM_L2, false)
+        val mapKeys = org.opencv.core.MatOfKeyPoint()
+        val sceneKeys = org.opencv.core.MatOfKeyPoint()
+        val mapDescriptors = Mat()
+        val sceneDescriptors = Mat()
+        val mask = Mat.zeros(scene.height, scene.width, CvType.CV_8UC1)
+        val emptyMask = Mat()
+        val matches = mutableListOf<org.opencv.core.MatOfDMatch>()
+        try {
+            Imgproc.rectangle(mask, Point(sceneRegion.x.toDouble(),sceneRegion.y.toDouble()),
+                Point((sceneRegion.right-1).toDouble(),(sceneRegion.bottom-1).toDouble()),Scalar(255.0),Imgproc.FILLED)
+            sift.detectAndCompute(mat,emptyMask,mapKeys,mapDescriptors)
+            sift.detectAndCompute(scene.mat,mask,sceneKeys,sceneDescriptors)
+            if (mapDescriptors.empty() || sceneDescriptors.rows() < 2) return emptyList()
+            matcher.knnMatch(mapDescriptors,sceneDescriptors,matches,2)
+            val mapPoints = mapKeys.toArray()
+            val scenePoints = sceneKeys.toArray()
+            // A strict nearest/second-nearest ratio and unique scene point prevent repeated map motifs dominating the fit.
+            return matches.mapNotNull { pair ->
+                val a = pair.toArray()
+                a.firstOrNull()?.takeIf { a.size == 2 && it.distance < 0.70 * a[1].distance }
+            }.sortedBy { it.distance }.distinctBy { it.trainIdx }.map { m ->
+                val a = mapPoints[m.queryIdx].pt
+                val b = scenePoints[m.trainIdx].pt
+                io.github.lib_automata.ImageFeatureMatch(a.x,a.y,b.x,b.y)
+            }
+        } finally {
+            matches.forEach { it.release() }
+            mapKeys.release(); sceneKeys.release(); mapDescriptors.release(); sceneDescriptors.release()
+            mask.release(); emptyMask.release(); sift.clear(); matcher.clear()
+        }
+    }
+
     override fun isWhite(): Boolean {
         val minMaxLocResult = Core.minMaxLoc(mat)
         // 0 = black, 255 = white

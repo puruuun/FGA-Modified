@@ -140,6 +140,29 @@ class AccessibilityGestures @Inject constructor(
         }
     }
 
+    /**
+     * Two simultaneous strokes in one gesture (multi-stroke gestures are available from API 24). The gesture result is
+     * only logged: a rejected pinch is noticed by the caller, which checks the zoom it reached on the next screenshot.
+     */
+    override fun pinch(startA: Location, endA: Location, startB: Location, endB: Location, durationMs: Long): Boolean = runBlocking {
+        Timber.d("pinch $startA->$endA, $startB->$endB, ${durationMs}ms")
+        val gesture = PinchGestureBuilder.build(io.github.lib_automata.PinchPlan(startA,endA,startB,endB,durationMs))
+        val completed = kotlinx.coroutines.withTimeoutOrNull(durationMs + 5_000) {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                fun finish(ok: Boolean) { if (continuation.isActive) continuation.resume(ok) }
+                val callback = object : AccessibilityService.GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: GestureDescription?) = finish(true)
+                    override fun onCancelled(gestureDescription: GestureDescription?) = finish(false)
+                }
+                val service = TapperService.instance
+                if (service == null || !service.dispatchGesture(gesture, callback, null)) finish(false)
+            }
+        } ?: false
+        Timber.d("pinch completed=$completed")
+        wait(gesturePrefs.swipeWaitTime)
+        completed
+    }
+
     override fun swipe(start: Location, end: Location) = runBlocking {
         Timber.d("swipe $start, $end")
 

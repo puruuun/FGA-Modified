@@ -298,19 +298,33 @@ class ScriptManager @Inject constructor(
             }
 
             is AutoWeeklyRoute.ExitException -> {
-                val name = e.target?.name.orEmpty()
-                val ap = e.target?.ap ?: 0
                 val msg = when (val reason = e.reason) {
-                    AutoWeeklyRoute.ExitReason.NoTarget -> context.getString(R.string.weekly_route_stop_no_target)
-                    AutoWeeklyRoute.ExitReason.NotOnPanel -> context.getString(R.string.weekly_route_stop_not_on_panel, name, ap)
-                    AutoWeeklyRoute.ExitReason.NotFreeQuest -> context.getString(R.string.weekly_route_stop_not_free, name, ap)
-                    is AutoWeeklyRoute.ExitReason.ApUnreadable -> context.getString(R.string.weekly_route_stop_ap_unreadable, name, reason.expected)
-                    is AutoWeeklyRoute.ExitReason.ApMismatch -> context.getString(R.string.weekly_route_stop_ap_mismatch, name, reason.expected, reason.read)
-                    is AutoWeeklyRoute.ExitReason.NameMismatch -> context.getString(R.string.weekly_route_stop_name_mismatch, name)
+                    AutoWeeklyRoute.ExitReason.NoRoute -> context.getString(R.string.weekly_route_stop_no_route)
+                    AutoWeeklyRoute.ExitReason.NotOnMainScreen -> context.getString(R.string.weekly_route_stop_not_main)
+                    is AutoWeeklyRoute.ExitReason.Finished -> buildString {
+                        append(context.getString(when {
+                            reason.userStopped -> R.string.weekly_route_summary_user
+                            reason.stop != null -> R.string.weekly_route_summary_battle
+                            reason.results.any { it.status in setOf(io.github.fate_grand_automata.scripts.weekly.StopStatus.Aborted,io.github.fate_grand_automata.scripts.weekly.StopStatus.NotRun) } -> R.string.weekly_route_summary_stopped
+                            else -> R.string.weekly_route_summary_finished
+                        }))
+                        reason.results.forEach { result ->
+                            val status = when (result.status) {
+                                io.github.fate_grand_automata.scripts.weekly.StopStatus.Done -> context.getString(R.string.weekly_route_status_done)
+                                io.github.fate_grand_automata.scripts.weekly.StopStatus.NotFound -> context.getString(R.string.weekly_route_status_not_found,context.getString(R.string.weekly_route_check_log))
+                                io.github.fate_grand_automata.scripts.weekly.StopStatus.Aborted -> context.getString(R.string.weekly_route_status_aborted,context.getString(R.string.weekly_route_check_log))
+                                io.github.fate_grand_automata.scripts.weekly.StopStatus.NotRun -> context.getString(R.string.weekly_route_status_not_run)
+                            }
+                            append("\n")
+                            append(context.getString(R.string.weekly_route_summary_line,result.item.quest.chapter,result.item.quest.name,
+                                result.item.quest.ap,result.done,result.item.count,status))
+                        }
+                        if(reason.manual.isNotEmpty()) append("\n"+context.getString(R.string.weekly_route_summary_manual,reason.manual.joinToString("\n")))
+                    }
                 }
-
                 messages.notify(msg)
-                messageBox.show(scriptExitedString, msg)
+                messageBox.show(scriptExitedString,msg)
+                (e.reason as? AutoWeeklyRoute.ExitReason.Finished)?.stop?.let { showBattleExit(context,it) }
             }
 
             is ScriptAbortException -> {

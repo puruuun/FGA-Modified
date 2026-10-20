@@ -10,11 +10,21 @@ data class RouteQuest(
     val id: Int, val warId: Int, val warOrder: Int, val chapter: String, val spot: String,
     val name: String, val ap: Int, val type: String, val afterClear: String,
     val traits: Set<Int> = emptySet(), val enemies: List<RouteEnemy> = emptyList(),
-    val enemyDataAvailable: Boolean = true, val repeatPhase: Int = 1
+    val enemyDataAvailable: Boolean = true, val repeatPhase: Int = 1,
+    /** Where the quest sits on the chapter map (Atlas spot id, map-pixel coordinates and the map it belongs to). */
+    val spotId: Int = 0, val spotX: Double = 0.0, val spotY: Double = 0.0, val mapId: Int = 0
 ) {
     fun repeatable(excludedWars: Set<Int>): Boolean = warId !in excludedWars && ap > 0 &&
         type == "free" && afterClear == "repeatLast"
 }
+
+/** One map image of a war. [width] and [height] are the display size in map pixels; the PNG itself is a power-of-two texture. */
+@Serializable
+data class WarMap(val id: Int, val image: String, val width: Int, val height: Int)
+
+/** Chapter data the navigation needs: the list button art and the map images. */
+@Serializable
+data class WarInfo(val id: Int, val name: String, val banner: String, val maps: List<WarMap>)
 
 enum class MissionKind { EnemyTraitAny, EnemyTraitAll, EnemyClass, ServantClass, EnemyId, QuestClear, QuestTrait, Unsupported }
 data class RouteMission(

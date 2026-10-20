@@ -30,7 +30,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 |---|---|
 | [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 판매 화면에 보이는 잠금 아닌 카드를 선택·판매하고 FP 배너로 복귀합니다. 시작 전 게임 필터 확인 필수. 기본 꺼짐. 시험 모드는 베타 전용이며 기본 켜짐. |
 | [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 서번트를 고른 강화 화면에서 칸마다 목표 레벨까지 강화합니다. 모든 칸 기본 꺼짐, 목표를 넘지 않고 잠긴 어펜드는 해방하지 않습니다. |
-| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션을 가장 적은 AP로 채우는 퀘스트와 횟수를 계산하고, 열어 둔 퀘스트 판에서 첫 퀘스트를 반복합니다(1.6.0 베타 1단계, JP·KR). |
+| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션의 최소 AP 경로를 계산하고, 메인 화면에서 장·지도를 찾아 전체 경로를 반복합니다(1.6.0 베타, JP·KR). |
 | [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 재림·영의 서포트 이미지를 생성하고 번호·이름 폴더에 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 스크립트·서포트 이미지를 골라 일괄로 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Modified-Features-KR.md#chaldea-import) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |

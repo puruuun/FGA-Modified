@@ -26,15 +26,16 @@ class TesseractOcrService @Inject constructor(
      */
     private var tessApi: TessBaseAPI? = null
     private var lineApi: TessBaseAPI? = null
+    private var lineLanguage = "eng"
 
     private fun api(): TessBaseAPI =
         tessApi ?: createApi().also { tessApi = it }
 
-    private fun createApi(): TessBaseAPI =
+    private fun createApi(language: String = "eng"): TessBaseAPI =
         TessBaseAPI().also { api ->
             try {
                 extractTesseractTrainingData()
-                check(api.init(context.filesDir.absolutePath, "eng")) { "Could not initialize Tesseract" }
+                check(api.init(context.filesDir.absolutePath, language)) { "Could not initialize Tesseract" }
             } catch (e: Throwable) {
                 api.recycle()
                 throw e
@@ -58,7 +59,12 @@ class TesseractOcrService @Inject constructor(
     override fun detectTextLine(pattern: Pattern, options: TextLineOcrOptions): OcrText = synchronized(lock) {
         // The same bundled Tesseract engine/data, with a separate lazy context so a whitelist
         // or line segmentation never leaks into gift-box OCR.
-        val api = lineApi ?: createApi().also { lineApi = it }
+        if (lineLanguage != options.language) {
+            lineApi?.recycle()
+            lineApi = null
+            lineLanguage = options.language
+        }
+        val api = lineApi ?: createApi(options.language).also { lineApi = it }
         api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_LINE)
         check(api.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, options.allowedCharacters))
         try {

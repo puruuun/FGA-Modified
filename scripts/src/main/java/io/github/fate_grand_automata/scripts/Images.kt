@@ -170,6 +170,14 @@ enum class Images(val path: String) {
     QuestItemParty("quest_item_party.png"),
     /** The English "Free Quest" emblem of a quest panel; identical on every server, so only En has a copy. */
     FreeQuestLabel("free_quest_label.png"),
+    /** Weekly route navigation (JP and KR only): the top-left button on the main screen, in a chapter list and on a map. */
+    WeeklyNotice("weekly_notice.png"),
+    WeeklyClose("weekly_close.png"),
+    WeeklyTerminal("weekly_terminal.png"),
+    /** Main record list buttons on the main screen. KR has no main record 2: its part-2 chapters sit in the main list. */
+    WeeklyMainRecord1("weekly_mr1.png"),
+    WeeklyMainRecord15("weekly_mr15.png"),
+    WeeklyMainRecord2("weekly_mr2.png"),
 
     GrandCeLabel("grand_ce_label.png"),
     BondCeEffectDefault("bond_ce_effect_default.png"),

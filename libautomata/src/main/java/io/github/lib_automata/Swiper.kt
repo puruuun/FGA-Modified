@@ -13,6 +13,9 @@ interface Swiper {
 
     /** Bounded scroll: exact displacement, no user multiplier, and a stationary hold before release. */
     fun scroll(start: Location, end: Location)
+
+    /** Two-finger pinch (script coordinates); see [PinchGesture]. */
+    fun pinch(plan: PinchPlan): Boolean
 }
 
 class RealSwiper @Inject constructor(
@@ -20,6 +23,14 @@ class RealSwiper @Inject constructor(
     private val platformImpl: PlatformImpl,
     private val transform: Transformer
 ): Swiper {
+    override fun pinch(plan: PinchPlan): Boolean {
+        return gestureService.pinch(
+            transform.toScreen(plan.startA), transform.toScreen(plan.endA),
+            transform.toScreen(plan.startB), transform.toScreen(plan.endB),
+            plan.durationMs
+        )
+    }
+
     override fun scroll(start: Location, end: Location) {
         gestureService.scroll(transform.toScreen(start), transform.toScreen(end))
     }

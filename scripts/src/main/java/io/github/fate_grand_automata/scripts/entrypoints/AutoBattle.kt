@@ -109,33 +109,44 @@ class AutoBattle @Inject constructor(
 
     private var isQuestClose = false
 
-    override fun script(): Nothing {
+    override fun script(): Nothing = try { runLoop() } finally { finishRun() }
+
+    private var routeQuest = false
+
+    /** Weekly route already tapped a validated panel. Reuse AP handling and battle, but never choose a map quest blindly. */
+    fun runSelectedQuest(): Nothing {
+        routeQuest = true
+        isContinuing = false
+        isInBattle = false
+        storySkipPossible = true
+        isQuestClose = false
+        return try { runLoop(selectedQuest = true) } finally { routeQuest = false }
+    }
+
+    private fun runLoop(selectedQuest: Boolean = false): Nothing {
         try {
+            if (selectedQuest) { battle.resetState(); afterSelectingQuest() }
             loop()
         } catch (e: BattleExitException) {
             throw ExitException(e.reason, makeExitState())
         } catch (_: ScriptAbortException) {
             throw ExitException(ExitReason.Abort, makeExitState())
         } catch (e: Exception) {
-            val reason = ExitReason.Unexpected(e)
+            throw ExitException(ExitReason.Unexpected(e), makeExitState())
+        }
+    }
 
-            throw ExitException(reason, makeExitState())
-        } finally {
-            refill.autoDecrement()
-            matTracker.autoDecrement()
-            ceDropsTracker.autoDecrement()
-
-            val perServerConfigPref = prefs.selectedServerConfigPref
-
-            // Auto-decrement runs
-            if (perServerConfigPref.shouldLimitRuns) {
-                perServerConfigPref.limitRuns -= state.runs
-
-                // Turn off run limit when done
-                if (perServerConfigPref.limitRuns <= 0) {
-                    perServerConfigPref.limitRuns = 1
-                    perServerConfigPref.shouldLimitRuns = false
-                }
+    /** Once per script, not once per route quest: trackers contain cumulative resource use. */
+    fun finishRun(updateRunLimit: Boolean = true) {
+        refill.autoDecrement()
+        matTracker.autoDecrement()
+        ceDropsTracker.autoDecrement()
+        val perServerConfigPref = prefs.selectedServerConfigPref
+        if (updateRunLimit && perServerConfigPref.shouldLimitRuns) {
+            perServerConfigPref.limitRuns -= state.runs
+            if (perServerConfigPref.limitRuns <= 0) {
+                perServerConfigPref.limitRuns = 1
+                perServerConfigPref.shouldLimitRuns = false
             }
         }
     }
@@ -247,6 +258,7 @@ class AutoBattle @Inject constructor(
      * Resets the battle state, clicks on the quest and refills the AP if needed.
      */
     private fun menu() {
+        if (routeQuest) throw BattleExitException(ExitReason.StopAfterThisRun)
         // In case the repeat loop breaks and we end up in menu (like withdrawing from quests)
         isContinuing = false
 

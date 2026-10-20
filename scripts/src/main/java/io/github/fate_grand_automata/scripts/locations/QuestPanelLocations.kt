@@ -12,6 +12,18 @@ import javax.inject.Inject
 class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
     private fun panel(region: Region) = (if (isWide) region + io.github.lib_automata.Location(-190, 0) else region).xFromRight()
 
+    companion object {
+        /** Distance between two panels of one spot (1440p). Measured on the spot with a mission quest above its free quest. */
+        const val SLOT_PITCH = 376
+        /** A spot's panel list shows this many panels at once; further ones need a scroll the route does not do. */
+        const val SLOTS = 3
+    }
+
+    fun slot(region: Region, slot: Int) = region + io.github.lib_automata.Location(0, slot * SLOT_PITCH)
+
+    /** The middle of a panel, clear of the info button and the reward icon on its right. */
+    fun tap(slot: Int) = panel(Region(-800, 384 + slot * SLOT_PITCH, 1, 1)).center
+
     /** The "Free Quest" emblem on the left of the panel. Mission and one-off quests show other artwork here. */
     val freeLabel = panel(Region(-1330, 270, 330, 220))
 

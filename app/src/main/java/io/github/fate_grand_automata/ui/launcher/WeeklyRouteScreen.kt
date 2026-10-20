@@ -29,20 +29,20 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.weekly.AtlasRouteRepository
+import io.github.fate_grand_automata.scripts.weekly.RouteItem
 import io.github.fate_grand_automata.scripts.weekly.RoutePlan
 import io.github.fate_grand_automata.scripts.weekly.WeeklyRouteSolver
-import io.github.fate_grand_automata.scripts.weekly.WeeklyRouteTarget
 import io.github.fate_grand_automata.ui.FgaScreen
 import io.github.fate_grand_automata.ui.Stepper
 
-/** What the user confirmed: the first route quest with its count, and the battle config to fight it with. */
-data class WeeklyRouteChoice(val target: WeeklyRouteTarget, val config: IBattleConfig)
+/** What the user confirmed: the route quests with their counts (above zero), the manual missions and the battle config. */
+data class WeeklyRouteChoice(val items: List<RouteItem>, val manual: List<String>, val config: IBattleConfig)
 
 private fun oneLine(text: String) = text.replace('\n', ' ')
 
 /**
  * D-1 route confirm dialog. The route is recomputed whenever a chapter is switched off; the counts can be edited.
- * Step 1 starts only the first quest of the route that still has a count above zero.
+ * Confirming starts the whole route (design 0009 step 2): every quest whose count is still above zero.
  */
 @Composable
 fun WeeklyRouteScreen(
@@ -72,7 +72,7 @@ fun WeeklyRouteScreen(
     val manual = plan.getOrNull()?.manual.orEmpty()
     val manualIds = manual.map { it.id }.toSet()
     val totalAp = items.sumOf { it.quest.ap.toLong() * (counts[it.quest.id] ?: 0) }
-    val first = items.firstOrNull { (counts[it.quest.id] ?: 0) > 0 }
+    val chosen = items.filter { (counts[it.quest.id] ?: 0) > 0 }.map { RouteItem(it.quest, counts.getValue(it.quest.id)) }
 
     FgaScreen {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -141,7 +141,7 @@ fun WeeklyRouteScreen(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 6.dp)
                     )
-                    Text(stringResource(R.string.weekly_route_step1), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.weekly_route_start_note), style = MaterialTheme.typography.bodySmall)
                     if (data.server == "KR") {
                         Text(stringResource(R.string.weekly_route_kr_note), style = MaterialTheme.typography.bodySmall)
                     }
@@ -191,17 +191,9 @@ fun WeeklyRouteScreen(
                 TextButton(onClick = { onResult(null) }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(
                     onClick = {
-                        val quest = checkNotNull(first).quest
-                        onResult(
-                            WeeklyRouteChoice(
-                                WeeklyRouteTarget(
-                                    quest.id, oneLine(quest.chapter), quest.spot, quest.name, quest.ap, counts.getValue(quest.id)
-                                ),
-                                configs[configIndex]
-                            )
-                        )
+                        onResult(WeeklyRouteChoice(chosen, manual.map { oneLine(it.name) }, configs[configIndex]))
                     },
-                    enabled = first != null && configIndex in configs.indices
+                    enabled = chosen.isNotEmpty() && configIndex in configs.indices
                 ) { Text(stringResource(R.string.weekly_route_run)) }
             }
         }

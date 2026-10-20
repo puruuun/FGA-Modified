@@ -16,6 +16,13 @@ interface GestureService : AutoCloseable {
     fun scroll(start: Location, end: Location)
 
     /**
+     * Two-finger gesture: both fingers touch down together, move in a straight line to their end points over
+     * [durationMs] and lift together. The locations are screen coordinates. Pinching in (zoom out) moves the fingers
+     * towards each other.
+     */
+    fun pinch(startA: Location, endA: Location, startB: Location, endB: Location, durationMs: Long): Boolean
+
+    /**
      * Clicks on a given [location].
      *
      * @param location the location to click on
