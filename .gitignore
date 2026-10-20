@@ -15,3 +15,6 @@ custom-game-area/image.jpg
 fastlane/serviceaccount.json
 fastlane/report.xml
 /crash/
+
+# Codex agent local copies of repo skills
+.agents/
