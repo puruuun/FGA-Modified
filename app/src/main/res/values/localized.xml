@@ -837,5 +837,26 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="weekly_route_progress_solve">Computing route…</string>
     <string name="weekly_route_settings">Weekly quest tracking settings</string>
     <string name="weekly_route_settings_no_data">Download this server’s data in the battle launcher’s weekly mission panel first.</string>
+    <string name="weekly_probe_toggle">Navigation probe (no AP is spent)</string>
+    <string name="weekly_probe_note">Goes through the same screens as the route (main screen, main record, chapter, map, spot) and only checks whether the panel of each quest can be found. It never taps a quest panel and never starts a battle. Start from the main screen. Results are saved as a CSV in the FGA storage folder (diagnostics/weeklyRoute/probe).</string>
+    <string name="weekly_probe_scope">Quests to check</string>
+    <string name="weekly_probe_scope_all">All main story free quests</string>
+    <string name="weekly_probe_scope_chapters">Selected chapters</string>
+    <string name="weekly_probe_scope_enabled">Quests enabled in the weekly settings</string>
+    <string name="weekly_probe_skip">Skip quests that already succeeded</string>
+    <string name="weekly_probe_count_selected">%1$d quests will be checked</string>
+    <string name="weekly_probe_summary_finished">Navigation probe finished.</string>
+    <string name="weekly_probe_summary_user">Navigation probe stopped by you. Results so far were kept.</string>
+    <string name="weekly_probe_count">%1$s: %2$d</string>
+    <string name="weekly_probe_line">%1$s / %2$s: %3$s</string>
+    <string name="weekly_probe_more">…and %1$d more (see the CSV)</string>
+    <string name="weekly_probe_csv">Result file: %1$s</string>
+    <string name="weekly_probe_csv_failed">The result file could not be written. See the WeeklyRoute log.</string>
+    <string name="weekly_probe_status_success">success</string>
+    <string name="weekly_probe_status_map">map fit failed</string>
+    <string name="weekly_probe_status_no_panel">no panel after spot tap</string>
+    <string name="weekly_probe_status_mismatch">panel mismatch</string>
+    <string name="weekly_probe_status_chapter">chapter not found</string>
+    <string name="weekly_probe_status_not_run">not run</string>
     <string name="weekly_route_unsupported_chapter">Mictlan — unsupported</string>
 </resources>

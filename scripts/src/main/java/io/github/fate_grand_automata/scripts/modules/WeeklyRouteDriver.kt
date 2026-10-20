@@ -79,7 +79,7 @@ class WeeklyRouteDriver @Inject constructor(
     var battleStop: AutoBattle.ExitException? = null
         private set
 
-    override fun log(message: String) = messages.log(ScriptLog.WeeklyRoute(message))
+    override fun log(message: String) = messages.log(ScriptLog.WeeklyRoute(if (session.run?.probe == true) "mode=probe $message" else message))
 
     override fun close() {
         banners.values.forEach { it?.close() }
@@ -273,7 +273,7 @@ class WeeklyRouteDriver @Inject constructor(
         }
     }
 
-    private fun readAnchoredPanel(quest: RouteQuest): Boolean {
+    private fun readAnchoredPanel(quest: RouteQuest, tap: Boolean = true): Boolean {
         for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
             if (useSameSnapIn { reader.anchors().isNotEmpty() }) break
             500.milliseconds.wait()
@@ -290,6 +290,10 @@ class WeeklyRouteDriver @Inject constructor(
                     val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames)
                     val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
                     log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} verdict=${QuestPanelMatch.label(verdict)}")
+                    if (verdict == PanelVerdict.Match && !tap) {
+                        log("probe quest=${quest.id} verdict=Match panel left untapped")
+                        return@useSameSnapIn true
+                    }
                     if (verdict == PanelVerdict.Match) {
                         log("tap step=panel quest=${quest.id} point=${anchor.tap}")
                         anchor.tap.click()
@@ -306,7 +310,8 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     private fun panelDiagnostic(questId: Int, attempt: Int) {
-        if (!diagnostics.enabled) return
+        // Probe mode keeps one frame per failed quest (probeDiagnostic) instead of one per read attempt.
+        if (run.probe || !diagnostics.enabled) return
         useColor {
             loc.scriptArea.getPattern("weekly panel non-Match").use { frame ->
                 diagnostics.save(frame, questId, attempt)?.let { log("panel diagnostic path=$it") }
@@ -314,7 +319,24 @@ class WeeklyRouteDriver @Inject constructor(
         }
     }
 
-    override fun openSpot(quest: RouteQuest): SpotOutcome {
+    /** One frame of the screen a failed probe ended on (map or open panel). */
+    private fun probeDiagnostic(questId: Int) {
+        if (!diagnostics.enabled) return
+        useColor {
+            loc.scriptArea.getPattern("weekly probe failure").use { frame ->
+                diagnostics.save(frame, questId, 0)?.let { log("probe diagnostic path=$it") }
+            }
+        }
+    }
+
+    override fun openSpot(quest: RouteQuest): SpotOutcome = open(quest, tap = true)
+
+    override fun probeSpot(quest: RouteQuest): SpotOutcome {
+        diagnostics.startProbe()
+        return open(quest, tap = false)
+    }
+
+    private fun open(quest: RouteQuest, tap: Boolean): SpotOutcome {
         val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
         if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
         val map = mapFor(war, quest.mapId) ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
@@ -330,9 +352,12 @@ class WeeklyRouteDriver @Inject constructor(
             if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
             return true
         }
-        if (!openPanel(false)) return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
+        if (!openPanel(false)) {
+            if (!tap) probeDiagnostic(quest.id)
+            return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
+        }
         val matched = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.run(
-            read = { readAnchoredPanel(quest) },
+            read = { readAnchoredPanel(quest, tap) },
             resetList = {
                 val anchor = useSameSnapIn { reader.resetAnchor() }
                 if (screen() != RouteScreen.List || anchor == null) {
@@ -351,6 +376,7 @@ class WeeklyRouteDriver @Inject constructor(
             }
         )
         if (matched) return SpotOutcome.Started
+        if (!tap) probeDiagnostic(quest.id)
         if (screen() == RouteScreen.List) closePanel()
         return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
     }
@@ -366,7 +392,11 @@ class WeeklyRouteDriver @Inject constructor(
         repeat(60) {
             val onPanel = useSameSnapIn { topLeft(Images.WeeklyClose) && reader.anchors().isNotEmpty() }
             if (onPanel) return true
-            if (!closed && closeRepeatDialog()) { closed = true; log("repeat dialog closed") }
+            if (!closed && closeRepeatDialog()) {
+                closed = true
+                log("repeat dialog closed; settling map for 5s")
+                5.seconds.wait()
+            }
             500.milliseconds.wait()
         }
         return false

@@ -3,16 +3,19 @@ package io.github.fate_grand_automata.util
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics
+import io.github.fate_grand_automata.scripts.weekly.WeeklyProbe
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
-/** Automatic only in beta; bounded per run, including failed writes. */
+/** Automatic only in beta (8 per run), or in probe mode (up to 100); bounded per run, including failed writes. */
 @ScriptScope
 class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStorageProvider) : IWeeklyPanelDiagnostics {
     private val run = System.currentTimeMillis()
     private var count = 0
-    override val enabled get() = BuildConfig.BUILD_TYPE == "beta" && count < 8
+    private var probe = false
+    override val enabled get() = if (probe) count < WeeklyProbe.DIAGNOSTIC_LIMIT else BuildConfig.BUILD_TYPE == "beta" && count < 8
+    override fun startProbe() { probe = true }
     override fun save(frame: Pattern, questId: Int, attempt: Int): String? {
         if (!enabled) return null
         val path = "weeklyRoute/$run/${++count}-q$questId-a$attempt.png"

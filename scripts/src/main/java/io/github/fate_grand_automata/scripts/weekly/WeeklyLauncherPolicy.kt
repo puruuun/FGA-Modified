@@ -17,6 +17,6 @@ object WeeklyCandidateSettings {
 }
 
 object WeeklyLauncherPolicy {
-    fun weekly(panelOpen: Boolean, positiveRouteCounts: List<Int>): Boolean =
-        panelOpen && positiveRouteCounts.any { it > 0 }
+    fun weekly(panelOpen: Boolean, positiveRouteCounts: List<Int>, probe: Boolean = false): Boolean =
+        panelOpen && (probe || positiveRouteCounts.any { it > 0 })
 }

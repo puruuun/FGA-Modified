@@ -65,6 +65,8 @@ interface RouteDriver {
     fun prepareMap(warId: Int): Boolean
     /** Finds the quest's spot on the open map and taps the quest panel whose name and AP match. */
     fun openSpot(quest: RouteQuest): SpotOutcome
+    /** D-25: the same navigation as [openSpot], but a matching panel is left untapped (open) and nothing else is done to it. */
+    fun probeSpot(quest: RouteQuest): SpotOutcome = error("probe mode is not supported by this driver")
     /** Runs the quest [count] times with the ordinary battle flow and brings the game back to the map with the panel open. */
     fun battle(quest: RouteQuest, count: Int): BattleOutcome
     fun log(message: String)
@@ -75,7 +77,12 @@ interface RouteDriver {
  * It tracks where the game is, so consecutive quests of one chapter never leave the map and a new chapter is reached
  * through the terminal button and the list, or through the main screen when it lives in another list.
  */
-class WeeklyRouteMachine(private val driver: RouteDriver, private val server: String) {
+class WeeklyRouteMachine(
+    private val driver: RouteDriver,
+    private val server: String,
+    private val probe: Boolean = false,
+    private val now: () -> Long = System::currentTimeMillis
+) {
     private sealed class Loc {
         data object Home : Loc()
         data class InList(val list: ChapterList) : Loc()
@@ -85,26 +92,35 @@ class WeeklyRouteMachine(private val driver: RouteDriver, private val server: St
 
     private var loc: Loc = Loc.Home
     val results = mutableListOf<StopResult>()
+    /** Probe mode only: one entry per visited quest, in visit order. */
+    val probeResults = mutableListOf<ProbeResult>()
     private var active: RouteItem? = null
     private val rejectedChapters=mutableSetOf<Int>()
     fun interrupt(note: String) {
-        active?.let { item -> if (results.none { it.item.quest.id == item.quest.id }) results += StopResult(item,0,StopStatus.Aborted,note) }
+        active?.let { item ->
+            if (results.none { it.item.quest.id == item.quest.id }) {
+                results += StopResult(item,0,StopStatus.Aborted,note)
+                if (probe) probeResults += ProbeResult(item.quest, ProbeStatus.NotRun, note, 0)
+            }
+        }
     }
 
     fun run(visits: List<ChapterVisit>): List<StopResult> {
         for ((index, visit) in visits.withIndex()) {
             if (loc == Loc.Lost) { rest(visit, "navigation lost"); continue }
             active = visit.stops.firstOrNull()
+            val reachStart = now()
             val problem = reach(visit)
-            if (problem != null) { notFound(visit, problem); continue }
+            if (problem != null) { notFound(visit, problem, now() - reachStart); continue }
             var stopped = false
             for (item in visit.stops) {
-                if (stopped) { results += StopResult(item, 0, StopStatus.NotRun, "route stopped"); continue }
+                if (stopped) { results += StopResult(item, 0, StopStatus.NotRun, "route stopped"); probeNotRun(item, "route stopped"); continue }
                 if(item.quest.warId in rejectedChapters) {
                     results += StopResult(item,0,StopStatus.NotFound,"chapter map not recognized")
+                    if (probe) probeResults += ProbeResult(item.quest, ProbeStatus.MapFitFailed, "chapter map not recognized", 0)
                     continue
                 }
-                stopped = !runStop(item)
+                stopped = !(if (probe) probeStop(item) else runStop(item))
             }
             if (stopped) {
                 loc = Loc.Lost
@@ -115,10 +131,38 @@ class WeeklyRouteMachine(private val driver: RouteDriver, private val server: St
         return results
     }
 
-    private fun rest(visit: ChapterVisit, note: String) = visit.stops.forEach { results += StopResult(it, 0, StopStatus.NotRun, note) }
-    private fun notFound(visit: ChapterVisit, note: String) = visit.stops.forEach {
+    private fun probeNotRun(item: RouteItem, note: String) { if (probe) probeResults += ProbeResult(item.quest, ProbeStatus.NotRun, note, 0) }
+    private fun rest(visit: ChapterVisit, note: String) = visit.stops.forEach {
+        results += StopResult(it, 0, StopStatus.NotRun, note)
+        probeNotRun(it, note)
+    }
+    private fun notFound(visit: ChapterVisit, note: String, elapsed: Long) = visit.stops.forEachIndexed { index, it ->
         driver.log("skip quest=${it.quest.id} reason=$note")
         results += StopResult(it, 0, StopStatus.NotFound, note)
+        if (probe) probeResults += ProbeResult(it.quest, ProbeStatus.classify(note), note, if (index == 0) elapsed else 0)
+    }
+
+    /** D-25: finds the quest's panel and reports the verdict. Never taps the panel, never starts a battle or a repeat dialog. */
+    private fun probeStop(item: RouteItem): Boolean {
+        active = item
+        val start = now()
+        val spot = driver.probeSpot(item.quest)
+        val elapsed = now() - start
+        if (spot is SpotOutcome.NotFound) {
+            driver.log("probe quest=${item.quest.id} status=${ProbeStatus.classify(spot.reason).csv} reason=${spot.reason} ms=$elapsed")
+            if (spot.skipChapter) rejectedChapters += item.quest.warId
+            results += StopResult(item, 0, StopStatus.NotFound, spot.reason)
+            probeResults += ProbeResult(item.quest, ProbeStatus.classify(spot.reason), spot.reason, elapsed)
+            return true
+        }
+        driver.log("probe quest=${item.quest.id} status=success ms=$elapsed")
+        results += StopResult(item, 0, StopStatus.Done, "")
+        probeResults += ProbeResult(item.quest, ProbeStatus.Success, "", elapsed)
+        if (!driver.closePanel()) {
+            driver.log("abort reason=panel did not close")
+            return false
+        }
+        return true
     }
 
     /** Runs one quest on the open map. Returns false when the whole route has to stop. */

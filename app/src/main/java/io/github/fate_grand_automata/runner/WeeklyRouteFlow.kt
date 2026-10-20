@@ -20,6 +20,24 @@ class WeeklyRouteFlow @Inject constructor(
 ) {
     private fun log(message: String) = Timber.tag(WEEKLY_ROUTE_TAG).i(message)
 
+    /** Quests whose panel an earlier probe found; kept per server so a rerun can skip them. */
+    private fun succeededFile(server: String) = File(context.filesDir, "weekly-probe-succeeded-$server.txt")
+    fun probeSucceeded(server: String): Set<Int> = runCatching {
+        succeededFile(server).takeIf { it.exists() }?.readLines()?.mapNotNull { it.trim().toIntOrNull() }?.toSet()
+    }.getOrNull().orEmpty()
+    fun rememberProbeSucceeded(server: String, ids: Collection<Int>) {
+        if (ids.isEmpty()) return
+        runCatching { succeededFile(server).writeText((probeSucceeded(server) + ids).sorted().joinToString("\n")) }
+    }
+
+    /** D-25: the probe run of [items] (one visit each, no AP). Called by the launcher's shared OK in probe mode. */
+    fun prepareProbe(data: AtlasRouteRepository.Dataset, items: List<io.github.fate_grand_automata.scripts.weekly.RouteItem>, skipSucceeded: Boolean) {
+        val done = if (skipSucceeded) probeSucceeded(data.server) else emptySet()
+        val todo = items.filter { it.quest.id !in done }
+        session.run = WeeklyRouteRun(data.server, todo, emptyList(), data.wars, File(context.cacheDir, "atlas-weekly"), data.questNames, probe = true)
+        log("mode=probe confirmed server=${data.server} quests=${todo.size} skippedSucceeded=${items.size - todo.size}")
+    }
+
     /** Called only by the launcher's shared OK, after its left-side config was saved. */
     fun prepare(data: AtlasRouteRepository.Dataset, items: List<io.github.fate_grand_automata.scripts.weekly.RouteItem>, manual: List<String>) {
         require(items.isNotEmpty() && items.all { it.count > 0 })

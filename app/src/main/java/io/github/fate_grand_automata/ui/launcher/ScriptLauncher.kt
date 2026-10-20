@@ -28,7 +28,8 @@ fun ScriptLauncher(
     prefs: IPreferences,
     prefsCore: PrefsCore,
     onWeeklyExpanded: (Boolean) -> Unit = {},
-    prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> }
+    prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> },
+    prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> }
 ) {
     var weeklyOpen by remember { mutableStateOf(false) }
     val weekly = remember { WeeklyPanelState() }
@@ -40,7 +41,7 @@ fun ScriptLauncher(
             val modifier = Modifier.weight(1f)
 
             val responseBuilder = when (scriptMode) {
-                ScriptModeEnum.Battle -> expandedBattleLauncher(prefs, prefsCore, weeklyOpen, weekly, prepareWeekly, modifier)
+                ScriptModeEnum.Battle -> expandedBattleLauncher(prefs, prefsCore, weeklyOpen, weekly, prepareWeekly, prepareProbe, modifier)
                 ScriptModeEnum.SupportImageMaker ->
                     battleLauncher(prefs, modifier, prefsCore)
 
@@ -102,6 +103,7 @@ private fun expandedBattleLauncher(
     open: Boolean,
     weekly: WeeklyPanelState,
     prepare: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit,
+    prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit,
     modifier: Modifier
 ): ScriptLauncherResponseBuilder {
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
@@ -111,11 +113,14 @@ private fun expandedBattleLauncher(
             core, weekly, Modifier.weight(0.7f))
     }
     return ScriptLauncherResponseBuilder(
-        canBuild = { left.canBuild() && (!open || !weekly.busy) },
+        canBuild = { left.canBuild() && (!open || !weekly.busy) && (!open || !weekly.probe || weekly.data?.let { weekly.probeItems(it, core.weeklyRoute.disabled.get()).isNotEmpty() } == true) },
         build = {
             val normal = left.build()
             val data = weekly.data
-            if (data != null && WeeklyLauncherPolicy.weekly(open, weekly.chosen.map { it.count })) {
+            if (data != null && open && weekly.probe && weekly.probeItems(data, core.weeklyRoute.disabled.get()).isNotEmpty()) {
+                prepareProbe(data, weekly.probeItems(data, core.weeklyRoute.disabled.get()), weekly.skipSucceeded)
+                ScriptLauncherResponse.WeeklyRoute
+            } else if (data != null && !weekly.probe && WeeklyLauncherPolicy.weekly(open, weekly.chosen.map { it.count })) {
                 prepare(data, weekly.chosen, weekly.manual)
                 ScriptLauncherResponse.WeeklyRoute
             } else normal

@@ -40,6 +40,7 @@ import io.github.fate_grand_automata.util.KnownException
 import io.github.fate_grand_automata.util.ScriptMessages
 import io.github.fate_grand_automata.util.ScriptState
 import io.github.fate_grand_automata.util.StorageProvider
+import io.github.fate_grand_automata.util.WEEKLY_ROUTE_TAG
 import io.github.fate_grand_automata.util.messageAndStackTrace
 import io.github.fate_grand_automata.util.set
 import io.github.fate_grand_automata.util.skillLevelStepMessage
@@ -60,6 +61,8 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.milliseconds
+
+private const val PROBE_SUMMARY_LINES = 25
 
 @ServiceScoped
 class ScriptManager @Inject constructor(
@@ -92,6 +95,48 @@ class ScriptManager @Inject constructor(
             runCatching { it.close() }
                 .onFailure { e -> Timber.w(e, "Failed to release the OCR service") }
         }
+    }
+
+    /** D-25: saves the probe's CSV below the FGA storage root, remembers the successes and builds the summary text. */
+    private fun probeSummary(context: Context, reason: AutoWeeklyRoute.ExitReason.Probed): String {
+        val results = reason.results
+        val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+        val path = "weeklyRoute/probe/probe-${reason.server}-$stamp.csv"
+        val saved = runCatching {
+            storageProvider.writeDiagnosticFile(path, "text/csv") { out ->
+                out.write(io.github.fate_grand_automata.scripts.weekly.WeeklyProbe.csv(results).toByteArray(Charsets.UTF_8))
+            }
+        }.onFailure { Timber.tag(WEEKLY_ROUTE_TAG).w(it, "mode=probe csv write failed path=%s", path) }.isSuccess
+        weeklyRoute.rememberProbeSucceeded(reason.server, results.filter {
+            it.status == io.github.fate_grand_automata.scripts.weekly.ProbeStatus.Success
+        }.map { it.quest.id })
+        Timber.tag(WEEKLY_ROUTE_TAG).i("mode=probe summary quests=${results.size} csv=${if (saved) "diagnostics/$path" else "failed"}")
+        return buildString {
+            append(context.getString(if (reason.userStopped) R.string.weekly_probe_summary_user else R.string.weekly_probe_summary_finished))
+            for (status in io.github.fate_grand_automata.scripts.weekly.ProbeStatus.entries) {
+                val count = results.count { it.status == status }
+                if (count > 0) append("\n").append(context.getString(R.string.weekly_probe_count, context.getString(probeStatusName(status)), count))
+            }
+            val failures = results.filter {
+                it.status != io.github.fate_grand_automata.scripts.weekly.ProbeStatus.Success &&
+                    it.status != io.github.fate_grand_automata.scripts.weekly.ProbeStatus.NotRun
+            }
+            failures.take(PROBE_SUMMARY_LINES).forEach {
+                append("\n").append(context.getString(R.string.weekly_probe_line, it.quest.chapter.replace('\n', ' '), it.quest.name,
+                    context.getString(probeStatusName(it.status))))
+            }
+            if (failures.size > PROBE_SUMMARY_LINES) append("\n").append(context.getString(R.string.weekly_probe_more, failures.size - PROBE_SUMMARY_LINES))
+            append("\n").append(if (saved) context.getString(R.string.weekly_probe_csv, "diagnostics/$path") else context.getString(R.string.weekly_probe_csv_failed))
+        }
+    }
+
+    private fun probeStatusName(status: io.github.fate_grand_automata.scripts.weekly.ProbeStatus) = when (status) {
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.Success -> R.string.weekly_probe_status_success
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.MapFitFailed -> R.string.weekly_probe_status_map
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.NoPanel -> R.string.weekly_probe_status_no_panel
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.Mismatch -> R.string.weekly_probe_status_mismatch
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.ChapterNotFound -> R.string.weekly_probe_status_chapter
+        io.github.fate_grand_automata.scripts.weekly.ProbeStatus.NotRun -> R.string.weekly_probe_status_not_run
     }
 
     private suspend fun showBattleExit(
@@ -301,6 +346,7 @@ class ScriptManager @Inject constructor(
                 val msg = when (val reason = e.reason) {
                     AutoWeeklyRoute.ExitReason.NoRoute -> context.getString(R.string.weekly_route_stop_no_route)
                     AutoWeeklyRoute.ExitReason.NotOnMainScreen -> context.getString(R.string.weekly_route_stop_not_main)
+                    is AutoWeeklyRoute.ExitReason.Probed -> probeSummary(context, reason)
                     is AutoWeeklyRoute.ExitReason.Finished -> buildString {
                         append(context.getString(when {
                             reason.userStopped -> R.string.weekly_route_summary_user
@@ -565,6 +611,7 @@ class ScriptManager @Inject constructor(
                     prefs = preferences,
                     prefsCore = prefsCore,
                     prepareWeekly = weeklyRoute::prepare,
+                    prepareProbe = weeklyRoute::prepareProbe,
                     onWeeklyExpanded = { expanded ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
                         val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }

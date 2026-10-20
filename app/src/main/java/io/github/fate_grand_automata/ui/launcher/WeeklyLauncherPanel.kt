@@ -36,6 +36,13 @@ class WeeklyPanelState {
         val count = counts[it.quest.id] ?: 0
         if (count > 0) it.copy(count = count) else null
     }
+    /** D-25 navigation probe: no AP is spent; the run only checks that each quest's panel can be found. */
+    var probe by mutableStateOf(false)
+    var probeScope by mutableStateOf(ProbeScope.All)
+    val probeChapters = mutableStateListOf<Int>()
+    var skipSucceeded by mutableStateOf(false)
+    fun probeItems(data: AtlasRouteRepository.Dataset, disabled: Set<String>): List<RouteItem> =
+        WeeklyProbe.select(data.server, data.quests, probeScope, probeChapters.toSet(), disabled)
     val manual: List<String> get() = plan?.manual.orEmpty().map { it.name.replace('\n', ' ') }
 }
 
@@ -99,7 +106,12 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
         HorizontalDivider()
         val data = state.data
         val plan = state.plan
-        if (data != null && plan != null) {
+        if (data != null) Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = state.probe, onCheckedChange = { state.probe = it })
+            Text(stringResource(R.string.weekly_probe_toggle), style = MaterialTheme.typography.bodyMedium)
+        }
+        if (data != null && state.probe) ProbeOptions(state, data, disabled, Modifier.weight(1f))
+        else if (data != null && plan != null) {
             val manualIds = plan.manual.map { it.id }.toSet()
             LazyColumn(Modifier.weight(1f)) {
                 item { PanelHeading(stringResource(R.string.weekly_route_missions)) }
@@ -137,4 +149,39 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
 private fun PanelHeading(title: String) {
     Text(title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary,
         modifier = Modifier.padding(top = 10.dp, bottom = 3.dp))
+}
+
+@Composable
+private fun ProbeOptions(state: WeeklyPanelState, data: AtlasRouteRepository.Dataset, disabled: Set<String>, modifier: Modifier) {
+    val chapters = remember(data) {
+        data.quests.filter { it.warId != WeeklyRouteSolver.MICTLAN_WAR }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
+    }
+    LazyColumn(modifier) {
+        item {
+            Text(stringResource(R.string.weekly_probe_note), style = MaterialTheme.typography.bodySmall)
+            PanelHeading(stringResource(R.string.weekly_probe_scope))
+            for ((scope, label) in listOf(
+                ProbeScope.All to R.string.weekly_probe_scope_all,
+                ProbeScope.Chapters to R.string.weekly_probe_scope_chapters,
+                ProbeScope.Enabled to R.string.weekly_probe_scope_enabled
+            )) Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = state.probeScope == scope, onClick = { state.probeScope = scope })
+                Text(stringResource(label), style = MaterialTheme.typography.bodySmall)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = state.skipSucceeded, onCheckedChange = { state.skipSucceeded = it })
+                Text(stringResource(R.string.weekly_probe_skip), style = MaterialTheme.typography.bodySmall)
+            }
+            Text(stringResource(R.string.weekly_probe_count_selected, state.probeItems(data, disabled).size),
+                style = MaterialTheme.typography.titleMedium)
+        }
+        if (state.probeScope == ProbeScope.Chapters) items(chapters.entries.toList(), key = { it.key }) { (war, quests) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = war in state.probeChapters, onCheckedChange = {
+                    if (it) state.probeChapters.add(war) else state.probeChapters.remove(war)
+                })
+                Text(quests.first().chapter.replace('\n', ' '), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
 }
