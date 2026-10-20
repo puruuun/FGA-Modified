@@ -38,6 +38,11 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
                 .put("duration",gesture.getStroke(0).duration).put("converges",plan.endSpan<plan.startSpan)
         }
         "screen" -> actual.put("screen",WeeklyRouteScreens(this,loc).read().name)
+        "repeatExit" -> {
+            actual.put("visible", WeeklyRepeatDialog(this, loc).visible())
+                .put("closeX", loc.repeatDialogClose.x / 2)
+                .put("closeY", loc.repeatDialogClose.y / 2)
+        }
         "button" -> useColor {
             val image=Images.valueOf(case.getString("image"))
             val score=loc.listArea.findAll(images[image],0.1).maxOfOrNull { it.score } ?: 0.0

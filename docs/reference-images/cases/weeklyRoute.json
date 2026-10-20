@@ -1170,6 +1170,42 @@
         "duration": 700,
         "converges": true
       }
+    },
+    {
+      "name": "JP-32-repeat-dialog-left-exit",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/32-repeat-dialog.webp",
+      "view": "repeatExit",
+      "expected": {
+        "visible": true,
+        "closeX": 443,
+        "closeY": 583
+      }
+    },
+    {
+      "name": "JP-11-map-not-repeat-dialog",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "repeatExit",
+      "expected": {
+        "visible": false,
+        "closeX": 443,
+        "closeY": 583
+      }
+    },
+    {
+      "name": "KR-30-quest-panel-not-repeat-dialog",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "repeatExit",
+      "expected": {
+        "visible": false,
+        "closeX": 443,
+        "closeY": 583
+      }
     }
   ],
   "imports": {

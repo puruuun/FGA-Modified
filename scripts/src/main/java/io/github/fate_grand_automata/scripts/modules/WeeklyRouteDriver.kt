@@ -305,13 +305,8 @@ class WeeklyRouteDriver @Inject constructor(
 
     // ---- battle --------------------------------------------------------------------------------------------------
 
-    /** The repeat dialog's close button, the one the interlude end screen uses; clicked only when its picture is there. */
-    private fun closeRepeatDialog(): Boolean = useSameSnapIn {
-        if (images[Images.Close] in locations.interludeEndScreenClose && locations.continueRegion.find(images[Images.Repeat]) != null) {
-            locations.interludeCloseClick.click()
-            true
-        } else false
-    }
+    /** Only called after the existing battle flow reaches its final run limit. */
+    private fun closeRepeatDialog(): Boolean = WeeklyRepeatDialog(this, loc).closeIfVisible()
 
     /** After the last run the game shows the map with the quest panel open (owner); a stuck repeat dialog is closed once. */
     private fun settleOnMap(): Boolean {

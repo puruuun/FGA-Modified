@@ -32,8 +32,11 @@ object MapView {
 
     /** True when a tap at ([x], [y]) lands on the map and not on a fixed button, with a margin around the point. */
     fun isTappable(x: Double, y: Double, width: Int, height: Int): Boolean {
-        if (x < 20 || y < 20 || x > width - 20 || y > height - 20) return false
+        if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0) return false
         val m = 24.0 * height / 720.0
+        val edge = 20.0 * height / 720.0
+        // Even at minimum zoom the icon can be partially clipped: its whole safety margin must be on-screen.
+        if (x - m < edge || y - m < edge || x + m > width - edge || y + m > height - edge) return false
         return !covered(x, y, width, height) && !covered(x - m, y, width, height) && !covered(x + m, y, width, height) &&
             !covered(x, y - m, width, height) && !covered(x, y + m, width, height)
     }

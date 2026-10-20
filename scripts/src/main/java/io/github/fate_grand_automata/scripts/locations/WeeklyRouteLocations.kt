@@ -13,6 +13,11 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
     /** The top-left button: notice (main screen), close (chapter list, quest panel open) or terminal (map). */
     val topLeftButton = Region(10, 30, 330, 140)
 
+    /** D-16: repeat dialog's RIGHT button is a signal only; never tap it when exiting the weekly repeat. */
+    val repeatDialogSignal = Region(180, 1100, 560, 130).xFromCenter()
+    /** LEFT close button centre, measured on owner frame 32 (720p: 443,583). */
+    val repeatDialogClose = Location(-394, 1166).xFromCenter()
+
     /** The scrolling button column of the main screen and the chapter lists: everything right of the portrait, below the title. */
     val listArea = Region(-1500, 200, 1500, 1140).xFromRight()
 
