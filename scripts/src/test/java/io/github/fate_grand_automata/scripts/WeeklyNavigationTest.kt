@@ -8,13 +8,13 @@ class WeeklyNavigationTest {
     private fun item(id: Int,war: Int=100,count: Int=2) = RouteItem(RouteQuest(id,war,war,"chapter","spot","name",5,"free","repeatLast",spotId=id,mapId=war),count)
     private class Fake: RouteDriver {
         val actions=mutableListOf<String>()
-        var missingWar: Int?=null;var missingSpot: Int?=null;var badMap=false;var zoomOk=true;var battleOk=true;var terminalOk=true
+        var missingWar: Int?=null;var missingSpot: Int?=null;var badMap=false;var zoomOk=true;var battleOk=true;var terminalOk=true;var landing=RouteScreen.List;var shown=RouteScreen.Home
         override fun log(message: String) {}
-        override fun screen()=RouteScreen.Home
+        override fun screen()=shown
         override fun openList(list: ChapterList)=true.also { actions+="list:$list" }
         override fun openChapter(warId: Int)=(warId!=missingWar).also { actions+="chapter:$warId" }
         override fun closeList()=true.also { actions+="home" }
-        override fun terminal()=terminalOk.also { actions+="terminal" }
+        override fun terminal()=terminalOk.also { actions+="terminal";shown=landing }
         override fun closePanel()=true.also { actions+="closePanel" }
         override fun prepareMap(warId: Int)=zoomOk.also { actions+="zoom:$warId" }
         override fun openSpot(quest: RouteQuest): SpotOutcome {
@@ -48,6 +48,20 @@ class WeeklyNavigationTest {
     @Test fun `other list returns through terminal then close to home`() {
         val f=Fake();run(f,listOf(item(1,100),item(2,201)))
         assertEquals(listOf("terminal","home","list:MainRecord15"),f.actions.dropWhile { it!="terminal" }.take(3))
+    }
+    @Test fun `terminal landing on the main screen opens the main record that holds the next chapter`() {
+        val f=Fake().apply { landing=RouteScreen.Home };run(f,listOf(item(1,100),item(2,101)))
+        assertEquals(listOf("terminal","list:MainRecord1","chapter:101"),f.actions.dropWhile { it!="terminal" }.take(3))
+        assertFalse("home" in f.actions)
+    }
+    @Test fun `terminal landing on the main screen reaches another main record directly`() {
+        val f=Fake().apply { landing=RouteScreen.Home };run(f,listOf(item(1,100),item(2,201)))
+        assertEquals(listOf("terminal","list:MainRecord15","chapter:201"),f.actions.dropWhile { it!="terminal" }.take(3))
+    }
+    @Test fun `KR part two chapter opens directly when the terminal lands on the main screen`() {
+        val f=Fake().apply { landing=RouteScreen.Home };run(f,listOf(item(1,301),item(2,302)),"KR")
+        assertFalse(f.actions.any { it.startsWith("list:") })
+        assertTrue("chapter:302" in f.actions)
     }
     @Test fun `KR part two opens directly from home after leaving main record list`() {
         val f=Fake();run(f,listOf(item(1,100),item(2,301)),"KR")

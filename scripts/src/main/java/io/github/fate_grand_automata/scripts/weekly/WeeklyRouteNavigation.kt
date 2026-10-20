@@ -154,7 +154,8 @@ class WeeklyRouteMachine(private val driver: RouteDriver, private val server: St
         if (current is Loc.OnMap && current.warId == visit.warId) return null
         if (current is Loc.OnMap) {
             if (!driver.terminal()) { loc = Loc.Lost; return "terminal button not found" }
-            loc = if (current.list == ChapterList.Home) Loc.Home else Loc.InList(current.list)
+            // The terminal button lands on the chapter list, or on the main screen (owner, beta.4): follow what is shown.
+            loc = if (current.list == ChapterList.Home || driver.screen() == RouteScreen.Home) Loc.Home else Loc.InList(current.list)
         }
         val here = loc
         if (here is Loc.InList && here.list != visit.list) {

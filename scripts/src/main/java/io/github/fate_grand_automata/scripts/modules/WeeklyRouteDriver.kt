@@ -62,6 +62,9 @@ class WeeklyRouteDriver @Inject constructor(
         /** Screen pixels per map pixel after the full zoom-out (width of the game area / width of the map). */
         val ZOOMED_OUT_SCALE = 0.45..0.9
         const val SCREEN_TIMEOUT_SECONDS = 8
+        /** Waits for the Free Quest mark (500 ms each) and reads of the panel (about 2 s in total). */
+        const val PANEL_SETTLE_ATTEMPTS = 6
+        const val PANEL_READ_ATTEMPTS = 4
     }
 
     private val run: WeeklyRouteRun get() = checkNotNull(session.run) { "no weekly route" }
@@ -286,18 +289,29 @@ class WeeklyRouteDriver @Inject constructor(
             log("quest=${quest.id} no panel after tapping the spot")
             return SpotOutcome.NotFound("no panel at the spot")
         }
-        1.seconds.wait()
+        // The panel slides in: wait for the Free Quest mark, let it settle, then retry an unreadable AP or name (design 0009 D-18).
+        for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
+            if (useSameSnapIn { reader.isFree(0) }) break
+            500.milliseconds.wait()
+        }
+        300.milliseconds.wait()
 
         val gameServer = prefs.gameServer
-        for (slot in 0 until QuestPanelLocations.SLOTS) {
-            val panel = reader.read(gameServer, slot, run.questNames)
-            val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, gameServer)
-            log("panel quest=${quest.id} slot=$slot free=${panel.free} ap=${panel.ap} name=${panel.nameText} nameCells=${panel.nameCells} verdict=${QuestPanelMatch.label(verdict)}")
-            if (verdict == PanelVerdict.Match) {
-                log("tap step=panel quest=${quest.id} point=${panelLoc.tap(slot)}")
-                panelLoc.tap(slot).click()
-                return SpotOutcome.Started
+        for (attempt in 0 until PANEL_READ_ATTEMPTS) {
+            var retry = false
+            for (slot in 0 until QuestPanelLocations.SLOTS) {
+                val panel = reader.read(gameServer, slot, run.questNames)
+                val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, gameServer)
+                log("panel quest=${quest.id} slot=$slot attempt=$attempt free=${panel.free} ap=${panel.ap} name=${panel.nameText} nameCells=${panel.nameCells} verdict=${QuestPanelMatch.label(verdict)}")
+                if (verdict == PanelVerdict.Match) {
+                    log("tap step=panel quest=${quest.id} point=${panelLoc.tap(slot)}")
+                    panelLoc.tap(slot).click()
+                    return SpotOutcome.Started
+                }
+                if (panel.free && (verdict is PanelVerdict.ApUnreadable || verdict is PanelVerdict.NameMismatch)) retry = true
             }
+            if (!retry) break
+            500.milliseconds.wait()
         }
         closePanel()
         return SpotOutcome.NotFound("no free panel with the AP and name")
