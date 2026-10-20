@@ -65,4 +65,8 @@ abstract class ScriptsModule {
     @ScriptScope
     @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
+
+    @ScriptScope
+    @Binds
+    abstract fun bindWeeklyPanelDiagnostics(diagnostics: io.github.fate_grand_automata.util.WeeklyPanelDiagnostics): io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics
 }

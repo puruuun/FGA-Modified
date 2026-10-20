@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.QuestPanelLocations
+import io.github.fate_grand_automata.scripts.locations.QuestPanelAnchor
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
@@ -44,6 +45,47 @@ class QuestPanelReader @Inject constructor(
     }
 
     private fun label(): Pattern? = runCatching { images[Images.FreeQuestLabel] }.getOrNull()
+
+    /** Fresh emblem positions, independent of panel slots or horizontal placement. */
+    fun anchors(): List<QuestPanelAnchor> = label()?.let { pattern ->
+        loc.freeSearchBand.findAll(pattern, FREE_SIMILARITY)
+            .sortedWith(compareBy({ it.region.y }, { it.region.x }))
+            .map { QuestPanelAnchor(it.region.location) }.filter { it.fits(loc.scriptArea) }.take(8)
+    }.orEmpty()
+
+    /** A clipped emblem may guide a recovery drag, but never authorizes a quest tap. */
+    fun resetAnchor(): QuestPanelAnchor? = anchors().firstOrNull() ?: label()?.let { full ->
+        val half = full.height / 2
+        full.crop(Region(0, half, full.width, full.height - half)).use { bottom ->
+            loc.freeSearchBand.findAll(bottom, 0.85).maxByOrNull { it.score }?.let { match ->
+                QuestPanelAnchor(match.region.location + io.github.lib_automata.Location(0, -half * 2))
+            }
+        }
+    }?.takeIf { anchor ->
+        listOf(anchor.resetStart, anchor.resetEnd).all {
+            it.x >= loc.scriptArea.x && it.x < loc.scriptArea.right && it.y >= loc.scriptArea.y && it.y < loc.scriptArea.bottom
+        }
+    }
+
+    fun readAnchored(server: GameServer, anchor: QuestPanelAnchor, questNames: Collection<String>): QuestPanel = useSameSnapIn {
+        if (!anchor.fits(loc.scriptArea)) return@useSameSnapIn QuestPanel(false, null, null, null)
+        val mark = label() ?: return@useSameSnapIn QuestPanel(false, null, null, null)
+        if (!Region(anchor.mark.x, anchor.mark.y, mark.width * 2, mark.height * 2)
+                .exists(mark, similarity = FREE_SIMILARITY)) return@useSameSnapIn QuestPanel(false, null, null, null)
+        val ap = anchor.ap.getPattern("anchored_panel_ap").use { image ->
+            QuestPanelMatch.apConsensus(AP_PROFILES.map { ocr.detectTextLine(image, it) })
+        }
+        anchor.name.getPattern("anchored_panel_name").use { band ->
+            val width = band.grayPixels()?.let { QuestPanelMatch.inkExtent(it, band.width, band.height) }
+            val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
+            val reads = band.crop(Region(0, 0, minOf((width ?: band.width) + 8, band.width), band.height)).use { image ->
+                listOf(2, 3).map { scale -> ocr.detectTextLine(image,
+                    TextLineOcrOptions(scale = scale, threshold = 0.6, invert = true, padding = 12, language = lang)) }
+            }
+            val name = if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
+            QuestPanel(true, ap, width?.let { QuestPanelMatch.cellsOf(it, server) }, width, name)
+        }
+    }
 
     /** [slot] is the panel's place in the spot's panel list, 0 for the uppermost. */
     fun isFree(slot: Int = 0): Boolean =

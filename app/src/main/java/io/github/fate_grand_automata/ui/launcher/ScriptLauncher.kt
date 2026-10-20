@@ -106,7 +106,7 @@ private fun expandedBattleLauncher(
 ): ScriptLauncherResponseBuilder {
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
     Row(modifier) {
-        left = battleLauncher(prefs, Modifier.weight(1f), core)
+        left = battleLauncher(prefs, Modifier.weight(1f), core, showLimits = !open)
         if (open) WeeklyLauncherPanel(if (prefs.gameServer is GameServer.Kr) "KR" else "JP",
             core, weekly, Modifier.weight(0.7f))
     }

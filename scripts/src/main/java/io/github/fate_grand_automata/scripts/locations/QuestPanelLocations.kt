@@ -10,6 +10,9 @@ import javax.inject.Inject
  * that branch has not been measured on a wide device.
  */
 class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
+    /** D-20: find the emblem across the game area, independent of panel slot or horizontal placement. */
+    val freeSearchBand get() = Region(24, 160, scriptArea.width - 48, 1160)
+
     private fun panel(region: Region) = (if (isWide) region + io.github.lib_automata.Location(-190, 0) else region).xFromRight()
 
     companion object {
@@ -32,4 +35,23 @@ class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms)
 
     /** Quest name band, up to the recommended-level column. */
     val name = panel(Region(-1004, 272, 694, 60))
+}
+
+/** Offsets from the matched Free Quest template's top-left, in 1440p script coordinates.
+ * Measured: JP01 mark=(652,155), name=(778,136), AP=(819,205), tap=(880,192) at 720p.
+ * JP10's lower panel and KR30 use the same relative geometry (KR is one pixel higher).
+ */
+data class QuestPanelAnchor(val mark: io.github.lib_automata.Location) {
+    val ap = Region(mark.x + 334, mark.y + 100, 100, 76)
+    val name = Region(mark.x + 252, mark.y - 38, 694, 60)
+    val tap = mark + io.github.lib_automata.Location(456, 74)
+    /** Name/progress area, well left of the reward/info buttons. Finger moves down 100px at 720p, never a tap. */
+    val resetLane = Region(mark.x + 600, mark.y - 40, 100, 220)
+    val resetStart = mark + io.github.lib_automata.Location(650, -30)
+    val resetEnd = mark + io.github.lib_automata.Location(650, 170)
+    fun fits(area: Region): Boolean = listOf(ap, name).all {
+        it.x >= area.x && it.y >= area.y && it.right <= area.right && it.bottom <= area.bottom
+    } && listOf(tap, resetStart, resetEnd).all {
+        it.x >= area.x && it.x < area.right && it.y >= area.y && it.y < area.bottom
+    }
 }

@@ -65,7 +65,8 @@ fun eligibleBattleConfigs(prefs: IPreferences): List<IBattleConfig> = prefs.batt
 fun battleLauncher(
     prefs: IPreferences,
     modifier: Modifier = Modifier,
-    prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore
+    prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore,
+    showLimits: Boolean = true
 ): ScriptLauncherResponseBuilder {
     val configs = remember { eligibleBattleConfigs(prefs) }
     // Each config's name lives in its own SharedPreferences file, so reading it per row would mean
@@ -357,88 +358,90 @@ fun battleLauncher(
                 }
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.p_limit).uppercase(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
+            if (showLimits) {
+                item {
                     Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        horizontalArrangement = Arrangement.End
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Card(
-                            shape = CircleShape,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            ),
-                            enabled = resetAllButton,
-                            onClick = {
-                                shouldLimitRuns = false
-                                limitRuns = 1
-                                shouldLimitCEs = false
-                                limitCEs = 1
-                                shouldLimitMats = false
-                                limitMats = 1
-                            }
+                        Text(
+                            text = stringResource(R.string.p_limit).uppercase(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .padding(10.dp, 4.dp)
+                            Card(
+                                shape = CircleShape,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                ),
+                                enabled = resetAllButton,
+                                onClick = {
+                                    shouldLimitRuns = false
+                                    limitRuns = 1
+                                    shouldLimitCEs = false
+                                    limitCEs = 1
+                                    shouldLimitMats = false
+                                    limitMats = 1
+                                }
                             ) {
-                                Text(
-                                    text = stringResource(R.string.reset_all).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    textAlign = TextAlign.Center,
-                                    color = if (resetAllButton) MaterialTheme.colorScheme.onSecondaryContainer
-                                    else MaterialTheme.colorScheme.onSecondaryContainer.copy(0.38f)
-                                )
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .padding(10.dp, 4.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.reset_all).uppercase(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                        color = if (resetAllButton) MaterialTheme.colorScheme.onSecondaryContainer
+                                        else MaterialTheme.colorScheme.onSecondaryContainer.copy(0.38f)
+                                    )
+                                }
                             }
                         }
+
                     }
 
                 }
 
-            }
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitRuns,
+                        onShouldLimitChange = { shouldLimitRuns = it },
+                        text = stringResource(R.string.p_runs),
+                        count = limitRuns,
+                        onCountChange = { limitRuns = it }
+                    )
+                }
 
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitRuns,
-                    onShouldLimitChange = { shouldLimitRuns = it },
-                    text = stringResource(R.string.p_runs),
-                    count = limitRuns,
-                    onCountChange = { limitRuns = it }
-                )
-            }
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitMats,
+                        onShouldLimitChange = { shouldLimitMats = it },
+                        text = stringResource(R.string.p_mats),
+                        count = limitMats,
+                        onCountChange = { limitMats = it }
+                    )
+                }
 
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitMats,
-                    onShouldLimitChange = { shouldLimitMats = it },
-                    text = stringResource(R.string.p_mats),
-                    count = limitMats,
-                    onCountChange = { limitMats = it }
-                )
-            }
-
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitCEs,
-                    onShouldLimitChange = { shouldLimitCEs = it },
-                    text = stringResource(R.string.p_ces),
-                    count = limitCEs,
-                    onCountChange = { limitCEs = it }
-                )
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitCEs,
+                        onShouldLimitChange = { shouldLimitCEs = it },
+                        text = stringResource(R.string.p_ces),
+                        count = limitCEs,
+                        onCountChange = { limitCEs = it }
+                    )
+                }
             }
         }
     }

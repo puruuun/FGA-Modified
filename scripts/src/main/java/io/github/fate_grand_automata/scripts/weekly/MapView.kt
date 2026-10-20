@@ -45,8 +45,9 @@ object MapView {
      * The drag that moves the point at ([x], [y]) towards the middle of the open map area, or null when it is already
      * tappable. The drag is capped so that one step stays a single bounded scroll.
      */
-    fun dragToward(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
-        if (isTappable(x, y, width, height)) return null
+    fun dragToward(x: Double, y: Double, width: Int, height: Int, centre: Boolean = false): ScreenPoint? {
+        val nearCentre = abs(x - width * 0.5) <= width * 0.08 && abs(y - height * 0.5) <= height * 0.08
+        if (isTappable(x, y, width, height) && (!centre || nearCentre)) return null
         val targetX = width * 0.5
         val targetY = height * 0.5
         val horizontalLimit = minOf(width * MAX_STEP_X, maxOf(0.0,width - 460.0 * height / 720.0))

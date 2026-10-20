@@ -86,6 +86,20 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             actual.put("match",verdict==PanelVerdict.Match).put("free",panel.free).put("ap",panel.ap ?: "unread")
                 .put("name",panel.nameText ?: "unread").put("rawNames",JSONArray(reader.nameReadings(prefs.gameServer,slot).map { "${it.text}@${it.confidence}" }))
         }
+        "anchoredPanel" -> useSameSnapIn {
+            val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
+            val region = if (prefs.gameServer is io.github.fate_grand_automata.scripts.enums.GameServer.Kr) "KR" else "JP"
+            val lexicon = JSONArray(fixtureText(imports.getJSONArray("names:$region").getString(0)))
+            val names = (0 until lexicon.length()).map { lexicon.getString(it) }
+            val anchor = reader.anchors().getOrNull(case.optInt("anchorIndex", 0))
+            actual.put("found", anchor != null)
+            if (anchor != null) {
+                val panel = reader.readAnchored(prefs.gameServer, anchor, names)
+                val verdict = QuestPanelMatch.strictVerdict(panel, case.getInt("targetAp"), case.getString("targetName"), prefs.gameServer)
+                actual.put("match", verdict == PanelVerdict.Match).put("ap", panel.ap ?: "unread")
+                    .put("name", panel.nameText ?: "unread").put("anchorX", anchor.mark.x / 2).put("anchorY", anchor.mark.y / 2)
+            }
+        }
         else -> error("unknown weekly navigation QA view")
     }
     val expected=case.getJSONObject("expected")

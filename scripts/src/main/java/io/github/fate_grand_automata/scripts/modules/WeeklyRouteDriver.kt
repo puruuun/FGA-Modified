@@ -50,7 +50,8 @@ class WeeklyRouteDriver @Inject constructor(
     private val battle: AutoBattle,
     private val state: BattleState,
     private val session: IWeeklyRouteSession,
-    private val loader: IPatternFileLoader
+    private val loader: IPatternFileLoader,
+    private val diagnostics: io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics
 ) : RouteDriver, IFgoAutomataApi by api, AutoCloseable {
     companion object {
         /** Chapter banner match score: the corrected opaque crop scores above 0.90 on owner captures; absent chapters below 0.61. */
@@ -172,7 +173,7 @@ class WeeklyRouteDriver @Inject constructor(
         log("chapter $warId banner score=${"%.2f".format(match.score)} at ${match.region.center}")
         if(screen() !in setOf(RouteScreen.Home,RouteScreen.List)) return false
         match.region.center.click()
-        2.seconds.wait()
+        io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.enterMapWait.wait()
         val opened = waitScreen(RouteScreen.Map, timeout = 12)
         log("chapter $warId opened=$opened")
         return opened
@@ -188,7 +189,7 @@ class WeeklyRouteDriver @Inject constructor(
     override fun terminal(): Boolean {
         if (screen() != RouteScreen.Map) return false.also { log("terminal button not visible") }
         loc.topLeftButton.click()
-        2.seconds.wait()
+        io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.leaveMapWait.wait()
         return waitScreen(RouteScreen.List, RouteScreen.Home).also { log("terminal returned=$it") }
     }
 
@@ -245,7 +246,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     /** The tappable screen position of the quest's spot in 720p, or why it could not be located. */
-    private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int): Pair<Location?, String> {
+    private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false): Pair<Location?, String> {
         var pinched = false
         var scrolls = 0
         while (true) {
@@ -261,7 +262,7 @@ class WeeklyRouteDriver @Inject constructor(
             val y = fit.screenY(quest.spotY)
             log("localize quest=${quest.id} score=${"%.2f".format(fit.score)} scale=${"%.3f".format(fit.scaleX)}/${"%.3f".format(fit.scaleY)} " +
                 "origin=${"%.0f".format(fit.originX)},${"%.0f".format(fit.originY)} spot=${"%.0f".format(x)},${"%.0f".format(y)}")
-            val drag = MapView.dragToward(x, y, screenWidth, screenHeight)
+            val drag = MapView.dragToward(x, y, screenWidth, screenHeight, centre)
             if (drag == null) return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
             if (scrolls >= MAX_MAP_SCROLLS || !MapView.isMeaningful(drag)) return null to "spot out of reach"
             scrolls++
@@ -272,49 +273,86 @@ class WeeklyRouteDriver @Inject constructor(
         }
     }
 
-    override fun openSpot(quest: RouteQuest): SpotOutcome {
-        val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
-        if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
-        val map = mapFor(war, quest.mapId) ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable",skipChapter=true)
-
-        val width = loc.scriptArea.width / 2
-        val height = loc.scriptArea.height / 2
-        val (spot, why) = locateSpot(quest, map, width, height)
-        if (spot == null) return SpotOutcome.NotFound(why,skipChapter=why in setOf("map not recognized","pinch failed"))
-
-        log("tap step=spot quest=${quest.id} point=$spot")
-        spot.click()
-        2.seconds.wait()
-        if (!waitScreen(RouteScreen.List, timeout = 4)) {
-            log("quest=${quest.id} no panel after tapping the spot")
-            return SpotOutcome.NotFound("no panel at the spot")
-        }
-        // The panel slides in: wait for the Free Quest mark, let it settle, then retry an unreadable AP or name (design 0009 D-18).
+    private fun readAnchoredPanel(quest: RouteQuest): Boolean {
         for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
-            if (useSameSnapIn { reader.isFree(0) }) break
+            if (useSameSnapIn { reader.anchors().isNotEmpty() }) break
             500.milliseconds.wait()
         }
         300.milliseconds.wait()
-
-        val gameServer = prefs.gameServer
         for (attempt in 0 until PANEL_READ_ATTEMPTS) {
-            var retry = false
-            for (slot in 0 until QuestPanelLocations.SLOTS) {
-                val panel = reader.read(gameServer, slot, run.questNames)
-                val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, gameServer)
-                log("panel quest=${quest.id} slot=$slot attempt=$attempt free=${panel.free} ap=${panel.ap} name=${panel.nameText} nameCells=${panel.nameCells} verdict=${QuestPanelMatch.label(verdict)}")
-                if (verdict == PanelVerdict.Match) {
-                    log("tap step=panel quest=${quest.id} point=${panelLoc.tap(slot)}")
-                    panelLoc.tap(slot).click()
-                    return SpotOutcome.Started
+            val matched = useSameSnapIn {
+                val anchors = reader.anchors()
+                if (anchors.isEmpty()) {
+                    log("panel quest=${quest.id} attempt=$attempt verdict=NoPanel")
+                    panelDiagnostic(quest.id, attempt)
                 }
-                if (panel.free && (verdict is PanelVerdict.ApUnreadable || verdict is PanelVerdict.NameMismatch)) retry = true
+                for (anchor in anchors) {
+                    val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames)
+                    val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
+                    log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} verdict=${QuestPanelMatch.label(verdict)}")
+                    if (verdict == PanelVerdict.Match) {
+                        log("tap step=panel quest=${quest.id} point=${anchor.tap}")
+                        anchor.tap.click()
+                        return@useSameSnapIn true
+                    }
+                    panelDiagnostic(quest.id, attempt)
+                }
+                false
             }
-            if (!retry) break
-            500.milliseconds.wait()
+            if (matched) return true
+            if (attempt < PANEL_READ_ATTEMPTS - 1) 500.milliseconds.wait()
         }
-        closePanel()
-        return SpotOutcome.NotFound("no free panel with the AP and name")
+        return false
+    }
+
+    private fun panelDiagnostic(questId: Int, attempt: Int) {
+        if (!diagnostics.enabled) return
+        useColor {
+            loc.scriptArea.getPattern("weekly panel non-Match").use { frame ->
+                diagnostics.save(frame, questId, attempt)?.let { log("panel diagnostic path=$it") }
+            }
+        }
+    }
+
+    override fun openSpot(quest: RouteQuest): SpotOutcome {
+        val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
+        if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
+        val map = mapFor(war, quest.mapId) ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
+        val width = loc.scriptArea.width / 2
+        val height = loc.scriptArea.height / 2
+        var problem = "no free panel with the AP and name"
+        fun openPanel(centre: Boolean): Boolean {
+            val (spot, why) = locateSpot(quest, map, width, height, centre)
+            if (spot == null) { problem = why; return false }
+            log("tap step=spot quest=${quest.id} centre=$centre point=$spot")
+            spot.click()
+            2.seconds.wait()
+            if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
+            return true
+        }
+        if (!openPanel(false)) return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
+        val matched = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.run(
+            read = { readAnchoredPanel(quest) },
+            resetList = {
+                val anchor = useSameSnapIn { reader.resetAnchor() }
+                if (screen() != RouteScreen.List || anchor == null) {
+                    log("panel reset skipped reason=no-safe-anchor")
+                    false
+                } else {
+                    log("panel reset finger=DOWN from=${anchor.resetStart} to=${anchor.resetEnd}")
+                    swipe.scroll(anchor.resetStart, anchor.resetEnd)
+                    300.milliseconds.wait()
+                    true
+                }
+            },
+            recenter = {
+                log("panel recovery step=centre quest=${quest.id}")
+                closePanel() && openPanel(true)
+            }
+        )
+        if (matched) return SpotOutcome.Started
+        if (screen() == RouteScreen.List) closePanel()
+        return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
     }
 
     // ---- battle --------------------------------------------------------------------------------------------------
@@ -326,7 +364,7 @@ class WeeklyRouteDriver @Inject constructor(
     private fun settleOnMap(): Boolean {
         var closed = false
         repeat(60) {
-            val onPanel = useSameSnapIn { topLeft(Images.WeeklyClose) && (0 until QuestPanelLocations.SLOTS).any { reader.isFree(it) } }
+            val onPanel = useSameSnapIn { topLeft(Images.WeeklyClose) && reader.anchors().isNotEmpty() }
             if (onPanel) return true
             if (!closed && closeRepeatDialog()) { closed = true; log("repeat dialog closed") }
             500.milliseconds.wait()

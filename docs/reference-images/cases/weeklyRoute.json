@@ -1206,6 +1206,110 @@
         "closeX": 443,
         "closeY": 583
       }
+    },
+    {
+      "name": "JP-01-anchored",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/01.png",
+      "view": "anchoredPanel",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5,
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 5,
+        "name": "骸彷徨う教会"
+      }
+    },
+    {
+      "name": "JP-10-anchored-free",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/10.png",
+      "view": "anchoredPanel",
+      "targetName": "赦免の城",
+      "targetAp": 21,
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 21,
+        "name": "赦免の城"
+      }
+    },
+    {
+      "name": "KR-30-anchored",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "anchoredPanel",
+      "targetName": "피가 끓어오르는 광연",
+      "targetAp": 19,
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 19,
+        "name": "피가끓어오르는광연"
+      }
+    },
+    {
+      "name": "JP-33-xe-anchored",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/33.png",
+      "view": "anchoredPanel",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5,
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 5,
+        "name": "骸彷徨う教会",
+        "anchorY": 155
+      }
+    },
+    {
+      "name": "JP-34-xe-shifted-anchored",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/34.png",
+      "view": "anchoredPanel",
+      "targetName": "骸彷徨う教会",
+      "targetAp": 5,
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 5,
+        "name": "骸彷徨う教会",
+        "anchorY": 143
+      }
+    },
+    {
+      "name": "JP-10-anchored-reject-mission",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/10.png",
+      "view": "anchoredPanel",
+      "targetName": "ミッションクエスト",
+      "targetAp": 5,
+      "expected": {
+        "found": true,
+        "match": false
+      }
+    },
+    {
+      "name": "JP-33-anchored-reject-name",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/33.png",
+      "view": "anchoredPanel",
+      "targetName": "未確認の教会",
+      "targetAp": 5,
+      "expected": {
+        "found": true,
+        "match": false,
+        "anchorY": 155
+      }
     }
   ],
   "imports": {
