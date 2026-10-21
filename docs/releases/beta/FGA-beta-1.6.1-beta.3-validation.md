@@ -24,10 +24,21 @@
 
 미확인 단계는 기존 KR 16:9 및 JP 와이드 사례를 계속 검증합니다. 게임을 조작해 캡처를 만들지는 않습니다. 공방 프레임의 음성 검증은 위 단계의 KR 와이드 양성 검증을 대신하지 않습니다.
 
+검색 영역도 다시 확인했습니다(720p, 21:9 게임 영역). 소환 메뉴는 중앙 기준 `(710,590,170,90)`에 KR 59×29 템플릿이 들어갑니다. 화살표는 왼쪽 안전 영역 기준 `(86,300,75,125)`에 공통 16×40 템플릿이 들어갑니다. 소환 버튼은 중앙 기준 `(965,470,250,90)` 및 무료 소환 `(730,470,220,90)`, 저장 제목은 `(515,300,650,130)`입니다. 한계 문구 `(380,145,920,45)`에는 KR 118×34 템플릿, 매각 버튼 `(415,440,290,80)`에는 KR 56×31 템플릿이 들어갑니다. 이 크기·기준점 점검은 화면 안의 실제 위치를 확인한 양성 검증과 구분합니다.
+
 ## 검증 및 배송
 
 - 공방 도착을 인식하면 닫기는 한 번만 누르고 MENU로 진행하는 회귀 단위 테스트 추가.
 - 기존 사례를 유지하고 QA 12개 추가: 프레임 36의 양성/음성 8개, KR 기존 16:9 공방/MENU 2개, INTER_AREA 공방/MENU 2개.
 - 전체 단위 테스트 `:app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test`: **654개 통과**, 실패·오류·skip 0 (app 186, prefs 26, scripts 442).
 - `mkdocs build --strict` 성공.
-- 기기 QA·커밋·Main CI·APK 서명 및 해시·설치 결과는 완료 후 아래에 기록합니다.
+- 최종 전체 기기 QA `build/device-qa/20261022-020620/`: **1434개 통과, 실패 0**, 기존 skip 11개. support 191, bond 25, questItems 10, noblePhantasm 18, fpSell 792, skillLevel 108, weeklyRoute 290.
+- 최종 QA APK에 최종 43×40 KR 템플릿이 원본과 바이트 단위로 동일하게 포함된 것을 확인했습니다. QA APK SHA-256: `47ef05341e444ac541c14cc0fb5454ca3b4e9787d2c7664c5efba90a5535808c`.
+- 제품 수정 `c92ef6dabf4e89c3e95080336eb2b28588ca9fcc`, 재생성 레시피 정합성 `acf1ae44ce480864ff6fd340ec97165936a208dc`를 main에 직접 푸시했습니다. 두 커밋의 author·committer는 `puruuun <188972188+puruuun@users.noreply.github.com>`, AI 트레일러 없음. 첫 CI는 후속 커밋으로 대체 취소됐으며, [최종 제품 커밋의 Main CI 성공](https://github.com/puruuun/FGA-Modified/actions/runs/39639969162)을 확인했습니다.
+- CI 성공 확인 후 같은 제품 커밋에서 `:app:assembleBeta` 성공. aapt: `io.github.fate_grand_automata.beta`, `1.6.1-beta.3 / 1006103`, `FGA(beta)`, ABI `armeabi-v7a`·`arm64-v8a` 확인.
+- apksigner 검증 성공. 인증서 SHA-256 `5acce47e71373dcfe3a6f6400ed3b3f687bd454aab91c7562c8327a3a083ac9d` (기존 베타와 동일). APK ZIP 무결성 및 수정 KR 템플릿의 패키징 원본 일치 확인.
+- APK: `C:/Users/rl/Documents/Codex/FGA-Modified-builds/FGA-beta-1.6.1-beta.3-arm.apk`, 체크섬: `.apk.sha256`. 복사 후 체크섬 파일과 APK를 다시 대조했습니다.
+- APK SHA-256: `c5f1f0491c7349fbff0ddb7016507a9149ff1aee2b1f88a6f4003023a9b93638`.
+- 설치: BlueStacks `127.0.0.1:5555` / `PIXEL 2 XL`만 사용, `install -r` **Success**. dumpsys로 `1.6.1-beta.3 / 1006103` 확인. 최초 설치 시각 유지.
+- 모든 기기 QA는 저장 프레임 7개 suite입니다. 게임 입력·진행, 다른 기기 설치, adb kill-server/start-server/disconnect, GitHub Release 게시를 하지 않았습니다. 실제 KR 와이드 복귀의 소유자 QA는 위 미확인 캡처 범위와 구분합니다.
+- 증거: `build/orchestration/beta3/`의 `unit-final.log`, `unit-delivery.log`, `scores.json`, `deviceqa-final.log`, `ci-success.json`, `assemble.log`, `aapt.txt`, `apksigner.txt`, `delivery.json`, `install.json`, `package-before.txt`, `package-after.txt`.
