@@ -10,8 +10,11 @@ import javax.inject.Inject
  * buttons at the screen edges).
  */
 class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
-    /** The top-left button: notice (main screen), close (chapter list, quest panel open) or terminal (map). */
-    val topLeftButton = Region(10, 30, 330, 140)
+    /**
+     * The top-left button: notice (main screen), close (chapter list, quest panel open) or terminal (map).
+     * Header UI: on wide screens it sits one safe-area inset further in (owner 21:9 captures 01-03: +85 px at 720p).
+     */
+    val topLeftButton = Region(10, 30, 330, 140).xFromLeftEdge()
 
     /** D-16: repeat dialog's RIGHT button is a signal only; never tap it when exiting the weekly repeat. */
     val repeatDialogSignal = Region(180, 1100, 560, 130).xFromCenter()
@@ -28,6 +31,6 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
     /** The two-finger zoom-out is centred on the map and uses the middle part of the screen. */
     val pinchBounds = Region(400, 300, scriptArea.width - 800, 800)
 
-    /** The panel column; used to look for Free Quest emblems of every panel slot. */
-    val panelColumn = (if (isWide) Region(-1520, 250, 330, 1100) else Region(-1330, 250, 330, 1100)).xFromRight()
+    /** The panel column; used to look for Free Quest emblems of every panel slot. The panels move in with the right inset on wide screens. */
+    val panelColumn = Region(-1330, 250, 330, 1100).xFromRightEdge()
 }

@@ -992,6 +992,81 @@
         "current": 6,
         "next": 7
       }
+    },
+    {
+      "name": "JP-wide-12-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-wide-12-band",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "band",
+      "slotMode": "Skill",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "JP-wide-12-no-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "dialog",
+      "slotMode": "Skill",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      }
+    },
+    {
+      "name": "JP-wide-12-locks",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "locks",
+      "slotMode": "Skill",
+      "expected": {
+        "locks": [
+          false,
+          false,
+          false
+        ]
+      }
+    },
+    {
+      "name": "JP-wide-12-no-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "result",
+      "slotMode": "Skill",
+      "expected": {
+        "result": false
+      }
+    },
+    {
+      "name": "JP-wide-13-is-not-skill-screen",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/13.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
     }
   ]
 }

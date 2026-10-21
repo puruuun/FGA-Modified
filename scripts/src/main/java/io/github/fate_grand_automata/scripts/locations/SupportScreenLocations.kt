@@ -11,7 +11,7 @@ import kotlin.math.roundToInt
 class SupportScreenLocations @Inject constructor(
     scriptAreaTransforms: IScriptAreaTransforms
 ) : IScriptAreaTransforms by scriptAreaTransforms {
-    private val headerOffset = Location(if (isWide) 171 else 0, 0)
+    private val headerOffset = Location(edgeInset, 0)
 
     val screenCheckRegion = Region(0, 0, 200, 400) + headerOffset
 

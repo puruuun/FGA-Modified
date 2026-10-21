@@ -4270,6 +4270,126 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Jp-wide-05-normal",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/05.webp",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 179,
+          "np": 2,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 379,
+          "np": 1,
+          "class": 57,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jp-wide-09-append",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/09.webp",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 289,
+          "np": 5,
+          "class": 62,
+          "grand": null,
+          "skills": [
+            true,
+            true,
+            false,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 489,
+          "np": 4,
+          "class": 62,
+          "grand": null,
+          "skills": [
+            false,
+            true,
+            true,
+            true,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jp-wide-10-normal",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/10.webp",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 248,
+          "np": 3,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 448,
+          "np": 5,
+          "class": 62,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jp-wide-11-append",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/11.webp",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 303,
+          "np": 5,
+          "class": 62,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            false
+          ]
+        },
+        {
+          "y": 503,
+          "np": 5,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
     }
   ]
 }

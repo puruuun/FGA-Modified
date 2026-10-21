@@ -7,30 +7,38 @@ import javax.inject.Inject
 /**
  * 1440p coordinates, centered on the 16:9 game area. Window chrome is never included.
  * KR and JP use the same layout for the sell screen, the warning dialog and the summon menus.
+ *
+ * Wide screens (design 0012): the sell screen's own UI is measured on the owner's 21:9 JP capture. Buttons and the
+ * title at the screen edges use [xFromLeftEdge] / [xFromRightEdge] with 16:9 values; the card grid stays centred
+ * (it lies between the two edge columns), and dialogs stay centred. The summon screens, the warning and the
+ * convert/done dialogs have no 21:9 capture yet and keep their centred values.
  */
 class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
     /** First line of the warning dialog (centered text, so the word is searched across the whole band). */
     val fullDialogLine = Region(-920, 290, 1840, 90).xFromCenter()
     val fullSell = Region(-850, 880, 580, 160).xFromCenter()
-    val heading = Region(760, 0, 500, 160).xFromCenter()
-    val servantTab = Region(-1250, 185, 340, 140).xFromCenter()
+    val heading = Region(-520, 0, 500, 160).xFromRightEdge()
+    val servantTab = Region(30, 185, 340, 140).xFromLeftEdge()
     /** Tapped to bring the servant tab forward when the sell screen opens on the Craft Essence tab (D-17). */
-    val servantTabClick = Location(-1120, 254).xFromCenter()
-    val grid = Region(-1130, 338, 1850, 1102).xFromCenter()
-    val sizeSwitch = Location(-1180, 1320).xFromCenter()
-    val confirm = Region(820, 1240, 440, 180).xFromCenter()
+    val servantTabClick = Location(160, 254).xFromLeftEdge()
+    /** The grid is centred between the left button column and the scroll bar; on 21:9 it sits 5 px (720p) right of the centre. */
+    private val gridShift = if (isWide) 10 else 0
+    val grid = Region(-1130 + gridShift, 338, 1850, 1102).xFromCenter()
+    /** Left column's last button (cards per row). The wide left column is packed closer together: 25 px higher on 21:9. */
+    val sizeSwitch = (if (isWide) Location(100, 1268) else Location(100, 1320)).xFromLeftEdge()
+    val confirm = Region(-460, 1240, 440, 180).xFromRightEdge()
     val convertHeading = Region(-180, 40, 400, 120).xFromCenter()
     val cancel = Region(-680, 1170, 580, 170).xFromCenter()
     val convert = Region(100, 1170, 620, 170).xFromCenter()
     val done = Region(-380, 400, 800, 160).xFromCenter()
     val doneClose = Region(-300, 1170, 600, 170).xFromCenter()
-    val close = Location(-1120, 80).xFromCenter()
-    val screenClose = Region(-1280, 0, 380, 180).xFromCenter()
+    val close = Location(160, 80).xFromLeftEdge()
+    val screenClose = Region(0, 0, 380, 180).xFromLeftEdge()
     val leftArrowRegion = Region(-1280, 600, 150, 250).xFromCenter()
     val summonButton = Region(250, 940, 500, 180).xFromCenter()
     val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
-    val shop = Region(550, 0, 710, 160).xFromCenter()
-    val menu = Region(890, 1210, 380, 200).xFromCenter()
+    val shop = Region(-730, 0, 710, 160).xFromRightEdge()
+    val menu = Region(-390, 1210, 380, 200).xFromRightEdge()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */
     val summonMenu = Region(-260, 1180, 340, 180).xFromCenter()
     val bannerTitle = Region(-650, 600, 1300, 260).xFromCenter()
@@ -39,7 +47,7 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** D-23: the end depends on how many rows were fully evaluated, never on a fixed three-row jump. */
     fun swipeEnd(distance: Int) = swipeStart - Location(0, distance)
     // Fixed seven-column pitch (133.25 px at 720p); one row phase is fitted per page.
-    fun columnX(column: Int) = Location(-1124 + kotlin.math.round(column * 266.5).toInt(), 0).xFromCenter().x
+    fun columnX(column: Int) = Location(-1124 + gridShift + kotlin.math.round(column * 266.5).toInt(), 0).xFromCenter().x
     val rowPitch = 284
     val cardWidth = 232
     val cardHeight = 252

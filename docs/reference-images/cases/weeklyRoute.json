@@ -5689,6 +5689,138 @@
         "dragY": 41.0,
         "screen": "Map"
       }
+    },
+    {
+      "name": "JP-wide-01-home",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/01.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "JP-wide-02-map",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/02.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-03-map",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/03.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-07-repeat",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/07.webp",
+      "view": "repeatExit",
+      "expected": {
+        "visible": true,
+        "closeX": 643,
+        "closeY": 583
+      }
+    },
+    {
+      "name": "JP-wide-03-map-localization",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/03.webp",
+      "view": "map",
+      "asset": "map:JP-100",
+      "anchors": [],
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "JP-wide-03-spot-under-terminal",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/03.webp",
+      "view": "spotTappable",
+      "spotX": 180.0,
+      "spotY": 43.0,
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-03-spot-under-menu",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/03.webp",
+      "view": "spotTappable",
+      "spotX": 1500.0,
+      "spotY": 650.0,
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-03-spot-open-map",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/03.webp",
+      "view": "spotTappable",
+      "spotX": 700.0,
+      "spotY": 460.0,
+      "expected": {
+        "tappable": true,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-02-spot-under-gift-and-status",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/02.webp",
+      "view": "spotTappable",
+      "spotX": 520.0,
+      "spotY": 600.0,
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-02-spot-under-title",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/02.webp",
+      "view": "spotTappable",
+      "spotX": 1400.0,
+      "spotY": 60.0,
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-wide-02-spot-open-map",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/02.webp",
+      "view": "spotTappable",
+      "spotX": 900.0,
+      "spotY": 300.0,
+      "expected": {
+        "tappable": true,
+        "screen": "Map"
+      }
     }
   ],
   "imports": {

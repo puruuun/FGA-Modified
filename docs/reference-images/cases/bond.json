@@ -385,6 +385,49 @@
           261
         ]
       ]
+    },
+    {
+      "name": "normal-jp-wide-08",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "normal",
+      "file": "docs/reference-images/Jp/wide-21x9/08.webp",
+      "expected": [
+        [
+          4748,
+          5259
+        ],
+        [
+          4748,
+          5259
+        ],
+        [
+          4748,
+          1670
+        ],
+        [
+          4748,
+          4632
+        ],
+        [
+          4748,
+          3644
+        ]
+      ]
+    },
+    {
+      "name": "other-jp-wide-06-party",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "other",
+      "file": "docs/reference-images/Jp/wide-21x9/06.webp"
+    },
+    {
+      "name": "other-jp-wide-14-fp-sell",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "other",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp"
     }
   ]
 }

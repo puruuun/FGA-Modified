@@ -520,6 +520,37 @@
         "on": false
       },
       "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+    },
+    {
+      "name": "Jp-wide-06-party-teapot-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/06.webp",
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      }
+    },
+    {
+      "name": "Jp-wide-13-dialog-off",
+      "suite": "questItems",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/13.webp",
+      "expected": {
+        "view": "Dialog",
+        "storm_on": false,
+        "tea_on": false
+      }
+    },
+    {
+      "name": "Jp-wide-07-repeat-dialog-is-not-an-item-screen",
+      "suite": "questItems",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/07.webp",
+      "expected": {
+        "view": "Unknown"
+      }
     }
   ]
 }

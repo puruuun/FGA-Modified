@@ -6,8 +6,9 @@ import javax.inject.Inject
 /**
  * The uppermost quest panel of a spot (the one AutoBattle taps through [Locations.menuSelectQuestClick]).
  * 1440p coordinates measured on the owner's 1280x720 normalized captures (x1440 = x720 * 2 - 2560 from the right edge,
- * y1440 = y720 * 2). JP and KR share the layout. Wide screens move the panel 190 left like [Locations.menuSelectQuestClick];
- * that branch has not been measured on a wide device.
+ * y1440 = y720 * 2). JP and KR share the layout. Wide screens move the panel in by the right safe-area inset
+ * ([WIDE_EDGE_INSET]): owner 21:9 capture 04 shows the whole panel 85 px (720p) further left, with the same size and
+ * inner layout. The anchored reads ([QuestPanelAnchor]) do not depend on this at all.
  */
 class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
     /** D-20: find the emblem across the game area, independent of panel slot or horizontal placement. */
@@ -16,7 +17,7 @@ class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     /** Enlarged spot ribbon after a spot tap; measured on owner 720p panels, centred in the left map area. */
     val enlargedSpotName = Region(-880, 936, 700, 64).xFromCenter()
 
-    private fun panel(region: Region) = (if (isWide) region + io.github.lib_automata.Location(-190, 0) else region).xFromRight()
+    private fun panel(region: Region) = region.xFromRightEdge()
 
     companion object {
         /** Distance between two panels of one spot (1440p). Measured on the spot with a mission quest above its free quest. */

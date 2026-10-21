@@ -16849,6 +16849,542 @@
         "close": true,
         "workshop": false
       }
+    },
+    {
+      "name": "JP-wide-14-layout",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "JP-wide-14-close-visible-not-workshop",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
+    },
+    {
+      "name": "JP-wide-14-no-menu-on-sell-screen",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": false
+      }
+    },
+    {
+      "name": "JP-wide-01-menu-visible",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/01.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "JP-wide-14-page",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "page",
+      "expected": {
+        "tileCount": 35,
+        "evaluatedRows": 3
+      }
+    },
+    {
+      "name": "JP-wide-14-r1c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        284,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 0
+    },
+    {
+      "name": "JP-wide-14-r1c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        417,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 1
+    },
+    {
+      "name": "JP-wide-14-r1c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        550,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 2
+    },
+    {
+      "name": "JP-wide-14-r1c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        683,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 3
+    },
+    {
+      "name": "JP-wide-14-r1c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        816,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 4
+    },
+    {
+      "name": "JP-wide-14-r1c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        949,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 5
+    },
+    {
+      "name": "JP-wide-14-r1c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        1082,
+        186,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 6
+    },
+    {
+      "name": "JP-wide-14-r2c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        284,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 0
+    },
+    {
+      "name": "JP-wide-14-r2c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        417,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 1
+    },
+    {
+      "name": "JP-wide-14-r2c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        550,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 2
+    },
+    {
+      "name": "JP-wide-14-r2c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        683,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 3
+    },
+    {
+      "name": "JP-wide-14-r2c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        816,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 4
+    },
+    {
+      "name": "JP-wide-14-r2c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        949,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 5
+    },
+    {
+      "name": "JP-wide-14-r2c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        1082,
+        328,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 6
+    },
+    {
+      "name": "JP-wide-14-r3c1",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        284,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 0
+    },
+    {
+      "name": "JP-wide-14-r3c2",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        417,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 1
+    },
+    {
+      "name": "JP-wide-14-r3c3",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        550,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 2
+    },
+    {
+      "name": "JP-wide-14-r3c4",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        683,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 3
+    },
+    {
+      "name": "JP-wide-14-r3c5",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        816,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 4
+    },
+    {
+      "name": "JP-wide-14-r3c6",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        949,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 5
+    },
+    {
+      "name": "JP-wide-14-r3c7",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "cell",
+      "card720": [
+        1082,
+        470,
+        116,
+        126
+      ],
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "checkGrid": true,
+      "column": 6
     }
   ]
 }

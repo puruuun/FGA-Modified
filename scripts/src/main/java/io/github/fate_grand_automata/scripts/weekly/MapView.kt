@@ -1,5 +1,8 @@
 package io.github.fate_grand_automata.scripts.weekly
 
+import io.github.fate_grand_automata.scripts.isWide
+import io.github.fate_grand_automata.scripts.locations.WIDE_EDGE_INSET
+import io.github.lib_automata.Size
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -15,18 +18,27 @@ object MapView {
     private const val MAX_STEP_X = 0.5
     private const val MAX_STEP_Y = 0.35
 
+    /**
+     * Wide screens keep the corner UI inside the safe area (owner 21:9 captures 02 and 03: terminal button, portrait,
+     * gift box, MENU and the title all 85 px further in), so each zone grows by the inset on its own side.
+     * 0 on 16:9 and on screens up to 18:9.
+     */
+    private fun inset(width: Int, height: Int): Double =
+        if (Size(width, height).isWide()) WIDE_EDGE_INSET / 2.0 * height / 720.0 else 0.0
+
     /** The fixed buttons and banners of the map screen, by their 720p anchors: left, right and bottom. */
     private fun covered(x: Double, y: Double, width: Int, height: Int): Boolean {
         val s = height / 720.0
         val fromRight = width - x
+        val inset = inset(width, height)
         return when {
-            x < 190 * s && y < 100 * s -> true                      // terminal / close button
-            fromRight < 560 * s && y < 140 * s -> true               // chapter title
-            x < 225 * s && y > 495 * s -> true                       // master portrait and status
-            x < 380 * s && y > 560 * s -> true                       // level and AP status
-            x in 375 * s..600 * s && y > 560 * s -> true             // gift box and mission note
-            fromRight < 250 * s && y > 605 * s -> true               // menu button
-            fromRight < 90 * s && y in 100 * s..440 * s -> true      // quest list scroll bar column
+            x < 190 * s + inset && y < 100 * s -> true                      // terminal / close button
+            fromRight < 560 * s + inset && y < 140 * s -> true               // chapter title
+            x < 225 * s + inset && y > 495 * s -> true                       // master portrait and status
+            x < 380 * s + inset && y > 560 * s -> true                       // level and AP status
+            x in 375 * s + inset..600 * s + inset && y > 560 * s -> true     // gift box and mission note
+            fromRight < 250 * s + inset && y > 605 * s -> true               // menu button
+            fromRight < 90 * s + inset && y in 100 * s..440 * s -> true      // quest list scroll bar column
             else -> false
         }
     }
@@ -95,8 +107,9 @@ object MapView {
      */
     fun dragPath(drag: ScreenPoint, width: Int, height: Int): Pair<ScreenPoint, ScreenPoint> {
         val s = height / 720.0
-        val left = 372 * s
-        val right = width - 126 * s
+        val inset = inset(width, height)
+        val left = 372 * s + inset
+        val right = width - 126 * s - inset
         val top = 172 * s
         val bottom = 440 * s
         val cx = (left + right) / 2
