@@ -559,7 +559,7 @@
       "file": "docs/reference-images/Kr/wide-2560/29.webp",
       "expected": {
         "view": "Single",
-        "kind": "Teapot",
+        "kind": "StormPod",
         "on": false
       }
     },
