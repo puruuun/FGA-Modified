@@ -93,15 +93,30 @@ class AtlasAssets(
      */
     fun map(server: String, war: WarInfo, mapId: Int): Pattern? = runCatching {
         val map = war.maps.firstOrNull { it.id == mapId } ?: error("war ${war.id} has no map $mapId")
-        val ready = File(dir(), "$server-map-${map.id}-${hash(map.image)}-${map.width}x${map.height}.gray.png")
+        val stem = "$server-map-${map.id}-${hash(map.image)}"
+        if (File(dir(), "$stem.placeholder").exists()) return@runCatching null
+        val ready = File(dir(), "$stem-${map.width}x${map.height}.gray.png")
         if (!ready.exists()) {
             val raw = download(map.image, "$server-mapraw-${map.id}-${hash(map.image)}.png")
-            loader.load(raw, color = false, tag = "map-${map.id}").use { texture ->
-                texture.resize(Size(map.width, map.height)).use { loader.save(it, ready) }
+            val placeholder = loader.load(raw, color = false, tag = "map-${map.id}").use { texture ->
+                if (PlaceholderMap.isPlaceholder(texture.width, texture.height)) true
+                else { texture.resize(Size(map.width, map.height)).use { loader.save(it, ready) }; false }
             }
             raw.delete()
+            if (placeholder) {
+                // D-31: the Atlas texture is a placeholder; remember that so the chapter is not downloaded again.
+                File(dir(), "$stem.placeholder").writeText("placeholder")
+                log("map placeholder war=${war.id} map=${map.id}")
+                return@runCatching null
+            }
             log("map ready ${ready.name}")
         }
         loader.load(ready, color = false, tag = "map-${map.id}")
     }.onFailure { log("map war=${war.id} map=$mapId failed: ${it.message}") }.getOrNull()
+
+    /** D-31: true once [map] found that the Atlas map image of [mapId] is only a placeholder texture. */
+    fun isPlaceholder(server: String, war: WarInfo, mapId: Int): Boolean {
+        val map = war.maps.firstOrNull { it.id == mapId } ?: return false
+        return File(dir(), "$server-map-${map.id}-${hash(map.image)}.placeholder").exists()
+    }
 }

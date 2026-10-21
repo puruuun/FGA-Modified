@@ -97,6 +97,24 @@ class WeeklyProbeTest {
         val results = listOf(ProbeResult(quest(1).copy(name = "a,\"b\""), ProbeStatus.NoPanel, "note", 1500))
         val lines = WeeklyProbe.csv(results).trim().lines()
         assertEquals(WeeklyProbe.CSV_HEADER, lines[0])
-        assertEquals("1,100,chapter 100,spot,\"a,\"\"b\"\"\",5,no_panel,1500,note", lines[1])
+        assertEquals("1,100,chapter 100,spot,\"a,\"\"b\"\"\",5,no_panel,1500,note,,,,", lines[1])
+    }
+
+    @Test fun `csv carries the evidence of a success`() {
+        val evidence = ProbeEvidence("diagnostics/weeklyRoute/1/evidence/q1.png", "spot-name+cells", "", "ヤガ・リャザン")
+        val lines = WeeklyProbe.csv(listOf(ProbeResult(quest(1), ProbeStatus.Success, "", 4000, evidence))).trim().lines()
+        assertEquals("1,100,chapter 100,spot,name 1,5,success,4000,,diagnostics/weeklyRoute/1/evidence/q1.png,spot-name+cells,,ヤガ・リャザン", lines[1])
+        assertEquals(13, lines[0].split(",").size)
+    }
+
+    @Test fun `the machine attaches the driver evidence to a success only`() {
+        val inner = Fake().apply { problems = mapOf(2 to "no panel at the spot") }
+        val f = object : RouteDriver by inner {
+            override fun lastEvidence() = ProbeEvidence("e.png", "quest-name", "name", "")
+        }
+        val machine = WeeklyRouteMachine(f, "JP", probe = true)
+        machine.run(WeeklyVisitOrder.order("JP", listOf(item(1), item(2))))
+        assertEquals("quest-name", machine.probeResults[0].evidence.by)
+        assertEquals("", machine.probeResults[1].evidence.by)
     }
 }

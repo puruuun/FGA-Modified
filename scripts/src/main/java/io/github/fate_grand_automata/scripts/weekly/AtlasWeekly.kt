@@ -88,7 +88,7 @@ object AtlasWeekly {
         val quests = select(wars, now)
         val used = quests.map { it.warId }.toSet()
         return Wars(quests, wars.filter { it.id in used }.associate { w ->
-            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) })
+            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) }, w.spots.associate { it.id to it.name })
         })
     }
 
@@ -99,7 +99,8 @@ object AtlasWeekly {
                 if (q.type != "free" || q.consumeType != "ap" || q.afterClear != "repeatLast" || now < q.openedAt || now >= q.closedAt) null
                 else RouteQuest(q.id, w.id, w.priority, w.longName, spot.name, q.name, q.consume, q.type, q.afterClear,
                     enemyDataAvailable = false, repeatPhase = q.phases.maxOrNull() ?: 0,
-                    spotId = spot.id, spotX = spot.x, spotY = spot.y, mapId = spot.mapId)
+                    spotId = spot.id, spotX = spot.x, spotY = spot.y, mapId = spot.mapId,
+                    spotFreeQuests = spot.quests.count { it.type == "free" })
             } }
     }.distinctBy { it.id }
 

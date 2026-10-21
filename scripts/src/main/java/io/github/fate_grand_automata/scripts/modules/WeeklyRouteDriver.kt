@@ -16,6 +16,8 @@ import io.github.fate_grand_automata.scripts.weekly.ListSearchDirection
 import io.github.fate_grand_automata.scripts.weekly.MapFit
 import io.github.fate_grand_automata.scripts.weekly.MapLocalizer
 import io.github.fate_grand_automata.scripts.weekly.MapView
+import io.github.fate_grand_automata.scripts.weekly.PlaceholderMap
+import io.github.fate_grand_automata.scripts.weekly.ScreenPoint
 import io.github.fate_grand_automata.scripts.weekly.RouteDriver
 import io.github.fate_grand_automata.scripts.weekly.RouteQuest
 import io.github.fate_grand_automata.scripts.weekly.RouteScreen
@@ -116,14 +118,15 @@ class WeeklyRouteDriver @Inject constructor(
 
     private fun findColor(template: Pattern, similarity: Double): Match? = useColor {
         useSameSnapIn {
-            val best = loc.listArea.findAll(template, 0.5).maxByOrNull { it.score }
+            // 0.3 keeps near misses in the log (D-32); only the threshold below accepts a banner.
+            val best = loc.listArea.findAll(template, 0.3).maxByOrNull { it.score }
             log("banner score=${best?.score} threshold=$similarity point=${best?.region?.center}")
             best?.takeIf { it.score >= similarity }
         }
     }
 
     /** Search lower content first, then upper content; never leave the expected list or exceed either bound. */
-    private fun scanList(find: () -> Match?): Match? {
+    private fun scanList(onEnd: (ListSearchDirection) -> Unit = {}, find: () -> Match?): Match? {
         val expected = screen()
         if (expected !in setOf(RouteScreen.Home, RouteScreen.List)) return null
         fun checked(): Match? = if (screen() == expected) find() else null
@@ -134,6 +137,7 @@ class WeeklyRouteDriver @Inject constructor(
                 scrollList(direction, index + 1)
                 checked()?.let { return it }
             }
+            onEnd(direction)
         }
         return null
     }
@@ -165,9 +169,12 @@ class WeeklyRouteDriver @Inject constructor(
     override fun openChapter(warId: Int): Boolean {
         val war = run.wars[warId] ?: return false.also { log("chapter $warId has no data") }
         val banner = bannerFor(war) ?: return false.also { log("chapter $warId banner unavailable") }
-        val match = scanList { findColor(banner, BANNER_SIMILARITY) }
+        // D-32: a chapter that is never found leaves one list frame per scan direction for the owner to compare with the Atlas banner.
+        val match = scanList(onEnd = { direction -> if (session.run?.probe == true) probeDiagnostic(900_000 + warId, direction.ordinal) }) {
+            findColor(banner, BANNER_SIMILARITY)
+        }
         if (match == null) {
-            log("chapter $warId banner not found")
+            log("chapter $warId banner not found banner=${banner.width}x${banner.height}")
             return false
         }
         log("chapter $warId banner score=${"%.2f".format(match.score)} at ${match.region.center}")
@@ -270,13 +277,13 @@ class WeeklyRouteDriver @Inject constructor(
                         log("scroll quest=${quest.id} stationary=true recenter=current-spot")
                         return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
                     }
-                    MapView.ScrollResult.Stop -> return null to "spot out of reach"
+                    MapView.ScrollResult.Stop -> return visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
                     MapView.ScrollResult.Refit -> Unit
                 }
             }
             val drag = MapView.dragToward(x, y, screenWidth, screenHeight, centre)
             if (drag == null) return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
-            if (scrolls >= MAX_MAP_SCROLLS || !MapView.isMeaningful(drag)) return null to "spot out of reach"
+            if (scrolls >= MAX_MAP_SCROLLS || !MapView.isMeaningful(drag)) return visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
             scrolls++
             beforeScroll = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
@@ -286,12 +293,50 @@ class WeeklyRouteDriver @Inject constructor(
         }
     }
 
+    private fun rawText(raw: List<io.github.lib_automata.OcrText>) = raw.joinToString("|") { "${it.text.trim()}@${it.confidence}" }
+
+    /** D-30: how the last probed quest matched; read by the route machine right after a successful [probeSpot]. */
+    private var evidence: io.github.fate_grand_automata.scripts.weekly.ProbeEvidence? = null
+    private var evidenceAnchor: io.github.fate_grand_automata.scripts.locations.QuestPanelAnchor? = null
+    override fun lastEvidence() = evidence
+
+    /** D-33: the map cannot bring the spot clear of a fixed button; tap the part of its icon that shows, if there is one. */
+    private fun visibleIcon(quest: RouteQuest, x: Double, y: Double, width: Int, height: Int): Pair<Location?, String>? {
+        val point = MapView.visibleTap(x, y, width, height) ?: return null
+        log("tap fallback quest=${quest.id} spot=${"%.0f".format(x)},${"%.0f".format(y)} visible=${"%.0f".format(point.x)},${"%.0f".format(point.y)}")
+        return Location(MapView.toScript(point.x), MapView.toScript(point.y)) to "ok"
+    }
+
+    /**
+     * D-31: the spot on a map the Atlas has no picture of. The map is dragged to its top or bottom border (it stops there),
+     * which fixes its position, and the spot is placed from its Atlas coordinates. A wrong tap can only open another spot's
+     * panel, whose names then fail the check, so nothing is started on a wrong spot.
+     */
+    private fun locatePlaceholderSpot(quest: RouteQuest, war: WarInfo, width: Int, height: Int): Pair<Location?, String> {
+        val map = war.maps.firstOrNull { it.id == quest.mapId } ?: return null to "map ${quest.mapId} image unavailable"
+        val geometry = PlaceholderMap.geometry(map, width, height) ?: return null to "map not recognized"
+        val target = geometry.target(quest.spotX, quest.spotY) ?: return null to "spot out of reach"
+        val down = target.edge == PlaceholderMap.Edge.Top
+        val (from, to) = MapView.dragPath(ScreenPoint(0.0, if (down) 1000.0 else -1000.0), width, height)
+        val length = kotlin.math.abs(to.y - from.y)
+        repeat(geometry.drags(length)) {
+            swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
+            1.seconds.wait()
+        }
+        log("placeholder map quest=${quest.id} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
+        return Location(MapView.toScript(target.point.x), MapView.toScript(target.point.y)) to "ok"
+    }
+
     private fun readAnchoredPanel(quest: RouteQuest, tap: Boolean, failure: io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure): Boolean {
+        evidence = null
+        evidenceAnchor = null
         for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
             if (useSameSnapIn { reader.anchors().isNotEmpty() }) break
             500.milliseconds.wait()
         }
         300.milliseconds.wait()
+        // D-29: the spot ribbon is read against the spot names of this chapter only.
+        val spotNames = run.wars[quest.warId]?.spots?.values?.filter { it.isNotBlank() }?.distinct().orEmpty()
         for (attempt in 0 until PANEL_READ_ATTEMPTS) {
             val matched = useSameSnapIn {
                 val anchors = reader.anchors()
@@ -300,17 +345,26 @@ class WeeklyRouteDriver @Inject constructor(
                     log("panel quest=${quest.id} attempt=$attempt verdict=NoPanel")
                     panelDiagnostic(quest.id, attempt)
                 }
+                val spot = if (anchors.isEmpty() || spotNames.isEmpty()) null else reader.readSpot(prefs.gameServer, spotNames)
                 for (anchor in anchors) {
-                    val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames)
-                    val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
+                    val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames, spot)
+                    val by = QuestPanelMatch.matchBy(panel, quest.name, quest.spot, quest.spotFreeQuests)
+                    val verdict = if (by != null) PanelVerdict.Match else QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
                     failure.verdict(QuestPanelMatch.label(verdict))
-                    log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} verdict=${QuestPanelMatch.label(verdict)}")
+                    log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} spot=${panel.spotText} " +
+                        "cells=${panel.nameCells?.let { "%.2f".format(it) }} by=${by ?: "none"} verdict=${QuestPanelMatch.label(verdict)}")
+                    log("panel quest=${quest.id} attempt=$attempt rawNames=[${rawText(panel.rawNames)}] rawSpots=[${rawText(panel.rawSpots)}]")
+                    if (verdict == PanelVerdict.Match) {
+                        evidenceAnchor = anchor
+                        evidence = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(
+                            by = by.orEmpty(), questRead = panel.nameText.orEmpty(), spotRead = panel.spotText.orEmpty())
+                    }
                     if (verdict == PanelVerdict.Match && !tap) {
-                        log("probe quest=${quest.id} verdict=Match panel left untapped")
+                        log("probe quest=${quest.id} verdict=Match by=$by panel left untapped")
                         return@useSameSnapIn true
                     }
                     if (verdict == PanelVerdict.Match) {
-                        log("tap step=panel quest=${quest.id} point=${anchor.tap}")
+                        log("tap step=panel quest=${quest.id} by=$by point=${anchor.tap}")
                         anchor.tap.click()
                         return@useSameSnapIn true
                     }
@@ -318,11 +372,20 @@ class WeeklyRouteDriver @Inject constructor(
                 }
                 false
             }
-            if (matched) return true
+            if (matched) {
+                // D-30: the evidence picture comes from a fresh colour frame (the reads above use the grayscale snapshot).
+                val anchor = evidenceAnchor
+                if (!tap && anchor != null) evidence = evidence?.copy(file = saveEvidence(quest.id, anchor).orEmpty())
+                return true
+            }
             if (attempt < PANEL_READ_ATTEMPTS - 1) 500.milliseconds.wait()
         }
         return false
     }
+
+    /** D-30: panel-name band above the spot ribbon, from a colour frame. Null when the sink is off. */
+    private fun saveEvidence(questId: Int, anchor: io.github.fate_grand_automata.scripts.locations.QuestPanelAnchor): String? =
+        useColor { reader.evidence(anchor)?.use { image -> diagnostics.saveEvidence(image, questId) } }
 
     private fun panelDiagnostic(questId: Int, attempt: Int) {
         // Probe mode keeps one frame per failed quest (probeDiagnostic) instead of one per read attempt.
@@ -335,11 +398,11 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     /** One frame of the screen a failed probe ended on (map or open panel). */
-    private fun probeDiagnostic(questId: Int) {
+    private fun probeDiagnostic(questId: Int, attempt: Int = 0) {
         if (!diagnostics.enabled) return
         useColor {
             loc.scriptArea.getPattern("weekly probe failure").use { frame ->
-                diagnostics.save(frame, questId, 0)?.let { log("probe diagnostic path=$it") }
+                diagnostics.save(frame, questId, attempt)?.let { log("probe diagnostic path=$it") }
             }
         }
     }
@@ -354,18 +417,29 @@ class WeeklyRouteDriver @Inject constructor(
     private fun open(quest: RouteQuest, tap: Boolean): SpotOutcome {
         val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
         if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
-        val map = mapFor(war, quest.mapId) ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
+        val map = mapFor(war, quest.mapId)
+        // D-31: a placeholder Atlas map is located by geometry instead of by image.
+        val placeholder = map == null && assets.isPlaceholder(server, war, quest.mapId)
+        if (map == null && !placeholder) return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
         val width = loc.scriptArea.width / 2
         val height = loc.scriptArea.height / 2
         var problem = "no matching free panel name"
         val failure = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure()
         fun openPanel(centre: Boolean): Boolean {
-            val (spot, why) = locateSpot(quest, map, width, height, centre)
+            val (spot, why) = if (map != null) locateSpot(quest, map, width, height, centre) else locatePlaceholderSpot(quest, war, width, height)
             if (spot == null) { problem = why; return false }
             log("tap step=spot quest=${quest.id} centre=$centre point=$spot")
             spot.click()
             2.seconds.wait()
-            if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
+            if (!waitScreen(RouteScreen.List, timeout = 4)) {
+                // D-33: keep the frame right after the tap, then tap the same point once more before giving up.
+                log("no panel quest=${quest.id} retap=true point=$spot")
+                if (!tap) probeDiagnostic(quest.id, 1)
+                1.seconds.wait()
+                spot.click()
+                2.seconds.wait()
+                if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
+            }
             failure.panelOpened()
             return true
         }

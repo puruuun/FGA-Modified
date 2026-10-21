@@ -13,6 +13,9 @@ class QuestPanelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     /** D-20: find the emblem across the game area, independent of panel slot or horizontal placement. */
     val freeSearchBand get() = Region(24, 160, scriptArea.width - 48, 1160)
 
+    /** Enlarged spot ribbon after a spot tap; measured on owner 720p panels, centred in the left map area. */
+    val enlargedSpotName = Region(-880, 936, 700, 64).xFromCenter()
+
     private fun panel(region: Region) = (if (isWide) region + io.github.lib_automata.Location(-190, 0) else region).xFromRight()
 
     companion object {

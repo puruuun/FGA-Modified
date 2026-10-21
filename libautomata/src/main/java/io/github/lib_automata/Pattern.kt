@@ -52,6 +52,9 @@ interface Pattern : AutoCloseable {
      */
     fun copy(): Pattern
 
+    /** A new image with [other] drawn below this one (the narrower is padded with black on the right). Both must have the same channels. */
+    fun stackedWith(other: Pattern): Pattern = throw UnsupportedOperationException("stackedWith")
+
     fun threshold(value: Double): Pattern
 
     /** Distinctive image correspondences; coordinates are pixels in this image and [scene]. */

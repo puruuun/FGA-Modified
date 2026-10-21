@@ -13,6 +13,49 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
     val loc=WeeklyRouteLocations(locations)
     val actual=JSONObject()
     when(case.getString("view")) {
+        "spotPanel" -> useSameSnapIn {
+            val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
+            val names = JSONArray(fixtureText(imports.getJSONArray("names:JP").getString(0))).let { a -> (0 until a.length()).map { a.getString(it) } }
+            val warSpots = case.getJSONArray("spotNames").let { a -> (0 until a.length()).map { a.getString(it) } }
+            val spot = reader.readSpot(prefs.gameServer, warSpots)
+            val panels = JSONArray()
+            var by: String? = null
+            for (anchor in reader.anchors()) {
+                var panel = reader.readAnchored(prefs.gameServer, anchor, names, spot)
+                if (case.optBoolean("forceNullName")) panel = panel.copy(nameText = null)
+                val found = QuestPanelMatch.matchBy(panel, case.getString("targetName"), case.getString("targetSpot"), case.getInt("freeQuests"))
+                if (found != null && by == null) by = found
+                panels.put(JSONObject().put("name", panel.nameText ?: "unread").put("spot", panel.spotText ?: "unread")
+                    .put("cells", panel.nameCells ?: -1).put("by", found ?: "mismatch")
+                    .put("rawNames", JSONArray(panel.rawNames.map { "${it.text.trim()}@${it.confidence}" }))
+                    .put("rawSpots", JSONArray(panel.rawSpots.map { "${it.text.trim()}@${it.confidence}" })))
+            }
+            actual.put("match", by != null).put("by", by ?: "mismatch").put("found", panels.length() > 0).put("panels", panels)
+        }
+        "evidence" -> useColor {
+            // D-30: the picture the probe saves for a success: panel name band above the spot ribbon, doubled.
+            val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
+            val anchor = reader.anchors().firstOrNull()
+            val image = anchor?.let { reader.evidence(it) }
+            actual.put("found", anchor != null).put("made", image != null)
+            image?.use { actual.put("width", it.width).put("height", it.height).put("color", it.grayPixels() == null) }
+        }
+        "spotLegacy" -> useSameSnapIn {
+            // Root-cause probe for the beta.8 null names: the beta.8 crop (ink width + 8 from the band's left edge) and its two reads.
+            val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
+            val names = JSONArray(fixtureText(imports.getJSONArray("names:JP").getString(0))).let { a -> (0 until a.length()).map { a.getString(it) } }
+            val rows = JSONArray()
+            for (anchor in reader.anchors()) anchor.name.getPattern("legacy name").use { band ->
+                val width = band.grayPixels()?.let { QuestPanelMatch.inkExtent(it, band.width, band.height) }
+                val old = band.crop(io.github.lib_automata.Region(0, 0, minOf((width ?: band.width) + 8, band.width), band.height)).use { image ->
+                    listOf(2, 3).map { scale -> ocr.detectTextLine(image, io.github.lib_automata.TextLineOcrOptions(scale = scale, threshold = 0.6,
+                        invert = true, padding = 12, language = "jpn_weekly")) }
+                }
+                rows.put(JSONObject().put("name", QuestPanelMatch.canonicalName(old, names) ?: "unread").put("width", width ?: -1)
+                    .put("raw", JSONArray(old.map { "${it.text.trim()}@${it.confidence}" })))
+            }
+            actual.put("legacy", rows).put("found", rows.length() > 0)
+        }
         "spotTappable" -> {
             val x = case.getDouble("spotX")
             val y = case.getDouble("spotY")
@@ -20,6 +63,7 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             val height = loc.scriptArea.height / 2
             actual.put("tappable", MapView.isTappable(x, y, width, height))
                 .put("needsScroll", MapView.dragToward(x, y, width, height) != null)
+                .put("fallback", MapView.visibleTap(x, y, width, height) != null)
                 .put("screen", WeeklyRouteScreens(this, loc).read().name)
         }
         "nameProbe" -> {

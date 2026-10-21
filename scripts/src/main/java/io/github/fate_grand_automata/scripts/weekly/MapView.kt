@@ -40,6 +40,31 @@ object MapView {
     }
 
     /**
+     * D-33: a spot icon that lies at most [MAX_SHIFT] px inside a fixed button's zone, on a map that cannot be moved any
+     * further, still shows its upper or outer part. Returns the nearest point within [MAX_SHIFT] px of ([x], [y]) that is
+     * outside every zone by at least [CLEARANCE] px and on the screen, or null when there is none. Axis directions only,
+     * smallest shift first (up, right, left, down on ties); a spot that already is tappable returns null (no shift needed).
+     */
+    fun visibleTap(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
+        if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0 || isTappable(x, y, width, height)) return null
+        fun clear(px: Double, py: Double): Boolean = isTappable(px, py, width, height) &&
+            listOf(-CLEARANCE to 0.0, CLEARANCE to 0.0, 0.0 to -CLEARANCE, 0.0 to CLEARANCE).none { (dx, dy) -> covered(px + dx, py + dy, width, height) }
+        val s = height / 720.0
+        val directions = listOf(0.0 to -1.0, 1.0 to 0.0, -1.0 to 0.0, 0.0 to 1.0)
+        for (step in 1..(MAX_SHIFT * s).toInt()) {
+            for ((dx, dy) in directions) {
+                val px = x + dx * step
+                val py = y + dy * step
+                if (clear(px, py)) return ScreenPoint(px, py)
+            }
+        }
+        return null
+    }
+
+    const val MAX_SHIFT = 30.0
+    private const val CLEARANCE = 4.0
+
+    /**
      * The drag that moves the point at ([x], [y]) towards the middle of the open map area, or null when it is already
      * tappable. The drag is capped so that one step stays a single bounded scroll.
      */

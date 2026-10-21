@@ -23,7 +23,14 @@ enum class ProbeStatus(val csv: String) {
     }
 }
 
-data class ProbeResult(val quest: RouteQuest, val status: ProbeStatus, val note: String, val elapsedMillis: Long)
+/**
+ * D-30: why a success is believable. [file] is the evidence picture (panel name band above the spot ribbon), [by] the rule that
+ * matched (`quest-name` or `spot-name+cells`), [questRead] and [spotRead] the canonical names the OCR settled on (blank when unread).
+ */
+data class ProbeEvidence(val file: String = "", val by: String = "", val questRead: String = "", val spotRead: String = "")
+
+data class ProbeResult(val quest: RouteQuest, val status: ProbeStatus, val note: String, val elapsedMillis: Long,
+    val evidence: ProbeEvidence = ProbeEvidence())
 
 enum class ProbeScope { All, Chapters, Enabled }
 
@@ -43,13 +50,14 @@ object WeeklyProbe {
             }
             .map { RouteItem(it, 1) }
 
-    const val CSV_HEADER = "quest_id,war_id,chapter,spot,quest,ap,status,elapsed_ms,note"
+    const val CSV_HEADER = "quest_id,war_id,chapter,spot,quest,ap,status,elapsed_ms,note,evidence_file,by,read_quest,read_spot"
 
     fun csv(results: List<ProbeResult>): String = buildString {
         append(CSV_HEADER).append('\n')
         results.forEach {
             val q = it.quest
-            append(listOf(q.id, q.warId, field(q.chapter), field(q.spot), field(q.name), q.ap, it.status.csv, it.elapsedMillis, field(it.note))
+            append(listOf(q.id, q.warId, field(q.chapter), field(q.spot), field(q.name), q.ap, it.status.csv, it.elapsedMillis, field(it.note),
+                field(it.evidence.file), it.evidence.by, field(it.evidence.questRead), field(it.evidence.spotRead))
                 .joinToString(",")).append('\n')
         }
     }

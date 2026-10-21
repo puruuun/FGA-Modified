@@ -162,6 +162,21 @@ class DroidCvPattern(
 
     override fun copy() = DroidCvPattern(mat.clone(), tag = tag)
 
+    override fun stackedWith(other: Pattern): Pattern {
+        require(other is DroidCvPattern && other.mat.type() == mat.type()) { "stackedWith needs the same image type" }
+        val wide = maxOf(width, other.width)
+        fun padded(source: Mat): Mat = if (source.width() == wide) source.clone() else Mat().also {
+            Core.copyMakeBorder(source, it, 0, 0, 0, wide - source.width(), Core.BORDER_CONSTANT, Scalar.all(0.0))
+        }
+        val top = padded(mat)
+        val bottom = padded(other.mat)
+        val result = Mat()
+        Core.vconcat(listOf(top, bottom), result)
+        top.release()
+        bottom.release()
+        return DroidCvPattern(result, tag = "$tag+${other.tag}")
+    }
+
     override fun threshold(value: Double): Pattern {
         val result = Mat()
 

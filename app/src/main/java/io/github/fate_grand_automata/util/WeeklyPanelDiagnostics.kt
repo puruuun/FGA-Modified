@@ -16,6 +16,18 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
     private var probe = false
     override val enabled get() = if (probe) count < WeeklyProbe.DIAGNOSTIC_LIMIT else BuildConfig.BUILD_TYPE == "beta" && count < 8
     override fun startProbe() { probe = true }
+    override fun saveEvidence(image: Pattern, questId: Int): String? {
+        if (!probe) return null
+        val path = "weeklyRoute/$run/evidence/q$questId.png"
+        return try {
+            storage.writeDiagnosticFile(path, "image/png") { image.save(it) }
+            "diagnostics/$path"
+        } catch (e: Exception) {
+            timber.log.Timber.tag(WEEKLY_ROUTE_TAG).w(e, "evidence write failed path=%s", path)
+            null
+        }
+    }
+
     override fun save(frame: Pattern, questId: Int, attempt: Int): String? {
         if (!enabled) return null
         val path = "weeklyRoute/$run/${++count}-q$questId-a$attempt.png"

@@ -67,6 +67,8 @@ interface RouteDriver {
     fun openSpot(quest: RouteQuest): SpotOutcome
     /** D-25: the same navigation as [openSpot], but a matching panel is left untapped (open) and nothing else is done to it. */
     fun probeSpot(quest: RouteQuest): SpotOutcome = error("probe mode is not supported by this driver")
+    /** D-30: how the last successful [probeSpot] matched (rule, evidence file, names read), or null when the driver keeps none. */
+    fun lastEvidence(): ProbeEvidence? = null
     /** Runs the quest [count] times with the ordinary battle flow and brings the game back to the map with the panel open. */
     fun battle(quest: RouteQuest, count: Int): BattleOutcome
     fun log(message: String)
@@ -157,7 +159,7 @@ class WeeklyRouteMachine(
         }
         driver.log("probe quest=${item.quest.id} status=success ms=$elapsed")
         results += StopResult(item, 0, StopStatus.Done, "")
-        probeResults += ProbeResult(item.quest, ProbeStatus.Success, "", elapsed)
+        probeResults += ProbeResult(item.quest, ProbeStatus.Success, "", elapsed, driver.lastEvidence() ?: ProbeEvidence())
         if (!driver.closePanel()) {
             driver.log("abort reason=panel did not close")
             return false

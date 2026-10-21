@@ -12,8 +12,15 @@ import io.github.lib_automata.Region
 import io.github.lib_automata.TextLineOcrOptions
 import javax.inject.Inject
 
-/** What the uppermost panel of a spot shows. [nameCells] is the quest name's ink width in full-width glyph cells. */
-data class QuestPanel(val free: Boolean, val ap: Int?, val nameCells: Double?, val nameWidthPx: Int?, val nameText: String? = null)
+/**
+ * What the uppermost panel of a spot shows. [nameCells] is the quest name's ink width in full-width glyph cells.
+ * [rawNames] are all OCR candidates of the name band; [spotText] and [rawSpots] come from the enlarged spot ribbon (D-29).
+ */
+data class QuestPanel(val free: Boolean, val ap: Int?, val nameCells: Double?, val nameWidthPx: Int?, val nameText: String? = null,
+    val rawNames: List<OcrText> = emptyList(), val spotText: String? = null, val rawSpots: List<OcrText> = emptyList())
+
+/** The enlarged spot ribbon read once per frame: the canonical spot name (normalized) or null, and every OCR candidate. */
+data class SpotReading(val text: String?, val raw: List<OcrText>)
 
 sealed class PanelVerdict {
     data object Match : PanelVerdict()
@@ -67,7 +74,7 @@ class QuestPanelReader @Inject constructor(
         }
     }
 
-    fun readAnchored(server: GameServer, anchor: QuestPanelAnchor, questNames: Collection<String>): QuestPanel = useSameSnapIn {
+    fun readAnchored(server: GameServer, anchor: QuestPanelAnchor, questNames: Collection<String>, spot: SpotReading? = null): QuestPanel = useSameSnapIn {
         if (!anchor.fits(loc.scriptArea)) return@useSameSnapIn QuestPanel(false, null, null, null)
         val mark = label() ?: return@useSameSnapIn QuestPanel(false, null, null, null)
         if (!Region(anchor.mark.x, anchor.mark.y, mark.width * 2, mark.height * 2)
@@ -78,14 +85,45 @@ class QuestPanelReader @Inject constructor(
         anchor.name.getPattern("anchored_panel_name").use { band ->
             val width = band.grayPixels()?.let { QuestPanelMatch.inkExtent(it, band.width, band.height) }
             val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
-            val reads = band.crop(Region(0, 0, minOf((width ?: band.width) + 8, band.width), band.height)).use { image ->
-                listOf(2, 3).map { scale -> ocr.detectTextLine(image,
-                    TextLineOcrOptions(scale = scale, threshold = 0.6, invert = true, padding = 12, language = lang)) }
-            }
+            val bounds = band.grayPixels()?.let { QuestPanelMatch.inkBounds(it, band.width, band.height) }
+            val reads = band.crop(bounds ?: Region(0, 0, band.width, band.height)).use { image -> textReadings(image, lang) }
             val name = if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
-            QuestPanel(true, ap, width?.let { QuestPanelMatch.cellsOf(it, server) }, width, name)
+            QuestPanel(true, ap, width?.let { QuestPanelMatch.cellsOf(it, server) }, width, name,
+                reads, spot?.text, spot?.raw.orEmpty())
         }
     }
+
+    private fun textReadings(image: Pattern, lang: String): List<OcrText> =
+        listOf(
+            TextLineOcrOptions(scale = 2, threshold = 0.6, invert = true, padding = 12, language = lang),
+            TextLineOcrOptions(scale = 3, threshold = 0.6, invert = true, padding = 12, language = lang),
+            TextLineOcrOptions(scale = 4, rawGrayscale = true, invert = true, padding = 12, language = lang),
+            TextLineOcrOptions(scale = 4, threshold = 0.5, invert = true, padding = 12, language = lang)
+        ).map { ocr.detectTextLine(image, it) }
+
+    fun spotReadings(server: GameServer): List<OcrText> = loc.enlargedSpotName.getPattern("enlarged_spot_name").use { band ->
+        val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
+        val bounds = band.grayPixels()?.let { QuestPanelMatch.inkBounds(it, band.width, band.height) }
+        band.crop(bounds ?: Region(0, 0, band.width, band.height)).use { textReadings(it, lang) }
+    }
+
+    /** D-29: the spot ribbon, canonicalized against the spot names of the quest's own chapter. */
+    fun readSpot(server: GameServer, spotNames: Collection<String>): SpotReading {
+        val raw = spotReadings(server)
+        return SpotReading(if (spotNames.isEmpty()) null else QuestPanelMatch.canonicalSpot(raw, spotNames), raw)
+    }
+
+    /**
+     * D-30: the panel name band above the spot ribbon, doubled in size, as the evidence picture of a success.
+     * Call inside the same colour mode as the frame that was read (the probe uses colour).
+     */
+    fun evidence(anchor: QuestPanelAnchor): Pattern? = runCatching {
+        anchor.name.getPattern("evidence_name").use { name ->
+            loc.enlargedSpotName.getPattern("evidence_spot").use { spot ->
+                name.stackedWith(spot).use { stacked -> stacked.resize(io.github.lib_automata.Size(stacked.width * 2, stacked.height * 2)) }
+            }
+        }
+    }.getOrNull()
 
     /** [slot] is the panel's place in the spot's panel list, 0 for the uppermost. */
     fun isFree(slot: Int = 0): Boolean =
@@ -136,6 +174,9 @@ object QuestPanelMatch {
         is PanelVerdict.NameMismatch -> "NameMismatch"
     }
 
+    /** A read that spells a catalogue name exactly is a vote from this confidence: no edit-distance margin can apply to it. */
+    const val EXACT_MIN_CONFIDENCE = 50
+
     fun normalizedName(s: String): String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFKC).filterNot { it.isWhitespace() }
     fun nameConsensus(readings: List<OcrText>): String? {
         val confident=readings.filter { it.confidence>=65 && it.text.isNotBlank() }.map { normalizedName(it.text) }
@@ -161,6 +202,7 @@ object QuestPanelMatch {
         }
         val votes=readings.filter { it.confidence>=45 && it.text.isNotBlank() }.mapNotNull { read ->
             val text=normalizedName(read.text)
+            if (read.confidence >= EXACT_MIN_CONFIDENCE && text in names) return@mapNotNull text
             val ranked=names.map { it to distance(text,it) }.sortedBy { it.second }
             val best=ranked.first()
             best.first.takeIf { best.second<=2 && best.second*3<=best.first.length &&
@@ -172,6 +214,62 @@ object QuestPanelMatch {
     /** Production navigation requires actual name characters, never just a matching glyph count. */
     fun strictVerdict(panel: QuestPanel, expectedAp: Int, expectedName: String, server: GameServer): PanelVerdict {
         return verdict(panel, expectedAp, expectedName, server)
+    }
+
+    /** Dash-like characters OCR swaps for each other in spot names (long vowel mark, minus, hyphens). */
+    private const val DASHES = "ー－−–—‐―-"
+    /** Ribbon outline pieces OCR reads as stray symbols at either end of a spot name. */
+    private const val NOISE_ENDS = "_^<>,.~|'\"ゝヽ、。:;"
+
+    /** Spot names compare after NFKC, without blanks, dash look-alikes folded to one hyphen and stray symbols trimmed from both ends. */
+    fun normalizedSpot(s: String): String =
+        normalizedName(s).map { if (it in DASHES) '-' else it }.joinToString("").trim { it in NOISE_ENDS }
+
+    /**
+     * D-29: the enlarged spot ribbon against the spot names of one chapter. Same voting as [canonicalName] (two agreeing
+     * readings, no contradicting one), but a verbatim catalogue spelling counts from confidence 50 (one-character neighbours
+     * such as X-A and X-B can never pass the edit margin) and an edit match needs a margin of two edits to the runner-up.
+     * Returns the normalized ([normalizedSpot]) name.
+     */
+    fun canonicalSpot(readings: List<OcrText>, spotNames: Collection<String>): String? {
+        val names = spotNames.map(::normalizedSpot).filter { it.isNotEmpty() }.distinct()
+        if (names.isEmpty()) return null
+        val votes = readings.filter { it.confidence >= 45 && it.text.isNotBlank() }.mapNotNull { read ->
+            val text = normalizedSpot(read.text)
+            if (text.isEmpty()) return@mapNotNull null
+            if (read.confidence >= EXACT_MIN_CONFIDENCE && text in names) return@mapNotNull text
+            val ranked = names.map { it to editDistance(text, it) }.sortedBy { it.second }
+            val best = ranked.first()
+            best.first.takeIf { best.second <= 2 && best.second * 3 <= best.first.length &&
+                (ranked.size == 1 || ranked[1].second - best.second >= 2) }
+        }
+        return votes.distinct().singleOrNull()?.takeIf { votes.size >= 2 }
+    }
+
+    internal fun editDistance(a: String, b: String): Int {
+        if (kotlin.math.abs(a.length - b.length) > 3) return 4
+        var row = IntArray(b.length + 1) { it }
+        for (i in a.indices) {
+            val next = IntArray(b.length + 1); next[0] = i + 1
+            for (j in b.indices) next[j + 1] = minOf(next[j] + 1, row[j + 1] + 1, row[j] + if (a[i] == b[j]) 0 else 1)
+            row = next
+        }
+        return row.last()
+    }
+
+    /**
+     * D-29 verdict with its rule. The quest name stays primary: a readable name decides alone, and a readable different
+     * name is never overridden. An unreadable name matches only on the spot ribbon, when the spot has exactly one Atlas free
+     * quest, the Free Quest emblem is present and the name's ink width fits. Returns "quest-name", "spot-name+cells" or null.
+     */
+    fun matchBy(panel: QuestPanel, expectedName: String, expectedSpot: String, freeQuests: Int): String? {
+        if (!panel.free) return null
+        if (panel.nameText != null) return "quest-name".takeIf { normalizedName(panel.nameText) == normalizedName(expectedName) }
+        if (freeQuests != 1 || expectedSpot.isBlank() || panel.spotText == null ||
+            normalizedSpot(panel.spotText) != normalizedSpot(expectedSpot)) return null
+        val cells = panel.nameCells ?: return null
+        val expected = nameCells(expectedName)
+        return "spot-name+cells".takeIf { kotlin.math.abs(cells - expected) <= nameTolerance(expected) }
     }
 
     /** Ink width of one full-width glyph at 720p: JP kana and kanji, KR hangul. Measured on the owner captures. */
@@ -215,6 +313,22 @@ object QuestPanelMatch {
         val threshold = median + 0.6 * (high - median)
         val columns = (0 until width).filter { x -> (0 until height).count { y -> values[y * width + x] >= threshold } >= 2 }
         return if (columns.isEmpty()) null else columns.last() - columns.first() + 1
+    }
+
+    /** Tight bright-glyph bounds, excluding the spot ribbon's dim outline and padding. No target-name geometry. */
+    fun inkBounds(gray: ByteArray, width: Int, height: Int): Region? {
+        if (width <= 0 || height <= 0 || gray.size < width * height) return null
+        val sorted = gray.map { it.toInt() and 255 }.sorted()
+        val median = sorted[sorted.size / 2]
+        val high = sorted[(sorted.size * 0.995).toInt().coerceAtMost(sorted.lastIndex)]
+        if (high - median < 40) return null
+        val threshold = median + 0.6 * (high - median)
+        val xs = (0 until width).filter { x -> (0 until height).count { y -> (gray[y * width + x].toInt() and 255) >= threshold } >= 2 }
+        if (xs.isEmpty()) return null
+        val ys = (0 until height).filter { y -> xs.count { x -> (gray[y * width + x].toInt() and 255) >= threshold } >= 2 }
+        if (ys.isEmpty()) return null
+        val left = maxOf(0, xs.first() - 2); val top = maxOf(0, ys.first() - 2)
+        return Region(left, top, minOf(width, xs.last() + 3) - left, minOf(height, ys.last() + 3) - top)
     }
 
     /** One value supported by at least two confident readings and contradicted by none. */
