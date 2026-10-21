@@ -55,6 +55,41 @@ class WeeklySpotNameTest {
         assertNull(QuestPanelMatch.matchBy(panel(null, "未確認座標X-A"), "屋敷跡", "", 1), "no Atlas spot name")
     }
 
+    // D-37: Ebihu mountain (93000713 and 93000715) and Amakusa style two-quest spots.
+    private val ebihu = listOf("震える霊峰", "大江山盗賊団")
+
+    @Test fun `spot scoped vote reads the beta9 failure of 93000713 from its own two candidates`() {
+        // Real beta.9 reads: only one is at confidence 45 or more, so the chapter-wide vote found nothing.
+        val raw = reads("因 える 霊峰" to 43, "岩 える 寺 風" to 40, "岩 える 圭 峰" to 43, "震え る 寺 峰" to 45)
+        assertEquals("震える霊峰", QuestPanelMatch.canonicalSpotQuestName(raw, ebihu))
+        val panel = QuestPanel(true, 21, 4.97, null, "震える霊峰", nameBySpot = true)
+        assertEquals("quest-name-spot", QuestPanelMatch.matchBy(panel, "震える霊峰", "エビフ山", 2))
+        assertNull(QuestPanelMatch.matchBy(panel, "大江山盗賊団", "エビフ山", 2), "the sibling target must not match")
+    }
+
+    @Test fun `spot scoped vote needs a two edit margin and half length distance`() {
+        val pair = listOf("静かな入り江", "名もなき霊峰")
+        // The upper panel of a two quest spot shows the sibling: it must resolve to the sibling and never to the target.
+        assertEquals("静かな入り江", QuestPanelMatch.canonicalSpotQuestName(reads("静かな入り江" to 80, "静かな入り江" to 70), pair))
+        assertEquals("静かな入り江", QuestPanelMatch.canonicalSpotQuestName(reads("静か入り江" to 60, "静かな入り汀" to 55), pair))
+        // Equally far from both candidates: no margin, no vote.
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静かな霊峰" to 80, "静かな霊峰" to 80), pair))
+        // More than half of the name is wrong.
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静口口口口口" to 80, "静口口口口口" to 80), pair))
+        // One read, a contradicting read, or reads below the spot confidence floor are no vote.
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静かな入り江" to 80), pair))
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静かな入り江" to 80, "名もなき霊峰" to 80), pair))
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静かな入り江" to 30, "静かな入り江" to 20), pair))
+        assertNull(QuestPanelMatch.canonicalSpotQuestName(reads("静かな入り江" to 80, "静かな入り江" to 80), listOf("静かな入り江")), "one candidate is the chapter-wide rule")
+    }
+
+    @Test fun `spot scope applies only to spots with two or more distinct free quests`() {
+        assertEquals(emptyList(), QuestPanelMatch.spotScoped(emptyList()))
+        assertEquals(emptyList(), QuestPanelMatch.spotScoped(listOf("豊穣祈願")))
+        assertEquals(emptyList(), QuestPanelMatch.spotScoped(listOf("豊穣祈願", "豊穣祈願")))
+        assertEquals(listOf("A", "B"), QuestPanelMatch.spotScoped(listOf("A", "B ")))
+    }
+
     @Test fun `a spot icon just inside the gift box zone is tapped on its visible part`() {
         // beta.8 Okeanos 93000311: spot (467,566), gift box zone starts at y > 560.
         assertFalse(MapView.isTappable(467.0, 566.0, 1280, 720))

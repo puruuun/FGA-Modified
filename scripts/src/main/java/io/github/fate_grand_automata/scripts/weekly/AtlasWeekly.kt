@@ -88,7 +88,8 @@ object AtlasWeekly {
         val quests = select(wars, now)
         val used = quests.map { it.warId }.toSet()
         return Wars(quests, wars.filter { it.id in used }.associate { w ->
-            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) }, w.spots.associate { it.id to it.name })
+            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) }, w.spots.associate { it.id to it.name },
+                w.spots.mapNotNull { spot -> spot.quests.filter { it.type == "free" }.map { it.name }.takeIf { it.isNotEmpty() }?.let { spot.id to it } }.toMap())
         })
     }
 

@@ -18,10 +18,14 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             val names = JSONArray(fixtureText(imports.getJSONArray("names:JP").getString(0))).let { a -> (0 until a.length()).map { a.getString(it) } }
             val warSpots = case.getJSONArray("spotNames").let { a -> (0 until a.length()).map { a.getString(it) } }
             val spot = reader.readSpot(prefs.gameServer, warSpots)
+            // D-37: the tapped spot's own free quests; absent in the older cases, which keep the chapter-wide vote.
+            val spotQuests = case.optJSONArray("spotQuests")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
+            val only = if (case.has("anchorIndex")) case.getInt("anchorIndex") else null
             val panels = JSONArray()
             var by: String? = null
-            for (anchor in reader.anchors()) {
-                var panel = reader.readAnchored(prefs.gameServer, anchor, names, spot)
+            for ((index, anchor) in reader.anchors().withIndex()) {
+                if (only != null && index != only) continue
+                var panel = reader.readAnchored(prefs.gameServer, anchor, names, spot, spotQuests)
                 if (case.optBoolean("forceNullName")) panel = panel.copy(nameText = null)
                 val found = QuestPanelMatch.matchBy(panel, case.getString("targetName"), case.getString("targetSpot"), case.getInt("freeQuests"))
                 if (found != null && by == null) by = found
@@ -100,6 +104,18 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             val image=Images.valueOf(case.getString("image"))
             val score=loc.listArea.findAll(images[image],0.1).maxOfOrNull { it.score } ?: 0.0
             actual.put("match",score>=WeeklyRouteDriver.BUTTON_SIMILARITY).put("score",score)
+        }
+        "bannerRaw" -> useColor {
+            // D-35: the Atlas banner as the app prepares it (AtlasAssets.banner: body crop, 1.25x), against a list frame.
+            fixturePattern(imports.getJSONArray(case.getString("asset")).getString(0),true).use { full ->
+                full.crop(AtlasAssets.BANNER_BODY).use { body ->
+                    body.resize(io.github.lib_automata.Size((body.width * AtlasAssets.BANNER_SCALE).toInt(), (body.height * AtlasAssets.BANNER_SCALE).toInt())).use { pattern ->
+                        val best = loc.listArea.findAll(pattern,0.1).maxByOrNull { it.score }
+                        actual.put("match",(best?.score ?: 0.0)>=WeeklyRouteDriver.BANNER_SIMILARITY).put("score",best?.score ?: 0.0)
+                            .put("x",best?.region?.center?.x ?: -1).put("y",best?.region?.center?.y ?: -1)
+                    }
+                }
+            }
         }
         "banner" -> useColor {
             fixturePattern(imports.getJSONArray(case.getString("asset")).getString(0),true).use { pattern ->

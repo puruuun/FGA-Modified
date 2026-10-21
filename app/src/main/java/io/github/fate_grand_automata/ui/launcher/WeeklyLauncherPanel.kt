@@ -65,7 +65,7 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
             try {
                 val plan = withContext(Dispatchers.Default) {
                     WeeklyRouteSolver.solve(data.week.missions,
-                        WeeklyCandidateSettings.candidates(server, data.quests, disabled), setOf(WeeklyRouteSolver.MICTLAN_WAR))
+                        WeeklyCandidateSettings.candidates(server, data.quests, disabled), WeeklyRouteSolver.EXCLUDED_WARS)
                 }
                 state.counts.putAll(plan.items.associate { it.quest.id to it.count })
                 state.plan = plan
@@ -154,7 +154,7 @@ private fun PanelHeading(title: String) {
 @Composable
 private fun ProbeOptions(state: WeeklyPanelState, data: AtlasRouteRepository.Dataset, disabled: Set<String>, modifier: Modifier) {
     val chapters = remember(data) {
-        data.quests.filter { it.warId != WeeklyRouteSolver.MICTLAN_WAR }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
+        data.quests.filter { it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
     }
     LazyColumn(modifier) {
         item {

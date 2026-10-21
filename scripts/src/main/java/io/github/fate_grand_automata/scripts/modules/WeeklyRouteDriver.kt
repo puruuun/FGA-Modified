@@ -147,9 +147,12 @@ class WeeklyRouteDriver @Inject constructor(
             ChapterList.MainRecord1 -> Images.WeeklyMainRecord1
             ChapterList.MainRecord15 -> Images.WeeklyMainRecord15
             ChapterList.MainRecord2 -> Images.WeeklyMainRecord2
+            ChapterList.MainInterlude -> Images.WeeklyMainInterlude
             ChapterList.Home -> return true
         }
-        val template = useColor { images[image] }
+        // The Main Interlude button has a template for JP only; a server without one cannot enter the list.
+        val template = runCatching { useColor { images[image] } }.getOrNull()
+            ?: return false.also { log("list $list button has no template for this server") }
         val match = scanList { findColor(template, BUTTON_SIMILARITY) }
         if (match == null) {
             log("list $list button not found")
@@ -236,7 +239,28 @@ class WeeklyRouteDriver @Inject constructor(
         repeat(2) { if (!pinchOut()) return false }
         measure("after")
         log("chapter $warId zoomed out")
-        return true
+        return checkFreeQuestMap(warId, war, map)
+    }
+
+    private var mapProblem: String? = null
+    override fun mapProblem() = mapProblem
+
+    /**
+     * D-35: a chapter with several maps whose free quests are all on one other map (Heian-kyo: 4 maps, free quests on 30702) is
+     * entered on the first map. When the zoomed-out screen does not fit that map, the chapter is skipped with a diagnostic frame;
+     * switching the map is not guessed.
+     */
+    private fun checkFreeQuestMap(warId: Int, war: WarInfo?, map: Pattern?): Boolean {
+        mapProblem = null
+        if (war == null || map == null || warId !in io.github.fate_grand_automata.scripts.weekly.ChapterLists.MAIN_INTERLUDE_WARS || war.maps.size < 2) return true
+        val fit = localize(map)
+        val ok = MapLocalizer.accepts(fit)
+        log("free quest map war=$warId maps=${war.maps.size} fitted=$ok score=${fit?.score?.let { "%.2f".format(it) }}")
+        if (ok) return true
+        mapProblem = "entered map is not the free quest map"
+        log("chapter $warId skipped reason=$mapProblem")
+        probeDiagnostic(900_000 + warId, 2)
+        return false
     }
 
     private fun mapFor(war: WarInfo, mapId: Int): Pattern? {
@@ -337,6 +361,7 @@ class WeeklyRouteDriver @Inject constructor(
         300.milliseconds.wait()
         // D-29: the spot ribbon is read against the spot names of this chapter only.
         val spotNames = run.wars[quest.warId]?.spots?.values?.filter { it.isNotBlank() }?.distinct().orEmpty()
+        val spotQuestNames = run.wars[quest.warId]?.spotQuests?.get(quest.spotId).orEmpty()
         for (attempt in 0 until PANEL_READ_ATTEMPTS) {
             val matched = useSameSnapIn {
                 val anchors = reader.anchors()
@@ -347,7 +372,7 @@ class WeeklyRouteDriver @Inject constructor(
                 }
                 val spot = if (anchors.isEmpty() || spotNames.isEmpty()) null else reader.readSpot(prefs.gameServer, spotNames)
                 for (anchor in anchors) {
-                    val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames, spot)
+                    val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames, spot, spotQuestNames)
                     val by = QuestPanelMatch.matchBy(panel, quest.name, quest.spot, quest.spotFreeQuests)
                     val verdict = if (by != null) PanelVerdict.Match else QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
                     failure.verdict(QuestPanelMatch.label(verdict))

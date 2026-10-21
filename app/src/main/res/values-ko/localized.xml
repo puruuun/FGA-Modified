@@ -739,7 +739,7 @@
     <string name="weekly_route_quest_line">%1$s / %2$s / %3$s · AP %4$d</string>
     <string name="weekly_route_total_ap">총 AP: %1$d</string>
     <string name="weekly_route_chapters">장 선택(열지 않은 장은 끄세요)</string>
-    <string name="weekly_route_mictlan">제외됨: Lostbelt No.7 믹틀란(지도 층 전환은 아직 지원하지 않음)</string>
+    <string name="weekly_route_mictlan">제외됨: Lostbelt No.7 믹틀란(지도 층 전환은 아직 지원하지 않음), 주장 Ⅰ~Ⅳ</string>
     <string name="weekly_route_kr_note">KR 적 구성은 JP 데이터 기준(같은 퀘스트 ID)</string>
     <string name="weekly_route_dropped">데이터 불일치로 뺀 퀘스트: %1$d개</string>
     <string name="weekly_route_battle_config">전투 설정</string>
@@ -765,5 +765,5 @@
     <string name="weekly_route_progress_solve">경로 계산 중…</string>
     <string name="weekly_route_settings">주간 퀘 추적 설정</string>
     <string name="weekly_route_settings_no_data">먼저 전투 실행 창의 주간 미션 패널에서 이 서버의 데이터를 다운로드하세요.</string>
-    <string name="weekly_route_unsupported_chapter">믹틀란 — 지원 안 함</string>
+    <string name="weekly_route_unsupported_chapter">믹틀란·주장 — 지원 안 함</string>
 </resources>

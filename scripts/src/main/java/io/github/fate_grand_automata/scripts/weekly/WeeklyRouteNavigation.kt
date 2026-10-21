@@ -1,7 +1,7 @@
 package io.github.fate_grand_automata.scripts.weekly
 
-/** The list a chapter button sits in (design 0009 D-8). [Home] is the main screen itself. */
-enum class ChapterList { Home, MainRecord1, MainRecord15, MainRecord2 }
+/** The list a chapter button sits in (design 0009 D-8). [Home] is the main screen itself. [MainInterlude] is the bottom home button (D-35). */
+enum class ChapterList { Home, MainRecord1, MainRecord15, MainRecord2, MainInterlude }
 
 object ChapterLists {
     /**
@@ -9,15 +9,25 @@ object ChapterLists {
      * Lostbelt No.1 on (3xx Lostbelts and 4xx Ordeal Calls). KR keeps the same first two lists, but its part-2 chapters
      * are not bundled and sit directly in the main screen list.
      */
+    /** D-35: Heian-kyo (307) and Traum (310) are not in a main record: they sit in the Main Interlude list. */
+    val MAIN_INTERLUDE_WARS = setOf(307, 310)
+
     fun of(server: String, warId: Int): ChapterList = when {
+        warId in MAIN_INTERLUDE_WARS -> ChapterList.MainInterlude
         warId in 100..108 -> ChapterList.MainRecord1
         warId in 200..299 -> ChapterList.MainRecord15
         server == "KR" -> ChapterList.Home
         else -> ChapterList.MainRecord2
     }
 
-    private val order = ChapterList.entries.associateWith { it.ordinal }
-    fun position(list: ChapterList) = if (list == ChapterList.Home) 3 else order.getValue(list)-1
+    /** Visit order of the lists: the main records, then the main screen's own chapters, then the Main Interlude button. */
+    fun position(list: ChapterList) = when (list) {
+        ChapterList.MainRecord1 -> 0
+        ChapterList.MainRecord15 -> 1
+        ChapterList.MainRecord2 -> 2
+        ChapterList.Home -> 3
+        ChapterList.MainInterlude -> 4
+    }
 }
 
 /** The quests of one chapter, in the order they are run. */
@@ -63,6 +73,8 @@ interface RouteDriver {
     fun closePanel(): Boolean
     /** Called once after entering a chapter map: the map is zoomed out to its minimum. */
     fun prepareMap(warId: Int): Boolean
+    /** Why the last [prepareMap] returned false, when it knows more than "zoom out failed" (D-35: the wrong map of a chapter). */
+    fun mapProblem(): String? = null
     /** Finds the quest's spot on the open map and taps the quest panel whose name and AP match. */
     fun openSpot(quest: RouteQuest): SpotOutcome
     /** D-25: the same navigation as [openSpot], but a matching panel is left untapped (open) and nothing else is done to it. */
@@ -215,6 +227,6 @@ class WeeklyRouteMachine(
         if (!driver.openChapter(visit.warId)) return "chapter ${visit.warId} not found"
         loc = Loc.OnMap(visit.warId, visit.list)
         // The map stays open on a failed zoom: the next chapter leaves it through the terminal button as usual.
-        return if (driver.prepareMap(visit.warId)) null else "zoom out failed"
+        return if (driver.prepareMap(visit.warId)) null else driver.mapProblem() ?: "zoom out failed"
     }
 }

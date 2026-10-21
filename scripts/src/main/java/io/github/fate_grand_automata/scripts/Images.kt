@@ -178,6 +178,8 @@ enum class Images(val path: String) {
     WeeklyMainRecord1("weekly_mr1.png"),
     WeeklyMainRecord15("weekly_mr15.png"),
     WeeklyMainRecord2("weekly_mr2.png"),
+    /** D-35: the gold Main Interlude button at the bottom of the main screen list (Heian-kyo, Traum). JP only so far. */
+    WeeklyMainInterlude("weekly_mi.png"),
 
     GrandCeLabel("grand_ce_label.png"),
     BondCeEffectDefault("bond_ce_effect_default.png"),

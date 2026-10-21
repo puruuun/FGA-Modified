@@ -17,7 +17,9 @@ import javax.inject.Inject
  * [rawNames] are all OCR candidates of the name band; [spotText] and [rawSpots] come from the enlarged spot ribbon (D-29).
  */
 data class QuestPanel(val free: Boolean, val ap: Int?, val nameCells: Double?, val nameWidthPx: Int?, val nameText: String? = null,
-    val rawNames: List<OcrText> = emptyList(), val spotText: String? = null, val rawSpots: List<OcrText> = emptyList())
+    val rawNames: List<OcrText> = emptyList(), val spotText: String? = null, val rawSpots: List<OcrText> = emptyList(),
+    /** D-37: [nameText] was chosen among the tapped spot's own free quests (2 or more), not among the whole regional list. */
+    val nameBySpot: Boolean = false)
 
 /** The enlarged spot ribbon read once per frame: the canonical spot name (normalized) or null, and every OCR candidate. */
 data class SpotReading(val text: String?, val raw: List<OcrText>)
@@ -74,7 +76,8 @@ class QuestPanelReader @Inject constructor(
         }
     }
 
-    fun readAnchored(server: GameServer, anchor: QuestPanelAnchor, questNames: Collection<String>, spot: SpotReading? = null): QuestPanel = useSameSnapIn {
+    fun readAnchored(server: GameServer, anchor: QuestPanelAnchor, questNames: Collection<String>, spot: SpotReading? = null,
+                     spotQuestNames: Collection<String> = emptyList()): QuestPanel = useSameSnapIn {
         if (!anchor.fits(loc.scriptArea)) return@useSameSnapIn QuestPanel(false, null, null, null)
         val mark = label() ?: return@useSameSnapIn QuestPanel(false, null, null, null)
         if (!Region(anchor.mark.x, anchor.mark.y, mark.width * 2, mark.height * 2)
@@ -87,9 +90,12 @@ class QuestPanelReader @Inject constructor(
             val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
             val bounds = band.grayPixels()?.let { QuestPanelMatch.inkBounds(it, band.width, band.height) }
             val reads = band.crop(bounds ?: Region(0, 0, band.width, band.height)).use { image -> textReadings(image, lang) }
-            val name = if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
+            // D-37: a spot with several free quests is voted among its own quests only.
+            val scoped = QuestPanelMatch.spotScoped(spotQuestNames)
+            val name = if (scoped.isNotEmpty()) QuestPanelMatch.canonicalSpotQuestName(reads, scoped)
+                else if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
             QuestPanel(true, ap, width?.let { QuestPanelMatch.cellsOf(it, server) }, width, name,
-                reads, spot?.text, spot?.raw.orEmpty())
+                reads, spot?.text, spot?.raw.orEmpty(), nameBySpot = scoped.isNotEmpty() && name != null)
         }
     }
 
@@ -246,6 +252,43 @@ object QuestPanelMatch {
         return votes.distinct().singleOrNull()?.takeIf { votes.size >= 2 }
     }
 
+    /** D-37: below this a spot-scoped read is ignored. Lower than the chapter-wide 45 because only 2-3 names compete. */
+    const val SPOT_QUEST_MIN_CONFIDENCE = 35
+
+    /** The distinct normalized free quest names of a spot when there are two or more; fewer means the chapter-wide rule applies. */
+    fun spotScoped(spotQuestNames: Collection<String>): List<String> =
+        spotQuestNames.map(::normalizedName).filter { it.isNotEmpty() }.distinct().takeIf { it.size >= 2 }.orEmpty()
+
+    private fun fullEditDistance(a: String, b: String): Int {
+        var row = IntArray(b.length + 1) { it }
+        for (i in a.indices) {
+            val next = IntArray(b.length + 1); next[0] = i + 1
+            for (j in b.indices) next[j + 1] = minOf(next[j] + 1, row[j + 1] + 1, row[j] + if (a[i] == b[j]) 0 else 1)
+            row = next
+        }
+        return row.last()
+    }
+
+    /**
+     * D-37: the quest name read among the free quests of the tapped spot only ([candidates], two or more, see [spotScoped]).
+     * A read votes for its nearest candidate when that is at most half the candidate's length away and the runner-up is at
+     * least two edits farther (a verbatim spelling from [EXACT_MIN_CONFIDENCE] on always votes). Two agreeing votes and no
+     * contradicting one are required. A read of the sibling quest therefore never becomes the target.
+     */
+    fun canonicalSpotQuestName(readings: List<OcrText>, candidates: List<String>): String? {
+        val names = candidates.map(::normalizedName).filter { it.isNotEmpty() }.distinct()
+        if (names.size < 2) return null
+        val votes = readings.filter { it.confidence >= SPOT_QUEST_MIN_CONFIDENCE && it.text.isNotBlank() }.mapNotNull { read ->
+            val text = normalizedName(read.text)
+            if (text.isEmpty()) return@mapNotNull null
+            if (read.confidence >= EXACT_MIN_CONFIDENCE && text in names) return@mapNotNull text
+            val ranked = names.map { it to fullEditDistance(text, it) }.sortedBy { it.second }
+            val best = ranked[0]
+            best.first.takeIf { best.second * 2 <= best.first.length && ranked[1].second - best.second >= 2 }
+        }
+        return votes.distinct().singleOrNull()?.takeIf { votes.size >= 2 }
+    }
+
     internal fun editDistance(a: String, b: String): Int {
         if (kotlin.math.abs(a.length - b.length) > 3) return 4
         var row = IntArray(b.length + 1) { it }
@@ -264,7 +307,8 @@ object QuestPanelMatch {
      */
     fun matchBy(panel: QuestPanel, expectedName: String, expectedSpot: String, freeQuests: Int): String? {
         if (!panel.free) return null
-        if (panel.nameText != null) return "quest-name".takeIf { normalizedName(panel.nameText) == normalizedName(expectedName) }
+        if (panel.nameText != null) return (if (panel.nameBySpot) "quest-name-spot" else "quest-name")
+            .takeIf { normalizedName(panel.nameText) == normalizedName(expectedName) }
         if (freeQuests != 1 || expectedSpot.isBlank() || panel.spotText == null ||
             normalizedSpot(panel.spotText) != normalizedSpot(expectedSpot)) return null
         val cells = panel.nameCells ?: return null

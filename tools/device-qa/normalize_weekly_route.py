@@ -19,6 +19,7 @@ KEEP = {
     "14": "14-jp-mr2-mid", "15": "15-jp-mr2-lb6", "16": "16-jp-mr2-lb3", "17": "17-jp-mr15", "18": "18-jp-mr1-mid",
     "19": "19-jp-orleans-zoomed-in", "20": "20-jp-atlantis-zoomed-out",
     "24": "24-kr-home-mr", "25": "25-kr-home-lostbelts", "26": "26-kr-mr1", "27": "27-kr-mr15",
+    "35": "35-home-main-records", "36": "36-main-interlude-list-traum-heian",
     "28": "28-kr-camelot-default", "29": "29-kr-camelot-zoomed-out", "30": "30-kr-camelot-quest-panel",
 }
 BOTTOM = {1156: 1153, 1147: 1144, 1146: 1143, 1111: 1111}
@@ -27,7 +28,7 @@ BOTTOM = {1156: 1153, 1147: 1144, 1146: 1143, 1111: 1111}
 def main() -> None:
     for number, stem in KEEP.items():
         path = SRC / f"{stem}.webp"
-        server = {"jp": "Jp", "kr": "Kr"}[stem.split("-")[1]]
+        server = {"jp": "Jp", "kr": "Kr"}.get(stem.split("-")[1], "Jp")  # 35 and 36 are JP captures without a server tag
         image = Image.open(path).convert("RGB")
         left, top, right = 0, 48, 1950
         bottom = BOTTOM[image.height]

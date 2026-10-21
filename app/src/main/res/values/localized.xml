@@ -811,7 +811,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="weekly_route_quest_line">%1$s / %2$s / %3$s · AP %4$d</string>
     <string name="weekly_route_total_ap">Total AP: %1$d</string>
     <string name="weekly_route_chapters">Chapters (turn off the ones you have not opened)</string>
-    <string name="weekly_route_mictlan">Excluded: Lostbelt No.7 Mictlan (map layers are not supported yet)</string>
+    <string name="weekly_route_mictlan">Excluded: Lostbelt No.7 Mictlan (map layers are not supported yet) and Ordeal Calls I-IV</string>
     <string name="weekly_route_kr_note">KR enemy data follows the JP data of the same quest ID.</string>
     <string name="weekly_route_dropped">Left out because of a data mismatch: %1$d quests</string>
     <string name="weekly_route_battle_config">Battle config</string>
@@ -858,5 +858,5 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="weekly_probe_status_mismatch">panel mismatch</string>
     <string name="weekly_probe_status_chapter">chapter not found</string>
     <string name="weekly_probe_status_not_run">not run</string>
-    <string name="weekly_route_unsupported_chapter">Mictlan — unsupported</string>
+    <string name="weekly_route_unsupported_chapter">Mictlan and Ordeal Calls — unsupported</string>
 </resources>

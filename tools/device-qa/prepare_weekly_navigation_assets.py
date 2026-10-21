@@ -18,6 +18,10 @@ def main():
             print('verified',source['file']);continue
         raw=urllib.request.urlopen(source['url'],timeout=60).read()
         assert hashlib.sha256(raw).hexdigest()==source['rawSha256'],'Atlas source changed; review before replacing fixture'
+        if source['kind']=='bannerRaw':
+            target.parent.mkdir(parents=True,exist_ok=True)
+            target.write_bytes(raw)
+            print('reproduced',source['file']);continue
         if source['kind']=='map':
             im=cv2.imdecode(np.frombuffer(raw,np.uint8),cv2.IMREAD_GRAYSCALE)
             im=cv2.resize(im,(source['width'],source['height']),interpolation=cv2.INTER_AREA)

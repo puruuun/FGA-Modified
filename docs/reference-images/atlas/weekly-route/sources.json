@@ -312,5 +312,23 @@
     "sha256": "c60c26a131e4246b7526f4d5dba11f0374d171c01c6e31cf68cccd1501985b98",
     "width": 1920,
     "height": 1240
+  },
+  {
+    "kind": "bannerRaw",
+    "server": "JP",
+    "war": 307,
+    "url": "https://static.atlasacademy.io/JP/Banner/questboard_cap309.png",
+    "rawSha256": "72476d496e74711adf4bf1919693a7cb6d51ba6a433721f16d96688606d64a40",
+    "file": "docs/reference-images/atlas/weekly-route/JP-banner-raw-307.png",
+    "sha256": "72476d496e74711adf4bf1919693a7cb6d51ba6a433721f16d96688606d64a40"
+  },
+  {
+    "kind": "bannerRaw",
+    "server": "JP",
+    "war": 310,
+    "url": "https://static.atlasacademy.io/JP/Banner/questboard_cap315.png",
+    "rawSha256": "51e86bf91ef4a6b9aa572f4572eed58fd767556e20a66de570f4d284bc777635",
+    "file": "docs/reference-images/atlas/weekly-route/JP-banner-raw-310.png",
+    "sha256": "51e86bf91ef4a6b9aa572f4572eed58fd767556e20a66de570f4d284bc777635"
   }
 ]

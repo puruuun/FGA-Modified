@@ -11,7 +11,7 @@ object WeeklyCandidateSettings {
     fun chapterKey(server: String, war: Int) = "$server:war:$war"
     fun questKey(server: String, quest: Int) = "$server:quest:$quest"
     fun candidates(server: String, quests: List<RouteQuest>, disabled: Set<String>) = quests.filter {
-        it.warId != WeeklyRouteSolver.MICTLAN_WAR &&
+        it.warId !in WeeklyRouteSolver.EXCLUDED_WARS &&
             chapterKey(server, it.warId) !in disabled && questKey(server, it.id) !in disabled
     }
 }

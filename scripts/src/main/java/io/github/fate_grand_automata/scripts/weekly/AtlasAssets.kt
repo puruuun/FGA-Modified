@@ -30,6 +30,8 @@ class AtlasAssets(
 ) {
     companion object {
         const val BANNER_SCALE = 1.25
+        /** D-36: bumped so maps cached by older versions (beta.8 kept a blurred 8x8 placeholder as the map) are fetched once more. */
+        const val MAP_CACHE_FORMAT = 2
         /** Button body inside the 450x125 banner image. */
         val BANNER_BODY = Region(14, 36, 420, 63)
         private const val HOST = "static.atlasacademy.io"
@@ -93,19 +95,30 @@ class AtlasAssets(
      */
     fun map(server: String, war: WarInfo, mapId: Int): Pattern? = runCatching {
         val map = war.maps.firstOrNull { it.id == mapId } ?: error("war ${war.id} has no map $mapId")
-        val stem = "$server-map-${map.id}-${hash(map.image)}"
-        if (File(dir(), "$stem.placeholder").exists()) return@runCatching null
+        val stem = "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${hash(map.image)}"
+        val placeholderMark = File(dir(), "$stem.placeholder")
+        val textureRecord = File(dir(), "$stem.texture")
+        if (placeholderMark.exists()) return@runCatching null
         val ready = File(dir(), "$stem-${map.width}x${map.height}.gray.png")
+        if (ready.exists()) {
+            // D-36: a cached map is only trusted when the size of the original texture was recorded and is a real map.
+            val recorded = textureRecord.takeIf { it.exists() }?.readText()?.trim()?.split('x')?.mapNotNull { it.toIntOrNull() }
+            if (recorded == null || recorded.size != 2 || PlaceholderMap.isPlaceholder(recorded[0], recorded[1])) {
+                log("map cache rejected war=${war.id} map=${map.id} texture=${recorded?.joinToString("x")}")
+                ready.delete(); textureRecord.delete()
+            }
+        }
         if (!ready.exists()) {
             val raw = download(map.image, "$server-mapraw-${map.id}-${hash(map.image)}.png")
             val placeholder = loader.load(raw, color = false, tag = "map-${map.id}").use { texture ->
+                textureRecord.writeText("${texture.width}x${texture.height}")
                 if (PlaceholderMap.isPlaceholder(texture.width, texture.height)) true
                 else { texture.resize(Size(map.width, map.height)).use { loader.save(it, ready) }; false }
             }
             raw.delete()
             if (placeholder) {
                 // D-31: the Atlas texture is a placeholder; remember that so the chapter is not downloaded again.
-                File(dir(), "$stem.placeholder").writeText("placeholder")
+                placeholderMark.writeText("placeholder")
                 log("map placeholder war=${war.id} map=${map.id}")
                 return@runCatching null
             }
@@ -117,6 +130,6 @@ class AtlasAssets(
     /** D-31: true once [map] found that the Atlas map image of [mapId] is only a placeholder texture. */
     fun isPlaceholder(server: String, war: WarInfo, mapId: Int): Boolean {
         val map = war.maps.firstOrNull { it.id == mapId } ?: return false
-        return File(dir(), "$server-map-${map.id}-${hash(map.image)}.placeholder").exists()
+        return File(dir(), "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${hash(map.image)}.placeholder").exists()
     }
 }

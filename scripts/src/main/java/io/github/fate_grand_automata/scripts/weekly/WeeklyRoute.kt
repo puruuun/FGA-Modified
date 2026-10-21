@@ -26,7 +26,9 @@ data class WarMap(val id: Int, val image: String, val width: Int, val height: In
 
 /** Chapter data the navigation needs: the list button art and the map images. */
 @Serializable
-data class WarInfo(val id: Int, val name: String, val banner: String, val maps: List<WarMap>, val spots: Map<Int, String> = emptyMap())
+data class WarInfo(val id: Int, val name: String, val banner: String, val maps: List<WarMap>, val spots: Map<Int, String> = emptyMap(),
+    /** D-37: the Atlas free quest names of each spot (spot id to names, only spots that have any). */
+    val spotQuests: Map<Int, List<String>> = emptyMap())
 
 enum class MissionKind { EnemyTraitAny, EnemyTraitAll, EnemyClass, ServantClass, EnemyId, QuestClear, QuestTrait, Unsupported }
 data class RouteMission(
@@ -79,6 +81,12 @@ object WeeklyRouteSolver {
 
     /** Lostbelt No.7 Mictlan: its maps are switched with layer buttons, so it is never a candidate (design 0009 D-9). */
     const val MICTLAN_WAR = 311
+
+    /** Ordeal Calls I-IV (wars 402-405) are excluded as well (design 0009 D-34), on every server. */
+    val ORDEAL_CALL_WARS: Set<Int> = setOf(402, 403, 404, 405)
+
+    /** Chapters that are never route candidates, probe targets, settings entries or chapter-list rows. */
+    val EXCLUDED_WARS: Set<Int> = setOf(MICTLAN_WAR) + ORDEAL_CALL_WARS
 
     fun solve(missions: List<RouteMission>, quests: List<RouteQuest>, excludedWars: Set<Int>, maxNodes: Int = 200_000): RoutePlan {
         val candidates = quests.filter { it.repeatable(excludedWars) }.sortedWith(order)

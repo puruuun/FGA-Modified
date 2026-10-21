@@ -47,7 +47,7 @@ fun WeeklyRouteSettingsScreen(prefs: PrefsCore) {
         }
         if (reading) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (!reading && data == null) Text(stringResource(R.string.weekly_route_settings_no_data), Modifier.padding(16.dp))
-        val chapters = data?.quests.orEmpty().sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
+        val chapters = data?.quests.orEmpty().filter { it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(16.dp)) {
             chapters.forEach { (war, quests) ->
                 val chapterKey = WeeklyCandidateSettings.chapterKey(server, war)

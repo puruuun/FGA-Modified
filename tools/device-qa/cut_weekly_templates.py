@@ -26,6 +26,7 @@ CUTS = {
         "weekly_mr1": ("03.webp", (665, 372, 525, 70)),
         "weekly_mr15": ("03.webp", (665, 205, 525, 70)),
         "weekly_mr2": ("12.webp", (668, 162, 522, 70)),
+        "weekly_mi": ("35.webp", (665, 448, 525, 70)),
     },
     "Kr": {
         "weekly_terminal": ("29.webp", TOP_LEFT),

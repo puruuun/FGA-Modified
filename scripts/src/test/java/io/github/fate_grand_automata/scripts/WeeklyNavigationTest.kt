@@ -33,6 +33,30 @@ class WeeklyNavigationTest {
             assertEquals(listOf(100,101,201,301),visits.map { it.warId })
         }
     }
+    @Test fun `Heian-kyo and Traum live in the Main Interlude list on both servers and are visited last`() {
+        for(server in listOf("JP","KR")) {
+            assertEquals(ChapterList.MainInterlude,ChapterLists.of(server,307));assertEquals(ChapterList.MainInterlude,ChapterLists.of(server,310))
+            val visits=WeeklyVisitOrder.order(server,listOf(item(5,310),item(4,301),item(3,307),item(2,201),item(1,100)))
+            assertEquals(listOf(100,201,301,307,310),visits.map { it.warId })
+        }
+    }
+    @Test fun `Main Interlude chapters are reached through the main screen and either landing is followed`() {
+        val f=Fake().apply { landing=RouteScreen.List };run(f,listOf(item(1,301),item(2,307),item(3,310)))
+        assertEquals(listOf("terminal","home","list:MainInterlude","chapter:307"),f.actions.dropWhile { it!="terminal" }.take(4))
+        assertEquals(listOf("terminal","chapter:310"),f.actions.dropWhile { it!="battle:2" }.drop(2).take(2))
+        val g=Fake().apply { landing=RouteScreen.Home };run(g,listOf(item(1,307),item(2,310)))
+        assertEquals(listOf("list:MainInterlude","chapter:307"),g.actions.take(2))
+        assertEquals(listOf("terminal","list:MainInterlude","chapter:310"),g.actions.dropWhile { it!="battle:1" }.drop(2).take(3))
+    }
+    @Test fun `a chapter whose free quest map is not entered is skipped with the driver's reason`() {
+        val f=object: RouteDriver by Fake() {
+            override fun openList(list: ChapterList)=true;override fun openChapter(warId: Int)=true
+            override fun prepareMap(warId: Int)=false;override fun mapProblem()="entered map is not the free quest map"
+        }
+        val results=WeeklyRouteMachine(f,"JP").run(WeeklyVisitOrder.order("JP",listOf(item(1,307))))
+        assertEquals(StopStatus.NotFound,results.single().status);assertEquals("entered map is not the free quest map",results.single().note)
+        assertEquals(ProbeStatus.MapFitFailed,ProbeStatus.classify(results.single().note))
+    }
     @Test fun `same chapter prepares once and closes each panel before the next spot`() {
         val f=Fake();val result=run(f,listOf(item(2),item(1)))
         assertEquals(listOf(1,2),result.map { it.item.quest.id })

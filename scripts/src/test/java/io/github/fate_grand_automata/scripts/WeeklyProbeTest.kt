@@ -93,6 +93,14 @@ class WeeklyProbeTest {
         assertEquals(listOf(1), ids(ProbeScope.Enabled, disabled = setOf(WeeklyCandidateSettings.chapterKey("JP", 101))))
     }
 
+    @Test fun `the Ordeal Calls 402 to 405 are excluded from probe and candidates like Mictlan`() {
+        val quests = listOf(quest(1, 100)) + (402..405).map { quest(it * 10, it) } + quest(3, 311)
+        assertEquals(listOf(1), WeeklyProbe.select("JP", quests, ProbeScope.All, emptySet(), emptySet()).map { it.quest.id })
+        assertEquals(listOf(1), WeeklyProbe.select("KR", quests, ProbeScope.Chapters, setOf(100, 402, 403, 404, 405, 311), emptySet()).map { it.quest.id })
+        assertEquals(listOf(1), WeeklyCandidateSettings.candidates("JP", quests, emptySet()).map { it.id })
+        assertEquals(setOf(311, 402, 403, 404, 405), WeeklyRouteSolver.EXCLUDED_WARS)
+    }
+
     @Test fun `csv escapes text fields`() {
         val results = listOf(ProbeResult(quest(1).copy(name = "a,\"b\""), ProbeStatus.NoPanel, "note", 1500))
         val lines = WeeklyProbe.csv(results).trim().lines()

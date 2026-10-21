@@ -10,7 +10,7 @@ enum class ProbeStatus(val csv: String) {
     NotRun("not_run");
 
     companion object {
-        private val mapFit = setOf("map not recognized", "pinch failed", "spot out of reach", "zoom out failed", "chapter map not recognized")
+        private val mapFit = setOf("map not recognized", "pinch failed", "spot out of reach", "zoom out failed", "chapter map not recognized", "entered map is not the free quest map")
 
         /** Maps the reason text of a [SpotOutcome.NotFound] or of a failed chapter visit to a status. */
         fun classify(reason: String): ProbeStatus = when {
@@ -34,13 +34,13 @@ data class ProbeResult(val quest: RouteQuest, val status: ProbeStatus, val note:
 
 enum class ProbeScope { All, Chapters, Enabled }
 
-/** The probe picks quests from the downloaded chapter data; Mictlan is never in it. */
+/** The probe picks quests from the downloaded chapter data; Mictlan and the Ordeal Calls are never in it. */
 object WeeklyProbe {
     /** Cap for failure PNGs in probe mode (the ordinary route keeps 8). */
     const val DIAGNOSTIC_LIMIT = 100
 
     fun select(server: String, quests: List<RouteQuest>, scope: ProbeScope, chapters: Set<Int>, disabled: Set<String>): List<RouteItem> =
-        quests.filter { it.type == "free" && it.ap > 0 && it.warId != WeeklyRouteSolver.MICTLAN_WAR }
+        quests.filter { it.type == "free" && it.ap > 0 && it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }
             .filter {
                 when (scope) {
                     ProbeScope.All -> true
