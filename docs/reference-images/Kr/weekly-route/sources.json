@@ -1,0 +1,47 @@
+[
+  {
+    "source": "build/orchestration/inputs/0009/37-kr-home-main-interlude.webp",
+    "sourceSha256": "3b94883b0fda7ec9dd19221e3b5645ef6079a05efb710126108c520b5a7e8d10",
+    "gameArea": [
+      0,
+      48,
+      1950,
+      1144
+    ],
+    "resize": [
+      1280,
+      720
+    ],
+    "resampling": "LANCZOS",
+    "file": "docs/reference-images/Kr/weekly-route/37.webp",
+    "sha256": "361bee3b3935372c81be4bc60fc9b771c4625acec555af1d645dee0b17c4b0cb",
+    "template": {
+      "file": "app/src/main/assets/Kr/weekly_mi.png",
+      "region720": [
+        665,
+        509,
+        525,
+        70
+      ],
+      "sha256": "c2aad7e349f3b68fae0e0b453475d6a5ee71b78d5a6598280746474a3b8b942d",
+      "sameRegionAs": "JP button interior: 525x70; KR scroll offset +61 px"
+    }
+  },
+  {
+    "source": "build/orchestration/inputs/0009/38-kr-main-interlude-list.webp",
+    "sourceSha256": "b0fa432deb5f54759eadada2c9aaf342af6ef34e49f24b2cdb083533dbde43af",
+    "gameArea": [
+      0,
+      48,
+      1950,
+      1144
+    ],
+    "resize": [
+      1280,
+      720
+    ],
+    "resampling": "LANCZOS",
+    "file": "docs/reference-images/Kr/weekly-route/38.webp",
+    "sha256": "8a00f7af15b6ddab57d78e864e0bca51f6c63dcd09baf4053a06ec2f1266dea7"
+  }
+]

@@ -330,5 +330,23 @@
     "rawSha256": "51e86bf91ef4a6b9aa572f4572eed58fd767556e20a66de570f4d284bc777635",
     "file": "docs/reference-images/atlas/weekly-route/JP-banner-raw-310.png",
     "sha256": "51e86bf91ef4a6b9aa572f4572eed58fd767556e20a66de570f4d284bc777635"
+  },
+  {
+    "kind": "bannerRaw",
+    "server": "KR",
+    "war": 307,
+    "url": "https://static.atlasacademy.io/KR/Banner/questboard_cap309.png",
+    "rawSha256": "90887852e028e35ba2525d929f39c4586b027f8bf2cd47269f9c73d92e82814b",
+    "file": "docs/reference-images/atlas/weekly-route/KR-banner-raw-307.png",
+    "sha256": "90887852e028e35ba2525d929f39c4586b027f8bf2cd47269f9c73d92e82814b"
+  },
+  {
+    "kind": "bannerRaw",
+    "server": "KR",
+    "war": 310,
+    "url": "https://static.atlasacademy.io/KR/Banner/questboard_cap315.png",
+    "rawSha256": "66742c8230559bc2f1adb4d1c7cfc99fe4d0fd04fafc95d7d3632d42a41960c8",
+    "file": "docs/reference-images/atlas/weekly-route/KR-banner-raw-310.png",
+    "sha256": "66742c8230559bc2f1adb4d1c7cfc99fe4d0fd04fafc95d7d3632d42a41960c8"
   }
 ]

@@ -34,6 +34,8 @@ CUTS = {
         "weekly_notice": ("24.webp", TOP_LEFT),
         "weekly_mr1": ("24.webp", (665, 472, 525, 70)),
         "weekly_mr15": ("24.webp", (665, 305, 525, 70)),
+        # Same button-face crop as JP; capture 37 is scrolled 61 px lower.
+        "weekly_mi": ("37.webp", (665, 509, 525, 70)),
     },
 }
 

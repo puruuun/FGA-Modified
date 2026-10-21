@@ -5378,6 +5378,303 @@
         "赦免の城",
         "貴船の城"
       ]
+    },
+    {
+      "name": "KR-24-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-25-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-26-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-27-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-28-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-29-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-30-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-37-bannerRaw-307-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/37.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-38-bannerRaw-307-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/38.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-307",
+      "expected": {
+        "match": true
+      }
+    },
+    {
+      "name": "KR-24-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-25-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-26-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-27-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-28-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-29-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-30-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-37-bannerRaw-310-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/37.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-38-bannerRaw-310-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/38.webp",
+      "view": "bannerRaw",
+      "asset": "bannerRaw:KR-310",
+      "expected": {
+        "match": true
+      }
+    },
+    {
+      "name": "KR-24-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-25-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-26-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-27-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-28-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-29-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/29.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-30-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/30.png",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
+    },
+    {
+      "name": "KR-37-WeeklyMainInterlude-True",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/37.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": true
+      }
+    },
+    {
+      "name": "KR-38-WeeklyMainInterlude-False",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/38.webp",
+      "view": "button",
+      "image": "WeeklyMainInterlude",
+      "expected": {
+        "match": false
+      }
     }
   ],
   "imports": {
@@ -5494,6 +5791,12 @@
     ],
     "bannerRaw:JP-310": [
       "docs/reference-images/atlas/weekly-route/JP-banner-raw-310.png"
+    ],
+    "bannerRaw:KR-307": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-raw-307.png"
+    ],
+    "bannerRaw:KR-310": [
+      "docs/reference-images/atlas/weekly-route/KR-banner-raw-310.png"
     ]
   }
 }

@@ -20,6 +20,7 @@ KEEP = {
     "19": "19-jp-orleans-zoomed-in", "20": "20-jp-atlantis-zoomed-out",
     "24": "24-kr-home-mr", "25": "25-kr-home-lostbelts", "26": "26-kr-mr1", "27": "27-kr-mr15",
     "35": "35-home-main-records", "36": "36-main-interlude-list-traum-heian",
+    "37": "37-kr-home-main-interlude", "38": "38-kr-main-interlude-list",
     "28": "28-kr-camelot-default", "29": "29-kr-camelot-zoomed-out", "30": "30-kr-camelot-quest-panel",
 }
 BOTTOM = {1156: 1153, 1147: 1144, 1146: 1143, 1111: 1111}
