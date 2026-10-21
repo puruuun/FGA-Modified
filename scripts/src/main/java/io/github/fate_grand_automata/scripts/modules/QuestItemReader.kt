@@ -26,6 +26,10 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataAp
         const val STATE_SIMILARITY = 0.88
         const val ICON_SIMILARITY = 0.88
         const val SCREEN_SIMILARITY = 0.90
+        /** KR wide header art differs; retain the original template and confidence floor. Shared with QuestLaunch. */
+        fun partyImages(isWide: Boolean, server: GameServer): List<Images> =
+            if (isWide && server is GameServer.Kr) listOf(Images.QuestItemParty, Images.QuestItemPartyWide)
+            else listOf(Images.QuestItemParty)
     }
 
     /** Each invocation captures one fresh frame. Never retain it across a click. */
@@ -42,7 +46,9 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataAp
             return@useSameSnapIn if (dialog && close != null && storm != null && tea != null)
                 View.Dialog(storm, tea, close.region.center) else View.Unknown
         }
-        if (!loc.partyHeading.exists(images[Images.QuestItemParty], similarity = SCREEN_SIMILARITY))
+        if (!partyImages(loc.isWide, prefs.gameServer).any {
+                loc.partyHeading.exists(images[it], similarity = SCREEN_SIMILARITY)
+            })
             return@useSameSnapIn View.Unknown
 
         val tea = loc.mainControl.exists(images[Images.QuestItemTeapot], similarity = ICON_SIMILARITY)

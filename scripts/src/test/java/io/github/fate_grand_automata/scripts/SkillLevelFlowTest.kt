@@ -74,6 +74,17 @@ private class FakePanel(
 class SkillLevelFlowTest {
     private fun run(panel: FakePanel, vararg targets: Int): List<SlotResult> = SkillLevelFlow(panel).runAll(targets.toList())
 
+    @Test fun `wide KR append capture with four locks only enhances slot two`() {
+        // Capture 33: slots 1, 3, 4, 5 locked; slot 2 is Lv.6/10. Requesting all slots must never unlock one.
+        val locks = setOf(0, 2, 3, 4)
+        val panel = FakePanel(mutableListOf(0, 6, 0, 0, 0), locked = locks, iconLockVisible = locks)
+        val results = run(panel, 7, 7, 7, 7, 7)
+        assertEquals(listOf(0, 7, 0, 0, 0), panel.levels)
+        assertEquals(1, panel.confirms)
+        assertFalse(panel.unlockPressed)
+        assertEquals(listOf(SlotStop.Locked, SlotStop.Reached, SlotStop.Locked, SlotStop.Locked, SlotStop.Locked), results.map { it.stop })
+    }
+
     @Test fun `enhances to the target, then cancels the next dialog and reports the target as reached`() {
         val panel = FakePanel(mutableListOf(3))
         val result = run(panel, 5).single()

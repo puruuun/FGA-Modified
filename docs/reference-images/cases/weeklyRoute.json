@@ -5821,6 +5821,191 @@
         "tappable": true,
         "screen": "Map"
       }
+    },
+    {
+      "name": "JP-w2560-23-home-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Home"
+      }
+    },
+    {
+      "name": "JP-w2560-23-main-record-1",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord1"
+    },
+    {
+      "name": "JP-w2560-23-main-record-15",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainRecord15"
+    },
+    {
+      "name": "JP-w2560-23-main-interlude",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "button",
+      "expected": {
+        "match": true
+      },
+      "image": "WeeklyMainInterlude"
+    },
+    {
+      "name": "JP-w2560-24-list-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/24.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-w2560-24-not-main-record",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/24.webp",
+      "view": "button",
+      "expected": {
+        "match": false
+      },
+      "image": "WeeklyMainRecord1"
+    },
+    {
+      "name": "JP-w2560-25-panel-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/25.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-w2560-25-anchored-panel",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/25.webp",
+      "view": "anchoredPanel",
+      "expected": {
+        "found": true,
+        "match": true,
+        "ap": 21,
+        "name": "三界分立"
+      },
+      "targetName": "三界分立",
+      "targetAp": 21
+    },
+    {
+      "name": "JP-w2560-25-spot-ribbon",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/25.webp",
+      "view": "spotPanel",
+      "expected": {
+        "found": true,
+        "match": true,
+        "by": "quest-name"
+      },
+      "targetName": "三界分立",
+      "targetSpot": "中つ森",
+      "freeQuests": 1,
+      "spotNames": [
+        "中つ森",
+        "薄暮れの森",
+        "ライヘンバッハ",
+        "クサンテンの塔"
+      ]
+    },
+    {
+      "name": "JP-w2560-26-map-screen",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "screen",
+      "expected": {
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-w2560-26-spot-open-map",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "spotTappable",
+      "expected": {
+        "tappable": true,
+        "screen": "Map"
+      },
+      "spotX": 840.0,
+      "spotY": 380.0
+    },
+    {
+      "name": "JP-w2560-26-spot-under-portrait",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "spotTappable",
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      },
+      "spotX": 180.0,
+      "spotY": 600.0
+    },
+    {
+      "name": "JP-w2560-26-spot-under-terminal",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "spotTappable",
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      },
+      "spotX": 180.0,
+      "spotY": 43.0
+    },
+    {
+      "name": "JP-w2560-26-spot-under-menu",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "spotTappable",
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      },
+      "spotX": 1500.0,
+      "spotY": 650.0
+    },
+    {
+      "name": "JP-w2560-26-spot-under-mission-note",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/26.webp",
+      "view": "spotTappable",
+      "expected": {
+        "tappable": false,
+        "screen": "Map"
+      },
+      "spotX": 620.0,
+      "spotY": 625.0
     }
   ],
   "imports": {

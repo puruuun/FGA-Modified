@@ -1067,6 +1067,242 @@
         "mode": "none",
         "servantSelected": false
       }
+    },
+    {
+      "name": "JP-w2560-15-mode",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/15.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "JP-w2560-15-dialog",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/15.webp",
+      "view": "dialog",
+      "slotMode": "Skill",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      }
+    },
+    {
+      "name": "JP-w2560-15-levels",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/15.webp",
+      "view": "levels",
+      "slotMode": "Skill",
+      "expected": {
+        "current": 5,
+        "next": 6
+      }
+    },
+    {
+      "name": "JP-w2560-16-result",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/16.webp",
+      "view": "result",
+      "slotMode": "Skill",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "JP-w2560-16-mode-none",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/16.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-w2560-30-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/30.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-w2560-30-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/30.webp",
+      "view": "band",
+      "slotMode": "Skill",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-w2560-30-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/30.webp",
+      "view": "locks",
+      "slotMode": "Skill",
+      "expected": {
+        "locks": [
+          false,
+          false,
+          false
+        ]
+      }
+    },
+    {
+      "name": "KR-w2560-30-no-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/30.webp",
+      "view": "dialog",
+      "slotMode": "Skill",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      }
+    },
+    {
+      "name": "KR-w2560-32-append-empty-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/32.webp",
+      "view": "mode",
+      "slotMode": "Append",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-w2560-33-append-mode",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/33.webp",
+      "view": "mode",
+      "slotMode": "Append",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "KR-w2560-33-append-band",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/33.webp",
+      "view": "band",
+      "slotMode": "Append",
+      "expected": {
+        "band": "Enhance",
+        "unlockButton": false,
+        "maxButton": false
+      }
+    },
+    {
+      "name": "KR-w2560-33-append-locks",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/33.webp",
+      "view": "locks",
+      "slotMode": "Append",
+      "expected": {
+        "locks": [
+          true,
+          false,
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "KR-w2560-33-append-no-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/33.webp",
+      "view": "dialog",
+      "slotMode": "Append",
+      "expected": {
+        "dialog": false,
+        "enhanceTitle": false
+      }
+    },
+    {
+      "name": "KR-w2560-34-append-dialog",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/34.webp",
+      "view": "dialog",
+      "slotMode": "Append",
+      "expected": {
+        "dialog": true,
+        "enhanceTitle": true
+      }
+    },
+    {
+      "name": "KR-w2560-34-append-levels",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/34.webp",
+      "view": "levels",
+      "slotMode": "Append",
+      "expected": {
+        "current": 6,
+        "next": 7
+      }
+    },
+    {
+      "name": "KR-w2560-35-append-result",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/35.webp",
+      "view": "result",
+      "slotMode": "Append",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "name": "KR-w2560-35-mode-none",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/35.webp",
+      "view": "mode",
+      "slotMode": "Append",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
+    },
+    {
+      "name": "KR-w2560-31-is-not-skill-screen",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "mode",
+      "slotMode": "Skill",
+      "expected": {
+        "mode": "none",
+        "servantSelected": false
+      }
     }
   ]
 }

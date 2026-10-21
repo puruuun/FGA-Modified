@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
@@ -39,7 +40,12 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     private fun titleImage(mode: SkillLevelMode) =
         if (mode == SkillLevelMode.Skill) Images.SkillLevelTitle else Images.AppendLevelTitle
 
-    fun onTitle(mode: SkillLevelMode): Boolean = useSameSnapIn { seen(loc.title, titleImage(mode), TITLE_SIMILARITY) }
+    fun onTitle(mode: SkillLevelMode): Boolean = useSameSnapIn {
+        seen(loc.title, titleImage(mode), TITLE_SIMILARITY) ||
+            // KR wide header art differs from 16:9; do not lower the screen recognition confidence.
+            (loc.isWide && prefs.gameServer is GameServer.Kr && mode == SkillLevelMode.Skill &&
+                seen(loc.title, Images.SkillLevelTitleWide, TITLE_SIMILARITY))
+    }
 
     /** The append title is checked first: on KR the skill title is also part of the append one. */
     fun detectMode(): SkillLevelMode? = useSameSnapIn {

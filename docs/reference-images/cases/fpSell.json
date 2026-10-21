@@ -17385,6 +17385,223 @@
       },
       "checkGrid": true,
       "column": 6
+    },
+    {
+      "name": "JP-w2560-17-summon-screen",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/17.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": true,
+        "arrow": true
+      }
+    },
+    {
+      "name": "JP-w2560-17-return-buttons",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/17.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "JP-w2560-17-close-visible",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/17.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
+    },
+    {
+      "name": "JP-w2560-18-final-dialog",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/18.webp",
+      "view": "finalButtons",
+      "expected": {
+        "heading": true,
+        "cancelLeft": true,
+        "convertRight": true
+      }
+    },
+    {
+      "name": "JP-w2560-19-done-dialog",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/19.webp",
+      "view": "doneDialog",
+      "expected": {
+        "done": true,
+        "close": true
+      }
+    },
+    {
+      "name": "JP-w2560-20-shop",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/20.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "JP-w2560-20-menu-visible",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/20.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "JP-w2560-20-summon-menu-hidden",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/20.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": false
+      }
+    },
+    {
+      "name": "JP-w2560-21-summon-menu",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/21.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": true
+      }
+    },
+    {
+      "name": "JP-w2560-21-menu-open",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/21.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": false
+      }
+    },
+    {
+      "name": "JP-w2560-22-servant-limit",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/22.webp",
+      "view": "fullDialog",
+      "expected": {
+        "servantWarning": true
+      }
+    },
+    {
+      "name": "JP-w2560-22-limit-sell-button",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/22.webp",
+      "view": "limitSell",
+      "expected": {
+        "sell": true
+      }
+    },
+    {
+      "name": "JP-w2560-23-is-not-sell-screen",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "layout",
+      "expected": {
+        "seven": false,
+        "sellScreen": false
+      }
+    },
+    {
+      "name": "KR-w2560-31-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-w2560-31-close-visible",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
+    },
+    {
+      "name": "KR-w2560-31-page",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "page",
+      "expected": {
+        "tileCount": 28,
+        "evaluatedRows": 3
+      }
+    },
+    {
+      "name": "KR-w2560-31-r1c1",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "cell",
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": false,
+        "lock": "Unlocked",
+        "candidate": true,
+        "inGrid": true
+      },
+      "card720": [
+        284,
+        186,
+        116,
+        126
+      ],
+      "checkGrid": true,
+      "column": 0
+    },
+    {
+      "name": "KR-w2560-31-r1c2",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "view": "cell",
+      "expected": {
+        "present": true,
+        "selected": false,
+        "excluded": true,
+        "lock": "Locked",
+        "candidate": false,
+        "inGrid": true
+      },
+      "card720": [
+        417,
+        186,
+        116,
+        126
+      ],
+      "checkGrid": true,
+      "column": 1
     }
   ]
 }

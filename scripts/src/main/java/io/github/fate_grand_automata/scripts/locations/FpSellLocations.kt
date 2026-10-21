@@ -10,8 +10,10 @@ import javax.inject.Inject
  *
  * Wide screens (design 0012): the sell screen's own UI is measured on the owner's 21:9 JP capture. Buttons and the
  * title at the screen edges use [xFromLeftEdge] / [xFromRightEdge] with 16:9 values; the card grid stays centred
- * (it lies between the two edge columns), and dialogs stay centred. The summon screens, the warning and the
- * convert/done dialogs have no 21:9 capture yet and keep their centred values.
+ * (it lies between the two edge columns), and dialogs stay centred. Owner 2560x1080 captures 17-22 (design 0012 D-4)
+ * show the summon screen, the workshop, the warning and the convert/done dialogs: only the banner arrow sits at the left
+ * edge (inset like the other left UI); the summon buttons, FP label, menus and dialogs stay centred or right-anchored
+ * as they were.
  */
 class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
     /** First line of the warning dialog (centered text, so the word is searched across the whole band). */
@@ -34,7 +36,8 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val doneClose = Region(-300, 1170, 600, 170).xFromCenter()
     val close = Location(160, 80).xFromLeftEdge()
     val screenClose = Region(0, 0, 380, 180).xFromLeftEdge()
-    val leftArrowRegion = Region(-1280, 600, 150, 250).xFromCenter()
+    /** Banner arrow of the summon screen: left-edge UI with the shared wide inset (owner capture 17). */
+    val leftArrowRegion = Region(0, 600, 150, 250).xFromLeftEdge()
     val summonButton = Region(250, 940, 500, 180).xFromCenter()
     val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
     val shop = Region(-730, 0, 710, 160).xFromRightEdge()
@@ -42,7 +45,7 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */
     val summonMenu = Region(-260, 1180, 340, 180).xFromCenter()
     val bannerTitle = Region(-650, 600, 1300, 260).xFromCenter()
-    val leftArrow = Location(-1230, 720).xFromCenter()
+    val leftArrow = Location(50, 720).xFromLeftEdge()
     val swipeStart = Location(0, 1310).xFromCenter()
     /** D-23: the end depends on how many rows were fully evaluated, never on a fixed three-row jump. */
     fun swipeEnd(distance: Int) = swipeStart - Location(0, distance)

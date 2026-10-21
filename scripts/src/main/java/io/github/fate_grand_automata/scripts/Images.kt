@@ -16,6 +16,7 @@ enum class Images(val path: String) {
     FpSellGrandServant("fp_sell_grand_servant.png"),
     FpSellSell("fp_sell_sell.png"),
     FpSellHeading("fp_sell_heading.png"),
+    FpSellHeadingWide("fp_sell_heading_wide.png"),
     FpSellTab("fp_sell_tab.png"),
     FpSellConfirm("fp_sell_confirm.png"),
     FpSellConvert("fp_sell_convert.png"),
@@ -39,6 +40,7 @@ enum class Images(val path: String) {
     SkillLevelDigit9Kr("skill_level_digit_9_kr.png"),
     SkillLevelDigit9Next("skill_level_digit_9_next.png"),
     SkillLevelTitle("skill_level_title.png"),
+    SkillLevelTitleWide("skill_level_title_wide.png"),
     AppendLevelTitle("append_level_title.png"),
     SkillLevelReselect("skill_level_reselect.png"),
     SkillLevelBandEnhance("skill_level_band_enhance.png"),
@@ -168,6 +170,7 @@ enum class Images(val path: String) {
     QuestItemDialogKrNative("quest_item_modal_native.png"),
     QuestItemDialogClose("quest_item_close.png"),
     QuestItemParty("quest_item_party.png"),
+    QuestItemPartyWide("quest_item_party_wide.png"),
     /** The English "Free Quest" emblem of a quest panel; identical on every server, so only En has a copy. */
     FreeQuestLabel("free_quest_label.png"),
     /** Weekly route navigation (JP and KR only): the top-left button on the main screen, in a chapter list and on a map. */

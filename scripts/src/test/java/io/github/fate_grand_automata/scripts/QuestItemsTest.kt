@@ -87,6 +87,7 @@ class QuestItemsTest {
             every { api.prefs.selectedServerConfigPref.useStormPod } returns false
             every { api.prefs.selectedServerConfigPref.useTeapot } returns false
             every { api.locations.questItems } returns loc
+            every { loc.isWide } returns false
             every { loc.mainControl } returns main
             every { loc.stormPodControl } returns left
             every { loc.teapotControl } returns right

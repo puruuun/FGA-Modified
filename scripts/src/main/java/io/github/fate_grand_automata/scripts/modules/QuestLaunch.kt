@@ -18,7 +18,9 @@ class QuestLaunch @Inject constructor(
         // These screen templates are currently available only for KR and JP.
         if (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp) return false
         val loc = locations.questItems
-        return loc.partyHeading.exists(images[Images.QuestItemParty], similarity = QuestItemReader.SCREEN_SIMILARITY) &&
+        return QuestItemReader.partyImages(loc.isWide, prefs.gameServer).any {
+            loc.partyHeading.exists(images[it], similarity = QuestItemReader.SCREEN_SIMILARITY)
+        } &&
             // Do not select a party or press Quest Start through an open item dialog.
             !loc.dialogClose.exists(images[Images.QuestItemDialogClose], similarity = QuestItemReader.SCREEN_SIMILARITY)
     }

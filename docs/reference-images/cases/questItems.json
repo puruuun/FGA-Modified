@@ -551,6 +551,26 @@
       "expected": {
         "view": "Unknown"
       }
+    },
+    {
+      "name": "Kr-w2560-29-party",
+      "suite": "questItems",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/29.webp",
+      "expected": {
+        "view": "Single",
+        "kind": "Teapot",
+        "on": false
+      }
+    },
+    {
+      "name": "Jp-w2560-17-is-not-an-item-screen",
+      "suite": "questItems",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/17.webp",
+      "expected": {
+        "view": "Unknown"
+      }
     }
   ]
 }

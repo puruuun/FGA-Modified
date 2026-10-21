@@ -4390,6 +4390,62 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Kr-w2560-27",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/27.webp",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 183,
+          "np": 3,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "y": 383,
+          "np": 3,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kr-w2560-28",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/28.webp",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 286,
+          "np": 2,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "y": 486,
+          "np": 5,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
     }
   ]
 }

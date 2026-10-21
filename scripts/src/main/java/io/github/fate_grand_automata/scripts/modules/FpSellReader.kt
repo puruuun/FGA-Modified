@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
 import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
@@ -65,7 +66,10 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         listOf(Images.FpSellTemporary, Images.FpSellTemporaryServant).mapNotNull { template(it) }
     }
 
-    fun onSellHeading() = loc.heading.exists(images[Images.FpSellHeading], similarity = 0.9)
+    /** KR wide header art needs its own template; keep the same confidence floor as 16:9. */
+    fun onSellHeading() = loc.heading.exists(images[Images.FpSellHeading], similarity = 0.9) ||
+        (loc.isWide && prefs.gameServer is GameServer.Kr &&
+            loc.heading.exists(images[Images.FpSellHeadingWide], similarity = 0.9))
     fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)
     fun onSellScreen() = onSellHeading() && onServantTab()
 

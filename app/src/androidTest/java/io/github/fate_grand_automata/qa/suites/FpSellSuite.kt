@@ -40,6 +40,15 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
             JSONObject().put("arrow", reader.loc.leftArrowRegion.exists(images[Images.FpSellLeftArrow], similarity = 0.9))
                 .put("summon", patterns.any { reader.loc.summonButton.exists(it, similarity = 0.9) || reader.loc.dailySummonButton.exists(it, similarity = 0.9) })
         }
+        // Design 0012 D-4: the summon screen, workshop menu and dialogs measured on the owner's 2560x1080 captures.
+        "summonMenu" -> JSONObject().put("summonMenu", useSameSnapIn { FpSellButtons(this).visible(reader.loc.summonMenu, Images.FpSellSummonMenu) })
+        "summonScreen" -> JSONObject()
+            .put("fpLabel", useSameSnapIn { findImage(locations.fp.summonCheck, Images.FriendSummon) || findImage(locations.fp.initialSummonCheck, Images.FriendSummon) })
+            .put("arrow", useSameSnapIn { reader.loc.leftArrowRegion.exists(images[Images.FpSellLeftArrow], similarity = 0.9) })
+        "doneDialog" -> JSONObject()
+            .put("done", reader.loc.done.exists(images[Images.FpSellDone], similarity = 0.9))
+            .put("close", reader.loc.doneClose.exists(images[Images.FpSellClose], similarity = 0.9))
+        "limitSell" -> JSONObject().put("sell", reader.loc.fullSell.exists(images[Images.FpSellSell], similarity = 0.9))
         "layout" -> JSONObject().put("seven", reader.isSevenColumns()).put("sellScreen", useSameSnapIn { reader.onSellScreen() })
         "bannerTitle" -> fixturePattern(case.getJSONArray("pieces").getJSONObject(0).getString("file")).use {
             JSONObject().put("matches", useSameSnapIn { FpBannerReturn(this, reader.loc).matches(it) })

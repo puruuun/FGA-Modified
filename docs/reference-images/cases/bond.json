@@ -428,6 +428,20 @@
       "server": "Jp",
       "kind": "other",
       "file": "docs/reference-images/Jp/wide-21x9/14.webp"
+    },
+    {
+      "name": "other-jp-w2560-16-skill-result",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "other",
+      "file": "docs/reference-images/Jp/wide-2560/16.webp"
+    },
+    {
+      "name": "other-kr-w2560-29-party",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "other",
+      "file": "docs/reference-images/Kr/wide-2560/29.webp"
     }
   ]
 }

@@ -5,8 +5,10 @@ import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.locations.*
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.weekly.MapView
+import io.github.lib_automata.CompareBy
 import io.github.lib_automata.Location
 import io.github.lib_automata.Region
+import io.github.lib_automata.Size
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -98,9 +100,40 @@ class WideScreenLocationsTest {
         assertEquals(Region(1190, 188, 740, 64), wide.bandColor)
         assertEquals(Region(2745, 1200, 500, 180), wide.buttonLabel)
         assertEquals(Location(1680 + (473 - 640) * 2, 478), wide.slotClick(SkillLevelMode.Skill, 0))
-        // The append screen has no 21:9 capture: its heights stay as measured on 16:9.
-        assertEquals(522, wide.slotClick(SkillLevelMode.Append, 0).y)
-        assertEquals(410, wide.slotLock(SkillLevelMode.Append, 0).y)
+        // Owner 2560x1080 captures 32-35: the append icons rise by the same 22 px (lock top 238 -> 216) and stay centred.
+        assertEquals(478, wide.slotClick(SkillLevelMode.Append, 0).y)
+        assertEquals(366, wide.slotLock(SkillLevelMode.Append, 0).y)
+        assertEquals(1680 + (473 - 640) * 2, wide.slotClick(SkillLevelMode.Append, 0).x)
+        assertEquals(1680 + (1183 - 640) * 2, wide.slotClick(SkillLevelMode.Append, 4).x)
+        // 16:9 is untouched for both modes.
+        assertEquals(522, old.slotClick(SkillLevelMode.Append, 0).y)
+        assertEquals(410, old.slotLock(SkillLevelMode.Append, 0).y)
+    }
+
+    @Test fun `summon banner arrow is left edge UI`() {
+        assertEquals(Region(0, 600, 150, 250), FpSellLocations(sixteenNine).leftArrowRegion)
+        assertEquals(Location(50, 720), FpSellLocations(sixteenNine).leftArrow)
+        // Capture 17: the arrow template sits at x 114-130 (720p) = 228-260 (1440p).
+        val wide = FpSellLocations(twentyOneNine).leftArrowRegion
+        assertTrue(228 >= wide.x && 260 <= wide.right)
+        assertEquals(Region(171, 600, 150, 250), wide)
+    }
+
+    @Test fun `ultra wide 2560x1080 game area is the 21 9 area without the side borders`() {
+        // Owner capture: the game has 16 px (of 2000) blue borders at the sides, which is 20 px of 2560.
+        val manager = FgoGameAreaManager(Size(2560, 1080)) { Location() }
+        assertEquals(Region(20, 0, 2520, 1080), manager.gameArea)
+        assertEquals(1440, (manager.scriptDimension as CompareBy.Height).height)
+        assertEquals(720, (manager.compareDimension as CompareBy.Height).height)
+        // Script area: 1440 tall and 3360 wide, the same area the 1680x720 device-QA frames use.
+        val scriptToScreen = manager.gameArea.height / 1440.0
+        assertEquals(3360, (manager.gameArea.width / scriptToScreen).toInt())
+        assertTrue(Size(3360, 1440).isWide())
+        // The same window at 2000x866 minus the toolbar and title bar: 1962x827 gives the 16 px borders seen on the capture.
+        assertEquals(Region(16, 0, 1930, 827), FgoGameAreaManager(Size(1962, 827)) { Location() }.gameArea)
+        // 21:9 itself fills the screen, and 16:9 is not affected.
+        assertEquals(Region(0, 0, 1680, 720), FgoGameAreaManager(Size(1680, 720)) { Location() }.gameArea)
+        assertEquals(Region(0, 0, 1920, 1080), FgoGameAreaManager(Size(1920, 1080)) { Location() }.gameArea)
     }
 
     @Test fun `quest item party heading and weekly header buttons follow the right and left inset`() {
