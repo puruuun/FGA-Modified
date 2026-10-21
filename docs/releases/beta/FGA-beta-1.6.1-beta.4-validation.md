@@ -30,3 +30,11 @@ beta.3에서 수정한 공방 글자 템플릿으로 추가 KR 공방 캡처도 
 - 기존 FP 사례 792개를 그대로 유지하고 새 사례 **34개**를 추가했습니다. 각 화면의 양성/음성, 두 FP 검사, 두 소환 버튼 영역, 저장 제목/FP 가드, 매각 화면을 포함합니다. 합계 FP 826개, 전체 1468개(기존 skip 11개 별도).
 - 전체 단위 테스트 `:app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test`: **654개 통과, 실패·오류·skip 0** (app 186, prefs 26, scripts 442).
 - 전체 기기 QA·Main CI·APK·설치 결과는 완료 후 아래에 기록합니다.
+
+## 배송 결과 (기획자, 2026-10-22)
+
+- Codex가 `22c6a2d3`을 푸시한 뒤 사용 한도로 멈춰, 기획자가 빌드·기기 QA·설치를 마무리했습니다.
+- Main CI(`22c6a2d3`): 성공.
+- APK: `FGA-beta-1.6.1-beta.4-arm.apk`, SHA-256 `da91e692cdbeba205d73c814e399b2db84a612ecaf24014e40fe80b6ff4a2ef1`. aapt 1006104 / 1.6.1-beta.4, arm64-v8a·armeabi-v7a. apksigner v2 통과, 인증서 `5acce47e…ac9d`.
+- 전체 기기 QA(`build/device-qa/20261022-022356/`): **1468개 통과, 실패 0**, 기존 skip 11개. support 191, bond 25, questItems 10, noblePhantasm 18, fpSell 826, skillLevel 108, weeklyRoute 290.
+- 설치: 블루스택 `127.0.0.1:5555`(2560×1080)에 `install -r` Success. 최초 설치 시간 유지.
