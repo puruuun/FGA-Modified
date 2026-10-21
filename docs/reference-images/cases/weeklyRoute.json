@@ -5675,6 +5675,20 @@
       "expected": {
         "match": false
       }
+    },
+    {
+      "name": "KR-39-93031216-edge-scroll-before-tap",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/39-edge-93031216.png",
+      "view": "edgeSpot",
+      "spotX": 635.0,
+      "spotY": 19.0,
+      "expected": {
+        "needsScroll": true,
+        "dragY": 41.0,
+        "screen": "Map"
+      }
     }
   ],
   "imports": {

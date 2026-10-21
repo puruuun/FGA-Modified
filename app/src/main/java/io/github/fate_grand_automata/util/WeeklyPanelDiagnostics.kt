@@ -28,6 +28,17 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
         }
     }
 
+    override fun saveAbort(frame: Pattern): String? {
+        val path = "weeklyRoute/$run/abort-${System.nanoTime()}.png"
+        return try {
+            storage.writeDiagnosticFile(path, "image/png") { frame.save(it) }
+            "diagnostics/$path"
+        } catch (e: Exception) {
+            timber.log.Timber.tag(WEEKLY_ROUTE_TAG).w(e, "abort diagnostic write failed")
+            null
+        }
+    }
+
     override fun save(frame: Pattern, questId: Int, attempt: Int): String? {
         if (!enabled) return null
         val path = "weeklyRoute/$run/${++count}-q$questId-a$attempt.png"

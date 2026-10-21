@@ -4,6 +4,7 @@ import io.github.lib_automata.Pattern
 
 /** Android supplies a beta-only, run-scoped sink. Caller retains and closes the frame. */
 interface IWeeklyPanelDiagnostics {
+    fun saveAbort(frame: Pattern): String? = save(frame, 0, -1)
     val enabled: Boolean
     /** Probe mode (D-25) saves failure frames in any build, up to [WeeklyProbe.DIAGNOSTIC_LIMIT]. */
     fun startProbe()

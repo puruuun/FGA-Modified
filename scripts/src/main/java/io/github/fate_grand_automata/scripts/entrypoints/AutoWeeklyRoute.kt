@@ -53,6 +53,7 @@ class AutoWeeklyRoute @Inject constructor(
         log("start screen=$screen")
         if (screen != RouteScreen.Home) {
             driver.close()
+            driver.abortDiagnostic()
             throw ExitException(ExitReason.NotOnMainScreen)
         }
 
@@ -66,9 +67,11 @@ class AutoWeeklyRoute @Inject constructor(
         try {
             machine.run(visits)
         } catch (_: ScriptAbortException) {
+            driver.abortDiagnostic()
             userStopped = true
             machine.interrupt("user stopped")
         } catch (e: Exception) {
+            driver.abortDiagnostic()
             log("stop reason=navigationError detail=${e.message}")
             machine.interrupt("navigation error")
         } finally {
@@ -93,6 +96,7 @@ class AutoWeeklyRoute @Inject constructor(
         if (driver.screen() != RouteScreen.Home) {
             driver.close()
             session.run = null
+            driver.abortDiagnostic()
             throw ExitException(ExitReason.NotOnMainScreen)
         }
         val visits = WeeklyVisitOrder.order(run.server, run.items)
@@ -102,9 +106,11 @@ class AutoWeeklyRoute @Inject constructor(
         try {
             machine.run(visits)
         } catch (_: ScriptAbortException) {
+            driver.abortDiagnostic()
             userStopped = true
             machine.interrupt("user stopped")
         } catch (e: Exception) {
+            driver.abortDiagnostic()
             log("stop reason=navigationError detail=${e.message}")
             machine.interrupt("navigation error")
         } finally {

@@ -81,7 +81,10 @@ class WeeklyRouteDriver @Inject constructor(
     var battleStop: AutoBattle.ExitException? = null
         private set
 
-    override fun log(message: String) = messages.log(ScriptLog.WeeklyRoute(if (session.run?.probe == true) "mode=probe $message" else message))
+    override fun log(message: String) {
+        if (message.startsWith("abort ") && !message.startsWith("abort diagnostic")) abortDiagnostic()
+        messages.log(ScriptLog.WeeklyRoute(if (session.run?.probe == true) "mode=probe $message" else message))
+    }
 
     override fun close() {
         banners.values.forEach { it?.close() }
@@ -203,11 +206,28 @@ class WeeklyRouteDriver @Inject constructor(
         return waitScreen(RouteScreen.List, RouteScreen.Home).also { log("terminal returned=$it") }
     }
 
-    override fun closePanel(): Boolean {
-        if (screen() != RouteScreen.List) return false.also { log("panel close button not visible") }
-        loc.topLeftButton.click()
-        1.seconds.wait()
-        return waitScreen(RouteScreen.Map).also { log("panel closed=$it") }
+    override fun closePanel(): Boolean = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelClose.run(
+        tap = { if (screen() == RouteScreen.List) { loc.topLeftButton.click(); true } else false },
+        waitMap = { waitScreen(RouteScreen.Map, timeout = 3) },
+        diagnostic = { abortDiagnostic() },
+        recover = {
+            // D-19: choose the action from the current screen.
+            when (screen()) {
+                RouteScreen.Map -> true
+                RouteScreen.List -> { loc.topLeftButton.click(); waitScreen(RouteScreen.Map, timeout = 3) }
+                else -> false
+            }
+        }
+    ).also { log("panel closed=$it") }
+
+    fun abortDiagnostic() {
+        runCatching {
+            useColor {
+                loc.scriptArea.getPattern("weekly route abort").use { frame ->
+                    diagnostics.saveAbort(frame)?.let { log("abort diagnostic path=$it") }
+                }
+            }
+        }.onFailure { log("diagnostic failed=${it.message}") }
     }
 
     // ---- map -----------------------------------------------------------------------------------------------------
@@ -277,7 +297,10 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     /** The tappable screen position of the quest's spot in 720p, or why it could not be located. */
-    private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false): Pair<Location?, String> {
+    private var edgeDrag: ScreenPoint? = null
+    private var placeholderPlacement: Pair<PlaceholderMap.Geometry, MapFit>? = null
+
+    private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false, edgeFirst: Boolean = true): Pair<Location?, String> {
         var pinched = false
         var scrolls = 0
         var beforeScroll: io.github.fate_grand_automata.scripts.weekly.ScreenPoint? = null
@@ -301,13 +324,17 @@ class WeeklyRouteDriver @Inject constructor(
                         log("scroll quest=${quest.id} stationary=true recenter=current-spot")
                         return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
                     }
-                    MapView.ScrollResult.Stop -> return visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
+                    MapView.ScrollResult.Stop -> return if (MapView.isTappable(x, y, screenWidth, screenHeight))
+                        Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
+                    else visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
                     MapView.ScrollResult.Refit -> Unit
                 }
             }
-            val drag = MapView.dragToward(x, y, screenWidth, screenHeight, centre)
+            val edge = if (edgeFirst) MapView.edgeDrag(x, y, screenWidth, screenHeight) else null
+            if (edge != null) edgeDrag = edge
+            val drag = edge ?: MapView.dragToward(x, y, screenWidth, screenHeight, centre)
             if (drag == null) return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
-            if (scrolls >= MAX_MAP_SCROLLS || !MapView.isMeaningful(drag)) return visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
+            if (scrolls >= MAX_MAP_SCROLLS) return null to "spot out of reach"
             scrolls++
             beforeScroll = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
@@ -340,6 +367,8 @@ class WeeklyRouteDriver @Inject constructor(
         val map = war.maps.firstOrNull { it.id == quest.mapId } ?: return null to "map ${quest.mapId} image unavailable"
         val geometry = PlaceholderMap.geometry(map, width, height) ?: return null to "map not recognized"
         val target = geometry.target(quest.spotX, quest.spotY) ?: return null to "spot out of reach"
+        placeholderPlacement = geometry to target.fit
+        MapView.edgeDrag(geometry.fit(target.edge).screenX(quest.spotX), geometry.fit(target.edge).screenY(quest.spotY), width, height)?.let { edgeDrag = it }
         val down = target.edge == PlaceholderMap.Edge.Top
         val (from, to) = MapView.dragPath(ScreenPoint(0.0, if (down) 1000.0 else -1000.0), width, height)
         val length = kotlin.math.abs(to.y - from.y)
@@ -347,6 +376,13 @@ class WeeklyRouteDriver @Inject constructor(
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
             1.seconds.wait()
         }
+        val inward = target.fit.originY - geometry.fit(target.edge).originY
+        if (kotlin.math.abs(inward) >= 4) {
+            val (start, end) = MapView.dragPath(ScreenPoint(0.0, inward), width, height)
+            swipe.scroll(Location(MapView.toScript(start.x), MapView.toScript(start.y)), Location(MapView.toScript(end.x), MapView.toScript(end.y)))
+            1.seconds.wait()
+        }
+        MapView.edgeDrag(target.point.x, target.point.y, width, height)?.let { edgeDrag = it }
         log("placeholder map quest=${quest.id} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
         return Location(MapView.toScript(target.point.x), MapView.toScript(target.point.y)) to "ok"
     }
@@ -450,8 +486,10 @@ class WeeklyRouteDriver @Inject constructor(
         val height = loc.scriptArea.height / 2
         var problem = "no matching free panel name"
         val failure = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure()
-        fun openPanel(centre: Boolean): Boolean {
-            val (spot, why) = if (map != null) locateSpot(quest, map, width, height, centre) else locatePlaceholderSpot(quest, war, width, height)
+        edgeDrag = null
+        placeholderPlacement = null
+        fun openPanel(centre: Boolean, edgeFirst: Boolean = true, recoveredSpot: Location? = null): Boolean {
+            val (spot, why) = if (recoveredSpot != null) recoveredSpot to "ok" else if (map != null) locateSpot(quest, map, width, height, centre, edgeFirst) else locatePlaceholderSpot(quest, war, width, height)
             if (spot == null) { problem = why; return false }
             log("tap step=spot quest=${quest.id} centre=$centre point=$spot")
             spot.click()
@@ -468,7 +506,23 @@ class WeeklyRouteDriver @Inject constructor(
             failure.panelOpened()
             return true
         }
-        if (!openPanel(false)) {
+        var opened = openPanel(false)
+        val edge = edgeDrag
+        if (!opened && problem == "no panel at the spot" && edge != null && screen() == RouteScreen.Map) {
+            val (from, to) = MapView.dragPath(ScreenPoint(-edge.x, -edge.y), width, height)
+            log("edge recovery quest=${quest.id} opposite=true")
+            swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
+            1.seconds.wait()
+            val recovered = placeholderPlacement?.let { (geometry, fit) ->
+                val originY = (fit.originY + to.y - from.y).coerceIn(-geometry.range, 0.0)
+                val y = originY + fit.scaleY * quest.spotY
+                val x = fit.screenX(quest.spotX)
+                val point = if (MapView.isTappable(x, y, width, height)) ScreenPoint(x, y) else MapView.visibleTap(x, y, width, height)
+                point?.let { Location(MapView.toScript(it.x), MapView.toScript(it.y)) }
+            }
+            if (map != null || recovered != null) opened = openPanel(false, edgeFirst = false, recoveredSpot = recovered)
+        }
+        if (!opened) {
             if (!tap) probeDiagnostic(quest.id)
             return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
         }

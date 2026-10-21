@@ -60,6 +60,13 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             }
             actual.put("legacy", rows).put("found", rows.length() > 0)
         }
+        "edgeSpot" -> {
+            val width = loc.scriptArea.width / 2
+            val height = loc.scriptArea.height / 2
+            val drag = MapView.edgeDrag(case.getDouble("spotX"), case.getDouble("spotY"), width, height)
+            actual.put("needsScroll", drag != null).put("dragY", drag?.y ?: 0.0)
+                .put("screen", WeeklyRouteScreens(this, loc).read().name)
+        }
         "spotTappable" -> {
             val x = case.getDouble("spotX")
             val y = case.getDouble("spotY")

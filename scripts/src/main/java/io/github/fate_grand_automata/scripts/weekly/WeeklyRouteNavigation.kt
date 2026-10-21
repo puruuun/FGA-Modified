@@ -125,7 +125,7 @@ class WeeklyRouteMachine(
             active = visit.stops.firstOrNull()
             val reachStart = now()
             val problem = reach(visit)
-            if (problem != null) { notFound(visit, problem, now() - reachStart); continue }
+            if (problem != null) { if (loc == Loc.Lost) driver.log("abort reason=$problem"); notFound(visit, problem, now() - reachStart); continue }
             var stopped = false
             for (item in visit.stops) {
                 if (stopped) { results += StopResult(item, 0, StopStatus.NotRun, "route stopped"); probeNotRun(item, "route stopped"); continue }

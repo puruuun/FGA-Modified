@@ -44,7 +44,9 @@ object PlaceholderMap {
             if (!widthFit || !spotX.isFinite() || !spotY.isFinite()) return null
             val edges = Edge.entries.filter { it == Edge.Top || range > 0 }
             for (edge in edges) {
-                val fit = fit(edge)
+                val border = fit(edge)
+                val shift = MapView.edgeDrag(border.screenX(spotX), border.screenY(spotY), viewWidth, viewHeight)?.y ?: 0.0
+                val fit = border.copy(originY = (border.originY + shift).coerceIn(-range, 0.0))
                 val x = fit.screenX(spotX)
                 val y = fit.screenY(spotY)
                 if (MapView.isTappable(x, y, viewWidth, viewHeight)) return Target(edge, ScreenPoint(x, y), fit)

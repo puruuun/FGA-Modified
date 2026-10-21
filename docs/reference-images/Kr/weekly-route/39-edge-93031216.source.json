@@ -1,0 +1,10 @@
+{
+  "source": "build/orchestration/runs/0009-owner-beta11-probe-kr-tablet/1792578479560/3-q93031216-a0.png",
+  "sha256": "04aa271c3f362d4fef55ec715acc75952603480d67d4b52cc414ac8cc6afadc4",
+  "normalization": "none: owner diagnostic already 1280x720",
+  "spot": [
+    635,
+    19
+  ],
+  "originY": -177
+}

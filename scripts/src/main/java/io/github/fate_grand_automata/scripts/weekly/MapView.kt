@@ -64,6 +64,16 @@ object MapView {
     const val MAX_SHIFT = 30.0
     private const val CLEARANCE = 4.0
 
+    /** D-39: image maps establish the boundary by fitting again after this inward drag. */
+    fun edgeDrag(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
+        val margin = 60.0 * height / 720.0
+        if (x !in 0.0..width.toDouble() || y !in 0.0..height.toDouble()) return null
+        val dx = when { x < margin -> margin - x; x > width - margin -> width - margin - x; else -> 0.0 }
+        val dy = when { y < margin -> margin - y; y > height - margin -> height - margin - y; else -> 0.0 }
+        fun step(v: Double) = if (v == 0.0) 0.0 else if (v > 0) maxOf(4.0, v) else minOf(-4.0, v)
+        return ScreenPoint(step(dx), step(dy)).takeIf { it.x != 0.0 || it.y != 0.0 }
+    }
+
     /**
      * The drag that moves the point at ([x], [y]) towards the middle of the open map area, or null when it is already
      * tappable. The drag is capped so that one step stays a single bounded scroll.
