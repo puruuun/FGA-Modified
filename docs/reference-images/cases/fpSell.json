@@ -17732,6 +17732,387 @@
       "expected": {
         "menu": true
       }
+    },
+    {
+      "name": "KR-w2560-37-closeTransition",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "KR-w2560-37-workshopButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": false
+      }
+    },
+    {
+      "name": "KR-w2560-37-summonMenu",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": true
+      }
+    },
+    {
+      "name": "KR-w2560-37-summonScreen",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": false,
+        "arrow": false
+      }
+    },
+    {
+      "name": "KR-w2560-37-returnButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": false,
+        "summon": false
+      }
+    },
+    {
+      "name": "KR-w2560-37-bannerTitle",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "bannerTitle",
+      "expected": {
+        "matches": false
+      },
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
+        }
+      ]
+    },
+    {
+      "name": "KR-w2560-37-fpChecks",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "fpChecks",
+      "expected": {
+        "first": false,
+        "initial": false
+      }
+    },
+    {
+      "name": "KR-w2560-37-buttonRegions",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/37.webp",
+      "view": "buttonRegions",
+      "expected": {
+        "normal": false,
+        "daily": false
+      }
+    },
+    {
+      "name": "KR-w2560-38-closeTransition",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
+    },
+    {
+      "name": "KR-w2560-38-workshopButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "KR-w2560-38-summonMenu",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": false
+      }
+    },
+    {
+      "name": "KR-w2560-38-summonScreen",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": true,
+        "arrow": true
+      }
+    },
+    {
+      "name": "KR-w2560-38-returnButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": true,
+        "summon": true
+      }
+    },
+    {
+      "name": "KR-w2560-38-bannerTitle",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "bannerTitle",
+      "expected": {
+        "matches": true
+      },
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
+        }
+      ]
+    },
+    {
+      "name": "KR-w2560-38-fpChecks",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "fpChecks",
+      "expected": {
+        "first": true,
+        "initial": true
+      }
+    },
+    {
+      "name": "KR-w2560-38-buttonRegions",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "buttonRegions",
+      "expected": {
+        "normal": true,
+        "daily": false
+      }
+    },
+    {
+      "name": "KR-w2560-38-summonGuard",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/38.webp",
+      "view": "summonGuard",
+      "expected": {
+        "verified": true
+      }
+    },
+    {
+      "name": "KR-w2560-39-closeTransition",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-workshopButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-summonMenu",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-summonScreen",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": false,
+        "arrow": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-returnButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": false,
+        "summon": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-bannerTitle",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "bannerTitle",
+      "expected": {
+        "matches": false
+      },
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
+        }
+      ]
+    },
+    {
+      "name": "KR-w2560-39-fpChecks",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "fpChecks",
+      "expected": {
+        "first": false,
+        "initial": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-buttonRegions",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "buttonRegions",
+      "expected": {
+        "normal": false,
+        "daily": false
+      }
+    },
+    {
+      "name": "KR-w2560-39-layout",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "view": "layout",
+      "expected": {
+        "seven": true,
+        "sellScreen": true
+      }
+    },
+    {
+      "name": "KR-w2560-40-closeTransition",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "KR-w2560-40-workshopButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "KR-w2560-40-summonMenu",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": false
+      }
+    },
+    {
+      "name": "KR-w2560-40-summonScreen",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": false,
+        "arrow": false
+      }
+    },
+    {
+      "name": "KR-w2560-40-returnButtons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": false,
+        "summon": false
+      }
+    },
+    {
+      "name": "KR-w2560-40-bannerTitle",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "bannerTitle",
+      "expected": {
+        "matches": false
+      },
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
+        }
+      ]
+    },
+    {
+      "name": "KR-w2560-40-fpChecks",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "fpChecks",
+      "expected": {
+        "first": false,
+        "initial": false
+      }
+    },
+    {
+      "name": "KR-w2560-40-buttonRegions",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/40.webp",
+      "view": "buttonRegions",
+      "expected": {
+        "normal": false,
+        "daily": false
+      }
     }
   ]
 }

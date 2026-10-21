@@ -45,6 +45,24 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
         "summonScreen" -> JSONObject()
             .put("fpLabel", useSameSnapIn { findImage(locations.fp.summonCheck, Images.FriendSummon) || findImage(locations.fp.initialSummonCheck, Images.FriendSummon) })
             .put("arrow", useSameSnapIn { reader.loc.leftArrowRegion.exists(images[Images.FpSellLeftArrow], similarity = 0.9) })
+        // Exact AutoFriendGacha validators use the user's default similarity (0.8 in fixtures).
+        "fpChecks" -> JSONObject()
+            .put("first", useSameSnapIn { images[Images.FriendSummon] in locations.fp.summonCheck })
+            .put("initial", useSameSnapIn { images[Images.FriendSummon] in locations.fp.initialSummonCheck })
+        "buttonRegions" -> {
+            val patterns = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
+                .mapNotNull { runCatching { images[it] }.getOrNull() }
+            JSONObject().put("normal", patterns.any { reader.loc.summonButton.exists(it, similarity = 0.9) })
+                .put("daily", patterns.any { reader.loc.dailySummonButton.exists(it, similarity = 0.9) })
+        }
+        "summonGuard" -> {
+            val banner = FpBannerReturn(this, reader.loc)
+            try {
+                banner.remember()
+                banner.verifySummon()
+                JSONObject().put("verified", true)
+            } finally { banner.release() }
+        }
         "doneDialog" -> JSONObject()
             .put("done", reader.loc.done.exists(images[Images.FpSellDone], similarity = 0.9))
             .put("close", reader.loc.doneClose.exists(images[Images.FpSellClose], similarity = 0.9))
