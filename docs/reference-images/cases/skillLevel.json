@@ -1303,6 +1303,30 @@
         "mode": "none",
         "servantSelected": false
       }
+    },
+    {
+      "name": "JP-35-levels",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/35.png",
+      "view": "levels",
+      "expected": {
+        "current": 2,
+        "next": 3
+      },
+      "slotMode": "Skill"
+    },
+    {
+      "name": "KR-36-levels",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/36.png",
+      "view": "levels",
+      "expected": {
+        "current": 2,
+        "next": 3
+      },
+      "slotMode": "Skill"
     }
   ]
 }
