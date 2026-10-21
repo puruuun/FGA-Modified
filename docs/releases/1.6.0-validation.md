@@ -8,3 +8,36 @@
 - APK는 같은 제품 커밋에서 만듭니다. 한 커밋 조건을 유지하기 위해 푸시 후 확정되는 CI·기기 QA·SHA-256·설치 결과는 이 문서의 로컬 최종본과 최종 인계 보고에 기록합니다.
 - 자동 검증은 저장 프레임 판독입니다. 게임은 조작하지 않으며 실제 게임 수동 검증과 태블릿 설치·게시·태그는 소유자 범위입니다.
 - 정규 APK는 설치하지 않습니다. 베타만 `127.0.0.1:5555`에 업데이트 설치합니다. HA29GCWH·emulator-5554는 조작하지 않습니다.
+
+## 최종 배송 검증
+
+- 제품 커밋 `e0ea34c75fecceba91d4efbe0ec73b46ee2e4fbc`, main 직접 푸시. author/committer 모두 `puruuun <188972188+puruuun@users.noreply.github.com>`, AI 트레일러 없음.
+- [Main CI 성공](https://github.com/puruuun/FGA-Modified/actions/runs/39595131570) 확인 후 `:app:assembleCi :app:assembleBeta` 성공. 두 APK는 같은 제품 커밋에서 빌드했습니다.
+- 전체 기기 QA **1311개 통과, 실패 0, 기존 skip 11개**. 각 skip은 저장소 case manifest의 skip 항목과 같습니다.
+- 기기 QA 보고서: `build/device-qa/20261021-205710/`.
+- 첫 시도는 964개 통과 후 BlueStacks 시스템 크래시로 중단됐습니다. 5555 포트 연결 복구 후 전체 7개 suite를 처음부터 재실행한 최종 결과가 위 숫자입니다. adb 서버 재시작·disconnect는 하지 않았습니다.
+
+| suite | 통과 | 실패 | 기존 skip |
+|---|---:|---:|---:|
+| support | 185 | 0 | 3 |
+| bond | 20 | 0 | 0 |
+| questItems | 5 | 0 | 8 |
+| noblePhantasm | 18 | 0 | 0 |
+| fpSell | 736 | 0 | 0 |
+| skillLevel | 83 | 0 | 0 |
+| weeklyRoute | 264 | 0 | 0 |
+
+| APK | SHA-256 |
+|---|---|
+| `FGA-mod-1.6.0-arm.apk` | `f94a13a83afa086622aedbeee4e67e38f47ff928dc4dd71d9b63ad4500204350` |
+| `FGA-beta-1.6.0-beta.13-arm.apk` | `082a798db1c4d6aa5333e2f17a0d7e697831d602c7a1d1f024312ed5c944d26d` |
+
+- 두 APK와 각각 `.apk.sha256`은 `C:/Users/rl/Documents/Codex/FGA-Modified-builds/`에 저장했습니다. 해시 파일 재대조와 ZIP 무결성 검사 성공.
+- aapt: 정규 패키지 `io.github.fate_grand_automata.cardcount`, `3087 / 1.6.0`, `FGA(mod)`; 베타 패키지 `io.github.fate_grand_automata.beta`, `1006013 / 1.6.0-beta.13`, `FGA(beta)`. 두 APK의 ABI는 `arm64-v8a`, `armeabi-v7a`입니다.
+- apksigner: 두 APK 검증 성공. 인증서 SHA-256 `5acce47e71373dcfe3a6f6400ed3b3f687bd454aab91c7562c8327a3a083ac9d`.
+- 베타만 BlueStacks `127.0.0.1:5555 / PIXEL 2 XL`에 `install --no-streaming -r`: **Performing Push Install
+Success**. 설치 버전 `1.6.0-beta.13 / 1006013`, 최초 설치 시각 `2026-10-15 23:24:59` 유지.
+- 정규 APK는 설치하지 않았습니다. HA29GCWH·emulator-5554를 조작하지 않았고, adb 서버 재시작·disconnect도 하지 않았습니다. 게임·GitHub Release·태그를 조작하거나 생성하지 않았습니다.
+- D-1 기본값·저장 true/false 유지, D-2 전역 OFF 시 reader 무호출·설정 유지·재활성화, D-5 ci/release와 beta/debug 판정 및 ci의 모든 주간 진단 저장 차단을 단위 테스트로 확인했습니다.
+- 증거: `build/orchestration/release160-*`. 기기 QA는 별도 테스트 앱에서 저장 프레임을 판독합니다. 게임 수동 검증은 이번 배송에서 수행하지 않았으며 소유자 범위입니다.
+- 전체 1커밋 조건을 유지하여 이 최종 배송 결과와 설계 완료 표시는 로컬 문서에 기록했습니다. 원격에는 제품 커밋에 포함된 사전 검증본이 있습니다. README 정규판 다운로드 줄은 게시 직전에 소유자가 갱신합니다.
