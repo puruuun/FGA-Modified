@@ -87,3 +87,7 @@ page=2 r3c4 present=true lock=Unlocked excluded=false selected=false decision=se
 베타 시험 모드는 재소환 뒤 두 번째 가득 참 알림에서 `SellDryRunDone`으로 끝납니다. 정규판은 시험 모드 없이 실제 판매합니다.
 
 실제 판매 직후에도 가득 참이면 다시 판매합니다. 더 선택할 칸이 없어 선택 수가 0이면 `InventoryFullNothingToSell`로 정지합니다. 별도의 판매 직후 가득 참 정지는 없습니다.
+
+## 1.6.1-beta.3 와이드 공방 복귀 수정
+
+KR에서 판매 완료 후 공방에 돌아왔는데 닫기를 다시 누르고 중단하던 인식을 수정했습니다. 공방 제목의 배경 영향을 줄인 템플릿을 사용하며, 공방을 확인하면 MENU → 소환으로 진행합니다. JP의 복귀 동작과 인식 기준은 동일합니다.

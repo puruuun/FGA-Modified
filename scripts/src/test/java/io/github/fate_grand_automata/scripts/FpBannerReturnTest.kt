@@ -129,6 +129,21 @@ class FpBannerReturnTest {
         assertEquals(8,reads)
         verify(exactly=1) { with(run.api) { menu.click(1) } }
     }
+    @Test fun `recognized workshop after selling advances to MENU without closing it again`() {
+        val run = Run(0)
+        val close = run.loc.screenClose
+        val menu = run.loc.menu
+        val shop = run.loc.shop
+        run.banner.restore()
+        verify(exactly = 1) { with(run.api) { close.click(1) } }
+        verify(exactly = 1) { with(run.api) { menu.click(1) } }
+        verifyOrder {
+            with(run.api) { close.click(1) }
+            with(run.api) { shop.exists(any(), any(), any()) }
+            with(run.api) { menu.click(1) }
+        }
+    }
+
     @Test fun `ignored first sell close is retried once and workshop arrival permits MENU`() {
         val run=Run(0)
         val close=run.loc.screenClose

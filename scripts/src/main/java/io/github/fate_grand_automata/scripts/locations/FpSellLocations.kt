@@ -40,6 +40,7 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val leftArrowRegion = Region(0, 600, 150, 250).xFromLeftEdge()
     val summonButton = Region(250, 940, 500, 180).xFromCenter()
     val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
+    /** Covers both localized right-edge titles, including the KR glyph crop (frame 36); avoid background in templates. */
     val shop = Region(-730, 0, 710, 160).xFromRightEdge()
     val menu = Region(-390, 1210, 380, 200).xFromRightEdge()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */

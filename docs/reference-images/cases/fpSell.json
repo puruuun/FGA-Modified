@@ -17602,6 +17602,136 @@
       ],
       "checkGrid": true,
       "column": 1
+    },
+    {
+      "name": "KR-w2560-36-shop",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "KR-w2560-36-menu-visible",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "KR-w2560-36-summon-menu-hidden",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "summonMenu",
+      "expected": {
+        "summonMenu": false
+      }
+    },
+    {
+      "name": "KR-w2560-36-not-summon-screen",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "summonScreen",
+      "expected": {
+        "fpLabel": false,
+        "arrow": false
+      }
+    },
+    {
+      "name": "KR-w2560-36-not-return-buttons",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "returnButtons",
+      "expected": {
+        "arrow": false,
+        "summon": false
+      }
+    },
+    {
+      "name": "KR-w2560-36-not-limit-dialog",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "fullDialog",
+      "expected": {
+        "servantWarning": false
+      }
+    },
+    {
+      "name": "KR-w2560-36-not-limit-sell",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "limitSell",
+      "expected": {
+        "sell": false
+      }
+    },
+    {
+      "name": "KR-w2560-36-not-banner",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36.webp",
+      "view": "bannerTitle",
+      "expected": {
+        "matches": false
+      },
+      "pieces": [
+        {
+          "file": "docs/reference-images/Kr/fp-sell/15-banner-title.png"
+        }
+      ]
+    },
+    {
+      "name": "KR-23-shop",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/23.png",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "KR-23-menu-visible",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/23.png",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
+    },
+    {
+      "name": "KR-w2560-36-runtime-shop",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36-runtime.webp",
+      "view": "closeTransition",
+      "expected": {
+        "close": true,
+        "workshop": true
+      }
+    },
+    {
+      "name": "KR-w2560-36-runtime-menu-visible",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/36-runtime.webp",
+      "view": "workshopButtons",
+      "expected": {
+        "menu": true
+      }
     }
   ]
 }
