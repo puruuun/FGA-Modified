@@ -14,10 +14,10 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
     private val run = System.currentTimeMillis()
     private var count = 0
     private var probe = false
-    override val enabled get() = if (probe) count < WeeklyProbe.DIAGNOSTIC_LIMIT else BuildConfig.BUILD_TYPE == "beta" && count < 8
+    override val enabled get() = BuildConfig.BUILD_TYPE == "beta" && count < if (probe) WeeklyProbe.DIAGNOSTIC_LIMIT else 8
     override fun startProbe() { probe = true }
     override fun saveEvidence(image: Pattern, questId: Int): String? {
-        if (!probe) return null
+        if (BuildConfig.BUILD_TYPE != "beta" || !probe) return null
         val path = "weeklyRoute/$run/evidence/q$questId.png"
         return try {
             storage.writeDiagnosticFile(path, "image/png") { image.save(it) }
@@ -29,6 +29,7 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
     }
 
     override fun saveAbort(frame: Pattern): String? {
+        if (BuildConfig.BUILD_TYPE != "beta") return null
         val path = "weeklyRoute/$run/abort-${System.nanoTime()}.png"
         return try {
             storage.writeDiagnosticFile(path, "image/png") { frame.save(it) }

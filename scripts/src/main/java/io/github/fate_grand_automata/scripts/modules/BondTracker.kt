@@ -19,7 +19,7 @@ class BondTracker @Inject constructor(
 ) : IFgoAutomataApi by api {
     private val ledger = BondLedger()
     private var battleRun: Int? = null
-    val enabled get() = (config.trackBond || config.stopOnBondMax) &&
+    val enabled get() = prefs.bondTrackingFeatureEnabled && (config.trackBond || config.stopOnBondMax) &&
         (prefs.gameServer is GameServer.Kr || prefs.gameServer is GameServer.Jp)
 
     fun isScreen() = enabled && reader.isScreen()

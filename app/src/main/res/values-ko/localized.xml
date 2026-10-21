@@ -575,7 +575,6 @@
     <string name="p_use_storm_pod">스톰포드 사용</string>
     <string name="p_use_teapot">티포트 사용</string>
     <string name="p_quest_item_usage_summary">체크하면 ON, 해제하면 OFF로 맞춘 뒤 퀘스트를 시작합니다.</string>
-    <string name="p_quest_item_usage_ignored">더 많은 옵션 → 추가기능에서 티포트·스톰포드 자동 설정 사용을 켜면 선택할 수 있습니다.</string>
     <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본 서버에서 지원합니다.</string>
     <string name="quest_item_setting_failed">스톰포드·티포트 설정 또는 설정창 닫기를 확인하지 못해 퀘스트 시작 전에 중단했습니다.</string>
     <string name="p_bond">인연포인트</string>
@@ -599,7 +598,7 @@
     <string name="github_update_open">릴리스 열기</string>
     <string name="github_update_later">나중에</string>
     <string name="p_enable_quest_item_control">티포트·스톰포드 자동 설정 사용</string>
-    <string name="p_enable_quest_item_control_summary">퀘스트 시작 전 실행 창의 아이템 ON/OFF 선택을 검사하고 적용합니다. 기본값은 꺼짐입니다.</string>
+    <string name="p_enable_quest_item_control_summary">퀘스트 시작 전 실행 창의 아이템 ON/OFF 선택을 검사하고 적용합니다. 기본값은 켜짐입니다.</string>
     <string name="chaldea_import_button">링크로 입력</string>
     <string name="chaldea_import_title">Chaldea 커맨드 가져오기</string>
     <string name="chaldea_import_url">Chaldea 공유 링크</string>
@@ -766,4 +765,5 @@
     <string name="weekly_route_settings">주간 퀘 추적 설정</string>
     <string name="weekly_route_settings_no_data">먼저 전투 실행 창의 주간 미션 패널에서 이 서버의 데이터를 다운로드하세요.</string>
     <string name="weekly_route_unsupported_chapter">믹틀란·주장 — 지원 안 함</string>
+    <string name="p_bond_tracking_feature_enabled">인연 추적 기능 사용</string>
 </resources>

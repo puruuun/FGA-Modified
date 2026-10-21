@@ -96,6 +96,7 @@ class PreferencesImpl @Inject constructor(
     override var hidePlayButton by prefs.hidePlayButton
 
     override val hideSQInAPResources by prefs.hideSQInAPResources
+    override val bondTrackingFeatureEnabled by prefs.bondTrackingFeatureEnabled
     override val ignoreQuestItemUsage by prefs.questItemControl.ignore
 
     override val stageCounterSimilarity by prefs.stageCounterSimilarity.map { it / 100.0 }

@@ -314,7 +314,7 @@ fun battleLauncher(
                 HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
             }
 
-            item {
+            if (!ignoreQuestItemUsage) item {
                 Text(
                     stringResource(R.string.p_quest_item_usage),
                     style = MaterialTheme.typography.bodyMedium,
@@ -325,7 +325,6 @@ fun battleLauncher(
                 QuestItemCheckbox(useTeapot, questItemsEnabled, stringResource(R.string.p_use_teapot)) { useTeapot = it }
                 Text(
                     stringResource(when {
-                        ignoreQuestItemUsage -> R.string.p_quest_item_usage_ignored
                         !questItemsSupported -> R.string.p_quest_item_usage_servers
                         else -> R.string.p_quest_item_usage_summary
                     }),
@@ -336,7 +335,7 @@ fun battleLauncher(
             }
 
             item {
-                if (bond != null) {
+                if (prefs.bondTrackingFeatureEnabled && bond != null) {
                     Text(stringResource(R.string.p_bond), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
                     QuestItemCheckbox(bond.track, true, stringResource(R.string.p_bond_track)) { changeBond(bond.copy(track = it)) }

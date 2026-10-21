@@ -277,13 +277,13 @@ class ExecutionProfileCoreTest {
         assertThat(restoredKr.useTeapot.get()).isEqualTo(true)
     }
     @Test
-    fun `item control defaults off and toggling its opt in preserves launcher item choices`() {
+    fun `item control defaults on and toggling its opt in preserves launcher item choices`() {
         val store = MemoryPrefs()
         val control = QuestItemControlPrefsCore(PrefMaker(store))
         val items = QuestItemPrefsCore(PrefMaker(store))
         items.useTeapot.set(true)
-        assertThat(control.enabled.get()).isEqualTo(false)
-        assertThat(control.ignore.get()).isEqualTo(true)
+        assertThat(control.enabled.get()).isEqualTo(true)
+        assertThat(control.ignore.get()).isEqualTo(false)
         control.enabled.set(true)
         assertThat(QuestItemControlPrefsCore(PrefMaker(store)).ignore.get()).isEqualTo(false)
         assertThat(items.useTeapot.get()).isEqualTo(true)

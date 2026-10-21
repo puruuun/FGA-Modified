@@ -59,14 +59,6 @@ fun LazyListScope.advancedGroup(
     }
 
     item {
-        prefs.supportReaderDiagnostics.SwitchPreference(
-            title = stringResource(R.string.p_support_reader_diagnostics),
-            summary = stringResource(R.string.p_support_reader_diagnostics_summary),
-            icon = icon(R.drawable.ic_bug)
-        )
-    }
-
-    item {
         val rootForScreenshots by prefs.useRootForScreenshots.remember()
 
         val enabled = !rootForScreenshots &&

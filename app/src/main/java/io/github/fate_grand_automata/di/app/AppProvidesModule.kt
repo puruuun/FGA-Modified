@@ -28,7 +28,7 @@ import io.github.fate_grand_automata.BuildConfig
 class AppProvidesModule {
     @Provides
     @Named("fpSellStableBuild")
-    fun provideFpSellStableBuild(): Boolean = BuildConfig.BUILD_TYPE == "ci" || BuildConfig.BUILD_TYPE == "release"
+    fun provideFpSellStableBuild(): Boolean = io.github.fate_grand_automata.util.isStableBuild(BuildConfig.BUILD_TYPE)
 
     @Provides
     fun provideMediaProjectionManager(@ApplicationContext context: Context) =

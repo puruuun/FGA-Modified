@@ -649,7 +649,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_use_storm_pod">Use Storm Pods</string>
     <string name="p_use_teapot">Use Teapots</string>
     <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
-    <string name="p_quest_item_usage_ignored">Enable Teapot/Storm Pod control in More options → Additional features to use these choices.</string>
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
     <string name="p_bond">Bond points</string>
@@ -671,7 +670,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="github_update_open">Open release</string>
     <string name="github_update_later">Later</string>
     <string name="p_enable_quest_item_control">Enable Teapot/Storm Pod control</string>
-    <string name="p_enable_quest_item_control_summary">Check and apply the launcher’s item ON/OFF choices before Quest Start. Disabled by default.</string>
+    <string name="p_enable_quest_item_control_summary">Check and apply the launcher’s item ON/OFF choices before Quest Start. Enabled by default.</string>
     <string name="chaldea_import_button">Import from link</string>
     <string name="chaldea_import_title">Import Chaldea command</string>
     <string name="chaldea_import_url">Chaldea share URL</string>
@@ -859,4 +858,5 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="weekly_probe_status_chapter">chapter not found</string>
     <string name="weekly_probe_status_not_run">not run</string>
     <string name="weekly_route_unsupported_chapter">Mictlan and Ordeal Calls — unsupported</string>
+    <string name="p_bond_tracking_feature_enabled">Enable bond tracking</string>
 </resources>

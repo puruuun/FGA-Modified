@@ -36,6 +36,20 @@ fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: 
         )
     }
     item {
+        prefs.supportReaderDiagnostics.SwitchPreference(
+            title = stringResource(R.string.p_support_reader_diagnostics),
+            summary = stringResource(R.string.p_support_reader_diagnostics_summary),
+            icon = icon(R.drawable.ic_bug)
+        )
+    }
+
+    item {
+        prefs.bondTrackingFeatureEnabled.SwitchPreference(
+            title = stringResource(R.string.p_bond_tracking_feature_enabled),
+            icon = icon(R.drawable.ic_gift)
+        )
+    }
+    item {
         prefs.questItemControl.enabled.SwitchPreference(
             title = stringResource(R.string.p_enable_quest_item_control),
             summary = stringResource(R.string.p_enable_quest_item_control_summary),

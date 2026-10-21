@@ -48,6 +48,7 @@ class WeeklyPanelState {
 
 @Composable
 fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelState, modifier: Modifier = Modifier) {
+    val probeAvailable = !io.github.fate_grand_automata.util.isStableBuild(io.github.fate_grand_automata.BuildConfig.BUILD_TYPE)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val cache = remember { File(context.cacheDir, "atlas-weekly") }
@@ -106,11 +107,11 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
         HorizontalDivider()
         val data = state.data
         val plan = state.plan
-        if (data != null) Row(verticalAlignment = Alignment.CenterVertically) {
+        if (probeAvailable && data != null) Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = state.probe, onCheckedChange = { state.probe = it })
             Text(stringResource(R.string.weekly_probe_toggle), style = MaterialTheme.typography.bodyMedium)
         }
-        if (data != null && state.probe) ProbeOptions(state, data, disabled, Modifier.weight(1f))
+        if (probeAvailable && data != null && state.probe) ProbeOptions(state, data, disabled, Modifier.weight(1f))
         else if (data != null && plan != null) {
             val manualIds = plan.manual.map { it.id }.toSet()
             LazyColumn(Modifier.weight(1f)) {

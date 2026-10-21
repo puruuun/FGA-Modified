@@ -157,6 +157,22 @@ class BondTrackingTest {
         assertTrue(short.maxPositions(0).isEmpty())
     }
 
+    @Test fun `global bond switch disables all reader work and preserves config`() {
+        val f = Fixture()
+        every { f.api.prefs.bondTrackingFeatureEnabled } returns false
+        assertFalse(f.tracker.enabled)
+        f.tracker.beginBattle()
+        assertFalse(f.tracker.isScreen())
+        assertEquals(BondFrame.Other, f.tracker.process())
+        f.tracker.finishResult()
+        assertEquals(null, f.tracker.summary())
+        io.mockk.verify { f.reader wasNot io.mockk.Called }
+        assertTrue(f.config.trackBond)
+        assertTrue(f.config.stopOnBondMax)
+        every { f.api.prefs.bondTrackingFeatureEnabled } returns true
+        assertTrue(f.tracker.enabled)
+    }
+
     private class Fixture {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val reader = mockk<BondReader>()
@@ -164,6 +180,7 @@ class BondTrackingTest {
         val config = mockk<io.github.fate_grand_automata.scripts.prefs.IBattleConfig>()
         val tracker = BondTracker(api, reader, state, config)
         init {
+            every { api.prefs.bondTrackingFeatureEnabled } returns true
             every { api.prefs.gameServer } returns GameServer.Kr
             every { config.trackBond } returns true
             every { config.stopOnBondMax } returns true

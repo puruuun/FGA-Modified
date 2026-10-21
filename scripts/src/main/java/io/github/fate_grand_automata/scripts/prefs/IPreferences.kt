@@ -27,6 +27,7 @@ interface IPreferences {
     val supportReaderDiagnostics: Boolean
     var hidePlayButton: Boolean
     val hideSQInAPResources: Boolean
+    val bondTrackingFeatureEnabled: Boolean
     val ignoreQuestItemUsage: Boolean
 
     var maxGoldEmberStackSize: Int
