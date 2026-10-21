@@ -29,7 +29,18 @@
 
 ## 배송 확인
 
-- 제품 커밋·Main CI·APK 검증·SHA-256·adb 연결 확인 결과는 푸시 후 기록합니다.
-- BlueStacks는 실행하거나 조작하지 않습니다. APK 빌드 후 `adb devices`에 `127.0.0.1:5555 / PIXEL 2 XL`이 없으면 기기 QA·설치는 대기로 남깁니다.
+- 제품 커밋 `8c1900903d3d0c39229ddd5286a30085337fb87a`을 main에 직접 푸시했습니다. author·committer 모두 `puruuun <188972188+puruuun@users.noreply.github.com>`, AI 트레일러 없음.
+- [Main CI 성공](https://github.com/puruuun/FGA-Modified/actions/runs/39625565989) 확인 후 같은 제품 커밋에서 `:app:assembleBeta` 성공.
+- aapt: `io.github.fate_grand_automata.beta`, `1006102 / 1.6.1-beta.2`, `FGA(beta)`, ABI `arm64-v8a`·`armeabi-v7a` 확인.
+- apksigner 검증 성공. 인증서 SHA-256 `5acce47e71373dcfe3a6f6400ed3b3f687bd454aab91c7562c8327a3a083ac9d` (기존 베타와 동일).
+- APK ZIP 무결성 및 KR 와이드 제목 템플릿 3개의 패키지 포함·원본 일치 확인.
+- APK: `C:/Users/rl/Documents/Codex/FGA-Modified-builds/FGA-beta-1.6.1-beta.2-arm.apk`와 `.apk.sha256`. 복사 후 해시 파일 재대조 성공.
+- APK SHA-256: `422be4d02175ae1a745d8932f4c5aa9b12ad3cc33f10eb07db0a0ac4522e84eb`.
+- `-PfgaDeviceTests=true :app:assembleDeviceTest :app:assembleDeviceTestAndroidTest` 성공. 테스트 APK 컴파일을 완료했으며 기기에서는 실행하지 않았습니다.
+- APK 검증 후 `C:/platform-tools/adb.exe devices -l` 결과 **빈 목록**. 지정 기기 `127.0.0.1:5555 / PIXEL 2 XL` 미연결로 **기기 QA와 설치는 미실행·대기**입니다. 에뮬레이터 실행·조작, `adb connect`, `kill-server`, `start-server`, `disconnect`는 하지 않았습니다.
+- 추가 오프라인 FP 버튼·확인창 대조 13개 통과. 카드 격자와 Android 제품 판독기 검증을 대신하지 않습니다.
+- 증거 로그: `build/orchestration/0012-beta2-unit-final.log`, `0012-offline.log`, `0012-ci-success.json`, `0012-assemble.log`, `0012-aapt.txt`, `0012-apksigner.txt`, `0012-deviceqa-build.log`, `0012-adb-devices.txt`, `0012-delivery.json`.
+- 최종 배송 결과는 별도 문서 커밋으로 기록합니다. APK의 제품 커밋과 Main CI는 위 SHA 기준입니다.
+- 다음 단계: 소유자가 지정 BlueStacks를 실행하고 연결한 뒤, 기기 모델을 확인하고 베타 `install -r` 및 전체 저장 프레임 QA 1422개(기존 skip 11개)를 수행해야 합니다. 0실패 여부는 아직 확인하지 않았습니다.
 - 게임 조작·다른 기기 설치·GitHub Release 게시·태그 생성은 하지 않습니다.
 - 남은 자료: 필수 어펜드 캡처는 확보 완료. 원본 고해상도 KR 작은 점수 글자는 판독 실패 시 필요할 수 있습니다. 인연 레벨업 창은 가운데 기준 유지, 실제 게임 21:9→20:9 확인은 소유자 범위입니다.
