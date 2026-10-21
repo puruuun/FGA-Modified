@@ -25,7 +25,7 @@
       "expected": {
         "free": true,
         "ap": 5,
-        "verdict": "ApMismatch"
+        "verdict": "Match"
       }
     },
     {
@@ -88,7 +88,7 @@
       "expected": {
         "free": true,
         "ap": 19,
-        "verdict": "ApMismatch"
+        "verdict": "Match"
       }
     },
     {
@@ -1309,6 +1309,230 @@
         "found": true,
         "match": false,
         "anchorY": 155
+      }
+    },
+    {
+      "name": "JP-probe-beta7-01-spot-93000001",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/1-q93000001-a0.png",
+      "view": "spotTappable",
+      "spotX": 452,
+      "spotY": 265,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-02-spot-93000005",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/2-q93000005-a0.png",
+      "view": "spotTappable",
+      "spotX": 1079,
+      "spotY": 405,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-03-spot-93000006",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/3-q93000006-a0.png",
+      "view": "spotTappable",
+      "spotX": 349,
+      "spotY": 359,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-04-spot-93000007",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/4-q93000007-a0.png",
+      "view": "spotTappable",
+      "spotX": 243,
+      "spotY": 485,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-05-spot-93000008",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/5-q93000008-a0.png",
+      "view": "spotTappable",
+      "spotX": 247,
+      "spotY": 342,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-06-spot-93000101",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/6-q93000101-a0.png",
+      "view": "spotTappable",
+      "spotX": 942,
+      "spotY": 248,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-07-spot-93000102",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/7-q93000102-a0.png",
+      "view": "spotTappable",
+      "spotX": 864,
+      "spotY": 213,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-08-spot-93000103",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/8-q93000103-a0.png",
+      "view": "spotTappable",
+      "spotX": 697,
+      "spotY": 343,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-08-panel-93000103",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/8-q93000103-a0.png",
+      "view": "anchoredPanel",
+      "targetAp": 7,
+      "targetName": "ロワールの畔",
+      "expected": {
+        "found": true,
+        "match": true,
+        "name": "ロワールの畔"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-09-spot-93000104",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/9-q93000104-a0.png",
+      "view": "spotTappable",
+      "spotX": 884,
+      "spotY": 362,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-10-spot-93000105",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/10-q93000105-a0.png",
+      "view": "spotTappable",
+      "spotX": 873,
+      "spotY": 418,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-11-spot-93000106",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/11-q93000106-a0.png",
+      "view": "spotTappable",
+      "spotX": 591,
+      "spotY": 359,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "List"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-11-panel-93000106",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/11-q93000106-a0.png",
+      "view": "anchoredPanel",
+      "targetAp": 7,
+      "targetName": "刃物の町",
+      "expected": {
+        "found": true,
+        "match": true,
+        "name": "刃物の町"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-12-spot-93000107",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/12-q93000107-a0.png",
+      "view": "spotTappable",
+      "spotX": 503,
+      "spotY": 267,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-13-spot-93000108",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/13-q93000108-a0.png",
+      "view": "spotTappable",
+      "spotX": 592,
+      "spotY": 164,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
+      }
+    },
+    {
+      "name": "JP-probe-beta7-14-spot-93000109",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta7/14-q93000109-a0.png",
+      "view": "spotTappable",
+      "spotX": 979,
+      "spotY": 525,
+      "expected": {
+        "tappable": true,
+        "needsScroll": false,
+        "screen": "Map"
       }
     }
   ],

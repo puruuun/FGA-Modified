@@ -12,3 +12,15 @@ object WeeklyPanelFlow {
         return recenter() && read()
     }
 }
+
+/** Once a panel was reached, recovery failures cannot overwrite its last reading with a map failure. */
+class WeeklyPanelFailure {
+    var opened = false
+        private set
+    var lastVerdict = "NoPanel"
+        private set
+    fun panelOpened() { opened = true }
+    fun verdict(value: String) { lastVerdict = value }
+    fun reason(recovery: String): String =
+        if (opened) "panel_mismatch last=$lastVerdict recovery=$recovery" else recovery
+}

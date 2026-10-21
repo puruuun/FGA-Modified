@@ -13,8 +13,8 @@ class WeeklyMapEdgeTest {
         val screenAnchors = listOf(
             ScreenPoint(initialX + 5 * scale, initialY + 5 * scale),
             ScreenPoint(initialX + 2395 * scale, initialY + 1195 * scale),
-            ScreenPoint(25.0, 360.0), ScreenPoint(width - 25.0, 360.0),
-            ScreenPoint(width / 2.0, 25.0), ScreenPoint(width / 2.0, height - 25.0),
+            ScreenPoint(11.0, 360.0), ScreenPoint(width - 11.0, 360.0),
+            ScreenPoint(width / 2.0, 11.0), ScreenPoint(width / 2.0, height - 11.0),
             ScreenPoint(150.0, 600.0), ScreenPoint(450.0, 600.0), ScreenPoint(width - 100.0, 650.0))
         for (anchor in screenAnchors) {
             val mapX = (anchor.x - initialX) / scale
@@ -55,8 +55,8 @@ class WeeklyMapEdgeTest {
     @Test fun `18 by 9 clipped and UI covered map spots scroll and refit before tap`() = moveAndRefit(1440)
     @Test fun `4 by 3 clipped and UI covered map spots scroll and refit before tap`() = moveAndRefit(960)
     @Test fun `partially clipped margins and nonfinite coordinates are not tappable`() {
-        assertFalse(MapView.isTappable(25.0, 360.0, 1280, 720))
-        assertNotNull(MapView.dragToward(25.0, 360.0, 1280, 720))
+        assertFalse(MapView.isTappable(11.0, 360.0, 1280, 720))
+        assertNotNull(MapView.dragToward(11.0, 360.0, 1280, 720))
         assertFalse(MapView.isTappable(Double.NaN, 360.0, 1280, 720))
         assertFalse(MapView.isTappable(640.0, Double.POSITIVE_INFINITY, 1280, 720))
     }

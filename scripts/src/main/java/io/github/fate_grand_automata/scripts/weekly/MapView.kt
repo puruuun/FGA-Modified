@@ -22,9 +22,10 @@ object MapView {
         return when {
             x < 190 * s && y < 100 * s -> true                      // terminal / close button
             fromRight < 560 * s && y < 140 * s -> true               // chapter title
-            x < 340 * s && y > 470 * s -> true                       // master portrait and status
-            x in 340 * s..640 * s && y > 540 * s -> true             // gift box and mission note
-            fromRight < 230 * s && y > 590 * s -> true               // menu button
+            x < 225 * s && y > 495 * s -> true                       // master portrait and status
+            x < 380 * s && y > 560 * s -> true                       // level and AP status
+            x in 375 * s..600 * s && y > 560 * s -> true             // gift box and mission note
+            fromRight < 250 * s && y > 605 * s -> true               // menu button
             fromRight < 90 * s && y in 100 * s..440 * s -> true      // quest list scroll bar column
             else -> false
         }
@@ -33,12 +34,9 @@ object MapView {
     /** True when a tap at ([x], [y]) lands on the map and not on a fixed button, with a margin around the point. */
     fun isTappable(x: Double, y: Double, width: Int, height: Int): Boolean {
         if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0) return false
-        val m = 24.0 * height / 720.0
-        val edge = 20.0 * height / 720.0
-        // Even at minimum zoom the icon can be partially clipped: its whole safety margin must be on-screen.
-        if (x - m < edge || y - m < edge || x + m > width - edge || y + m > height - edge) return false
-        return !covered(x, y, width, height) && !covered(x - m, y, width, height) && !covered(x + m, y, width, height) &&
-            !covered(x, y - m, width, height) && !covered(x, y + m, width, height)
+        val ring = 12.0 * height / 720.0
+        if (x - ring < 0 || y - ring < 0 || x + ring > width || y + ring > height) return false
+        return !covered(x, y, width, height)
     }
 
     /**
@@ -77,6 +75,18 @@ object MapView {
 
     /** A drag too small to move the map (below four pixels both ways) cannot make progress. */
     fun isMeaningful(drag: ScreenPoint) = abs(drag.x) >= 4 || abs(drag.y) >= 4
+
+    /** A fresh post-scroll fit must move the origin by at least four 720p pixels. */
+    fun originMoved(before: ScreenPoint, after: ScreenPoint): Boolean =
+        kotlin.math.hypot(after.x - before.x, after.y - before.y) >= 4.0
+
+    /** At a map boundary recentering may reuse the current safe spot; never repeat an ineffective drag. */
+    fun afterScroll(before: ScreenPoint, after: ScreenPoint, recenter: Boolean, tappable: Boolean): ScrollResult =
+        if (originMoved(before, after)) ScrollResult.Refit
+        else if (recenter && tappable) ScrollResult.Tap
+        else ScrollResult.Stop
+
+    enum class ScrollResult { Refit, Tap, Stop }
 
     /** 720p to the 1440p script coordinates the click and scroll helpers take. */
     fun toScript(v: Double) = (v * 2).roundToInt()

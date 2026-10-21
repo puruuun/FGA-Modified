@@ -17,12 +17,16 @@ internal fun FixtureApi.verifyWeeklyRoute(): JSONObject {
     if (case.has("view")) return verifyWeeklyNavigation()
     val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
     val server = prefs.gameServer
-    val panel = reader.read(server)
+    val region = if (server is io.github.fate_grand_automata.scripts.enums.GameServer.Kr) "KR" else "JP"
+    val lexicon = JSONArray(fixtureText(imports.getJSONArray("names:$region").getString(0)))
+    val names = (0 until lexicon.length()).map { lexicon.getString(it) }
+    val panel = reader.read(server, questNames = names)
     val verdict = QuestPanelMatch.verdict(panel, case.getInt("targetAp"), case.getString("targetName"), server)
     val actual = JSONObject()
         .put("free", panel.free)
         .put("ap", panel.ap ?: "unread")
-        .put("verdict", verdict::class.simpleName)
+        .put("name", panel.nameText ?: "unread")
+        .put("verdict", QuestPanelMatch.label(verdict))
         .put("nameWidthPx", panel.nameWidthPx ?: "none")
         .put("nameCells", panel.nameCells?.let { "%.2f".format(it) } ?: "none")
         .put("expectedCells", "%.2f".format(QuestPanelMatch.nameCells(case.getString("targetName"))))

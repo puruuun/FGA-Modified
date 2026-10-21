@@ -13,6 +13,15 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
     val loc=WeeklyRouteLocations(locations)
     val actual=JSONObject()
     when(case.getString("view")) {
+        "spotTappable" -> {
+            val x = case.getDouble("spotX")
+            val y = case.getDouble("spotY")
+            val width = loc.scriptArea.width / 2
+            val height = loc.scriptArea.height / 2
+            actual.put("tappable", MapView.isTappable(x, y, width, height))
+                .put("needsScroll", MapView.dragToward(x, y, width, height) != null)
+                .put("screen", WeeklyRouteScreens(this, loc).read().name)
+        }
         "nameProbe" -> {
             val reader=QuestPanelReader(this,QuestPanelLocations(locations),ocr)
             val locName=QuestPanelLocations(locations)

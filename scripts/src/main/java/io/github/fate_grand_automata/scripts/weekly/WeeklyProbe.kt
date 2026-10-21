@@ -14,6 +14,7 @@ enum class ProbeStatus(val csv: String) {
 
         /** Maps the reason text of a [SpotOutcome.NotFound] or of a failed chapter visit to a status. */
         fun classify(reason: String): ProbeStatus = when {
+            reason.startsWith("panel_mismatch ") -> Mismatch
             reason in mapFit || reason.endsWith("image unavailable") -> MapFitFailed
             reason == "no panel at the spot" -> NoPanel
             reason == "no free panel with the AP and name" -> Mismatch

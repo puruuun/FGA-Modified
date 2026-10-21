@@ -144,7 +144,7 @@ object QuestPanelMatch {
     /**
      * Domain-constrained OCR, against ALL regional quest names rather than the target. At most two character edits,
      * <= one third of the word, a two-edit margin to every runner-up, and two agreeing readings are required. Unknown
-     * names and close legitimate alternatives are not forced to match the route. Glyph width/AP remain separate guards.
+     * names and close legitimate alternatives are not forced to match the route. AP and glyph width are diagnostic only.
      */
     fun canonicalName(readings: List<OcrText>, questNames: Collection<String>): String? {
         val names=questNames.map(::normalizedName).filter { it.isNotEmpty() }.distinct()
@@ -171,10 +171,7 @@ object QuestPanelMatch {
 
     /** Production navigation requires actual name characters, never just a matching glyph count. */
     fun strictVerdict(panel: QuestPanel, expectedAp: Int, expectedName: String, server: GameServer): PanelVerdict {
-        val basic=verdict(panel,expectedAp,expectedName,server)
-        if (basic != PanelVerdict.Match) return basic
-        return if (panel.nameText != null && normalizedName(panel.nameText)==normalizedName(expectedName)) PanelVerdict.Match
-            else PanelVerdict.NameMismatch(panel.nameCells ?: 0.0,nameCells(expectedName))
+        return verdict(panel, expectedAp, expectedName, server)
     }
 
     /** Ink width of one full-width glyph at 720p: JP kana and kanji, KR hangul. Measured on the owner captures. */
@@ -230,11 +227,7 @@ object QuestPanelMatch {
 
     fun verdict(panel: QuestPanel, expectedAp: Int, expectedName: String, server: GameServer): PanelVerdict {
         if (!panel.free) return PanelVerdict.NotFree
-        val ap = panel.ap ?: return PanelVerdict.ApUnreadable(expectedAp)
-        if (ap != expectedAp) return PanelVerdict.ApMismatch(ap, expectedAp)
-        val cells = panel.nameCells ?: return PanelVerdict.NoPanel
-        val expected = nameCells(expectedName)
-        return if (Math.abs(cells - expected) <= nameTolerance(expected)) PanelVerdict.Match
-        else PanelVerdict.NameMismatch(cells, expected)
+        return if (panel.nameText != null && normalizedName(panel.nameText) == normalizedName(expectedName)) PanelVerdict.Match
+        else PanelVerdict.NameMismatch(panel.nameCells ?: 0.0, nameCells(expectedName))
     }
 }

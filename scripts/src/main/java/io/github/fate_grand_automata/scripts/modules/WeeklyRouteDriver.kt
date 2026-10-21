@@ -249,6 +249,7 @@ class WeeklyRouteDriver @Inject constructor(
     private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false): Pair<Location?, String> {
         var pinched = false
         var scrolls = 0
+        var beforeScroll: io.github.fate_grand_automata.scripts.weekly.ScreenPoint? = null
         while (true) {
             val fit = localize(map)
             if (!MapLocalizer.accepts(fit)) {
@@ -262,10 +263,22 @@ class WeeklyRouteDriver @Inject constructor(
             val y = fit.screenY(quest.spotY)
             log("localize quest=${quest.id} score=${"%.2f".format(fit.score)} scale=${"%.3f".format(fit.scaleX)}/${"%.3f".format(fit.scaleY)} " +
                 "origin=${"%.0f".format(fit.originX)},${"%.0f".format(fit.originY)} spot=${"%.0f".format(x)},${"%.0f".format(y)}")
+            beforeScroll?.let { before ->
+                val origin = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
+                when (MapView.afterScroll(before, origin, centre, MapView.isTappable(x, y, screenWidth, screenHeight))) {
+                    MapView.ScrollResult.Tap -> {
+                        log("scroll quest=${quest.id} stationary=true recenter=current-spot")
+                        return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
+                    }
+                    MapView.ScrollResult.Stop -> return null to "spot out of reach"
+                    MapView.ScrollResult.Refit -> Unit
+                }
+            }
             val drag = MapView.dragToward(x, y, screenWidth, screenHeight, centre)
             if (drag == null) return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
             if (scrolls >= MAX_MAP_SCROLLS || !MapView.isMeaningful(drag)) return null to "spot out of reach"
             scrolls++
+            beforeScroll = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
             log("scroll quest=${quest.id} drag=${"%.0f".format(drag.x)},${"%.0f".format(drag.y)}")
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
@@ -273,7 +286,7 @@ class WeeklyRouteDriver @Inject constructor(
         }
     }
 
-    private fun readAnchoredPanel(quest: RouteQuest, tap: Boolean = true): Boolean {
+    private fun readAnchoredPanel(quest: RouteQuest, tap: Boolean, failure: io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure): Boolean {
         for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
             if (useSameSnapIn { reader.anchors().isNotEmpty() }) break
             500.milliseconds.wait()
@@ -283,12 +296,14 @@ class WeeklyRouteDriver @Inject constructor(
             val matched = useSameSnapIn {
                 val anchors = reader.anchors()
                 if (anchors.isEmpty()) {
+                    failure.verdict("NoPanel")
                     log("panel quest=${quest.id} attempt=$attempt verdict=NoPanel")
                     panelDiagnostic(quest.id, attempt)
                 }
                 for (anchor in anchors) {
                     val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames)
                     val verdict = QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
+                    failure.verdict(QuestPanelMatch.label(verdict))
                     log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} verdict=${QuestPanelMatch.label(verdict)}")
                     if (verdict == PanelVerdict.Match && !tap) {
                         log("probe quest=${quest.id} verdict=Match panel left untapped")
@@ -342,7 +357,8 @@ class WeeklyRouteDriver @Inject constructor(
         val map = mapFor(war, quest.mapId) ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
         val width = loc.scriptArea.width / 2
         val height = loc.scriptArea.height / 2
-        var problem = "no free panel with the AP and name"
+        var problem = "no matching free panel name"
+        val failure = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure()
         fun openPanel(centre: Boolean): Boolean {
             val (spot, why) = locateSpot(quest, map, width, height, centre)
             if (spot == null) { problem = why; return false }
@@ -350,6 +366,7 @@ class WeeklyRouteDriver @Inject constructor(
             spot.click()
             2.seconds.wait()
             if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
+            failure.panelOpened()
             return true
         }
         if (!openPanel(false)) {
@@ -357,7 +374,7 @@ class WeeklyRouteDriver @Inject constructor(
             return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
         }
         val matched = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.run(
-            read = { readAnchoredPanel(quest, tap) },
+            read = { readAnchoredPanel(quest, tap, failure) },
             resetList = {
                 val anchor = useSameSnapIn { reader.resetAnchor() }
                 if (screen() != RouteScreen.List || anchor == null) {
@@ -378,7 +395,7 @@ class WeeklyRouteDriver @Inject constructor(
         if (matched) return SpotOutcome.Started
         if (!tap) probeDiagnostic(quest.id)
         if (screen() == RouteScreen.List) closePanel()
-        return SpotOutcome.NotFound(problem, skipChapter = problem in setOf("map not recognized", "pinch failed"))
+        return SpotOutcome.NotFound(failure.reason(problem), skipChapter = !failure.opened && problem in setOf("map not recognized", "pinch failed"))
     }
 
     // ---- battle --------------------------------------------------------------------------------------------------
