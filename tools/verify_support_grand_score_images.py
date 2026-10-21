@@ -89,9 +89,9 @@ class Reader:
             result=consensus()
         if known(result):return result
         compound=any('/' in r['text'] for r in readings)
-        from validate_support_scores import detects, CLASS, GRAND
+        from validate_support_scores import detects, CLASS, GRAND, GRAND_SIMILARITY
         visual_class=check_class and detects(roi,CLASS)
-        visual_grand=check_grand and detects(roi,GRAND,verify_digit=True)
+        visual_grand=check_grand and detects(roi,GRAND,verify_digit=True,similarity=GRAND_SIMILARITY)
         if visual_class or visual_grand:
             if result['class'] is None and visual_class:result['class']=62
             if result['grand'] is None and visual_grand:result['grand']=16

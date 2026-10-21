@@ -48,12 +48,18 @@ class SupportScoreReader @Inject constructor(
         // JP screenshot field crops: true matches >= .96; negatives <= .85.
         // Templates include the slash, so an ordinary +16 or +62 cannot supply a compound field.
         const val COMPACT_FIELD_SIMILARITY = 0.94
+        // Grand "/+16" templates (and their final-digit check) use their own floor. A BlueStacks
+        // 2340x1080 frame scales to 720p slightly differently from the 1920x1080 frames the older
+        // templates were cut from: the same +59/+16 field scored 0.9397 whole and 0.9248 on the last
+        // digit against the 2340 template. Measured JP/KR negatives never exceed 0.67 whole-field.
+        const val GRAND_FIELD_SIMILARITY = 0.90
         val COMPACT_CLASS_TEMPLATES = listOf(
             Images.SupportCompactClass62A, Images.SupportCompactClass62B, Images.SupportCompactClass62C
         )
         val GRAND_TEMPLATES = listOf(
-            Images.SupportGrand16A, Images.SupportGrand16B, Images.SupportGrand16C,
-            Images.SupportGrand16LargeA, Images.SupportGrand16LargeB, Images.SupportGrand16LargeC
+            Images.SupportGrand16A, Images.SupportGrand16B, Images.SupportGrand16C, Images.SupportGrand16D,
+            Images.SupportGrand16LargeA, Images.SupportGrand16LargeB, Images.SupportGrand16LargeC,
+            Images.SupportGrand16LargeD
         )
         val OCR_OPTIONS = TextLineOcrOptions(
             scale = OCR_SCALE, threshold = OCR_THRESHOLD, fillOutline = true,
@@ -75,6 +81,22 @@ class SupportScoreReader @Inject constructor(
         private val compoundScore = Regex("""\+?(\d{1,3})/\+?(\d{1,3})""")
 
         private val ordinaryScore = Regex("""\+?(\d{1,3})""")
+
+        // Anything may precede the slash (a garbled Class field); only the Grand digits matter here.
+        private val grandTail = Regex(""".*/\+?(\d{1,3})""")
+
+        /**
+         * OCR fallback for a Grand +16 whose Class half is unreadable. Every readable result must end in
+         * exactly "/16" (with or without the plus), and at least [MIN_AGREEMENT] of them must be strong.
+         */
+        fun grandTail16(results: List<OcrText>): Boolean {
+            val tails = results.filter { it.confidence >= MIN_OCR_CONFIDENCE }.mapNotNull { result ->
+                grandTail.matchEntire(result.text.trim().replace(Regex("""\s+"""), ""))
+                    ?.let { it.groupValues[1].toInt() to result.confidence }
+            }
+            return tails.isNotEmpty() && tails.all { it.first == 16 } &&
+                tails.count { it.second >= MIN_CONFIRM_CONFIDENCE } >= MIN_AGREEMENT
+        }
 
         /** Diagnostics stop recording after this many candidates in one run. */
         const val MAX_DIAGNOSTIC_CANDIDATES = 500
@@ -237,14 +259,14 @@ class SupportScoreReader @Inject constructor(
             val template = images[image]
             val hit = if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
             else {
-                val candidates = region.findAll(template, similarity = COMPACT_FIELD_SIMILARITY)
+                val candidates = region.findAll(template, similarity = GRAND_FIELD_SIMILARITY)
                 if (candidates.isEmpty()) false else {
                     // The common /+1 prefix must not hide a different final digit.
                     val pixels = SupportScoreLayout.grandLastDigit(template.width, template.height)
                     template.crop(pixels).use { digit ->
                         candidates.any { match ->
                             SupportScoreLayout.matchedPixels(match.region, template.width, template.height, pixels)
-                                .exists(digit, similarity = COMPACT_FIELD_SIMILARITY)
+                                .exists(digit, similarity = GRAND_FIELD_SIMILARITY)
                         }
                     }
                 }
@@ -252,7 +274,7 @@ class SupportScoreReader @Inject constructor(
             evidence.template(image, hit)
         }
         val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
-        val grand16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
+        val grand16 = checkGrand && (matches(GRAND_TEMPLATES, verifyGrandDigit = true) || grandTail16(results))
         if (class62 || grand16) return SupportScores(
             recognized?.classScore ?: if (class62) 62 else null,
             recognized?.grandScore ?: if (grand16) 16 else null,

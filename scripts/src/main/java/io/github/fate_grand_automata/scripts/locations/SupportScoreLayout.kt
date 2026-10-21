@@ -6,7 +6,9 @@ import io.github.lib_automata.Region
 object SupportScoreLayout {
     const val SCORE_X = 1960
     const val SCORE_Y = 310
-    const val SCORE_WIDTH = 110
+    // 120 (was 110): the last digit of "+16" sits within 2-3 px (720p) of the 55 px crop edge on a
+    // 2340x1080 frame, so a slightly wider region keeps the whole glyph and its outline.
+    const val SCORE_WIDTH = 120
     const val SCORE_HEIGHT = 60
 
     fun numberRegion(bounds: Region) = Region(

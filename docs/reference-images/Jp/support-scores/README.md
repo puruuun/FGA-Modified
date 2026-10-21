@@ -15,7 +15,7 @@ combine the unchanged ordinary +62 matcher and the compound fields: Class only
 accepts both forms, while any enabled Grand condition rejects ordinary displays.
 
 The six Grand templates use crops 000, 037, 027 (two-digit Class font) and
-014, 047, 080 (larger one-digit Class font). The three compact Class templates
+014, 047, 080 (larger one-digit Class font). Two more (`d`, `large_d`) come from the BlueStacks 2340x1080 diagnostic crops in `../wide-2340/` (0013); Grand templates use `GRAND_FIELD_SIMILARITY` (0.90). The three compact Class templates
 use 000, 037, 027. Other crops are held-out examples; template source examples
 are included so accidental asset corruption is also detected.
 

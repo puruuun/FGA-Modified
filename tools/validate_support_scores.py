@@ -16,7 +16,8 @@ ASSETS = ROOT / "app/src/main/assets/En"
 FIXTURES = ROOT / "docs/reference-images/Jp/support-scores"
 READER = ROOT / "scripts/src/main/java/io/github/fate_grand_automata/scripts/supportSelection/SupportScoreReader.kt"
 SIMILARITY = float(re.search(r"COMPACT_FIELD_SIMILARITY = ([\d.]+)", READER.read_text())[1])
-GRAND = [f"support_grand_16_{size}{phase}.png" for size in ("", "large_") for phase in "abc"]
+GRAND_SIMILARITY = float(re.search(r"GRAND_FIELD_SIMILARITY = ([\d.]+)", READER.read_text())[1])
+GRAND = [f"support_grand_16_{size}{phase}.png" for size in ("", "large_") for phase in "abcd"]
 CLASS = [f"support_compact_class_62_{phase}.png" for phase in "abc"]
 
 
@@ -56,7 +57,7 @@ def main():
         folder = regional if sample.get("server") == "Kr" else FIXTURES
         image = cv2.imread(str(folder / sample["file"]), cv2.IMREAD_GRAYSCALE)
         assert image is not None and image.shape == (30, 55), sample["file"]
-        grand16 = detects(image, GRAND, verify_digit=True)
+        grand16 = detects(image, GRAND, verify_digit=True, similarity=GRAND_SIMILARITY)
         class62 = detects(image, CLASS)
         for field, detected in (("grand16", grand16), ("compactClass62", class62)):
             if detected != sample[field]:

@@ -68,7 +68,7 @@ class AppendSupportTest {
             every { prefs.preferredCEs } returns ceNames
             every { prefs.score62Check } returns scoreEnabled
             every { prefs.grandScore16Check } returns grandScoreEnabled
-            every { scoreCrop.width } returns 55
+            every { scoreCrop.width } returns 60
             every { scoreCrop.height } returns 30
             for (bound in listOf(first, second)) {
                 every { with(api) { SupportScoreLayout.numberRegion(bound.region).getPattern("support_class_grand_scores") } } returns scoreCrop
@@ -385,9 +385,9 @@ class AppendSupportTest {
     @Test
     fun `score number region follows the candidate row offset`() {
         assertThat(SupportScoreLayout.numberRegion(Region(76, 408, 2356, 428)))
-            .isEqualTo(Region(2036, 718, 110, 60))
+            .isEqualTo(Region(2036, 718, 120, 60))
         assertThat(SupportScoreLayout.numberRegion(Region(287, 808, 2356, 428)))
-            .isEqualTo(Region(2247, 1118, 110, 60))
+            .isEqualTo(Region(2247, 1118, 120, 60))
     }
 
     @Test

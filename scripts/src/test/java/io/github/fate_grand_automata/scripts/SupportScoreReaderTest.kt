@@ -39,7 +39,7 @@ class SupportScoreReaderTest {
             every { images[Images.SupportScore62, null] } returns legacy
             every { with(api) { region.exists(legacy, any(), any()) } } returns false
             every { with(api) { region.getPattern("support_class_grand_scores") } } returns crop
-            every { crop.width } returns 55
+            every { crop.width } returns 60
             every { crop.height } returns 30
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
             visual.forEach { (image, pattern) ->
@@ -189,7 +189,7 @@ class SupportScoreReaderTest {
         assertThat(f.reader.read(f.bounds,false,true)).isEqualTo(SupportScores())
         verify(exactly=0) { f.ocr.detectTextLine(any(),any()) }
         verify(exactly=1) { f.crop.close() }
-        every { f.crop.width } returns 55
+        every { f.crop.width } returns 60
         every { f.ocr.detectTextLine(any(),any()) } throws IllegalStateException("score OCR failed")
         kotlin.test.assertFailsWith<IllegalStateException> { f.reader.read(f.bounds,false,true) }
         verify(exactly=2) { f.crop.close() }
@@ -352,5 +352,32 @@ class SupportScoreReaderTest {
         val scores = f.reader.read(f.bounds, false, true)
         assertThat(SupportScoreSelection.matches(scores, false, true)).isEqualTo(false)
         verify(exactly = 1) { f.digits.getValue(Images.SupportGrand16A).close() }
+    }
+
+    @Test
+    fun `2340 frame templates recover Grand 16 when OCR fails`() {
+        for (image in listOf(Images.SupportGrand16D, Images.SupportGrand16LargeD)) {
+            val f = Fixture()
+            every { f.ocr.detectTextLine(f.crop, any()) } returnsMany listOf(
+                OcrText("6/+1", 0), OcrText("+4", 0), OcrText("+1", 0), OcrText("6 +16", 42)
+            )
+            f.show(image)
+            assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
+        }
+    }
+
+    @Test
+    fun `Grand tail OCR fallback needs exactly 16 after the slash and strong agreement`() {
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90), OcrText("/+16", 88)))).isEqualTo(true)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90)))).isEqualTo(false)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90), OcrText("S9/+16", 84)))).isEqualTo(false)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90), OcrText("S9/+16", 88), OcrText("5/+18", 80)))).isEqualTo(false)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+1", 90), OcrText("S9/+1", 88)))).isEqualTo(false)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+116", 90), OcrText("S9/+116", 88)))).isEqualTo(false)
+        assertThat(SupportScoreReader.grandTail16(listOf(OcrText("+16", 90), OcrText("+16", 88)))).isEqualTo(false)
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("S9/+16", 90)
+        assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
+        assertThat(f.reader.read(f.bounds, true, false)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
     }
 }

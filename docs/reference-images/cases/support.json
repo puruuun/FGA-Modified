@@ -44,7 +44,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-001.png",
@@ -66,7 +67,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-002.png",
@@ -88,7 +90,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-003.png",
@@ -110,7 +113,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-004.png",
@@ -132,7 +136,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-005.png",
@@ -154,7 +159,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-006.png",
@@ -176,7 +182,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-007.png",
@@ -198,7 +205,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-008.png",
@@ -220,7 +228,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-009.png",
@@ -242,7 +251,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-010.png",
@@ -264,7 +274,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-011.png",
@@ -286,7 +297,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-012.png",
@@ -308,7 +320,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-013.png",
@@ -330,7 +343,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-014.png",
@@ -352,7 +366,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-015.png",
@@ -374,7 +389,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-016.png",
@@ -396,7 +412,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-017.png",
@@ -418,7 +435,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-018.png",
@@ -440,7 +458,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-019.png",
@@ -462,7 +481,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-020.png",
@@ -484,7 +504,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-021.png",
@@ -506,7 +527,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-022.png",
@@ -528,7 +550,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-023.png",
@@ -550,7 +573,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-024.png",
@@ -572,7 +596,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-025.png",
@@ -594,7 +619,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-026.png",
@@ -616,7 +642,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-027.png",
@@ -638,7 +665,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-028.png",
@@ -660,7 +688,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-029.png",
@@ -682,7 +711,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-030.png",
@@ -704,7 +734,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-031.png",
@@ -726,7 +757,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-032.png",
@@ -748,7 +780,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-033.png",
@@ -770,7 +803,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-034.png",
@@ -792,7 +826,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-035.png",
@@ -814,7 +849,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-036.png",
@@ -836,7 +872,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-037.png",
@@ -858,7 +895,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-038.png",
@@ -880,7 +918,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-039.png",
@@ -902,7 +941,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-040.png",
@@ -924,7 +964,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-041.png",
@@ -946,7 +987,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-042.png",
@@ -968,7 +1010,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-043.png",
@@ -990,7 +1033,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-044.png",
@@ -1012,7 +1056,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-045.png",
@@ -1034,7 +1079,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-046.png",
@@ -1056,7 +1102,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-047.png",
@@ -1078,7 +1125,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-048.png",
@@ -1100,7 +1148,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-049.png",
@@ -1122,7 +1171,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-050.png",
@@ -1144,7 +1194,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-051.png",
@@ -1166,7 +1217,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-052.png",
@@ -1188,7 +1240,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-053.png",
@@ -1210,7 +1263,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-054.png",
@@ -1232,7 +1286,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-055.png",
@@ -1254,7 +1309,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-056.png",
@@ -1276,7 +1332,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-057.png",
@@ -1298,7 +1355,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-058.png",
@@ -1320,7 +1378,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-059.png",
@@ -1342,7 +1401,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-060.png",
@@ -1364,7 +1424,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-061.png",
@@ -1386,7 +1447,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-062.png",
@@ -1408,7 +1470,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-063.png",
@@ -1430,7 +1493,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-064.png",
@@ -1452,7 +1516,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-065.png",
@@ -1474,7 +1539,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-066.png",
@@ -1496,7 +1562,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-067.png",
@@ -1518,7 +1585,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-068.png",
@@ -1540,7 +1608,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-069.png",
@@ -1562,7 +1631,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-070.png",
@@ -1584,7 +1654,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-071.png",
@@ -1606,7 +1677,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-072.png",
@@ -1628,7 +1700,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-073.png",
@@ -1650,7 +1723,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-074.png",
@@ -1672,7 +1746,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-075.png",
@@ -1694,7 +1769,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-076.png",
@@ -1716,7 +1792,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-077.png",
@@ -1738,7 +1815,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-078.png",
@@ -1760,7 +1838,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-079.png",
@@ -1782,7 +1861,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-080.png",
@@ -1804,7 +1884,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-081.png",
@@ -1826,7 +1907,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-082.png",
@@ -1848,7 +1930,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-083.png",
@@ -1870,7 +1953,8 @@
             "bothScores": true
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-084.png",
@@ -1892,7 +1976,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-085.png",
@@ -1914,7 +1999,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-086.png",
@@ -1936,7 +2022,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-087.png",
@@ -1958,7 +2045,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-088.png",
@@ -1980,7 +2068,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-089.png",
@@ -2002,7 +2091,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-090.png",
@@ -2024,7 +2114,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-091.png",
@@ -2046,7 +2137,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-092.png",
@@ -2068,7 +2160,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-093.png",
@@ -2090,7 +2183,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-094.png",
@@ -2112,7 +2206,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-095.png",
@@ -2134,7 +2229,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-096.png",
@@ -2156,7 +2252,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-097.png",
@@ -2178,7 +2275,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-098.png",
@@ -2200,7 +2298,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-099.png",
@@ -2222,7 +2321,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-100.png",
@@ -2244,7 +2344,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-000.png",
@@ -2268,7 +2369,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-001.png",
@@ -2292,7 +2394,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-002.png",
@@ -2316,7 +2419,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-003.png",
@@ -2340,7 +2444,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-004.png",
@@ -2364,7 +2469,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-005.png",
@@ -2388,7 +2494,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-006.png",
@@ -2412,7 +2519,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-007.png",
@@ -2436,7 +2544,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-008.png",
@@ -2460,7 +2569,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-009.png",
@@ -2484,7 +2594,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-010.png",
@@ -2508,7 +2619,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-011.png",
@@ -2532,7 +2644,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-012.png",
@@ -2556,7 +2669,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-013.png",
@@ -2580,7 +2694,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-014.png",
@@ -2604,7 +2719,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-015.png",
@@ -2628,7 +2744,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-016.png",
@@ -2652,7 +2769,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-017.png",
@@ -2676,7 +2794,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-018.png",
@@ -2700,7 +2819,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-019.png",
@@ -2724,7 +2844,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-020.png",
@@ -2748,7 +2869,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-021.png",
@@ -2772,7 +2894,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-022.png",
@@ -2796,7 +2919,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-023.png",
@@ -2820,7 +2944,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-024.png",
@@ -2844,7 +2969,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-score-025.png",
@@ -2868,7 +2994,8 @@
             "bothScores": false
           }
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-000.png",
@@ -2886,7 +3013,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-001.png",
@@ -2904,7 +3032,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-002.png",
@@ -2922,7 +3051,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-003.png",
@@ -2940,7 +3070,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-004.png",
@@ -2958,7 +3089,8 @@
           "rowY720": 0,
           "np": 4
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-005.png",
@@ -2976,7 +3108,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-006.png",
@@ -2994,7 +3127,8 @@
           "rowY720": 0,
           "np": 4
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-007.png",
@@ -3012,7 +3146,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-008.png",
@@ -3030,7 +3165,8 @@
           "rowY720": 0,
           "np": 4
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-009.png",
@@ -3048,7 +3184,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-010.png",
@@ -3066,7 +3203,8 @@
           "rowY720": 0,
           "np": 4
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-011.png",
@@ -3084,7 +3222,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-012.png",
@@ -3102,7 +3241,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-013.png",
@@ -3120,7 +3260,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-014.png",
@@ -3138,7 +3279,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-015.png",
@@ -3156,7 +3298,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-016.png",
@@ -3174,7 +3317,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-017.png",
@@ -3192,7 +3336,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-018.png",
@@ -3210,7 +3355,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-019.png",
@@ -3228,7 +3374,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-020.png",
@@ -3246,7 +3393,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-021.png",
@@ -3264,7 +3412,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-022.png",
@@ -3282,7 +3431,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-023.png",
@@ -3300,7 +3450,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-024.png",
@@ -3318,7 +3469,8 @@
           "rowY720": 0,
           "np": 1
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-025.png",
@@ -3336,7 +3488,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-026.png",
@@ -3354,7 +3507,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-027.png",
@@ -3372,7 +3526,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-028.png",
@@ -3390,7 +3545,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-029.png",
@@ -3408,7 +3564,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-030.png",
@@ -3426,7 +3583,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-031.png",
@@ -3444,7 +3602,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-032.png",
@@ -3462,7 +3621,8 @@
           "rowY720": 0,
           "np": 2
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-033.png",
@@ -3480,7 +3640,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-034.png",
@@ -3498,7 +3659,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-035.png",
@@ -3516,7 +3678,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-036.png",
@@ -3534,7 +3697,8 @@
           "rowY720": 0,
           "np": 5
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Kr-np-037.png",
@@ -3552,7 +3716,8 @@
           "rowY720": 0,
           "np": 3
         }
-      ]
+      ],
+      "bleedRight720": 5
     },
     {
       "name": "Jp-np-support-np-143344-311.png",
@@ -4444,6 +4609,73 @@
             false,
             false
           ]
+        }
+      ]
+    },
+    {
+      "name": "Jp-2340-score-59-16.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/wide-2340/score-59-16.png",
+      "region720": [
+        1008,
+        524,
+        75,
+        50
+      ],
+      "rows": [
+        {
+          "rowY720": 379,
+          "grand": 16,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-2340-score-0-16.png",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/wide-2340/score-0-16.png",
+      "region720": [
+        1008,
+        546,
+        75,
+        50
+      ],
+      "rows": [
+        {
+          "rowY720": 401,
+          "grand": 16,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jp-2340-wide-01",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2340/01.webp",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 135,
+          "grand": 16
+        },
+        {
+          "y": 335,
+          "grand": 16,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
         }
       ]
     }

@@ -32,6 +32,8 @@ internal class FixtureApi(
     /** Crop fixtures are placed on a black 1280x720 canvas at region720; they must cover every region the reader touches. */
     internal val isCrop = case.optString("frame") == "crop"
     private val region720 = case.optJSONArray("region720")?.let { it.toRegion() }
+    /** Reads may extend this many 720p pixels past the right edge of a single crop (black canvas there): the score region is 5 px wider than the stored 55x30 crops. */
+    private val bleedRight720 = case.optInt("bleedRight720", 0)
     private val masked720 = case.optJSONArray("masked720")?.let { list -> (0 until list.length()).map { list.getJSONArray(it).toRegion() } } ?: emptyList()
     /** 720p rectangles of every pixel read through the fixture, used for the crop coverage check. */
     private val readRegions = mutableListOf<Region>()
@@ -166,7 +168,7 @@ internal class FixtureApi(
         if (!isCrop) return
         val regions = cropPieces().map { it.second }
         for (read in readRegions) {
-            check(regions.any { it.contains(read) }) {
+            check(regions.any { it.copy(width = it.width + bleedRight720).contains(read) }) {
                 "fixture does not cover region: read $read outside ${regions.joinToString()}"
             }
             for (mask in masked720) check(!read.overlaps(mask)) { "read $read overlaps masked area $mask" }

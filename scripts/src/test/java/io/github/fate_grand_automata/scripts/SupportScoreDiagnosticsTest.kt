@@ -54,7 +54,7 @@ class SupportScoreDiagnosticsTest {
             // Diagnostics take their own copy of the same snapshot; the reading path uses the tagged crop.
             every { with(api) { region.getPattern(any()) } } returns crop
             every { with(api) { region.getPattern("support_class_grand_scores") } } returns crop
-            every { crop.width } returns 55
+            every { crop.width } returns 60
             every { crop.height } returns 30
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
             visual.forEach { (image, pattern) ->
@@ -153,7 +153,7 @@ class SupportScoreDiagnosticsTest {
             "\"screen\":3",
             "\"row\":2",
             "\"rowY1440\":408",
-            "\"cropSize\":[55,30]",
+            "\"cropSize\":[60,30]",
             "\"colorMode\":\"gray\"",
             "\"checkClass\":true",
             "\"checkGrand\":true",
