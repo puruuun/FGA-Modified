@@ -55,14 +55,14 @@ class BondTrackingTest {
         assertEquals(BondReader.JP_GAIN_PROFILES.size, calls)
     }
 
-    @Test fun `retry keeps primary conflicts and cannot turn one strong read into confirmation`() {
+    @Test fun `majority fallback retains primary votes and requires a strong winner`() {
         var primary = 0
-        assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) { options ->
+        assertEquals(BondValue.Gain(1830, 1976), BondReader.readGain(BondReader.GAIN_PROFILES) { options ->
             if (options.horizontalScale == 1.0 && primary++ == 0) OcrText("+1,830(+1,970)", 92)
             else OcrText("+1,830(+1,976)", 95)
         })
         var calls = 0
-        assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) {
+        assertEquals(BondValue.Gain(815, 590), BondReader.readGain(BondReader.GAIN_PROFILES) {
             OcrText("+815(+590)", if (calls++ == 0) 95 else 84)
         })
         assertNull(BondReader.readGain(BondReader.GAIN_PROFILES) { OcrText("NEXT 1,338,294", 99) })
@@ -80,13 +80,48 @@ class BondTrackingTest {
             OcrText("+365(+372)", if (options.horizontalScale < 1.0) 84 else 40)
         })
         var calls = 0
-        assertNull(BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
+        assertEquals(BondValue.Gain(365, 372), BondReader.readGain(BondReader.JP_GAIN_PROFILES) { options ->
             when {
                 calls++ == 0 -> OcrText("+365(+374)", 91)
                 options.horizontalScale < 1.0 -> OcrText("+365(+372)", 91)
                 else -> OcrText("", 0)
             }
         })
+    }
+
+    @Test fun `majority rejects near ties weak winners and fewer than three votes`() {
+        fun votes(good: Int, bad: Int, confidence: Int = 85) =
+            List(good) { OcrText("1318(+805)", confidence) } + List(bad) { OcrText("18(+805)", 90) }
+        for ((good, bad) in listOf(2 to 1, 3 to 2, 4 to 3, 5 to 3, 3 to 3))
+            assertNull(BondReader.majorityGain(votes(good, bad)), "$good versus $bad")
+        assertNull(BondReader.majorityGain(votes(8, 0, 84)))
+        assertNull(BondReader.majorityGain(votes(1, 0) + votes(9, 0, 59)))
+        assertEquals(BondValue.Gain(1318, 805), BondReader.majorityGain(votes(3, 1)))
+        assertEquals(BondValue.Gain(1318, 805), BondReader.majorityGain(votes(4, 2)))
+        assertEquals(BondValue.Gain(1318, 805), BondReader.majorityGain(votes(1, 0) + votes(2, 0, 60)))
+    }
+
+    @Test fun `base check rejects even consensus conflicts without inventing a gain`() {
+        fun column(index: Int, base: Int, bonus: Int = 805) = BondReader.ColumnReading(index,
+            BondValue.Gain(base, bonus), List(3) { OcrText("$base(+$bonus)", 90) }, "consensus")
+        val anchors = listOf(column(0, 1318), column(1, 1318))
+        val wrong = column(2, 18)
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(anchors + wrong)[2].value)
+        assertEquals(wrong, BondReader.crossCheck(listOf(anchors[0], wrong))[1])
+        val weak = wrong.copy(value = BondValue.Unknown,
+            candidates = wrong.candidates + List(2) { OcrText("1318(+805)", 90) })
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(anchors + weak)[2].value)
+        val recovered = weak.copy(candidates = weak.candidates + OcrText("1318(+805)", 60))
+        val result = BondReader.crossCheck(anchors + recovered)[2]
+        assertEquals(BondValue.Gain(1318, 805), result.value)
+        assertEquals("majority+base", result.reason)
+        val sameBaseTie = weak.copy(candidates = List(3) { OcrText("1318(+805)", 90) } +
+            List(2) { OcrText("1318(+806)", 90) } + OcrText("18(+805)", 90))
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(anchors + sameBaseTie)[2].value)
+        val ambiguous = anchors + listOf(column(2, 18), column(3, 18), column(4, 99))
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(ambiguous)[4].value)
+        assertEquals(BondReader.crossCheck(anchors + recovered).reversed(),
+            BondReader.crossCheck((anchors + recovered).reversed()))
     }
 
     @Test fun `level width retry preserves two strong reads and refuses conflicting cap levels`() {

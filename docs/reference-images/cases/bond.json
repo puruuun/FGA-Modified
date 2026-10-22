@@ -470,12 +470,7 @@
           1318,
           1079
         ]
-      ],
-      "skipColumns": {
-        "0": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015.",
-        "1": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015.",
-        "2": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015."
-      }
+      ]
     }
   ]
 }

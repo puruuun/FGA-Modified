@@ -52,7 +52,9 @@ class BondTracker @Inject constructor(
                     latest?.values?.getOrNull(index) == BondValue.Unknown -> "OCR consensus failed"
                     else -> "no agreement between reads"
                 }
-                messages.log(ScriptLog.Bond("run=${state.runs} final c${index + 1}=$value reason=$reason"))
+                val rule = reader.lastColumns.getOrNull(index)?.reason
+                    ?.takeIf { it in setOf("consensus", "majority", "majority+base") }
+                messages.log(ScriptLog.Bond("run=${state.runs} final c${index + 1}=$value reason=$reason rule=${rule ?: "none"}"))
             }
         }
         var frame = read(0)

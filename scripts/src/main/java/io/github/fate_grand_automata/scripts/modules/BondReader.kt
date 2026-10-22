@@ -12,6 +12,7 @@ import javax.inject.Inject
 class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrService) : IFgoAutomataApi by api {
     companion object {
         const val TEXT_CONFIDENCE = 85
+        const val VOTE_CONFIDENCE = 60
         const val IMAGE_SIMILARITY = 0.85
         val IMAGE_SCALES = listOf(0.9, 0.95, 1.0, 1.05, 1.1)
         val GAIN_PROFILES = listOf(3, 4, 6).flatMap { scale ->
@@ -52,10 +53,12 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
 
         internal fun readGain(profiles: List<TextLineOcrOptions>, read: (TextLineOcrOptions) -> OcrText): BondValue.Gain? {
             val readings = profiles.map(read)
-            // Retain primary evidence: a strong conflicting number must still veto the retry.
+            // Retain primary evidence through every consensus retry and the majority fallback.
             confirmedGain(readings)?.let { return it }
             val widened = readings + GAIN_FALLBACK_PROFILES.map(read)
-            return confirmedGain(widened) ?: confirmedGain(widened + GAIN_COMPACT_PROFILES.map(read))
+            confirmedGain(widened)?.let { return it }
+            val all = widened + GAIN_COMPACT_PROFILES.map(read)
+            return confirmedGain(all) ?: majorityGain(all)
         }
 
         internal fun readLevel(read: (TextLineOcrOptions) -> OcrText): Int? {
@@ -65,6 +68,39 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
         }
 
         fun confirmedGain(readings: List<OcrText>): BondValue.Gain? = consensus(readings, ::parseGain)
+        internal fun majorityGain(readings: List<OcrText>, base: Int? = null): BondValue.Gain? {
+            val votes = readings.filter { it.confidence >= VOTE_CONFIDENCE }.mapNotNull { reading ->
+                parseGain(reading.text)?.takeIf { base == null || it.base == base }?.let { it to reading.confidence }
+            }.groupBy({ it.first }, { it.second }).entries.sortedByDescending { it.value.size }
+            val winner = votes.firstOrNull() ?: return null
+            val runnerUp = votes.getOrNull(1)?.value?.size ?: 0
+            return winner.key.takeIf {
+                winner.value.size >= 3 && winner.value.any { it >= TEXT_CONFIDENCE } &&
+                    winner.value.size - runnerUp >= 2 && runnerUp * 2 <= winner.value.size
+            }
+        }
+
+        /** Use a snapshot so column order cannot create its own corroborating evidence. */
+        internal fun crossCheck(columns: List<ColumnReading>): List<ColumnReading> = columns.map { column ->
+            if (column.candidates.isEmpty()) return@map column
+            val bases = columns.filter { it.column != column.column }.mapNotNull { (it.value as? BondValue.Gain)?.base }
+                .groupingBy { it }.eachCount().filterValues { it >= 2 }.keys
+            val base = bases.singleOrNull()
+            if (bases.size > 1) column.copy(value = BondValue.Unknown, reason = "conflicting column bases")
+            else if (base == null) column
+            else {
+                val conflict = column.candidates.any {
+                    it.confidence >= VOTE_CONFIDENCE && parseGain(it.text)?.let { gain -> gain.base != base } == true
+                }
+                if ((column.value as? BondValue.Gain)?.base == base && column.reason == "consensus") column
+                else if (!conflict) column
+                else {
+                    val gain = majorityGain(column.candidates, base)
+                    column.copy(value = gain ?: BondValue.Unknown,
+                        reason = if (gain == null) "base conflict" else "majority+base")
+                }
+            }
+        }
         fun confirmedLevel(readings: List<OcrText>): Int? = consensus(readings) { text ->
             text.trim().takeIf { it.matches(Regex("[0-9]{1,2}")) }?.toIntOrNull()?.takeIf { it in 1..99 }
         }
@@ -121,10 +157,11 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
                 reason = if (candidates.isEmpty()) "crop clipped" else "OCR consensus failed"
             }
             else BondValue.Unknown.also { reason = "gain reading disabled" }
+            if (value is BondValue.Gain) reason = if (confirmedGain(candidates) == value) "consensus" else "majority"
             ColumnReading(index, value, candidates, reason)
         }
-        lastColumns = columns
-        BondFrame.Normal(columns.map { it.value })
+        lastColumns = crossCheck(columns)
+        BondFrame.Normal(lastColumns.map { it.value })
     }
 
     private fun <T> number(region: Region, read: (Pattern) -> T?): T? =
