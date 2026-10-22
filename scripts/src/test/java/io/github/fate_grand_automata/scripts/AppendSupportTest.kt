@@ -22,6 +22,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppendSupportTest {
+    @kotlin.test.AfterTest
+    fun releaseMocks() = io.mockk.clearAllMocks()
+
     private class Fixture(
         enabled: Boolean = true,
         required: List<Boolean> = List(5) { true },
@@ -70,12 +73,22 @@ class AppendSupportTest {
             every { prefs.grandScore16Check } returns grandScoreEnabled
             every { scoreCrop.width } returns 60
             every { scoreCrop.height } returns 30
+            val scaled = mockk<Pattern>(relaxed = true)
+            val binary = mockk<Pattern>(relaxed = true)
+            every { scoreCrop.resize(any()) } returns scaled
+            every { scaled.threshold(any()) } returns binary
+            every { binary.grayPixels() } returns null
+            every { binary.fillText() } returns scaled
+            every { scaled.width } returns 60
+            every { scaled.height } returns 30
+            every { scaled.grayPixels() } returns scoreInk()
+
             for (bound in listOf(first, second)) {
                 every { with(api) { SupportScoreLayout.numberRegion(bound.region).getPattern("support_class_grand_scores") } } returns scoreCrop
             }
             every { scoreOcr.detectTextLine(scoreCrop, any()) } answers {
                 assertTrue(snapshot, "Score OCR must use the candidate snapshot before Append switching")
-                OcrText("+0/+16", 92)
+                if (grandScoreEnabled) OcrText("+0/+16", 92) else OcrText("", 0)
             }
             every { prefs.npLevelCheck } returns npEnabled
             every { prefs.minimumNpLevel } returns minimumNp
@@ -290,7 +303,7 @@ class AppendSupportTest {
         val f = Fixture(enabled = false, characters = emptyList(), ceNames = emptyList(), grandScoreEnabled = true)
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
         verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
-        verify(exactly = 1) { f.api.images[Images.SupportScore62, null] }
+        verify(atLeast = 1) { f.api.images[Images.SupportScore62, null] }
         assertThat(f.taps).isEqualTo(0)
     }
 
@@ -321,7 +334,7 @@ class AppendSupportTest {
         val f = Fixture(enabled = false, scoreEnabled = true)
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
         verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
-        verify(exactly = 0) { f.scoreOcr.detectTextLine(any(), any()) }
+        verify(exactly = 4) { f.scoreOcr.detectTextLine(any(), any()) }
     }
 
     @Test

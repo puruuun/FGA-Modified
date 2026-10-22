@@ -12,6 +12,7 @@ import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
+import io.github.lib_automata.Size
 import io.github.lib_automata.TextLineOcrOptions
 import io.github.lib_automata.dagger.ScriptScope
 import java.text.SimpleDateFormat
@@ -78,12 +79,12 @@ class SupportScoreReader @Inject constructor(
         }
         // At 720p OCR can omit the small plus sign. The slash and both complete
         // numeric fields are mandatory; their order, not the plus glyph, identifies the score.
-        private val compoundScore = Regex("""\+?(\d{1,3})/\+?(\d{1,3})""")
+        private val compoundScore = Regex("""\+?(-?\d+)/\+?(-?\d+)""")
 
-        private val ordinaryScore = Regex("""\+?(\d{1,3})""")
+        private val ordinaryScore = Regex("""\+?(-?\d+)""")
 
         // Anything may precede the slash (a garbled Class field); only the Grand digits matter here.
-        private val grandTail = Regex(""".*/\+?(\d{1,3})""")
+        private val grandTail = Regex(""".*/\+?(-?\d+)""")
 
         /**
          * OCR fallback for a Grand +16 whose Class half is unreadable. Every readable result must end in
@@ -92,7 +93,7 @@ class SupportScoreReader @Inject constructor(
         fun grandTail16(results: List<OcrText>): Boolean {
             val tails = results.filter { it.confidence >= MIN_OCR_CONFIDENCE }.mapNotNull { result ->
                 grandTail.matchEntire(result.text.trim().replace(Regex("""\s+"""), ""))
-                    ?.let { it.groupValues[1].toInt() to result.confidence }
+                    ?.let { (it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE) to result.confidence }
             }
             return tails.isNotEmpty() && tails.all { it.first == 16 } &&
                 tails.count { it.second >= MIN_CONFIRM_CONFIDENCE } >= MIN_AGREEMENT
@@ -110,15 +111,29 @@ class SupportScoreReader @Inject constructor(
         private const val DIAGNOSTIC_SCORE_TAG = "support_score_diagnostic"
         private const val DIAGNOSTIC_WIDE_TAG = "support_score_diagnostic_wide"
 
-        fun parse(result: OcrText): SupportScores? {
+        private fun rawParse(result: OcrText): SupportScores? {
             if (result.confidence < MIN_OCR_CONFIDENCE) return null
             val text = result.text.trim().replace(Regex("""\s+"""), "")
             compoundScore.matchEntire(text)?.let {
-                return SupportScores(it.groupValues[1].toInt(), it.groupValues[2].toInt())
+                return SupportScores((it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), (it.groupValues[2].toIntOrNull() ?: Int.MAX_VALUE), SupportScoreDisplay.Compound)
             }
             return ordinaryScore.matchEntire(text)?.let {
-                SupportScores(classScore = it.groupValues[1].toInt(), display = SupportScoreDisplay.Ordinary)
+                SupportScores(classScore = (it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), display = SupportScoreDisplay.Ordinary)
             }
+        }
+
+        fun parse(result: OcrText): SupportScores? = rawParse(result)?.let {
+            it.copy(classScore = it.classScore?.takeIf { value -> value in 0..62 },
+                grandScore = it.grandScore?.takeIf { value -> value in 0..16 })
+        }
+
+        private fun invalidClass(results: List<OcrText>) = results.any {
+            rawParse(it)?.classScore?.let { value -> value !in 0..62 } == true
+        }
+
+        private fun invalidGrand(results: List<OcrText>) = results.any {
+            it.confidence >= MIN_OCR_CONFIDENCE && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+                ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value !in 0..16 } == true
         }
 
         fun confirmed(results: List<OcrText>): SupportScores? {
@@ -135,8 +150,8 @@ class SupportScoreReader @Inject constructor(
             }
             // A disabled/uncertain Class field must not veto a confidently read Grand field,
             // and vice versa. Only the selected conditions are combined by the selection policy.
-            val classScore = field { it.classScore }
-            val grandScore = field { it.grandScore }
+            val classScore = if (invalidClass(results)) null else field { it.classScore }
+            val grandScore = if (invalidGrand(results)) null else field { it.grandScore }
             if (classScore == null && grandScore == null) return null
             return SupportScores(classScore, grandScore,
                 if (compound) SupportScoreDisplay.Compound else SupportScoreDisplay.Ordinary)
@@ -226,35 +241,54 @@ class SupportScoreReader @Inject constructor(
             Images.SupportScore62,
             region.exists(images[Images.SupportScore62], similarity = SupportScoreSelection.SCORE_SIMILARITY)
         )
-        if (legacyClass62 && !checkGrand) return SupportScores(classScore = 62, display = SupportScoreDisplay.Ordinary)
+        var blockedClass = false
+        var blockedGrand = false
+        var inconsistentGrand = false
+        var clipped = false
+        fun inspect(pattern: Pattern, options: TextLineOcrOptions, result: OcrText) {
+            pattern.resize(Size(pattern.width * options.scale, pattern.height * options.scale)).use { scaled ->
+                scaled.threshold(options.threshold).use { binary ->
+                    binary.fillText().use { filled ->
+                        val ink = filled.grayPixels()?.let {
+                            SupportScoreInk(it, filled.width, filled.height, binary.grayPixels())
+                        }
+                        clipped = clipped || ink == null || ink.clipped(options.scale)
+                        if ('/' in result.text) {
+                            val tail = grandTail.matchEntire(result.text.filterNot(Char::isWhitespace))
+                            if (ink == null ||
+                                (result.confidence >= MIN_OCR_CONFIDENCE && tail != null &&
+                                    !ink.grandDigitsAgree(tail.groupValues[1].length))) inconsistentGrand = true
+                        }
+                    }
+                }
+            }
+        }
 
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
                 val primary = OCR_PROFILES.mapIndexed { profile, options ->
-                    detect(pattern, options, "primary", profile, evidence)
+                    detect(pattern, options, "primary", profile, evidence).also { inspect(pattern, options, it) }
                 }
                 val known = confirmed(primary)
                 if (known != null && (known.display == SupportScoreDisplay.Ordinary ||
                         ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null)))) primary
                 else if (prefs.gameServer is GameServer.Kr) primary + OCR_DARK_PROFILES.mapIndexed { profile, options ->
-                    detect(pattern, options, "dark", profile, evidence)
+                    detect(pattern, options, "dark", profile, evidence).also { inspect(pattern, options, it) }
                 }
                 else primary
             }
         }
         // A clipped number is not evidence that Grand is absent.
         if (results.isEmpty()) return SupportScores()
-        val recognized = confirmed(results)
-        if (recognized != null && (recognized.display == SupportScoreDisplay.Ordinary ||
-                ((!checkClass || recognized.classScore != null) && (!checkGrand || recognized.grandScore != null)))) {
-            return recognized
+        val recognized = confirmed(results)?.let {
+            if (inconsistentGrand) it.copy(grandScore = null) else it
         }
-
         // JP shrinks the entire pair for two-digit Class scores. Reading both tiny fields
         // as one OCR word can lose the slash/plus or produce low confidence even on +56/+16.
         // Independently recover only a requested maximum, with a delimiter-bearing template.
-        // Keep any already confirmed numeric field, including a confirmed nonmaximum.
+        // Reconcile both sources before returning; neither may override contradictory evidence.
+        var differentGrandDigit = false
         fun matches(templates: List<Images>, verifyGrandDigit: Boolean = false) = templates.any { image ->
             val template = images[image]
             val hit = if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
@@ -266,7 +300,9 @@ class SupportScoreReader @Inject constructor(
                     template.crop(pixels).use { digit ->
                         candidates.any { match ->
                             SupportScoreLayout.matchedPixels(match.region, template.width, template.height, pixels)
-                                .exists(digit, similarity = GRAND_FIELD_SIMILARITY)
+                                .exists(digit, similarity = GRAND_FIELD_SIMILARITY).also {
+                                    if (!it) differentGrandDigit = true
+                                }
                         }
                     }
                 }
@@ -274,20 +310,27 @@ class SupportScoreReader @Inject constructor(
             evidence.template(image, hit)
         }
         val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
-        val grand16 = checkGrand && (matches(GRAND_TEMPLATES, verifyGrandDigit = true) || grandTail16(results))
-        if (class62 || grand16) return SupportScores(
-            recognized?.classScore ?: if (class62) 62 else null,
-            recognized?.grandScore ?: if (grand16) 16 else null,
-            SupportScoreDisplay.Compound
+        val grandTemplate16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
+        // A width mismatch discards OCR (including the tail fallback), while a complete,
+        // final-digit-verified template is independent evidence. Explicit OCR contradictions
+        // and range/clipping vetoes below still make the field unknown.
+        val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(results))
+        val compound = class62 || grand16 || results.any { '/' in it.text }
+        val classTemplate = if (compound) class62 else legacyClass62
+        val raw = results.mapNotNull(::rawParse)
+        blockedClass = blockedClass || (!compound && clipped) || invalidClass(results) ||
+            (classTemplate && raw.any { it.classScore != null && it.classScore != 62 })
+        blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(results) ||
+            (grandTemplate16 && results.any {
+                it.confidence >= MIN_OCR_CONFIDENCE && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+                    ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value != 16 } == true
+            }) || (!grandTemplate16 && differentGrandDigit && recognized?.grandScore == 16)
+        return SupportScores(
+            if (blockedClass) null else recognized?.classScore ?: if (classTemplate) 62 else null,
+            if (blockedGrand) null else recognized?.grandScore ?: if (grand16) 16 else null,
+            if (compound) SupportScoreDisplay.Compound else recognized?.display ?:
+                if (legacyClass62) SupportScoreDisplay.Ordinary else SupportScoreDisplay.Unknown
         )
-        recognized?.let { return it }
-        // A visible slash with an uncertain pair must not fall back to finding +62 on the
-        // Grand side. An ordinary score never supplies a Grand score implicitly.
-        return when {
-            results.any { '/' in it.text } -> SupportScores(display = SupportScoreDisplay.Compound)
-            legacyClass62 -> SupportScores(classScore = 62, display = SupportScoreDisplay.Ordinary)
-            else -> SupportScores()
-        }
     }
 
     private fun detect(

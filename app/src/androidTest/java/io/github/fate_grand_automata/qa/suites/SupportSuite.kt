@@ -57,8 +57,23 @@ internal fun FixtureApi.verifySupport(): JSONObject {
                 .put("grand", s?.grandScore ?: JSONObject.NULL).put("display", s?.display?.name ?: "Unknown").put("skills", JSONArray(k))
         }
         rows.put(values)
-        for (key in listOf("np", "class", "grand", "display")) if (row.has(key))
-            check(values.get(key).toString() == row.get(key).toString()) { "$key at $y: $values != $row" }
+        // D-1 may intentionally veto a previously readable field. Preserve its ground-truth
+        // label and require an actual null, rather than relabelling the image or skipping it.
+        val unknownFields = row.optJSONArray("protectiveUnknown")?.let { fields ->
+            (0 until fields.length()).map { fields.getString(it) }.toSet()
+        } ?: emptySet()
+        require(unknownFields.all { it == "class" || it == "grand" })
+        for (key in unknownFields) check(values.isNull(key)) { "Expected protective unknown $key at $y: $values" }
+        for (key in listOf("np", "class", "grand", "display")) if (row.has(key)) {
+            if (key in unknownFields) continue
+            // Keep the ground-truth Grand label while asserting a protective unknown is allowed.
+            val allowed = if (key == "grand") row.optJSONArray("grandAllowed") else null
+            val actual = values.get(key).toString()
+            check(if (allowed == null) actual == row.get(key).toString() else
+                (0 until allowed.length()).any { allowed.get(it).toString() == actual }) {
+                "$key at $y: $values != $row"
+            }
+        }
         if (row.has("skills")) check(values.getJSONArray("skills").toString() == row.getJSONArray("skills").toString()) { "Skills at $y: $values != $row" }
         val npChecks = JSONArray()
         if (row.has("np") && !row.isNull("np")) for (minimum in 1..5) {
@@ -72,8 +87,14 @@ internal fun FixtureApi.verifySupport(): JSONObject {
             .put("grandOnly", SupportScoreSelection.matches(scores, false, true)).put("bothScores", SupportScoreSelection.matches(scores, true, true))
         if (row.has("policy")) {
             val policy = row.getJSONObject("policy")
-            for (key in listOf("classOnly", "grandOnly", "bothScores"))
-                check(values.getBoolean(key) == policy.getBoolean(key)) { "$key at $y: $values != $policy" }
+            for (key in listOf("classOnly", "grandOnly", "bothScores")) {
+                val veto = when (key) {
+                    "classOnly" -> "class" in unknownFields
+                    "grandOnly" -> "grand" in unknownFields
+                    else -> unknownFields.isNotEmpty()
+                }
+                check(values.getBoolean(key) == (policy.getBoolean(key) && !veto)) { "$key at $y: $values != $policy" }
+            }
         }
         if (live && case.optBoolean("appendCycle")) {
             val pass = AppendSkillSelection(this, supportPrefs(), display, skills).check(bound)

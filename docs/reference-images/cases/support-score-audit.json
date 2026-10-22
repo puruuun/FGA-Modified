@@ -1284,10 +1284,14 @@
           "y": 500,
           "class": 62,
           "grand": 16,
-          "display": "Compound"
+          "display": "Compound",
+          "grandAllowed": [
+            null,
+            16
+          ]
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline WRONG: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': 62, 'grand': 1, 'display': 'Compound'}; unread=; wrong=grand"
+      "note": "D-1 regression: labelled +62/+16; Grand must be 16 or unknown, never 1. Label retained in grand."
     },
     {
       "name": "owner-200-row-1-skills",
@@ -1319,9 +1323,13 @@
           "y": 286,
           "class": 0,
           "grand": 16,
-          "display": "Compound"
+          "display": "Compound",
+          "protectiveUnknown": [
+            "grand"
+          ]
         }
-      ]
+      ],
+      "note": "D-1 regression: previously correct +0/+16 now returns 0/null. Ground-truth label retained; require protective null, not a new numeric value."
     },
     {
       "name": "owner-200-row-2-skills",

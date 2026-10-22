@@ -26,6 +26,8 @@ py -3 tools/device-qa/run.py --build --suite support,bond,questItems
 - `masked720`: rectangles hidden for privacy. A read that overlaps one fails the case.
 - Full frames (no `frame`): any aspect ratio. The frame is scaled to 720 high and the coordinates use the same formulas as `ScriptAreaTransforms`.
 - `skip`: a reason string. The case is left out of the run and listed in `summary-<suite>.md`.
+- Support row `grandAllowed: [null, 16]`: retains the `grand: 16` ground-truth label while testing that D-1 returns either 16 or unknown, never another number (199.webp row 2).
+- Support row `protectiveUnknown: ["class", "grand"]` (either field or both): requires those fields to return **null** and their selection conditions to fail. Original numeric labels and `policy` remain unchanged. Use only for documented D-1 veto regressions; a passing veto test is not a successful numeric detection.
 
 ## Rules for new fixtures
 

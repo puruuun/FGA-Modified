@@ -22,6 +22,9 @@ import io.mockk.verify
 import kotlin.test.Test
 
 class SupportScoreDiagnosticsTest {
+    @kotlin.test.AfterTest
+    fun releaseMocks() = io.mockk.clearAllMocks()
+
     private class RecordingDiagnostics(override val enabled: Boolean = true) : IReaderDiagnostics {
         data class Record(val reader: String, val stem: String, val images: Map<String, Pattern>, val json: String)
 
@@ -56,6 +59,17 @@ class SupportScoreDiagnosticsTest {
             every { with(api) { region.getPattern("support_class_grand_scores") } } returns crop
             every { crop.width } returns 60
             every { crop.height } returns 30
+            val prepared = mockk<Pattern>(relaxed = true)
+            every { crop.resize(any()) } returns prepared
+            val binary = mockk<Pattern>(relaxed = true)
+            every { prepared.threshold(any()) } returns binary
+            every { binary.grayPixels() } returns null
+            every { binary.fillText() } returns prepared
+            every { prepared.fillText() } returns prepared
+            every { prepared.width } returns 60
+            every { prepared.height } returns 30
+            every { prepared.grayPixels() } returns scoreInk()
+
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
             visual.forEach { (image, pattern) ->
                 every { images[image, null] } returns pattern
@@ -158,7 +172,7 @@ class SupportScoreDiagnosticsTest {
             "\"checkClass\":true",
             "\"checkGrand\":true",
             "\"ocr\":[{\"stage\":\"primary\",\"profile\":0,\"text\":\"+62/+16\",\"confidence\":92}",
-            "\"templates\":{\"SupportScore62\":false}",
+            "\"templates\":{\"SupportScore62\":false",
             "\"result\":{\"class\":62,\"grand\":16,\"display\":\"Compound\"}",
             "\"matched\":true",
             "\"elapsedMs\":"
@@ -172,12 +186,14 @@ class SupportScoreDiagnosticsTest {
     fun `recording stops at the candidate cap and reading continues`() {
         val recording = RecordingDiagnostics()
         val f = Fixture(recording)
+        val messages = f.api.messages
         repeat(SupportScoreReader.MAX_DIAGNOSTIC_CANDIDATES + 3) {
             assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+            io.mockk.clearMocks(f.api, f.images, f.crop, f.ocr, answers = false, childMocks = false)
         }
         assertThat(recording.records.size).isEqualTo(SupportScoreReader.MAX_DIAGNOSTIC_CANDIDATES)
         // The limit is reported once, not per skipped candidate.
-        verify(exactly = 1) { f.api.messages.log(any()) }
+        verify(exactly = 1) { messages.log(any()) }
     }
 
     @Test

@@ -428,3 +428,29 @@
 - 전체 단위 테스트 `:app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test`: **통과**.
 - Codex가 측정 직후 사용 한도로 멈춰, 기획자가 QA 재실행·커밋을 마무리했습니다.
 - 어펜드 추가분(20장 40행): 같은 `support-score-audit.json`에 행마다 2케이스를 추가했습니다(`owner-N-row-K-skills`: view·슬롯 10 여부, `owner-N-row-K`: 점수). 슬롯 케이스 40개와 점수 성공 22개는 활성, **점수 unknown 17·오독 1은 skip(사유와 실제 반환값 기록)**입니다. 이 파일 전체 실행: **105개 통과, 실패 0, skip 45**(`build/device-qa/20261022-150428`). 기존 support suite 194개도 그대로 통과(`20261022-150515`). skip은 오독·unknown을 성공으로 바꾸지 않으며 위 통계에는 모두 포함됩니다.
+
+
+## D-1 실측 결과 (1.6.2-beta.2 / 1006202)
+
+D-1 네 규칙만 적용했습니다. D-2는 소유자 별도 원본 자료를 기다립니다. 이전 수치는 0013의 원시 보고서 110행을 다시 합산한 값입니다(초기 0014 요약의 JP 일반 성공 14는 13으로 정정).
+
+| 범위 | 오독 이전→이후 | 62 검출 이전→이후 | 16 검출 이전→이후 | unknown 이전→이후 |
+|---|---:|---:|---:|---:|
+| 전체 110행 | 1→0 | 16/29→16/29 | 8/37→6/37 | 44→46 |
+| KR 48행 | 0→0 | 4/4→4/4 | 해당 없음 | 1→1 |
+| JP 62행 | 1→0 | 12/25→12/25 | 8/37→6/37 | 43→45 |
+
+완전 정답은 전체 65→64(KR 47→47, JP 18→17)입니다. **이전에 완전 정답이었다가 unknown이 된 행은 `200.webp` 1행 한 건입니다.** 이미 클래스가 unknown이던 `164.webp` 2행에서도 이전에 맞았던 그랜드 16을 잃었습니다. 아래가 맞던 필드를 잃은 전체 목록입니다.
+
+| 파일 | 행 | 이전 class / grand / display | 이후 | 영향 |
+|---|---:|---|---|---|
+| 200.webp | 1 | 0 / 16 / Compound | 0 / null / Compound | 완전 정답 → unknown |
+| 164.webp | 2 | null / 16 / Compound | null / null / Compound | grand 미확정, 행 분류는 unknown 유지 |
+
+`199.webp` 2행은 `62 / 1 / Compound`에서 `62 / null / Compound`로 바뀌었습니다. 회귀 케이스는 skip을 제거하고 정답 라벨 grand=16을 유지하며 `grandAllowed=[null,16]`을 명시해 1을 반드시 거부합니다. KR의 48행 반환값은 모두 이전과 같습니다.
+
+측정: `build/device-qa/20261022-160522/report-support.json`(skip 없는 전수 110행, 값 assertion 없이 실제 반환값 보존). unknown은 성공으로 세지 않습니다. 템플릿이나 임계값을 감사 자료에 맞춰 학습하지 않았습니다.
+
+행별 원시 비교: [0014-d1-audit-results.json](0014-d1-audit-results.json). `200.webp` 1행은 원래 라벨을 유지하고 `protectiveUnknown=["grand"]`로 null 반환을 엄격히 검증합니다. unknown은 숫자 검출 성공으로 세지 않습니다.
+
+기존 support crop QA에서도 D-1 차단을 명시한 9건이 있습니다. Class는 `Jp-score-010/029/048.png`, Grand는 `Jp-score-024/040/041/045/046/056.png`입니다. 원래 라벨·policy·활성 상태를 유지하고 `protectiveUnknown`으로 해당 필드가 정확히 null이고 조건이 거부되는지 검사합니다. 새 skip은 없으며, 이 검사 통과를 검출 성공으로 계산하지 않습니다. 자릿수 불일치는 OCR과 tail 재시도를 폐기하지만 끝자리까지 검증된 독립 템플릿은 허용합니다. 값 충돌·범위·잘림 veto는 템플릿보다 우선합니다.

@@ -21,12 +21,16 @@ import io.mockk.verify
 import kotlin.test.Test
 
 class SupportScoreReaderTest {
+    @kotlin.test.AfterTest
+    fun releaseMocks() = io.mockk.clearAllMocks()
+
     private class Fixture {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val images = mockk<IImageLoader>()
         val ocr = mockk<OcrService>()
         val legacy = mockk<Pattern>()
         val crop = mockk<Pattern>(relaxed = true)
+        val prepared = mockk<Pattern>(relaxed = true)
         val bounds = SupportBounds(Region(76, 408, 2356, 428))
         val region = SupportScoreLayout.numberRegion(bounds.region)
         val reader = SupportScoreReader(api, ocr)
@@ -41,6 +45,16 @@ class SupportScoreReaderTest {
             every { with(api) { region.getPattern("support_class_grand_scores") } } returns crop
             every { crop.width } returns 60
             every { crop.height } returns 30
+            every { crop.resize(any()) } returns prepared
+            val binary = mockk<Pattern>(relaxed = true)
+            every { prepared.threshold(any()) } returns binary
+            every { binary.grayPixels() } returns null
+            every { binary.fillText() } returns prepared
+            every { prepared.fillText() } returns prepared
+            every { prepared.width } returns 60
+            every { prepared.height } returns 30
+            every { prepared.grayPixels() } returns scoreInk()
+
             every { ocr.detectTextLine(crop, any()) } returns OcrText("+62/+16", 92)
             visual.forEach { (image, pattern) ->
                 every { images[image, null] } returns pattern
@@ -70,10 +84,10 @@ class SupportScoreReaderTest {
     fun `slash separates class from grand and an ordinary score has no implicit grand`() {
         assertThat(SupportScoreReader.parse(OcrText("+62/+16", 92))).isEqualTo(SupportScores(62, 16))
         assertThat(SupportScoreReader.parse(OcrText(" +0 / +16\n", 92))).isEqualTo(SupportScores(0, 16))
-        assertThat(SupportScoreReader.parse(OcrText("+16/+62", 92))).isEqualTo(SupportScores(16, 62))
+        assertThat(SupportScoreReader.parse(OcrText("+16/+62", 92))).isEqualTo(SupportScores(16, null, SupportScoreDisplay.Compound))
         assertThat(SupportScoreReader.parse(OcrText("62/+16", 92))).isEqualTo(SupportScores(62, 16))
         assertThat(SupportScoreReader.parse(OcrText("+62/16", 92))).isEqualTo(SupportScores(62, 16))
-        for (text in listOf("+62+16", "+62/+16/+0", "+62/-16", "score +62/+16")) {
+        for (text in listOf("+62+16", "+62/+16/+0", "score +62/+16")) {
             assertThat(SupportScoreReader.parse(OcrText(text, 95))).isNull()
         }
         assertThat(SupportScoreReader.parse(OcrText("+62/+16", 74))).isNull()
@@ -143,12 +157,13 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `ordinary +62 preserves the existing fast class matcher`() {
+    fun `ordinary +62 checks OCR before accepting the legacy matcher`() {
         val f=Fixture()
         every { with(f.api) { f.region.exists(f.legacy,any(),any()) } } returns true
+        every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+62",92)
         assertThat(f.reader.read(f.bounds,true,false)).isEqualTo(SupportScores(62,null,SupportScoreDisplay.Ordinary))
-        verify(exactly=0) { f.ocr.detectTextLine(any(),any()) }
-        verify(exactly=0) { with(f.api) { f.region.getPattern(any()) } }
+        verify(exactly=4) { f.ocr.detectTextLine(any(),any()) }
+        verify(exactly=1) { with(f.api) { f.region.getPattern(any()) } }
     }
 
     @Test
@@ -168,7 +183,7 @@ class SupportScoreReaderTest {
         val f=Fixture()
         every { f.ocr.detectTextLine(f.crop,any()) } returns OcrText("+16/+62",92)
         val scores=f.reader.read(f.bounds,true,true)
-        assertThat(scores).isEqualTo(SupportScores(16,62))
+        assertThat(scores).isEqualTo(SupportScores(16,null,SupportScoreDisplay.Compound))
     }
 
     @Test
@@ -315,14 +330,14 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `visual recovery retains a confirmed nonmaximum field`() {
+    fun `template conflicts veto each field even when OCR disagrees internally`() {
         val f = Fixture()
         every { f.ocr.detectTextLine(f.crop, any()) } returnsMany listOf(
             OcrText("56/+0", 92), OcrText("56/+16", 91), OcrText("56/+0", 90), OcrText("56/+16", 89)
         )
         f.show(Images.SupportCompactClass62A)
         f.show(Images.SupportGrand16A)
-        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(56, 16))
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
     }
 
     @Test
@@ -330,8 +345,7 @@ class SupportScoreReaderTest {
         val f = Fixture()
         every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("+62/+0", 92)
         f.show(Images.SupportGrand16A)
-        assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(62, 0))
-        SupportScoreReader.GRAND_TEMPLATES.forEach { verify(exactly = 0) { f.images[it, null] } }
+        assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
     }
 
     @Test
@@ -367,6 +381,82 @@ class SupportScoreReaderTest {
     }
 
     @Test
+    fun `range violations poison only their own field across profiles and templates`() {
+        val good = List(2) { OcrText("62/16", 92) }
+        assertThat(SupportScoreReader.confirmed(good + OcrText("63/16", 75)))
+            .isEqualTo(SupportScores(null, 16))
+        assertThat(SupportScoreReader.confirmed(good + OcrText("62/17", 75)))
+            .isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        assertThat(SupportScoreReader.parse(OcrText("0/0", 92))).isEqualTo(SupportScores(0, 0))
+        assertThat(SupportScoreReader.parse(OcrText("-1/16", 92))).isEqualTo(SupportScores(null, 16))
+        assertThat(SupportScoreReader.parse(OcrText("62/-1", 92)))
+            .isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        assertThat(SupportScoreReader.parse(OcrText("999999999999999999/16", 92)))
+            .isEqualTo(SupportScores(null, 16))
+        assertThat(SupportScoreReader.parse(OcrText("999/999", 92)))
+            .isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("63/17", 92)
+        f.show(Images.SupportCompactClass62A); f.show(Images.SupportGrand16A)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
+    }
+
+    @Test
+    fun `ordinary legacy template disagreement is unknown for KR too`() {
+        val f = Fixture()
+        every { f.api.prefs.gameServer } returns GameServer.Kr
+        every { with(f.api) { f.region.exists(f.legacy, any(), any()) } } returns true
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("61", 92)
+        assertThat(f.reader.read(f.bounds, true, false).classScore).isNull()
+    }
+
+    @Test
+    fun `199 row 2 OCR one cannot override the Grand 16 template`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/+1", 92)
+        f.show(Images.SupportGrand16A)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+    }
+
+    @Test
+    fun `both directions of grand digit count mismatch veto OCR and tail recovery`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62/1", 92)
+        assertThat(f.reader.read(f.bounds, true, true).grandScore).isNull()
+        val single = scoreInk().also { p -> for (y in 0..29) for (x in 47..53) p[y*60+x] = 255.toByte() }
+        every { f.prepared.grayPixels() } returns single
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("S9/16", 92)
+        assertThat(f.reader.read(f.bounds, true, true).grandScore).isNull()
+    }
+
+    @Test
+    fun `right margin ink vetoes only the final field including template fallback`() {
+        val f = Fixture()
+        val clipped = scoreInk().also { p -> for (y in 11..23) for (x in 53..59) p[y*60+x] = 0 }
+        every { f.prepared.grayPixels() } returns clipped
+        f.show(Images.SupportGrand16A)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("62", 92)
+        every { with(f.api) { f.region.exists(f.legacy, any(), any()) } } returns true
+        assertThat(f.reader.read(f.bounds, true, false).classScore).isNull()
+    }
+
+    @Test
+    fun `open outline lost during filling is still clipped in the original binary margin`() {
+        val raw = ByteArray(58 * 28) { 255.toByte() }
+        for (y in 10..24) raw[(y-1)*58+57] = if (y in 13..20) 255.toByte() else 0
+        val ink = io.github.fate_grand_automata.scripts.supportSelection.SupportScoreInk(scoreInk(), 60, 30, raw)
+        assertThat(ink.clipped(2)).isEqualTo(true)
+    }
+
+    @Test
+    fun `OCR 16 is vetoed when a similar template prefix has a different final digit`() {
+        val f = Fixture()
+        f.show(Images.SupportGrand16A, correctLastDigit = false)
+        assertThat(f.reader.read(f.bounds, true, true).grandScore).isNull()
+    }
+
+    @Test
     fun `Grand tail OCR fallback needs exactly 16 after the slash and strong agreement`() {
         assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90), OcrText("/+16", 88)))).isEqualTo(true)
         assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90)))).isEqualTo(false)
@@ -380,4 +470,15 @@ class SupportScoreReaderTest {
         assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
         assertThat(f.reader.read(f.bounds, true, false)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
     }
+}
+
+/** Filled OCR ink with a slash, plus and two independent digit bodies. */
+internal fun scoreInk(): ByteArray = ByteArray(60 * 30) { 255.toByte() }.also { pixels ->
+    fun box(x: Int, y: Int, w: Int, h: Int) {
+        for (yy in y until y+h) for (xx in x until x+w) pixels[yy*60+xx] = 0
+    }
+    for (y in 10..24) box(29-(y-10)/3,y,2,1)
+    box(33,15,6,5)
+    box(41,11,3,13)
+    box(47,11,6,13)
 }
