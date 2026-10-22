@@ -1,0 +1,1017 @@
+{
+  "schema": 1,
+  "suite": "support",
+  "cases": [
+    {
+      "name": "d2-1920x1080-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 15,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          },
+          "class": 62,
+          "protectiveUnknown": [
+            "class"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 35,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 57,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 41,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          },
+          "class": 62
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 12,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-04-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-04-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-04-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-04-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 18,
+            "grand": 4,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-1920x1080-04-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-1920x1080-04-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 12,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          },
+          "class": 62
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 4,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 8,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 18,
+            "grand": 15,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-02-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-02-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 7,
+            "grand": 10,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-04-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-04-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 0,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-04-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-04-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 11,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2340x1080-04-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2340x1080-04-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          },
+          "class": 62
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 33,
+            "grand": 12,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 13,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          },
+          "class": 62,
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-02-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-02-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 5,
+            "grand": 2,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 4,
+            "grand": 0,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 25,
+            "grand": 16,
+            "display": "Compound"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          },
+          "grand": 16
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-04-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-04-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 51,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-04-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-04-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 62,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": true,
+            "grandOnly": false,
+            "bothScores": false
+          },
+          "class": 62
+        }
+      ]
+    },
+    {
+      "name": "d2-2560x1440-04-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-d2/scores/d2-2560x1440-04-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "label": {
+            "class": 0,
+            "grand": null,
+            "display": "Ordinary"
+          },
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    }
+  ]
+}

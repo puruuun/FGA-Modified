@@ -457,6 +457,28 @@ class SupportScoreReaderTest {
     }
 
     @Test
+    fun `JP block recovery still obeys OCR and final digit vetoes while KR keeps its path`() {
+        val f = Fixture()
+        val image = javax.imageio.ImageIO.read(java.io.File(
+            "../docs/reference-images/support-score-d2/scores/d2-1920x1080-01-row-2.png"))
+        val pixels = ByteArray(image.width * image.height) { p ->
+            val rgb = image.getRGB(p % image.width, p / image.width)
+            (((rgb shr 16 and 255) * 299 + (rgb shr 8 and 255) * 587 + (rgb and 255) * 114 + 500) / 1000).toByte()
+        }
+        every { f.crop.grayPixels() } returns pixels
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("", 0)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("51/15", 92)
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("", 0)
+        f.show(Images.SupportGrand16A, correctLastDigit = false)
+        assertThat(f.reader.read(f.bounds, true, true).grandScore).isNull()
+        every { f.api.prefs.gameServer } returns GameServer.Kr
+        assertThat(f.reader.read(f.bounds, true, true).classScore).isNull()
+        assertThat(f.reader.read(f.bounds, true, true).grandScore).isNull()
+    }
+
+    @Test
     fun `Grand tail OCR fallback needs exactly 16 after the slash and strong agreement`() {
         assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90), OcrText("/+16", 88)))).isEqualTo(true)
         assertThat(SupportScoreReader.grandTail16(listOf(OcrText("S9/+16", 90)))).isEqualTo(false)

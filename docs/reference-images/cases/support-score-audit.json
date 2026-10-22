@@ -46,7 +46,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': 16, 'display': 'Compound'}; unread=class; wrong="
+      "skip": "D-2 holdout miss (class); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': 16, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-163-row-2",
@@ -92,7 +92,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': 16, 'display': 'Compound'}; unread=class; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-165-row-1",
@@ -108,7 +108,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': 16, 'display': 'Compound'}; unread=class; wrong="
+      "skip": "D-2 holdout miss (class); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': 16, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-165-row-2",
@@ -139,7 +139,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 57, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 57, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-166-row-2",
@@ -275,7 +275,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 1, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 1, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-171-row-1",
@@ -291,7 +291,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 9, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 9, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-171-row-2",
@@ -307,7 +307,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 28, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 28, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-172-row-1",
@@ -323,7 +323,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 23, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 23, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-172-row-2",
@@ -339,7 +339,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-173-row-1",
@@ -355,7 +355,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-173-row-2",
@@ -446,7 +446,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 58, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 58, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-176-row-2",
@@ -477,7 +477,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 23, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 23, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-177-row-2",
@@ -493,7 +493,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 62, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-178-row-1",
@@ -509,7 +509,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 0, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 0, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-178-row-2",
@@ -555,7 +555,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 0, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 0, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-180-row-1",
@@ -571,7 +571,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 0, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class); truth={'class': 0, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': 16, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-180-row-2",
@@ -587,7 +587,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-181-row-1",
@@ -603,7 +603,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 5, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 5, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-181-row-2",
@@ -619,7 +619,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,grand,display; wrong="
+      "skip": "D-2 holdout miss (class,grand,display); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-182-row-1",
@@ -635,7 +635,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-182-row-2",
@@ -786,7 +786,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-187-row-2",
@@ -802,7 +802,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 1, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 1, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-188-row-1",
@@ -833,7 +833,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-189-row-1",
@@ -849,7 +849,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-189-row-2",
@@ -865,7 +865,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (display); truth={'class': 62, 'grand': None, 'display': 'Ordinary'}; actual={'class': 62, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-190-row-1",
@@ -881,7 +881,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 50, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 50, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-190-row-2",
@@ -1017,7 +1017,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 baseline unknown: expected {'class': 5, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 5, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-195-row-1",
@@ -1112,7 +1112,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-197-row-2-skills",
@@ -1147,7 +1147,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-198-row-1-skills",
@@ -1182,7 +1182,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 51, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 51, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-198-row-2-skills",
@@ -1217,7 +1217,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-199-row-1-skills",
@@ -1252,7 +1252,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 57, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 57, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-199-row-2-skills",
@@ -1364,7 +1364,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-201-row-1-skills",
@@ -1399,7 +1399,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 54, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-201-row-2-skills",
@@ -1434,7 +1434,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 62, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-202-row-1-skills",
@@ -1741,7 +1741,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-206-row-2-skills",
@@ -2008,7 +2008,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-210-row-2-skills",
@@ -2041,7 +2041,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 1, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 1, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-211-row-1-skills",
@@ -2074,7 +2074,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 0, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 0, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-211-row-2-skills",
@@ -2107,7 +2107,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class,grand); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': None, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-212-row-1-skills",
@@ -2142,7 +2142,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class); truth={'class': 24, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': 16, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-212-row-2-skills",
@@ -2177,7 +2177,7 @@
           "display": "Compound"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+      "skip": "D-2 holdout miss (class); truth={'class': 62, 'grand': 16, 'display': 'Compound'}; actual={'class': None, 'grand': 16, 'display': 'Compound'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-213-row-1-skills",
@@ -2280,7 +2280,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (display); truth={'class': 62, 'grand': None, 'display': 'Ordinary'}; actual={'class': 62, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-214-row-2-skills",
@@ -2315,7 +2315,7 @@
           "display": "Ordinary"
         }
       ],
-      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 0, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+      "skip": "D-2 holdout miss (class,display); truth={'class': 0, 'grand': None, 'display': 'Ordinary'}; actual={'class': None, 'grand': None, 'display': 'Unknown'}. No holdout templates or threshold tuning."
     },
     {
       "name": "owner-215-row-1-skills",

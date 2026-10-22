@@ -1,0 +1,610 @@
+{
+  "schema": 1,
+  "normalization": "Full native game area, OpenCV INTER_AREA, height 720, aspect kept; no window chrome.",
+  "excluded": [
+    "1920x1080/02 row 3: clipped bottom"
+  ],
+  "frames": [
+    {
+      "file": "1920x1080/01.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 88,
+          "class": 62,
+          "grand": 15,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            243,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 288,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            443,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 488,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            643,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/1920x1080/01.png",
+      "sourceSha256": "641e6200729b82ce9a8b2046e61c7bd64c7b997e684df5913cdb6e4cb6782da9"
+    },
+    {
+      "file": "1920x1080/02.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 151,
+          "class": 35,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            306,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 351,
+          "class": 57,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            506,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/1920x1080/02.png",
+      "sourceSha256": "4d9358329eea65fca5d305499d351c727105f50827945671f14e9d76ebb3983e"
+    },
+    {
+      "file": "1920x1080/03.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 89,
+          "class": 41,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            244,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 289,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            444,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 489,
+          "class": 12,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            644,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/1920x1080/03.png",
+      "sourceSha256": "4a72ee086a953d6b48143fe704c13c75919556c7014a91e17d1e211f954e53c3"
+    },
+    {
+      "file": "1920x1080/04.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 69,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            224,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 269,
+          "class": 18,
+          "grand": 4,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            424,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 469,
+          "class": 62,
+          "grand": 12,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            624,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/1920x1080/04.png",
+      "sourceSha256": "065805d30a5a9d3ae3d8afb5202f3390f6edd26bb1b6d7467aa56cc713e1a64b"
+    },
+    {
+      "file": "2340x1080/01.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 99,
+          "class": 4,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            254,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 299,
+          "class": 0,
+          "grand": 8,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            454,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 499,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            654,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2340x1080/01.png",
+      "sourceSha256": "a0c53ee736b15f67da4e127c2e0c16ce4703622aced15cb57d26933b97cd8a3e"
+    },
+    {
+      "file": "2340x1080/02.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 53,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            208,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 253,
+          "class": 18,
+          "grand": 15,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            408,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 453,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            608,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2340x1080/02.png",
+      "sourceSha256": "372067daab7310712deb419c2ea240916e35f9b8190931bca8a683d860e26bc4"
+    },
+    {
+      "file": "2340x1080/03.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 88,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            243,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 288,
+          "class": 7,
+          "grand": 10,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            443,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 488,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            643,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2340x1080/03.png",
+      "sourceSha256": "b4df0217f438bd739261f4b9ce7bdee04cf6f4186ab84204db206fb5813fd556"
+    },
+    {
+      "file": "2340x1080/04.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 86,
+          "class": 0,
+          "grand": 0,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            241,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 286,
+          "class": 0,
+          "grand": 11,
+          "display": "Compound",
+          "scoreRegion720": [
+            1179,
+            441,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 486,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1179,
+            641,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2340x1080/04.png",
+      "sourceSha256": "07e506772a6346de5b3c90bb33e07091992f965ea983467e3a71512ea61f9d42"
+    },
+    {
+      "file": "2560x1440/01.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 88,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            243,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 288,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            443,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 488,
+          "class": 33,
+          "grand": 12,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            643,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2560x1440/01.png",
+      "sourceSha256": "80bdbe9ec6b68a2c8edac1e5713f1ed429506149a76cb15812cbbb8da32b6ff4"
+    },
+    {
+      "file": "2560x1440/02.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 98,
+          "class": 0,
+          "grand": 13,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            253,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 298,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            453,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 498,
+          "class": 5,
+          "grand": 2,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            653,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2560x1440/02.png",
+      "sourceSha256": "4cb62b345550873dbece29b15a144650badf99b544e859d63ecebf14cdb7e06d"
+    },
+    {
+      "file": "2560x1440/03.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 74,
+          "class": 4,
+          "grand": 0,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            229,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 274,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            429,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 474,
+          "class": 25,
+          "grand": 16,
+          "display": "Compound",
+          "scoreRegion720": [
+            1018,
+            629,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2560x1440/03.png",
+      "sourceSha256": "a4e34927017fb129b4b0acfa09abbdb39f4c30054c7aca51bcad90c07a744919"
+    },
+    {
+      "file": "2560x1440/04.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 106,
+          "class": 51,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            261,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 306,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            461,
+            60,
+            30
+          ]
+        },
+        {
+          "y": 506,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary",
+          "scoreRegion720": [
+            1018,
+            661,
+            60,
+            30
+          ]
+        }
+      ],
+      "source": "build/orchestration/inputs/0014-d2/2560x1440/04.png",
+      "sourceSha256": "a59584c7f09e92197097effacf4af02c3fa8abf48798ce85445a53f5274a76df"
+    }
+  ],
+  "labeling": "Visual inspection of all 35 complete score boxes; planner labels independently cross-checked. Exclude clipped score boxes."
+}

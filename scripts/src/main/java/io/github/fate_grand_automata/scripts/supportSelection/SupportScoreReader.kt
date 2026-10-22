@@ -168,6 +168,7 @@ class SupportScoreReader @Inject constructor(
     private class ReadEvidence {
         val ocr = mutableListOf<Map<String, Any?>>()
         val templates = linkedMapOf<String, Boolean>()
+        val blocks = linkedMapOf<String, Any?>()
     }
 
     /** Read-only within the caller's candidate snapshot, before any Append display switch. */
@@ -208,6 +209,7 @@ class SupportScoreReader @Inject constructor(
                     "checkGrand" to checkGrand,
                     "ocr" to evidence.ocr,
                     "templates" to evidence.templates,
+                    "blocks" to evidence.blocks,
                     "result" to linkedMapOf(
                         "class" to scores.classScore,
                         "grand" to scores.grandScore,
@@ -264,9 +266,13 @@ class SupportScoreReader @Inject constructor(
             }
         }
 
+        var blocks: SupportScoreBlocks.Result? = null
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
+                if (prefs.gameServer is GameServer.Jp) {
+                    blocks = pattern.grayPixels()?.let { SupportScoreBlocks.read(it, pattern.width, pattern.height) }
+                }
                 val primary = OCR_PROFILES.mapIndexed { profile, options ->
                     detect(pattern, options, "primary", profile, evidence).also { inspect(pattern, options, it) }
                 }
@@ -315,19 +321,36 @@ class SupportScoreReader @Inject constructor(
         // final-digit-verified template is independent evidence. Explicit OCR contradictions
         // and range/clipping vetoes below still make the field unknown.
         val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(results))
-        val compound = class62 || grand16 || results.any { '/' in it.text }
+        val compound = blocks?.compound == true || class62 || grand16 || results.any { '/' in it.text }
+        val blockClass62 = checkClass && blocks?.class62 == SupportScoreBlocks.Decision.Positive
+        val blockGrand16 = checkGrand && blocks?.grand16 == SupportScoreBlocks.Decision.Positive
         val classTemplate = if (compound) class62 else legacyClass62
         val raw = results.mapNotNull(::rawParse)
         blockedClass = blockedClass || (!compound && clipped) || invalidClass(results) ||
-            (classTemplate && raw.any { it.classScore != null && it.classScore != 62 })
+            ((classTemplate || blockClass62) && raw.any { it.classScore != null && it.classScore != 62 })
         blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(results) ||
-            (grandTemplate16 && results.any {
+            ((grandTemplate16 || blockGrand16) && results.any {
                 it.confidence >= MIN_OCR_CONFIDENCE && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
                     ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value != 16 } == true
-            }) || (!grandTemplate16 && differentGrandDigit && recognized?.grandScore == 16)
+            }) || (!grandTemplate16 && differentGrandDigit && (recognized?.grandScore == 16 || blockGrand16))
+        // D-2 is independent evidence, never permission to override D-1 conflicts, clipping or ranges.
+        // A counted one-digit block or a decisive near-miss vetoes an existing maximum as well.
+        val rejectClass62 = blocks?.class62 == SupportScoreBlocks.Decision.Negative
+        val rejectGrand16 = blocks?.grand16 == SupportScoreBlocks.Decision.Negative
+        blockedClass = blockedClass || (rejectClass62 && (classTemplate || recognized?.classScore == 62)) ||
+            (blockClass62 && recognized?.classScore?.let { it != 62 } == true)
+        blockedGrand = blockedGrand || (rejectGrand16 && (grand16 || recognized?.grandScore == 16)) ||
+            (blockGrand16 && recognized?.grandScore?.let { it != 16 } == true)
+        evidence?.blocks?.putAll(mapOf(
+            "class62" to blocks?.class62?.name, "grand16" to blocks?.grand16?.name,
+            "compound" to blocks?.compound, "clipped" to clipped,
+            "invalidClass" to invalidClass(results), "invalidGrand" to invalidGrand(results),
+            "blockedClass" to blockedClass, "blockedGrand" to blockedGrand,
+            "differentGrandDigit" to differentGrandDigit, "inconsistentGrand" to inconsistentGrand
+        ))
         return SupportScores(
-            if (blockedClass) null else recognized?.classScore ?: if (classTemplate) 62 else null,
-            if (blockedGrand) null else recognized?.grandScore ?: if (grand16) 16 else null,
+            if (blockedClass) null else recognized?.classScore ?: if (classTemplate || blockClass62) 62 else null,
+            if (blockedGrand) null else recognized?.grandScore ?: if (grand16 || blockGrand16) 16 else null,
             if (compound) SupportScoreDisplay.Compound else recognized?.display ?:
                 if (legacyClass62) SupportScoreDisplay.Ordinary else SupportScoreDisplay.Unknown
         )

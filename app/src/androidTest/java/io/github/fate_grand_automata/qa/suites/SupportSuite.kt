@@ -39,7 +39,15 @@ internal fun FixtureApi.verifySupport(): JSONObject {
     val bounds = if (full) useSameSnapIn { SupportBoundsFinder(this).all() } else emptyList()
     if (full) result.put("bounds", JSONArray(bounds.map { it.region.y / 2.0 }))
     val expected = case.getJSONArray("rows"); val rows = JSONArray()
-    val np = SupportNpLevelReader(this, ocr); val score = SupportScoreReader(this, ocr); val skills = SupportSkillLevelReader(this)
+    val scoreEvidence = JSONArray()
+    val scoreDiagnostics = object : io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics {
+        override val enabled = case.optBoolean("scoreDiagnostics")
+        override val runId = "device-qa"
+        override fun record(reader: String, stem: String, images: Map<String, Pattern>, json: String) {
+            scoreEvidence.put(JSONObject(json))
+        }
+    }
+    val np = SupportNpLevelReader(this, ocr); val score = SupportScoreReader(this, ocr, scoreDiagnostics); val skills = SupportSkillLevelReader(this)
     for (i in 0 until expected.length()) {
         val row = expected.getJSONObject(i)
         val y = if (full) row.getInt("y") else row.getInt("rowY720")
@@ -50,7 +58,7 @@ internal fun FixtureApi.verifySupport(): JSONObject {
         } else SupportBounds(locations.support.defaultBounds.copy(y = y * 2))
         val values = useSameSnapIn {
             val n = if (full || row.has("np")) np.read(bound) else null
-            val readsScore = full || row.has("class") || row.has("grand") || row.has("policy")
+            val readsScore = full || row.optBoolean("readScore") || row.has("class") || row.has("grand") || row.has("policy")
             val s = if (readsScore) score.read(bound, true, true) else null
             val k = if (full || row.has("skills")) skills.read(bound, view == SupportSkillDisplay.View.Append) else emptyList()
             JSONObject().put("np", n ?: JSONObject.NULL).put("class", s?.classScore ?: JSONObject.NULL)
@@ -115,5 +123,6 @@ internal fun FixtureApi.verifySupport(): JSONObject {
         }
         values.put("importMatches", checks)
     }
+    if (scoreDiagnostics.enabled) result.put("scoreDiagnostics", scoreEvidence)
     return result.put("rows", rows)
 }

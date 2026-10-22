@@ -1,0 +1,704 @@
+[
+  {
+    "name": "d2-1920x1080-01-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9728732618381453,
+    "negative": 0.8931129564390135,
+    "margin": 0.07976030539913181
+  },
+  {
+    "name": "d2-1920x1080-01-row-1",
+    "field": "grand",
+    "label": 15,
+    "sigma": 0,
+    "positive": 0.7261903746634424,
+    "negative": 0.9628908663731697,
+    "margin": -0.2367004917097273
+  },
+  {
+    "name": "d2-1920x1080-01-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9728732618381453,
+    "negative": 0.8931129564390135,
+    "margin": 0.07976030539913181
+  },
+  {
+    "name": "d2-1920x1080-01-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9836403429407723,
+    "negative": 0.9249996529761432,
+    "margin": 0.05864068996462912
+  },
+  {
+    "name": "d2-1920x1080-01-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9728732618381453,
+    "negative": 0.8931129564390135,
+    "margin": 0.07976030539913181
+  },
+  {
+    "name": "d2-1920x1080-01-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9836403429407723,
+    "negative": 0.9249996529761432,
+    "margin": 0.05864068996462912
+  },
+  {
+    "name": "d2-1920x1080-02-row-1",
+    "field": "class",
+    "label": 35,
+    "sigma": 0,
+    "positive": 0.12891802294845983,
+    "negative": 0.7939480710925149,
+    "margin": -0.665030048144055
+  },
+  {
+    "name": "d2-1920x1080-02-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9550212654238881,
+    "negative": 0.9201516883921093,
+    "margin": 0.03486957703177884
+  },
+  {
+    "name": "d2-1920x1080-02-row-2",
+    "field": "class",
+    "label": 57,
+    "sigma": 0,
+    "positive": 0.3897993015942972,
+    "negative": 0.891857723178294,
+    "margin": -0.5020584215839968
+  },
+  {
+    "name": "d2-1920x1080-02-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.955266111223225,
+    "negative": 0.917682210607121,
+    "margin": 0.03758390061610406
+  },
+  {
+    "name": "d2-1920x1080-02-row-2",
+    "field": "class",
+    "label": 57,
+    "sigma": 0.7,
+    "positive": -0.21295984870381368,
+    "negative": 0.8926620500745026,
+    "margin": -1.1056218987783164
+  },
+  {
+    "name": "d2-1920x1080-03-row-1",
+    "field": "class",
+    "label": 41,
+    "sigma": 0,
+    "positive": 0.30012015176697604,
+    "negative": 0.5427479206103358,
+    "margin": -0.2426277688433598
+  },
+  {
+    "name": "d2-1920x1080-03-row-1",
+    "field": "class",
+    "label": 41,
+    "sigma": 0.4,
+    "positive": 0.298616437150183,
+    "negative": 0.5432246171987493,
+    "margin": -0.24460818004856627
+  },
+  {
+    "name": "d2-1920x1080-03-row-1",
+    "field": "class",
+    "label": 41,
+    "sigma": 0.7,
+    "positive": 0.2939965223948369,
+    "negative": 0.559053323491724,
+    "margin": -0.26505680109688706
+  },
+  {
+    "name": "d2-1920x1080-03-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9680631166889594,
+    "negative": 0.8724731187494053,
+    "margin": 0.09558999793955414
+  },
+  {
+    "name": "d2-1920x1080-03-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 0.958234152368039,
+    "negative": 0.8666304608241797,
+    "margin": 0.09160369154385928
+  },
+  {
+    "name": "d2-1920x1080-03-row-3",
+    "field": "class",
+    "label": 12,
+    "sigma": 0,
+    "positive": 0.48311763661247986,
+    "negative": 0.7534984469505778,
+    "margin": -0.2703808103380979
+  },
+  {
+    "name": "d2-1920x1080-03-row-3",
+    "field": "class",
+    "label": 12,
+    "sigma": 0.4,
+    "positive": 0.4850877918710542,
+    "negative": 0.7589315355741151,
+    "margin": -0.27384374370306086
+  },
+  {
+    "name": "d2-1920x1080-03-row-3",
+    "field": "class",
+    "label": 12,
+    "sigma": 0.7,
+    "positive": 0.44661233601762573,
+    "negative": 0.8153515554808365,
+    "margin": -0.36873921946321075
+  },
+  {
+    "name": "d2-1920x1080-04-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9728732618381453,
+    "negative": 0.8680884617761374,
+    "margin": 0.10478480006200785
+  },
+  {
+    "name": "d2-1920x1080-04-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9796156079751831,
+    "negative": 0.915260951441282,
+    "margin": 0.06435465653390116
+  },
+  {
+    "name": "d2-1920x1080-04-row-2",
+    "field": "class",
+    "label": 18,
+    "sigma": 0,
+    "positive": 0.12264419631213737,
+    "negative": 0.9448444710087212,
+    "margin": -0.8222002746965837
+  },
+  {
+    "name": "d2-1920x1080-04-row-2",
+    "field": "class",
+    "label": 18,
+    "sigma": 0.4,
+    "positive": 0.11155600693699337,
+    "negative": 0.9461389729796389,
+    "margin": -0.8345829660426455
+  },
+  {
+    "name": "d2-1920x1080-04-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9728732618381453,
+    "negative": 0.8680884617761374,
+    "margin": 0.10478480006200785
+  },
+  {
+    "name": "d2-1920x1080-04-row-3",
+    "field": "grand",
+    "label": 12,
+    "sigma": 0,
+    "positive": 0.4775512813227827,
+    "negative": 0.978590761386675,
+    "margin": -0.5010394800638923
+  },
+  {
+    "name": "d2-2340x1080-01-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9756385117494705,
+    "negative": 0.8710270959447104,
+    "margin": 0.10461141580476008
+  },
+  {
+    "name": "d2-2340x1080-01-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9807380252173207,
+    "negative": 0.8771360442369351,
+    "margin": 0.10360198098038553
+  },
+  {
+    "name": "d2-2340x1080-01-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9280738941129857,
+    "negative": 0.685747332494216,
+    "margin": 0.24232656161876964
+  },
+  {
+    "name": "d2-2340x1080-01-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9651517321577492,
+    "negative": 0.8771056370475351,
+    "margin": 0.0880460951102141
+  },
+  {
+    "name": "d2-2340x1080-01-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 0.8505039012406095,
+    "negative": 0.6504369196210051,
+    "margin": 0.20006698161960434
+  },
+  {
+    "name": "d2-2340x1080-01-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9650117974974708,
+    "negative": 0.8830286045507912,
+    "margin": 0.08198319294667955
+  },
+  {
+    "name": "d2-2340x1080-02-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9552024167292716,
+    "negative": 0.8993833914682573,
+    "margin": 0.05581902526101434
+  },
+  {
+    "name": "d2-2340x1080-02-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9475129765761404,
+    "negative": 0.9001942035476977,
+    "margin": 0.04731877302844267
+  },
+  {
+    "name": "d2-2340x1080-02-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 0.9502307534846129,
+    "negative": 0.897518479591353,
+    "margin": 0.05271227389325994
+  },
+  {
+    "name": "d2-2340x1080-02-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9651517321577492,
+    "negative": 0.9127511353069627,
+    "margin": 0.05240059685078646
+  },
+  {
+    "name": "d2-2340x1080-02-row-2",
+    "field": "grand",
+    "label": 15,
+    "sigma": 0,
+    "positive": 0.7088324317344447,
+    "negative": 0.9595574493612955,
+    "margin": -0.25072501762685084
+  },
+  {
+    "name": "d2-2340x1080-02-row-2",
+    "field": "class",
+    "label": 18,
+    "sigma": 0.4,
+    "positive": 0.13269244066366714,
+    "negative": 0.9461389729796389,
+    "margin": -0.8134465323159717
+  },
+  {
+    "name": "d2-2340x1080-02-row-2",
+    "field": "grand",
+    "label": 15,
+    "sigma": 0.4,
+    "positive": 0.7078233621682815,
+    "negative": 0.9624429590075513,
+    "margin": -0.2546195968392698
+  },
+  {
+    "name": "d2-2340x1080-02-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9860871344244014,
+    "negative": 0.8767721816434519,
+    "margin": 0.10931495278094949
+  },
+  {
+    "name": "d2-2340x1080-02-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9856440203176696,
+    "negative": 0.9026665159480549,
+    "margin": 0.08297750436961471
+  },
+  {
+    "name": "d2-2340x1080-03-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9854898360752078,
+    "negative": 0.8705448936761429,
+    "margin": 0.11494494239906494
+  },
+  {
+    "name": "d2-2340x1080-03-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9856440203176696,
+    "negative": 0.8960179868275717,
+    "margin": 0.0896260334900979
+  },
+  {
+    "name": "d2-2340x1080-03-row-2",
+    "field": "grand",
+    "label": 10,
+    "sigma": 0,
+    "positive": 0.7891643225287656,
+    "negative": 0.9652239599646861,
+    "margin": -0.17605963743592057
+  },
+  {
+    "name": "d2-2340x1080-03-row-2",
+    "field": "grand",
+    "label": 10,
+    "sigma": 0.4,
+    "positive": 0.8001630240682809,
+    "negative": 0.9679821301249697,
+    "margin": -0.16781910605668882
+  },
+  {
+    "name": "d2-2340x1080-03-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9854898360752078,
+    "negative": 0.8705448936761429,
+    "margin": 0.11494494239906494
+  },
+  {
+    "name": "d2-2340x1080-03-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9856440203176696,
+    "negative": 0.8960179868275717,
+    "margin": 0.0896260334900979
+  },
+  {
+    "name": "d2-2340x1080-04-row-2",
+    "field": "grand",
+    "label": 11,
+    "sigma": 0,
+    "positive": 0.5034697902317822,
+    "negative": 0.914605160928112,
+    "margin": -0.41113537069632977
+  },
+  {
+    "name": "d2-2340x1080-04-row-2",
+    "field": "grand",
+    "label": 11,
+    "sigma": 0.4,
+    "positive": 0.5086797160067831,
+    "negative": 0.9165874804546145,
+    "margin": -0.4079077644478314
+  },
+  {
+    "name": "d2-2340x1080-04-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9677184219730621,
+    "negative": 0.8982253128143,
+    "margin": 0.06949310915876217
+  },
+  {
+    "name": "d2-2340x1080-04-row-3",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 0.9572096450878784,
+    "negative": 0.9267345226320909,
+    "margin": 0.03047512245578754
+  },
+  {
+    "name": "d2-2560x1440-01-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 1.0,
+    "negative": 0.8910891870048097,
+    "margin": 0.10891081299519034
+  },
+  {
+    "name": "d2-2560x1440-01-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 1.0,
+    "negative": 0.9315377039877568,
+    "margin": 0.06846229601224318
+  },
+  {
+    "name": "d2-2560x1440-01-row-1",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 1.0,
+    "negative": 0.7383171843898101,
+    "margin": 0.2616828156101899
+  },
+  {
+    "name": "d2-2560x1440-01-row-1",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 1.0000000000000002,
+    "negative": 0.9373583181660854,
+    "margin": 0.06264168183391483
+  },
+  {
+    "name": "d2-2560x1440-01-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9812068677344351,
+    "negative": 0.8788029470544523,
+    "margin": 0.10240392067998283
+  },
+  {
+    "name": "d2-2560x1440-01-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9770375911598037,
+    "negative": 0.8901683132775671,
+    "margin": 0.08686927788223664
+  },
+  {
+    "name": "d2-2560x1440-01-row-3",
+    "field": "class",
+    "label": 33,
+    "sigma": 0,
+    "positive": 0.3052285468463213,
+    "negative": 0.7939480710925149,
+    "margin": -0.4887195242461936
+  },
+  {
+    "name": "d2-2560x1440-01-row-3",
+    "field": "grand",
+    "label": 12,
+    "sigma": 0,
+    "positive": 0.48886959892858867,
+    "negative": 0.9579317789818341,
+    "margin": -0.46906218005324546
+  },
+  {
+    "name": "d2-2560x1440-01-row-3",
+    "field": "class",
+    "label": 33,
+    "sigma": 0.4,
+    "positive": 0.3160942595808635,
+    "negative": 0.7766570444834807,
+    "margin": -0.4605627849026172
+  },
+  {
+    "name": "d2-2560x1440-01-row-3",
+    "field": "grand",
+    "label": 12,
+    "sigma": 0.4,
+    "positive": 0.47505559294112315,
+    "negative": 0.9814605221840067,
+    "margin": -0.5064049292428836
+  },
+  {
+    "name": "d2-2560x1440-02-row-1",
+    "field": "grand",
+    "label": 13,
+    "sigma": 0,
+    "positive": 0.5671774442238172,
+    "negative": 0.9703093809002904,
+    "margin": -0.4031319366764732
+  },
+  {
+    "name": "d2-2560x1440-02-row-1",
+    "field": "grand",
+    "label": 13,
+    "sigma": 0.4,
+    "positive": 0.5661704561129118,
+    "negative": 0.9747288235456123,
+    "margin": -0.40855836743270046
+  },
+  {
+    "name": "d2-2560x1440-02-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 1.0,
+    "negative": 0.775791238263471,
+    "margin": 0.22420876173652904
+  },
+  {
+    "name": "d2-2560x1440-02-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 1.0,
+    "negative": 0.8359556981804326,
+    "margin": 0.16404430181956742
+  },
+  {
+    "name": "d2-2560x1440-02-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 1.0,
+    "negative": 0.7383171843898101,
+    "margin": 0.2616828156101899
+  },
+  {
+    "name": "d2-2560x1440-02-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 1.0000000000000002,
+    "negative": 0.8354305168105522,
+    "margin": 0.16456948318944797
+  },
+  {
+    "name": "d2-2560x1440-03-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9812068677344351,
+    "negative": 0.8032138783177132,
+    "margin": 0.17799298941672193
+  },
+  {
+    "name": "d2-2560x1440-03-row-2",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9805157777284756,
+    "negative": 0.781868290642613,
+    "margin": 0.19864748708586266
+  },
+  {
+    "name": "d2-2560x1440-03-row-3",
+    "field": "class",
+    "label": 25,
+    "sigma": 0,
+    "positive": 0.029681099866202494,
+    "negative": 0.6335597565501471,
+    "margin": -0.6038786566839446
+  },
+  {
+    "name": "d2-2560x1440-03-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0,
+    "positive": 0.9849221573206367,
+    "negative": 0.7830545499111006,
+    "margin": 0.20186760740953613
+  },
+  {
+    "name": "d2-2560x1440-03-row-3",
+    "field": "class",
+    "label": 25,
+    "sigma": 0.4,
+    "positive": 0.005654903221653431,
+    "negative": 0.664733855157543,
+    "margin": -0.6590789519358896
+  },
+  {
+    "name": "d2-2560x1440-03-row-3",
+    "field": "grand",
+    "label": 16,
+    "sigma": 0.4,
+    "positive": 0.9851700960745905,
+    "negative": 0.7798126827165879,
+    "margin": 0.20535741335800262
+  },
+  {
+    "name": "d2-2560x1440-03-row-3",
+    "field": "class",
+    "label": 25,
+    "sigma": 0.7,
+    "positive": -0.198503092449089,
+    "negative": 0.8926620500745026,
+    "margin": -1.0911651425235915
+  },
+  {
+    "name": "d2-2560x1440-04-row-1",
+    "field": "class",
+    "label": 51,
+    "sigma": 0,
+    "positive": 0.49760987782108945,
+    "negative": 0.9430641365592157,
+    "margin": -0.4454542587381263
+  },
+  {
+    "name": "d2-2560x1440-04-row-1",
+    "field": "class",
+    "label": 51,
+    "sigma": 0.4,
+    "positive": 0.501839296581549,
+    "negative": 0.9438739810958436,
+    "margin": -0.4420346845142946
+  },
+  {
+    "name": "d2-2560x1440-04-row-1",
+    "field": "class",
+    "label": 51,
+    "sigma": 0.7,
+    "positive": 0.6069021207946498,
+    "negative": 0.9180282425547939,
+    "margin": -0.3111261217601441
+  },
+  {
+    "name": "d2-2560x1440-04-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0,
+    "positive": 0.9677184219730621,
+    "negative": 0.8545747153749379,
+    "margin": 0.11314370659812423
+  },
+  {
+    "name": "d2-2560x1440-04-row-2",
+    "field": "class",
+    "label": 62,
+    "sigma": 0.4,
+    "positive": 0.9524225271214665,
+    "negative": 0.8598666671806545,
+    "margin": 0.09255585994081195
+  }
+]
