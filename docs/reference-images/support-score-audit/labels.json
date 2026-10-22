@@ -3,8 +3,8 @@
   "readerCommit": "aefa6bcb",
   "rowIndexConvention": "1-based among fully visible rows; screenRowIndex includes clipped rows",
   "normalization": "Exact game rectangle [left,top,right,bottom), OpenCV INTER_AREA, height 720, width floor(cropWidth*720/cropHeight).",
-  "appendSampleCount": 0,
-  "appendNote": "All 35 screenshots show the normal 3-skill view. The five icons above are command cards, not append slots.",
+  "appendSampleCount": 34,
+  "appendNote": "Files 197-216 (20 owner screenshots) added after the first 35. 197-208 and 212-216 show the append view (5 append slots; \"locked\" = dark icon without a number); 209-211 are labeled view=skill: they show the 3-slot unique/skill view (not append), listed as skillLevels. screenRowIndex of these rows counts one clipped row at the top.",
   "frames": [
     {
       "file": "162.webp",
@@ -598,6 +598,346 @@
       ],
       "normalizedSize": [
         1597,
+        720
+      ]
+    },
+    {
+      "file": "197.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "198.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "199.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "200.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "201.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "202.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "203.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "204.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "205.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "206.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "207.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "208.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "209.webp",
+      "sourceSize": [
+        1832,
+        1164
+      ],
+      "crop": [
+        1,
+        106,
+        1782,
+        1105
+      ],
+      "normalizedSize": [
+        1283,
+        720
+      ]
+    },
+    {
+      "file": "210.webp",
+      "sourceSize": [
+        1832,
+        1164
+      ],
+      "crop": [
+        1,
+        106,
+        1782,
+        1105
+      ],
+      "normalizedSize": [
+        1283,
+        720
+      ]
+    },
+    {
+      "file": "211.webp",
+      "sourceSize": [
+        1832,
+        1164
+      ],
+      "crop": [
+        1,
+        106,
+        1782,
+        1105
+      ],
+      "normalizedSize": [
+        1283,
+        720
+      ]
+    },
+    {
+      "file": "212.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "213.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "214.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "215.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
+        720
+      ]
+    },
+    {
+      "file": "216.webp",
+      "sourceSize": [
+        2000,
+        1147
+      ],
+      "crop": [
+        1,
+        49,
+        1951,
+        1145
+      ],
+      "normalizedSize": [
+        1281,
         720
       ]
     }
@@ -1582,6 +1922,834 @@
         "grandScore": null,
         "text": "Ordinary +29"
       }
+    },
+    {
+      "file": "197.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 294,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "197.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 494,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "198.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 281,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 51,
+        "grandScore": 16,
+        "text": "Compound +51/+16"
+      },
+      "appendSlots": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "198.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 481,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        10,
+        10
+      ]
+    },
+    {
+      "file": "199.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 300,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 57,
+        "grandScore": 16,
+        "text": "Compound +57/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "199.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 500,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "200.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 286,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 0,
+        "grandScore": 16,
+        "text": "Compound +0/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "200.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 486,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 24,
+        "grandScore": 16,
+        "text": "Compound +24/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "201.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 274,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 54,
+        "grandScore": 16,
+        "text": "Compound +54/+16"
+      },
+      "appendSlots": [
+        2,
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "201.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 474,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "202.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 289,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "202.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 489,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 45,
+        "grandScore": null,
+        "text": "Ordinary +45"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "203.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 272,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "203.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 472,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "204.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 294,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "204.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 494,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 60,
+        "grandScore": null,
+        "text": "Ordinary +60"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "205.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 320,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 15,
+        "grandScore": null,
+        "text": "Ordinary +15"
+      },
+      "appendSlots": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "205.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 520,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "206.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 290,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        10,
+        10
+      ]
+    },
+    {
+      "file": "206.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 490,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 1,
+        "grandScore": 16,
+        "text": "Compound +1/+16"
+      },
+      "appendSlots": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "207.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 263,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "207.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 463,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "208.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 305,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 15,
+        "grandScore": null,
+        "text": "Ordinary +15"
+      },
+      "appendSlots": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "208.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 505,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "209.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 292,
+      "view": "skill",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 21,
+        "grandScore": null,
+        "text": "Ordinary +21"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "209.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 492,
+      "view": "skill",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 21,
+        "grandScore": null,
+        "text": "Ordinary +21"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "210.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 295,
+      "view": "skill",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "210.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 496,
+      "view": "skill",
+      "score": {
+        "display": "Compound",
+        "classScore": 1,
+        "grandScore": 16,
+        "text": "Compound +1/+16"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "211.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 216,
+      "view": "skill",
+      "score": {
+        "display": "Compound",
+        "classScore": 0,
+        "grandScore": 16,
+        "text": "Compound +0/+16"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "211.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 417,
+      "view": "skill",
+      "score": {
+        "display": "Compound",
+        "classScore": 24,
+        "grandScore": 16,
+        "text": "Compound +24/+16"
+      },
+      "skillLevels": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "file": "212.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 279,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 24,
+        "grandScore": 16,
+        "text": "Compound +24/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "212.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 479,
+      "view": "append",
+      "score": {
+        "display": "Compound",
+        "classScore": 62,
+        "grandScore": 16,
+        "text": "Compound +62/+16"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        10,
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "213.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 255,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "213.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 455,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "214.webp",
+      "server": "Jp",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 209,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 62,
+        "grandScore": null,
+        "text": "Ordinary +62"
+      },
+      "appendSlots": [
+        9,
+        4,
+        "locked",
+        9,
+        4
+      ]
+    },
+    {
+      "file": "214.webp",
+      "server": "Jp",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 409,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "215.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 294,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "215.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 494,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
+    },
+    {
+      "file": "216.webp",
+      "server": "Kr",
+      "rowIndex": 1,
+      "screenRowIndex": 2,
+      "rowY720": 307,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 45,
+        "grandScore": null,
+        "text": "Ordinary +45"
+      },
+      "appendSlots": [
+        "locked",
+        "locked",
+        "locked",
+        "locked",
+        10
+      ]
+    },
+    {
+      "file": "216.webp",
+      "server": "Kr",
+      "rowIndex": 2,
+      "screenRowIndex": 3,
+      "rowY720": 507,
+      "view": "append",
+      "score": {
+        "display": "Ordinary",
+        "classScore": 0,
+        "grandScore": null,
+        "text": "Ordinary +0"
+      },
+      "appendSlots": [
+        "locked",
+        10,
+        "locked",
+        "locked",
+        "locked"
+      ]
     }
   ]
 }

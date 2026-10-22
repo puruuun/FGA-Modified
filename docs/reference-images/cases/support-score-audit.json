@@ -1078,6 +1078,1372 @@
           "display": "Ordinary"
         }
       ]
+    },
+    {
+      "name": "owner-197-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/197.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "skills": [
+            false,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-197-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/197.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-197-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/197.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-197-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/197.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-198-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/198.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 281,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-198-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/198.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 281,
+          "class": 51,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 51, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-198-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/198.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 481,
+          "skills": [
+            false,
+            true,
+            false,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-198-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/198.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 481,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-199-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/199.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 300,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-199-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/199.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 300,
+          "class": 57,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 57, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-199-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/199.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 500,
+          "skills": [
+            false,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-199-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/199.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 500,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline WRONG: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': 62, 'grand': 1, 'display': 'Compound'}; unread=; wrong=grand"
+    },
+    {
+      "name": "owner-200-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/200.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 286,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-200-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/200.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 286,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "owner-200-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/200.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 486,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-200-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/200.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 486,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-201-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/201.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 274,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-201-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/201.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 274,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 54, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-201-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/201.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 474,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-201-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/201.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 474,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+    },
+    {
+      "name": "owner-202-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/202.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 289,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-202-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/202.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 289,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-202-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/202.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 489,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-202-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/202.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 489,
+          "class": 45,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-203-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/203.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 272,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-203-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/203.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 272,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-203-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/203.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 472,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-203-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/203.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 472,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-204-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/204.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-204-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/204.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-204-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/204.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-204-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/204.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "class": 60,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-205-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/205.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 320,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-205-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/205.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 320,
+          "class": 15,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-205-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/205.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 520,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-205-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/205.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 520,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-206-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/206.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 290,
+          "skills": [
+            false,
+            true,
+            false,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-206-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/206.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 290,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-206-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/206.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 490,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-206-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/206.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 490,
+          "class": 1,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "owner-207-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/207.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 263,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-207-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/207.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 263,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-207-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/207.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 463,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-207-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/207.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 463,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-208-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/208.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 305,
+          "skills": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-208-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/208.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 305,
+          "class": 15,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-208-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/208.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 505,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-208-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/208.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 505,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-209-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/209.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 292,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-209-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/209.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 292,
+          "class": 21,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-209-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/209.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 492,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-209-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/209.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 492,
+          "class": 21,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-210-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/210.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 295,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-210-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/210.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 295,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-210-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/210.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 496,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-210-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/210.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 496,
+          "class": 1,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 1, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-211-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/211.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 216,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-211-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/211.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 216,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 0, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-211-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/211.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 417,
+          "skills": [
+            true,
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-211-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/211.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 417,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-212-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/212.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 279,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-212-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/212.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 279,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 24, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-212-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/212.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 479,
+          "skills": [
+            false,
+            true,
+            true,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-212-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/212.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 479,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': 16, 'display': 'Compound'}; actual {'class': None, 'grand': None, 'display': 'Compound'}; unread=class,grand; wrong="
+    },
+    {
+      "name": "owner-213-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/213.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 255,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-213-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/213.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 255,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-213-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/213.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 455,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-213-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/213.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 455,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-214-row-1-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/214.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 209,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-214-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/214.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 209,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 62, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+    },
+    {
+      "name": "owner-214-row-2-skills",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/214.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 409,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-214-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/214.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 409,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "1.6.2-beta.1 append-audit baseline unknown: expected {'class': 0, 'grand': None, 'display': 'Ordinary'}; actual {'class': None, 'grand': None, 'display': 'Unknown'}; unread=class,display; wrong="
+    },
+    {
+      "name": "owner-215-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/215.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-215-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/215.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 294,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-215-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/215.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-215-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/215.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 494,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-216-row-1-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/216.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 307,
+          "skills": [
+            false,
+            false,
+            false,
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-216-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/216.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 307,
+          "class": 45,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "owner-216-row-2-skills",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/216.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 507,
+          "skills": [
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "owner-216-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/216.png",
+      "view": "Append",
+      "rows": [
+        {
+          "y": 507,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
     }
   ]
 }
