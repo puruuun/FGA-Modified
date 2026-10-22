@@ -57,7 +57,7 @@ internal fun FixtureApi.verifySupport(): JSONObject {
                 .put("grand", s?.grandScore ?: JSONObject.NULL).put("display", s?.display?.name ?: "Unknown").put("skills", JSONArray(k))
         }
         rows.put(values)
-        for (key in listOf("np", "class", "grand")) if (row.has(key))
+        for (key in listOf("np", "class", "grand", "display")) if (row.has(key))
             check(values.get(key).toString() == row.get(key).toString()) { "$key at $y: $values != $row" }
         if (row.has("skills")) check(values.getJSONArray("skills").toString() == row.getJSONArray("skills").toString()) { "Skills at $y: $values != $row" }
         val npChecks = JSONArray()

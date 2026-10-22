@@ -1,0 +1,1126 @@
+{
+  "schema": 1,
+  "suite": "support",
+  "cases": [
+    {
+      "name": "owner-162-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/162.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 285,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-162-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/162.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 485,
+          "class": 18,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-163-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/163.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 291,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-163-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/163.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 491,
+          "class": 1,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-164-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/164.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 280,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-164-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/164.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 480,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-165-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/165.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 279,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-165-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/165.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 479,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-166-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/166.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 271,
+          "class": 57,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-166-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/166.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 471,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-167-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/167.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 297,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-167-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/167.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 496,
+          "class": 60,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-168-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/168.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 284,
+          "class": 60,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-168-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/168.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 484,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-169-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/169.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 282,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-169-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/169.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 482,
+          "class": 42,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-170-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/170.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 287,
+          "class": 18,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-170-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/170.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 487,
+          "class": 1,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-171-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/171.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 312,
+          "class": 9,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-171-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/171.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 512,
+          "class": 28,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-172-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/172.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 249,
+          "class": 23,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-172-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/172.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 449,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-173-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/173.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 272,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-173-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/173.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 472,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-174-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/174.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 277,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-174-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/174.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 477,
+          "class": 22,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-175-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/175.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 297,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-175-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/175.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 497,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-176-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/176.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 265,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-176-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/176.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 465,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-177-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/177.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 174,
+          "class": 23,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-177-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/177.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 374,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-178-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/178.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 240,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-178-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/178.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 440,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-179-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/179.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 219,
+          "class": 28,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-179-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/179.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 419,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-180-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/180.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 288,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-180-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/180.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 488,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-181-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/181.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 289,
+          "class": 5,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-181-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/181.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 489,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-182-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/182.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 291,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-182-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/182.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 492,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-183-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/183.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 285,
+          "class": 50,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-183-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/183.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 486,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-184-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/184.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 280,
+          "class": 45,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-184-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/184.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 481,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-185-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/185.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 270,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-185-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/185.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 471,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-186-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/186.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 311,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-186-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/186.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 511,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-187-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/187.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 275,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-187-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/187.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 475,
+          "class": 1,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-188-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/188.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 296,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-188-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/188.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 496,
+          "class": 24,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-189-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/189.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 276,
+          "class": 54,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-189-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/189.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 476,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-190-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/190.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 271,
+          "class": 50,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-190-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/190.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 471,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-191-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/191.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 292,
+          "class": 45,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-191-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/191.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 492,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-192-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/192.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 287,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-192-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/192.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 487,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-193-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/193.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 266,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-193-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/193.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 467,
+          "class": 3,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-194-row-1",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/194.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 285,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-194-row-2",
+      "suite": "support",
+      "server": "Jp",
+      "file": "docs/reference-images/support-score-audit/194.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 485,
+          "class": 5,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-195-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/195.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 294,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-195-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/195.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 494,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-196-row-1",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/196.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 305,
+          "class": 42,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    },
+    {
+      "name": "owner-196-row-2",
+      "suite": "support",
+      "server": "Kr",
+      "file": "docs/reference-images/support-score-audit/196.png",
+      "view": "Normal",
+      "rows": [
+        {
+          "y": 505,
+          "class": 29,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Baseline pending: BlueStacks 127.0.0.1:5555 unavailable; not classified as a reader failure."
+    }
+  ]
+}
