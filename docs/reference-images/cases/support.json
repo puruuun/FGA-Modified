@@ -4714,6 +4714,591 @@
           }
         }
       ]
+    },
+    {
+      "name": "native-holdout-1920x1080-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 7,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 58,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-1920x1080-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 0,
+          "grand": 0,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, grand; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-02-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-02-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 10,
+          "grand": 12,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, grand; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-1920x1080-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, display; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-1920x1080-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-1920x1080-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 59,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, display; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2340x1080-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 55,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 11,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 48,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 6,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-02-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-02-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 13,
+          "grand": 2,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, grand; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2340x1080-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 11,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, display; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2340x1080-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2340x1080-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 27,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, display; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2560x1440-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2560x1440-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 50,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2560x1440-01-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-01-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 2,
+          "grand": 12,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, grand; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2560x1440-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 18,
+          "grand": 14,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class, grand; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2560x1440-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2560x1440-02-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-02-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 19,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "skip": "Native holdout measurement only: D-2 misses class; no tuning permitted. See 0014-native-holdout-results.json."
+    },
+    {
+      "name": "native-holdout-2560x1440-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 50,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2560x1440-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "name": "native-holdout-2560x1440-03-row-3",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/support-score-holdout/scores/native-holdout-2560x1440-03-row-3.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
     }
   ]
 }

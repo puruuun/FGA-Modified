@@ -74,6 +74,15 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
         }
     }
 
+    /** Evidence from exactly the last frame, including every OCR profile actually used. */
+    data class ColumnReading(val column: Int, val value: BondValue, val candidates: List<OcrText>, val reason: String?) {
+        fun compact(): String = "c${column + 1}=$value" + (reason?.let { "($it)" } ?: "") +
+            candidates.groupingBy { "${it.text.trim().replace(Regex("\\s+"), " ")}@${it.confidence}" }
+                .eachCount().entries.joinToString(prefix = " ocr=[", postfix = "]") { (text, count) -> "$text*$count" }
+    }
+    var lastColumns: List<ColumnReading> = emptyList()
+        private set
+
     private fun matches(region: Region, image: Images): List<Match> {
         val template = images[image]
         return IMAGE_SCALES.flatMap { scale ->
@@ -90,6 +99,7 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
 
     /** All text and image evidence belongs to this one frame. Never reuse across a click. */
     fun read(readGains: Boolean = true): BondFrame = useSameSnapIn {
+        lastColumns = emptyList()
         if (matches(locations.bond.popupTitle, Images.BondPopupTitle).isNotEmpty()) {
             val arrow = matches(locations.bond.popupArrow, Images.Bond).maxByOrNull { it.score }
             val level = arrow?.let { match ->
@@ -99,16 +109,22 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
             return@useSameSnapIn BondFrame.LevelUp(level, columns.singleOrNull())
         }
         if (matches(locations.bond.resultTitle, Images.BondResultTitle).isEmpty()) return@useSameSnapIn BondFrame.Other
-        BondFrame.Normal((0..4).map { index ->
-            val region = locations.bond.gain(index)
-            if (matches(region, Images.BondMax).isNotEmpty()) BondValue.Max
+        val columns = (0..4).map { index ->
+            val candidates = mutableListOf<OcrText>()
+            var reason: String? = null
+            val value = if (matches(locations.bond.gain(index), Images.BondMax).isNotEmpty()) BondValue.Max
             else if (readGains) number(locations.bond.gainText(index)) { pattern ->
                 readGain(if (prefs.gameServer is GameServer.Kr) GAIN_PROFILES else JP_GAIN_PROFILES) {
-                    ocr.detectTextLine(pattern, it)
+                    ocr.detectTextLine(pattern, it).also(candidates::add)
                 }
-            } ?: BondValue.Unknown
-            else BondValue.Unknown
-        })
+            } ?: BondValue.Unknown.also {
+                reason = if (candidates.isEmpty()) "crop clipped" else "OCR consensus failed"
+            }
+            else BondValue.Unknown.also { reason = "gain reading disabled" }
+            ColumnReading(index, value, candidates, reason)
+        }
+        lastColumns = columns
+        BondFrame.Normal(columns.map { it.value })
     }
 
     private fun <T> number(region: Region, read: (Pattern) -> T?): T? =

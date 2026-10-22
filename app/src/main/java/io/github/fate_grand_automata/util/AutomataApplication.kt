@@ -23,12 +23,12 @@ class AutomataApplication : Application() {
 
     private class FgaTree : Timber.DebugTree() {
         override fun isLoggable(tag: String?, priority: Int): Boolean {
-            return isFgaLoggable(tag, priority, BuildConfig.DEBUG)
+            return isFgaLoggable(tag, priority, BuildConfig.DEBUG, BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest"))
         }
     }
 }
 
 /** Same production policy, with an explicit debug flag so non-debug logging is unit-testable. */
-internal fun isFgaLoggable(tag: String?, priority: Int, debug: Boolean): Boolean =
-    debug || priority > Log.INFO ||
+internal fun isFgaLoggable(tag: String?, priority: Int, debug: Boolean, beta: Boolean = false): Boolean =
+    if (tag == BOND_TAG) beta && priority >= Log.INFO else debug || priority > Log.INFO ||
         (priority >= Log.INFO && tag in setOf("FGA.SupportScore", FP_SELL_TAG, SKILL_LEVEL_TAG, WEEKLY_ROUTE_TAG))

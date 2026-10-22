@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "frames": [
+    {
+      "source": "02-append-9to10-jp.webp",
+      "sourceSize": [
+        2000,
+        1253
+      ],
+      "sourceSha256": "5f38dc8af54e0d3010b572c03b992b44143189de659fad4869371573b4293b7d",
+      "gameBox": [
+        0,
+        66,
+        2000,
+        1187
+      ],
+      "normalizedSize": [
+        1284,
+        720
+      ],
+      "interpolation": "OpenCV INTER_AREA",
+      "file": "Jp/skill-level/append-9to10-tablet.png",
+      "expected": {
+        "current": 9,
+        "next": 10
+      }
+    },
+    {
+      "source": "01-bond-kr.webp",
+      "sourceSize": [
+        2000,
+        1253
+      ],
+      "sourceSha256": "f7a91d6e07f8532b8e10fc62fa6b7a9c4eed24262a6dc730dd1f98830226440f",
+      "gameBox": [
+        0,
+        66,
+        2000,
+        1187
+      ],
+      "normalizedSize": [
+        1284,
+        720
+      ],
+      "interpolation": "OpenCV INTER_AREA",
+      "file": "Kr/bond-tablet-0015.png",
+      "expected": [
+        [
+          1318,
+          1214
+        ],
+        [
+          1318,
+          1214
+        ],
+        [
+          1318,
+          805
+        ],
+        [
+          1318,
+          1079
+        ],
+        [
+          1318,
+          1079
+        ]
+      ]
+    }
+  ]
+}

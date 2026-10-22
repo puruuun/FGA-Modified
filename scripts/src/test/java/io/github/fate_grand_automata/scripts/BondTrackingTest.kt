@@ -173,9 +173,28 @@ class BondTrackingTest {
         assertTrue(f.tracker.enabled)
     }
 
+    @Test fun `bond logs distinguish OCR failure from changing frames without changing stable totals`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        val logs = mutableListOf<ScriptLog>()
+        every { f.api.messages.log(capture(logs)) } just Runs
+        fun frame(bonus: Int) = BondFrame.Normal(listOf(
+            BondValue.Gain(10, bonus), BondValue.Unknown, gain, BondValue.Max, gain))
+        every { f.reader.read() } returnsMany listOf(frame(1), frame(2), frame(3), frame(4))
+        every { f.reader.lastColumns } returns listOf(BondReader.ColumnReading(0, gain,
+            listOf(OcrText("+4,748(+2,660)", 93)), null))
+        f.tracker.process()
+        val lines = logs.filterIsInstance<ScriptLog.Bond>().map { it.message }
+        for (read in 0..3) assertTrue(lines.any { "read=$read" in it && "@93" in it })
+        assertTrue(lines.any { "final c1=Unknown reason=no agreement between reads" in it })
+        assertTrue(lines.any { "final c2=Unknown reason=OCR consensus failed" in it })
+        assertTrue(lines.any { "final c3=" in it && "reason=agreed" in it })
+        assertEquals(2, f.tracker.summary()!!.slots.count { it.missedRuns == 1 })
+    }
+
     private class Fixture {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
-        val reader = mockk<BondReader>()
+        val reader = mockk<BondReader>().also { every { it.lastColumns } returns emptyList() }
         val state = BattleState()
         val config = mockk<io.github.fate_grand_automata.scripts.prefs.IBattleConfig>()
         val tracker = BondTracker(api, reader, state, config)

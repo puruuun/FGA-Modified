@@ -25,6 +25,8 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    /** Beta-only per-frame bond evidence and final agreement. */
+    class Bond(val message: String) : ScriptLog()
     /** A line for `adb logcat -s FpSell`: one per evaluated sell tile, plus the stop step and reason. */
     class FpSell(val message: String) : ScriptLog()
     /** A line for `adb logcat -s SkillLevel`: the start, one per slot decision and the stop. */

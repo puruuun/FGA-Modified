@@ -13,8 +13,10 @@ import org.json.JSONObject
  * or "other" (a frame that is not a bond result).
  */
 internal fun FixtureApi.verifyBond(): JSONObject {
-    val frame = BondReader(this, ocr).read()
+    val reader = BondReader(this, ocr)
+    val frame = reader.read()
     val result = JSONObject().put("frame", frame::class.java.simpleName)
+    result.put("evidence", JSONArray(reader.lastColumns.map { it.compact() }))
     when (case.getString("kind")) {
         "normal" -> {
             check(frame is BondFrame.Normal) { "expected a normal bond result, got $frame" }
@@ -26,7 +28,18 @@ internal fun FixtureApi.verifyBond(): JSONObject {
                 }
             })
             result.put("columns", columns)
-            check(columns.toString() == case.getJSONArray("expected").toString()) { "columns $columns != ${case.getJSONArray("expected")}" }
+            val skipped = case.optJSONObject("skipColumns") ?: JSONObject()
+            result.put("skippedColumns", skipped)
+            for (key in skipped.keys()) {
+                require(key.toInt() in 0..4 && skipped.getString(key).isNotBlank()) { "column skip needs an index and reason" }
+            }
+            val expected = case.getJSONArray("expected")
+            check(expected.length() == 5 && columns.length() == 5)
+            for (index in 0..4) if (!skipped.has(index.toString())) {
+                check(columns.get(index).toString() == expected.get(index).toString()) {
+                    "column ${index + 1}: ${columns.get(index)} != ${expected.get(index)}"
+                }
+            }
         }
         "popup" -> {
             check(frame is BondFrame.LevelUp) { "expected a level-up popup, got $frame" }

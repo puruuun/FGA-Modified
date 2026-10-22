@@ -1327,6 +1327,18 @@
         "next": 3
       },
       "slotMode": "Skill"
+    },
+    {
+      "name": "JP-tablet-append-9-to-10",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/append-9to10-tablet.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "expected": {
+        "current": 9,
+        "next": 10
+      }
     }
   ]
 }

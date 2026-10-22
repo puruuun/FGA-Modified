@@ -1,0 +1,294 @@
+{
+  "schema": 1,
+  "normalization": "Native game area; height 720, aspect kept, OpenCV INTER_AREA. No excluded rows. Measurement only; never training.",
+  "frames": [
+    {
+      "file": "1920x1080/01.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 98,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 298,
+          "class": 7,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 498,
+          "class": 58,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "310f42406bcc159a854b4565486329c5737418b8433d9e79118fd6eb55f51b3d"
+    },
+    {
+      "file": "1920x1080/02.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 91,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 291,
+          "class": 0,
+          "grand": 0,
+          "display": "Compound"
+        },
+        {
+          "y": 491,
+          "class": 10,
+          "grand": 12,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "5b8ddf92c89bac68efbf4e1f057d97c3ef95ff5592fc32fb35249834672cee6c"
+    },
+    {
+      "file": "1920x1080/03.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 73,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 273,
+          "class": 0,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 473,
+          "class": 59,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "sourceSha256": "77dcd2321808f19af321478bab92ff6f999f120932dbbdb1414cea9fe57d73d9"
+    },
+    {
+      "file": "2340x1080/01.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 84,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 284,
+          "class": 55,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 484,
+          "class": 11,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "5dec0976fe3aa68d5252ad089e4f06e0adafb0b6d2f2de5cb0ef446bcfe608ce"
+    },
+    {
+      "file": "2340x1080/02.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 84,
+          "class": 48,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 284,
+          "class": 6,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 484,
+          "class": 13,
+          "grand": 2,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "ea055348c1056f040531f2b1ec12d2e48edca0f128b0db743b4affd3a3891c3e"
+    },
+    {
+      "file": "2340x1080/03.png",
+      "sourceSize": [
+        2340,
+        1080
+      ],
+      "normalizedSize": [
+        1560,
+        720
+      ],
+      "rows": [
+        {
+          "y": 64,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 264,
+          "class": 11,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 464,
+          "class": 27,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "sourceSha256": "a6e6b60791c2eb49e0fa5ec9dec60242cc003d18f70bbee391a38c4f66bfb3ab"
+    },
+    {
+      "file": "2560x1440/01.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 59,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 259,
+          "class": 50,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 459,
+          "class": 2,
+          "grand": 12,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "b5428a407d4e2469044fd6ec89f3c627d7a7944bec0ecf0b92354b3f44e11d6b"
+    },
+    {
+      "file": "2560x1440/02.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 83,
+          "class": 18,
+          "grand": 14,
+          "display": "Compound"
+        },
+        {
+          "y": 283,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 483,
+          "class": 19,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ],
+      "sourceSha256": "e8f9e7ac73d78463f3f73a9966398e3de1f6959fee22463feddc8122949ae87b"
+    },
+    {
+      "file": "2560x1440/03.png",
+      "sourceSize": [
+        2560,
+        1440
+      ],
+      "normalizedSize": [
+        1280,
+        720
+      ],
+      "rows": [
+        {
+          "y": 65,
+          "class": 50,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 265,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 465,
+          "class": 62,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ],
+      "sourceSha256": "244484f8a68d2e155190613325b2e9edde739c6b707e90a442bf1b93e3dc115f"
+    }
+  ]
+}

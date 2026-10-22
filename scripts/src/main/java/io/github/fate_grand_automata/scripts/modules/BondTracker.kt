@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.models.*
@@ -38,15 +39,32 @@ class BondTracker @Inject constructor(
         // requested 1.2 second delay independent of the general wait multiplier.
         1200.milliseconds.wait(applyMultiplier = false)
         val readGains = config.trackBond
-        var frame = reader.read(readGains)
+        fun read(number: Int): BondFrame = reader.read(readGains).also { frame ->
+            messages.log(ScriptLog.Bond("run=${state.runs} read=$number ${frame::class.simpleName}"))
+            reader.lastColumns.forEach { column ->
+                messages.log(ScriptLog.Bond("run=${state.runs} read=$number ${column.compact()}"))
+            }
+        }
+        fun logStable(stable: List<BondValue>, latest: BondFrame.Normal?) {
+            stable.forEachIndexed { index, value ->
+                val reason = if (value != BondValue.Unknown) "agreed" else when {
+                    !readGains -> "gain reading disabled"
+                    latest?.values?.getOrNull(index) == BondValue.Unknown -> "OCR consensus failed"
+                    else -> "no agreement between reads"
+                }
+                messages.log(ScriptLog.Bond("run=${state.runs} final c${index + 1}=$value reason=$reason"))
+            }
+        }
+        var frame = read(0)
         if (frame is BondFrame.Normal) {
             var previous: BondFrame.Normal = frame
             val stable = MutableList<BondValue>(5) { BondValue.Unknown }
             repeat(3) {
                 350.milliseconds.wait()
-                frame = reader.read(readGains)
+                frame = read(it + 1)
                 val current = frame as? BondFrame.Normal
                 if (current == null) {
+                    logStable(stable, null)
                     ledger.normal(state.runs, stable)
                     return record(frame)
                 }
@@ -56,13 +74,14 @@ class BondTracker @Inject constructor(
                 }
                 previous = current
             }
+            logStable(stable, previous)
             ledger.normal(state.runs, stable)
             checkStop()
             return frame
         }
         if (frame is BondFrame.LevelUp) {
             350.milliseconds.wait()
-            val confirmed = reader.read(readGains)
+            val confirmed = read(1)
             if (frame != confirmed) {
                 ledger.levelUp(state.runs, null, null)
                 return confirmed

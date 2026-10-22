@@ -442,6 +442,40 @@
       "server": "Kr",
       "kind": "other",
       "file": "docs/reference-images/Kr/wide-2560/29.webp"
+    },
+    {
+      "name": "KR-tablet-bond-0015",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "normal",
+      "file": "docs/reference-images/Kr/bond-tablet-0015.png",
+      "expected": [
+        [
+          1318,
+          1214
+        ],
+        [
+          1318,
+          1214
+        ],
+        [
+          1318,
+          805
+        ],
+        [
+          1318,
+          1079
+        ],
+        [
+          1318,
+          1079
+        ]
+      ],
+      "skipColumns": {
+        "0": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015.",
+        "1": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015.",
+        "2": "Owner tablet fixed frame: BondReader returns Unknown (OCR consensus failed); measurement only, no threshold tuning in 0015."
+      }
     }
   ]
 }

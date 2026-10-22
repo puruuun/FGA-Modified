@@ -49,7 +49,11 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     }.xFromCenter()
     /** Digits only; the yellow "Lv." label is left of both. The next level can have two digits ("10"). */
     fun currentLevel(mode: SkillLevelMode) = Region(-208, levelTop(mode), 104, 120).xFromCenter()
-    fun nextLevel(mode: SkillLevelMode) = Region(216, levelTop(mode), 164, 120).xFromCenter()
+    fun nextLevel(mode: SkillLevelMode) = (when (mode) {
+        // Tablet append 9 -> 10: glyph top 522, right 371; retain clear padding on both sides.
+        SkillLevelMode.Append -> Region(216, 508, 192, 136)
+        SkillLevelMode.Skill -> Region(216, levelTop(mode), 164, 120)
+    }).xFromCenter()
     private fun levelTop(mode: SkillLevelMode) = if (mode == SkillLevelMode.Skill) 624 else 524
     fun dialogCancel(mode: SkillLevelMode) = Location(-390, dialogButtonY(mode)).xFromCenter()
     fun dialogConfirm(mode: SkillLevelMode) = Location(400, dialogButtonY(mode)).xFromCenter()

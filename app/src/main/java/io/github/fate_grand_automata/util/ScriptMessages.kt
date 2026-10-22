@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import dagger.hilt.android.scopes.ServiceScoped
+import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerNotification
 import io.github.fate_grand_automata.scripts.IScriptMessages
@@ -24,6 +25,8 @@ const val WEEKLY_ROUTE_TAG = "WeeklyRoute"
 
 /** Fixed logcat tag of the skill / append level run: `adb logcat -s SkillLevel`. */
 const val SKILL_LEVEL_TAG = "SkillLevel"
+
+const val BOND_TAG = "Bond"
 
 @ServiceScoped
 class ScriptMessages @Inject constructor(
@@ -51,6 +54,10 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.Bond -> {
+                if (BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest")) Timber.tag(BOND_TAG).i(item.message)
+                Unit
+            }
             is ScriptLog.FpSell -> Timber.tag(FP_SELL_TAG).i(item.message)
             is ScriptLog.SkillLevel -> Timber.tag(SKILL_LEVEL_TAG).i(item.message)
             is ScriptLog.WeeklyRoute -> Timber.tag(WEEKLY_ROUTE_TAG).i(item.message)
