@@ -32,7 +32,7 @@ class BondTracker @Inject constructor(
         if (enabled && battleRun == state.runs) ledger.ensure(state.runs)
     }
 
-    /** Two agreeing fresh frames per value prevent reading the result counting animation. */
+    /** The last two confirmed gains must agree; unknown OCR frames supply no new value. */
     fun process(): BondFrame {
         if (!enabled) return BondFrame.Other
         // Wait for the result animation before capturing a fresh frame. Keep the user's
@@ -45,14 +45,20 @@ class BondTracker @Inject constructor(
                 messages.log(ScriptLog.Bond("run=${state.runs} read=$number ${column.compact()}"))
             }
         }
+        data class ConfirmedRead(val number: Int, val value: BondValue, val rule: String?)
+        val agreements = MutableList<Pair<Int, Int>?>(5) { null }
+        val agreedRules = MutableList<String?>(5) { null }
         fun logStable(stable: List<BondValue>, latest: BondFrame.Normal?) {
             stable.forEachIndexed { index, value ->
-                val reason = if (value != BondValue.Unknown) "agreed" else when {
+                val reason = if (value != BondValue.Unknown) {
+                    val reads = checkNotNull(agreements[index])
+                    "agreed(reads=${reads.first},${reads.second})"
+                } else when {
                     !readGains -> "gain reading disabled"
                     latest?.values?.getOrNull(index) == BondValue.Unknown -> "OCR consensus failed"
                     else -> "no agreement between reads"
                 }
-                val rule = reader.lastColumns.getOrNull(index)?.reason
+                val rule = agreedRules[index]
                     ?.takeIf { it in setOf("consensus", "majority", "majority+base") }
                 messages.log(ScriptLog.Bond("run=${state.runs} final c${index + 1}=$value reason=$reason rule=${rule ?: "none"}"))
             }
@@ -60,6 +66,7 @@ class BondTracker @Inject constructor(
         var frame = read(0)
         if (frame is BondFrame.Normal) {
             var previous: BondFrame.Normal = frame
+            val readings = mutableListOf(frame to reader.lastColumns)
             val stable = MutableList<BondValue>(5) { BondValue.Unknown }
             repeat(3) {
                 350.milliseconds.wait()
@@ -70,9 +77,22 @@ class BondTracker @Inject constructor(
                     ledger.normal(state.runs, stable)
                     return record(frame)
                 }
+                readings += current to reader.lastColumns
                 current.values.forEachIndexed { index, value ->
-                    // Keep only the latest agreement, not an intermediate animated number.
-                    stable[index] = if (previous.values.getOrNull(index) == value) value else BondValue.Unknown
+                    val confirmed = readings.mapIndexedNotNull { number, (reading, columns) ->
+                        reading.values.getOrNull(index)?.takeUnless { it == BondValue.Unknown }?.let {
+                            ConfirmedRead(number, it, columns.getOrNull(index)?.reason)
+                        }
+                    }.takeLast(2)
+                    // Unknown gain OCR cannot erase agreement, but a later different value can.
+                    // MAX still requires two adjacent frames, exactly as before.
+                    val agrees = confirmed.size == 2 && confirmed[0].value == confirmed[1].value
+                    val eligible = confirmed.lastOrNull()?.value is BondValue.Gain ||
+                        (value == BondValue.Max && previous.values.getOrNull(index) == BondValue.Max)
+                    stable[index] = if (agrees && eligible) confirmed.last().value else BondValue.Unknown
+                    agreements[index] = if (stable[index] != BondValue.Unknown)
+                        confirmed[0].number to confirmed[1].number else null
+                    agreedRules[index] = if (stable[index] != BondValue.Unknown) confirmed.last().rule else null
                 }
                 previous = current
             }

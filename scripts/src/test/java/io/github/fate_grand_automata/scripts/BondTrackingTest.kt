@@ -278,6 +278,62 @@ class BondTrackingTest {
         assertTrue(f.tracker.summary()!!.slots.all { it.total == 10L && it.readRuns == 1 && it.missedRuns == 0 })
     }
 
+    @Test fun `last two non unknown gains agree independently for each column including owner tablet dropout`() {
+        val a = BondValue.Gain(1318, 1214)
+        val b = BondValue.Gain(1318, 805)
+        val u = BondValue.Unknown
+        val sequences = listOf(
+            listOf(a, a, a, u), // Owner beta.5 log: final OCR lacks a strong candidate.
+            listOf(a, a, b, u), // A later confirmed value blocks the earlier agreement.
+            listOf(a, u, u, u), // A single confirmed reading is insufficient.
+            listOf(a, b, BondValue.Gain(1318, 1079), BondValue.Gain(1318, 1080)),
+            listOf(u, a, u, a)
+        )
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        val logs = mutableListOf<ScriptLog>()
+        every { f.api.messages.log(capture(logs)) } just Runs
+        every { f.reader.lastColumns } returns List(5) {
+            BondReader.ColumnReading(it, a, emptyList(), "majority")
+        }
+        every { f.reader.read() } returnsMany (0..3).map { read ->
+            BondFrame.Normal(sequences.map { it[read] })
+        }
+        f.tracker.process()
+        assertEquals(listOf(2532L, 0L, 0L, 0L, 2532L), f.tracker.summary()!!.slots.map { it.total })
+        assertEquals(listOf(0, 1, 1, 1, 0), f.tracker.summary()!!.slots.map { it.missedRuns })
+        val lines = logs.filterIsInstance<ScriptLog.Bond>().map { it.message }
+        assertTrue(lines.any { "final c1=$a reason=agreed(reads=1,2) rule=majority" in it })
+        assertTrue(lines.any { "final c5=$a reason=agreed(reads=1,3) rule=majority" in it })
+        for (column in 2..4) assertTrue(lines.any { "final c$column=Unknown" in it && "agreed(" !in it })
+        verify(exactly = 4) { f.reader.read(true) }
+    }
+
+    @Test fun `unknown gaps do not relax the adjacent frame requirement for MAX`() {
+        val m = BondValue.Max
+        val u = BondValue.Unknown
+        for (sequence in listOf(listOf(m, m, m, u), listOf(m, u, m, u), listOf(u, m, u, m))) {
+            val f = Fixture()
+            every { f.reader.read() } returnsMany sequence.map { BondFrame.Normal(List(5) { _ -> it }) }
+            f.tracker.process()
+            assertEquals(0, f.state.runs)
+            assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 1 })
+        }
+        val f = Fixture()
+        every { f.reader.read() } returnsMany listOf(u, u, m, m).map { BondFrame.Normal(List(5) { _ -> it }) }
+        assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
+        assertEquals(1, f.state.runs)
+    }
+
+    @Test fun `a confirmed MAX between gains blocks the older gain agreement`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        every { f.reader.read() } returnsMany listOf(gain, gain, BondValue.Max, gain)
+            .map { BondFrame.Normal(List(5) { _ -> it }) }
+        f.tracker.process()
+        assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 1 })
+    }
+
     @Test fun `each result waits out the counter animation before its first OCR even with faster waits`() {
         val f = Fixture()
         every { f.config.stopOnBondMax } returns false
