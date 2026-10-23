@@ -109,6 +109,7 @@ object MapView {
         val reachable = safeYs(x, width, height).filter { it - mapY in -range..0.0 }
         val inward = reachable.filter { it in margin..height - margin }.ifEmpty { reachable }
         return inward.minByOrNull { abs(it - height * 0.5) }?.let { (it - mapY).coerceIn(-range, 0.0) }
+            ?: origin.coerceIn(-range, 0.0).takeIf { isTappable(x, y, width, height) }
     }
 
     /**

@@ -35,6 +35,7 @@ class WeeklyMapEdgeTest {
             assertTrue(target in -180.0..0.0)
             assertTrue(MapView.isTappable(width / 2.0, 690 + target, width, 720))
         }
+        assertEquals(0.0, MapView.targetOrigin(640.0, 19.5, 0.0, 0.0, 1280, 720))
         assertNull(MapView.targetOrigin(Double.NaN, 500.0, 0.0, 180.0, 1280, 720))
     }
 
