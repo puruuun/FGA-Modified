@@ -1,0 +1,418 @@
+[
+  {
+    "kind": "servant",
+    "folder": "Arcueid",
+    "id": 2300500,
+    "number": 351,
+    "name": "アーキタイプ：アース",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Artoria (Caster)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "BB Dubai",
+    "id": 2300600,
+    "number": 421,
+    "name": "ＢＢドバイ",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Chloe (Avenger)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Ciel",
+    "id": 2300900,
+    "number": 418,
+    "name": "謎の代行者C.I.E.L",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Douman",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Flora",
+    "id": 1002000,
+    "number": 464,
+    "name": "フローラ",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Jalter",
+    "id": 1100300,
+    "number": 106,
+    "name": "ジャンヌ・ダルク〔オルタ〕",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Kazuradrop",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Koyanskaya",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Koyanskaya of the Darkness (Foreigner)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Lady Avalon",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Mash",
+    "id": 800100,
+    "number": 1,
+    "name": "マシュ・キリエライト",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Merlin",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Nero (Bride)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Oberon",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Omii-san",
+    "id": 605200,
+    "number": 463,
+    "name": "蛇女房",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Sima Yi (Reines)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Skadi",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Skadi (Ruler)",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Tamamo",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Tiamat Summer",
+    "id": 205400,
+    "number": 450,
+    "name": "ラーヴァ／ティアマト",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "U-Olga Marie",
+    "id": 4000100,
+    "number": 444,
+    "name": "Ｕ－オルガマリー",
+    "region": null
+  },
+  {
+    "kind": "servant",
+    "folder": "Waver",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Aerial Drive.png",
+    "id": 9402750,
+    "number": 683,
+    "name": "Aerial Drive",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Bella Lisa.png",
+    "id": 9403690,
+    "number": 988,
+    "name": "Bella Lisa",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Beyond the Night Without the Snow Flower.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Black Grail.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Blessed Bride.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Chaldea Dinnertime.png",
+    "id": 9404180,
+    "number": 1121,
+    "name": "Chaldea Dinnertime",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Chaldea Lunchtime.png",
+    "id": 9401970,
+    "number": 330,
+    "name": "Chaldea Lunchtime",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Chaldea Morning.png",
+    "id": 9407740,
+    "number": 2020,
+    "name": "Chaldea Morning",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Chaldea Teatime.png",
+    "id": 9403520,
+    "number": 910,
+    "name": "Chaldea Teatime",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Detective Fou.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Foreign God.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "From NFF with Love.png",
+    "id": 9407480,
+    "number": 1949,
+    "name": "From NFF with Love",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Golden Sumo.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Great Library of Memories.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "GudaGuda Poster Girl.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Gun Dealer.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Holy Night Supper.png",
+    "id": 9402090,
+    "number": 390,
+    "name": "Holy Night Supper",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Kaleidoscope.png",
+    "id": 9400340,
+    "number": 34,
+    "name": "Kaleidoscope",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Marshal of the Sorcerors.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Mona Lisa.png",
+    "id": 9400780,
+    "number": 80,
+    "name": "Mona Lisa",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Needle of Sincerity.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Painting Summer.png",
+    "id": 9403340,
+    "number": 871,
+    "name": "Painting Summer",
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Report Check.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Rising Against the Azure Sky.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Secret Mission.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Sword Saints of Wandering.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "The Chaldean.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  },
+  {
+    "kind": "ce",
+    "folder": "Wings of Manuscript.png",
+    "id": null,
+    "number": null,
+    "name": null,
+    "region": null
+  }
+]

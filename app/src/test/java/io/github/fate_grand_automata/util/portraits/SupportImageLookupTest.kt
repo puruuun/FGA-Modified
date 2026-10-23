@@ -4,6 +4,20 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class SupportImageLookupTest {
+    @Test fun `share internal IDs use JP numbers and distinguish regional exclusive identities`() = runBlocking {
+        val source = Source()
+        source.catalogs["JP"] = listOf(jp)
+        source.catalogs["KR"] = listOf(kr, record(123, 90, "한정"))
+        source.catalogs["NA"] = listOf(record(456, 90, "Exclusive"))
+        val lookup = SupportImageLookup(source)
+        for (kind in SupportCatalogKind.entries) {
+            assertEquals("No.90 네로 클라우디우스(브라이드)", lookup.byId(kind, jp.id, "ko")!!.folderName)
+            assertEquals("KR.No.90 한정", lookup.byId(kind, 123, "ko")!!.folderName)
+            assertEquals("NA.No.90 Exclusive", lookup.byId(kind, 456, "ko")!!.folderName)
+            assertNull(lookup.byId(kind, 999, "ko"))
+        }
+    }
+
     private fun record(id: Int = 100600, number: Int = 90, name: String = "ネロ・クラウディウス〔ブライド〕", clazz: String = "saber") =
         SupportCatalogRecord(id, number, name, name, clazz, 5, "https://static.atlasacademy.io/JP/Faces/f_1006000.png")
     private val jp get() = record()

@@ -25,6 +25,20 @@ interface SupportCatalogSource {
 
 /** Pure coordinator, also exercised with deterministic regional fixtures in unit tests. */
 class SupportImageLookup(private val source: SupportCatalogSource) {
+    /** Share links carry internal IDs; collection numbers can collide across regions. */
+    suspend fun byId(kind: SupportCatalogKind, id: Int, language: String): SupportCatalogEntry? {
+        val catalogs = mutableMapOf<String, List<SupportCatalogRecord>>()
+        suspend fun catalog(region: String) = catalogs[region] ?: source.catalog(kind, region).also { catalogs[region] = it }
+        val jp = catalog("JP")
+        val localized = catalog(SupportImageCatalog.languageRegion(language))
+        for (region in SupportImageCatalog.lookupRegions) {
+            val record = catalog(region).firstOrNull { it.id == id } ?: continue
+            return SupportImageCatalog.merge(kind, listOf(record), localized, jp).single()
+                .copy(sourceRegion = if (jp.any { it.id == id }) null else region)
+        }
+        return null
+    }
+
     suspend fun search(kind: SupportCatalogKind, query: String, language: String): List<SupportCatalogEntry> {
         // Validate even before downloading a catalog for invalid/empty requests.
         SupportImageCatalog.search(emptyList(), query)

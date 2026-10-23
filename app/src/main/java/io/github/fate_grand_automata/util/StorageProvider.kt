@@ -182,6 +182,19 @@ class StorageProvider @Inject constructor(
         }
     }
 
+    /** Read-only lookup for import previews: never creates directories. */
+    fun existingSupportEntries(kind: SupportImageKind): List<String> {
+        val sub = when (kind) {
+            SupportImageKind.Servant -> "servant"
+            SupportImageKind.CE -> "ce"
+            else -> return emptyList()
+        }
+        return dirRoot?.findFile(supportFolderName)?.findFile(sub)?.listFiles().orEmpty()
+            .filter { (it.isFile && it.name?.endsWith(".png", true) == true) ||
+                (it.isDirectory && it.listFiles().any { child -> child.isFile && child.name?.endsWith(".png", true) == true }) }
+            .mapNotNull { it.name }
+    }
+
     override fun list(kind: SupportImageKind) = kind.imageFolder
         .listFiles()
         .mapNotNull { it.name }

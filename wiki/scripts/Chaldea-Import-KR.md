@@ -8,7 +8,58 @@
 4. 기존 커맨드 대체 안내를 확인하고 **변환하여 입력**을 누릅니다.
 5. 변환과 FGA 문법 검증이 성공하면 해당 커맨드가 바로 입력됩니다.
 
-첫 번째·두 번째 커맨드 각각에서 사용할 수 있습니다. 누른 쪽의 커맨드만 대체하며, 편성·서포트·개념예장·카드 우선순위 등 다른 스크립트 설정은 가져오지 않습니다. 주소 오류, 변환 실패 또는 취소 시 기존 커맨드는 유지됩니다.
+첫 번째·두 번째 커맨드 각각에서 사용할 수 있습니다. 누른 쪽의 커맨드를 대체합니다. **서포트 설정도 가져오기**를 끈 기본 상태에서는 다른 설정을 바꾸지 않습니다. 주소 오류, 변환 실패 또는 확인 전 취소 시 기존 커맨드와 서포트 설정은 유지됩니다.
+
+## 서포트 설정도 가져오기
+
+1. 링크 입력 창에서 **서포트 설정도 가져오기**를 체크하고 **변환하여 입력**을 누릅니다.
+2. 미리보기에서 프렌드 서번트와 장착 예장의 도감 번호·이름, 저장 폴더·내장 이미지·다운로드 필요 여부와 변경할 설정을 확인합니다.
+3. **확인하고 가져오기**를 누르면 필요한 이미지를 받은 뒤 커맨드와 서포트 설정을 적용합니다. 확인 전 **취소**는 아무 설정도 바꾸지 않으며 판독 이미지도 저장하지 않습니다. 적용 중에는 완료될 때까지 기다립니다.
+
+편성 6칸에 `friend`가 정확히 1명일 때만 서포트를 가져옵니다. 없거나 여러 명이면 안내하고 커맨드만 가져옵니다. 첫 번째·두 번째 커맨드는 같은 전투 설정의 서포트 설정을 공유합니다.
+
+선택 방식은 Preferred가 되며 선호 서번트·예장은 각각 한 항목으로 교체됩니다. 장착 예장이 없으면 선호 예장을 비웁니다. 예장 최대 돌파, 보구 레벨 판독과 최소 레벨, 스킬 1–3의 최대 여부, 어펜드 5칸의 최대 여부와 판독 사용, 서포트 클래스를 가져옵니다. 스킬은 10만 최대 조건으로 넣으며 어펜드는 하나라도 10이면 판독을 켭니다. 그랜드·스코어·친구만·최종 재림 등 나머지 설정은 유지됩니다. 대응하지 않는 클래스는 기존 클래스를 유지합니다.
+
+이미지는 도감 번호가 맞는 **저장 폴더 → 내장 연결표 → Atlas 이미지 다운로드** 순서로 찾습니다. JP 번호를 우선하며 지역 한정 번호는 `KR.No.`·`NA.No.`로 구분합니다. 내장 폴더와 파일 이름은 바꾸지 않습니다. 목록 조회에는 확인 전에도 인터넷 연결이 필요할 수 있지만 이미지 다운로드·저장은 확인 뒤에만 합니다.
+
+목록 정보를 얻지 못하면 서포트 부분을 건너뛰고 커맨드를 가져옵니다. 예장 정보나 특정 이미지 다운로드가 실패하면 해당 항목의 기존 선택을 유지하고 안내합니다. 연결을 확인한 후 다시 가져오거나 **더 보기 → 서포트 이미지 검색·저장**에서 준비할 수 있습니다. 실제 게임에서 프렌드 조건에 맞는 대상이 있는지와 서포트 선택 1회 실행은 사용자가 확인해야 합니다.
+
+### 내장 개념예장 연결표
+
+Atlas NA 이름과 정확히 하나가 일치할 때만 연결합니다. 나머지는 미연결 상태로 두며 필요하면 다운로드합니다. 현재 서번트 9개 연결·15개 미연결, 예장 11개 연결·17개 미연결입니다. 서번트 중 `asc1.png`처럼 내부 ID가 없는 이름은 추측하지 않습니다.
+
+<!-- builtin-ce-table:start -->
+| 폴더(파일) | collection No | Atlas NA name |
+|---|---|---|
+| Aerial Drive.png | 683 | Aerial Drive |
+| Bella Lisa.png | 988 | Bella Lisa |
+| Beyond the Night Without the Snow Flower.png | 미연결 | — |
+| Black Grail.png | 미연결 | — |
+| Blessed Bride.png | 미연결 | — |
+| Chaldea Dinnertime.png | 1121 | Chaldea Dinnertime |
+| Chaldea Lunchtime.png | 330 | Chaldea Lunchtime |
+| Chaldea Morning.png | 2020 | Chaldea Morning |
+| Chaldea Teatime.png | 910 | Chaldea Teatime |
+| Detective Fou.png | 미연결 | — |
+| Foreign God.png | 미연결 | — |
+| From NFF with Love.png | 1949 | From NFF with Love |
+| Golden Sumo.png | 미연결 | — |
+| Great Library of Memories.png | 미연결 | — |
+| GudaGuda Poster Girl.png | 미연결 | — |
+| Gun Dealer.png | 미연결 | — |
+| Holy Night Supper.png | 390 | Holy Night Supper |
+| Kaleidoscope.png | 34 | Kaleidoscope |
+| Marshal of the Sorcerors.png | 미연결 | — |
+| Mona Lisa.png | 80 | Mona Lisa |
+| Needle of Sincerity.png | 미연결 | — |
+| Painting Summer.png | 871 | Painting Summer |
+| Report Check.png | 미연결 | — |
+| Rising Against the Azure Sky.png | 미연결 | — |
+| Secret Mission.png | 미연결 | — |
+| Sword Saints of Wandering.png | 미연결 | — |
+| The Chaldean.png | 미연결 | — |
+| Wings of Manuscript.png | 미연결 | — |
+<!-- builtin-ce-table:end -->
 
 **에너미 타겟팅 정보 무시**를 켜면 `t1`·`t2`·`t3`와 특수한 적 슬롯 등 모든 적 선택 정보가 커맨드에서 빠집니다. 적 하나를 대상으로 하는 스킬도 스킬 알파벳은 그대로 들어갑니다. 아군 대상 번호·스킬 선택지·오더 체인지·보구·공격 순서는 유지됩니다. 이 선택은 해당 링크를 가져올 때만 적용하며 게임에서는 적 선택을 변경하는 커맨드를 실행하지 않습니다.
 

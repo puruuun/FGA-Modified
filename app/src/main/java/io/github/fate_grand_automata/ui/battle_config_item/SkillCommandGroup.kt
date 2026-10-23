@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.icon
@@ -41,6 +42,7 @@ import io.github.fate_grand_automata.ui.skill_maker.colorRes
 @Composable
 fun SkillCommandGroup(
     config: ExecutionProfileCore,
+    supportPrefs: SupportPrefsCore,
     title: String,
     openSkillMaker: () -> Unit
 ) {
@@ -53,6 +55,7 @@ fun SkillCommandGroup(
 
     if (importing) {
         ChaldeaImportDialog(
+            supportPrefs = supportPrefs,
             onDismiss = { importing = false },
             onImported = {
                 cmd = it

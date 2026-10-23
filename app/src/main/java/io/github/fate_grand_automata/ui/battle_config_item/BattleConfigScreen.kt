@@ -233,6 +233,7 @@ private fun BattleConfigContent(
                         Column {
                             SkillCommandGroup(
                                 config = config.execution,
+                            supportPrefs = config.support,
                                 title = if (cardCountMode) stringResource(R.string.command_start_edit_command, 1)
                                     else stringResource(R.string.p_battle_config_cmd),
                                 openSkillMaker = { navigate(BattleConfigDestination.SkillMaker()) }
@@ -241,6 +242,7 @@ private fun BattleConfigContent(
                                 HorizontalDivider()
                                 SkillCommandGroup(
                                     config = config.secondaryExecution,
+                                supportPrefs = config.support,
                                     title = stringResource(R.string.command_start_edit_command, 2),
                                     openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(1)) }
                                 )
