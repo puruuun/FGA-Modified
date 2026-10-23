@@ -36,6 +36,11 @@ class WideScreenLocationsTest {
     private val sixteenNine = transforms(2560)
     private val twentyOneNine = transforms(3360)
 
+    @Test fun `weekly scrollbar follows the right safe edge`() {
+        assertEquals(Region(2506, 190, 16, 988), WeeklyRouteLocations(sixteenNine).listScrollbar)
+        assertEquals(Region(3135, 190, 16, 988), WeeklyRouteLocations(twentyOneNine).listScrollbar)
+    }
+
     @Test fun `the safe area inset exists only on wide screens`() {
         assertEquals(0, sixteenNine.edgeInset)
         assertEquals(WIDE_EDGE_INSET, twentyOneNine.edgeInset)

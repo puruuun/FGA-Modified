@@ -132,17 +132,25 @@ class WeeklyRouteDriver @Inject constructor(
     private fun scanList(onEnd: (ListSearchDirection) -> Unit = {}, find: () -> Match?): Match? {
         val expected = screen()
         if (expected !in setOf(RouteScreen.Home, RouteScreen.List)) return null
-        fun checked(): Match? = if (screen() == expected) find() else null
-        checked()?.let { return it }
-        for (direction in ListSearchDirection.entries) {
-            repeat(MAX_LIST_SCROLLS) { index ->
-                if (screen() != expected) return null
-                scrollList(direction, index + 1)
-                checked()?.let { return it }
-            }
-            onEnd(direction)
-        }
-        return null
+        return io.github.fate_grand_automata.scripts.weekly.WeeklyListScan.run(
+            maxScrolls = MAX_LIST_SCROLLS,
+            capture = {
+                val valid = screen() == expected
+                // Colour matching takes its own snapshot. Keep both grayscale measurements together;
+                // ScreenshotManager does not support nesting snapshot blocks or changing their channels.
+                val match = if (valid) find() else null
+                useSameSnapIn {
+                    val position = if (valid) loc.listScrollbar.getPattern("weekly list scrollbar").use {
+                        io.github.fate_grand_automata.scripts.weekly.ListScrollbar.position(it.grayPixels(), it.width, it.height)
+                    } else null
+                    val pixels = if (valid) loc.listContent.getPattern("weekly list movement").use { it.grayPixels() } else null
+                    io.github.fate_grand_automata.scripts.weekly.ListScanFrame(valid, match, position, pixels)
+                }
+            },
+            scroll = { direction, count -> scrollList(direction, count) },
+            onEnd = onEnd,
+            log = ::log
+        )
     }
 
     override fun openList(list: ChapterList): Boolean {

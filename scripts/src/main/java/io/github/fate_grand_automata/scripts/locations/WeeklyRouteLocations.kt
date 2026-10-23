@@ -24,6 +24,11 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
     /** The scrolling button column of the main screen and the chapter lists: everything right of the portrait, below the title. */
     val listArea = Region(-1500, 200, 1500, 1140).xFromRight()
 
+    /** Owner 0009 and 0012: rail y=95..589, core x=right-27..right-19 at 720p. */
+    val listScrollbar = Region(-54, 190, 16, 988).xFromRightEdge()
+    /** Banner column only: exclude the animated portrait, header, scrollbar and MENU. */
+    val listContent = Region(-1280, 250, 1140, 930).xFromRightEdge()
+
     /** Where a list scroll starts and its finger travel: up 640 px moves the list down by 640 px. */
     val listScrollStart = Location(-700, 1180).xFromRight()
     val listScrollEnd = Location(-700, 540).xFromRight()

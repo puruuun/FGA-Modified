@@ -6006,6 +6006,246 @@
       },
       "spotX": 620.0,
       "spotY": 625.0
+    },
+    {
+      "name": "Jp-weekly-route-02-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/02.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Jp-weekly-route-03-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/03.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.76
+      }
+    },
+    {
+      "name": "Jp-weekly-route-04-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Jp-weekly-route-05-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.85
+      }
+    },
+    {
+      "name": "Jp-weekly-route-12-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/12.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.59
+      }
+    },
+    {
+      "name": "Jp-weekly-route-13-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Jp-weekly-route-14-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.21
+      }
+    },
+    {
+      "name": "Jp-weekly-route-15-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.43
+      }
+    },
+    {
+      "name": "Jp-weekly-route-16-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.74
+      }
+    },
+    {
+      "name": "Jp-weekly-route-17-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.19
+      }
+    },
+    {
+      "name": "Jp-weekly-route-18-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.5
+      }
+    },
+    {
+      "name": "Jp-weekly-route-35-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/35.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.81
+      }
+    },
+    {
+      "name": "Jp-weekly-route-36-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/36.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.16
+      }
+    },
+    {
+      "name": "Kr-weekly-route-24-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.76
+      }
+    },
+    {
+      "name": "Kr-weekly-route-25-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.2
+      }
+    },
+    {
+      "name": "Kr-weekly-route-26-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.05
+      }
+    },
+    {
+      "name": "Kr-weekly-route-27-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Kr-weekly-route-37-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/37.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.86
+      }
+    },
+    {
+      "name": "Kr-weekly-route-38-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/38.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.16
+      }
+    },
+    {
+      "name": "Jp-wide-21x9-01-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/01.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Jp-wide-2560-23-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.76
+      }
+    },
+    {
+      "name": "Jp-wide-2560-24-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/24.webp",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0
+      }
+    },
+    {
+      "name": "Jp-map-no-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/06.webp",
+      "view": "scrollbar",
+      "expected": {
+        "unknown": true
+      }
+    },
+    {
+      "name": "Kr-map-no-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "view": "scrollbar",
+      "expected": {
+        "unknown": true
+      }
     }
   ],
   "imports": {
