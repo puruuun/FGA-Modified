@@ -543,10 +543,15 @@ class WeeklyRouteDriver @Inject constructor(
         if (!opened && problem == "no panel at the spot" && edge != null && screen() == RouteScreen.Map) {
             val (from, to) = MapView.dragPath(ScreenPoint(-edge.x, -edge.y), width, height)
             log("edge recovery quest=${quest.id} opposite=true")
-            swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
-            1.seconds.wait()
+            val actualDelta = if (placeholderPlacement != null) measuredMapDrag(ScreenPoint(0.0, -edge.y), width, height)
+            else {
+                swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
+                1.seconds.wait()
+                null
+            }
             val recovered = placeholderPlacement?.let { (geometry, fit) ->
-                val originY = (fit.originY + to.y - from.y).coerceIn(-geometry.range, 0.0)
+                val delta = actualDelta ?: return@let null
+                val originY = (fit.originY + delta).coerceIn(-geometry.range, 0.0)
                 val y = originY + fit.scaleY * quest.spotY
                 val x = fit.screenX(quest.spotX)
                 val point = if (MapView.isTappable(x, y, width, height)) ScreenPoint(x, y) else MapView.visibleTap(x, y, width, height)
