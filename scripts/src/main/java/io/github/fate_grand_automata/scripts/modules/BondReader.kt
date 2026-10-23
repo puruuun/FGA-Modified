@@ -80,6 +80,14 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
             }
         }
 
+        /** Third path only: all >=60 candidates agree, with six votes and independent same-frame base evidence. */
+        internal fun unanimousGain(readings: List<OcrText>, base: Int): BondValue.Gain? {
+            val candidates = readings.filter { it.confidence >= VOTE_CONFIDENCE }
+            if (candidates.size < 6) return null
+            val values = candidates.map { parseGain(it.text) ?: return null }
+            return values.distinct().singleOrNull()?.takeIf { it.base == base }
+        }
+
         /** Use a snapshot so column order cannot create its own corroborating evidence. */
         internal fun crossCheck(columns: List<ColumnReading>): List<ColumnReading> = columns.map { column ->
             if (column.candidates.isEmpty()) return@map column
@@ -93,7 +101,11 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
                     it.confidence >= VOTE_CONFIDENCE && parseGain(it.text)?.let { gain -> gain.base != base } == true
                 }
                 if ((column.value as? BondValue.Gain)?.base == base && column.reason == "consensus") column
-                else if (!conflict) column
+                else if (!conflict) {
+                    val gain = if (column.value == BondValue.Unknown && confirmedGain(column.candidates) == null &&
+                        majorityGain(column.candidates) == null) unanimousGain(column.candidates, base) else null
+                    if (gain == null) column else column.copy(value = gain, reason = "unanimous+base")
+                }
                 else {
                     val gain = majorityGain(column.candidates, base)
                     column.copy(value = gain ?: BondValue.Unknown,

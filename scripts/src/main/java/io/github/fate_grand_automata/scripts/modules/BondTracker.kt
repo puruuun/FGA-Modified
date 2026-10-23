@@ -59,7 +59,7 @@ class BondTracker @Inject constructor(
                     else -> "no agreement between reads"
                 }
                 val rule = agreedRules[index]
-                    ?.takeIf { it in setOf("consensus", "majority", "majority+base") }
+                    ?.takeIf { it in setOf("consensus", "majority", "majority+base", "unanimous+base") }
                 messages.log(ScriptLog.Bond("run=${state.runs} final c${index + 1}=$value reason=$reason rule=${rule ?: "none"}"))
             }
         }

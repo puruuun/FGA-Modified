@@ -15,7 +15,6 @@ data class ScreenPoint(val x: Double, val y: Double)
  */
 object MapView {
     /** Largest drag of one scroll step, as a fraction of the screen. */
-    private const val MAX_STEP_X = 0.5
     private const val MAX_STEP_Y = 0.35
 
     /**
@@ -80,10 +79,9 @@ object MapView {
     fun edgeDrag(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
         val margin = 60.0 * height / 720.0
         if (x !in 0.0..width.toDouble() || y !in 0.0..height.toDouble()) return null
-        val dx = when { x < margin -> margin - x; x > width - margin -> width - margin - x; else -> 0.0 }
         val dy = when { y < margin -> margin - y; y > height - margin -> height - margin - y; else -> 0.0 }
         fun step(v: Double) = if (v == 0.0) 0.0 else if (v > 0) maxOf(4.0, v) else minOf(-4.0, v)
-        return ScreenPoint(step(dx), step(dy)).takeIf { it.x != 0.0 || it.y != 0.0 }
+        return ScreenPoint(0.0, step(dy)).takeIf { it.y != 0.0 }
     }
 
     /**
@@ -91,14 +89,26 @@ object MapView {
      * tappable. The drag is capped so that one step stays a single bounded scroll.
      */
     fun dragToward(x: Double, y: Double, width: Int, height: Int, centre: Boolean = false): ScreenPoint? {
-        val nearCentre = abs(x - width * 0.5) <= width * 0.08 && abs(y - height * 0.5) <= height * 0.08
-        if (isTappable(x, y, width, height) && (!centre || nearCentre)) return null
-        val targetX = width * 0.5
-        val targetY = height * 0.5
-        val horizontalLimit = minOf(width * MAX_STEP_X, maxOf(0.0,width - 460.0 * height / 720.0))
-        val dx = (targetX - x).coerceIn(-horizontalLimit, horizontalLimit)
-        val dy = (targetY - y).coerceIn(-height * MAX_STEP_Y, height * MAX_STEP_Y)
-        return ScreenPoint(dx, dy)
+        if (!x.isFinite() || !y.isFinite()) return null
+        if (isTappable(x, y, width, height) && (!centre || abs(y - height * 0.5) <= height * 0.08)) return null
+        val target = safeYs(x, width, height).minByOrNull { abs(it - height * 0.5) } ?: return null
+        return ScreenPoint(0.0, (target - y).coerceIn(-height * MAX_STEP_Y, height * MAX_STEP_Y))
+    }
+
+    private fun safeYs(x: Double, width: Int, height: Int) = (12..height - 12).map { it.toDouble() }.filter { y ->
+        isTappable(x, y, width, height) && isTappable(x, y - 4, width, height) && isTappable(x, y + 4, width, height)
+    }
+
+    /** D-40/41: choose a reachable safe y at this fixed x, then keep its origin target across refits. */
+    fun targetOrigin(x: Double, mapY: Double, origin: Double, range: Double, width: Int, height: Int,
+                     centre: Boolean = false, edgeFirst: Boolean = true): Double? {
+        if (listOf(x, mapY, origin, range).any { !it.isFinite() } || range < 0) return null
+        val y = origin + mapY
+        val margin = 60.0 * height / 720.0
+        if (isTappable(x, y, width, height) && !centre && (!edgeFirst || y in margin..height - margin)) return origin.coerceIn(-range, 0.0)
+        val reachable = safeYs(x, width, height).filter { it - mapY in -range..0.0 }
+        val inward = reachable.filter { it in margin..height - margin }.ifEmpty { reachable }
+        return inward.minByOrNull { abs(it - height * 0.5) }?.let { (it - mapY).coerceIn(-range, 0.0) }
     }
 
     /**
@@ -114,7 +124,7 @@ object MapView {
         val bottom = 440 * s
         val cx = (left + right) / 2
         val cy = (top + bottom) / 2
-        val hx = minOf(abs(drag.x) / 2, (right - left) / 2)
+        val hx = 0.0 // Minimum zoom maps fill the width; horizontal gestures cannot move them.
         val hy = minOf(abs(drag.y) / 2, (bottom - top) / 2)
         val sx = if (drag.x < 0) -hx else hx
         val sy = if (drag.y < 0) -hy else hy

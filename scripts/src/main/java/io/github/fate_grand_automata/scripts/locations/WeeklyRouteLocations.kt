@@ -33,6 +33,9 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
     val listScrollStart = Location(-700, 1180).xFromRight()
     val listScrollEnd = Location(-700, 540).xFromRight()
 
+    /** Map-only central area for before/after feature displacement; excludes header, portrait, MENU and rail. */
+    val mapMotion = Region(500, 360, scriptArea.width - 740, 600)
+
     /** The two-finger zoom-out is centred on the map and uses the middle part of the screen. */
     val pinchBounds = Region(400, 300, scriptArea.width - 800, 800)
 

@@ -1,63 +1,80 @@
 package io.github.fate_grand_automata.scripts
 
 import io.github.fate_grand_automata.scripts.weekly.*
-import io.github.lib_automata.ImageFeatureMatch
+import kotlin.math.abs
 import kotlin.test.*
 
 class WeeklyMapEdgeTest {
-    private fun moveAndRefit(width: Int, height: Int = 720) {
-        // One common minimum-zoom map, still larger than all three viewport aspect ratios.
-        val scale = 2.0 / 3
-        val initialX = (width - 2400 * scale) / 2
-        val initialY = (height - 1200 * scale) / 2
-        val screenAnchors = listOf(
-            ScreenPoint(initialX + 5 * scale, initialY + 5 * scale),
-            ScreenPoint(initialX + 2395 * scale, initialY + 1195 * scale),
-            ScreenPoint(11.0, 360.0), ScreenPoint(width - 11.0, 360.0),
-            ScreenPoint(width / 2.0, 11.0), ScreenPoint(width / 2.0, height - 11.0),
-            ScreenPoint(150.0, 600.0), ScreenPoint(450.0, 600.0), ScreenPoint(width - 100.0, 650.0))
-        for (anchor in screenAnchors) {
-            val mapX = (anchor.x - initialX) / scale
-            val mapY = (anchor.y - initialY) / scale
-            var originX = initialX
-            var originY = initialY
-            var scrolls = 0
-            var reads = 0
-            while (true) {
-                // A fresh visible-point fit after every actual (possibly shortened) finger travel.
-                val features = (1..23).flatMap { x -> (1..11).map { y ->
-                    ImageFeatureMatch(x * 100.0, y * 100.0, originX + scale * x * 100, originY + scale * y * 100)
-                } }.filter { it.screenX in 0.0..width.toDouble() && it.screenY in 0.0..height.toDouble() }
-                val fit = assertNotNull(MapLocalizer.fit(features))
-                reads++
-                val x = fit.screenX(mapX)
-                val y = fit.screenY(mapY)
-                val drag = MapView.dragToward(x, y, width, height)
-                if (drag == null) {
-                    assertTrue(scrolls > 0, "unsafe initial point was tapped: $anchor width=$width")
-                    assertTrue(reads > scrolls, "tap requires a fit after the last scroll")
-                    assertTrue(MapView.isTappable(MapView.toScript(x) / 2.0, MapView.toScript(y) / 2.0, width, height))
-                    break
-                }
-                assertFalse(MapView.isTappable(x, y, width, height))
-                assertTrue(scrolls < 4, "point did not become safe: $anchor width=$width")
-                val (start, end) = MapView.dragPath(drag, width, height)
-                assertTrue(MapView.isTappable(start.x, start.y, width, height))
-                assertTrue(MapView.isTappable(end.x, end.y, width, height))
-                originX += end.x - start.x
-                originY += end.y - start.y
-                scrolls++
-            }
+    @Test fun `Traum 93031211 at 1083 696 reaches safe target with half distance gestures`() {
+        // Owner beta.7 log: initial edge request -36 moved only -18; the map later reaches -179.
+        val target = assertNotNull(MapView.targetOrigin(1083.0, 696.0, 0.0, 180.0, 1280, 720))
+        assertTrue(target in -180.0..0.0)
+        val controller = VerticalMapDrag(target, 1280, 720)
+        var origin = 0.0
+        var drags = 0
+        while (true) {
+            val drag = controller.next(origin) ?: break
+            assertEquals(0.0, drag.x)
+            val (from, to) = MapView.dragPath(drag, 1280, 720)
+            assertEquals(from.x, to.x)
+            origin = (origin + (to.y - from.y) * 0.5).coerceIn(-180.0, 0.0)
+            assertTrue(++drags < 10)
         }
+        assertEquals(0.5, controller.ratio, 0.001)
+        assertTrue(abs(target - origin) <= 2)
+        assertTrue(MapView.isTappable(1083.0, 696 + origin, 1280, 720))
+        assertFalse(controller.stationary)
     }
 
-    @Test fun `16 by 9 clipped and UI covered map spots scroll and refit before tap`() = moveAndRefit(1280)
-    @Test fun `18 by 9 clipped and UI covered map spots scroll and refit before tap`() = moveAndRefit(1440)
-    @Test fun `4 by 3 clipped and UI covered map spots scroll and refit before tap`() = moveAndRefit(960)
-    @Test fun `partially clipped margins and nonfinite coordinates are not tappable`() {
-        assertFalse(MapView.isTappable(11.0, 360.0, 1280, 720))
-        assertNotNull(MapView.dragToward(11.0, 360.0, 1280, 720))
-        assertFalse(MapView.isTappable(Double.NaN, 360.0, 1280, 720))
-        assertFalse(MapView.isTappable(640.0, Double.POSITIVE_INFINITY, 1280, 720))
+    @Test fun `targets stay in computed vertical bounds and horizontal impossibilities stay unreachable`() {
+        for (width in listOf(960, 1280, 1680)) {
+            assertNull(MapView.targetOrigin(11.0, 360.0, 0.0, 180.0, width, 720))
+            assertNull(MapView.targetOrigin(width - 11.0, 360.0, 0.0, 180.0, width, 720))
+            assertNull(MapView.targetOrigin(width / 2.0, 1000.0, 0.0, 100.0, width, 720))
+            val target = assertNotNull(MapView.targetOrigin(width / 2.0, 690.0, 0.0, 180.0, width, 720))
+            assertTrue(target in -180.0..0.0)
+            assertTrue(MapView.isTappable(width / 2.0, 690 + target, width, 720))
+        }
+        assertNull(MapView.targetOrigin(Double.NaN, 500.0, 0.0, 180.0, 1280, 720))
+    }
+
+    @Test fun `small actual movement is compensated and only a stationary origin stops the controller`() {
+        val controller = VerticalMapDrag(-20.0, 1280, 720)
+        assertNotNull(controller.next(0.0))
+        assertNotNull(controller.next(-2.0)) // Old four-pixel motion floor must not stop progress.
+        assertFalse(controller.stationary)
+        assertNull(controller.next(-2.0))
+        assertTrue(controller.stationary)
+    }
+
+    @Test fun `UI avoidance and edge drags never contain a horizontal component`() {
+        for (width in listOf(960, 1280, 1680)) for (x in listOf(100.0, width - 100.0)) {
+            assertEquals(0.0, assertNotNull(MapView.dragToward(x, 650.0, width, 720)).x)
+            assertEquals(0.0, assertNotNull(MapView.edgeDrag(x, 700.0, width, 720)).x)
+            val path = MapView.dragPath(ScreenPoint(500.0, 180.0), width, 720)
+            assertEquals(path.first.x, path.second.x)
+        }
+    }
+    @Test fun `relative map fits measure half gesture displacement and distinguish a stationary border`() {
+        for (delta in listOf(-134.0, 0.0, 90.0)) {
+            val features = (1..8).flatMap { x -> (1..5).map { y ->
+                io.github.lib_automata.ImageFeatureMatch(x * 60.0, y * 40.0, x * 60.0, y * 40.0 + delta)
+            } }
+            val fit = assertNotNull(MapLocalizer.fit(features, 0.98..1.02))
+            assertEquals(delta, fit.originY, 0.001)
+            assertEquals(0.0, fit.originX, 0.001)
+        }
+        assertEquals(ProbeStatus.MapFitFailed, ProbeStatus.classify("map movement safety limit"))
+    }
+    @Test fun `reference-free map gestures keep feature overlap and compensate measured gain`() {
+        val control = VerticalMapDrag(-170.0, 1280, 720, initialRatio = 0.5, maxTravel = 120.0)
+        var origin = 0.0
+        repeat(10) {
+            val drag = control.next(origin) ?: return@repeat
+            assertEquals(0.0, drag.x)
+            assertTrue(kotlin.math.abs(drag.y) <= 120)
+            origin = (origin + drag.y * 0.5).coerceAtLeast(-180.0)
+        }
+        assertEquals(-170.0, origin, 2.0)
     }
 }

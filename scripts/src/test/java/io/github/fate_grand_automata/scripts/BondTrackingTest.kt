@@ -13,6 +13,37 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 class BondTrackingTest {
+    @Test fun `tablet beta7b exact four reads confirm unanimously with independent shared bases`() {
+        val lines = javaClass.getResource("/bond/tablet-beta7b-c1.txt")!!.readText().lineSequence().filter { it.isNotBlank() }
+        val anchors = (1..3).map { index -> BondReader.ColumnReading(index,
+            BondValue.Gain(3797, 8835), List(2) { OcrText("3797(+8835)", 95) }, "consensus") }
+        for (line in lines) {
+            val readings = Regex("(.+?)@([0-9]+)\\*([0-9]+)(?:, |$)").findAll(line.substringAfter("ocr=[").removeSuffix("]"))
+                .flatMap { m -> List(m.groupValues[3].toInt()) { OcrText(m.groupValues[1], m.groupValues[2].toInt()) } }.toList()
+            assertEquals(18, readings.size)
+            val primary = BondReader.confirmedGain(readings) ?: BondReader.majorityGain(readings)
+            val column = BondReader.ColumnReading(0, primary ?: BondValue.Unknown, readings, if (primary == null) null else "majority")
+            val result = BondReader.crossCheck(listOf(column) + anchors).first()
+            assertEquals(BondValue.Gain(3797, 11267), result.value)
+            assertEquals(if (primary == null) "unanimous+base" else "majority", result.reason)
+        }
+    }
+
+    @Test fun `unanimous base fallback rejects conflicts insufficient votes and insufficient independent bases`() {
+        val votes = List(6) { OcrText("3797(+11267)", 60) }
+        fun anchor(index: Int, base: Int = 3797) = BondReader.ColumnReading(index,
+            BondValue.Gain(base, 8835), emptyList(), "consensus")
+        fun weak(candidates: List<OcrText> = votes) = BondReader.ColumnReading(0, BondValue.Unknown, candidates, null)
+        for (candidates in listOf(votes.take(5), votes + OcrText("3797(+11268)", 60),
+                votes + OcrText("3798(+11267)", 60), votes + OcrText("bad", 60))) {
+            assertEquals(BondValue.Unknown, BondReader.crossCheck(listOf(weak(candidates), anchor(1), anchor(2))).first().value)
+        }
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(listOf(weak(), anchor(1))).first().value)
+        assertEquals(BondValue.Unknown, BondReader.crossCheck(listOf(weak(), anchor(1, 42), anchor(2, 42))).first().value)
+        val original = listOf(weak(), anchor(1), anchor(2))
+        assertEquals(BondReader.crossCheck(original).reversed(), BondReader.crossCheck(original.reversed()))
+    }
+
     private val gain = BondValue.Gain(4748, 2660)
 
     @Test fun `gain parsing sums base and bonus and never uses NEXT`() {

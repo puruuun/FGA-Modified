@@ -61,7 +61,7 @@ class WeeklyRouteDriver @Inject constructor(
         /** Main record button match score (colour, 525x70 px). */
         const val BUTTON_SIMILARITY = 0.8
         const val MAX_LIST_SCROLLS = 14
-        const val MAX_MAP_SCROLLS = 4
+        const val MAX_MAP_SCROLLS = 16
         /** Screen pixels per map pixel after the full zoom-out (width of the game area / width of the map). */
         val ZOOMED_OUT_SCALE = 0.45..0.9
         const val SCREEN_TIMEOUT_SECONDS = 8
@@ -311,7 +311,7 @@ class WeeklyRouteDriver @Inject constructor(
     private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false, edgeFirst: Boolean = true): Pair<Location?, String> {
         var pinched = false
         var scrolls = 0
-        var beforeScroll: io.github.fate_grand_automata.scripts.weekly.ScreenPoint? = null
+        var movement: io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag? = null
         while (true) {
             val fit = localize(map)
             if (!MapLocalizer.accepts(fit)) {
@@ -325,28 +325,25 @@ class WeeklyRouteDriver @Inject constructor(
             val y = fit.screenY(quest.spotY)
             log("localize quest=${quest.id} score=${"%.2f".format(fit.score)} scale=${"%.3f".format(fit.scaleX)}/${"%.3f".format(fit.scaleY)} " +
                 "origin=${"%.0f".format(fit.originX)},${"%.0f".format(fit.originY)} spot=${"%.0f".format(x)},${"%.0f".format(y)}")
-            beforeScroll?.let { before ->
-                val origin = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
-                when (MapView.afterScroll(before, origin, centre, MapView.isTappable(x, y, screenWidth, screenHeight))) {
-                    MapView.ScrollResult.Tap -> {
-                        log("scroll quest=${quest.id} stationary=true recenter=current-spot")
-                        return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
-                    }
-                    MapView.ScrollResult.Stop -> return if (MapView.isTappable(x, y, screenWidth, screenHeight))
-                        Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
-                    else visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
-                    MapView.ScrollResult.Refit -> Unit
-                }
+            if (movement == null) {
+                val range = (map.height * fit.scaleY - screenHeight).coerceAtLeast(0.0)
+                val target = MapView.targetOrigin(x, quest.spotY * fit.scaleY, fit.originY, range,
+                    screenWidth, screenHeight, centre, edgeFirst)
+                    ?: return visibleIcon(quest, x, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
+                movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(target, screenWidth, screenHeight)
             }
-            val edge = if (edgeFirst) MapView.edgeDrag(x, y, screenWidth, screenHeight) else null
-            if (edge != null) edgeDrag = edge
-            val drag = edge ?: MapView.dragToward(x, y, screenWidth, screenHeight, centre)
-            if (drag == null) return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
-            if (scrolls >= MAX_MAP_SCROLLS) return null to "spot out of reach"
+            val drag = movement.next(fit.originY)
+            if (drag == null) {
+                if (MapView.isTappable(x, y, screenWidth, screenHeight))
+                    return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
+                return visibleIcon(quest, x, y, screenWidth, screenHeight) ?:
+                    (null to if (movement.stationary) "spot out of reach" else "map movement did not converge")
+            }
+            if (edgeFirst && MapView.edgeDrag(x, y, screenWidth, screenHeight) != null) edgeDrag = drag
+            if (scrolls >= MAX_MAP_SCROLLS) return null to "map movement safety limit"
             scrolls++
-            beforeScroll = io.github.fate_grand_automata.scripts.weekly.ScreenPoint(fit.originX, fit.originY)
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
-            log("scroll quest=${quest.id} drag=${"%.0f".format(drag.x)},${"%.0f".format(drag.y)}")
+            log("scroll quest=${quest.id} drag=0,${"%.0f".format(drag.y)} targetOrigin=${"%.1f".format(movement.target)} ratio=${"%.2f".format(movement.ratio)}")
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
             1.seconds.wait()
         }
@@ -378,21 +375,48 @@ class WeeklyRouteDriver @Inject constructor(
         placeholderPlacement = geometry to target.fit
         MapView.edgeDrag(geometry.fit(target.edge).screenX(quest.spotX), geometry.fit(target.edge).screenY(quest.spotY), width, height)?.let { edgeDrag = it }
         val down = target.edge == PlaceholderMap.Edge.Top
-        val (from, to) = MapView.dragPath(ScreenPoint(0.0, if (down) 1000.0 else -1000.0), width, height)
-        val length = kotlin.math.abs(to.y - from.y)
-        repeat(geometry.drags(length)) {
+        var ratio = 1.0
+        var atBorder = false
+        for (attempt in 0 until MAX_MAP_SCROLLS) {
+            // Retain >100 px vertical overlap in the 300 px motion crop even at a 1:1 gain.
+            val drag = ScreenPoint(0.0, if (down) 120.0 else -120.0)
+            val path = MapView.dragPath(drag, width, height)
+            val delta = measuredMapDrag(drag, width, height) ?: return null to "map not recognized"
+            if (kotlin.math.abs(delta) < 0.75) { atBorder = true; break }
+            ratio = kotlin.math.abs(delta / (path.second.y - path.first.y)).coerceIn(0.1, 2.0)
+        }
+        if (!atBorder) return null to "map movement safety limit"
+        var origin = geometry.fit(target.edge).originY
+        val movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(target.fit.originY, width, height, ratio, maxTravel = 120.0)
+        var reached = false
+        for (attempt in 0 until MAX_MAP_SCROLLS) {
+            val drag = movement.next(origin)
+            if (drag == null) { reached = true; break }
+            val delta = measuredMapDrag(drag, width, height) ?: return null to "map not recognized"
+            origin = (origin + delta).coerceIn(-geometry.range, 0.0)
+        }
+        if (!reached) return null to "map movement safety limit"
+        val actual = target.fit.copy(originY = origin)
+        placeholderPlacement = geometry to actual
+        val x = actual.screenX(quest.spotX)
+        val y = actual.screenY(quest.spotY)
+        if (!MapView.isTappable(x, y, width, height)) return visibleIcon(quest, x, y, width, height) ?: (null to "spot out of reach")
+        MapView.edgeDrag(x, y, width, height)?.let { edgeDrag = it }
+        log("placeholder map quest=${quest.id} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
+        return Location(MapView.toScript(x), MapView.toScript(y)) to "ok"
+    }
+
+    /** Relative motion for maps without reference art. Both crops are map pixels, never fixed UI. */
+    private fun measuredMapDrag(drag: ScreenPoint, width: Int, height: Int): Double? {
+        val (from, to) = MapView.dragPath(drag, width, height)
+        return loc.mapMotion.getPattern("map motion before").use { before ->
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
             1.seconds.wait()
+            loc.mapMotion.getPattern("map motion after").use { after ->
+                MapLocalizer.fit(before.featureMatches(after, io.github.lib_automata.Region(0, 0, after.width, after.height)), 0.98..1.02)
+                    ?.takeIf { kotlin.math.abs(it.originX) <= 2.0 }?.originY
+            }
         }
-        val inward = target.fit.originY - geometry.fit(target.edge).originY
-        if (kotlin.math.abs(inward) >= 4) {
-            val (start, end) = MapView.dragPath(ScreenPoint(0.0, inward), width, height)
-            swipe.scroll(Location(MapView.toScript(start.x), MapView.toScript(start.y)), Location(MapView.toScript(end.x), MapView.toScript(end.y)))
-            1.seconds.wait()
-        }
-        MapView.edgeDrag(target.point.x, target.point.y, width, height)?.let { edgeDrag = it }
-        log("placeholder map quest=${quest.id} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
-        return Location(MapView.toScript(target.point.x), MapView.toScript(target.point.y)) to "ok"
     }
 
     private fun readAnchoredPanel(quest: RouteQuest, tap: Boolean, failure: io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure): Boolean {

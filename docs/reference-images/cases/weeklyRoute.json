@@ -6246,6 +6246,66 @@
       "expected": {
         "unknown": true
       }
+    },
+    {
+      "name": "KR-tablet-scrollbar-01-home-top",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/01-home-top.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.0
+      }
+    },
+    {
+      "name": "KR-tablet-scrollbar-02-home-bottom",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/02-home-bottom.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 1.0
+      }
+    },
+    {
+      "name": "KR-tablet-scrollbar-03-mainrecord-top",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/03-mainrecord-top.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.0
+      }
+    },
+    {
+      "name": "KR-tablet-scrollbar-04-mainrecord-bottom",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/04-mainrecord-bottom.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 1.0
+      }
+    },
+    {
+      "name": "KR-tablet-scrollbar-05-interlude-top",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/05-interlude-top.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 0.0
+      }
+    },
+    {
+      "name": "KR-tablet-scrollbar-06-interlude-bottom",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/06-interlude-bottom.png",
+      "view": "scrollbar",
+      "expected": {
+        "position": 1.0
+      }
     }
   ],
   "imports": {

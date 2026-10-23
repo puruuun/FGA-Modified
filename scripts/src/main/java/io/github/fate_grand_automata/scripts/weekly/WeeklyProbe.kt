@@ -10,7 +10,7 @@ enum class ProbeStatus(val csv: String) {
     NotRun("not_run");
 
     companion object {
-        private val mapFit = setOf("map not recognized", "pinch failed", "spot out of reach", "zoom out failed", "chapter map not recognized", "entered map is not the free quest map")
+        private val mapFit = setOf("map not recognized", "map movement did not converge", "map movement safety limit", "pinch failed", "spot out of reach", "zoom out failed", "chapter map not recognized", "entered map is not the free quest map")
 
         /** Maps the reason text of a [SpotOutcome.NotFound] or of a failed chapter visit to a status. */
         fun classify(reason: String): ProbeStatus = when {

@@ -1339,6 +1339,18 @@
         "current": 9,
         "next": 10
       }
+    },
+    {
+      "name": "KR-tablet-append-2-to-3",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/03-append-2to3-tablet.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "expected": {
+        "current": 2,
+        "next": 3
+      }
     }
   ]
 }

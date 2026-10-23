@@ -29,7 +29,7 @@ class WeeklyGeometryTest {
     @Test fun `UI covered and offscreen spots require bounded nonfling drags`() {
         assertFalse(MapView.isTappable(100.0,40.0,1280,720));assertFalse(MapView.isTappable(1200.0,650.0,1280,720))
         assertTrue(MapView.isTappable(640.0,360.0,1280,720))
-        val drag=assertNotNull(MapView.dragToward(3000.0,-1000.0,1280,720));assertTrue(kotlin.math.abs(drag.x)<=640 && kotlin.math.abs(drag.y)<=324)
+        val drag=assertNotNull(MapView.dragToward(640.0,-1000.0,1280,720));assertTrue(kotlin.math.abs(drag.x)<=640 && kotlin.math.abs(drag.y)<=324)
         val path=MapView.dragPath(drag,1280,720);assertTrue(path.first.x in 0.0..1280.0 && path.second.y in 0.0..720.0)
     }
     @Test fun `pinch fingers start together symmetrically inside bounds and converge`() {
@@ -67,7 +67,7 @@ class WeeklyGeometryTest {
     }
 
     @Test fun `both drag directions start and end inside the map safe area`() {
-        for(width in listOf(960,1280,1680)) for(x in listOf(-2000.0,4000.0)) for(y in listOf(-2000.0,3000.0)) {
+        for(width in listOf(960,1280,1680)) for(x in listOf(100.0,width - 100.0)) for(y in listOf(-2000.0,3000.0)) {
             val drag=assertNotNull(MapView.dragToward(x,y,width,720))
             val path=MapView.dragPath(drag,width,720)
             assertTrue(MapView.isTappable(path.first.x,path.first.y,width,720),"start=$path width=$width")
