@@ -19,6 +19,23 @@ on:
       - 'docs/**'
       - '.claude/**'
       - '**/AGENTS.md'
+  pull_request:
+    branches: [main]
+    # Same paths-ignore as push.
+    paths-ignore:
+      - '.idea/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/instructions/**'
+      - '.github/copilot-instructions.md'
+      - '.gitattributes'
+      - '.gitignore'
+      - '*.md'
+      - 'LICENSE'
+      - 'custom-game-area/**'
+      - 'wiki/**'
+      - 'docs/**'
+      - '.claude/**'
+      - '**/AGENTS.md'
   workflow_dispatch:
 
 permissions:

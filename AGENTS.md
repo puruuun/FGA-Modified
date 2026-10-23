@@ -17,12 +17,13 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ## Delivery for this repository
 
-- Unless the user explicitly requests a pull request, integrate changes with the latest remote `main`, verify them, and push directly to `main` without creating a new PR.
+- Deliver every change through a pull request (owner decision, 2026-10-23). Branch from the latest remote `main` (for example `feat/…`, `fix/…`, `docs/…`), commit there, push the branch, and open a PR against `main`. Never push commits directly to `main`.
+- The planner (Claude) reviews the PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
 - For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use Codex as author, committer, or co-author unless the user requests it. Do not add `Co-Authored-By` trailers or "Generated with" lines for any AI agent (Codex, Claude, Copilot, …) to commits or PR descriptions; GitHub should show only `puruuun`. Preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
-- Before pushing, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
-- After pushing, check the `Main CI` run for that commit. If it fails, fix it before any other work.
-- Do not build beta or stable APKs from a commit whose `Main CI` run failed.
+- Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
+- After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
+- Do not build beta or stable APKs from a commit whose `Main CI` run failed. Build release and beta APKs from `main` after the merge.
 
 - Development beta APKs are not published as GitHub Releases unless the user explicitly requests publication. Save build APKs locally or update BlueStacks; CI build artifacts may be used for building and downloading them.
 
