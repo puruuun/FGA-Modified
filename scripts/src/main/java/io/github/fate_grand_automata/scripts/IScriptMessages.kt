@@ -25,6 +25,7 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    data object QuestItemsPartySkipped : ScriptLog()
     /** Beta-only per-frame bond evidence and final agreement. */
     class Bond(val message: String) : ScriptLog()
     /** A line for `adb logcat -s FpSell`: one per evaluated sell tile, plus the stop step and reason. */

@@ -159,7 +159,7 @@ class QuestItemsTest {
             every { api.prefs.selectedServerConfigPref.useTeapot } returns tea
         }
         fun failsBeforeQuest() {
-            val error = assertFailsWith<AutoBattle.BattleExitException> { launch.start() }
+            val error = assertFailsWith<AutoBattle.BattleExitException> { if (modal) items.prepare() else launch.start() }
             assertThat(error.reason).isEqualTo(AutoBattle.ExitReason.QuestItemSettingFailed)
             assertFalse("quest" in trace)
         }
@@ -210,8 +210,8 @@ class QuestItemsTest {
 
     @Test
     fun `already open dialog is configured without pressing the main control`() {
-        val f = Fixture(); f.modal = true; f.wanted(false, true); f.launch.start()
-        assertThat(f.trace).isEqualTo(listOf("party", "tea", "close", "quest"))
+        val f = Fixture(); f.modal = true; f.wanted(false, true); f.items.prepare()
+        assertThat(f.trace).isEqualTo(listOf("tea", "close"))
     }
 
     @Test
@@ -220,8 +220,8 @@ class QuestItemsTest {
             val f = Fixture()
             every { f.api.prefs.ignoreQuestItemUsage } returns bypass
             if (!bypass) every { f.api.prefs.gameServer } returns GameServer.En.Original
-            f.launch.start()
-            assertThat(f.trace).isEqualTo(listOf("party", "quest"))
+            f.items.prepare()
+            assertThat(f.trace).isEqualTo(emptyList())
             verify(exactly = 0) { f.api.useSameSnapIn<Any?>(any()) }
             verify(exactly = 0) { f.api.images[any(), any()] }
         }
@@ -234,11 +234,11 @@ class QuestItemsTest {
     }
 
     @Test
-    fun `unreadable or ambiguous controls cannot trigger a blind click`() {
+    fun `initial unreadable or ambiguous controls are skipped without item clicks`() {
         for (failure in 0..2) {
             val f = Fixture(); f.hideState = failure == 0; f.ambiguousState = failure == 1; f.ambiguousIcon = failure == 2
-            f.failsBeforeQuest()
-            assertThat(f.trace).isEqualTo(listOf("party"))
+            f.launch.start()
+            assertThat(f.trace).isEqualTo(listOf("party", "quest"))
         }
     }
 
@@ -249,11 +249,15 @@ class QuestItemsTest {
     }
 
     @Test
-    fun `unrecognized party screen is not mistaken for an absent item control`() {
+    fun `no party after support skips items and Start after exactly three seconds`() {
         val f = Fixture(); f.absent = true
         every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returns false
-        f.failsBeforeQuest()
-        assertThat(f.trace).isEqualTo(listOf("party"))
+        assertFalse(f.launch.start())
+        assertTrue(f.trace.isEmpty())
+        verify(exactly = 10) { with(f.api) { 300.milliseconds.wait(false) } }
+        verify { f.api.messages.log(io.github.fate_grand_automata.scripts.ScriptLog.QuestItemsPartySkipped) }
+        f.items.prepare() // Initial reads also never throw or tap when the screen cannot be established.
+        assertTrue(f.trace.isEmpty())
     }
 
     @Test
@@ -268,15 +272,15 @@ class QuestItemsTest {
     fun `failed item toggle or failed dialog close prevents Quest Start`() {
         val toggle = Fixture(); toggle.modal = true; toggle.ignoreTaps = true; toggle.wanted(true, false)
         toggle.failsBeforeQuest()
-        assertThat(toggle.trace).isEqualTo(listOf("party", "storm"))
+        assertThat(toggle.trace).isEqualTo(listOf("storm"))
         val close = Fixture(); close.ignoreClose = true; close.failsBeforeQuest()
         assertThat(close.trace).isEqualTo(listOf("party", "main", "close"))
     }
 
     @Test
     fun `partial dialog and changed state after closing both stop before starting`() {
-        val partial = Fixture(); partial.modal = true; partial.partialDialog = true; partial.failsBeforeQuest()
-        assertThat(partial.trace).isEqualTo(listOf("party"))
+        val partial = Fixture(); partial.modal = true; partial.partialDialog = true; partial.items.prepare()
+        assertTrue(partial.trace.isEmpty())
         val wrong = Fixture(); wrong.wrongAfterClose = true; wrong.failsBeforeQuest()
         assertThat(wrong.trace).isEqualTo(listOf("party", "main", "close"))
     }
@@ -294,10 +298,11 @@ class QuestItemsTest {
         assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
         val partial = Fixture(server = GameServer.Kr)
         partial.nativeHeadingOnly = true; partial.modal = true; partial.partialDialog = true
-        partial.failsBeforeQuest()
-        assertThat(partial.trace).isEqualTo(listOf("party"))
+        partial.items.prepare()
+        assertTrue(partial.trace.isEmpty())
         val jp = Fixture(); jp.nativeHeadingOnly = true; jp.modal = true
-        jp.failsBeforeQuest()
+        jp.items.prepare()
+        assertTrue(jp.trace.isEmpty())
         val loader = jp.api.images
         verify(exactly = 0) { loader[Images.QuestItemDialogKrNative, any()] }
     }
@@ -335,5 +340,12 @@ class QuestItemsTest {
             assertThat(error.reason).isEqualTo(if (failure) AutoBattle.ExitReason.QuestItemSettingFailed else AutoBattle.ExitReason.Abort)
             assertThat(f.trace).isEqualTo(if (failure) listOf("party", "main", "close") else listOf("party", "main", "close", "quest"))
         }
+    }
+    @Test
+    fun `delayed confirmed party checks items and starts only after confirmation`() {
+        val f = Fixture()
+        every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returnsMany listOf(false, false, true)
+        assertTrue(f.launch.start())
+        assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
     }
 }

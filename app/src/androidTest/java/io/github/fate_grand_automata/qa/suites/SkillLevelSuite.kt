@@ -27,7 +27,7 @@ internal fun FixtureApi.verifySkillLevel(): JSONObject {
         "levels" -> {
             val digits = SkillLevelDigits(this, loc, ocr)
             val level = digits.read(mode())
-            fun raw(region: io.github.lib_automata.Region) = JSONArray(digits.readings(region).map { "${it.text.trim()}@${it.confidence}" })
+            fun raw(region: io.github.lib_automata.Region) = JSONArray(digits.readings(region, mode()).map { "${it.text.trim()}@${it.confidence}" })
             JSONObject().put("current", level.current ?: "unread").put("next", level.next ?: "unread")
                 .put("rawCurrent", raw(loc.currentLevel(mode()))).put("rawNext", raw(loc.nextLevel(mode())))
         }

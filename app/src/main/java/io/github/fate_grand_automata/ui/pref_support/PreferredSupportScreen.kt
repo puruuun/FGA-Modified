@@ -162,7 +162,7 @@ private fun PreferredSupport(
                     AnimatedVisibility(npEnabled) {
                         config.minimumNpLevel.ListPreference(
                             title = stringResource(R.string.p_np_min_level),
-                            entries = (1..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
+                            entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
                         )
                     }
                     config.score62Check.SwitchPreference(

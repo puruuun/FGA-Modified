@@ -49,9 +49,10 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     }.xFromCenter()
     /** Digits only; the yellow "Lv." label is left of both. The next level can have two digits ("10"). */
     // The tablet append 2 is not clipped: the old crop includes the Lv. period and background icons,
-    // producing a confident 4 at threshold 0.6. Isolate the measured digit column without relaxing consensus.
+    // producing a confident 4 at threshold 0.6. 0019 shifts the same-width digit column left 1 px
+    // at 720p for even outline padding on tablet and wide KR/JP, while excluding the Lv. period.
     fun currentLevel(mode: SkillLevelMode) = (if (mode == SkillLevelMode.Append)
-        Region(-204, levelTop(mode), 64, 120) else Region(-208, levelTop(mode), 104, 120)).xFromCenter()
+        Region(-206, levelTop(mode), 64, 120) else Region(-208, levelTop(mode), 104, 120)).xFromCenter()
     fun nextLevel(mode: SkillLevelMode) = (when (mode) {
         // Tablet append 9 -> 10: glyph top 522, right 371; retain clear padding on both sides.
         SkillLevelMode.Append -> Region(216, 508, 192, 136)

@@ -85,7 +85,9 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                     }
                     plan.settings?.let { settings ->
                         Text(stringResource(R.string.chaldea_support_changes,
-                            if (settings.mlb) "✓" else "x", settings.npLevel,
+                            if (settings.mlb) "✓" else "x", if (settings.npLevel > 1)
+                                stringResource(R.string.p_np_min_level_entry, settings.npLevel)
+                            else stringResource(R.string.chaldea_support_np_disabled),
                             settings.skills.joinToString("/") { if (it) "10" else "x" },
                             settings.appends.joinToString("/") { if (it) "10" else "x" },
                             settings.supportClass?.let { stringResource(it.stringRes) } ?: "—"))

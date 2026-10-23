@@ -1351,6 +1351,253 @@
         "current": 2,
         "next": 3
       }
+    },
+    {
+      "name": "0019-01-append-7to8-kr-bluestacks-window",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/01-append-7to8-kr-bluestacks-window.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "BlueStacks window; chrome removed using owner game box",
+      "expected": {
+        "current": 7,
+        "next": 8
+      }
+    },
+    {
+      "name": "0019-jp-wide-01-1to2",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-01-1to2.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 1,
+        "next": 2
+      }
+    },
+    {
+      "name": "0019-jp-wide-02-2to3",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-02-2to3.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 2,
+        "next": 3
+      }
+    },
+    {
+      "name": "0019-jp-wide-03-3to4",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-03-3to4.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 3,
+        "next": 4
+      }
+    },
+    {
+      "name": "0019-jp-wide-04-4to5",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-04-4to5.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 4,
+        "next": 5
+      }
+    },
+    {
+      "name": "0019-jp-wide-05-5to6",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-05-5to6.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 5,
+        "next": 6
+      }
+    },
+    {
+      "name": "0019-jp-wide-06-6to7",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-06-6to7.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 6,
+        "next": 7
+      }
+    },
+    {
+      "name": "0019-jp-wide-07-7to8",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-07-7to8.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 7,
+        "next": 8
+      }
+    },
+    {
+      "name": "0019-jp-wide-08-8to9",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-08-8to9.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 8,
+        "next": 9
+      }
+    },
+    {
+      "name": "0019-jp-wide-09-9to10",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0019/jp-wide-09-9to10.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 9,
+        "next": 10
+      }
+    },
+    {
+      "name": "0019-kr-wide-01-1to2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-01-1to2.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 1,
+        "next": 2
+      }
+    },
+    {
+      "name": "0019-kr-wide-02-2to3",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-02-2to3.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 2,
+        "next": 3
+      }
+    },
+    {
+      "name": "0019-kr-wide-03-3to4",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-03-3to4.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 3,
+        "next": 4
+      }
+    },
+    {
+      "name": "0019-kr-wide-04-4to5",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-04-4to5.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 4,
+        "next": 5
+      }
+    },
+    {
+      "name": "0019-kr-wide-05-5to6",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-05-5to6.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 5,
+        "next": 6
+      }
+    },
+    {
+      "name": "0019-kr-wide-06-6to7",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-06-6to7.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 6,
+        "next": 7
+      }
+    },
+    {
+      "name": "0019-kr-wide-07-7to8",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-07-7to8.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 7,
+        "next": 8
+      }
+    },
+    {
+      "name": "0019-kr-wide-08-8to9",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-08-8to9.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 8,
+        "next": 9
+      }
+    },
+    {
+      "name": "0019-kr-wide-09-9to10",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0019/kr-wide-09-9to10.png",
+      "view": "levels",
+      "slotMode": "Append",
+      "note": "Resampled 2000x844 upload; not native; centered 21:9 game area",
+      "expected": {
+        "current": 9,
+        "next": 10
+      }
     }
   ]
 }

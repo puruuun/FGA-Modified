@@ -19,7 +19,7 @@ class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: Q
         if (prefs.ignoreQuestItemUsage || (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp)) return
         val wantedStorm = prefs.selectedServerConfigPref.useStormPod
         val wantedTea = prefs.selectedServerConfigPref.useTeapot
-        val initial = await { it != View.Unknown }
+        val initial = await(initial = true) { it != View.Unknown }
         when (initial) {
             View.Unavailable -> return
             is View.Dialog -> configureDialog(initial, wantedStorm, wantedTea)
@@ -40,7 +40,7 @@ class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: Q
                     else -> fail()
                 }
             }
-            View.Unknown -> fail()
+            View.Unknown -> return
         }
     }
 
@@ -65,12 +65,13 @@ class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: Q
         100.milliseconds.wait(applyMultiplier = false)
     }
 
-    private fun await(accept: (View) -> Boolean): View {
+    private fun await(initial: Boolean = false, accept: (View) -> Boolean): View {
         repeat(10) {
             0.3.seconds.wait()
             val view = reader.read()
             if (accept(view)) return view
         }
+        if (initial) return View.Unknown
         fail()
     }
 

@@ -26,7 +26,11 @@ class SkillLevelDigits @Inject constructor(
          * horizontal stretch of 1.2 or more turns "1" into "4". These profiles were picked on the owner dialogs
          * (digits 1-6), where every confident reading of all of them was right.
          */
-        val PROFILES = listOf(0.6, 0.65, 0.7, 0.75, 0.8).flatMap { threshold ->
+        val PROFILES = profiles(listOf(0.6, 0.65, 0.7, 0.75, 0.8))
+        // Append's translucent background differs from the normal skill dialog. 0.60 merges
+        // background into KR 5/7; 0.62/0.63 retain thin 9 in both KR/JP wide uploads.
+        val APPEND_PROFILES = profiles(listOf(0.62, 0.63, 0.65, 0.7, 0.75, 0.8))
+        private fun profiles(thresholds: List<Double>) = thresholds.flatMap { threshold ->
             listOf(0.8, 1.0).flatMap { stretch ->
                 listOf(4, 12).map { padding ->
                     TextLineOcrOptions(scale = 1, threshold = threshold, invert = true, padding = padding,
@@ -68,21 +72,26 @@ class SkillLevelDigits @Inject constructor(
     }
 
     /** Raw primary OCR readings, kept for the QA report. */
-    fun readings(region: Region): List<OcrText> = region.getPattern("skill_level_digit").use { pattern ->
-        PROFILES.map { ocr.detectTextLine(pattern, it) }
+    fun readings(region: Region, mode: SkillLevelMode = SkillLevelMode.Skill): List<OcrText> = region.getPattern("skill_level_digit").use { pattern ->
+        (if (mode == SkillLevelMode.Append) APPEND_PROFILES else PROFILES).map { ocr.detectTextLine(pattern, it) }
     }
 
-    private fun readDigit(region: Region, valid: IntRange): Int? {
-        val primary = readings(region)
+    /** Template evidence for offline QA, using exactly the product fallback path. */
+    fun templateScores(region: Region): List<Pair<Int, Double>> = digitTemplates.orEmpty().map { (digit, pattern) ->
+        digit to (region.find(pattern, similarity = 0.7)?.score ?: 0.0)
+    }
+
+    private fun readDigit(region: Region, valid: IntRange, mode: SkillLevelMode): Int? {
+        val primary = readings(region, mode)
         if (!needsTemplateFallback(primary)) return consensus(primary, valid)
         // The isolated glyph 9 is missed by Tesseract. Require a near-exact match that beats every other digit.
-        val templates = digitTemplates ?: return null
-        val scores = templates.map { (digit, pattern) -> digit to (region.find(pattern, similarity = 0.7)?.score ?: 0.0) }
+        val scores = templateScores(region)
+        if (scores.isEmpty()) return null
         return templateNine(scores)?.takeIf { it in valid }
     }
 
     /** Current is valid from 1 to 9, next from 2 to 10. Unread or contradictory values remain null. */
     fun read(mode: SkillLevelMode): SkillLevelReading = useSameSnapIn {
-        SkillLevelReading(readDigit(loc.currentLevel(mode), 1..9), readDigit(loc.nextLevel(mode), 2..10))
+        SkillLevelReading(readDigit(loc.currentLevel(mode), 1..9, mode), readDigit(loc.nextLevel(mode), 2..10, mode))
     }
 }

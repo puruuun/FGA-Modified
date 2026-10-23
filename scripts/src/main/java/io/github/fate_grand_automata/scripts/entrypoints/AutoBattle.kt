@@ -487,7 +487,7 @@ class AutoBattle @Inject constructor(
         support.selectSupport()
 
         if (!isContinuing) {
-            4.seconds.wait()
+            if (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp) 4.seconds.wait()
             party()
         }
     }
@@ -495,7 +495,7 @@ class AutoBattle @Inject constructor(
     /** Also handles a script started directly on party confirmation, including after a repeat. */
     private fun party() {
         canScreenshotBondCE = false
-        startQuest()
+        if (!startQuest()) return
         // Let the transition settle before checking battle screens again.
         5.seconds.wait()
     }
@@ -543,11 +543,12 @@ class AutoBattle @Inject constructor(
      * 2. A boost item is selected if [IPreferences.boostItemSelectionMode] is set (needed in some events)
      * 3. The story is skipped if [IPreferences.storySkip] is activated
      */
-    private fun startQuest() {
-        questLaunch.start()
+    private fun startQuest(): Boolean {
+        if (!questLaunch.start()) return false
 
         useBoostItem()
         storySkipPossible = true
+        return true
     }
 
     /**

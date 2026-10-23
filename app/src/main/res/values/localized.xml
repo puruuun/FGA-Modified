@@ -865,10 +865,11 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="chaldea_support_builtin">Built-in image</string>
     <string name="chaldea_support_download">Download required after confirmation</string>
     <string name="chaldea_support_confirm">Confirm and import</string>
-    <string name="chaldea_support_changes">Mode: Preferred\nReplace preferred servant and CE (clear CE if none equipped).\nCE MLB: %1$s\nRead NP level: on; minimum: %2$d\nMax skills: %3$s\nAppend skills (enabled if any is 10): %4$s\nSupport class (— = unchanged): %5$s\nOther settings stay unchanged.</string>
+    <string name="chaldea_support_changes">Mode: Preferred\nReplace preferred servant and CE (clear CE if none equipped).\nCE MLB: %1$s\nNP level check: %2$s\nMax skills: %3$s\nAppend skills (enabled if any is 10): %4$s\nSupport class (— = unchanged): %5$s\nOther settings stay unchanged.</string>
     <string name="chaldea_support_no_ce">No CE equipped: clear preferred CEs.</string>
     <string name="chaldea_support_friend_count">Support skipped: exactly one friend is required. Commands can still be imported.</string>
     <string name="chaldea_support_metadata_failed">Support skipped: could not load servant details. Check your connection and try again. Commands can still be imported.</string>
     <string name="chaldea_support_servant_failed">Could not prepare servant images. The previous servant selection will be kept.</string>
     <string name="chaldea_support_ce_failed">Could not prepare CE details or images. The previous CE selection will be kept.</string>
+    <string name="chaldea_support_np_disabled">Off (Lv.1; saved minimum unchanged)</string>
 </resources>
