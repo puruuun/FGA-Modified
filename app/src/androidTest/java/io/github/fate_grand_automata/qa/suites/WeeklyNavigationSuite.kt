@@ -23,7 +23,7 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
                     "scrollbar position=$position expected=$expected"
                 }
                 // Keep the raw measurement in the report; the shared exact verifier checks the rounded target.
-                actual.put("measured", position).put("position", expected.getDouble("position"))
+                actual.put("measured", position).put("position", expected.get("position"))
             } else {
                 check(position == null) { "expected unreadable scrollbar, got $position" }
                 actual.put("unknown", true)
