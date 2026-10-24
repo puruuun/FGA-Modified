@@ -41,6 +41,16 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     /** The padlock sits in the icon centre. */
     fun slotLock(mode: SkillLevelMode, slot: Int) = Region((slotX(mode)[slot] - 40 - 640) * 2, 410 - slotRise, 160, 224).xFromCenter()
 
+    /** Panel level row, before Enhance. Same icon coordinates on real/exchange 0021 captures.
+     * Skill includes the Lv. and /10 text; Append isolates the current outlined glyph column.
+     * 16:10 uses the same 16:9 game-area coordinates after letterbox removal. */
+    fun panelLevel(mode: SkillLevelMode, slot: Int): Region {
+        require(slot in slotX(mode).indices)
+        val x = slotX(mode)[slot] - 640
+        return (if (mode == SkillLevelMode.Skill) Region((x + 65) * 2, 584 - slotRise, 290, 68)
+            else Region((x - 5) * 2, 590 - slotRise, 66, 42)).xFromCenter()
+    }
+
     /** Confirm dialog: the "confirmation" watermark sits lower in the skill dialog than in the append dialog. */
     val dialogWatermark = Region(-240, 1180, 500, 120).xFromCenter()
     fun dialogTitle(mode: SkillLevelMode) = when (mode) {

@@ -1,0 +1,1522 @@
+[
+  {
+    "server": "Kr",
+    "level": 1,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 1,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 1,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 1,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 2,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 2,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 2,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 2,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 3,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 3,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 3,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 3,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 4,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 4,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 4,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 4,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 5,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 5,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 5,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 5,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 6,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 6,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 6,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 6,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 7,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.46.02.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/37-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 7,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.46.19.254.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/39-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 7,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.45.42.770.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/35-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 7,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.45.52.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/36-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 8,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.47.31.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/44-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 8,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.47.07.720.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/41-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 8,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.47.15.720.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/42-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 8,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.47.23.571.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/43-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 9,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.49.01.187.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/49-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 9,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.48.36.271.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/46-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 9,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.48.44.571.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/47-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 9,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.48.52.587.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/48-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 10,
+    "sourceSlot": 1,
+    "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 10,
+    "sourceSlot": 3,
+    "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 10,
+    "sourceSlot": 4,
+    "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Kr",
+    "level": 10,
+    "sourceSlot": 5,
+    "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+    "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 1,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 1,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 1,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 1,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      0,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 2,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 2,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 2,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 2,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      21,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 3,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 3,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 3,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 3,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      42,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 4,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 4,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 4,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 4,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      63,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 5,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 5,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 5,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 5,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      84,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 6,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 6,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 6,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 6,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      105,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 7,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 7,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 7,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 7,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      126,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 8,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 8,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 8,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 8,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      147,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 9,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.18.03.270.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/15-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 9,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/16-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 9,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/16-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 9,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.18.49.670.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/17-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      168,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 10,
+    "sourceSlot": 1,
+    "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+    "region720": [
+      668,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      0,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 10,
+    "sourceSlot": 3,
+    "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+    "region720": [
+      1023,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      33,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 10,
+    "sourceSlot": 4,
+    "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+    "region720": [
+      1200,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      66,
+      189,
+      33,
+      21
+    ]
+  },
+  {
+    "server": "Jp",
+    "level": 10,
+    "sourceSlot": 5,
+    "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+    "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+    "region720": [
+      1378,
+      273,
+      33,
+      21
+    ],
+    "cell": [
+      99,
+      189,
+      33,
+      21
+    ]
+  }
+]

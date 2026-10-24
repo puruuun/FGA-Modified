@@ -1,0 +1,665 @@
+{
+  "note": "Planner labels by eye. 0 = locked slot (no level text). Append levels are slots 1-5 left to right, skill slots 1-3. All frames are 2560x1080 native BlueStacks captures (21:9). append-exchange = the append exchange screen (same icons as the enhance screen); append-real = the real append enhance screen with the 강화 가능 / 強化可能 overlay.",
+  "frames": [
+    {
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        1,
+        2,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        1,
+        2,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        1,
+        2,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        10,
+        1,
+        2
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        2,
+        10,
+        10,
+        10,
+        1
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        4,
+        10,
+        10,
+        10,
+        3
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        3,
+        4,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        3,
+        4,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        3,
+        4,
+        10
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        10,
+        3,
+        4
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        5,
+        6,
+        7,
+        8,
+        4
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        8,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        7,
+        8,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        6,
+        7,
+        8,
+        4,
+        5
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.18.03.270.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/15-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        9,
+        9,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/16-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        9,
+        9,
+        0
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.18.49.670.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/17-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        9,
+        0,
+        0,
+        9
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.31.23.637.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/18-skill.png",
+      "screen": "skill",
+      "levels": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.32.08.037.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/19-skill.png",
+      "screen": "skill",
+      "levels": [
+        6,
+        4,
+        4
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.32.33.987.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/20-skill.png",
+      "screen": "skill",
+      "levels": [
+        7,
+        7,
+        8
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.32.45.421.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/21-skill.png",
+      "screen": "skill",
+      "levels": [
+        9,
+        9,
+        9
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.33.06.987.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/22-skill.png",
+      "screen": "skill",
+      "levels": [
+        10,
+        10,
+        2
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.33.12.937.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/23-skill.png",
+      "screen": "skill",
+      "levels": [
+        9,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "jp/실제 강화창 글시뜸 jp.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/24-append-real.png",
+      "screen": "append-real",
+      "levels": [
+        0,
+        5,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        1,
+        2,
+        3,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        1,
+        2,
+        3,
+        10
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        3,
+        10,
+        10,
+        1,
+        2
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        2,
+        3,
+        10,
+        10,
+        1
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        4,
+        5,
+        6,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        4,
+        5,
+        6,
+        10
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        10,
+        10,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        6,
+        10,
+        10,
+        4,
+        5
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        5,
+        6,
+        10,
+        10,
+        4
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.45.42.770.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/35-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        7,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.45.52.687.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/36-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        0,
+        7
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.46.02.587.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/37-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        7,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.46.11.104.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/38-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        7,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.46.19.254.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/39-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        7,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.46.58.954.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/40-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        8,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.47.07.720.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/41-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        8,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.47.15.720.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/42-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        8,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.47.23.571.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/43-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        0,
+        8
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.47.31.587.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/44-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        8,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.48.17.770.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/45-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        9,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.48.36.271.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/46-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.48.44.571.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/47-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        9,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.48.52.587.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/48-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        0,
+        0,
+        0,
+        0,
+        9
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.24_23.49.01.187.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/49-append-exchange.png",
+      "screen": "append-exchange",
+      "levels": [
+        9,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_00.36.23.570.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/50-skill.png",
+      "screen": "skill",
+      "levels": [
+        4,
+        1,
+        2
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_00.36.41.070.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/51-skill.png",
+      "screen": "skill",
+      "levels": [
+        5,
+        3,
+        9
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_00.36.52.037.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/52-skill.png",
+      "screen": "skill",
+      "levels": [
+        10,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_00.37.04.621.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/53-skill.png",
+      "screen": "skill",
+      "levels": [
+        8,
+        8,
+        8
+      ]
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_00.37.17.570.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/54-skill.png",
+      "screen": "skill",
+      "levels": [
+        9,
+        10,
+        10
+      ]
+    },
+    {
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "screen": "append-real",
+      "levels": [
+        5,
+        6,
+        10,
+        10,
+        4
+      ]
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_00.53.47.870.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/56-skill.png",
+      "screen": "skill",
+      "levels": [
+        5,
+        4,
+        4
+      ]
+    }
+  ]
+}
