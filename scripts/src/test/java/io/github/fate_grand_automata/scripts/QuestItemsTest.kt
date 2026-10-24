@@ -18,6 +18,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class QuestItemsTest {
     @Test
@@ -255,6 +256,7 @@ class QuestItemsTest {
         assertFalse(f.launch.start())
         assertTrue(f.trace.isEmpty())
         verify(exactly = 10) { with(f.api) { 300.milliseconds.wait(false) } }
+        verify(exactly = 0) { with(f.api) { 2.seconds.wait(any()) } }
         verify { f.api.messages.log(io.github.fate_grand_automata.scripts.ScriptLog.QuestItemsPartySkipped) }
         f.items.prepare() // Initial reads also never throw or tap when the screen cannot be established.
         assertTrue(f.trace.isEmpty())
@@ -343,9 +345,22 @@ class QuestItemsTest {
     }
     @Test
     fun `delayed confirmed party checks items and starts only after confirmation`() {
-        val f = Fixture()
-        every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returnsMany listOf(false, false, true)
-        assertTrue(f.launch.start())
-        assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
+            val f = Fixture(server = server)
+            val twoSecondWaitTrace = mutableListOf<List<String>>()
+            every { with(f.api) { 2.seconds.wait() } } answers {
+                twoSecondWaitTrace += f.trace.toList()
+            }
+            every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returnsMany listOf(false, false, true)
+            assertTrue(f.launch.start())
+            verify(exactly = 2) { with(f.api) { 300.milliseconds.wait(false) } }
+            assertThat(twoSecondWaitTrace).isEqualTo(
+                listOf(
+                    emptyList(),
+                    listOf("party", "main", "close", "quest")
+                )
+            )
+            assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
+        }
     }
 }

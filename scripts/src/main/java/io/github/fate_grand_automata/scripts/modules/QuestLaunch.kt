@@ -37,6 +37,7 @@ class QuestLaunch @Inject constructor(
                 messages.log(io.github.fate_grand_automata.scripts.ScriptLog.QuestItemsPartySkipped)
                 return false
             }
+            2.seconds.wait()
         }
         partySelection.selectParty()
         items.prepare()

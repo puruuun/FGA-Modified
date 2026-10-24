@@ -8,7 +8,9 @@ With control off, every item read and change is bypassed. The launcher retains t
 
 ## Behavior
 
-The sequence is **support selection → party selection → item settings → Quest Start**. One probe tap distinguishes identical-looking direct controls from controls that open the item dialog. Direct controls are verified after the flip and restored with a second tap when the initial state already matched the requested state. Items are consumed at Quest Start, not by these configuration taps.
+The sequence is **support selection → party selection → item settings → Quest Start**. On KR and JP, the script polls for up to **3 seconds** to confirm the party screen after support selection, then waits **2 seconds** for the screen transition to settle before selecting the party and checking item settings. If the party screen is not confirmed within 3 seconds, party selection, item checks and Quest Start are skipped (`quest items: party screen not confirmed, skipped`).
+
+One probe tap distinguishes identical-looking direct controls from controls that open the item dialog. Direct controls are verified after the flip and restored with a second tap when the initial state already matched the requested state. Items are consumed at Quest Start, not by these configuration taps.
 
 In the dialog, **left = Storm Pod, right = Teapot**. Only mismatched switches are changed, with a fresh frame after every tap. Both requested states must be verified before Close, and party-screen restoration must be verified before Quest Start. Unreadable states, unresponsive switches or unconfirmed closing stop the script before starting. Quantity 0 or 0/9 never supplies the ON/OFF state.
 
