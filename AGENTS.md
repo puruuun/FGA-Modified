@@ -14,6 +14,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
 - **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`; the translated `values-*` copies are synced from POEditor.
 - **Any user-facing feature or change, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated; the GitHub Pages manual picks it up automatically.
+- **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, and record each sync in the log table.
 
 ## Delivery for this repository
 
