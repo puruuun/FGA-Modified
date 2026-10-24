@@ -16,6 +16,7 @@ import io.github.fate_grand_automata.qa.suites.verifySupport
 import io.github.fate_grand_automata.qa.suites.verifyFpSell
 import io.github.fate_grand_automata.qa.suites.verifySkillLevel
 import io.github.fate_grand_automata.qa.suites.verifyWeeklyRoute
+import io.github.fate_grand_automata.qa.suites.verifyRankUp
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -69,6 +70,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                         "fpSell" -> api.verifyFpSell()
                         "skillLevel" -> api.verifySkillLevel()
                         "weeklyRoute" -> api.verifyWeeklyRoute()
+                        "rankUp" -> api.verifyRankUp()
                         else -> error("Unknown suite")
                     })
                     api.checkCoverage()

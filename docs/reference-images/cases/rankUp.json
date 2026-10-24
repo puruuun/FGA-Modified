@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "suite": "rankUp",
+  "cases": [
+    {
+      "name": "Kr-0020-np-rankup-downscaled",
+      "suite": "rankUp",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/rank-up/0020-np-rankup-downscaled.png",
+      "note": "Chat-downscaled 850x474 upload; centered 843x474 game crop, normalized to 1280x720; not native",
+      "expected": {
+        "rankUp": true
+      }
+    },
+    {
+      "name": "Kr-negative-battle-screen",
+      "suite": "rankUp",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle-screen.png",
+      "expected": {
+        "rankUp": false
+      }
+    },
+    {
+      "name": "Kr-negative-bond-20261016-164241",
+      "suite": "rankUp",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/bond-20261016-164241.png",
+      "expected": {
+        "rankUp": false
+      }
+    },
+    {
+      "name": "Kr-negative-bond-20261016-165827",
+      "suite": "rankUp",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/bond-20261016-165827.png",
+      "expected": {
+        "rankUp": false
+      }
+    },
+    {
+      "name": "Kr-negative-bond-kr11",
+      "suite": "rankUp",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/bond-kr11.png",
+      "expected": {
+        "rankUp": false
+      }
+    }
+  ]
+}

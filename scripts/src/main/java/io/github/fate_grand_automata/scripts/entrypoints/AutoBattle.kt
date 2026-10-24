@@ -38,6 +38,9 @@ fun IFgoAutomataApi.isInSupport(): Boolean {
     return locations.support.screenCheckRegion.exists(images[Images.SupportScreen], similarity = 0.85)
 }
 
+/** Shared with offline device QA; keeps the battle loop's default similarity and centered region. */
+fun IFgoAutomataApi.isRankUpScreen() = images[Images.RankUp] in locations.rankUpRegion
+
 fun IFgoAutomataApi.isInventoryFull() =
     // We only have images for JP, NA and KR
     (prefs.gameServer is GameServer.En || prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
@@ -533,8 +536,7 @@ class AutoBattle @Inject constructor(
         locations.battle.battleSafeMiddleOfScreenClick.click(10)
     }
 
-    private fun isRankUp() =
-        images[Images.RankUp] in locations.rankUpRegion
+    private fun isRankUp() = isRankUpScreen()
 
     /**
      * Starts the quest after the support has already been selected. The following features are done optionally:
