@@ -4,9 +4,10 @@
 
 버전 값은 저장소 루트의 `version.properties`에만 씁니다. 워크플로 파일에는 버전을 적지 않습니다.
 
-1. **버전 올리기.** `version.properties`의 `beta.*`와 `stable.*`를 고칩니다.
-   - 정규판 versionCode는 직전 정규판 값에 1을 더합니다.
-   - 베타 versionCode는 `major*1000000 + minor*1000 + patch*100 + beta`입니다. 빌드가 이 규칙을 검사합니다.
+1. **유의적 버전(SemVer) 결정 및 베타 우선 검증.** 상세 규칙은 [`docs/agents/releases-and-versioning.md`](../agents/releases-and-versioning.md)를 따릅니다.
+   - 기존 기능 개선·버그 수정·번역/에셋 정리·업스트림 동기화는 **패치 버전(`X.Y.(Z+1)`)**, 새로운 기능 추가는 **마이너 버전(`X.(Y+1).0`)**으로 올립니다.
+   - 기능·코드 변경 단계에서는 먼저 `beta.versionName`(`X.Y.Z-beta.N`)과 `beta.versionCode`(`major*1000000 + minor*1000 + patch*100 + beta`)만 올리고 `./gradlew :app:assembleBeta`로 베타 APK를 만들어 블루스택·태블릿에서 검증합니다.
+   - 베타 검증이 끝나고 정규판 출시가 결정되면 `stable.versionName`(`X.Y.Z`)과 `stable.versionCode`(직전 정규판 값 + 1)를 올립니다.
 2. **Main CI 확인.** 버전을 올린 커밋의 `Main CI` 실행이 성공했는지 확인합니다.
 3. **베타 APK 설치.** `Beta APK` 워크플로를 실행하거나 `./gradlew :app:assembleBeta`로 만듭니다. 블루스택에 업데이트로 설치합니다. 설치가 되는지, APK의 SHA-256이 `.sha256` 파일과 같은지 확인합니다.
 4. **기기 검사.** 블루스택에서 `py -3 tools/device-qa/run.py --build --suite support,bond,questItems`를 실행합니다. 모든 suite가 실패 없이 끝나야 합니다. skip은 `docs/reference-images/README.md`의 목록과 같아야 합니다.

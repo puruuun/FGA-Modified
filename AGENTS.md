@@ -14,7 +14,8 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
 - **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`; the translated `values-*` copies are synced from POEditor.
 - **Any user-facing feature or change, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated; the GitHub Pages manual picks it up automatically.
-- **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, and record each sync in the log table.
+- **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, curate built-in CEs with the owner, and record each sync in the log table.
+- **`version.properties`, `docs/releases/`, `wiki/releases/`, or building Beta/Stable APKs** — [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md). Use Semantic Versioning (`X.Y.(Z+1)` for refinements/fixes/syncs, `X.(Y+1).0` for new features) and always build/verify a Beta APK (`beta.*`, `./gradlew :app:assembleBeta`) on BlueStacks/tablet before promoting `stable.*` and publishing a GitHub Release.
 
 ## Delivery for this repository
 
@@ -28,7 +29,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
 - Do not build beta or stable APKs from a commit whose `Main CI` run failed. Build release and beta APKs from `main` after the merge.
 
-- Development beta APKs are not published as GitHub Releases unless the user explicitly requests publication. Save build APKs locally or update BlueStacks; CI build artifacts may be used for building and downloading them.
+- Follow the **Beta-First QA & Semantic Versioning** workflow in [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md) (owner decision, 2026-10-24): bump `beta.versionName`/`beta.versionCode` first (`X.Y.(Z+1)-beta.N` for refinements/fixes/syncs, `X.(Y+1).0-beta.N` for new features), build and install the Beta APK (`./gradlew :app:assembleBeta`) for BlueStacks/tablet verification, and only bump `stable.*` and publish a GitHub Release after the owner approves.
 
 ## Build & test
 
