@@ -176,7 +176,8 @@ class ChaldeaSupportImportTest {
             assertEquals(folders, rows.filter { it.kind == kind }.map { it.folder }.toSet())
         }
         assertEquals(9, rows.count { it.kind == "servant" && it.id != null })
-        assertEquals(11, rows.count { it.kind == "ce" && it.id != null })
+        assertEquals(23, rows.count { it.kind == "ce" && it.id != null })
+        assertEquals(0, rows.count { it.kind == "ce" && it.id == null })
         for (row in rows.filter { it.kind == "servant" && it.id != null }) {
             assertTrue(File(assets, "servant/${row.folder}").listFiles()!!.any {
                 Regex("f_${row.id}[0-9]\\.png").matches(it.name)
@@ -184,8 +185,10 @@ class ChaldeaSupportImportTest {
         }
         val text = File(assets, "builtin-ids.json").readText()
         val array = Json.parseToJsonElement(text).jsonArray
-        array.map { it.jsonObject }.filter { it.text("kind") == "ce" && it.int("id") != null }.forEach {
-            assertEquals(it.text("folder")!!.removeSuffix(".png"), it.text("name"))
+        array.map { it.jsonObject }.filter { it.text("kind") == "ce" }.forEach {
+            assertTrue((it.int("id") ?: 0) > 0)
+            assertTrue((it.int("number") ?: 0) > 0)
+            assertTrue(!it.text("name").isNullOrBlank())
         }
         assertFailsWith<IllegalArgumentException> { BuiltinSupportIds.parse(JsonArray(array + array.first()).toString()) }
     }

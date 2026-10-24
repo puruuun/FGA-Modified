@@ -589,7 +589,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="servant_name_waver">Waver</string>
 
     <!-- Default CE Names -->
-    <string name="ce_name_aerial_drive">Aerial Drive</string>
     <string name="ce_name_bella_lisa">Bella Lisa</string>
     <string name="ce_name_beyond_the_night_without_the_snow_flower">Beyond the Night Without the Snow Flower</string>
     <string name="ce_name_black_grail">Black Grail</string>
@@ -601,16 +600,12 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="ce_name_detective_fou">Detective Fou</string>
     <string name="ce_name_foreign_god">Foreign God</string>
     <string name="ce_name_from_nff_with_love">From NFF with Love</string>
-    <string name="ce_name_golden_sumo">Golden Sumo</string>
     <string name="ce_name_great_library_of_memories">Great Library of Memories</string>
-    <string name="ce_name_gudaguda_poster_girl">GudaGuda Poster Girl</string>
     <string name="ce_name_gun_dealer">Gun Dealer</string>
-    <string name="ce_name_holy_night_supper">Holy Night Supper</string>
     <string name="ce_name_kaleidoscope">Kaleidoscope</string>
     <string name="ce_name_marshal_of_the_sorcerors">Marshal of the Sorcerors</string>
     <string name="ce_name_mona_lisa">Mona Lisa</string>
     <string name="ce_name_needle_of_sincerity">Needle of Sincerity</string>
-    <string name="ce_name_painting_summer">Painting Summer</string>
     <string name="ce_name_report_check">Report Check</string>
     <string name="ce_name_rising_against_the_azure_sky">Rising Against the Azure Sky</string>
     <string name="ce_name_secret_mission">Secret Mission</string>

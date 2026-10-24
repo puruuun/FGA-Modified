@@ -1,6 +1,6 @@
 """Generate identity mappings without guessing names or renaming shipped images.
 
-Run with Python 3; Atlas JP supplies canonical numbers, NA exact CE names.
+Run with Python 3; Atlas JP supplies canonical numbers, NA/KR/JP verified records supply CE matches.
 """
 import json
 import re
@@ -10,6 +10,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "app/src/main/assets/Support"
 
+NA_CE_ALIASES = {
+    "Black Grail.png": ("The Black Grail", 48, 9400480),
+}
+
+KR_CE_MATCHES = {
+    "Beyond the Night Without the Snow Flower.png": ("눈꽃 없는 밤의 너머로", 1410, 9405170),
+    "Detective Fou.png": ("명탐정 폼즈", 1080, 9403990),
+    "Marshal of the Sorcerors.png": ("마도원수", 1458, 9405320),
+    "Needle of Sincerity.png": ("지성의 한 땀", 2209, 9408390),
+    "Report Check.png": ("리포트 체크", 2052, 9407850),
+    "Rising Against the Azure Sky.png": ("창공에 서다", 1605, 9406200),
+    "Secret Mission.png": ("시크릿 미션", 2142, 9408220),
+    "The Chaldean.png": ("칼데아의 남자", 1797, 9406960),
+    "Wings of Manuscript.png": ("수고의 날개", 2124, 9408060),
+}
+
+JP_CE_MATCHES = {
+    "Blessed Bride.png": (2233, 9408590),
+    "Foreign God.png": (2437, 9408800),
+    "Great Library of Memories.png": (2583, 9409210),
+    "Gun Dealer.png": (2701, 9409490),
+    "Sword Saints of Wandering.png": (2607, 9409320),
+}
+
 
 def catalog(region, kind):
     url = f"https://api.atlasacademy.io/export/{region}/basic_{kind}.json"
@@ -17,12 +41,37 @@ def catalog(region, kind):
         return json.load(response)
 
 
+def match_ce(file, na_equips, kr_equips, jp_equips):
+    matches = [s for s in na_equips if s["name"] == file.stem]
+    if len(matches) == 1:
+        return matches[0]
+    if file.name in NA_CE_ALIASES:
+        na_name, number, ce_id = NA_CE_ALIASES[file.name]
+        matches = [s for s in na_equips if s["name"] == na_name and s["collectionNo"] == number and s["id"] == ce_id]
+        if len(matches) == 1:
+            return matches[0]
+    if file.name in KR_CE_MATCHES:
+        kr_name, number, ce_id = KR_CE_MATCHES[file.name]
+        matches = [s for s in kr_equips if s["name"] == kr_name and s["collectionNo"] == number and s["id"] == ce_id]
+        if len(matches) == 1:
+            return matches[0]
+    if file.name in JP_CE_MATCHES:
+        number, ce_id = JP_CE_MATCHES[file.name]
+        record = jp_equips.get(ce_id)
+        if record and record["collectionNo"] == number:
+            return record
+    return None
+
+
 def generate():
     servants = {s["id"]: s for s in catalog("JP", "servant")
                 if s["type"] in ("normal", "heroine") and s["collectionNo"] > 0}
-    equips = [s for s in catalog("NA", "equip")
-              if s["type"] == "servantEquip" and s["collectionNo"] > 0]
-    jp_equips = {s["id"]: s for s in catalog("JP", "equip")}
+    na_equips = [s for s in catalog("NA", "equip")
+                 if s["type"] == "servantEquip" and s["collectionNo"] > 0]
+    kr_equips = [s for s in catalog("KR", "equip")
+                 if s["type"] == "servantEquip" and s["collectionNo"] > 0]
+    jp_equips = {s["id"]: s for s in catalog("JP", "equip")
+                 if s["type"] == "servantEquip" and s["collectionNo"] > 0}
     rows = []
     for folder in sorted((ASSETS / "servant").iterdir()):
         ids = set()
@@ -36,12 +85,11 @@ def generate():
         record = records[0] if len(records) == 1 else None
         rows.append(row("servant", folder.name, record))
     for file in sorted((ASSETS / "ce").glob("*.png")):
-        matches = [s for s in equips if s["name"] == file.stem]
-        record = matches[0] if len(matches) == 1 else None
+        record = match_ce(file, na_equips, kr_equips, jp_equips)
         rows.append(row("ce", file.name, record, jp_equips))
     (ASSETS / "builtin-ids.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    table = ["# 내장 개념예장 연결표", "", "Atlas NA 이름 완전 일치·단일 결과만 연결합니다. 번호는 JP 우선이며 JP에 없으면 NA 번호입니다.", "",
-             "| 폴더(파일) | collection No | Atlas NA name |", "|---|---|---|"]
+    table = ["# 내장 개념예장 연결표", "", "Atlas NA/KR/JP 데이터로 검증된 내장 개념예장 23종 연결표입니다. 번호는 JP 도감 번호 기준입니다.", "",
+             "| 폴더(파일) | collection No | Atlas name |", "|---|---|---|"]
     for item in rows:
         if item["kind"] == "ce":
             table.append(f'| {item["folder"]} | {item["number"] or "미연결"} | {item["name"] or "—"} |')

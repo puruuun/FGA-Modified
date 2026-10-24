@@ -193,14 +193,6 @@
   },
   {
     "kind": "ce",
-    "folder": "Aerial Drive.png",
-    "id": 9402750,
-    "number": 683,
-    "name": "Aerial Drive",
-    "region": null
-  },
-  {
-    "kind": "ce",
     "folder": "Bella Lisa.png",
     "id": 9403690,
     "number": 988,
@@ -210,25 +202,25 @@
   {
     "kind": "ce",
     "folder": "Beyond the Night Without the Snow Flower.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9405170,
+    "number": 1410,
+    "name": "눈꽃 없는 밤의 너머로",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Black Grail.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9400480,
+    "number": 48,
+    "name": "The Black Grail",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Blessed Bride.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9408590,
+    "number": 2233,
+    "name": "幸せな花嫁へ",
     "region": null
   },
   {
@@ -266,17 +258,17 @@
   {
     "kind": "ce",
     "folder": "Detective Fou.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9403990,
+    "number": 1080,
+    "name": "명탐정 폼즈",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Foreign God.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9408800,
+    "number": 2437,
+    "name": "異星の神",
     "region": null
   },
   {
@@ -289,42 +281,18 @@
   },
   {
     "kind": "ce",
-    "folder": "Golden Sumo.png",
-    "id": null,
-    "number": null,
-    "name": null,
-    "region": null
-  },
-  {
-    "kind": "ce",
     "folder": "Great Library of Memories.png",
-    "id": null,
-    "number": null,
-    "name": null,
-    "region": null
-  },
-  {
-    "kind": "ce",
-    "folder": "GudaGuda Poster Girl.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9409210,
+    "number": 2583,
+    "name": "記憶の大図書館",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Gun Dealer.png",
-    "id": null,
-    "number": null,
-    "name": null,
-    "region": null
-  },
-  {
-    "kind": "ce",
-    "folder": "Holy Night Supper.png",
-    "id": 9402090,
-    "number": 390,
-    "name": "Holy Night Supper",
+    "id": 9409490,
+    "number": 2701,
+    "name": "ガン・ディーラー",
     "region": null
   },
   {
@@ -338,9 +306,9 @@
   {
     "kind": "ce",
     "folder": "Marshal of the Sorcerors.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9405320,
+    "number": 1458,
+    "name": "마도원수",
     "region": null
   },
   {
@@ -354,65 +322,57 @@
   {
     "kind": "ce",
     "folder": "Needle of Sincerity.png",
-    "id": null,
-    "number": null,
-    "name": null,
-    "region": null
-  },
-  {
-    "kind": "ce",
-    "folder": "Painting Summer.png",
-    "id": 9403340,
-    "number": 871,
-    "name": "Painting Summer",
+    "id": 9408390,
+    "number": 2209,
+    "name": "지성의 한 땀",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Report Check.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9407850,
+    "number": 2052,
+    "name": "리포트 체크",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Rising Against the Azure Sky.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9406200,
+    "number": 1605,
+    "name": "창공에 서다",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Secret Mission.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9408220,
+    "number": 2142,
+    "name": "시크릿 미션",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Sword Saints of Wandering.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9409320,
+    "number": 2607,
+    "name": "流転の剣聖",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "The Chaldean.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9406960,
+    "number": 1797,
+    "name": "칼데아의 남자",
     "region": null
   },
   {
     "kind": "ce",
     "folder": "Wings of Manuscript.png",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 9408060,
+    "number": 2124,
+    "name": "수고의 날개",
     "region": null
   }
 ]

@@ -428,20 +428,15 @@ Order Change"</string>
     <string name="servant_name_waver">諸葛孔明〔埃爾梅羅Ⅱ世〕</string>
 
     <!-- Default CE Names -->
-    <string name="ce_name_aerial_drive">天際旋蕩</string>
     <string name="ce_name_bella_lisa">貝拉．麗莎</string>
     <string name="ce_name_black_grail">黑之聖杯</string>
     <string name="ce_name_chaldea_lunchtime">迦勒底午餐時光</string>
     <string name="ce_name_chaldea_morning">迦勒底晨光</string>
     <string name="ce_name_chaldea_teatime">迦勒底午茶時光</string>
     <string name="ce_name_from_nff_with_love">來自NFF的愛</string>
-    <string name="ce_name_golden_sumo">黃金相撲～岩場～</string>
-    <string name="ce_name_gudaguda_poster_girl">嘮嘮叨叨看板娘</string>
-    <string name="ce_name_holy_night_supper">聖夜晚餐</string>
     <string name="ce_name_kaleidoscope">萬華鏡</string>
     <string name="ce_name_marshal_of_the_sorcerors">魔道元帥</string>
     <string name="ce_name_mona_lisa">蒙娜麗莎</string>
-    <string name="ce_name_painting_summer">繪畫之夏</string>
     <string name="ce_name_report_check">檢查報告</string>
     <string name="ce_name_secret_mission">秘密任務</string>
     <string name="ce_name_wings_of_manuscript">手稿之翼</string>

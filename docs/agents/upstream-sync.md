@@ -21,18 +21,26 @@ features, so every sync follows the same rules instead of being decided again ea
 3. Resolve conflicts with the ownership table below. Title the merge commit
    `Merge upstream FGA master (<short sha>) into the fork`; the body lists what was taken and
    what was not, and why.
-4. Fork follow-ups (Korean/Japanese translations of new upstream strings, adaptations of fork
+4. **Built-in Craft Essence curation check**: Never blindly adopt upstream CE additions, renames,
+   or restorations of deleted CEs. Inspect
+   `git diff main..upstream/master -- app/src/main/assets/Support/ce/ app/src/main/java/io/github/fate_grand_automata/util/SupportNameResources.kt`,
+   look up any newly added or modified CEs on Atlas Academy (`collectionNo`, `id`, Korean
+   translation, and whether MLB grants a 20% Bond Point bonus), present the candidate list to the
+   owner, and only include/exclude/format them (plus regenerate `builtin-ids.json`) per the
+   owner's decision.
+5. Fork follow-ups (Korean/Japanese translations of new upstream strings, adaptations of fork
    code) go in separate commits after the merge commit.
-5. Deliver it like any code change: full unit suite, PR, `Main CI`, `--ff-only` merge
+6. Deliver it like any code change: full unit suite, PR, `Main CI`, `--ff-only` merge
    (see `AGENTS.md`). Device QA on BlueStacks covers the upstream behaviour changes that touch
    KR/JP play.
-6. Add a row to the sync log below (documentation-only, pushed directly to `main`).
+7. Add a row to the sync log below (documentation-only, pushed directly to `main`).
 
 ## Ownership
 
 | Area | Owner | On conflict |
 | --- | --- | --- |
 | App code, assets, `scripts/`, `libautomata/`, `prefs/` | Upstream, plus fork features | Merge both; keep fork behaviour, adopt upstream fixes |
+| Built-in Craft Essences (`app/src/main/assets/Support/ce/`, `SupportNameResources.ceNameResIds`, `ce_name_*` in `localized.xml`, `builtin-ids.json`) | **Fork (owner-curated)** | Do not automatically add, rename, or restore deleted CEs from upstream; inspect Atlas Academy (`collectionNo`, `id`, KR translation, 20% Bond bonus condition) and ask the owner before applying |
 | Gradle wrapper, `gradle/libs.versions.toml`, `build.gradle.kts` | Upstream | Take upstream, keep fork-only additions |
 | English strings `values/localized.xml` | Upstream, plus fork strings | Merge both |
 | Translations `values-ko`, `values-ja` (and other `values-*`) | **Fork** — the fork does not use POEditor | Keep fork text; translate new upstream strings in ko and ja yourself |

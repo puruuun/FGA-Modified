@@ -26,39 +26,34 @@
 
 ### 내장 개념예장 연결표
 
-Atlas NA 이름과 정확히 하나가 일치할 때만 연결합니다. 나머지는 미연결 상태로 두며 필요하면 다운로드합니다. 현재 서번트 9개 연결·15개 미연결, 예장 11개 연결·17개 미연결입니다. 서번트 중 `asc1.png`처럼 내부 ID가 없는 이름은 추측하지 않습니다.
+Atlas NA·KR·JP 데이터로 검증된 항목을 연결합니다. 나머지는 미연결 상태로 두며 필요하면 다운로드합니다. 현재 서번트 9개 연결·15개 미연결, 예장 23개 연결·0개 미연결입니다. 서번트 중 `asc1.png`처럼 내부 ID가 없는 이름은 추측하지 않습니다.
 
 <!-- builtin-ce-table:start -->
-| 폴더(파일) | collection No | Atlas NA name |
+| 폴더(파일) | collection No | Atlas name |
 |---|---|---|
-| Aerial Drive.png | 683 | Aerial Drive |
 | Bella Lisa.png | 988 | Bella Lisa |
-| Beyond the Night Without the Snow Flower.png | 미연결 | — |
-| Black Grail.png | 미연결 | — |
-| Blessed Bride.png | 미연결 | — |
+| Beyond the Night Without the Snow Flower.png | 1410 | 눈꽃 없는 밤의 너머로 |
+| Black Grail.png | 48 | The Black Grail |
+| Blessed Bride.png | 2233 | 幸せな花嫁へ |
 | Chaldea Dinnertime.png | 1121 | Chaldea Dinnertime |
 | Chaldea Lunchtime.png | 330 | Chaldea Lunchtime |
 | Chaldea Morning.png | 2020 | Chaldea Morning |
 | Chaldea Teatime.png | 910 | Chaldea Teatime |
-| Detective Fou.png | 미연결 | — |
-| Foreign God.png | 미연결 | — |
+| Detective Fou.png | 1080 | 명탐정 폼즈 |
+| Foreign God.png | 2437 | 異星の神 |
 | From NFF with Love.png | 1949 | From NFF with Love |
-| Golden Sumo.png | 미연결 | — |
-| Great Library of Memories.png | 미연결 | — |
-| GudaGuda Poster Girl.png | 미연결 | — |
-| Gun Dealer.png | 미연결 | — |
-| Holy Night Supper.png | 390 | Holy Night Supper |
+| Great Library of Memories.png | 2583 | 記憶の大図書館 |
+| Gun Dealer.png | 2701 | ガン・ディーラー |
 | Kaleidoscope.png | 34 | Kaleidoscope |
-| Marshal of the Sorcerors.png | 미연결 | — |
+| Marshal of the Sorcerors.png | 1458 | 마도원수 |
 | Mona Lisa.png | 80 | Mona Lisa |
-| Needle of Sincerity.png | 미연결 | — |
-| Painting Summer.png | 871 | Painting Summer |
-| Report Check.png | 미연결 | — |
-| Rising Against the Azure Sky.png | 미연결 | — |
-| Secret Mission.png | 미연결 | — |
-| Sword Saints of Wandering.png | 미연결 | — |
-| The Chaldean.png | 미연결 | — |
-| Wings of Manuscript.png | 미연결 | — |
+| Needle of Sincerity.png | 2209 | 지성의 한 땀 |
+| Report Check.png | 2052 | 리포트 체크 |
+| Rising Against the Azure Sky.png | 1605 | 창공에 서다 |
+| Secret Mission.png | 2142 | 시크릿 미션 |
+| Sword Saints of Wandering.png | 2607 | 流転の剣聖 |
+| The Chaldean.png | 1797 | 칼데아의 남자 |
+| Wings of Manuscript.png | 2124 | 수고의 날개 |
 <!-- builtin-ce-table:end -->
 
 **에너미 타겟팅 정보 무시**를 켜면 `t1`·`t2`·`t3`와 특수한 적 슬롯 등 모든 적 선택 정보가 커맨드에서 빠집니다. 적 하나를 대상으로 하는 스킬도 스킬 알파벳은 그대로 들어갑니다. 아군 대상 번호·스킬 선택지·오더 체인지·보구·공격 순서는 유지됩니다. 이 선택은 해당 링크를 가져올 때만 적용하며 게임에서는 적 선택을 변경하는 커맨드를 실행하지 않습니다.
