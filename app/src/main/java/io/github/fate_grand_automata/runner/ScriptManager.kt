@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
+import io.github.fate_grand_automata.di.script.ScriptComponent
 import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.script.ScriptEntryPoint
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
@@ -59,7 +60,6 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PROBE_SUMMARY_LINES = 25
@@ -449,15 +449,27 @@ class ScriptManager @Inject constructor(
         return false
     }
 
-    private fun updateGameServer() {
+    /**
+     * Sets [IPreferences.gameServer] from the Game Server setting.
+     *
+     * @return false if the setting is auto-detect and no FGO app has been detected,
+     * in which case the server is left unchanged.
+     */
+    private fun updateGameServer(): Boolean {
         val server = prefsCore.gameServerRaw.get()
 
+        if (server == PrefsCore.GAME_SERVER_AUTO_DETECT) {
+            val detected = TapperService.instance?.detectedFgoServer
+                ?: return false
+
+            Timber.d("Using auto-detected Game Server: $detected")
+            preferences.gameServer = detected
+
+            return true
+        }
+
         preferences.gameServer =
-            if (server == PrefsCore.GAME_SERVER_AUTO_DETECT)
-                (TapperService.instance?.detectedFgoServer ?: GameServers.default).also {
-                    Timber.d("Using auto-detected Game Server: $it")
-                }
-            else try {
+            try {
                 GameServers.deserialize(server)?.also {
                     Timber.d("Using Game Server: $it")
                 } ?: GameServers.default
@@ -466,6 +478,8 @@ class ScriptManager @Inject constructor(
 
                 GameServers.default
             }
+
+        return true
     }
 
     fun startScript(
@@ -473,9 +487,27 @@ class ScriptManager @Inject constructor(
         screenshotService: ScreenshotService,
         componentBuilder: ScriptComponentBuilder
     ) {
-        updateGameServer()
+        val isGameServerKnown = updateGameServer()
 
         if (scriptState !is ScriptState.Stopped) {
+            return
+        }
+
+        if (!isGameServerKnown) {
+            Timber.w("Game Server: auto-detect found no FGO app, not starting")
+
+            scope.launch {
+                messageBox.show(
+                    context.getString(R.string.p_game_server),
+                    context.getString(
+                        R.string.error_game_server_not_detected,
+                        context.getString(R.string.p_more_options),
+                        context.getString(R.string.p_script_mode_battle),
+                        context.getString(R.string.p_game_server)
+                    )
+                )
+            }
+
             return
         }
 
