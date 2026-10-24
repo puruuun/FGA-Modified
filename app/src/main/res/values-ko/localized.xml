@@ -249,6 +249,7 @@
     <string name="p_game_area_mode">"게임 영역 설정"</string>
     <string name="p_game_server">"게임 서버"</string>
     <string name="p_game_server_auto_detect">"자동 감지"</string>
+    <string name="error_game_server_not_detected">"FGA가 실행 중인 FGO 서버를 감지하지 못했습니다. FGO를 나갔다가 다시 연 뒤 재시도하세요.\n\nFGO 버전이 인식되지 않거나 앱 복제 도구 안에서 실행 중이라면 %1$s > %2$s > %3$s에서 서버를 직접 선택하세요."</string>
     <string name="p_hide_sq_in_resource">"AP 회복수단에서 성정석 제외"</string>
     <string name="p_hide_sq_in_resource_summary">"이 설정을 활성화하면 실수로 성정석을 터치하여 AP 회복에 사용하지 않도록 성정석을 회복수단에서 제외합니다."</string>
     <string name="p_limit">"제한"</string>

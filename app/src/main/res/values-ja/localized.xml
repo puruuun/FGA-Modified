@@ -249,6 +249,7 @@
     <string name="p_game_area_mode">"ゲームエリア設定"</string>
     <string name="p_game_server">"ゲームサーバー"</string>
     <string name="p_game_server_auto_detect">"自動選択"</string>
+    <string name="error_game_server_not_detected">"FGAは実行中のFGOのサーバーを検出できませんでした。FGOを一度閉じてから開き直し、もう一度お試しください。\n\nFGOのバージョンが認識されない場合やアプリのクローンツール内で実行している場合は、%1$s > %2$s > %3$sからサーバーを手動で選択してください。"</string>
 
     <!-- Fuzzy -->
     <string name="p_hide_sq_in_resource">"AP回復アイテムに聖晶石を表示しない"</string>
