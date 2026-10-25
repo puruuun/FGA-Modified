@@ -48,7 +48,9 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
         require(slot in slotX(mode).indices)
         val x = slotX(mode)[slot] - 640
         return (if (mode == SkillLevelMode.Skill) Region((x + 65) * 2, 584 - slotRise, 290, 68)
-            else Region((x - 5) * 2, 590 - slotRise, 66, 42)).xFromCenter()
+            // Native 0021 KR/JP 16:9 captures place this row at y=294, not 295 (720p).
+            // Its text baseline rises 21 px on wide; retain the validated wide crop at y=273.
+            else Region((x - 5) * 2, if (isWide) 590 - slotRise else 588, 66, 42)).xFromCenter()
     }
 
     /** Confirm dialog: the "confirmation" watermark sits lower in the skill dialog than in the append dialog. */

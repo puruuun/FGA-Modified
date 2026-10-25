@@ -1,5 +1,5 @@
 {
-  "note": "Planner labels by eye. 0 = locked slot (no level text). Append levels are slots 1-5 left to right, skill slots 1-3. All frames are 2560x1080 native BlueStacks captures (21:9). append-exchange = the append exchange screen (same icons as the enhance screen); append-real = the real append enhance screen with the 강화 가능 / 強化可能 overlay.",
+  "note": "Planner labels by eye. 0 = locked slot (no level text). Append levels are slots 1-5 left to right, skill slots 1-3. All frames are 2560x1080 native BlueStacks captures (21:9). append-exchange = the append exchange screen (same icons as the enhance screen); append-real = the real append enhance screen with the 강화 가능 / 強化可能 overlay. Frames with layout '16:9 native 1920x1080' are real 16:9 BlueStacks captures; selectedSlot = the slot with the blue selection border.",
   "frames": [
     {
       "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
@@ -11,7 +11,9 @@
         10,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
@@ -23,7 +25,9 @@
         2,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
@@ -35,7 +39,9 @@
         1,
         2,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
@@ -47,7 +53,9 @@
         10,
         1,
         2
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
@@ -59,7 +67,9 @@
         10,
         10,
         1
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
@@ -71,7 +81,9 @@
         10,
         10,
         3
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
@@ -83,7 +95,9 @@
         10,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
@@ -95,7 +109,9 @@
         4,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
@@ -107,7 +123,9 @@
         3,
         4,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
@@ -119,7 +137,9 @@
         10,
         3,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
@@ -131,7 +151,9 @@
         7,
         8,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
@@ -143,7 +165,9 @@
         6,
         7,
         8
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
@@ -155,7 +179,9 @@
         5,
         6,
         7
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
@@ -167,7 +193,9 @@
         4,
         5,
         6
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
@@ -179,7 +207,9 @@
         8,
         4,
         5
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.18.03.270.png",
@@ -191,7 +221,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
@@ -203,7 +235,9 @@
         9,
         9,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.18.49.670.png",
@@ -215,7 +249,9 @@
         0,
         0,
         9
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.31.23.637.png",
@@ -225,7 +261,9 @@
         1,
         2,
         3
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 3
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.32.08.037.png",
@@ -235,7 +273,9 @@
         6,
         4,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 2
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.32.33.987.png",
@@ -245,7 +285,9 @@
         7,
         7,
         8
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.32.45.421.png",
@@ -255,7 +297,9 @@
         9,
         9,
         9
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.33.06.987.png",
@@ -265,7 +309,9 @@
         10,
         10,
         2
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.33.12.937.png",
@@ -275,7 +321,9 @@
         9,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "jp/실제 강화창 글시뜸 jp.png",
@@ -287,7 +335,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 2
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
@@ -299,7 +349,9 @@
         3,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
@@ -311,7 +363,9 @@
         2,
         3,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
@@ -323,7 +377,9 @@
         1,
         2,
         3
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
@@ -335,7 +391,9 @@
         10,
         1,
         2
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
@@ -347,7 +405,9 @@
         10,
         10,
         1
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
@@ -359,7 +419,9 @@
         6,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
@@ -371,7 +433,9 @@
         5,
         6,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
@@ -383,7 +447,9 @@
         4,
         5,
         6
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
@@ -395,7 +461,9 @@
         10,
         4,
         5
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
@@ -407,7 +475,9 @@
         10,
         10,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.45.42.770.png",
@@ -419,7 +489,9 @@
         0,
         7,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.45.52.687.png",
@@ -431,7 +503,9 @@
         0,
         0,
         7
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.46.02.587.png",
@@ -443,7 +517,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.46.11.104.png",
@@ -455,7 +531,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.46.19.254.png",
@@ -467,7 +545,9 @@
         7,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.46.58.954.png",
@@ -479,7 +559,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.47.07.720.png",
@@ -491,7 +573,9 @@
         8,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.47.15.720.png",
@@ -503,7 +587,9 @@
         0,
         8,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.47.23.571.png",
@@ -515,7 +601,9 @@
         0,
         0,
         8
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.47.31.587.png",
@@ -527,7 +615,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.48.17.770.png",
@@ -539,7 +629,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.48.36.271.png",
@@ -551,7 +643,9 @@
         9,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.48.44.571.png",
@@ -563,7 +657,9 @@
         0,
         9,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.48.52.587.png",
@@ -575,7 +671,9 @@
         0,
         0,
         9
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.24_23.49.01.187.png",
@@ -587,7 +685,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": null
     },
     {
       "source": "kr/Screenshot_2026.10.25_00.36.23.570.png",
@@ -597,7 +697,9 @@
         4,
         1,
         2
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 3
     },
     {
       "source": "kr/Screenshot_2026.10.25_00.36.41.070.png",
@@ -607,7 +709,9 @@
         5,
         3,
         9
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "kr/Screenshot_2026.10.25_00.36.52.037.png",
@@ -617,7 +721,9 @@
         10,
         6,
         7
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "kr/Screenshot_2026.10.25_00.37.04.621.png",
@@ -627,7 +733,9 @@
         8,
         8,
         8
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "kr/Screenshot_2026.10.25_00.37.17.570.png",
@@ -637,7 +745,9 @@
         9,
         10,
         10
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "kr/실제 강화창 글시뜸 KR.png",
@@ -649,7 +759,9 @@
         10,
         10,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
     },
     {
       "source": "jp/Screenshot_2026.10.25_00.53.47.870.png",
@@ -659,7 +771,75 @@
         5,
         4,
         4
-      ]
+      ],
+      "layout": "native-wide",
+      "selectedSlot": 1
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_01.35.23.307.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/57-skill.png",
+      "screen": "skill",
+      "levels": [
+        7,
+        6,
+        5
+      ],
+      "layout": "native-16:9",
+      "selectedSlot": 1
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_01.35.43.557.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/58-append-real.png",
+      "screen": "append-real",
+      "levels": [
+        6,
+        7,
+        8,
+        4,
+        5
+      ],
+      "layout": "native-16:9",
+      "selectedSlot": 1
+    },
+    {
+      "source": "jp/Screenshot_2026.10.25_01.36.49.123.png",
+      "file": "docs/reference-images/Jp/skill-level/0021/59-append-real.png",
+      "screen": "append-real",
+      "levels": [
+        10,
+        10,
+        0,
+        10,
+        10
+      ],
+      "layout": "native-16:9",
+      "selectedSlot": 4
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_01.37.52.723.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/60-skill.png",
+      "screen": "skill",
+      "levels": [
+        8,
+        6,
+        4
+      ],
+      "layout": "native-16:9",
+      "selectedSlot": 1
+    },
+    {
+      "source": "kr/Screenshot_2026.10.25_01.38.47.490.png",
+      "file": "docs/reference-images/Kr/skill-level/0021/61-append-real.png",
+      "screen": "append-real",
+      "levels": [
+        0,
+        0,
+        0,
+        9,
+        0
+      ],
+      "layout": "native-16:9",
+      "selectedSlot": 4
     }
   ]
 }
