@@ -31,12 +31,15 @@ private class FakePanel(
     private val enhanceTitle: Boolean = true,
     private val skipReturns: Boolean = true,
     private val cancelCloses: Boolean = true,
+    private val panelRead: (trueLevel: Int) -> Int? = { null },
     private val read: (trueLevel: Int) -> SkillLevelReading = { SkillLevelReading(it, it + 1) }
 ) : SkillLevelPanel {
     var selected = -1
     var dialogOpen = false
     var confirms = 0
     var cancels = 0
+    var panelReads = 0
+    var enhances = 0
     var unlockPressed = false
     val peak = levels.toMutableList()
 
@@ -47,7 +50,13 @@ private class FakePanel(
     override fun band() = band(selected)
     override fun unlockButtonVisible() = selected in unlockLabel || selected in locked
     override fun maxButtonVisible() = maxLabel
+    override fun readPanelLevel(slot: Int): Int? {
+        check(slot == selected)
+        panelReads++
+        return panelRead(levels[slot])
+    }
     override fun pressEnhance() {
+        enhances++
         if (selected in locked) unlockPressed = true
         else if (levels[selected] < 10 && band(selected) == SkillLevelBand.Enhance && dialogOpens) dialogOpen = true
     }
@@ -73,6 +82,159 @@ private class FakePanel(
 
 class SkillLevelFlowTest {
     private fun run(panel: FakePanel, vararg targets: Int): List<SlotResult> = SkillLevelFlow(panel).runAll(targets.toList())
+
+    @Test fun `equal panel and dialog levels proceed using both sources`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), panelRead = { it })
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(4)).single()
+        assertEquals(SlotStop.Reached, result.stop)
+        assertEquals(1, panel.confirms)
+        assertEquals(1, panel.enhances)
+        assertEquals(0, panel.cancels)
+        assertTrue(logs.any { "panel=3 dialog=3 source=both" in it })
+    }
+
+    @Test fun `different panel and dialog levels cancel without confirming`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), panelRead = { 4 })
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(8)).single()
+        assertEquals(SlotStop.PanelMismatch, result.stop)
+        assertEquals(1, panel.cancels)
+        assertEquals(0, panel.confirms)
+        assertFalse(panel.dialogOpen)
+        assertTrue(logs.any { "panel=4 dialog=3 source=both" in it })
+    }
+
+    @Test fun `mismatch cancellation failure stops all slots as stuck`() {
+        val panel = FakePanel(mutableListOf(3, 3), panelRead = { 4 }, cancelCloses = false)
+        assertEquals(SlotStop.Stuck, run(panel, 8, 8).single().stop)
+        assertEquals(1, panel.enhances)
+        assertEquals(0, panel.confirms)
+    }
+
+    @Test fun `unread dialog progresses across several panel-only passes`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), panelRead = { it }, read = { SkillLevelReading(null, null) })
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(7)).single()
+        assertEquals(SlotResult(0, 7, 3, 7, SlotStop.Reached, SkillLevelStep.Enhance), result)
+        assertEquals(4, panel.confirms)
+        assertEquals(4, panel.enhances)
+        assertEquals(5, panel.panelReads)
+        assertEquals(0, panel.cancels)
+        for (level in 3..7) assertTrue(logs.any { "panel=$level dialog=unread source=panel" in it })
+    }
+
+    @Test fun `panel catches no increase before another enhance tap`() {
+        val panel = FakePanel(mutableListOf(3), panelRead = { it }, confirmWorks = false,
+            read = { SkillLevelReading(null, null) })
+        val result = run(panel, 8).single()
+        assertEquals(SlotResult(0, 8, 3, 3, SlotStop.NoIncrease, SkillLevelStep.Enhance), result)
+        assertEquals(1, panel.confirms)
+        assertEquals(1, panel.enhances)
+        assertEquals(2, panel.panelReads)
+        assertEquals(0, panel.cancels)
+    }
+
+    @Test fun `panel catches a jump by more than one before enhance`() {
+        var reads = 0
+        val panel = FakePanel(mutableListOf(3), panelRead = { if (reads++ == 0) 3 else 5 })
+        assertEquals(SlotStop.NoIncrease, run(panel, 8).single().stop)
+        assertEquals(1, panel.enhances)
+        assertEquals(1, panel.confirms)
+    }
+
+    @Test fun `panel max target and above target stop without tapping enhance`() {
+        for ((level, target, stop) in listOf(Triple(10, 8, SlotStop.Max), Triple(10, 10, SlotStop.Max),
+            Triple(6, 6, SlotStop.Reached), Triple(7, 6, SlotStop.Reached))) {
+            val panel = FakePanel(mutableListOf(level), panelRead = { it })
+            assertEquals(SlotResult(0, target, level, level, stop, SkillLevelStep.Enhance), run(panel, target).single())
+            assertEquals(0, panel.enhances)
+            assertEquals(0, panel.confirms)
+            assertEquals(0, panel.cancels)
+        }
+    }
+
+    @Test fun `panel max takes precedence over previous level check after reaching ten`() {
+        val panel = FakePanel(mutableListOf(9), panelRead = { it }, read = { SkillLevelReading(null, null) })
+        assertEquals(SlotResult(0, 10, 9, 10, SlotStop.Max, SkillLevelStep.Enhance), run(panel, 10).single())
+        assertEquals(1, panel.enhances)
+        assertEquals(1, panel.confirms)
+    }
+
+    @Test fun `abstaining panel preserves dialog-only progress and log`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3))
+        assertEquals(SlotStop.Reached, SkillLevelFlow(panel, logs::add).runAll(listOf(4)).single().stop)
+        assertEquals(1, panel.confirms)
+        assertTrue(logs.any { "panel=abstain:unread dialog=3 source=dialog" in it })
+    }
+
+    @Test fun `both sources unread cancel and log their abstention`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), read = { SkillLevelReading(null, null) })
+        assertEquals(SlotStop.Unreadable, SkillLevelFlow(panel, logs::add).runAll(listOf(8)).single().stop)
+        assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
+        assertTrue(logs.any { "panel=abstain:unread dialog=unread" in it })
+    }
+
+    @Test fun `invalid dialog pairs are unread and may use a confident panel`() {
+        for (reading in listOf(SkillLevelReading(null, 4), SkillLevelReading(3, null),
+            SkillLevelReading(3, 5), SkillLevelReading(10, 11))) {
+            val panel = FakePanel(mutableListOf(3), panelRead = { it }, read = { reading })
+            assertEquals(SlotStop.Reached, run(panel, 4).single().stop)
+            assertEquals(1, panel.confirms)
+        }
+    }
+
+    @Test fun `panel fallback never overrides a zero or a non enhancement dialog`() {
+        for (reading in listOf(SkillLevelReading(0, 1), SkillLevelReading(null, 0), SkillLevelReading(3, 0))) {
+            val panel = FakePanel(mutableListOf(3), panelRead = { it }, read = { reading })
+            assertEquals(SlotStop.Unreadable, run(panel, 8).single().stop)
+            assertEquals(0, panel.confirms)
+            assertEquals(1, panel.cancels)
+        }
+        val panel = FakePanel(mutableListOf(3), panelRead = { it }, enhanceTitle = false)
+        assertEquals(SlotStop.UnexpectedDialog, run(panel, 8).single().stop)
+        assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
+    }
+
+    @Test fun `a panel value never bypasses the requirement for a dialog`() {
+        val panel = FakePanel(mutableListOf(3), panelRead = { it }, dialogOpens = false)
+        assertEquals(SlotStop.CannotEnhance, run(panel, 8).single().stop)
+        assertEquals(0, panel.confirms)
+    }
+
+    @Test fun `invalid panel values abstain instead of confirming or stopping early`() {
+        for (bad in listOf(0, -1, 11)) {
+            val panel = FakePanel(mutableListOf(3), panelRead = { bad }, read = { SkillLevelReading(null, null) })
+            assertEquals(SlotStop.Unreadable, run(panel, 8).single().stop)
+            assertEquals(0, panel.confirms)
+        }
+    }
+
+    @Test fun `append panel evidence includes abstention reason score and margin on each pass`() {
+        val base = FakePanel(mutableListOf(3))
+        val panel = object : SkillLevelPanel by base {
+            override val panelLevelEvidence = io.github.fate_grand_automata.scripts.modules.PanelLevelEvidence(
+                null, false, 3, 0.65, 0.12, "low-score")
+        }
+        val logs = mutableListOf<String>()
+        SkillLevelFlow(panel, logs::add).runAll(listOf(4))
+        assertEquals(2, logs.count { "panel=abstain:low-score" in it && "source=dialog score=0.65 margin=0.12" in it })
+    }
+
+    @Test fun `a lock discovered by the panel reader also prevents the enhance tap`() {
+        val base = FakePanel(mutableListOf(3))
+        val panel = object : SkillLevelPanel by base {
+            override val panelLevelEvidence = io.github.fate_grand_automata.scripts.modules.PanelLevelEvidence(
+                null, true, null, 0.0, 0.0, "locked")
+        }
+        assertEquals(SlotStop.Locked, SkillLevelFlow(panel).runAll(listOf(8)).single().stop)
+        assertEquals(0, base.enhances)
+        assertEquals(0, base.confirms)
+    }
 
     @Test fun `wide KR append capture with four locks only enhances slot two`() {
         // Capture 33: slots 1, 3, 4, 5 locked; slot 2 is Lv.6/10. Requesting all slots must never unlock one.
@@ -162,6 +324,8 @@ class SkillLevelFlowTest {
         for (panel in cases) {
             val result = run(panel, 5).single()
             assertEquals(SlotStop.Locked, result.stop)
+            assertEquals(0, panel.panelReads)
+            assertEquals(0, panel.enhances)
             assertFalse(panel.unlockPressed)
             assertEquals(0, panel.confirms)
             assertFalse(panel.dialogOpen)

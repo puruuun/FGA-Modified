@@ -14,7 +14,7 @@ data class PanelLevelEvidence(
     val margin: Double, val reason: String, val readings: List<OcrText> = emptyList()
 )
 
-/** Phase 1 only: no clicks, no enhancement-flow wiring and no dialog fallback. */
+/** Reads a panel level conservatively without clicks; the flow cross-checks it against the dialog. */
 class SkillLevelPanelReader @Inject constructor(
     api: IFgoAutomataApi, private val loc: SkillLevelLocations, private val ocr: OcrService
 ) : IFgoAutomataApi by api {

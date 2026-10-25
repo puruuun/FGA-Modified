@@ -16,6 +16,7 @@ fun skillLevelSummary(context: Context, results: List<SlotResult>): String = res
         SlotStop.CannotEnhance -> R.string.skill_level_stop_cannot
         SlotStop.Locked -> R.string.skill_level_stop_locked
         SlotStop.Unreadable -> R.string.skill_level_stop_unreadable
+        SlotStop.PanelMismatch -> R.string.skill_level_stop_panel_mismatch
         SlotStop.NoIncrease -> R.string.skill_level_stop_no_increase
         SlotStop.UnexpectedDialog -> R.string.skill_level_stop_dialog
         SlotStop.Stuck -> R.string.skill_level_stop_stuck

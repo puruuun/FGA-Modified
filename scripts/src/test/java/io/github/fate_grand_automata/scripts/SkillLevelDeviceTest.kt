@@ -16,7 +16,8 @@ class SkillLevelDeviceTest {
         val screens = mockk<SkillLevelScreens>(relaxed=true)
         val enhance = Location(100,200)
         val confirm = Location(300,400)
-        val device = SkillLevelDevice(api,SkillLevelMode.Skill,loc,screens,mockk(relaxed=true))
+        val panelReader = mockk<SkillLevelPanelReader>()
+        val device = SkillLevelDevice(api,SkillLevelMode.Skill,loc,screens,mockk(relaxed=true),panelReader)
         init {
             every { api.locations.enhancementClick } returns enhance
             every { loc.dialogConfirm(SkillLevelMode.Skill) } returns confirm
@@ -34,6 +35,28 @@ class SkillLevelDeviceTest {
         assertEquals(20.seconds,SkillLevelTiming.SKIP_INTERVAL*SkillLevelTiming.SKIP_POLLS)
         verifyOrder { with(run.api) { run.enhance.click(1);SkillLevelTiming.AFTER_ENHANCE.wait() };run.screens.dialogVisible() }
         verify(exactly=1) { with(run.api) { any<Duration>().wait(any()) } }
+    }
+    @Test fun `device forwards selected slot and mode to panel reader and retains evidence`() {
+        val run = Run()
+        val evidence = PanelLevelEvidence(6, false, 6, 0.9, 0.2, "matched")
+        every { run.panelReader.read(SkillLevelMode.Skill, 1) } returns evidence
+        assertEquals(6, run.device.readPanelLevel(1))
+        assertEquals(evidence, run.device.panelLevelEvidence)
+        verify(exactly = 1) { run.panelReader.read(SkillLevelMode.Skill, 1) }
+    }
+    @Test fun `real dialog reader preserves confident zero even in conflicting primary OCR`() {
+        val run = Run()
+        val current = Region(1, 2, 3, 4)
+        val next = Region(5, 6, 7, 8)
+        every { run.loc.currentLevel(SkillLevelMode.Skill) } returns current
+        every { run.loc.nextLevel(SkillLevelMode.Skill) } returns next
+        val digits = spyk(SkillLevelDigits(run.api, run.loc, mockk()))
+        every { digits.readings(current, SkillLevelMode.Skill) } returns listOf(OcrText("0", 95), OcrText("3", 95))
+        every { digits.readings(next, SkillLevelMode.Skill) } returns listOf(OcrText("4", 95), OcrText("4", 95))
+        assertEquals(SkillLevelReading(0, 4), digits.read(SkillLevelMode.Skill))
+        every { digits.readings(current, SkillLevelMode.Skill) } returns listOf(OcrText("3", 95), OcrText("3", 95))
+        every { digits.readings(next, SkillLevelMode.Skill) } returns listOf(OcrText("0", 95), OcrText("4", 95))
+        assertEquals(SkillLevelReading(3, 0), digits.read(SkillLevelMode.Skill))
     }
     @Test fun `confirm taps once with no added wait before the skip flow`() {
         val run=Run()

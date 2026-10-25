@@ -786,6 +786,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="skill_level_stop_cannot">cannot enhance</string>
     <string name="skill_level_stop_locked">locked, skipped</string>
     <string name="skill_level_stop_unreadable">level not read, nothing was enhanced</string>
+    <string name="skill_level_stop_panel_mismatch">panel and dialog levels differ, canceled</string>
     <string name="skill_level_stop_no_increase">level did not go up, stopped</string>
     <string name="skill_level_stop_dialog">unexpected dialog, canceled</string>
     <string name="skill_level_stop_stuck">the game did not return to the enhancement screen. Check it: an enhancement may have happened.</string>

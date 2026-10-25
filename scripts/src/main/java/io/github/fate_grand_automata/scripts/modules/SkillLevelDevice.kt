@@ -9,7 +9,8 @@ class SkillLevelDevice(
     private val mode: SkillLevelMode,
     private val loc: SkillLevelLocations,
     private val screens: SkillLevelScreens,
-    private val digits: SkillLevelDigits
+    private val digits: SkillLevelDigits,
+    private val panelReader: SkillLevelPanelReader
 ) : SkillLevelPanel, IFgoAutomataApi by api {
     /** The padlock only exists on append slots. */
     override fun isLocked(slot: Int) = mode == SkillLevelMode.Append && screens.slotLocked(mode, slot)
@@ -22,6 +23,14 @@ class SkillLevelDevice(
     override fun band() = screens.band()
     override fun unlockButtonVisible() = screens.unlockButtonVisible()
     override fun maxButtonVisible() = screens.maxButtonVisible()
+    override var panelLevelEvidence: PanelLevelEvidence? = null
+        private set
+
+    override fun readPanelLevel(slot: Int): Int? {
+        val evidence = panelReader.read(mode, slot)
+        panelLevelEvidence = evidence
+        return evidence.level.takeUnless { evidence.locked }
+    }
 
     override fun pressEnhance() {
         // Last look before the one button that is also the unlock button.

@@ -29,7 +29,7 @@ enum class SkillLevelStep(val token: String) {
 enum class SlotStop {
     /** Target 0. */
     Off,
-    /** The slot is at the target level (read in the dialog, or reached by the last confirmed enhancement). */
+    /** The slot is at the target level (read on the panel/dialog, or reached by the last confirmation). */
     Reached,
     /** Level 10: nothing left to enhance. */
     Max,
@@ -39,8 +39,10 @@ enum class SlotStop {
     CannotEnhance,
     /** Locked append slot, never unlocked. */
     Locked,
-    /** The level in the dialog was not read, was 0, or was out of range. */
+    /** Neither source supplied a usable level, or the dialog contained zero. */
     Unreadable,
+    /** The panel and enhancement dialog read different current levels. */
+    PanelMismatch,
     /** The level did not go up by exactly one after a confirmed enhancement. */
     NoIncrease,
     /** The dialog was not an enhancement dialog. */
@@ -52,7 +54,7 @@ enum class SlotStop {
 }
 
 /**
- * [startLevel] is the first level read in the dialog; [endLevel] the last known one (null when never read).
+ * [startLevel] is the first accepted level; [endLevel] the last known one (null when never read).
  */
 data class SlotResult(val slot: Int, val target: Int, val startLevel: Int?, val endLevel: Int?, val stop: SlotStop,
     val step: SkillLevelStep = SkillLevelStep.Select)
@@ -68,6 +70,10 @@ interface SkillLevelPanel {
     fun unlockButtonVisible(): Boolean
     /** The bottom-right button reads "cannot enhance any more" (JP). */
     fun maxButtonVisible(): Boolean
+    /** Confident selected-slot level, or null when the panel reader abstains. */
+    fun readPanelLevel(slot: Int): Int?
+    /** Diagnostics from the last panel read; fakes may omit them. */
+    val panelLevelEvidence: PanelLevelEvidence? get() = null
     /** Taps the bottom-right button. Only ever called for a slot that passed every unlock guard. */
     fun pressEnhance()
     /** Waits up to 2 s for the confirm dialog. */
@@ -84,7 +90,7 @@ interface SkillLevelPanel {
 
 /**
  * D-11 / D-14. Safety, in the order the checks run for every slot:
- * never tap unlock (padlock, band, button label, dialog level 0), never confirm an unread level, never confirm
+ * never tap unlock (padlock, band, button label, dialog level 0), never confirm without a trusted level, never confirm
  * when the level did not go up by one since the last confirmation, never confirm at or above the target.
  */
 class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (String) -> Unit = {}) {
@@ -97,6 +103,10 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
     private var partial: SlotResult? = null
 
     private fun line(fields: String) = log("slot=${activeSlot + 1} step=${activeStep.token} $fields")
+    private fun readings(panel: String, dialog: Int? = null, source: String = "panel", evidence: PanelLevelEvidence? = null) {
+        line("panel=$panel dialog=${dialog ?: "unread"} source=$source" +
+            (evidence?.let { " score=${it.score} margin=${it.margin}" } ?: ""))
+    }
     private fun summary(result: SlotResult) = log("summary slot=${result.slot + 1} step=${result.step.token} " +
         "target=${result.target} start=${result.startLevel ?: "-"} end=${result.endLevel ?: "-"} reason=${result.stop}")
 
@@ -137,33 +147,77 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
         if (target <= 0) return finish(SlotStop.Off)
         repeat(MAX_PASSES) {
             activeStep = SkillLevelStep.Select
-            if (panel.isLocked(slot)) return finish(SlotStop.Locked)
+            if (panel.isLocked(slot)) {
+                readings("locked")
+                return finish(SlotStop.Locked)
+            }
             panel.select(slot)
             line("action=select")
             activeStep = SkillLevelStep.Enhance
             val band = panel.band()
             line("band=$band")
-            if (band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) return finish(SlotStop.Locked)
-            if (band == SkillLevelBand.Shortage) return finish(if (reachedByLastConfirm()) SlotStop.Reached else SlotStop.Shortage)
+            if (band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) {
+                readings("locked")
+                return finish(SlotStop.Locked)
+            }
+            if (band == SkillLevelBand.Shortage) {
+                readings("abstain:shortage")
+                return finish(if (reachedByLastConfirm()) SlotStop.Reached else SlotStop.Shortage)
+            }
+            val panelLevel = panel.readPanelLevel(slot)?.takeIf { it in 1..10 }
+            val evidence = panel.panelLevelEvidence
+            val panelText = panelLevel?.toString() ?: if (evidence?.locked == true) "locked" else "abstain:${evidence?.reason ?: "unread"}"
+            if (evidence?.locked == true) {
+                readings("locked", evidence = evidence)
+                return finish(SlotStop.Locked)
+            }
+            if (panelLevel != null) {
+                val stop = when {
+                    panelLevel == 10 -> SlotStop.Max
+                    panelLevel >= target -> SlotStop.Reached
+                    previous != null && panelLevel != previous + 1 -> SlotStop.NoIncrease
+                    else -> null
+                }
+                if (stop != null) {
+                    readings(panelText, evidence = evidence)
+                    if (start == null) start = panelLevel
+                    known = panelLevel
+                    return finish(stop)
+                }
+            }
             line("action=enhance-tap")
             panel.pressEnhance()
             activeStep = SkillLevelStep.Dialog
             val seen = panel.awaitDialog()
             line("seen=$seen")
             if (!seen) {
+                readings(panelText, evidence = evidence)
                 return finish(when {
                     reachedByLastConfirm() -> SlotStop.Reached
                     panel.maxButtonVisible() -> SlotStop.Max
                     else -> SlotStop.CannotEnhance
                 })
             }
-            if (!panel.dialogIsEnhance()) return finish(closeDialog(SlotStop.UnexpectedDialog))
+            if (!panel.dialogIsEnhance()) {
+                readings(panelText, evidence = evidence)
+                return finish(closeDialog(SlotStop.UnexpectedDialog))
+            }
             activeStep = SkillLevelStep.Ocr
             val reading = panel.readLevels()
             line("current=${reading.current ?: "unread"} next=${reading.next ?: "unread"}")
-            val current = reading.current
-            if (current == null || current !in 1..9) return finish(closeDialog(SlotStop.Unreadable))
-            if (reading.next != current + 1) return finish(closeDialog(SlotStop.Unreadable))
+            val dialogLevel = reading.current?.takeIf { it in 1..9 && reading.next == it + 1 }
+            val source = when {
+                panelLevel != null && dialogLevel != null -> "both"
+                dialogLevel != null -> "dialog"
+                else -> "panel"
+            }
+            readings(panelText, dialogLevel, source, evidence)
+            // A visible zero remains an unlock guard even with a confident panel reading.
+            if (reading.current == 0 || reading.next == 0) return finish(closeDialog(SlotStop.Unreadable))
+            if (panelLevel != null && dialogLevel != null && panelLevel != dialogLevel)
+                return finish(closeDialog(SlotStop.PanelMismatch))
+            val current = dialogLevel ?: panelLevel?.takeIf { it in 1..9 }
+                ?: return finish(closeDialog(SlotStop.Unreadable))
             if (start == null) start = current
             known = current
             remember()

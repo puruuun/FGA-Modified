@@ -1,5 +1,7 @@
 # 패널 레벨 판독기 — Phase 1 측정
 
+Phase 2 강화 흐름 연결과 1.6.8-beta.1 검증 결과는 [Phase 2 검증 기록](1.6.8-beta.1-validation.md)을 참고하세요. 아래의 Phase 1 판독 기준·자료·한계는 그대로 유지합니다.
+
 기준 main `139b2123`, 브랜치 `feat/panel-level-reader`, [PR #18](https://github.com/puruuun/FGA-Modified/pull/18). **강화 흐름에 연결하지 않았으며 version.properties도 변경하지 않았습니다.** AutoSkillLevel/SkillLevelFlow/SkillLevelDigits의 동작은 그대로입니다.
 
 ## 측정 정정 및 입력

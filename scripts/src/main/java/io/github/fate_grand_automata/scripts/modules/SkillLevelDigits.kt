@@ -83,6 +83,9 @@ class SkillLevelDigits @Inject constructor(
 
     private fun readDigit(region: Region, valid: IntRange, mode: SkillLevelMode): Int? {
         val primary = readings(region, mode)
+        // Preserve a confident zero as an unlock signal. Turning it into null would let the
+        // panel fallback override it, including when another OCR profile disagrees.
+        if (primary.any { it.confidence >= MIN_CONFIDENCE && it.text.trim().toIntOrNull() == 0 }) return 0
         if (!needsTemplateFallback(primary)) return consensus(primary, valid)
         // The isolated glyph 9 is missed by Tesseract. Require a near-exact match that beats every other digit.
         val scores = templateScores(region)
@@ -90,7 +93,7 @@ class SkillLevelDigits @Inject constructor(
         return templateNine(scores)?.takeIf { it in valid }
     }
 
-    /** Current is valid from 1 to 9, next from 2 to 10. Unread or contradictory values remain null. */
+    /** Current 1..9, next 2..10; zero is an explicit unlock signal. Other unread/conflicting values are null. */
     fun read(mode: SkillLevelMode): SkillLevelReading = useSameSnapIn {
         SkillLevelReading(readDigit(loc.currentLevel(mode), 1..9, mode), readDigit(loc.nextLevel(mode), 2..10, mode))
     }

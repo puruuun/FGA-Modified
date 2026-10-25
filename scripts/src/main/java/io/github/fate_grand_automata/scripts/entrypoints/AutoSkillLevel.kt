@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
 import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
+import io.github.fate_grand_automata.scripts.modules.SkillLevelPanelReader
 import io.github.fate_grand_automata.scripts.modules.SlotResult
 import io.github.lib_automata.EntryPoint
 import io.github.lib_automata.ExitManager
@@ -27,6 +28,7 @@ abstract class SkillLevelScript(
     private val loc: SkillLevelLocations,
     private val screens: SkillLevelScreens,
     private val digits: SkillLevelDigits,
+    private val panelReader: SkillLevelPanelReader,
     val mode: SkillLevelMode
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
 
@@ -76,7 +78,7 @@ abstract class SkillLevelScript(
         val (onScreen, selected) = useSameSnapIn { screens.onTitle(mode) to screens.servantSelected() }
         if (!onScreen) return ExitReason.WrongScreen
         if (!selected) return ExitReason.NoServantSelected
-        val device = SkillLevelDevice(api, mode, loc, screens, digits)
+        val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader)
         val run = SkillLevelFlow(device, ::log).also { flow = it }
         return ExitReason.Done(run.runAll(targets))
     }
@@ -85,11 +87,11 @@ abstract class SkillLevelScript(
 @ScriptScope
 class AutoSkillLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
-    screens: SkillLevelScreens, digits: SkillLevelDigits
-) : SkillLevelScript(exitManager, api, loc, screens, digits, SkillLevelMode.Skill)
+    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Skill)
 
 @ScriptScope
 class AutoAppendLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
-    screens: SkillLevelScreens, digits: SkillLevelDigits
-) : SkillLevelScript(exitManager, api, loc, screens, digits, SkillLevelMode.Append)
+    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Append)
