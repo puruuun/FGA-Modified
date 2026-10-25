@@ -114,15 +114,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Jp/quest-items-native-teapot-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -130,7 +121,7 @@
         "kind": "Teapot",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Jp-storm-off",
@@ -146,15 +137,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Jp/quest-items-storm-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -162,7 +144,7 @@
         "kind": "StormPod",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Jp-storm-on",
@@ -178,15 +160,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Jp/quest-items-storm-on-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -194,7 +167,7 @@
         "kind": "StormPod",
         "on": true
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Jp-teapot-off",
@@ -210,15 +183,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Jp/quest-items-teapot-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -226,7 +190,7 @@
         "kind": "Teapot",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Jp-teapot-on",
@@ -242,15 +206,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Jp/quest-items-teapot-on-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -258,7 +213,7 @@
         "kind": "Teapot",
         "on": true
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Kr-dialog-on",
@@ -350,15 +305,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Kr/quest-items-native-dialog-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -381,15 +327,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Kr/quest-items-storm-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -397,7 +334,7 @@
         "kind": "StormPod",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Kr-teapot-off",
@@ -413,15 +350,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Kr/quest-items-teapot-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -429,7 +357,7 @@
         "kind": "Teapot",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Kr-window-dialog-off",
@@ -472,15 +400,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Kr/quest-items-window-dialog-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -503,15 +422,6 @@
             260,
             79
           ]
-        },
-        {
-          "file": "docs/reference-images/Kr/quest-items-window-teapot-off-party-heading.png",
-          "region720": [
-            880,
-            0,
-            400,
-            85
-          ]
         }
       ],
       "expected": {
@@ -519,7 +429,7 @@
         "kind": "Teapot",
         "on": false
       },
-      "skip": "coverage: the reader also reads the heading area, which is not in the screen's crops"
+      "skip": "coverage: main-control crops do not include the dialog heading and close regions read before the main control"
     },
     {
       "name": "Jp-wide-06-party-teapot-off",
@@ -549,7 +459,7 @@
       "server": "Jp",
       "file": "docs/reference-images/Jp/wide-21x9/07.webp",
       "expected": {
-        "view": "Unknown"
+        "view": "Unavailable"
       }
     },
     {
@@ -569,7 +479,16 @@
       "server": "Jp",
       "file": "docs/reference-images/Jp/wide-2560/17.webp",
       "expected": {
-        "view": "Unknown"
+        "view": "Unavailable"
+      }
+    },
+    {
+      "name": "Jp-wide-support-is-not-an-item-screen",
+      "suite": "questItems",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/05.webp",
+      "expected": {
+        "view": "Unavailable"
       }
     }
   ]

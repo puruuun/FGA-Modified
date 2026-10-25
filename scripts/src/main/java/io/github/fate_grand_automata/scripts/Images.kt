@@ -171,8 +171,6 @@ enum class Images(val path: String) {
     QuestItemDialog("quest_item_modal.png"),
     QuestItemDialogKrNative("quest_item_modal_native.png"),
     QuestItemDialogClose("quest_item_close.png"),
-    QuestItemParty("quest_item_party.png"),
-    QuestItemPartyWide("quest_item_party_wide.png"),
     /** The English "Free Quest" emblem of a quest panel; identical on every server, so only En has a copy. */
     FreeQuestLabel("free_quest_label.png"),
     /** Weekly route navigation (JP and KR only): the top-left button on the main screen, in a chapter list and on a map. */

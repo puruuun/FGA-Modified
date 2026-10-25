@@ -50,11 +50,11 @@ class Reader:
         self.settings = constants(SCRIPTS/'modules/QuestItemReader.kt')
         text = (SCRIPTS/'locations/QuestItemLocations.kt').read_text()
         self.regions = {}
-        for key in ['mainControl','partyHeading','dialogHeading','stormPodControl','teapotControl','dialogClose']:
+        for key in ['mainControl','dialogHeading','stormPodControl','teapotControl','dialogClose']:
             expression = re.search(r'val '+key+r'\s*=([^\n]+)', text)[1]
             rects = re.findall(r'Region\((-?\d+),\s*(-?\d+),\s*(\d+),\s*(\d+)\)', expression)
             x,y,w,h = map(int,rects[-1]) # 16:9 branch
-            if key in ['mainControl','partyHeading']: x += 2560
+            if key == 'mainControl': x += 2560
             else: x += 1280
             if key == 'mainControl': y += 1440
             self.regions[key] = tuple(rounded(v/2) for v in (x,y,w,h))
@@ -90,19 +90,16 @@ class Reader:
         title_scores = self.values(gray,'dialogHeading',['modal'] + (['modal_native'] if server == 'Kr' else []),server)
         title = max(title_scores.values()) >= self.settings['SCREEN_SIMILARITY']
         close = self.values(gray,'dialogClose',['close'],server)['close'] >= self.settings['SCREEN_SIMILARITY']
-        party = self.values(gray,'partyHeading',['party'],server)['party'] >= self.settings['SCREEN_SIMILARITY']
         icons = self.values(gray,'mainControl',['tea','storm'],server)
         tea = icons['tea'] >= self.settings['ICON_SIMILARITY']; storm = icons['storm'] >= self.settings['ICON_SIMILARITY']
         kind = 'Teapot' if tea and not storm else 'StormPod' if storm and not tea else None
         main = self.confirmed_button(gray,'mainControl',server); left=self.confirmed_button(gray,'stormPodControl',server); right=self.confirmed_button(gray,'teapotControl',server)
         if title or close: view = 'Dialog' if title and close and left is not None and right is not None else 'Unknown'
-        elif not party: view = 'Unknown'
         elif kind is not None and main is not None: view = 'Single'
         elif not tea and not storm and all(value < self.settings['STATE_SIMILARITY'] for value in v['mainControl'].values()): view = 'Unavailable'
         else: view = 'Unknown'
         return dict(view=view, main_kind=kind, main_on=main, storm_on=left, tea_on=right, dialog=title, close=close,
-                    similarities=v, icon_similarities=icons, title_similarities=title_scores,
-                    launch_screen=party and not close)
+                    similarities=v, icon_similarities=icons, title_similarities=title_scores)
 
 def verify_reference_crops(reader, report_path):
     """Rebuild only the tested ROIs on black canvases, never synthetic full game screens."""
@@ -123,7 +120,6 @@ def verify_reference_crops(reader, report_path):
         modal = 'dialog' in case
         expected = 'Unknown' if case.endswith('negative') else 'Dialog' if modal else 'Single'
         assert result['view'] == expected, (server,case,result)
-        assert result['launch_screen'] == (expected == 'Single'), (server,case,result)
         if expected == 'Dialog':
             wanted = case.endswith('-on')
             assert result['storm_on'] == wanted and result['tea_on'] == wanted, (server,case,result)
@@ -136,11 +132,8 @@ def verify_reference_crops(reader, report_path):
             assert result['main_on'] == case.endswith('-on'), (server,case,result)
             missing=gray.copy();x,y,w,h=reader.regions['mainControl'];missing[y:y+h,x:x+w]=0
             absent=reader.read(missing,server)
-            assert absent['view']=='Unavailable' and absent['launch_screen'], (server,case,absent)
-            x,y,w,h=reader.regions['partyHeading'];missing[y:y+h,x:x+w]=0
-            invalid=reader.read(missing,server)
-            assert invalid['view']=='Unknown' and not invalid['launch_screen'], (server,case,invalid)
-            negatives += 2
+            assert absent['view']=='Unavailable', (server,case,absent)
+            negatives += 1
         results.append(dict(server=server,case=case,expected=expected,detected=result,passed=True))
     report=dict(passed=True,opencv=cv2.__version__,thresholds=reader.settings,roi_cases=len(results),
                 synthetic_negative_checks=negatives,screens=results,

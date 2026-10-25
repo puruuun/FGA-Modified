@@ -54,7 +54,6 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
-            ScriptLog.QuestItemsPartySkipped -> Timber.tag("QuestItems").i("quest items: party screen not confirmed, skipped")
             is ScriptLog.Bond -> {
                 if (BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest")) Timber.tag(BOND_TAG).i(item.message)
                 Unit
