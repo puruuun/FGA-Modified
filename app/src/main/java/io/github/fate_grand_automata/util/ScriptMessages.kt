@@ -113,6 +113,10 @@ class ScriptMessages @Inject constructor(
                 Timber.d("Clicking NP(s): ${item.nps}")
             }
 
+            is ScriptLog.DirectCardsFallback -> Timber.tag("FGA.DirectCards").i(
+                "Fallback %s -> %s", item.requested, item.cards
+            )
+
             is ScriptLog.ClickingCards -> {
                 Timber.d("Clicking cards: ${item.cards}")
             }

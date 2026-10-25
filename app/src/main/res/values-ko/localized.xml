@@ -268,7 +268,9 @@
     <string name="skill_maker_direct_cards">일반 카드 직접 지정</string>
     <string name="skill_maker_direct_cards_button">일반 카드\n직접 지정</string>
     <string name="skill_maker_direct_cards_use">이 턴의 공격 순서 직접 지정</string>
-    <string name="skill_maker_direct_cards_help">세 장의 공격 순서를 선택합니다. 버스터·아츠·퀵은 상성을 구분하지 않습니다. 필요한 일반 카드가 없거나 판독하지 못하면 중단합니다.</string>
+    <string name="skill_maker_direct_cards_help">세 장의 공격 순서를 선택합니다. 버스터·아츠·퀵은 상성을 구분하지 않습니다. 필요한 일반 카드가 없으면 중단하며, 대체를 켜면 부족한 자리만 우선순위로 채웁니다. 판독하지 못하면 항상 중단합니다.</string>
+    <string name="skill_maker_direct_cards_fallback">카드 부족 시 우선순위로 대체</string>
+    <string name="skill_maker_direct_cards_fallback_summary">부족 시 대체</string>
     <string name="skill_maker_direct_cards_slot">%1$d번째 공격</string>
     <string name="skill_maker_direct_np">서번트 %1$d 보구</string>
     <string name="direct_cards_unavailable">고정 공격 %1$s에 필요한 카드를 확인하지 못했습니다. 카드는 선택하지 않았습니다. 현재 카드와 전열 서번트를 확인해 주세요.</string>

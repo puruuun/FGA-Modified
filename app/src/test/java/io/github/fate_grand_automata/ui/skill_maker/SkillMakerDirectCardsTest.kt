@@ -44,4 +44,34 @@ class SkillMakerDirectCardsTest {
                 .isEqualTo(AutoSkillCommand.parse(source).stages.map { it.size })
         }
     }
+
+    @Test
+    fun `fallback survives editor copy save reopen and replacement with strict`() {
+        val source = "a1b2&?b4a,&bba,#,&?456"
+        val model = SkillMakerModel(source)
+        assertThat(model.toString()).isEqualTo(source)
+        val copied = SkillMakerModel(model.toString())
+        assertThat(copied.toString()).isEqualTo(source)
+        val index = copied.skillCommand.indexOfFirst {
+            it is SkillMakerEntry.Next.Turn && it.action.directCards?.fallback == true
+        }
+        // An edited copy must not mutate the original command history.
+        val staged = AutoSkillAction.Atk.direct(DirectCardSequence.parse("b4a"))
+        assertThat(model.toString()).isEqualTo(source)
+        copied.skillCommand[index] = SkillMakerEntry.Next.Turn(staged)
+        assertThat(copied.toString()).isEqualTo("a1b2&b4a,&bba,#,&?456")
+        assertThat(SkillMakerModel(copied.toString()).toString()).isEqualTo(copied.toString())
+        assertThat(model.toString()).isEqualTo(source)
+        assertThat(DirectCardSequence.parse("baq").fallback).isEqualTo(false)
+    }
+
+    @Test
+    fun `fallback attacks remain three slots in model and normalized uppercase roundtrips`() {
+        val model = SkillMakerModel("0a&?B4A,&?QQQ")
+        assertThat(model.toString()).isEqualTo("a&?b4a,&?qqq")
+        val action = AutoSkillCommand.parse(model.toString())[0, 0].last() as AutoSkillAction.Atk
+        assertThat(action.directCards?.code?.length).isEqualTo(3)
+        assertThat(action.directCards?.fallback).isEqualTo(true)
+        assertThat(action.copy().toCommandString()).isEqualTo("&?b4a")
+    }
 }

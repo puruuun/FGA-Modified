@@ -24,13 +24,20 @@ class DirectCardsTest {
         ParsedCard(CommandCard.Face.E, TeamSlot.C, FieldSlot.C, CardTypeEnum.Quick, CardAffinityEnum.Weak)
     )
 
-    private class Fixture(command: String = "", secondCommand: String = "&a5b") {
+    private class Fixture(
+        command: String = "", secondCommand: String = "&a5b",
+        cardPriority: String = "Q,WQ,RQ,A,WA,RA,B,WB,RB",
+        useServantPriority: Boolean = true,
+        servantPriority: String = "3,2,1,4,5,6",
+        secondary: TestExecutionProfile = TestExecutionProfile(skillCommand = secondCommand)
+    ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val caster = mockk<Caster>(relaxed = true)
         val tracker = mockk<ServantTracker>()
         val chains = mockk<ApplyBraveChains>()
         val taps = mutableListOf<CommandCard>()
         val execution: BattleExecution
+        val state: BattleState
         val card: Card
         val autoSkill: AutoSkill
         init {
@@ -41,15 +48,15 @@ class DirectCardsTest {
             every { config.skillCommand } returns command
             every { config.commandStartMode } returns CommandStartMode.CardCount
             every { config.secondaryStartEnabled } returns true
-            every { config.secondaryExecution } returns TestExecutionProfile(skillCommand = secondCommand)
-            every { config.useServantPriority } returns true
-            every { config.servantPriority } returns ServantPriorityPerWave.of("3,2,1,4,5,6")
-            every { config.cardPriority } returns CardPriorityPerWave.of("Q,WQ,RQ,A,WA,RA,B,WB,RB")
+            every { config.secondaryExecution } returns secondary
+            every { config.useServantPriority } returns useServantPriority
+            every { config.servantPriority } returns ServantPriorityPerWave.of(servantPriority)
+            every { config.cardPriority } returns CardPriorityPerWave.of(cardPriority)
             every { config.braveChains } returns listOf(BraveChainEnum.Avoid)
             every { config.rearrangeCards } returns listOf(true)
             every { config.spam } returns listOf(ServantSpamConfig(np = NpSpamConfig(spam = SpamEnum.Spam, waves = setOf(1))))
             execution = BattleExecution(config)
-            val state = BattleState().also { it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
+            state = BattleState().also { it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
             card = Card(api, tracker, state, caster, mockk<CardParser>(), chains, execution)
             autoSkill = AutoSkill(api, execution, caster)
         }
@@ -164,5 +171,141 @@ class DirectCardsTest {
         f.execution.select(1)
         f.card.clickCommandCards(hand(), f.autoSkill.execute(0, 0))
         assertThat(f.taps).isEqualTo(listOf(CommandCard.Face.B, CommandCard.NP.B, CommandCard.Face.A))
+    }
+
+    private fun artsAndQuicks() = hand().mapIndexed { index, card ->
+        card.copy(type = if (index == 0) CardTypeEnum.Arts else CardTypeEnum.Quick,
+            affinity = CardAffinityEnum.Normal)
+    }
+
+    @Test
+    fun `fallback reserves later Arts before replacing missing Buster and logs final order`() {
+        val f = Fixture(command = "&?b4a", cardPriority = "B,WB,RB,A,WA,RA,Q,WQ,RQ", useServantPriority = false)
+        val expected = listOf(CommandCard.Face.B, CommandCard.NP.A, CommandCard.Face.A)
+        f.card.clickCommandCards(artsAndQuicks(), f.autoSkill.execute(0, 0))
+        assertThat(f.taps).isEqualTo(expected)
+        verify(exactly = 1) { f.api.messages.log(match<ScriptLog.DirectCardsFallback> {
+            it.requested == "&?b4a" && it.cards == expected
+        }) }
+        verify(exactly = 0) { f.chains.pick(any(), any(), any(), any()) }
+        verify(exactly = 0) { f.caster.canSpam(any()) }
+        val strict = Fixture(command = "&b4a")
+        assertFailsWith<AutoBattle.BattleExitException> {
+            strict.card.clickCommandCards(artsAndQuicks(), strict.autoSkill.execute(0, 0))
+        }
+        assertThat(strict.taps).isEqualTo(emptyList())
+    }
+
+    @Test
+    fun `multiple gaps repeated colors and all NP positions reserve globally without reuse`() {
+        val cards = artsAndQuicks()
+        val expected = mapOf(
+            "?bba" to listOf(CommandCard.Face.B, CommandCard.Face.C, CommandCard.Face.A),
+            "?aaa" to listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C),
+            "?4ba" to listOf(CommandCard.NP.A, CommandCard.Face.B, CommandCard.Face.A),
+            "?b4a" to listOf(CommandCard.Face.B, CommandCard.NP.A, CommandCard.Face.A),
+            "?ba4" to listOf(CommandCard.Face.B, CommandCard.Face.A, CommandCard.NP.A),
+            "?bb4" to listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.NP.A)
+        )
+        for ((code, wanted) in expected) {
+            assertThat(DirectCardSequence.parse(code).resolve(cards)).isEqualTo(wanted)
+        }
+        // A scarce repeated color is reserved for the earlier slot, even with reverse priority.
+        assertThat(DirectCardSequence.parse("?aaa").resolve(cards) { it.reversed() })
+            .isEqualTo(listOf(CommandCard.Face.A, CommandCard.Face.E, CommandCard.Face.D))
+    }
+
+    @Test
+    fun `satisfied fallback is exactly strict leftmost selection and never sorts or logs`() {
+        for (code in listOf("bba", "ba4", "b5a", "4ba", "456")) {
+            val f = Fixture(command = "&?$code")
+            f.card.clickCommandCards(hand().reversed(), f.autoSkill.execute(0, 0))
+            assertThat(f.taps).isEqualTo(DirectCardSequence.parse(code).resolve(hand()))
+            assertThat(DirectCardSequence.parse("?$code").resolve(hand()) { error("Must not sort") })
+                .isEqualTo(f.taps)
+            verify(exactly = 0) { f.api.messages.log(any<ScriptLog.DirectCardsFallback>()) }
+        }
+    }
+
+    @Test
+    fun `fallback uses shared card servant wave and secondary priorities only for gaps`() {
+        val cards = hand().map { it.copy(type = if (it.card == CommandCard.Face.B) CardTypeEnum.Arts else
+            if (it.card == CommandCard.Face.E) CardTypeEnum.Quick else CardTypeEnum.Buster,
+            affinity = CardAffinityEnum.Normal) }
+        val priorities = "Q,WQ,RQ,B,WB,RB,A,WA,RA\nB,WB,RB,Q,WQ,RQ,A,WA,RA"
+        for ((wave, face) in listOf(0 to CommandCard.Face.E, 1 to CommandCard.Face.A)) {
+            val f = Fixture(command = "&?aaa", cardPriority = priorities, useServantPriority = false)
+            f.state.commandPosition = CommandPosition(wave, 0)
+            f.card.clickCommandCards(cards, AutoSkillAction.Atk.direct(DirectCardSequence.parse("?aaa")).toNPUsage())
+            assertThat(f.taps.first()).isEqualTo(CommandCard.Face.B)
+            assertThat(f.taps[1]).isEqualTo(face)
+        }
+        for ((priority, face) in listOf("1,2,3,4,5,6" to CommandCard.Face.A, "3,2,1,4,5,6" to CommandCard.Face.E)) {
+            val f = Fixture(command = "&?aaa", servantPriority = priority)
+            f.card.clickCommandCards(cards, f.autoSkill.execute(0, 0))
+            assertThat(f.taps.take(2)).isEqualTo(listOf(CommandCard.Face.B, face))
+        }
+        val f = Fixture(command = "&?aaa", secondary = TestExecutionProfile(skillCommand = "&?aaa",
+            cardPriority = CardPriorityPerWave.of(priorities), useServantPriority = false))
+        f.execution.select(1)
+        f.card.clickCommandCards(cards, f.autoSkill.execute(0, 0))
+        assertThat(f.taps.take(2)).isEqualTo(listOf(CommandCard.Face.B, CommandCard.Face.E))
+    }
+
+    @Test
+    fun `fallback excludes stunned cards and rejects bad hands insufficient cards and missing NP before taps`() {
+        val stunned = artsAndQuicks().map { if (it.card == CommandCard.Face.B)
+            it.copy(isStunned = true, type = CardTypeEnum.Unknown) else it }
+        assertThat(DirectCardSequence.parse("?b4a").resolve(stunned))
+            .isEqualTo(listOf(CommandCard.Face.C, CommandCard.NP.A, CommandCard.Face.A))
+        val bad = listOf(
+            artsAndQuicks().map { it.copy(type = CardTypeEnum.Unknown) },
+            artsAndQuicks().dropLast(1),
+            artsAndQuicks().dropLast(1) + artsAndQuicks().first(),
+            artsAndQuicks().map { it.copy(isStunned = it.card != CommandCard.Face.A) }
+        )
+        for (cards in bad) {
+            val f = Fixture(command = "&?4bb")
+            assertFailsWith<AutoBattle.BattleExitException> { f.card.clickCommandCards(cards, f.autoSkill.execute(0, 0)) }
+            assertThat(f.taps).isEqualTo(emptyList())
+        }
+        val f = Fixture(command = "&?b5a")
+        every { f.tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A)
+        assertFailsWith<AutoBattle.BattleExitException> { f.card.clickCommandCards(artsAndQuicks(), f.autoSkill.execute(0, 0)) }
+        assertThat(f.taps).isEqualTo(emptyList())
+    }
+
+    @Test
+    fun `malformed duplicate priorities never reuse faces and fail atomically when exhausted`() {
+        val cards = artsAndQuicks().map { if (it.card != CommandCard.Face.A)
+            it.copy(type = CardTypeEnum.Buster) else it }
+        for (code in listOf("?qqq", "?4qq")) {
+            val f = Fixture(command = "&$code", cardPriority = "A,A,A,A,A,A,A,A,A", useServantPriority = false)
+            assertFailsWith<AutoBattle.BattleExitException> { f.card.clickCommandCards(cards, f.autoSkill.execute(0, 0)) }
+            assertThat(f.taps).isEqualTo(emptyList())
+        }
+        assertThat(DirectCardSequence.parse("?bb4").resolve(artsAndQuicks()) { listOf(it[0], it[0], it[1]) })
+            .isEqualTo(listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.NP.A))
+    }
+
+    @Test
+    fun `fallback syntax normalizes and retains skills separators no ops and per turn flag`() {
+        val parsed = AutoSkillCommand.parse("0a&?B4A,&b4a,#,&?456")
+        assertThat(parsed[0, 0].size).isEqualTo(2)
+        assertThat((parsed[0, 0].last() as AutoSkillAction.Atk).toCommandString()).isEqualTo("&?b4a")
+        assertThat((parsed[0, 1].single() as AutoSkillAction.Atk).directCards?.fallback).isEqualTo(false)
+        assertThat((parsed[1, 0].single() as AutoSkillAction.Atk).toCommandString()).isEqualTo("&?456")
+        val f = Fixture(command = "&?b4a,0")
+        assertThat(f.autoSkill.execute(0, 0).directCards?.fallback).isEqualTo(true)
+        assertThat(f.autoSkill.execute(0, 1)).isEqualTo(NPUsage.none)
+        assertThat(DirectCardSequence.parse("b4a").fallback).isEqualTo(false)
+    }
+
+    @Test
+    fun `fallback marker is allowed only once immediately after ampersand with three choices`() {
+        for (code in listOf("&?", "&?ba", "&?bb44", "&??ba4", "&b?4a", "?&ba4", "&?4a4", "&?ba4a",
+            "&?ba4&bba", "4&?ba4", "n1&?ba4", "&?bq7", "&?ba0", "&?ba4?")) {
+            assertFailsWith<AutoBattle.BattleExitException>(code) { AutoSkillCommand.parse(code) }
+        }
     }
 }
