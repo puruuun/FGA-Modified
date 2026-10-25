@@ -5,7 +5,6 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.QuestItemLocations
-import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.Kind
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.View
@@ -46,7 +45,6 @@ class QuestItemsTest {
         val right = Region(1530, 730, 200, 164)
         val heading = Region(760, 160, 1040, 160)
         val close = Region(970, 1040, 620, 174)
-        val partyHeading = Region(1760, 0, 800, 170)
         val quest = Location(2400, 1350)
         val patterns = mutableMapOf<Images, Pattern>()
         val trace = mutableListOf<String>()
@@ -54,10 +52,10 @@ class QuestItemsTest {
         var tea = false
         var modal = false
         var nativeHeadingOnly = false
-        var stopAtQuest = false
         var snapshot = false
         var absent = false
         var hideState = false
+        var hideIcon = false
         var ambiguousState = false
         var ambiguousIcon = false
         var ignoreTaps = false
@@ -94,7 +92,6 @@ class QuestItemsTest {
             every { loc.teapotControl } returns right
             every { loc.dialogHeading } returns heading
             every { loc.dialogClose } returns close
-            every { loc.partyHeading } returns partyHeading
             every { api.locations.menuStartQuestClick } returns quest
             every { api.images[any(), any()] } answers { patterns.getOrPut(firstArg()) { mockk<Pattern>() } }
             every { api.useSameSnapIn<Any?>(any()) } answers {
@@ -111,9 +108,8 @@ class QuestItemsTest {
                     Images.QuestItemDialog -> region == heading && modal && !nativeHeadingOnly
                     Images.QuestItemDialogKrNative -> region == heading && modal && nativeHeadingOnly
                     Images.QuestItemDialogClose -> region == close && modal && !partialDialog
-                    Images.QuestItemParty -> region == partyHeading
-                    Images.QuestItemTeapot -> region == main && !absent && !modal && (kind == Kind.Teapot || ambiguousIcon)
-                    Images.QuestItemStormPod -> region == main && !absent && !modal && (kind == Kind.StormPod || ambiguousIcon)
+                    Images.QuestItemTeapot -> region == main && !absent && !modal && !hideIcon && (kind == Kind.Teapot || ambiguousIcon)
+                    Images.QuestItemStormPod -> region == main && !absent && !modal && !hideIcon && (kind == Kind.StormPod || ambiguousIcon)
                     else -> false
                 }
             }
@@ -146,7 +142,6 @@ class QuestItemsTest {
                     }
                     quest -> {
                         trace.add("quest"); assertFalse(modal)
-                        if (stopAtQuest) throw AutoBattle.BattleExitException(AutoBattle.ExitReason.Abort)
                     }
                     else -> error("Unexpected click")
                 }
@@ -236,8 +231,8 @@ class QuestItemsTest {
 
     @Test
     fun `initial unreadable or ambiguous controls are skipped without item clicks`() {
-        for (failure in 0..2) {
-            val f = Fixture(); f.hideState = failure == 0; f.ambiguousState = failure == 1; f.ambiguousIcon = failure == 2
+        for (failure in 0..3) {
+            val f = Fixture(); f.hideState = failure == 0; f.ambiguousState = failure == 1; f.ambiguousIcon = failure == 2; f.hideIcon = failure == 3
             f.launch.start()
             assertThat(f.trace).isEqualTo(listOf("party", "quest"))
         }
@@ -250,15 +245,10 @@ class QuestItemsTest {
     }
 
     @Test
-    fun `no party after support skips items and Start after exactly three seconds`() {
+    fun `non-party frame without item evidence is unavailable and never tapped`() {
         val f = Fixture(); f.absent = true
-        every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returns false
-        assertFalse(f.launch.start())
-        assertTrue(f.trace.isEmpty())
-        verify(exactly = 10) { with(f.api) { 300.milliseconds.wait(false) } }
-        verify(exactly = 0) { with(f.api) { 2.seconds.wait(any()) } }
-        verify { f.api.messages.log(io.github.fate_grand_automata.scripts.ScriptLog.QuestItemsPartySkipped) }
-        f.items.prepare() // Initial reads also never throw or tap when the screen cannot be established.
+        assertThat(f.reader.read()).isEqualTo(View.Unavailable)
+        f.items.prepare()
         assertTrue(f.trace.isEmpty())
     }
 
@@ -310,57 +300,14 @@ class QuestItemsTest {
     }
 
     @Test
-    fun `party detector accepts KR and JP even with item bypass but excludes modal and other screens`() {
-        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
+    fun `launch uses one second either side of items and two seconds after Start on every server`() {
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original, GameServer.En.Original, GameServer.Cn, GameServer.Tw)) {
             val f = Fixture(server = server)
-            assertTrue(f.api.useSameSnapIn { f.launch.isScreen() })
-            every { f.api.prefs.ignoreQuestItemUsage } returns true
-            assertTrue(f.api.useSameSnapIn { f.launch.isScreen() })
-            f.modal = true
-            assertFalse(f.api.useSameSnapIn { f.launch.isScreen() })
-            f.modal = false
-            every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returns false
-            assertFalse(f.api.useSameSnapIn { f.launch.isScreen() })
-        }
-        val unsupported = Fixture(server = GameServer.En.Original)
-        assertFalse(unsupported.launch.isScreen())
-        verify(exactly = 0) { unsupported.api.images[any(), any()] }
-    }
-
-    @Test
-    fun `battle entry from party confirms items before quest and propagates failure on both servers`() {
-        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) for (failure in listOf(false, true)) {
-            val f = Fixture(server = server)
-            f.ignoreClose = failure; f.stopAtQuest = true
-            val entry = AutoBattle(
-                mockk(relaxed = true), f.api, BattleState(), mockk(relaxed = true),
-                mockk(relaxed = true), mockk(relaxed = true), f.launch,
-                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)
-            )
-            val error = assertFailsWith<AutoBattle.ExitException> { entry.script() }
-            assertThat(error.reason).isEqualTo(if (failure) AutoBattle.ExitReason.QuestItemSettingFailed else AutoBattle.ExitReason.Abort)
-            assertThat(f.trace).isEqualTo(if (failure) listOf("party", "main", "close") else listOf("party", "main", "close", "quest"))
-        }
-    }
-    @Test
-    fun `delayed confirmed party checks items and starts only after confirmation`() {
-        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
-            val f = Fixture(server = server)
-            val twoSecondWaitTrace = mutableListOf<List<String>>()
-            every { with(f.api) { 2.seconds.wait() } } answers {
-                twoSecondWaitTrace += f.trace.toList()
-            }
-            every { with(f.api) { f.partyHeading.exists(any(), any(), any()) } } returnsMany listOf(false, false, true)
-            assertTrue(f.launch.start())
-            verify(exactly = 2) { with(f.api) { 300.milliseconds.wait(false) } }
-            assertThat(twoSecondWaitTrace).isEqualTo(
-                listOf(
-                    emptyList(),
-                    listOf("party", "main", "close", "quest")
-                )
-            )
-            assertThat(f.trace).isEqualTo(listOf("party", "main", "close", "quest"))
+            every { with(f.api) { 1.seconds.wait() } } answers { f.trace.add("wait1") }
+            every { with(f.api) { 2.seconds.wait() } } answers { f.trace.add("wait2") }
+            f.launch.start()
+            val itemTrace = if (server is GameServer.Kr || server is GameServer.Jp) listOf("main", "close") else emptyList()
+            assertThat(f.trace).isEqualTo(listOf("party", "wait1") + itemTrace + listOf("wait1", "quest", "wait2"))
         }
     }
 }

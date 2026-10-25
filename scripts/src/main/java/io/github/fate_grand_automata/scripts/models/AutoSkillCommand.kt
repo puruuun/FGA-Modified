@@ -170,7 +170,10 @@ class AutoSkillCommand private constructor(
                     }
 
                     SpecialCommand.DirectCards.autoSkillCode -> {
-                        val sequence = buildString { repeat(3) { append(queue.remove()) } }
+                        val sequence = buildString {
+                            if (queue.peek() == '?') append(queue.remove())
+                            repeat(3) { append(queue.remove()) }
+                        }
                         require(queue.isEmpty()) { "Direct attack must be the last command in the turn" }
                         AutoSkillAction.Atk.direct(DirectCardSequence.parse(sequence))
                     }

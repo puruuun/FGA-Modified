@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
@@ -37,7 +38,9 @@ internal fun directCardLabel(choice: Char): String = when (choice) {
 
 @Composable
 internal fun DirectCardsSummary(sequence: String) {
-    Text(sequence.map { directCardLabel(it) }.joinToString(" → "))
+    val parsed = DirectCardSequence.parse(sequence)
+    Text(parsed.code.map { directCardLabel(it) }.joinToString(" → ") +
+        if (parsed.fallback) " (${stringResource(R.string.skill_maker_direct_cards_fallback_summary)})" else "")
 }
 
 @Composable
@@ -47,7 +50,10 @@ internal fun DirectCardsDialog(
     onApply: (Boolean, String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var sequence by rememberSaveable { mutableStateOf(initialSequence) }
+    val initial = DirectCardSequence.parse(initialSequence)
+    var sequence by rememberSaveable { mutableStateOf(initial.code) }
+    var fallback by rememberSaveable { mutableStateOf(initial.fallback) }
+    fun commandSequence() = (if (fallback) "?" else "") + sequence
     var enabled by rememberSaveable { mutableStateOf(initiallyEnabled) }
     val valid = runCatching { DirectCardSequence.parse(sequence) }.isSuccess
 
@@ -62,6 +68,10 @@ internal fun DirectCardsDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.skill_maker_direct_cards_use), modifier = Modifier.weight(1f))
                     Switch(checked = enabled, onCheckedChange = { enabled = it })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = fallback, onCheckedChange = { fallback = it }, enabled = enabled)
+                    Text(stringResource(R.string.skill_maker_direct_cards_fallback))
                 }
                 Text(stringResource(R.string.skill_maker_direct_cards_help))
                 repeat(3) { index ->
@@ -90,11 +100,11 @@ internal fun DirectCardsDialog(
                         }
                     }
                 }
-                if (enabled) DirectCardsSummary(sequence)
+                if (enabled) DirectCardsSummary(commandSequence())
             }
         },
         confirmButton = {
-            TextButton(onClick = { onApply(enabled, sequence) }, enabled = !enabled || valid) {
+            TextButton(onClick = { onApply(enabled, commandSequence()) }, enabled = !enabled || valid) {
                 Text(stringResource(R.string.save))
             }
         },

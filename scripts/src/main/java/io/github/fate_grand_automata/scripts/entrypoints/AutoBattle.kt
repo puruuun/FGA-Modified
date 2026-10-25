@@ -110,8 +110,6 @@ class AutoBattle @Inject constructor(
 
     private var canScreenshotBondCE = false
 
-    private var isQuestClose = false
-
     override fun script(): Nothing = try { runLoop() } finally { finishRun() }
 
     private var routeQuest = false
@@ -122,7 +120,6 @@ class AutoBattle @Inject constructor(
         isContinuing = false
         isInBattle = false
         storySkipPossible = true
-        isQuestClose = false
         return try { runLoop(selectedQuest = true) } finally { routeQuest = false }
     }
 
@@ -221,10 +218,9 @@ class AutoBattle @Inject constructor(
             { isInResult() } to { result() },
             { isInDropsScreen() } to { dropScreen() },
             { isInQuestRewardScreen() } to { questReward() },
-            { questLaunch.isScreen() } to { party() },
             { isInSupport() } to { support() },
             { isRepeatScreen() } to { repeatQuest() },
-            { isInOrdealCallOutOfPodsScreen() } to { ordealCallOutOfPods() },
+            { isInOrdealCallOutOfPodsScreen() } to { closeBottomCentreDialog() },
             { isInInterludeEndScreen() } to { locations.interludeCloseClick.click() },
             { withdraw.needsToWithdraw() } to { withdraw.withdraw() },
             { needsToStorySkip() } to { skipStory() },
@@ -264,12 +260,6 @@ class AutoBattle @Inject constructor(
         if (routeQuest) throw BattleExitException(ExitReason.StopAfterThisRun)
         // In case the repeat loop breaks and we end up in menu (like withdrawing from quests)
         isContinuing = false
-
-        if (isQuestClose){
-            // Ordeal Call
-            isQuestClose = false
-            throw BattleExitException(ExitReason.LimitRuns(state.runs))
-        }
 
         battle.resetState()
 
@@ -401,12 +391,8 @@ class AutoBattle @Inject constructor(
         return findImage(locations.ordealCallOutOfPodsRegion, Images.Close)
     }
 
-    private fun ordealCallOutOfPods() {
+    private fun closeBottomCentreDialog() {
         locations.ordealCallOutOfPodsClick.click()
-
-        isQuestClose = true
-        // Count the current run
-        state.nextRun()
     }
 
     private fun findRepeatButton(): Match? {
@@ -490,15 +476,15 @@ class AutoBattle @Inject constructor(
         support.selectSupport()
 
         if (!isContinuing) {
-            if (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp) 4.seconds.wait()
+            4.seconds.wait()
             party()
         }
     }
 
-    /** Also handles a script started directly on party confirmation, including after a repeat. */
+    /** Launches after support selection; starting directly on the party screen is unsupported. */
     private fun party() {
         canScreenshotBondCE = false
-        if (!startQuest()) return
+        startQuest()
         // Let the transition settle before checking battle screens again.
         5.seconds.wait()
     }
@@ -545,12 +531,11 @@ class AutoBattle @Inject constructor(
      * 2. A boost item is selected if [IPreferences.boostItemSelectionMode] is set (needed in some events)
      * 3. The story is skipped if [IPreferences.storySkip] is activated
      */
-    private fun startQuest(): Boolean {
-        if (!questLaunch.start()) return false
+    private fun startQuest() {
+        questLaunch.start()
 
         useBoostItem()
         storySkipPossible = true
-        return true
     }
 
     /**

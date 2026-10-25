@@ -14,6 +14,14 @@ class SkillLevelLogPolicyTest {
         assertTrue(isFgaLoggable(WEEKLY_ROUTE_TAG,Log.INFO,debug=false))
         assertFalse(isFgaLoggable(WEEKLY_ROUTE_TAG,Log.DEBUG,debug=false))
     }
+    @Test fun `direct cards fallback info survives non debug beta logging without enabling debug noise`() {
+        assertFalse(BuildConfig.DEBUG)
+        for (beta in listOf(false, true)) {
+            assertTrue(isFgaLoggable("FGA.DirectCards", Log.INFO, debug = false, beta = beta))
+            assertFalse(isFgaLoggable("FGA.DirectCards", Log.DEBUG, debug = false, beta = beta))
+            assertFalse(isFgaLoggable("Other", Log.INFO, debug = false, beta = beta))
+        }
+    }
     @Test fun `the existing tag allowlist and warning policy remain unchanged`() {
         assertTrue(isFgaLoggable(FP_SELL_TAG,Log.INFO,debug=false))
         assertTrue(isFgaLoggable("FGA.SupportScore",Log.INFO,debug=false))

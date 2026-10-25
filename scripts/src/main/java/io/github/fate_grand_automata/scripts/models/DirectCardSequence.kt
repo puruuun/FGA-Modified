@@ -2,9 +2,9 @@ package io.github.fate_grand_automata.scripts.models
 
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 
-/** A complete three-card attack. Affinity and servant priority do not participate. */
+/** A complete three-card attack; optional priority replacement fills only missing colors. */
 @ConsistentCopyVisibility
-data class DirectCardSequence private constructor(val code: String) {
+data class DirectCardSequence private constructor(val code: String, val fallback: Boolean = false) {
     init {
         require(code.length == 3 && code.all { it in "baq456" }) {
             "Direct attack requires exactly three choices: b, a, q, 4, 5 or 6"
@@ -15,29 +15,39 @@ data class DirectCardSequence private constructor(val code: String) {
     val nps: Set<CommandCard.NP> get() = code.mapNotNull { np(it) }.toSet()
     val cardsBeforeNP: Int get() = code.indexOfFirst { np(it) != null }.coerceAtLeast(0)
 
-    fun resolve(cards: List<ParsedCard>): List<CommandCard>? {
+    fun resolve(
+        cards: List<ParsedCard>,
+        prioritize: (List<ParsedCard>) -> List<ParsedCard> = { it }
+    ): List<CommandCard>? {
         if (cards.size != 5 || cards.map { it.card }.toSet() != CommandCard.Face.list.toSet() ||
             cards.any { !it.isStunned && it.type == CardTypeEnum.Unknown }) return null
         val remaining = cards.filter { !it.isStunned }.sortedBy { it.card.index }.toMutableList()
-        val result = mutableListOf<CommandCard>()
-        for (token in code) {
-            val np = np(token)
-            if (np != null) {
-                result += np
-            } else {
-                val match = remaining.firstOrNull { it.type == type(token) } ?: return null
-                result += match.card
-                remaining.remove(match)
+        // Reserve matching colors across ALL slots before any priority replacement.
+        // Repeated colors belong to the earliest requesting slot first.
+        val result = code.map { token ->
+            np(token) ?: remaining.firstOrNull { it.type == type(token) }?.also { remaining.remove(it) }?.card
+        }.toMutableList<CommandCard?>()
+        if (result.any { it == null }) {
+            if (!fallback) return null
+            // The shared sorter can contain repeated entries for malformed saved priorities.
+            // Only distinct, still-available cards may fill a gap; never invent a candidate.
+            val replacements = prioritize(remaining.toList()).filter { it in remaining }
+                .distinctBy { it.card }.iterator()
+            for (index in result.indices) {
+                if (result[index] == null) {
+                    if (!replacements.hasNext()) return null
+                    result[index] = replacements.next().card
+                }
             }
         }
-        return result
+        return result.filterNotNull()
     }
 
-    override fun toString() = "${SpecialCommand.DirectCards.autoSkillCode}$code"
+    override fun toString() = "${SpecialCommand.DirectCards.autoSkillCode}${if (fallback) "?" else ""}$code"
 
     companion object {
         fun parse(value: String): DirectCardSequence {
-            return DirectCardSequence(value.lowercase())
+            return DirectCardSequence(value.removePrefix("?").lowercase(), value.startsWith("?"))
         }
 
         private fun np(token: Char): CommandCard.NP? = CommandCard.NP.list.firstOrNull { it.autoSkillCode == token }

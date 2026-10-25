@@ -25,7 +25,6 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
-    data object QuestItemsPartySkipped : ScriptLog()
     /** Beta-only per-frame bond evidence and final agreement. */
     class Bond(val message: String) : ScriptLog()
     /** A line for `adb logcat -s FpSell`: one per evaluated sell tile, plus the stop step and reason. */
@@ -54,6 +53,7 @@ sealed class ScriptLog {
     class SupportNoblePhantasm(val matched: Boolean, val bestScore: Double?) : ScriptLog()
 
     class ClickingNPs(val nps: Iterable<CommandCard.NP>) : ScriptLog()
+    class DirectCardsFallback(val requested: String, val cards: List<CommandCard>) : ScriptLog()
     class ClickingCards(val cards: Iterable<CommandCard.Face>) : ScriptLog()
     class NPsGroupedByFaceCards(val groups: Map<CommandCard.NP, List<CommandCard.Face>>) : ScriptLog()
     class SupportFaceCardGroup(val group: List<CommandCard.Face>) : ScriptLog()
