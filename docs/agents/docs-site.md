@@ -14,7 +14,7 @@ A change that adds or changes something a user sees (a setting, a script, a stop
   - what it will and will not do (safety limits);
   - the stop messages and what to do about each one.
 - Release notes go to `wiki/releases/<version>-KR.md` and appear under **릴리스 노트**, newest first.
-- Japanese pages are named `<Name>-JA.md` and appear under **日本語**. English pages (`<Name>.md`, mostly original FGA docs) stay in the wiki but are left out of the site menu and search.
+- English pages (`<Name>.md`, mostly original FGA docs) stay in the wiki but are left out of the site menu and search.
 
 ## How the navigation is built
 
@@ -22,7 +22,6 @@ A change that adds or changes something a user sees (a setting, a script, a stop
 - **시작하기**: the fixed list `GETTING_STARTED` in the hook.
 - **기능 설명서**: every other `wiki/scripts/*-KR.md`. Names containing `Study` or `Research` are research notes and are left out.
 - **릴리스 노트**: `wiki/releases/*.md`.
-- **日本語**: `*-JA.md`.
 - Everything else (English / original FGA pages, research notes) is built so links keep working, but is not in the menu or search.
 
 The hook also makes GitHub-wiki links work on the site:

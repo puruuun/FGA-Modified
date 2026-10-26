@@ -48,21 +48,3 @@
 Obtainium은 정규판만 제공합니다. 개발 베타 APK는 컴퓨터에 저장하거나 블루스택에 직접 설치합니다.
 
 [정규판 Obtainium 설정](../../obtainium.json)
-
-## 개발 및 검증
-
-`./gradlew :app:assembleBeta`로 베타 APK를 만듭니다. `.github/workflows/beta.yml`은 앱·설정·스크립트·라이브러리 단위 테스트 후 APK를 생성합니다. **개발 베타는 별도 요청 없이 GitHub Release에 게시하지 않으며**, 컴퓨터에 저장하거나 블루스택에 업데이트 설치합니다. 베타용 Obtainium 등록 링크와 설정은 제공하지 않습니다.
-
-단위 테스트는 언어 매핑과 일본어 대체, 내부 ID 기준 이름 연결, 동명 클래스 분리, 번호·부분 이름·전각 정규화, 예장 전용 자산, JP·KR·NA 순서와 첫 결과에서 중단, 지역 전용 폴더 분리, 이미지 URL·메타데이터 검증, 폴더 이름 변경과 이전 선택 호환성을 확인합니다.
-
-출처: [Atlas API](https://api.atlasacademy.io/docs), [전용 이미지 조사](Support-Template-Coordinate-Study-KR.md).
-
-### 예장 변환 회귀 검사
-
-일본 서버에서 이전에 기록한 일반·그랜드 서포트 화면을 사용해 13종의 예장에 대한 15개 대표 영역을 저장했습니다. 생성 띠와 대표 영역 15개가 일치했고, 서로 다른 내장 예장 28종의 조합 756개는 기본 판독 유사도 0.80 미만이었습니다(최대 약 0.7622). 이것은 기록 화면과 지정한 예장 집합의 픽셀 검사이며 모든 예장·서버의 실전 성공률을 뜻하지 않습니다.
-
-원본 `EquipFaces` PNG를 내려받은 폴더를 지정해 재검사할 수 있습니다. [대표 영역과 원본 URL](../../docs/reference-images/ce-import-crops.json), [28종 원본 파일명](research/support-template-correlations.csv).
-
-```sh
-python tools/verify_imported_ce_images.py --assets-dir /path/to/EquipFaces --report ce-import-checks.json
-```

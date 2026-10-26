@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
-import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
@@ -15,8 +14,17 @@ import javax.inject.Inject
  */
 class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: SkillLevelLocations) : IFgoAutomataApi by api {
     companion object {
-        /** Positives 0.99-1.0, negatives at most 0.45 on the owner screens. */
-        const val TITLE_SIMILARITY = 0.85
+        /**
+         * Centre-left material-list label with the pink chevron icon, 720p TM_CCOEFF_NORMED on the owner's 20 captures
+         * (KR and JP, 16:9 and 21:9): the right label on its own screen scores 0.998-1.000 (also with no servant selected,
+         * a Lv.10 slot and a locked append slot). The other label scores at most 0.32 (append on skill), 0.68 (JP skill on
+         * append) and 0.46 (KR skill on append): the append text contains the skill text, the icon keeps the score low.
+         */
+        const val LABEL_SIMILARITY = 0.90
+        /** Re-select button; 0.99-1.0 on the owner screens, at most 0.45 elsewhere. */
+        const val RESELECT_SIMILARITY = 0.85
+        /** Floor of the diagnostic best-score search: anything below shows as "<0.30". */
+        const val SCORE_FLOOR = 0.3
         const val BAND_SIMILARITY = 0.8
         /** The grey (disabled) unlock button still scores 0.72 (JP) and 0.85 (KR), everything else stays below 0.64. */
         const val UNLOCK_BUTTON_SIMILARITY = 0.7
@@ -37,29 +45,37 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     private fun seen(region: Region, image: Images, similarity: Double): Boolean =
         template(image)?.let { region.exists(it, similarity = similarity) } == true
 
-    private fun titleImage(mode: SkillLevelMode) =
-        if (mode == SkillLevelMode.Skill) Images.SkillLevelTitle else Images.AppendLevelTitle
+    private fun labelImage(mode: SkillLevelMode) =
+        if (mode == SkillLevelMode.Skill) Images.SkillLevelLabel else Images.AppendLevelLabel
 
-    fun onTitle(mode: SkillLevelMode): Boolean = useSameSnapIn {
-        seen(loc.title, titleImage(mode), TITLE_SIMILARITY) ||
-            // KR wide header art differs from 16:9; do not lower the screen recognition confidence.
-            (loc.isWide && prefs.gameServer is GameServer.Kr && mode == SkillLevelMode.Skill &&
-                seen(loc.title, Images.SkillLevelTitleWide, TITLE_SIMILARITY))
-    }
+    /** The screen of [mode] is showing: its centre-left label (see [LABEL_SIMILARITY]). */
+    fun onLabel(mode: SkillLevelMode): Boolean = useSameSnapIn { seen(loc.label, labelImage(mode), LABEL_SIMILARITY) }
 
-    /** The append title is checked first: on KR the skill title is also part of the append one. */
+    /** The append label is checked first: its text contains the skill one, so the skill label can reach 0.68 on append screens. */
     fun detectMode(): SkillLevelMode? = useSameSnapIn {
         when {
-            onTitle(SkillLevelMode.Append) -> SkillLevelMode.Append
-            onTitle(SkillLevelMode.Skill) -> SkillLevelMode.Skill
+            onLabel(SkillLevelMode.Append) -> SkillLevelMode.Append
+            onLabel(SkillLevelMode.Skill) -> SkillLevelMode.Skill
             else -> null
         }
     }
 
-    /** D-10: the re-select button only exists once a servant is selected (before that only "close" shows). */
-    fun servantSelected(): Boolean = useSameSnapIn { seen(loc.reselect, Images.SkillLevelReselect, TITLE_SIMILARITY) }
+    private fun bestScore(region: Region, image: Images): Double? =
+        template(image)?.let { pattern -> region.findAll(pattern, SCORE_FLOOR).maxOfOrNull { it.score } }
 
-    fun onScreen(mode: SkillLevelMode): Boolean = useSameSnapIn { onTitle(mode) && servantSelected() }
+    /** Best append label, skill label and re-select scores on one frame (null = below [SCORE_FLOOR] or no template): for logs only. */
+    fun bestScores(): SkillLevelScores = useSameSnapIn {
+        SkillLevelScores(
+            append = bestScore(loc.label, Images.AppendLevelLabel),
+            skill = bestScore(loc.label, Images.SkillLevelLabel),
+            reselect = bestScore(loc.reselect, Images.SkillLevelReselect)
+        )
+    }
+
+    /** D-10: the re-select button only exists once a servant is selected (before that only "close" shows). */
+    fun servantSelected(): Boolean = useSameSnapIn { seen(loc.reselect, Images.SkillLevelReselect, RESELECT_SIMILARITY) }
+
+    fun onScreen(mode: SkillLevelMode): Boolean = useSameSnapIn { onLabel(mode) && servantSelected() }
 
     fun dialogVisible(): Boolean = useSameSnapIn { seen(loc.dialogWatermark, Images.SkillLevelConfirmation, DIALOG_SIMILARITY) }
 
@@ -90,4 +106,14 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
         useSameSnapIn { seen(loc.slotLock(mode, slot), Images.SkillLevelLock, LOCK_SIMILARITY) }
 
     fun onResult(): Boolean = useSameSnapIn { seen(loc.result, Images.SkillLevelResult, RESULT_SIMILARITY) }
+}
+
+/** Best template scores of one frame, see [SkillLevelScreens.bestScores]. */
+data class SkillLevelScores(val append: Double?, val skill: Double?, val reselect: Double?) {
+    /** One log line, for example `scores label-append=1.000 label-skill=0.680 reselect=<0.30 detected=Append`. */
+    fun describe(detected: SkillLevelMode?): String =
+        "scores label-append=${fmt(append)} label-skill=${fmt(skill)} reselect=${fmt(reselect)} detected=${detected ?: "none"}"
+
+    private fun fmt(score: Double?) = score?.let { String.format(java.util.Locale.ROOT, "%.3f", it) }
+        ?: ("<" + String.format(java.util.Locale.ROOT, "%.2f", SkillLevelScreens.SCORE_FLOOR))
 }

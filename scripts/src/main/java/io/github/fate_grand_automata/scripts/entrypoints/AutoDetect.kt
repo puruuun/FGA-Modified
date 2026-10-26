@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.scripts.entrypoints
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.ScriptLog
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
@@ -21,8 +23,15 @@ class AutoDetect @Inject constructor(
             it.copy(width = it.width / 3)
         }
 
-        // D-10: the skill / append screens are told apart by their title; only KR and JP have the templates.
-        val skillMode by lazy { skillScreens.detectMode() }
+        // D-10: the skill / append screens are told apart by the centre-left label; only KR and JP have the templates.
+        val skillMode by lazy {
+            skillScreens.detectMode().also { mode ->
+                // Only KR / JP have the templates; one line with the best scores for reports of a wrong detection.
+                if (prefs.gameServer is GameServer.Kr || prefs.gameServer is GameServer.Jp) {
+                    runCatching { messages.log(ScriptLog.SkillLevel("auto-detect " + skillScreens.bestScores().describe(mode))) }
+                }
+            }
+        }
 
         when {
             images[Images.FriendSummon] in locations.fp.summonCheck ||

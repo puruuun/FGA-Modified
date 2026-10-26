@@ -1,6 +1,6 @@
 # FGA(mod)
 
-[한국어](README.md) | [English](README.en.md) | [日本語](README.ja.md)
+[한국어](README.md) | [English](README.en.md)
 
 **KR(한국)·JP(일본) 서버에 한정해 테스트했습니다. 다른 서버의 동작은 확인하지 않았습니다.**
 
@@ -20,34 +20,36 @@ Obtainium은 정규판만 제공합니다. [정규판 설정 파일](obtainium.j
 
 설치 출처: GitHub Releases와 Obtainium 외의 곳에서 받은 APK는 설치하지 마세요.
 
-[기존 기능 상세 안내](wiki/scripts/Modified-Features-KR.md#installation) · [서번트 번호 이미지 생성 안내](wiki/scripts/Servant-Number-Portraits-KR.md)
+[설치 안내](wiki/scripts/Modified-Features-KR.md#installation) · [서번트 번호 이미지 생성 안내](wiki/scripts/Servant-Number-Portraits-KR.md)
 
 Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 수정판은 업데이트 설치할 수 있습니다.
 
 ## 추가·수정된 기능
 
-| 기능 | 간단한 설명 |
+| 기능 | 설명 |
 |---|---|
-| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 판매 화면에 보이는 잠금 아닌 카드를 선택·판매하고 FP 배너로 복귀합니다. 시작 전 게임 필터 확인 필수. 기본 꺼짐. 시험 모드는 베타 전용이며 기본 켜짐. |
-| [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 서번트를 고른 강화 화면에서 칸마다 목표 레벨까지 강화합니다. 모든 칸 기본 꺼짐, 목표를 넘지 않고 잠긴 어펜드는 해방하지 않습니다. |
-| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션의 최소 AP 경로를 계산하고, 메인 화면에서 장·지도를 찾아 전체 경로를 반복합니다(JP·KR). |
-| [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 재림·영의 서포트 이미지를 생성하고 번호·이름 폴더에 저장합니다. |
-| [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 스크립트·서포트 이미지를 골라 일괄로 가져옵니다. |
-| [Chaldea 링크로 커맨드 입력](wiki/scripts/Modified-Features-KR.md#chaldea-import) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
-| [카드 조건으로 커맨드 시작](wiki/scripts/Modified-Features-KR.md#card-start) | 서번트별 카드 수에 따라 두 설정 중 하나를 실행합니다. |
-| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 시작 조건이 부족하면 셔플 후 다시 검사합니다. |
-| [서포트 어펜드 스킬](wiki/scripts/Modified-Features-KR.md#support-append) | 지정한 어펜드 슬롯의 10레벨 여부를 확인합니다. |
-| [서포트 스코어](wiki/scripts/Modified-Features-KR.md#support-score) | 클래스 +62·그랜드 +16 조건으로 선별합니다. |
-| [서포트 보구 레벨](wiki/scripts/Modified-Features-KR.md#support-np) | 설정한 최소 보구 레벨 이상을 선택합니다. |
-| [재림 구분 (서번트 이름 + 보구)](wiki/scripts/Ascension-Select-KR.md) | 서포트 이미지 메이커로 만든 서번트 이름 + 보구 그림으로 재림이 다른 서번트를 구분해 고릅니다. |
-| [공격 순서 직접 지정](wiki/scripts/Modified-Features-KR.md#direct-cards) | 일반 카드·보구 세 장의 순서를 지정합니다. |
-| [티포트·스톰포드](wiki/scripts/Modified-Features-KR.md#quest-items) | 사용 설정을 켜면 퀘스트 시작 전 ON/OFF를 맞춥니다. |
-| [인연포인트·MAX 정지](wiki/scripts/Modified-Features-KR.md#bond-tracking) | 결과창 캐릭터 1~5별 획득량과 MAX 정지 예외를 설정합니다. |
+| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 잠금이 아닌 카드를 판매하고 소환을 이어 갑니다. |
+| [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 칸마다 정한 목표 레벨까지 스킬을 강화합니다. |
+| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션을 최소 AP 경로로 클리어합니다. |
+| [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 서포트 이미지를 만들어 저장합니다. |
+| [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
+| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | Chaldea 공유 링크를 커맨드로 변환해 입력합니다. |
+| [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 일반 카드가 충분할 때만 커맨드를 시작합니다. |
+| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건이 부족하면 셔플 후 다시 검사합니다. |
+| [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
+| [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
+| [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고릅니다. |
+| [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
+| [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
+| [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
+| [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX가 되면 멈춥니다. |
 
-설정 방법·동작 규칙·검증 범위는 [전체 상세 안내](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
+설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 
 ## 원본 및 라이선스
 
 [원본 저장소](https://github.com/Fate-Grand-Automata/FGA) · [원본 사용 안내](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT 라이선스](LICENSE)
 
 수정 기준: 공식 FGA v3059 ([기준 커밋](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)). 원본 개발팀의 저작권 고지를 유지합니다. 추가·수정한 부분의 저작권은 puruuun에게 있으며, 같은 MIT 라이선스로 배포합니다.
+
+참조: Chaldea 링크로 커맨드 입력의 변환 규칙은 [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter)(커밋 `1c95510`)의 변환 로직을 참조해 Kotlin으로 옮겼습니다.
