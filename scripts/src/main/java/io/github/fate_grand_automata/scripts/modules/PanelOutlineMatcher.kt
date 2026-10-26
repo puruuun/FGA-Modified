@@ -11,13 +11,17 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
         const val HEIGHT = 21
         const val MIN_SCORE = 0.70
         const val MIN_MARGIN = 0.10
+        // The left 14 pixels contain the yellow Lv. prefix and icon artwork, not the current digits.
+        // Apply the identical window to every sample and observation, for every slot and channel.
+        private const val DIGIT_LEFT = 14
         private val sourceSlots = listOf(0, 2, 3, 4)
 
         fun feature(pixels: ByteArray, width: Int, height: Int): DoubleArray? {
-            if (width < 3 || height < 3 || pixels.size != width * height) return null
-            fun at(x: Int, y: Int) = (pixels[y.coerceIn(0, height - 1) * width + x.coerceIn(0, width - 1)].toInt() and 255).toDouble()
-            val f = DoubleArray(pixels.size) { p ->
-                val x = p % width; val y = p / width
+            val digitWidth = width - DIGIT_LEFT
+            if (digitWidth < 3 || height < 3 || pixels.size != width * height) return null
+            fun at(x: Int, y: Int) = (pixels[y.coerceIn(0, height - 1) * width + DIGIT_LEFT + x.coerceIn(0, digitWidth - 1)].toInt() and 255).toDouble()
+            val f = DoubleArray(digitWidth * height) { p ->
+                val x = p % digitWidth; val y = p / digitWidth
                 at(x - 1, y) + at(x + 1, y) + at(x, y - 1) + at(x, y + 1) - 4 * at(x, y)
             }
             val mean = f.average()
@@ -40,8 +44,7 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
     }
 
     fun read(pixels: ByteArray, width: Int, height: Int, slot: Int): PanelLevelEvidence {
-        // A stress fixture can compress the glyph horizontally. Normalize the observation to
-        // the template grid with bilinear sampling; source assets remain at 720p scale.
+        // Normalize to the template grid; source assets remain at 720p scale.
         if (width < 3 || height < 3 || pixels.size != width * height)
             return PanelLevelEvidence(null, false, null, 0.0, 0.0, "invalid-crop")
         val normalized = if (width == WIDTH && height == HEIGHT) pixels else resample(pixels, width, height)
@@ -64,5 +67,52 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
         val fx = sx - x; val fy = sy - y
         (((at(0, 0) * (1 - fx) + at(1, 0) * fx) * (1 - fy) +
             (at(0, 1) * (1 - fx) + at(1, 1) * fx) * fy).toInt().coerceIn(0, 255)).toByte()
+    }
+}
+
+/** Both banks and observations use the same RGB conversion; no grayscale fallback can silently
+ * feed luminance into the blue bank. A disagreement, even from an abstaining channel, stays unread. */
+internal class PanelAppendMatcher(rgb: ByteArray, width: Int, height: Int) {
+    private val blue: PanelOutlineMatcher
+    private val luminance: PanelOutlineMatcher
+
+    init {
+        val channels = checkNotNull(channels(rgb, width, height))
+        blue = PanelOutlineMatcher(channels.first, width, height)
+        luminance = PanelOutlineMatcher(channels.second, width, height)
+    }
+
+    fun read(rgb: ByteArray, width: Int, height: Int, slot: Int): PanelLevelEvidence {
+        val channels = channels(rgb, width, height)
+            ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "invalid-color-crop")
+        return combine(blue.read(channels.first, width, height, slot),
+            luminance.read(channels.second, width, height, slot))
+    }
+
+    companion object {
+        /** Blue preserves white while darkening yellow/gold. Luminance retains dark outlines on pale art. */
+        internal fun channels(rgb: ByteArray, width: Int, height: Int): Pair<ByteArray, ByteArray>? {
+            if (width <= 0 || height <= 0 || rgb.size != width * height * 3) return null
+            val blue = ByteArray(width * height)
+            val luminance = ByteArray(width * height)
+            for (p in blue.indices) {
+                val r = rgb[p * 3].toInt() and 255
+                val g = rgb[p * 3 + 1].toInt() and 255
+                val b = rgb[p * 3 + 2].toInt() and 255
+                blue[p] = b.toByte()
+                luminance[p] = ((299 * r + 587 * g + 114 * b + 500) / 1000).toByte()
+            }
+            return blue to luminance
+        }
+
+        internal fun combine(blue: PanelLevelEvidence, luminance: PanelLevelEvidence): PanelLevelEvidence {
+            val strongest = if (blue.score >= luminance.score) blue else luminance
+            if (blue.candidate == null || luminance.candidate == null || blue.candidate != luminance.candidate)
+                return strongest.copy(level = null, reason = "channel-conflict-or-unread")
+            // A higher score with a failing margin never suppresses the agreeing channel that clears both gates.
+            val accepted = listOf(blue, luminance).filter { it.level != null }.maxByOrNull { it.score }
+                ?: return strongest.copy(level = null, reason = "weak-outline-or-margin")
+            return accepted.copy(reason = if (accepted === blue) "blue-outline-ncc" else "luminance-outline-ncc")
+        }
     }
 }

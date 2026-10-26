@@ -12,9 +12,10 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--input", type=Path, default=ROOT / "build/orchestration/inputs/0021-append-panel")
+parser.add_argument("--write-templates", action="store_true", help="explicitly regenerate RGB sample banks from the unchanged source slots")
 
 
-def prepare(inputs: Path) -> None:
+def prepare(inputs: Path, write_templates: bool = False) -> None:
     labels = json.loads((inputs / "labels.json").read_text(encoding="utf-8"))
     frames, cases, bank = [], [], {}
     selection_audit = {r["source"]: r for r in json.loads(
@@ -34,10 +35,6 @@ def prepare(inputs: Path) -> None:
         if not native16:
             color = color[:, 20:2540]
         color = cv2.resize(color, target, interpolation=cv2.INTER_AREA)
-        gray = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
-        if not native16:
-            gray = gray[:, 20:2540]
-        gray = cv2.resize(gray, target, interpolation=cv2.INTER_AREA)
         layout = "native-16:9" if native16 else "native-wide"
         selection = frame.get("selectedSlot", selection_audit.get(frame["file"], {}).get("selectedSlot"))
         if selection is not None:
@@ -55,11 +52,13 @@ def prepare(inputs: Path) -> None:
                               layout=layout, selected=selection == slot+1, selectedSlot=selection))
             if not native16 and mode == "Append" and level > 0 and slot != 1:
                 box = [centers[slot] - 5, 273, 33, 21]
-                bank.setdefault((server, level, slot), (gray[273:294, box[0]:box[0]+33], frame, relative, box))
+                bank.setdefault((server, level, slot), (color[273:294, box[0]:box[0]+33], frame, relative, box))
 
     provenance = []
     for server in ("Kr", "Jp"):
-        sheet = np.zeros((210, 132), np.uint8)
+        # Preserve RGB source samples. Product code derives blue and luminance identically for
+        # these cells and the observation; native 16:9 remains validation-only.
+        sheet = np.zeros((210, 132, 3), np.uint8)
         for level in range(1, 11):
             for column, slot in enumerate((0, 2, 3, 4)):
                 patch, frame, relative, box = bank[(server, level, slot)]
@@ -69,7 +68,10 @@ def prepare(inputs: Path) -> None:
         destination = ROOT / f"app/src/main/assets/{server}/skill_level_panel_append_samples.png"
         encoded = cv2.imencode(".png", sheet)[1].tobytes()
         # New native frames are validation-only; never retrain the accepted wide bank implicitly.
-        assert destination.read_bytes() == encoded, "Frozen template bank changed; review sources explicitly"
+        if write_templates:
+            destination.write_bytes(encoded)
+        else:
+            assert destination.read_bytes() == encoded, "Frozen template bank changed; review sources explicitly"
 
     artifacts = {
         "docs/reference-images/panel-0021-sources.json": dict(note=labels["note"], frames=frames),
@@ -82,4 +84,5 @@ def prepare(inputs: Path) -> None:
 
 
 if __name__ == "__main__":
-    prepare(parser.parse_args().input)
+    args = parser.parse_args()
+    prepare(args.input, args.write_templates)

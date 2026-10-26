@@ -47,8 +47,10 @@ class SkillLevelPanelReader @Inject constructor(
 
     private val appendMatcher by lazy {
         runCatching {
-            val sheet = images[Images.SkillLevelPanelAppendSamples]
-            sheet.grayPixels()?.let { PanelOutlineMatcher(it, sheet.width, sheet.height) }
+            useColor {
+                val sheet = images[Images.SkillLevelPanelAppendSamples]
+                sheet.rgbPixels()?.let { PanelAppendMatcher(it, sheet.width, sheet.height) }
+            }
         }.getOrNull()
     }
 
@@ -58,13 +60,20 @@ class SkillLevelPanelReader @Inject constructor(
             return@useSameSnapIn PanelLevelEvidence(null, false, null, 0.0, 0.0, "unsupported-server")
         if (mode == SkillLevelMode.Append && SkillLevelScreens(this, loc).slotLocked(mode, slot))
             return@useSameSnapIn PanelLevelEvidence(null, true, null, 0.0, 0.0, "locked")
-        loc.panelLevel(mode, slot).getPattern("panel-level").use { pattern ->
-            if (mode == SkillLevelMode.Append) {
-                val pixels = pattern.grayPixels()
-                if (pixels == null) PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-gray-pixels")
-                else appendMatcher?.read(pixels, pattern.width, pattern.height, slot)
-                    ?: PanelLevelEvidence(null, false, null, 0.0, 0.0, "missing-templates")
-            } else decide(skillProfiles.map { ocr.detectTextLine(pattern, it) })
+        if (mode == SkillLevelMode.Append) {
+            val matcher = appendMatcher
+                ?: return@useSameSnapIn PanelLevelEvidence(null, false, null, 0.0, 0.0, "missing-templates")
+            // Enter color BEFORE snapshotting: the product screenshot cache holds a single image type.
+            // Both channel decisions use this one color crop, after the existing grayscale lock check.
+            useColor { useSameSnapIn {
+                loc.panelLevel(mode, slot).getPattern("panel-level").use { pattern ->
+                    val pixels = pattern.rgbPixels()
+                    if (pixels == null) PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-color-pixels")
+                    else matcher.read(pixels, pattern.width, pattern.height, slot)
+                }
+            } }
+        } else loc.panelLevel(mode, slot).getPattern("panel-level").use { pattern ->
+            decide(skillProfiles.map { ocr.detectTextLine(pattern, it) })
         }
     }
 }

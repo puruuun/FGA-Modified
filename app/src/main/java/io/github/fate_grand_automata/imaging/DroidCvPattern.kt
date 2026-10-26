@@ -246,6 +246,14 @@ class DroidCvPattern(
         return ByteArray(width * height).also { mat.get(0, 0, it) }
     }
 
+    override fun rgbPixels(): ByteArray? {
+        if (mat.empty() || mat.channels() != 3) return null
+        return Mat().use { rgb ->
+            Imgproc.cvtColor(mat, rgb, Imgproc.COLOR_BGR2RGB)
+            ByteArray(width * height * 3).also { rgb.get(0, 0, it) }
+        }
+    }
+
     override fun floodFill(x: Double, y: Double, maxDiff: Double, newValue: Double): Pattern {
         val point = Point(x, y)
         this.mat.floodFill(point, maxDiff, newValue)

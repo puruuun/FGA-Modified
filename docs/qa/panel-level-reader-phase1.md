@@ -1,5 +1,7 @@
 # 패널 레벨 판독기 — Phase 1 측정
 
+최신 채널 개선과 전후 비교는 이 문서 하단의 **1.6.8-beta.3 — 어펜드 whiteness 채널 (#24)** 및 [beta.3 검증 기록](1.6.8-beta.3-validation.md)을 참고하세요. 아래 Phase 1 수치는 당시 판독기의 기록입니다.
+
 Phase 2 강화 흐름 연결과 1.6.8-beta.1 검증 결과는 [Phase 2 검증 기록](1.6.8-beta.1-validation.md)을 참고하세요. 아래의 Phase 1 판독 기준·자료·한계는 그대로 유지합니다.
 
 기준 main `139b2123`, 브랜치 `feat/panel-level-reader`, [PR #18](https://github.com/puruuun/FGA-Modified/pull/18). **강화 흐름에 연결하지 않았으며 version.properties도 변경하지 않았습니다.** AutoSkillLevel/SkillLevelFlow/SkillLevelDigits의 동작은 그대로입니다.
@@ -242,3 +244,72 @@ python tools/device-qa/report_panel_levels.py --report build/device-qa/<run>/rep
 ## Phase 2 권고
 
 현재 기권 기준을 유지하며 패널·다이얼로그의 값과 score/margin/reason을 함께 기록하는 제한된 결합부터 권합니다. 두 확정값이 다르면 즉시 중단하고 잠금은 해방하지 않아야 합니다. 실제 16:9는 이번에 검증했지만 열린 KR 표본과 4번 아이콘 배경, 실제 16:10 캡처를 보강해야 합니다. 특히 현재 16:9 선택 4번은 기권하므로 패널 단독 진행 범위를 넓히기에는 이릅니다. 템플릿은 wide 자료에서 뽑았으므로 동일 슬롯 출처를 제외했어도 완전한 독립 holdout은 아닙니다. 이번 변경에는 흐름 연결·버전 변경이 없습니다.
+
+
+## 1.6.8-beta.3 — 어펜드 whiteness 채널 (#24)
+
+기준 `d0eefcb4`의 기존 판독기와 변경 판독기를 BlueStacks **127.0.0.1:5555**에서 각각 실행했습니다. 기존 **62장/282슬롯 전체**(KR·JP, native-wide·native-16:9, 선택 테두리 포함)를 실제 ImageLoader/OpenCV 및 제품 좌표로 읽었습니다. 아래 정답/기권/오독은 열린 어펜드만 세며, 잠금 78/78과 스킬 42/42는 전후 모두 정확합니다. [개별 전후 결과](append-panel-whiteness-cases.json)에 기대값·선택 여부·좌표·후보·점수·마진·이유를 보관합니다.
+
+### 채널 선택과 기권 기준
+
+- **blue + luminance 보조 후보**를 선택했습니다. blue와 `min(R,G,B)`를 같은 80개 출처 셀과 모든 열린 어펜드에서 비교했습니다. 숫자 창과 luminance 보조 후보를 동일하게 적용한 기기 비교에서도 둘 다 159/3/0이며 전체 282건이 통과했습니다. 경계 사례 `Jp-59-Append-4`의 score는 blue 0.7065, min 0.7050입니다. 이 사례의 여유와 단순한 채널 추출을 근거로 blue를 선택했습니다. min 비교 보고서는 `build/device-qa/20261026-151742/report-skillLevelPanel.json`입니다. 단순 전체 크롭 채널 교체는 2번 기권을 늘려 채택하지 않았습니다.
+- 제품 크롭 **33×21 및 좌표는 그대로**입니다. 왼쪽 14px의 노란 `Lv.` 접두사·아이콘 부분을 특징 계산에서 제외하고 오른쪽 **19×21** 숫자를 사용합니다. 모든 슬롯·서버·채널·샘플에 같은 창과 Laplacian/NCC를 적용합니다.
+- 샘플 PNG는 **132×210 RGB**로 재생성했습니다. [기존 80개 출처](../reference-images/panel-0021-template-sources.json)와 원본 프레임은 그대로이며, 샘플과 실제 크롭을 **같은 RGB→blue/luminance 코드**로 변환합니다. 기존 단일 숫자 에셋은 확인창용이므로 변경하지 않았습니다. 2번은 여전히 샘플 출처에서 제외하고 대상과 같은 슬롯의 샘플도 제외합니다. 16:9 프레임은 재학습에 사용하지 않았습니다.
+- **score ≥0.70 및 margin ≥0.10 유지**. 두 채널의 최상위 후보가 같고 적어도 하나가 두 기준을 모두 통과해야 합니다. 기권한 채널도 다른 후보를 제시하면 최종 기권합니다. 높은 점수가 낮은 마진을 보충하지 않습니다.
+
+### 슬롯별 전후 — 기기 제품 경로
+
+| 슬롯 | 이전 정답/기권/오독 | 이후 정답/기권/오독 |
+|---|---|---|
+| 1 | 32/0/0 | 32/0/0 |
+| 2 | 34/0/0 | 34/0/0 |
+| 3 | 31/0/0 | 31/0/0 |
+| 4 | 11/22/0 | 30/3/0 |
+| 5 | 32/0/0 | 32/0/0 |
+
+| 레이아웃 | 서버 | 슬롯 | 이전 정답/기권/오독 | 이후 정답/기권/오독 |
+|---|---|---|---|---|
+| native-16:9 | Jp | 1 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 2 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 3 | 1/0/0 | 1/0/0 |
+| native-16:9 | Jp | 4 | 0/2/0 | 1/1/0 |
+| native-16:9 | Jp | 5 | 2/0/0 | 2/0/0 |
+| native-16:9 | Kr | 4 | 0/1/0 | 0/1/0 |
+| native-wide | Jp | 1 | 16/0/0 | 16/0/0 |
+| native-wide | Jp | 2 | 18/0/0 | 18/0/0 |
+| native-wide | Jp | 3 | 16/0/0 | 16/0/0 |
+| native-wide | Jp | 4 | 9/7/0 | 15/1/0 |
+| native-wide | Jp | 5 | 16/0/0 | 16/0/0 |
+| native-wide | Kr | 1 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 2 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 3 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 4 | 2/12/0 | 14/0/0 |
+| native-wide | Kr | 5 | 14/0/0 | 14/0/0 |
+
+| 선택된 어펜드 | 이전 정답/기권/오독 | 이후 정답/기권/오독 |
+|---|---|---|
+| native-16:9 Jp | 1/1/0 | 2/0/0 |
+| native-16:9 Kr | 0/1/0 | 0/1/0 |
+| native-wide Jp | 1/0/0 | 1/0/0 |
+| native-wide Kr | 1/0/0 | 1/0/0 |
+
+
+2번은 이미 전부 정답이므로 정답 수는 34/34로 유지됩니다. **최저 score 0.7352→0.7877, 중앙값 0.8036→0.8579, 최저 margin 0.1604→0.2384**로 판정 여유가 개선됐습니다. KR wide 최저 score도 0.7352→0.7877입니다. 열린 KR 16:9 2번 프레임은 아직 없습니다.
+
+4번은 **11/33→30/33 정답**, 기권 **22→3**, 오독 **0 유지**입니다. 잔여 기권은 `Jp-03-Append-4`(Lv.1), `Jp-58-Append-4`(Lv.4), `Kr-61-Append-4`(Lv.9)입니다. KR native-16:9 Lv.9는 여전히 기권하므로 모든 4번을 읽는다고 일반화하지 않습니다. 선택된 어펜드는 3/5→4/5 정답, 스킬 선택 14/14는 그대로입니다.
+
+### 라벨된 참고 이미지 — fixture 제외
+
+소유자 프레임 `build/orchestration/inputs/0025-append-slot4/kr-append-check-16x9-2560x1440-dimmed.png`: **KR, 2560×1440 native-16:9, 어펜드 4번 실제 Lv.10, 기존 판독 기권(score 약 0.60)**. FGA 종료 다이얼로그가 게임 화면을 어둡게 한 이미지입니다. 유효한 fixture나 템플릿 출처가 아니며 위 측정·학습에서 제외했습니다. 원본을 커밋하지 않았습니다.
+
+### 재현
+
+기존 판독기: `build/device-qa/20261026-145730/report-skillLevelPanel.json`. 변경 판독기: `build/device-qa/20261026-150832/report-skillLevelPanel.json`. 각각 282 통과 / 0 실패 / 0 skip입니다.
+
+```text
+python tools/device-qa/prepare_panel_levels.py
+python tools/device-qa/run.py --build --serial 127.0.0.1:5555 --suite skillLevelPanel
+python tools/device-qa/report_append_whiteness.py --before build/device-qa/20261026-145730/report-skillLevelPanel.json --after build/device-qa/20261026-150832/report-skillLevelPanel.json
+```
+
+준비 도구는 기본적으로 동결된 RGB 뱅크의 일치를 검사합니다. 기존 출처 셀을 의도적으로 재생성할 때만 `--write-templates`를 사용합니다. 전체 검증과 소유자 확인 항목은 [beta.3 검증 기록](1.6.8-beta.3-validation.md)에 있습니다.

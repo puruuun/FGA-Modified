@@ -76,6 +76,9 @@ interface Pattern : AutoCloseable {
 
     /** Row-major 8-bit grayscale pixels; null for a colour image. The returned buffer is an independent copy. */
     fun grayPixels(): ByteArray?
+
+    /** Row-major 8-bit RGB triples; null for grayscale or unsupported images. The buffer is an independent copy. */
+    fun rgbPixels(): ByteArray? = null
 }
 
 /** Mean colour of an image, each channel in 0..255. */
