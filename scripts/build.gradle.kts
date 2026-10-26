@@ -81,3 +81,12 @@ tasks.register<JavaExec>("weeklyRouteStress") {
     args(providers.gradleProperty("atlasCache").getOrElse("${rootProject.layout.buildDirectory.get()}/atlas-weekly"))
     maxHeapSize = "2g"
 }
+
+// Offline append measurement uses the product matcher, excluding every cell from a held-out frame.
+tasks.register<JavaExec>("panelAppendEvaluation") {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.fate_grand_automata.scripts.PanelAppendEvaluation")
+    args(rootProject.projectDir.absolutePath,
+        "${rootProject.layout.buildDirectory.get()}/panel-append-evaluation.json")
+}

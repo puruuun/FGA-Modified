@@ -49,7 +49,10 @@ class SkillLevelPanelReader @Inject constructor(
         runCatching {
             useColor {
                 val sheet = images[Images.SkillLevelPanelAppendSamples]
-                sheet.rgbPixels()?.let { PanelAppendMatcher(it, sheet.width, sheet.height) }
+                val own = images[Images.SkillLevelPanelAppendOwnSamples]
+                sheet.rgbPixels()?.let { cross -> own.rgbPixels()?.let { primary ->
+                    PanelAppendMatcher(cross, sheet.width, sheet.height, PanelSampleSheet(primary, own.width, own.height))
+                } }
             }
         }.getOrNull()
     }

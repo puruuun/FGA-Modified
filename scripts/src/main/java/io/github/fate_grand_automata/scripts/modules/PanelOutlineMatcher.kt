@@ -2,10 +2,12 @@ package io.github.fate_grand_automata.scripts.modules
 
 import kotlin.math.sqrt
 
-/** Same-size 720p samples. A Laplacian suppresses slow icon gradients while retaining the dark digit outline.
- * No Android/OpenCV dependencies. Templates from the target icon slot are excluded even in production:
- * evidence must transfer from another icon background, never match its own calibration crop. */
-internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
+/** Same 720p digit window, Laplacian and NCC for own-slot and frozen cross-slot banks.
+ * Exclusions address atlas cells, allowing host evaluation to remove entire source frames. */
+internal class PanelOutlineMatcher(
+    sheet: ByteArray, width: Int, height: Int,
+    private val ownSlot: Boolean = false, excludedCells: Set<Int> = emptySet()
+) {
     companion object {
         const val WIDTH = 33
         const val HEIGHT = 21
@@ -36,10 +38,13 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
     private data class Sample(val level: Int, val slot: Int, val feature: DoubleArray)
     private val samples: List<Sample>
     init {
-        require(width == WIDTH * 4 && height == HEIGHT * 10 && sheet.size == width * height)
-        samples = (1..10).flatMap { level -> sourceSlots.mapIndexed { col, slot ->
-            val patch = ByteArray(WIDTH * HEIGHT) { p -> sheet[((level - 1) * HEIGHT + p / WIDTH) * width + col * WIDTH + p % WIDTH] }
-            Sample(level, slot, checkNotNull(feature(patch, WIDTH, HEIGHT)))
+        val slots = if (ownSlot) (0..4).toList() else sourceSlots
+        require(width == WIDTH * slots.size && height > 0 && height % (HEIGHT * 10) == 0 && sheet.size == width * height)
+        if (!ownSlot) require(height == HEIGHT * 10)
+        samples = (0 until height / HEIGHT).flatMap { row -> slots.mapIndexedNotNull { col, slot ->
+            if (row * slots.size + col in excludedCells) return@mapIndexedNotNull null
+            val patch = ByteArray(WIDTH * HEIGHT) { p -> sheet[(row * HEIGHT + p / WIDTH) * width + col * WIDTH + p % WIDTH] }
+            feature(patch, WIDTH, HEIGHT)?.let { Sample(row % 10 + 1, slot, it) }
         } }
     }
 
@@ -50,10 +55,13 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
         val normalized = if (width == WIDTH && height == HEIGHT) pixels else resample(pixels, width, height)
         val f = feature(normalized, WIDTH, HEIGHT)
             ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-outline")
-        val scores = samples.filter { it.slot != slot }.groupBy { it.level }.mapValues { (_, group) ->
+        val scores = samples.filter { if (ownSlot) it.slot == slot else it.slot != slot }.groupBy { it.level }.mapValues { (_, group) ->
             group.maxOf { s -> f.indices.sumOf { f[it] * s.feature[it] } }
         }.toList().sortedByDescending { it.second }
-        val top = scores.first(); val margin = top.second - scores[1].second
+        val top = scores.firstOrNull()
+            ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-samples")
+        // A lone remaining level cannot establish a meaningful runner-up margin.
+        val margin = top.second - (scores.getOrNull(1)?.second ?: top.second)
         val accepted = top.second >= MIN_SCORE && margin >= MIN_MARGIN
         return PanelLevelEvidence(if (accepted) top.first else null, false, top.first, top.second, margin,
             if (accepted) "outline-ncc" else "weak-outline-or-margin")
@@ -70,26 +78,53 @@ internal class PanelOutlineMatcher(sheet: ByteArray, width: Int, height: Int) {
     }
 }
 
+/** Excluded cells are used only by host leave-one-frame-out evaluation; product sheets include every cell. */
+internal data class PanelSampleSheet(val rgb: ByteArray, val width: Int, val height: Int, val excludedCells: Set<Int> = emptySet())
+
 /** Both banks and observations use the same RGB conversion; no grayscale fallback can silently
  * feed luminance into the blue bank. A disagreement, even from an abstaining channel, stays unread. */
-internal class PanelAppendMatcher(rgb: ByteArray, width: Int, height: Int) {
+internal class PanelAppendMatcher(
+    rgb: ByteArray, width: Int, height: Int,
+    own: PanelSampleSheet? = null, excludedCrossCells: Set<Int> = emptySet()
+) {
     private val blue: PanelOutlineMatcher
     private val luminance: PanelOutlineMatcher
+    private val ownBlue: PanelOutlineMatcher?
+    private val ownLuminance: PanelOutlineMatcher?
 
     init {
         val channels = checkNotNull(channels(rgb, width, height))
-        blue = PanelOutlineMatcher(channels.first, width, height)
-        luminance = PanelOutlineMatcher(channels.second, width, height)
+        blue = PanelOutlineMatcher(channels.first, width, height, excludedCells = excludedCrossCells)
+        luminance = PanelOutlineMatcher(channels.second, width, height, excludedCells = excludedCrossCells)
+        if (own != null) {
+            val ownChannels = checkNotNull(channels(own.rgb, own.width, own.height))
+            ownBlue = PanelOutlineMatcher(ownChannels.first, own.width, own.height, true, own.excludedCells)
+            ownLuminance = PanelOutlineMatcher(ownChannels.second, own.width, own.height, true, own.excludedCells)
+        } else {
+            ownBlue = null
+            ownLuminance = null
+        }
     }
 
     fun read(rgb: ByteArray, width: Int, height: Int, slot: Int): PanelLevelEvidence {
         val channels = channels(rgb, width, height)
             ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "invalid-color-crop")
-        return combine(blue.read(channels.first, width, height, slot),
+        val cross = combine(blue.read(channels.first, width, height, slot),
             luminance.read(channels.second, width, height, slot))
+        if (ownBlue == null || ownLuminance == null) return cross // beta.3 evaluation path
+        val primary = combine(ownBlue.read(channels.first, width, height, slot),
+            ownLuminance.read(channels.second, width, height, slot))
+        return combineBanks(primary, cross)
     }
 
     companion object {
+        internal fun combineBanks(own: PanelLevelEvidence, cross: PanelLevelEvidence): PanelLevelEvidence {
+            if (own.level == null) return own.copy(reason = "own-slot-${own.reason}")
+            // The second opinion vetoes only a decided level. An abstention is not a vote.
+            if (cross.level != null && cross.level != own.level)
+                return own.copy(level = null, reason = "own-cross-slot-conflict")
+            return own.copy(reason = "own-slot-${own.reason}")
+        }
         /** Blue preserves white while darkening yellow/gold. Luminance retains dark outlines on pale art. */
         internal fun channels(rgb: ByteArray, width: Int, height: Int): Pair<ByteArray, ByteArray>? {
             if (width <= 0 || height <= 0 || rgb.size != width * height * 3) return null

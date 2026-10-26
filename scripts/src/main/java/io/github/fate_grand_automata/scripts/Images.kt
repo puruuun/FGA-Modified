@@ -28,6 +28,7 @@ enum class Images(val path: String) {
     FpSellSummonMenu("fp_sell_summon_menu.png"),
     FpSellLock("fp_sell_lock.png"),
     SkillLevelPanelAppendSamples("skill_level_panel_append_samples.png"),
+    SkillLevelPanelAppendOwnSamples("skill_level_panel_append_own_samples.png"),
     SkillLevelDigit0("skill_level_digit_0.png"),
     SkillLevelDigit1("skill_level_digit_1.png"),
     SkillLevelDigit2("skill_level_digit_2.png"),

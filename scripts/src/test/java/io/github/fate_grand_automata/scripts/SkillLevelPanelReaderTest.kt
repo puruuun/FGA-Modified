@@ -60,6 +60,33 @@ class SkillLevelPanelReaderTest {
         assertEquals(1, matcher.read(own, w, h, 1).level)
     }
 
+    @Test fun `own bank uses only its slot and excludes every held-out cell`() {
+        val pixels = ByteArray(w * 5 * h * 10)
+        for (level in 1..10) for (slot in 0..4) {
+            val glyph = patch(level * 10 + slot)
+            for (y in 0 until h) for (x in 0 until w)
+                pixels[((level - 1) * h + y) * w * 5 + slot * w + x] = glyph[y * w + x]
+        }
+        val own = PanelOutlineMatcher(pixels, w * 5, h * 10, ownSlot = true)
+        assertEquals(6, own.read(patch(61), w, h, 1).level)
+        assertNull(own.read(patch(61), w, h, 0).level)
+        // One frame can contribute multiple slots and levels, and duplicate frames can contribute
+        // additional cells: the exclusion is a set of all their atlas cells, not a target-slot filter.
+        val excluded = PanelOutlineMatcher(pixels, w * 5, h * 10, true, setOf(25, 26, 27, 28, 29, 31))
+        assertNull(excluded.read(patch(61), w, h, 1).level)
+        assertNull(excluded.read(patch(62), w, h, 2).level)
+        assertEquals(8, excluded.read(patch(81), w, h, 1).level)
+    }
+
+    @Test fun `own decision is primary cross abstention allows acceptance and cross decision can veto`() {
+        val own = evidence(4, 0.9, 0.2)
+        assertEquals(4, PanelAppendMatcher.combineBanks(own, evidence(4, 0.8, 0.2)).level)
+        assertEquals(4, PanelAppendMatcher.combineBanks(own, evidence(9, 0.6, 0.2)).level)
+        assertNull(PanelAppendMatcher.combineBanks(own, evidence(9, 0.8, 0.2)).level)
+        assertNull(PanelAppendMatcher.combineBanks(evidence(4, 0.69, 0.3), evidence(4, 0.9, 0.2)).level)
+        assertNull(PanelAppendMatcher.combineBanks(evidence(4, 0.9, 0.09), evidence(4, 0.9, 0.2)).level)
+    }
+
     @Test fun `yellow prefix changes cannot alter the digit decision`() {
         val matcher = PanelOutlineMatcher(sheet { level, _ -> patch(level) }, w * 4, h * 10)
         val observed = patch(6)

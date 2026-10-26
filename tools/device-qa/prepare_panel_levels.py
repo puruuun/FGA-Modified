@@ -6,6 +6,8 @@ Run from any directory: python tools/device-qa/prepare_panel_levels.py [--input 
 from pathlib import Path
 import argparse
 import json
+import hashlib
+from collections import Counter
 import cv2
 import numpy as np
 
@@ -17,7 +19,7 @@ parser.add_argument("--write-templates", action="store_true", help="explicitly r
 
 def prepare(inputs: Path, write_templates: bool = False) -> None:
     labels = json.loads((inputs / "labels.json").read_text(encoding="utf-8"))
-    frames, cases, bank = [], [], {}
+    frames, cases, bank, own = [], [], {}, []
     selection_audit = {r["source"]: r for r in json.loads(
         (ROOT / "docs/reference-images/panel-0021-selection-audit.json").read_text(encoding="utf-8"))}
     centers = [673, 850, 1028, 1205, 1383]
@@ -28,6 +30,7 @@ def prepare(inputs: Path, write_templates: bool = False) -> None:
         path = inputs / frame["file"]
         encoded = np.fromfile(path, np.uint8)
         color = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+        frame_hash = hashlib.sha256(color.tobytes()).hexdigest()
         native16 = frame.get("layout") == "16:9 native 1920x1080"
         assert color.shape[:2] == ((1080, 1920) if native16 else (1080, 2560))
         # Keep UI height/shape. No horizontal squeezing or synthetic layout fixtures.
@@ -53,6 +56,10 @@ def prepare(inputs: Path, write_templates: bool = False) -> None:
             if not native16 and mode == "Append" and level > 0 and slot != 1:
                 box = [centers[slot] - 5, 273, 33, 21]
                 bank.setdefault((server, level, slot), (color[273:294, box[0]:box[0]+33], frame, relative, box))
+            if not native16 and mode == "Append" and level > 0:
+                box = [centers[slot] - 5, 273, 33, 21]
+                own.append((server, level, slot, color[273:294, box[0]:box[0]+33].copy(),
+                            frame, relative, box, frame_hash, selection == slot+1))
 
     provenance = []
     for server in ("Kr", "Jp"):
@@ -73,9 +80,40 @@ def prepare(inputs: Path, write_templates: bool = False) -> None:
         else:
             assert destination.read_bytes() == encoded, "Frozen template bank changed; review sources explicitly"
 
+    own_provenance = []
+    missing = []
+    for server in ("Kr", "Jp"):
+        counts = Counter((level, slot) for s, level, slot, *_ in own if s == server)
+        variants = max(counts.values())
+        # Five fixed slot columns, ten level rows per variant. Black cells are absent samples.
+        sheet = np.zeros((variants * 210, 165, 3), np.uint8)
+        used = Counter()
+        for s, level, slot, patch, frame, relative, box, frame_hash, selected in own:
+            if s != server:
+                continue
+            variant = used[(level, slot)]
+            used[(level, slot)] += 1
+            x, y = slot * 33, (variant * 10 + level - 1) * 21
+            sheet[y:y+21, x:x+33] = patch
+            own_provenance.append(dict(server=server, level=level, sourceSlot=slot+1,
+                source=frame["file"], reference=relative, region720=box, cell=[x, y, 33, 21],
+                cellIndex=(variant * 10 + level - 1) * 5 + slot,
+                framePixelSha256=frame_hash, selected=selected))
+        for slot in range(5):
+            for level in range(1, 11):
+                if not counts[(level, slot)]:
+                    missing.append(dict(server=server, slot=slot+1, level=level))
+        destination = ROOT / f"app/src/main/assets/{server}/skill_level_panel_append_own_samples.png"
+        encoded = cv2.imencode(".png", sheet)[1].tobytes()
+        if write_templates:
+            destination.write_bytes(encoded)
+        else:
+            assert destination.read_bytes() == encoded, "Own-slot bank changed; review sources explicitly"
+
     artifacts = {
         "docs/reference-images/panel-0021-sources.json": dict(note=labels["note"], frames=frames),
         "docs/reference-images/panel-0021-template-sources.json": provenance,
+        "docs/reference-images/panel-0021-own-template-sources.json": dict(samples=own_provenance, missing=missing),
         "docs/reference-images/cases/skillLevelPanel.json": dict(schema=1, suite="skillLevelPanel", cases=cases),
     }
     for relative, value in artifacts.items():

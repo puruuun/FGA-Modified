@@ -1,6 +1,6 @@
 # 패널 레벨 판독기 — Phase 1 측정
 
-최신 채널 개선과 전후 비교는 이 문서 하단의 **1.6.8-beta.3 — 어펜드 whiteness 채널 (#24)** 및 [beta.3 검증 기록](1.6.8-beta.3-validation.md)을 참고하세요. 아래 Phase 1 수치는 당시 판독기의 기록입니다.
+최신 슬롯별 샘플과 프레임 제외 측정은 하단 **1.6.8-beta.4 — 슬롯별 자체 샘플 (#31)** 및 [beta.4 검증 기록](1.6.8-beta.4-validation.md)을 참고하세요. beta.3 채널 비교와 아래 Phase 1 수치는 당시 판독기의 기록입니다.
 
 Phase 2 강화 흐름 연결과 1.6.8-beta.1 검증 결과는 [Phase 2 검증 기록](1.6.8-beta.1-validation.md)을 참고하세요. 아래의 Phase 1 판독 기준·자료·한계는 그대로 유지합니다.
 
@@ -313,3 +313,203 @@ python tools/device-qa/report_append_whiteness.py --before build/device-qa/20261
 ```
 
 준비 도구는 기본적으로 동결된 RGB 뱅크의 일치를 검사합니다. 기존 출처 셀을 의도적으로 재생성할 때만 `--write-templates`를 사용합니다. 전체 검증과 소유자 확인 항목은 [beta.3 검증 기록](1.6.8-beta.3-validation.md)에 있습니다.
+
+## 1.6.8-beta.4 — 슬롯별 자체 샘플 (#31)
+
+기준 `80a2896b`(beta.3), 브랜치 `feat/append-own-slot-samples`. Beta만 **1.6.8-beta.4 / 1006804**, Stable은 **1.6.7 / 3094**입니다. [개별 기기·호스트 결과](append-panel-own-slot-cases.json), [출처·셀 번호·원본 픽셀 해시](../reference-images/panel-0021-own-template-sources.json), [짧은 검증 기록](1.6.8-beta.4-validation.md)을 함께 보세요.
+
+### 판정과 샘플
+
+- KR **70개**, JP **82개**: 기존 0021의 열린 wide 교환·실제 강화 화면을 모두 사용했습니다. 서버×슬롯×레벨 100개 셀에 출처가 있으며 누락 셀은 없습니다. 같은 레벨도 서로 다른 프레임을 모두 보존합니다. JP `24-append-real` 2번 Lv.5의 창 안 선택 테두리와 KR `55-append-real` 1번 Lv.5도 별도 샘플입니다. native 16:9 다섯 프레임은 전부 검증 전용입니다.
+- 33×21 크롭의 오른쪽 **19×21**, blue·luminance, Laplacian/NCC, **score ≥ 0.70·margin ≥ 0.10**은 beta.3 그대로입니다. 각 은행 안에서 두 채널의 최상위 후보가 같아야 하며 적어도 한 채널이 두 기준을 모두 넘어야 합니다.
+- **자체 슬롯 은행이 주 판독**입니다. 동결된 기존 교차 슬롯 은행도 확정한 값이 다르면 기권합니다. 교차 은행이 기권하면 자체 판독의 통과값을 사용합니다. 기준 미달의 최상위 후보를 확정값처럼 취급하지 않습니다. 자체 은행이 기권하면 교차 은행으로 대체하지 않습니다.
+
+### 슬롯 3 확인
+
+**슬롯 3도 자체 은행을 사용합니다.** 서로 다른 서번트의 JP `00-append-exchange`, `14-append-exchange`, `16-append-exchange`에서 검 아이콘 영역 **(963,180,130,80)**은 RGB 픽셀이 완전히 같습니다(MAD **0.0**). 각각 슬롯 3 레벨은 10·8·9입니다. KR `25-append-exchange`·`55-append-real`, JP native 16:9 `58-append-real`도 같은 검·화살표와 숫자 배경입니다. JP/KR 사이 미세 렌더링 차이는 서버별 은행으로 분리했습니다. 검토 이미지: 로컬 `build/slot3-audit.png`·`build/own-icons.png`. 0021 밖의 클래스까지 동일하다는 추가 주장은 하지 않습니다.
+
+`강화 가능 / 強化可能`은 숫자 창 위쪽에 있으므로 기권 원인으로 돌리지 않았습니다. 좌표 도구로 `Region(366,546,66,42).xFromCenter()`가 JP wide 슬롯 3의 **(1023,273,33,21)**에 놓이는 것을 확인했습니다. 좌표와 크롭은 변경하지 않았습니다.
+
+### 측정 방법과 해석
+
+기기는 BlueStacks **127.0.0.1:5555**, 실제 `skillLevelPanel` suite의 ImageLoader/OpenCV/제품 좌표를 사용합니다. 기기에서는 제품 은행의 출처를 프레임마다 제거할 수 없으므로 **제품 은행 결과**로 표시합니다. 학습 원본과 같은 화면을 읽은 wide 결과가 포함되며 독립 검증으로 해석하면 안 됩니다.
+
+호스트는 `:scripts:panelAppendEvaluation`에서 **동일한 제품 Kotlin matcher**를 직접 호출합니다. 대상 프레임 전체를 디코딩한 RGB SHA-256이 같은 모든 참조 프레임을 찾고, 그 프레임에서 잘라낸 **모든 슬롯·레벨 샘플을 자체 은행과 교차 은행 양쪽에서 제외**합니다. PNG 인코딩만 다른 동일 픽셀 프레임도 같은 그룹입니다. 제외 셀 수와 프레임 그룹을 JSON으로 남기며, native 16:9가 은행의 출처에 없는지도 검사합니다. beta.3도 같은 방식으로 평가합니다.
+
+호스트의 제외 없는 결과는 두 버전 모두 기기 결과의 level·candidate·status가 같고 score·margin 차이가 **1e-12 미만**이어야 보고서를 생성합니다. **오독 0**도 필수입니다. 적중률 분모는 잠금과 일반 스킬을 제외한 열린 어펜드 **162개**입니다.
+
+**제품 은행의 100%와 독립 평가의 50.62%를 구분해야 합니다.** beta.4는 학습하지 않은 native 16:9 10개를 모두 읽지만, wide의 여러 슬롯·레벨은 유일한 원본 프레임을 제외하면 자체 샘플이 없어 기권합니다. 전체 프레임 제외 적중률은 beta.3보다 낮습니다. 교차 은행 fallback·기준 완화로 보정하지 않았습니다. 새로운 wide 원본을 추가하기 전에는 전체 일반화 성능 개선을 주장할 수 없습니다.
+
+### 재현
+
+```text
+python tools/device-qa/prepare_panel_levels.py
+gradlew :scripts:panelAppendEvaluation
+set ANDROID_HOME=C:\Users\rl\AppData\Local\Android\Sdk
+python tools/device-qa/run.py --build --serial 127.0.0.1:5555 --suite support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp,skillLevelPanel
+python tools/device-qa/report_append_own_samples.py --before build/device-qa/20261026-155510/report-skillLevelPanel.json --after build/device-qa/20261026-160002/report-skillLevelPanel.json --output build/beta4-tables.md
+```
+
+beta.3 기기 보고서: `build/device-qa/20261026-155510/`. beta.4 전체 기기 보고서: `build/device-qa/20261026-160002/`. 호스트: `build/panel-append-evaluation.json`. 게임 조작·다른 기기·ADB 서버 명령은 사용하지 않았습니다.
+
+### device-product-bank
+
+정답/기권/오독. 열린 슬롯이 없는 셀은 0/0/0입니다.
+
+| 레이아웃 | 서버 | 슬롯 | beta.3 | beta.4 |
+|---|---|---|---|---|
+| native-wide | Kr | 1 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 2 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 3 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 4 | 14/0/0 | 14/0/0 |
+| native-wide | Kr | 5 | 14/0/0 | 14/0/0 |
+| native-wide | Jp | 1 | 16/0/0 | 16/0/0 |
+| native-wide | Jp | 2 | 18/0/0 | 18/0/0 |
+| native-wide | Jp | 3 | 16/0/0 | 16/0/0 |
+| native-wide | Jp | 4 | 15/1/0 | 16/0/0 |
+| native-wide | Jp | 5 | 16/0/0 | 16/0/0 |
+| native-16:9 | Kr | 1 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 2 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 3 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 4 | 0/1/0 | 1/0/0 |
+| native-16:9 | Kr | 5 | 0/0/0 | 0/0/0 |
+| native-16:9 | Jp | 1 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 2 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 3 | 1/0/0 | 1/0/0 |
+| native-16:9 | Jp | 4 | 1/1/0 | 2/0/0 |
+| native-16:9 | Jp | 5 | 2/0/0 | 2/0/0 |
+
+- beta.3: **159/3/0**, 적중률 **159/162 = 98.15%**.
+- beta.4: **162/0/0**, 적중률 **162/162 = 100.00%**.
+
+### host-leave-one-frame-out
+
+정답/기권/오독. 열린 슬롯이 없는 셀은 0/0/0입니다.
+
+| 레이아웃 | 서버 | 슬롯 | beta.3 | beta.4 |
+|---|---|---|---|---|
+| native-wide | Kr | 1 | 14/0/0 | 6/8/0 |
+| native-wide | Kr | 2 | 14/0/0 | 6/8/0 |
+| native-wide | Kr | 3 | 14/0/0 | 5/9/0 |
+| native-wide | Kr | 4 | 14/0/0 | 5/9/0 |
+| native-wide | Kr | 5 | 14/0/0 | 6/8/0 |
+| native-wide | Jp | 1 | 16/0/0 | 8/8/0 |
+| native-wide | Jp | 2 | 18/0/0 | 12/6/0 |
+| native-wide | Jp | 3 | 16/0/0 | 8/8/0 |
+| native-wide | Jp | 4 | 15/1/0 | 8/8/0 |
+| native-wide | Jp | 5 | 16/0/0 | 8/8/0 |
+| native-16:9 | Kr | 1 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 2 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 3 | 0/0/0 | 0/0/0 |
+| native-16:9 | Kr | 4 | 0/1/0 | 1/0/0 |
+| native-16:9 | Kr | 5 | 0/0/0 | 0/0/0 |
+| native-16:9 | Jp | 1 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 2 | 2/0/0 | 2/0/0 |
+| native-16:9 | Jp | 3 | 1/0/0 | 1/0/0 |
+| native-16:9 | Jp | 4 | 1/1/0 | 2/0/0 |
+| native-16:9 | Jp | 5 | 2/0/0 | 2/0/0 |
+
+- beta.3: **159/3/0**, 적중률 **159/162 = 98.15%**.
+- beta.4: **82/80/0**, 적중률 **82/162 = 50.62%**.
+
+### 샘플 수 (레벨 1→10 순)
+
+| 서버 | 슬롯 | 레벨별 원본 샘플 수 |
+|---|---|---|
+| Kr | 1 | 1/1/1/1/2/1/1/1/1/4 |
+| Kr | 2 | 1/1/1/1/1/2/1/1/1/4 |
+| Kr | 3 | 1/1/1/1/1/1/1/1/1/5 |
+| Kr | 4 | 1/1/1/1/1/1/1/1/1/5 |
+| Kr | 5 | 1/1/1/2/1/1/1/1/1/4 |
+| Jp | 1 | 1/1/1/2/1/1/1/1/1/6 |
+| Jp | 2 | 1/1/1/2/2/1/1/1/2/6 |
+| Jp | 3 | 1/1/1/2/1/1/1/1/1/6 |
+| Jp | 4 | 1/1/1/2/1/1/1/1/1/6 |
+| Jp | 5 | 1/1/1/2/1/1/1/1/1/6 |
+
+호스트 잔여 기권 80건 중 80건은 프레임 제외 후 해당 슬롯·레벨의 샘플이 없습니다.
+
+| 케이스 | 기대 | 이유 | score | margin |
+|---|---|---|---|---|
+| Jp-00-Append-1 | 1 | own-slot-channel-conflict-or-unread | 0.5278 | 0.0127 |
+| Jp-00-Append-2 | 2 | own-slot-weak-outline-or-margin | 0.6970 | 0.0838 |
+| Jp-01-Append-2 | 1 | own-slot-weak-outline-or-margin | 0.5136 | 0.0088 |
+| Jp-01-Append-3 | 2 | own-slot-weak-outline-or-margin | 0.7110 | 0.0523 |
+| Jp-02-Append-3 | 1 | own-slot-channel-conflict-or-unread | 0.5472 | 0.0072 |
+| Jp-02-Append-4 | 2 | own-slot-weak-outline-or-margin | 0.6938 | 0.0585 |
+| Jp-03-Append-4 | 1 | own-slot-weak-outline-or-margin | 0.5211 | 0.0094 |
+| Jp-03-Append-5 | 2 | own-slot-weak-outline-or-margin | 0.7066 | 0.0665 |
+| Jp-04-Append-1 | 2 | own-slot-weak-outline-or-margin | 0.7058 | 0.0954 |
+| Jp-04-Append-5 | 1 | own-slot-channel-conflict-or-unread | 0.5127 | 0.0369 |
+| Jp-05-Append-5 | 3 | own-slot-channel-conflict-or-unread | 0.7674 | 0.0059 |
+| Jp-06-Append-1 | 3 | own-slot-weak-outline-or-margin | 0.7516 | 0.0000 |
+| Jp-07-Append-2 | 3 | own-slot-weak-outline-or-margin | 0.7495 | 0.0526 |
+| Jp-08-Append-3 | 3 | own-slot-weak-outline-or-margin | 0.7605 | 0.0345 |
+| Jp-09-Append-4 | 3 | own-slot-weak-outline-or-margin | 0.7314 | 0.0104 |
+| Jp-10-Append-1 | 5 | own-slot-weak-outline-or-margin | 0.7516 | 0.0653 |
+| Jp-10-Append-2 | 6 | own-slot-weak-outline-or-margin | 0.6979 | 0.0625 |
+| Jp-10-Append-3 | 7 | own-slot-weak-outline-or-margin | 0.6415 | 0.0925 |
+| Jp-10-Append-4 | 8 | own-slot-weak-outline-or-margin | 0.7746 | 0.0536 |
+| Jp-11-Append-3 | 6 | own-slot-weak-outline-or-margin | 0.7725 | 0.0703 |
+| Jp-11-Append-4 | 7 | own-slot-weak-outline-or-margin | 0.5842 | 0.0729 |
+| Jp-11-Append-5 | 8 | own-slot-weak-outline-or-margin | 0.7952 | 0.0278 |
+| Jp-12-Append-1 | 8 | own-slot-weak-outline-or-margin | 0.7857 | 0.0342 |
+| Jp-12-Append-3 | 5 | own-slot-weak-outline-or-margin | 0.7605 | 0.0886 |
+| Jp-12-Append-4 | 6 | own-cross-slot-conflict | 0.7272 | 0.1085 |
+| Jp-12-Append-5 | 7 | own-slot-weak-outline-or-margin | 0.6577 | 0.0959 |
+| Jp-13-Append-1 | 7 | own-slot-weak-outline-or-margin | 0.6418 | 0.0847 |
+| Jp-13-Append-2 | 8 | own-slot-weak-outline-or-margin | 0.7296 | 0.0595 |
+| Jp-13-Append-4 | 5 | own-slot-weak-outline-or-margin | 0.7314 | 0.0773 |
+| Jp-13-Append-5 | 6 | own-slot-weak-outline-or-margin | 0.7696 | 0.0696 |
+| Jp-14-Append-1 | 6 | own-slot-weak-outline-or-margin | 0.7560 | 0.0806 |
+| Jp-14-Append-2 | 7 | own-slot-weak-outline-or-margin | 0.6132 | 0.0802 |
+| Jp-14-Append-3 | 8 | own-slot-weak-outline-or-margin | 0.7980 | 0.0413 |
+| Jp-14-Append-5 | 5 | own-slot-weak-outline-or-margin | 0.7615 | 0.0615 |
+| Jp-15-Append-1 | 9 | own-slot-weak-outline-or-margin | 0.7571 | 0.0727 |
+| Jp-16-Append-3 | 9 | own-slot-weak-outline-or-margin | 0.7560 | 0.0743 |
+| Jp-16-Append-4 | 9 | own-cross-slot-conflict | 0.7457 | 0.1049 |
+| Jp-17-Append-5 | 9 | own-slot-weak-outline-or-margin | 0.7608 | 0.0780 |
+| Kr-25-Append-1 | 1 | own-slot-weak-outline-or-margin | 0.3370 | 0.1073 |
+| Kr-25-Append-2 | 2 | own-slot-weak-outline-or-margin | 0.6298 | 0.0784 |
+| Kr-25-Append-3 | 3 | own-slot-weak-outline-or-margin | 0.7558 | 0.0716 |
+| Kr-26-Append-2 | 1 | own-slot-weak-outline-or-margin | 0.3892 | 0.0943 |
+| Kr-26-Append-3 | 2 | own-slot-weak-outline-or-margin | 0.7053 | 0.0839 |
+| Kr-26-Append-4 | 3 | own-slot-weak-outline-or-margin | 0.7317 | 0.0431 |
+| Kr-27-Append-3 | 1 | own-slot-weak-outline-or-margin | 0.4366 | 0.0876 |
+| Kr-27-Append-4 | 2 | own-slot-weak-outline-or-margin | 0.6288 | 0.0282 |
+| Kr-27-Append-5 | 3 | own-slot-weak-outline-or-margin | 0.7524 | 0.0255 |
+| Kr-28-Append-1 | 3 | own-slot-weak-outline-or-margin | 0.7354 | 0.0313 |
+| Kr-28-Append-4 | 1 | own-slot-weak-outline-or-margin | 0.3289 | 0.1144 |
+| Kr-28-Append-5 | 2 | own-slot-weak-outline-or-margin | 0.6410 | 0.0441 |
+| Kr-29-Append-1 | 2 | own-slot-weak-outline-or-margin | 0.6240 | 0.0453 |
+| Kr-29-Append-2 | 3 | own-slot-weak-outline-or-margin | 0.7038 | 0.0850 |
+| Kr-29-Append-5 | 1 | own-slot-weak-outline-or-margin | 0.3791 | 0.0281 |
+| Kr-30-Append-1 | 4 | own-slot-weak-outline-or-margin | 0.4557 | 0.0230 |
+| Kr-30-Append-2 | 5 | own-slot-weak-outline-or-margin | 0.7038 | 0.0468 |
+| Kr-30-Append-3 | 6 | own-slot-weak-outline-or-margin | 0.7806 | 0.0727 |
+| Kr-31-Append-2 | 4 | own-slot-weak-outline-or-margin | 0.5479 | 0.0551 |
+| Kr-31-Append-3 | 5 | own-slot-weak-outline-or-margin | 0.7558 | 0.0424 |
+| Kr-31-Append-4 | 6 | own-cross-slot-conflict | 0.7393 | 0.1033 |
+| Kr-32-Append-3 | 4 | own-slot-weak-outline-or-margin | 0.5197 | 0.0425 |
+| Kr-32-Append-4 | 5 | own-slot-weak-outline-or-margin | 0.7317 | 0.0210 |
+| Kr-32-Append-5 | 6 | own-slot-weak-outline-or-margin | 0.7547 | 0.0005 |
+| Kr-33-Append-1 | 6 | own-slot-weak-outline-or-margin | 0.7521 | 0.0198 |
+| Kr-33-Append-4 | 4 | own-slot-weak-outline-or-margin | 0.4507 | 0.0123 |
+| Kr-33-Append-5 | 5 | own-slot-channel-conflict-or-unread | 0.7542 | 0.0018 |
+| Kr-35-Append-4 | 7 | own-slot-weak-outline-or-margin | 0.6006 | 0.0148 |
+| Kr-36-Append-5 | 7 | own-slot-channel-conflict-or-unread | 0.6080 | 0.0110 |
+| Kr-37-Append-1 | 7 | own-slot-channel-conflict-or-unread | 0.5901 | 0.0114 |
+| Kr-38-Append-2 | 7 | own-slot-weak-outline-or-margin | 0.5900 | 0.0551 |
+| Kr-39-Append-3 | 7 | own-slot-channel-conflict-or-unread | 0.6278 | 0.0119 |
+| Kr-40-Append-2 | 8 | own-cross-slot-conflict | 0.7331 | 0.1143 |
+| Kr-41-Append-3 | 8 | own-slot-weak-outline-or-margin | 0.7806 | 0.0891 |
+| Kr-42-Append-4 | 8 | own-slot-weak-outline-or-margin | 0.7447 | 0.0543 |
+| Kr-43-Append-5 | 8 | own-slot-weak-outline-or-margin | 0.7547 | 0.0278 |
+| Kr-44-Append-1 | 8 | own-slot-weak-outline-or-margin | 0.7521 | 0.0480 |
+| Kr-45-Append-2 | 9 | own-slot-weak-outline-or-margin | 0.5842 | 0.0493 |
+| Kr-46-Append-3 | 9 | own-slot-weak-outline-or-margin | 0.6698 | 0.0506 |
+| Kr-47-Append-4 | 9 | own-slot-weak-outline-or-margin | 0.6067 | 0.0233 |
+| Kr-48-Append-5 | 9 | own-slot-weak-outline-or-margin | 0.6285 | 0.0270 |
+| Kr-49-Append-1 | 9 | own-slot-channel-conflict-or-unread | 0.6170 | 0.0160 |
+
+동일 픽셀 중복 프레임 그룹은 이번 0021 참조 집합에서 0개였습니다. 호스트 기권은 기준 미달 67건·채널 불일치 9건·은행 간 확정값 충돌 4건입니다. 마지막 4건은 교차 은행의 거부로 최종 오독을 막았습니다. 기기 제품 은행의 잔여 기권은 0건입니다.

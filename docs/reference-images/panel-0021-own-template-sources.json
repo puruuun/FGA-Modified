@@ -1,0 +1,3349 @@
+{
+  "samples": [
+    {
+      "server": "Kr",
+      "level": 1,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 0,
+      "framePixelSha256": "7e535908ce6d203c6c409cc0ad4876b045e30a541242d3c9a8fe4fcd0db1e36b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 2,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 6,
+      "framePixelSha256": "7e535908ce6d203c6c409cc0ad4876b045e30a541242d3c9a8fe4fcd0db1e36b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 3,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 12,
+      "framePixelSha256": "7e535908ce6d203c6c409cc0ad4876b045e30a541242d3c9a8fe4fcd0db1e36b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 48,
+      "framePixelSha256": "7e535908ce6d203c6c409cc0ad4876b045e30a541242d3c9a8fe4fcd0db1e36b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.33.39.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/25-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 49,
+      "framePixelSha256": "7e535908ce6d203c6c409cc0ad4876b045e30a541242d3c9a8fe4fcd0db1e36b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 45,
+      "framePixelSha256": "6f80c879cfd07c93d276a04d012f567a2f0d55d61a1215ad4a75219637dd2960",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 1,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 1,
+      "framePixelSha256": "6f80c879cfd07c93d276a04d012f567a2f0d55d61a1215ad4a75219637dd2960",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 2,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 7,
+      "framePixelSha256": "6f80c879cfd07c93d276a04d012f567a2f0d55d61a1215ad4a75219637dd2960",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 3,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 13,
+      "framePixelSha256": "6f80c879cfd07c93d276a04d012f567a2f0d55d61a1215ad4a75219637dd2960",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.34.00.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/26-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 99,
+      "framePixelSha256": "6f80c879cfd07c93d276a04d012f567a2f0d55d61a1215ad4a75219637dd2960",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 95,
+      "framePixelSha256": "e890bd28d6d2ba130e3b456ffced235129173efe0f6c967ad2b6c95998d59028",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 46,
+      "framePixelSha256": "e890bd28d6d2ba130e3b456ffced235129173efe0f6c967ad2b6c95998d59028",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 1,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 2,
+      "framePixelSha256": "e890bd28d6d2ba130e3b456ffced235129173efe0f6c967ad2b6c95998d59028",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 2,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 8,
+      "framePixelSha256": "e890bd28d6d2ba130e3b456ffced235129173efe0f6c967ad2b6c95998d59028",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 3,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.34.20.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/27-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 14,
+      "framePixelSha256": "e890bd28d6d2ba130e3b456ffced235129173efe0f6c967ad2b6c95998d59028",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 3,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 10,
+      "framePixelSha256": "d5d692b2eba650c604f644c1959f5a55fc62ee8e64c390908fdc41d6fe667709",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 96,
+      "framePixelSha256": "d5d692b2eba650c604f644c1959f5a55fc62ee8e64c390908fdc41d6fe667709",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 47,
+      "framePixelSha256": "d5d692b2eba650c604f644c1959f5a55fc62ee8e64c390908fdc41d6fe667709",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 1,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 3,
+      "framePixelSha256": "d5d692b2eba650c604f644c1959f5a55fc62ee8e64c390908fdc41d6fe667709",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 2,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.34.36.054.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/28-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 9,
+      "framePixelSha256": "d5d692b2eba650c604f644c1959f5a55fc62ee8e64c390908fdc41d6fe667709",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 2,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 5,
+      "framePixelSha256": "5594f26357432013c38b37fcae8a3d24b12c3a5c62e0caf561dbc115e7fd292b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 3,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 11,
+      "framePixelSha256": "5594f26357432013c38b37fcae8a3d24b12c3a5c62e0caf561dbc115e7fd292b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 97,
+      "framePixelSha256": "5594f26357432013c38b37fcae8a3d24b12c3a5c62e0caf561dbc115e7fd292b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 98,
+      "framePixelSha256": "5594f26357432013c38b37fcae8a3d24b12c3a5c62e0caf561dbc115e7fd292b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 1,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.34.52.204.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/29-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 4,
+      "framePixelSha256": "5594f26357432013c38b37fcae8a3d24b12c3a5c62e0caf561dbc115e7fd292b",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 15,
+      "framePixelSha256": "6f7eb916c91e8d7d928d06e313a9ccbfbc980da55e07d2d0ea7e5dbf19f84c79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 21,
+      "framePixelSha256": "6f7eb916c91e8d7d928d06e313a9ccbfbc980da55e07d2d0ea7e5dbf19f84c79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 27,
+      "framePixelSha256": "6f7eb916c91e8d7d928d06e313a9ccbfbc980da55e07d2d0ea7e5dbf19f84c79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 148,
+      "framePixelSha256": "6f7eb916c91e8d7d928d06e313a9ccbfbc980da55e07d2d0ea7e5dbf19f84c79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.43.12.704.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/30-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 149,
+      "framePixelSha256": "6f7eb916c91e8d7d928d06e313a9ccbfbc980da55e07d2d0ea7e5dbf19f84c79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 145,
+      "framePixelSha256": "ca446cf86587d619fab897e9eecc4173050b951ede2dce0de2c16980af29ae53",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 16,
+      "framePixelSha256": "ca446cf86587d619fab897e9eecc4173050b951ede2dce0de2c16980af29ae53",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 22,
+      "framePixelSha256": "ca446cf86587d619fab897e9eecc4173050b951ede2dce0de2c16980af29ae53",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 28,
+      "framePixelSha256": "ca446cf86587d619fab897e9eecc4173050b951ede2dce0de2c16980af29ae53",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.43.28.304.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/31-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 199,
+      "framePixelSha256": "ca446cf86587d619fab897e9eecc4173050b951ede2dce0de2c16980af29ae53",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 195,
+      "framePixelSha256": "740d2594d99230a77ac06a56bac3a80858b5bf82930670964a1ec133729fc635",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 146,
+      "framePixelSha256": "740d2594d99230a77ac06a56bac3a80858b5bf82930670964a1ec133729fc635",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 17,
+      "framePixelSha256": "740d2594d99230a77ac06a56bac3a80858b5bf82930670964a1ec133729fc635",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 23,
+      "framePixelSha256": "740d2594d99230a77ac06a56bac3a80858b5bf82930670964a1ec133729fc635",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.43.44.370.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/32-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 29,
+      "framePixelSha256": "740d2594d99230a77ac06a56bac3a80858b5bf82930670964a1ec133729fc635",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 25,
+      "framePixelSha256": "e6005766f6462f34f08eb71c52f27ad65b23ad4ab2ec13ab8becc6b251ea3700",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 196,
+      "framePixelSha256": "e6005766f6462f34f08eb71c52f27ad65b23ad4ab2ec13ab8becc6b251ea3700",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 147,
+      "framePixelSha256": "e6005766f6462f34f08eb71c52f27ad65b23ad4ab2ec13ab8becc6b251ea3700",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 18,
+      "framePixelSha256": "e6005766f6462f34f08eb71c52f27ad65b23ad4ab2ec13ab8becc6b251ea3700",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.44.00.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/33-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 24,
+      "framePixelSha256": "e6005766f6462f34f08eb71c52f27ad65b23ad4ab2ec13ab8becc6b251ea3700",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 20,
+      "framePixelSha256": "9c5b2bfbf13d3d215788dae353ab93716b810db8aef14010b418f212fb55f2b5",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 26,
+      "framePixelSha256": "9c5b2bfbf13d3d215788dae353ab93716b810db8aef14010b418f212fb55f2b5",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 197,
+      "framePixelSha256": "9c5b2bfbf13d3d215788dae353ab93716b810db8aef14010b418f212fb55f2b5",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 198,
+      "framePixelSha256": "9c5b2bfbf13d3d215788dae353ab93716b810db8aef14010b418f212fb55f2b5",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.44.47.837.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/34-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 19,
+      "framePixelSha256": "9c5b2bfbf13d3d215788dae353ab93716b810db8aef14010b418f212fb55f2b5",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 7,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.45.42.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/35-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 33,
+      "framePixelSha256": "c26eff836a413138cd1046a047c80a864d46f1e60366b50d4f9432b9e0a4c407",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 7,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.45.52.687.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/36-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 34,
+      "framePixelSha256": "9ef02673c4ed0266672763ea98e2ff96d28327359e298b5bff3f944b413a6f66",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 7,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.46.02.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/37-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 30,
+      "framePixelSha256": "eb3e1d338c464c90eb1ab90eeed04985e54b9ac6e5db4f74776d06b648f88911",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 7,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.46.11.104.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/38-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 31,
+      "framePixelSha256": "3ccaeac8f449e6d6fcf7412510b3142aafded928c991da7dc6e85deb9c95e521",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 7,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.46.19.254.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/39-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 32,
+      "framePixelSha256": "325233187aa9d7f5d84964ddb7415c0b2ee2f014c42b34caabf3e36b1235f74f",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 8,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.46.58.954.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/40-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 36,
+      "framePixelSha256": "1d65a250275d0ef5f9976531acd79f1a8b43f72ff2623cf6c27de2bcef97b31c",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 8,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.47.07.720.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/41-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 37,
+      "framePixelSha256": "02a952bb9c857003a2361eba3fca54c41ef2498d67ba01027b2e3a52ca5c97eb",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 8,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.47.15.720.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/42-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 38,
+      "framePixelSha256": "c8cc036aeb9266a6bc5375c65242ea00f12b3501931758686e09626ed039e873",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 8,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.47.23.571.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/43-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 39,
+      "framePixelSha256": "e7cc29c3a19c3a52c1d43db1fb4d7f4cdf6119d573c5f741f992c8873c970c1c",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 8,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.47.31.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/44-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 35,
+      "framePixelSha256": "6c906765bb8c323422a91f3d58f10dc868f3e2a018aece043cfa05e401cdb52e",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 9,
+      "sourceSlot": 2,
+      "source": "kr/Screenshot_2026.10.24_23.48.17.770.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/45-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 41,
+      "framePixelSha256": "1cee72e58c176f9bc2bb7eb54d2fc6a8ffb8a7315bb48a1b15368268de05b456",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 9,
+      "sourceSlot": 3,
+      "source": "kr/Screenshot_2026.10.24_23.48.36.271.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/46-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 42,
+      "framePixelSha256": "8c4855583f575fc56b09b51fcf7ac012e53e3c8dbbc20a079ea329bd529672f8",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 9,
+      "sourceSlot": 4,
+      "source": "kr/Screenshot_2026.10.24_23.48.44.571.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/47-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 43,
+      "framePixelSha256": "acb7d37d550ae24652ff442285a2caf5ca3432455e38aad3d5a8bfcd0b4e1e98",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 9,
+      "sourceSlot": 5,
+      "source": "kr/Screenshot_2026.10.24_23.48.52.587.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/48-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 44,
+      "framePixelSha256": "797ab2f5445a2f28144ad5f03ce90aa52298fe6c37c576253d06c1d51e936df8",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 9,
+      "sourceSlot": 1,
+      "source": "kr/Screenshot_2026.10.24_23.49.01.187.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/49-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 40,
+      "framePixelSha256": "eb0593d620ea4d078a0bf44d65c1c435e07ac84198b0bb2b4d1c9886f65b8ae2",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 5,
+      "sourceSlot": 1,
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        294,
+        33,
+        21
+      ],
+      "cellIndex": 70,
+      "framePixelSha256": "e8aadd7aa885b09a304165c04374f516d22bdce61731df7a16d93db7439fcf79",
+      "selected": true
+    },
+    {
+      "server": "Kr",
+      "level": 6,
+      "sourceSlot": 2,
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        315,
+        33,
+        21
+      ],
+      "cellIndex": 76,
+      "framePixelSha256": "e8aadd7aa885b09a304165c04374f516d22bdce61731df7a16d93db7439fcf79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 247,
+      "framePixelSha256": "e8aadd7aa885b09a304165c04374f516d22bdce61731df7a16d93db7439fcf79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 248,
+      "framePixelSha256": "e8aadd7aa885b09a304165c04374f516d22bdce61731df7a16d93db7439fcf79",
+      "selected": false
+    },
+    {
+      "server": "Kr",
+      "level": 4,
+      "sourceSlot": 5,
+      "source": "kr/실제 강화창 글시뜸 KR.png",
+      "reference": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 69,
+      "framePixelSha256": "e8aadd7aa885b09a304165c04374f516d22bdce61731df7a16d93db7439fcf79",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 1,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 0,
+      "framePixelSha256": "46b08044876b914f68991607f4448304d983640e55f8b82da868b9323db7b2a6",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 2,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 6,
+      "framePixelSha256": "46b08044876b914f68991607f4448304d983640e55f8b82da868b9323db7b2a6",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 47,
+      "framePixelSha256": "46b08044876b914f68991607f4448304d983640e55f8b82da868b9323db7b2a6",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 48,
+      "framePixelSha256": "46b08044876b914f68991607f4448304d983640e55f8b82da868b9323db7b2a6",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.12.13.954.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/00-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 49,
+      "framePixelSha256": "46b08044876b914f68991607f4448304d983640e55f8b82da868b9323db7b2a6",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 45,
+      "framePixelSha256": "16a9dd82bfb90f31fcade099f69bed7125a27d77448b38f398bb838eaa205e99",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 1,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 1,
+      "framePixelSha256": "16a9dd82bfb90f31fcade099f69bed7125a27d77448b38f398bb838eaa205e99",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 2,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 7,
+      "framePixelSha256": "16a9dd82bfb90f31fcade099f69bed7125a27d77448b38f398bb838eaa205e99",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 98,
+      "framePixelSha256": "16a9dd82bfb90f31fcade099f69bed7125a27d77448b38f398bb838eaa205e99",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.12.25.054.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/01-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 99,
+      "framePixelSha256": "16a9dd82bfb90f31fcade099f69bed7125a27d77448b38f398bb838eaa205e99",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 95,
+      "framePixelSha256": "eb422ac3b3b065af82ed7e1961029a5a67c715a2ef3b4404f834de671699b171",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        189,
+        33,
+        21
+      ],
+      "cellIndex": 46,
+      "framePixelSha256": "eb422ac3b3b065af82ed7e1961029a5a67c715a2ef3b4404f834de671699b171",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 1,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 2,
+      "framePixelSha256": "eb422ac3b3b065af82ed7e1961029a5a67c715a2ef3b4404f834de671699b171",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 2,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 8,
+      "framePixelSha256": "eb422ac3b3b065af82ed7e1961029a5a67c715a2ef3b4404f834de671699b171",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.12.35.187.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/02-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 149,
+      "framePixelSha256": "eb422ac3b3b065af82ed7e1961029a5a67c715a2ef3b4404f834de671699b171",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 145,
+      "framePixelSha256": "1b0b00a268c742e5d9b3af6caea166cd154bdf5671b00627988b1805e73dccd7",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 96,
+      "framePixelSha256": "1b0b00a268c742e5d9b3af6caea166cd154bdf5671b00627988b1805e73dccd7",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        399,
+        33,
+        21
+      ],
+      "cellIndex": 97,
+      "framePixelSha256": "1b0b00a268c742e5d9b3af6caea166cd154bdf5671b00627988b1805e73dccd7",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 1,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 3,
+      "framePixelSha256": "1b0b00a268c742e5d9b3af6caea166cd154bdf5671b00627988b1805e73dccd7",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 2,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.12.45.721.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/03-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 9,
+      "framePixelSha256": "1b0b00a268c742e5d9b3af6caea166cd154bdf5671b00627988b1805e73dccd7",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 2,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        21,
+        33,
+        21
+      ],
+      "cellIndex": 5,
+      "framePixelSha256": "3d1061c732bc2c8d4b07475c50ed2a26b2319d1cc28534f2a59bb527bd1cea27",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 146,
+      "framePixelSha256": "3d1061c732bc2c8d4b07475c50ed2a26b2319d1cc28534f2a59bb527bd1cea27",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 147,
+      "framePixelSha256": "3d1061c732bc2c8d4b07475c50ed2a26b2319d1cc28534f2a59bb527bd1cea27",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        609,
+        33,
+        21
+      ],
+      "cellIndex": 148,
+      "framePixelSha256": "3d1061c732bc2c8d4b07475c50ed2a26b2319d1cc28534f2a59bb527bd1cea27",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 1,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.12.56.904.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/04-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        0,
+        33,
+        21
+      ],
+      "cellIndex": 4,
+      "framePixelSha256": "3d1061c732bc2c8d4b07475c50ed2a26b2319d1cc28534f2a59bb527bd1cea27",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 15,
+      "framePixelSha256": "0b56c1112467e54e00b0eeb9fad828986e9cb587b3ec86985d7d984e8e092715",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 196,
+      "framePixelSha256": "0b56c1112467e54e00b0eeb9fad828986e9cb587b3ec86985d7d984e8e092715",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 197,
+      "framePixelSha256": "0b56c1112467e54e00b0eeb9fad828986e9cb587b3ec86985d7d984e8e092715",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 198,
+      "framePixelSha256": "0b56c1112467e54e00b0eeb9fad828986e9cb587b3ec86985d7d984e8e092715",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 3,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.13.34.520.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/05-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 14,
+      "framePixelSha256": "0b56c1112467e54e00b0eeb9fad828986e9cb587b3ec86985d7d984e8e092715",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 3,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 10,
+      "framePixelSha256": "112b24d61bebbf51cd16a5543e282c69db026de3f6f458823ba0bebd7ee4e943",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 16,
+      "framePixelSha256": "112b24d61bebbf51cd16a5543e282c69db026de3f6f458823ba0bebd7ee4e943",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 247,
+      "framePixelSha256": "112b24d61bebbf51cd16a5543e282c69db026de3f6f458823ba0bebd7ee4e943",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 248,
+      "framePixelSha256": "112b24d61bebbf51cd16a5543e282c69db026de3f6f458823ba0bebd7ee4e943",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.13.45.837.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/06-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 199,
+      "framePixelSha256": "112b24d61bebbf51cd16a5543e282c69db026de3f6f458823ba0bebd7ee4e943",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        819,
+        33,
+        21
+      ],
+      "cellIndex": 195,
+      "framePixelSha256": "ef014d83facff9e7094c4e555a3c9634d9dd24f09295bbf39ab3e7694418ca46",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 3,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 11,
+      "framePixelSha256": "ef014d83facff9e7094c4e555a3c9634d9dd24f09295bbf39ab3e7694418ca46",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 17,
+      "framePixelSha256": "ef014d83facff9e7094c4e555a3c9634d9dd24f09295bbf39ab3e7694418ca46",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        1239,
+        33,
+        21
+      ],
+      "cellIndex": 298,
+      "framePixelSha256": "ef014d83facff9e7094c4e555a3c9634d9dd24f09295bbf39ab3e7694418ca46",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.13.55.354.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/07-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 249,
+      "framePixelSha256": "ef014d83facff9e7094c4e555a3c9634d9dd24f09295bbf39ab3e7694418ca46",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 245,
+      "framePixelSha256": "60cf8a9bfbc5c357df6a7a043eb687f64ce5273f01066fd2a882ce44017175fb",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        1029,
+        33,
+        21
+      ],
+      "cellIndex": 246,
+      "framePixelSha256": "60cf8a9bfbc5c357df6a7a043eb687f64ce5273f01066fd2a882ce44017175fb",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 3,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 12,
+      "framePixelSha256": "60cf8a9bfbc5c357df6a7a043eb687f64ce5273f01066fd2a882ce44017175fb",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 18,
+      "framePixelSha256": "60cf8a9bfbc5c357df6a7a043eb687f64ce5273f01066fd2a882ce44017175fb",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.14.04.754.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/08-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        1239,
+        33,
+        21
+      ],
+      "cellIndex": 299,
+      "framePixelSha256": "60cf8a9bfbc5c357df6a7a043eb687f64ce5273f01066fd2a882ce44017175fb",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        1239,
+        33,
+        21
+      ],
+      "cellIndex": 295,
+      "framePixelSha256": "69e7b29c05f2bd6603451443e7b958b9b57bba3d0689a37e4cdd1de557d1c94a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        1239,
+        33,
+        21
+      ],
+      "cellIndex": 296,
+      "framePixelSha256": "69e7b29c05f2bd6603451443e7b958b9b57bba3d0689a37e4cdd1de557d1c94a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 10,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        1239,
+        33,
+        21
+      ],
+      "cellIndex": 297,
+      "framePixelSha256": "69e7b29c05f2bd6603451443e7b958b9b57bba3d0689a37e4cdd1de557d1c94a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 3,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        42,
+        33,
+        21
+      ],
+      "cellIndex": 13,
+      "framePixelSha256": "69e7b29c05f2bd6603451443e7b958b9b57bba3d0689a37e4cdd1de557d1c94a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.14.14.320.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/09-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        63,
+        33,
+        21
+      ],
+      "cellIndex": 19,
+      "framePixelSha256": "69e7b29c05f2bd6603451443e7b958b9b57bba3d0689a37e4cdd1de557d1c94a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 20,
+      "framePixelSha256": "cb9ff9be04b8cc371e9d870391dd55074cbb46ce1fb1af44eb199fc17ba3c037",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 6,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 26,
+      "framePixelSha256": "cb9ff9be04b8cc371e9d870391dd55074cbb46ce1fb1af44eb199fc17ba3c037",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 7,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 32,
+      "framePixelSha256": "cb9ff9be04b8cc371e9d870391dd55074cbb46ce1fb1af44eb199fc17ba3c037",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 8,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 38,
+      "framePixelSha256": "cb9ff9be04b8cc371e9d870391dd55074cbb46ce1fb1af44eb199fc17ba3c037",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.15.57.737.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/10-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 69,
+      "framePixelSha256": "cb9ff9be04b8cc371e9d870391dd55074cbb46ce1fb1af44eb199fc17ba3c037",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 65,
+      "framePixelSha256": "2c5e303deeebd18d0796b81712249a0e30a2d9c21d68ba80e2c8c35b29932e73",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 21,
+      "framePixelSha256": "2c5e303deeebd18d0796b81712249a0e30a2d9c21d68ba80e2c8c35b29932e73",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 6,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 27,
+      "framePixelSha256": "2c5e303deeebd18d0796b81712249a0e30a2d9c21d68ba80e2c8c35b29932e73",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 7,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 33,
+      "framePixelSha256": "2c5e303deeebd18d0796b81712249a0e30a2d9c21d68ba80e2c8c35b29932e73",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 8,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.16.26.537.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/11-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 39,
+      "framePixelSha256": "2c5e303deeebd18d0796b81712249a0e30a2d9c21d68ba80e2c8c35b29932e73",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 8,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 35,
+      "framePixelSha256": "f527780e81440d9065a3de3d8ebdc267848dcbf8c2df8757a242fdffa6ffa367",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 66,
+      "framePixelSha256": "f527780e81440d9065a3de3d8ebdc267848dcbf8c2df8757a242fdffa6ffa367",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 22,
+      "framePixelSha256": "f527780e81440d9065a3de3d8ebdc267848dcbf8c2df8757a242fdffa6ffa367",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 6,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 28,
+      "framePixelSha256": "f527780e81440d9065a3de3d8ebdc267848dcbf8c2df8757a242fdffa6ffa367",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 7,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.16.44.887.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/12-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 34,
+      "framePixelSha256": "f527780e81440d9065a3de3d8ebdc267848dcbf8c2df8757a242fdffa6ffa367",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 7,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 30,
+      "framePixelSha256": "f251c078bf5b636608d6f96612bafb725f1da4af0fdc6ebe397fdc88a2bb6648",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 8,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 36,
+      "framePixelSha256": "f251c078bf5b636608d6f96612bafb725f1da4af0fdc6ebe397fdc88a2bb6648",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 67,
+      "framePixelSha256": "f251c078bf5b636608d6f96612bafb725f1da4af0fdc6ebe397fdc88a2bb6648",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 23,
+      "framePixelSha256": "f251c078bf5b636608d6f96612bafb725f1da4af0fdc6ebe397fdc88a2bb6648",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 6,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.17.05.387.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/13-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 29,
+      "framePixelSha256": "f251c078bf5b636608d6f96612bafb725f1da4af0fdc6ebe397fdc88a2bb6648",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 6,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        105,
+        33,
+        21
+      ],
+      "cellIndex": 25,
+      "framePixelSha256": "fdcf5b68fc326cfe689aaae6aa7d8a561705afe3f12afe3a33ffb1bd9b63989a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 7,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        126,
+        33,
+        21
+      ],
+      "cellIndex": 31,
+      "framePixelSha256": "fdcf5b68fc326cfe689aaae6aa7d8a561705afe3f12afe3a33ffb1bd9b63989a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 8,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        147,
+        33,
+        21
+      ],
+      "cellIndex": 37,
+      "framePixelSha256": "fdcf5b68fc326cfe689aaae6aa7d8a561705afe3f12afe3a33ffb1bd9b63989a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 4,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        273,
+        33,
+        21
+      ],
+      "cellIndex": 68,
+      "framePixelSha256": "fdcf5b68fc326cfe689aaae6aa7d8a561705afe3f12afe3a33ffb1bd9b63989a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.17.22.770.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/14-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        84,
+        33,
+        21
+      ],
+      "cellIndex": 24,
+      "framePixelSha256": "fdcf5b68fc326cfe689aaae6aa7d8a561705afe3f12afe3a33ffb1bd9b63989a",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 1,
+      "source": "jp/Screenshot_2026.10.25_00.18.03.270.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/15-append-exchange.png",
+      "region720": [
+        668,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        0,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 40,
+      "framePixelSha256": "6badce1b1a8737c188b7aa91f9401aafc42afd705775fb2b445096443d996fbc",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.18.03.270.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/15-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 41,
+      "framePixelSha256": "6badce1b1a8737c188b7aa91f9401aafc42afd705775fb2b445096443d996fbc",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 3,
+      "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/16-append-exchange.png",
+      "region720": [
+        1023,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        66,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 42,
+      "framePixelSha256": "faac6010a15cf0a68c113cbfbb1d4d65966be3b50e97bfd3b898ca094fb21d7d",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 4,
+      "source": "jp/Screenshot_2026.10.25_00.18.17.620.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/16-append-exchange.png",
+      "region720": [
+        1200,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        99,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 43,
+      "framePixelSha256": "faac6010a15cf0a68c113cbfbb1d4d65966be3b50e97bfd3b898ca094fb21d7d",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 2,
+      "source": "jp/Screenshot_2026.10.25_00.18.49.670.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/17-append-exchange.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        378,
+        33,
+        21
+      ],
+      "cellIndex": 91,
+      "framePixelSha256": "5f981b628db73410df77bde54f72c7a3eb80e70366065ce6cd7f2797ce0a98ce",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 9,
+      "sourceSlot": 5,
+      "source": "jp/Screenshot_2026.10.25_00.18.49.670.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/17-append-exchange.png",
+      "region720": [
+        1378,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        132,
+        168,
+        33,
+        21
+      ],
+      "cellIndex": 44,
+      "framePixelSha256": "5f981b628db73410df77bde54f72c7a3eb80e70366065ce6cd7f2797ce0a98ce",
+      "selected": false
+    },
+    {
+      "server": "Jp",
+      "level": 5,
+      "sourceSlot": 2,
+      "source": "jp/실제 강화창 글시뜸 jp.png",
+      "reference": "docs/reference-images/Jp/skill-level/0021/24-append-real.png",
+      "region720": [
+        845,
+        273,
+        33,
+        21
+      ],
+      "cell": [
+        33,
+        294,
+        33,
+        21
+      ],
+      "cellIndex": 71,
+      "framePixelSha256": "c842f7f7a190b8d848d8766655ec8647decb692cd33e7f9ba9e81fbadc203a5d",
+      "selected": true
+    }
+  ],
+  "missing": []
+}
