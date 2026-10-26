@@ -52,4 +52,4 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 수정 기준: 공식 FGA v3059 ([기준 커밋](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)). 원본 개발팀의 저작권 고지를 유지합니다. 추가·수정한 부분의 저작권은 puruuun에게 있으며, 같은 MIT 라이선스로 배포합니다.
 
-참조: Chaldea 링크로 커맨드 입력의 변환 규칙은 [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter)(커밋 `1c95510`)의 변환 로직을 참조해 Kotlin으로 옮겼습니다. 해당 저장소에는 라이선스 표기가 없어 원작자에게 사용 여부를 문의할 예정이며, 원작자가 원하지 않으면 관련 코드를 제거합니다.
+참조: Chaldea 링크로 커맨드 입력의 변환 규칙은 [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter)(커밋 `1c95510`)의 변환 로직을 참조해 Kotlin으로 옮겼습니다.
