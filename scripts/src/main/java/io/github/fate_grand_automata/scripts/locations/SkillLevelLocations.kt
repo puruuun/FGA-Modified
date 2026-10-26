@@ -22,8 +22,18 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     // Append measured independently on capture 33: lock top 216 vs 238 at 720p, the same rise as skill.
     private val slotRise = if (isWide) 44 else 0
 
-    /** Top-right title banner: tells the skill screen from the append screen. */
-    val title = Region(-1200, 0, 1200, 150).xFromRightEdge()
+    // The label sits 25 px (720p) higher on wide screens, like the other centred header items.
+    private val labelRise = if (isWide) 50 else 0
+
+    /**
+     * Centre-left label above the material list ("items needed to enhance the skill" / "... the append skill"): tells the
+     * skill screen from the append screen. It does not depend on the header art or the window chrome. Owner captures
+     * (20, KR and JP, 16:9 and 21:9): the label's top-left is at x 385 (append) / 390 (skill) and y 383 at 720p,
+     * i.e. x -510..-500 from the centre and y 766 at 1440p; on 21:9 the same x from the centre and y 358 (50 less at 1440p).
+     * Templates are 278x34 / 418x34 (JP) and 277x34 / 362x34 (KR) at 720p, the widest is 836 px at 1440p. This region spans
+     * x -560..680 from the centre and y 730..870 (680..820 wide), so every template fits with margin on both shapes.
+     */
+    val label = Region(-560, 730 - labelRise, 1240, 140).xFromCenter()
     /** Top-left "re-select servant" button: only on screen once a servant is selected. */
     val reselect = Region(340, 0, 340, 180).xFromLeftEdge()
     /** Words "enhance" / "unlock" of the instruction band above the slots. */

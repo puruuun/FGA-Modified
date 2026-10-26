@@ -71,6 +71,12 @@ abstract class SkillLevelScript(
         }
     }
 
+    /** Best scores of the screen checks, so a "wrong screen" report can be diagnosed from the log alone. */
+    private fun logScores(reason: ExitReason): ExitReason {
+        runCatching { log(screens.bestScores().describe(screens.detectMode())) }
+        return reason
+    }
+
     private fun start(): ExitReason {
         val server = prefs.gameServer
         log("start mode=$mode server=${server.simple}")
@@ -78,9 +84,9 @@ abstract class SkillLevelScript(
         val targets = prefs.skillLevel.targets(mode)
         val checkOnly = prefs.skillLevel.checkOnly
         if (!checkOnly && targets.none { it > 0 }) return ExitReason.NothingSelected
-        val (onScreen, selected) = useSameSnapIn { screens.onTitle(mode) to screens.servantSelected() }
-        if (!onScreen) return ExitReason.WrongScreen
-        if (!selected) return ExitReason.NoServantSelected
+        val (onScreen, selected) = useSameSnapIn { screens.onLabel(mode) to screens.servantSelected() }
+        if (!onScreen) return logScores(ExitReason.WrongScreen)
+        if (!selected) return logScores(ExitReason.NoServantSelected)
         val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader)
         if (checkOnly) {
             log("check-only=true targets=ignored")

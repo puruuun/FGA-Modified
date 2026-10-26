@@ -89,7 +89,7 @@ class WideScreenLocationsTest {
 
     @Test fun `skill level screen keeps 16 9 and moves the measured 21 9 elements`() {
         val old = SkillLevelLocations(sixteenNine)
-        assertEquals(Region(1360, 0, 1200, 150), old.title)
+        assertEquals(Region(720, 730, 1240, 140), old.label)
         assertEquals(Region(340, 0, 340, 180), old.reselect)
         assertEquals(Region(780, 196, 520, 104), old.bandWords)
         assertEquals(Region(790, 216, 740, 64), old.bandColor)
@@ -98,8 +98,8 @@ class WideScreenLocationsTest {
         assertEquals(Region(2 * (473 - 40 - 640) + 1280, 410, 160, 224), old.slotLock(SkillLevelMode.Skill, 0))
 
         val wide = SkillLevelLocations(twentyOneNine)
-        // Owner capture 12: title 1019, re-select 279, band text 14 px up, slot icons 22 px up, button 342 px right / 30 px up.
-        assertEquals(Region(1989, 0, 1200, 150), wide.title)
+        // Owner capture 12: centre label 50 px (1440p) up, re-select 279, band text 14 px up, slot icons 22 px up, button 342 px right / 30 px up.
+        assertEquals(Region(1120, 680, 1240, 140), wide.label)
         assertEquals(Region(511, 0, 340, 180), wide.reselect)
         assertEquals(Region(1180, 168, 520, 104), wide.bandWords)
         assertEquals(Region(1190, 188, 740, 64), wide.bandColor)

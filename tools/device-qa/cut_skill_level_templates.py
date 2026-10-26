@@ -14,11 +14,8 @@ ASSETS = ROOT / "app/src/main/assets"
 
 # (asset folder, file name, reference folder, reference file, box x, y, w, h)
 RECIPES = [
-    # Title banners, cut from the part that tells skill and append apart (the KR skill title is the tail of the append one).
-    ("Jp", "skill_level_title.png", "Jp", "02.png", 704, 14, 266, 48),
-    ("Kr", "skill_level_title.png", "Kr", "15.png", 1010, 14, 250, 50),
-    ("Jp", "append_level_title.png", "Jp", "08.png", 792, 14, 190, 48),
-    ("Kr", "append_level_title.png", "Kr", "13.png", 872, 14, 160, 50),
+    # skill_level_label.png / append_level_label.png (centre-left label with the chevron icon, issue #33) are cut from the
+    # owner's 2560x1440 captures at 720p and are not part of these recipes.
     # Servant re-select button: only on screen once a servant is selected.
     ("Jp", "skill_level_reselect.png", "Jp", "02.png", 194, 14, 112, 60),
     ("Kr", "skill_level_reselect.png", "Kr", "15.png", 194, 14, 112, 60),
