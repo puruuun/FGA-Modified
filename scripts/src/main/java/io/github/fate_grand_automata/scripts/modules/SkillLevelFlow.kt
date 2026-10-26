@@ -8,17 +8,6 @@ enum class SkillLevelMode(val slots: Int) {
     Append(5)
 }
 
-/** What the instruction band above the slots says about the selected slot. */
-enum class SkillLevelBand {
-    /** "Touch the enhance button". */
-    Enhance,
-    /** "Touch the unlock button": the selected slot is locked. */
-    Unlock,
-    /** Red text: materials, QP or servant coins are short. */
-    Shortage,
-    Other
-}
-
 /** The two levels read from the confirm dialog (`Lv.current > Lv.next`). Null means not read. */
 data class SkillLevelReading(val current: Int?, val next: Int?)
 
@@ -33,8 +22,6 @@ enum class SlotStop {
     Reached,
     /** Level 10: nothing left to enhance. */
     Max,
-    /** Material, QP or coin shortage. */
-    Shortage,
     /** No dialog opened and no reason could be told. */
     CannotEnhance,
     /** Locked append slot, never unlocked. */
@@ -72,7 +59,6 @@ interface SkillLevelPanel {
     fun isLocked(slot: Int): Boolean
     /** Taps the slot icon and lets the screen settle. */
     fun select(slot: Int)
-    fun band(): SkillLevelBand
     /** The bottom-right button reads "unlock". */
     fun unlockButtonVisible(): Boolean
     /** The bottom-right button reads "cannot enhance any more" (JP). */
@@ -97,7 +83,7 @@ interface SkillLevelPanel {
 
 /**
  * D-11 / D-14. Safety, in the order the checks run for every slot:
- * never tap unlock (padlock, band, button label, dialog level 0), never confirm without a trusted level, never confirm
+ * never tap unlock (padlock, panel lock evidence, button label, dialog level 0), never confirm without a trusted level, never confirm
  * when the level did not go up by one since the last confirmation, never confirm at or above the target.
  */
 class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (String) -> Unit = {}) : SkillLevelRun {
@@ -161,20 +147,10 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             panel.select(slot)
             line("action=select")
             activeStep = SkillLevelStep.Enhance
-            val band = panel.band()
-            line("band=$band")
-            if (band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) {
-                readings("locked")
-                return finish(SlotStop.Locked)
-            }
-            if (band == SkillLevelBand.Shortage) {
-                readings("abstain:shortage")
-                return finish(if (reachedByLastConfirm()) SlotStop.Reached else SlotStop.Shortage)
-            }
             val panelLevel = panel.readPanelLevel(slot)?.takeIf { it in 1..10 }
             val evidence = panel.panelLevelEvidence
             val panelText = panelLevel?.toString() ?: if (evidence?.locked == true) "locked" else "abstain:${evidence?.reason ?: "unread"}"
-            if (evidence?.locked == true) {
+            if (panel.unlockButtonVisible() || evidence?.locked == true) {
                 readings("locked", evidence = evidence)
                 return finish(SlotStop.Locked)
             }

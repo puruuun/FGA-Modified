@@ -19,11 +19,6 @@ RECIPES = [
     # Servant re-select button: only on screen once a servant is selected.
     ("Jp", "skill_level_reselect.png", "Jp", "02.png", 194, 14, 112, 60),
     ("Kr", "skill_level_reselect.png", "Kr", "15.png", 194, 14, 112, 60),
-    # Instruction band, the two words that differ: enhance / unlock.
-    ("Jp", "skill_level_band_enhance.png", "Jp", "02.png", 411, 109, 38, 30),
-    ("Jp", "skill_level_band_unlock.png", "Jp", "08.png", 411, 109, 38, 30),
-    ("Kr", "skill_level_band_enhance.png", "Kr", "15.png", 396, 112, 56, 30),
-    ("Kr", "skill_level_band_unlock.png", "Kr", "13.png", 396, 112, 56, 30),
     # Bottom-right button: unlock word (guard), and the JP max-level red label.
     ("Jp", "skill_level_unlock_button.png", "Jp", "08.png", 1074, 652, 68, 40),
     ("Kr", "skill_level_unlock_button.png", "Kr", "13.png", 1104, 652, 72, 40),

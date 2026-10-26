@@ -72,30 +72,18 @@ class SkillLevelCheckFlow(panel: SkillLevelPanel, private val log: (String) -> U
         panelLevel = panel.readPanelLevel(slot)?.takeIf { it in 1..10 }
         val evidence = panel.panelLevelEvidence
         report = report.copy(panel = panelLevel?.toString() ?: "abstain:${evidence?.reason ?: "unread"}", evidence = evidence)
-        val band = panel.band()
         activeStep = SkillLevelStep.Enhance
-        if (evidence?.locked == true || band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) return locked()
+        if (panel.unlockButtonVisible() || evidence?.locked == true) return locked()
         // The panel itself is under test: even a reading of 10 must not suppress a dialog comparison.
-        val noDialogReason = when (band) {
-            SkillLevelBand.Enhance -> null
-            SkillLevelBand.Shortage -> "shortage"
-            else -> if (panel.maxButtonVisible()) "max" else "band-other"
-        }
-        if (noDialogReason != null) {
-            report = report.copy(reason = noDialogReason)
-            stop = if (noDialogReason == "max") SlotStop.Max else if (noDialogReason == "shortage") SlotStop.Shortage else SlotStop.CannotEnhance
-            return
-        }
         panel.pressEnhance() // Retains the device's last-moment unlock guard.
         activeStep = SkillLevelStep.Dialog
         if (!panel.awaitDialog()) {
             val reason = when {
                 panel.maxButtonVisible() -> "max"
-                panel.band() == SkillLevelBand.Shortage -> "shortage"
                 else -> "no-response"
             }
             report = report.copy(reason = reason)
-            stop = when (reason) { "max" -> SlotStop.Max; "shortage" -> SlotStop.Shortage; else -> SlotStop.CannotEnhance }
+            stop = if (reason == "max") SlotStop.Max else SlotStop.CannotEnhance
             return
         }
         report = report.copy(dialog = "unread", verdict = if (panelLevel != null) SkillLevelCheckVerdict.PanelOnly else SkillLevelCheckVerdict.BothUnread)

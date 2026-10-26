@@ -1,15 +1,12 @@
 package io.github.fate_grand_automata.scripts
 
-import io.github.fate_grand_automata.scripts.modules.SkillLevelBand
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDigits
 import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
 import io.github.fate_grand_automata.scripts.modules.SkillLevelPanel
 import io.github.fate_grand_automata.scripts.modules.SkillLevelReading
-import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
 import io.github.fate_grand_automata.scripts.modules.SlotResult
 import io.github.fate_grand_automata.scripts.modules.SlotStop
-import io.github.lib_automata.MeanColor
 import io.github.lib_automata.OcrText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +18,6 @@ import kotlin.test.assertTrue
 private class FakePanel(
     val levels: MutableList<Int>,
     private val locked: Set<Int> = emptySet(),
-    private val bands: Map<Int, SkillLevelBand> = emptyMap(),
     private val iconLockVisible: Set<Int> = emptySet(),
     private val unlockLabel: Set<Int> = emptySet(),
     private val maxLabel: Boolean = false,
@@ -43,11 +39,8 @@ private class FakePanel(
     var unlockPressed = false
     val peak = levels.toMutableList()
 
-    private fun band(slot: Int) = bands[slot] ?: if (slot in locked) SkillLevelBand.Unlock else SkillLevelBand.Enhance
-
     override fun isLocked(slot: Int) = slot in iconLockVisible
     override fun select(slot: Int) { selected = slot }
-    override fun band() = band(selected)
     override fun unlockButtonVisible() = selected in unlockLabel || selected in locked
     override fun maxButtonVisible() = maxLabel
     override fun readPanelLevel(slot: Int): Int? {
@@ -58,7 +51,7 @@ private class FakePanel(
     override fun pressEnhance() {
         enhances++
         if (selected in locked) unlockPressed = true
-        else if (levels[selected] < 10 && band(selected) == SkillLevelBand.Enhance && dialogOpens) dialogOpen = true
+        else if (levels[selected] < 10 && dialogOpens) dialogOpen = true
     }
     override fun awaitDialog() = dialogOpen
     override fun dialogIsEnhance() = enhanceTitle
@@ -82,6 +75,34 @@ private class FakePanel(
 
 class SkillLevelFlowTest {
     private fun run(panel: FakePanel, vararg targets: Int): List<SlotResult> = SkillLevelFlow(panel).runAll(targets.toList())
+
+    @Test fun `unlocked slot reads panel before unlock guard and waits for dialog before max check`() {
+        val base = FakePanel(mutableListOf(3), dialogOpens = false)
+        val actions = mutableListOf<String>()
+        val panel = object : SkillLevelPanel by base {
+            override fun isLocked(slot: Int): Boolean { actions += "padlock"; return base.isLocked(slot) }
+            override fun select(slot: Int) { actions += "select"; base.select(slot) }
+            override fun readPanelLevel(slot: Int): Int? { actions += "panel"; return base.readPanelLevel(slot) }
+            override fun unlockButtonVisible(): Boolean { actions += "unlock"; return base.unlockButtonVisible() }
+            override fun pressEnhance() { actions += "enhance"; base.pressEnhance() }
+            override fun awaitDialog(): Boolean { actions += "dialog"; return base.awaitDialog() }
+            override fun maxButtonVisible(): Boolean { actions += "max"; return base.maxButtonVisible() }
+        }
+        assertEquals(SlotStop.CannotEnhance, SkillLevelFlow(panel).runSlot(0, 8).stop)
+        assertEquals(listOf("padlock", "select", "panel", "unlock", "enhance", "dialog", "max"), actions)
+        assertEquals(0, base.confirms)
+    }
+
+    @Test fun `no dialog after the last confirm preserves reached below level ten`() {
+        val base = FakePanel(mutableListOf(3))
+        val panel = object : SkillLevelPanel by base {
+            override fun pressEnhance() { if (base.confirms == 0) base.pressEnhance() }
+        }
+        val result = SkillLevelFlow(panel).runSlot(0, 4)
+        assertEquals(SlotResult(0, 4, 3, 4, SlotStop.Reached, SkillLevelStep.Dialog), result)
+        assertEquals(1, base.confirms)
+        assertEquals(0, base.cancels)
+    }
 
     @Test fun `equal panel and dialog levels proceed using both sources`() {
         val logs = mutableListOf<String>()
@@ -317,14 +338,13 @@ class SkillLevelFlowTest {
     @Test fun `locked slots are skipped by every guard and unlock is never pressed`() {
         val cases = listOf(
             FakePanel(mutableListOf(1), iconLockVisible = setOf(0)),
-            FakePanel(mutableListOf(1), bands = mapOf(0 to SkillLevelBand.Unlock)),
             FakePanel(mutableListOf(1), unlockLabel = setOf(0)),
             FakePanel(mutableListOf(1), locked = setOf(0)),
         )
         for (panel in cases) {
             val result = run(panel, 5).single()
             assertEquals(SlotStop.Locked, result.stop)
-            assertEquals(0, panel.panelReads)
+            assertEquals(if (panel.selected == -1) 0 else 1, panel.panelReads)
             assertEquals(0, panel.enhances)
             assertFalse(panel.unlockPressed)
             assertEquals(0, panel.confirms)
@@ -332,10 +352,12 @@ class SkillLevelFlowTest {
         }
     }
 
-    @Test fun `a shortage band stops the slot without pressing the button`() {
-        val panel = FakePanel(mutableListOf(3), bands = mapOf(0 to SkillLevelBand.Shortage))
+    @Test fun `a material shortage ends the slot after no dialog without confirming`() {
+        val panel = FakePanel(mutableListOf(3), dialogOpens = false)
         val result = run(panel, 5).single()
-        assertEquals(SlotStop.Shortage, result.stop)
+        assertEquals(SlotStop.CannotEnhance, result.stop)
+        assertEquals(1, panel.enhances)
+        assertEquals(1, panel.panelReads)
         assertFalse(panel.dialogOpen)
         assertEquals(0, panel.confirms)
     }
@@ -403,13 +425,6 @@ class SkillLevelFlowTest {
         assertEquals(10, SkillLevelDigits.consensus(listOf(c("10", 95), c(" 10\n", 90)), 2..10))
     }
 
-    @Test fun `the red shortage band is told from the normal one by colour`() {
-        assertTrue(SkillLevelScreens.isShortageColor(MeanColor(54.0, 33.0, 58.0)))
-        assertTrue(SkillLevelScreens.isShortageColor(MeanColor(46.0, 38.0, 53.0)))
-        assertFalse(SkillLevelScreens.isShortageColor(MeanColor(14.0, 73.0, 90.0)))
-        assertFalse(SkillLevelScreens.isShortageColor(MeanColor(22.0, 67.0, 76.0)))
-        assertFalse(SkillLevelScreens.isShortageColor(null))
-    }
     @Test fun `nine to two digit ten confirms exactly once when the target is ten`() {
         val panel = FakePanel(mutableListOf(9), read = { SkillLevelReading(9, 10) })
         val result = run(panel, 10).single()
@@ -458,7 +473,7 @@ class SkillLevelFlowTest {
     @Test fun `every successful stage and cancellation is visible in the step log`() {
         val logs = mutableListOf<String>()
         val result = SkillLevelFlow(FakePanel(mutableListOf(3)), logs::add).runAll(listOf(4)).single()
-        for (field in listOf("action=select", "band=Enhance", "action=enhance-tap", "seen=true",
+        for (field in listOf("action=select", "action=enhance-tap", "seen=true",
             "current=3 next=4", "action=confirm", "return=true", "action=cancel", "cancelClosed=true")) {
             assertTrue(logs.any { it.contains(field) }, field)
         }

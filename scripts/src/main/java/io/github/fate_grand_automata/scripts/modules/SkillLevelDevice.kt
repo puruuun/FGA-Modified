@@ -20,7 +20,6 @@ class SkillLevelDevice(
         SkillLevelTiming.SELECT_SETTLE.wait()
     }
 
-    override fun band() = screens.band()
     override fun unlockButtonVisible() = screens.unlockButtonVisible()
     override fun maxButtonVisible() = screens.maxButtonVisible()
     override var panelLevelEvidence: PanelLevelEvidence? = null
@@ -34,7 +33,7 @@ class SkillLevelDevice(
 
     override fun pressEnhance() {
         // Last look before the one button that is also the unlock button.
-        check(!screens.unlockButtonVisible() && screens.band() != SkillLevelBand.Unlock) { "refusing to press an unlock button" }
+        check(!screens.unlockButtonVisible()) { "refusing to press an unlock button" }
         locations.enhancementClick.click()
         SkillLevelTiming.AFTER_ENHANCE.wait()
     }

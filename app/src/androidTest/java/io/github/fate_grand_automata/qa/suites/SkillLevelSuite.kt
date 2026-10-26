@@ -10,7 +10,7 @@ import org.json.JSONObject
 
 /**
  * Offline fixtures of the 0008 skill / append level screens: production readers on the owner captures, no gestures.
- * Views: mode (centre label + servant selected), band (instruction band + bottom-right button label), dialog (confirm dialog),
+ * Views: mode (centre label + servant selected), button (bottom-right button label), dialog (confirm dialog),
  * levels (OCR of `Lv.current > Lv.next`), locks (padlock per append slot), result.
  */
 internal fun FixtureApi.verifySkillLevel(): JSONObject {
@@ -21,8 +21,7 @@ internal fun FixtureApi.verifySkillLevel(): JSONObject {
     val actual = when (case.getString("view")) {
         "mode" -> JSONObject().put("mode", screens.detectMode()?.name ?: "none")
             .put("servantSelected", screens.servantSelected())
-        "band" -> JSONObject().put("band", screens.band().name)
-            .put("unlockButton", screens.unlockButtonVisible()).put("maxButton", screens.maxButtonVisible())
+        "button" -> JSONObject().put("unlockButton", screens.unlockButtonVisible()).put("maxButton", screens.maxButtonVisible())
         "dialog" -> JSONObject().put("dialog", screens.dialogVisible()).put("enhanceTitle", screens.dialogIsEnhance(mode()))
         "levels" -> {
             val digits = SkillLevelDigits(this, loc, ocr)

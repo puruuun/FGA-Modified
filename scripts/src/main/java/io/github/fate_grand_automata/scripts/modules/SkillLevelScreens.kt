@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.scripts.modules
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
-import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import javax.inject.Inject
@@ -25,7 +24,6 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
         const val RESELECT_SIMILARITY = 0.85
         /** Floor of the diagnostic best-score search: anything below shows as "<0.30". */
         const val SCORE_FLOOR = 0.3
-        const val BAND_SIMILARITY = 0.8
         /** The grey (disabled) unlock button still scores 0.72 (JP) and 0.85 (KR), everything else stays below 0.64. */
         const val UNLOCK_BUTTON_SIMILARITY = 0.7
         const val MAX_BUTTON_SIMILARITY = 0.8
@@ -36,8 +34,6 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
         /** The result prompt sits on character art; 0.75-0.77 on the append results, 0.3 at most elsewhere. */
         const val RESULT_SIMILARITY = 0.7
 
-        /** The red band text turns the otherwise teal band red (R 46-54 above G 33-38, normal bands have R 14-22 under G 64-74). */
-        fun isShortageColor(color: MeanColor?): Boolean = color != null && color.red >= 35.0 && color.red > color.green
     }
 
     private fun template(image: Images): Pattern? = runCatching { images[image] }.getOrNull()
@@ -83,19 +79,6 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     fun dialogIsEnhance(mode: SkillLevelMode): Boolean = useSameSnapIn {
         val image = if (mode == SkillLevelMode.Skill) Images.SkillLevelDialogTitle else Images.AppendLevelDialogTitle
         seen(loc.dialogTitle(mode), image, DIALOG_TITLE_SIMILARITY)
-    }
-
-    fun band(): SkillLevelBand {
-        val color = useColor { useSameSnapIn { loc.bandColor.getPattern("skill_level_band").use { it.meanColor() } } }
-        if (isShortageColor(color)) return SkillLevelBand.Shortage
-        return useSameSnapIn {
-            when {
-                // Unlock wins when both words somehow match: it is the one that must never be pressed.
-                seen(loc.bandWords, Images.SkillLevelBandUnlock, BAND_SIMILARITY) -> SkillLevelBand.Unlock
-                seen(loc.bandWords, Images.SkillLevelBandEnhance, BAND_SIMILARITY) -> SkillLevelBand.Enhance
-                else -> SkillLevelBand.Other
-            }
-        }
     }
 
     fun unlockButtonVisible(): Boolean = useSameSnapIn { seen(loc.buttonLabel, Images.SkillLevelUnlockButton, UNLOCK_BUTTON_SIMILARITY) }

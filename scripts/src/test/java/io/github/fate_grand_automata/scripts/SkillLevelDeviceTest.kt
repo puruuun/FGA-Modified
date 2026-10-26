@@ -21,7 +21,6 @@ class SkillLevelDeviceTest {
         init {
             every { api.locations.enhancementClick } returns enhance
             every { loc.dialogConfirm(SkillLevelMode.Skill) } returns confirm
-            every { screens.band() } returns SkillLevelBand.Enhance
             every { screens.dialogVisible() } returns true
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
         }
@@ -33,7 +32,7 @@ class SkillLevelDeviceTest {
         assertEquals(0.4.seconds,SkillLevelTiming.AFTER_ENHANCE)
         assertEquals(2.seconds,SkillLevelTiming.FIND_POLL*SkillLevelTiming.DIALOG_POLLS)
         assertEquals(20.seconds,SkillLevelTiming.SKIP_INTERVAL*SkillLevelTiming.SKIP_POLLS)
-        verifyOrder { with(run.api) { run.enhance.click(1);SkillLevelTiming.AFTER_ENHANCE.wait() };run.screens.dialogVisible() }
+        verifyOrder { run.screens.unlockButtonVisible();with(run.api) { run.enhance.click(1);SkillLevelTiming.AFTER_ENHANCE.wait() };run.screens.dialogVisible() }
         verify(exactly=1) { with(run.api) { any<Duration>().wait(any()) } }
     }
     @Test fun `device forwards selected slot and mode to panel reader and retains evidence`() {

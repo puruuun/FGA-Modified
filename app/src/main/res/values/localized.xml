@@ -783,7 +783,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="skill_level_stop_off">off</string>
     <string name="skill_level_stop_reached">target reached</string>
     <string name="skill_level_stop_max">max level</string>
-    <string name="skill_level_stop_shortage">short of materials, QP or coins</string>
     <string name="skill_level_stop_cannot">cannot enhance</string>
     <string name="skill_level_stop_locked">locked, skipped</string>
     <string name="skill_level_stop_unreadable">level not read, nothing was enhanced</string>

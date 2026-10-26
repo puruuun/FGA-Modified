@@ -91,8 +91,6 @@ class WideScreenLocationsTest {
         val old = SkillLevelLocations(sixteenNine)
         assertEquals(Region(720, 730, 1240, 140), old.label)
         assertEquals(Region(340, 0, 340, 180), old.reselect)
-        assertEquals(Region(780, 196, 520, 104), old.bandWords)
-        assertEquals(Region(790, 216, 740, 64), old.bandColor)
         assertEquals(Region(2060, 1260, 500, 180), old.buttonLabel)
         assertEquals(Location(-334, 522) + Location(1280, 0), old.slotClick(SkillLevelMode.Skill, 0))
         assertEquals(Region(2 * (473 - 40 - 640) + 1280, 410, 160, 224), old.slotLock(SkillLevelMode.Skill, 0))
@@ -101,8 +99,6 @@ class WideScreenLocationsTest {
         // Owner capture 12: centre label 50 px (1440p) up, re-select 279, band text 14 px up, slot icons 22 px up, button 342 px right / 30 px up.
         assertEquals(Region(1120, 680, 1240, 140), wide.label)
         assertEquals(Region(511, 0, 340, 180), wide.reselect)
-        assertEquals(Region(1180, 168, 520, 104), wide.bandWords)
-        assertEquals(Region(1190, 188, 740, 64), wide.bandColor)
         assertEquals(Region(2745, 1200, 500, 180), wide.buttonLabel)
         assertEquals(Location(1680 + (473 - 640) * 2, 478), wide.slotClick(SkillLevelMode.Skill, 0))
         // Owner 2560x1080 captures 32-35: the append icons rise by the same 22 px (lock top 238 -> 216) and stay centred.

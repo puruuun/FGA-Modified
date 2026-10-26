@@ -719,7 +719,6 @@
     <string name="skill_level_stop_off">끔</string>
     <string name="skill_level_stop_reached">목표 도달</string>
     <string name="skill_level_stop_max">최대 레벨</string>
-    <string name="skill_level_stop_shortage">재료·QP·코인 부족</string>
     <string name="skill_level_stop_cannot">강화 불가</string>
     <string name="skill_level_stop_locked">잠김, 건너뜀</string>
     <string name="skill_level_stop_unreadable">레벨 확인 실패, 강화하지 않음</string>

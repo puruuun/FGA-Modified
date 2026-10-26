@@ -271,145 +271,133 @@
       }
     },
     {
-      "name": "JP-02-band",
+      "name": "JP-02-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/02.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
     },
     {
-      "name": "JP-03-band",
+      "name": "JP-03-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/03.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
     },
     {
-      "name": "JP-06-band",
+      "name": "JP-06-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/06.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
     },
     {
-      "name": "JP-07-band",
+      "name": "JP-07-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/07.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": true
       }
     },
     {
-      "name": "JP-08-band",
+      "name": "JP-08-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/08.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Unlock",
         "unlockButton": true,
         "maxButton": false
       }
     },
     {
-      "name": "KR-13-band",
+      "name": "KR-13-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/skill-level/13.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Unlock",
         "unlockButton": true,
         "maxButton": false
       }
     },
     {
-      "name": "KR-14-band",
+      "name": "KR-14-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/skill-level/14.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
     },
     {
-      "name": "KR-15-band",
+      "name": "KR-15-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/skill-level/15.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
     },
     {
-      "name": "JP-21-band",
+      "name": "JP-21-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/21.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Unlock",
         "unlockButton": true,
         "maxButton": false
       }
     },
     {
-      "name": "JP-22-band",
+      "name": "JP-22-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/skill-level/22.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Shortage",
         "unlockButton": true,
         "maxButton": false
       }
     },
     {
-      "name": "KR-23-band",
+      "name": "KR-23-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/skill-level/23.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Shortage",
         "unlockButton": true,
         "maxButton": false
       }
     },
     {
-      "name": "KR-24-band",
+      "name": "KR-24-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/skill-level/24.png",
-      "view": "band",
+      "view": "button",
       "expected": {
-        "band": "Unlock",
         "unlockButton": true,
         "maxButton": false
       }
@@ -1010,14 +998,13 @@
       }
     },
     {
-      "name": "JP-wide-12-band",
+      "name": "JP-wide-12-button",
       "suite": "skillLevel",
       "server": "Jp",
       "file": "docs/reference-images/Jp/wide-21x9/12.webp",
-      "view": "band",
+      "view": "button",
       "slotMode": "Skill",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
@@ -1145,14 +1132,13 @@
       }
     },
     {
-      "name": "KR-w2560-30-band",
+      "name": "KR-w2560-30-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/wide-2560/30.webp",
-      "view": "band",
+      "view": "button",
       "slotMode": "Skill",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }
@@ -1209,14 +1195,13 @@
       }
     },
     {
-      "name": "KR-w2560-33-append-band",
+      "name": "KR-w2560-33-append-button",
       "suite": "skillLevel",
       "server": "Kr",
       "file": "docs/reference-images/Kr/wide-2560/33.webp",
-      "view": "band",
+      "view": "button",
       "slotMode": "Append",
       "expected": {
-        "band": "Enhance",
         "unlockButton": false,
         "maxButton": false
       }

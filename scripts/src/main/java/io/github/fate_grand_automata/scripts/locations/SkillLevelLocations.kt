@@ -13,12 +13,11 @@ import javax.inject.Inject
 class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms) : IScriptAreaTransforms by transforms {
     /**
      * Wide screens (design 0012, owner 21:9 JP skill screen): the title and the re-select button are header UI at the
-     * right / left edge, the servant card and the panel stay centred but sit higher (band 14 px, slots 22 px at 720p),
+     * right / left edge, the servant card and the panel stay centred but sit higher (slots 22 px at 720p),
      * and the bottom-right button moves in and up like [Locations.enhancementClick]. Owner 2560x1080 captures 15, 16 and 32-35
      * show the dialogs and results (centred, same heights as 16:9) and the append screen, whose five slot icons rise by the
      * same 22 px as the skill ones.
      */
-    private val bandRise = if (isWide) 28 else 0
     // Append measured independently on capture 33: lock top 216 vs 238 at 720p, the same rise as skill.
     private val slotRise = if (isWide) 44 else 0
 
@@ -36,10 +35,6 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     val label = Region(-560, 730 - labelRise, 1240, 140).xFromCenter()
     /** Top-left "re-select servant" button: only on screen once a servant is selected. */
     val reselect = Region(340, 0, 340, 180).xFromLeftEdge()
-    /** Words "enhance" / "unlock" of the instruction band above the slots. */
-    val bandWords = Region(-500, 196 - bandRise, 520, 104).xFromCenter()
-    /** The band's text row; the text turns red when material, QP or coins are short. */
-    val bandColor = Region(-490, 216 - bandRise, 740, 64).xFromCenter()
     /** Bottom-right button label: "unlock", or the JP red "cannot enhance any more". */
     val buttonLabel = (if (isWide) Region(-500 - WIDE_ACTION_INSET, 1200, 500, 180) else Region(-500, 1260, 500, 180)).xFromRight()
 

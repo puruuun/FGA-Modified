@@ -7,7 +7,6 @@ class SkillLevelCheckFlowTest {
     private class Panel(
         var level: Int? = 3,
         var reading: SkillLevelReading = SkillLevelReading(3, 4),
-        var bandValue: SkillLevelBand = SkillLevelBand.Enhance,
         var locked: Set<Int> = emptySet(),
         var unlock: Boolean = false,
         var max: Boolean = false,
@@ -24,14 +23,13 @@ class SkillLevelCheckFlowTest {
         var cancels = 0
         var dialogReads = 0
         var confirms = 0
-        override fun isLocked(slot: Int) = slot in locked
+        override fun isLocked(slot: Int): Boolean { actions += "padlock"; return slot in locked }
         override fun select(slot: Int) { selected += slot; actions += "select" }
         override fun readPanelLevel(slot: Int): Int? { actions += "panel"; return level }
-        override fun band(): SkillLevelBand { actions += "band"; return bandValue }
-        override fun unlockButtonVisible() = unlock
-        override fun maxButtonVisible() = max
+        override fun unlockButtonVisible(): Boolean { actions += "unlock"; return unlock }
+        override fun maxButtonVisible(): Boolean { actions += "max"; return max }
         override fun pressEnhance() { enhances++; actions += "enhance" }
-        override fun awaitDialog() = dialog
+        override fun awaitDialog(): Boolean { actions += "dialog"; return dialog }
         override fun dialogIsEnhance() = enhanceTitle
         override fun readLevels(): SkillLevelReading {
             dialogReads++
@@ -55,7 +53,7 @@ class SkillLevelCheckFlowTest {
         assertEquals(listOf(0, 1, 2), panel.selected)
         assertEquals(3, panel.enhances)
         assertEquals(3, panel.cancels)
-        assertEquals(listOf("select", "panel", "band", "enhance"), panel.actions.take(4))
+        assertEquals(listOf("padlock", "select", "panel", "unlock", "enhance", "dialog"), panel.actions.take(6))
     }
     @Test fun `mismatch is reported and cancelled`() {
         val panel = Panel(level = 4)
@@ -98,11 +96,6 @@ class SkillLevelCheckFlowTest {
             assertEquals("-", results[index].check?.dialog)
         }
     }
-    @Test fun `unlock band never presses enhance`() {
-        val panel = Panel(bandValue = SkillLevelBand.Unlock)
-        assertEquals(SkillLevelCheckVerdict.Locked, report(panel).verdict)
-        assertEquals(0, panel.enhances)
-    }
     @Test fun `unlock button never presses enhance`() {
         val panel = Panel(unlock = true)
         assertEquals(SkillLevelCheckVerdict.Locked, report(panel).verdict)
@@ -113,33 +106,36 @@ class SkillLevelCheckFlowTest {
         assertEquals(SkillLevelCheckVerdict.Locked, report(panel).verdict)
         assertEquals(0, panel.enhances)
     }
-    @Test fun `max panel is read without pressing enhance`() {
-        val panel = Panel(level = 10, bandValue = SkillLevelBand.Other, max = true)
+    @Test fun `max panel is read and max button checked only after no dialog`() {
+        val panel = Panel(level = 10, max = true, dialog = false)
         val result = report(panel)
         assertEquals("10", result.panel)
         assertEquals("max", result.reason)
         assertEquals(SkillLevelCheckVerdict.NoDialog, result.verdict)
-        assertEquals(0, panel.enhances)
+        assertEquals(3, panel.enhances)
+        assertEquals(listOf("padlock", "select", "panel", "unlock", "enhance", "dialog", "max"), panel.actions.take(7))
     }
     @Test fun `max button with unread panel reports reason`() {
-        val panel = Panel(level = null, bandValue = SkillLevelBand.Other, max = true)
+        val panel = Panel(level = null, max = true, dialog = false)
         assertEquals("max", report(panel).reason)
-        assertEquals(0, panel.enhances)
+        assertEquals(3, panel.enhances)
     }
-    @Test fun `shortage retains panel reading without pressing enhance`() {
-        val panel = Panel(bandValue = SkillLevelBand.Shortage)
+    @Test fun `material shortage retains panel reading after an unresponsive enhance tap`() {
+        val panel = Panel(dialog = false)
         val result = report(panel)
         assertEquals("3", result.panel)
-        assertEquals("shortage", result.reason)
-        assertEquals(0, panel.enhances)
+        assertEquals("no-response", result.reason)
+        assertEquals(SkillLevelCheckVerdict.NoDialog, result.verdict)
+        assertEquals(3, panel.enhances)
+        assertEquals(0, panel.cancels)
     }
-    @Test fun `panel ten must still be cross checked when enhance band is visible`() {
+    @Test fun `panel ten must still be cross checked when a dialog opens`() {
         val panel = Panel(level = 10, reading = SkillLevelReading(9, 10))
         assertEquals(SkillLevelCheckVerdict.Mismatch, report(panel).verdict)
         assertEquals(3, panel.enhances)
         assertEquals(3, panel.cancels)
     }
-    @Test fun `disabled max button after enhance band gives no dialog reason`() {
+    @Test fun `disabled max button gives no dialog reason after the enhance tap`() {
         val panel = Panel(level = null, max = true, dialog = false)
         val result = report(panel)
         assertEquals(SkillLevelCheckVerdict.NoDialog, result.verdict)
@@ -147,10 +143,12 @@ class SkillLevelCheckFlowTest {
         assertEquals(3, panel.enhances)
         assertEquals(0, panel.cancels)
     }
-    @Test fun `other band is not pressed`() {
-        val panel = Panel(bandValue = SkillLevelBand.Other)
-        assertEquals("band-other", report(panel).reason)
-        assertEquals(0, panel.enhances)
+    @Test fun `visible max label cannot suppress an available dialog comparison`() {
+        val panel = Panel(max = true)
+        assertEquals(SkillLevelCheckVerdict.Match, report(panel).verdict)
+        assertEquals(3, panel.enhances)
+        assertEquals(3, panel.cancels)
+        assertFalse("max" in panel.actions)
     }
     @Test fun `unexpected dialog is cancelled without reading`() {
         val panel = Panel(enhanceTitle = false)

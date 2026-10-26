@@ -35,7 +35,6 @@ class AutoDetect @Inject constructor(
 
         when {
             images[Images.FriendSummon] in locations.fp.summonCheck ||
-                    findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue) ||
                     images[Images.FriendSummon] in locations.fp.initialSummonCheck ->
                 ScriptModeEnum.FP
 

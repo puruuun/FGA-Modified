@@ -13,7 +13,6 @@ fun skillLevelSummary(context: Context, results: List<SlotResult>): String = res
         SlotStop.Off -> R.string.skill_level_stop_off
         SlotStop.Reached -> R.string.skill_level_stop_reached
         SlotStop.Max -> R.string.skill_level_stop_max
-        SlotStop.Shortage -> R.string.skill_level_stop_shortage
         SlotStop.CannotEnhance -> R.string.skill_level_stop_cannot
         SlotStop.Locked -> R.string.skill_level_stop_locked
         SlotStop.Unreadable -> R.string.skill_level_stop_unreadable

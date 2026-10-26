@@ -44,8 +44,6 @@ enum class Images(val path: String) {
     SkillLevelLabel("skill_level_label.png"),
     AppendLevelLabel("append_level_label.png"),
     SkillLevelReselect("skill_level_reselect.png"),
-    SkillLevelBandEnhance("skill_level_band_enhance.png"),
-    SkillLevelBandUnlock("skill_level_band_unlock.png"),
     SkillLevelUnlockButton("skill_level_unlock_button.png"),
     SkillLevelMaxButton("skill_level_max_button.png"),
     SkillLevelConfirmation("skill_level_confirmation.png"),
