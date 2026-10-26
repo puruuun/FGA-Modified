@@ -11,7 +11,12 @@ import io.github.fate_grand_automata.scripts.prefs.ISkillLevelPreferences
 internal class SkillLevelPrefs : ISkillLevelPreferences {
     private companion object {
         val held = mutableMapOf<SkillLevelMode, List<Int>>()
+        @Volatile var checkOnlyHeld = false
     }
+
+    override var checkOnly: Boolean
+        get() = checkOnlyHeld
+        set(value) { checkOnlyHeld = value }
 
     override fun targets(mode: SkillLevelMode): List<Int> = synchronized(held) {
         val saved = held[mode].orEmpty()

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="skill_level_check_only">Check level reading only (no enhancement)</string>
     <string name="tapper_service_description">"This accessibility service is used to perform clicks and swipes without root. It also enables automatic detection of FGO version (NA/JP/CN/TW/KR) by checking the APK name of the foreground app. In case you see the service malfunctioning, try turning it OFF and then turn ON again. If it still doesn't work, you might have to adjust your device's Battery optimization settings for the app."</string>
     <string name="battle_config_item_copy">"Copy"</string>
     <string name="battle_config_item_delete">"Delete"</string>

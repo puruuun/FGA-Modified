@@ -4,6 +4,8 @@ import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 
 /** Target level per slot of the skill (3) and append (5) enhancement screens: 0 is off, 1 to 10 is the level to stop at. */
 interface ISkillLevelPreferences {
+    /** In-memory hand-over from the beta launcher only; never saved to disk. */
+    var checkOnly: Boolean
     /** Always [SkillLevelMode.slots] values, each clamped to 0..10. In memory only (D-18), never saved across runs. */
     fun targets(mode: SkillLevelMode): List<Int>
     fun setTargets(mode: SkillLevelMode, targets: List<Int>)

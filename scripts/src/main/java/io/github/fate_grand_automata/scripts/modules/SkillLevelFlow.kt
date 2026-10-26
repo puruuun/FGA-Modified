@@ -57,7 +57,14 @@ enum class SlotStop {
  * [startLevel] is the first accepted level; [endLevel] the last known one (null when never read).
  */
 data class SlotResult(val slot: Int, val target: Int, val startLevel: Int?, val endLevel: Int?, val stop: SlotStop,
-    val step: SkillLevelStep = SkillLevelStep.Select)
+    val step: SkillLevelStep = SkillLevelStep.Select, val check: SkillLevelCheckReport? = null)
+
+/** Common progress exposed to the end-of-run dialog, including interrupted runs. */
+interface SkillLevelRun {
+    val results: List<SlotResult>
+    val activeSlot: Int
+    val activeStep: SkillLevelStep
+}
 
 /** Everything the loop needs from the game. The real one reads the screen and taps; tests fake it. */
 interface SkillLevelPanel {
@@ -93,12 +100,12 @@ interface SkillLevelPanel {
  * never tap unlock (padlock, band, button label, dialog level 0), never confirm without a trusted level, never confirm
  * when the level did not go up by one since the last confirmation, never confirm at or above the target.
  */
-class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (String) -> Unit = {}) {
+class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (String) -> Unit = {}) : SkillLevelRun {
     private val done = mutableListOf<SlotResult>()
-    val results: List<SlotResult> get() = done.toList()
-    var activeSlot = -1
+    override val results: List<SlotResult> get() = done.toList()
+    override var activeSlot = -1
         private set
-    var activeStep = SkillLevelStep.Select
+    override var activeStep = SkillLevelStep.Select
         private set
     private var partial: SlotResult? = null
 

@@ -7,6 +7,8 @@ import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDevice
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDigits
 import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
+import io.github.fate_grand_automata.scripts.modules.SkillLevelRun
+import io.github.fate_grand_automata.scripts.modules.SkillLevelCheckFlow
 import io.github.fate_grand_automata.scripts.modules.SkillLevelStep
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
@@ -50,7 +52,7 @@ abstract class SkillLevelScript(
 
     class ExitException(val reason: ExitReason, val mode: SkillLevelMode, val step: SkillLevelStep = SkillLevelStep.Select) : Exception()
 
-    private var flow: SkillLevelFlow? = null
+    private var flow: SkillLevelRun? = null
 
     private fun log(message: String) = messages.log(ScriptLog.SkillLevel(message))
 
@@ -74,11 +76,17 @@ abstract class SkillLevelScript(
         log("start mode=$mode server=${server.simple}")
         if (server !is GameServer.Jp && server !is GameServer.Kr) return ExitReason.UnsupportedServer
         val targets = prefs.skillLevel.targets(mode)
-        if (targets.none { it > 0 }) return ExitReason.NothingSelected
+        val checkOnly = prefs.skillLevel.checkOnly
+        if (!checkOnly && targets.none { it > 0 }) return ExitReason.NothingSelected
         val (onScreen, selected) = useSameSnapIn { screens.onTitle(mode) to screens.servantSelected() }
         if (!onScreen) return ExitReason.WrongScreen
         if (!selected) return ExitReason.NoServantSelected
         val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader)
+        if (checkOnly) {
+            log("check-only=true targets=ignored")
+            val run = SkillLevelCheckFlow(device, ::log).also { flow = it }
+            return ExitReason.Done(run.runAll(mode))
+        }
         val run = SkillLevelFlow(device, ::log).also { flow = it }
         return ExitReason.Done(run.runAll(targets))
     }

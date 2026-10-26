@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.scripts.modules.SlotStop
 
 /** D-12: one line per slot, `start Lv -> end Lv / target / reason`. */
 fun skillLevelSummary(context: Context, results: List<SlotResult>): String = results.joinToString("\n") { r ->
+    r.check?.let { return@joinToString it.line(r.slot) }
     val reason = context.getString(when (r.stop) {
         SlotStop.Off -> R.string.skill_level_stop_off
         SlotStop.Reached -> R.string.skill_level_stop_reached

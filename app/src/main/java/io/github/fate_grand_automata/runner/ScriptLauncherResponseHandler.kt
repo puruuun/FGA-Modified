@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.runner
 
 import dagger.hilt.android.scopes.ServiceScoped
+import io.github.fate_grand_automata.util.skillLevelCheckAvailable
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
@@ -58,6 +59,7 @@ class ScriptLauncherResponseHandler @Inject constructor(
 
             is ScriptLauncherResponse.SkillLevel -> {
                 prefs.skillLevel.setTargets(SkillLevelMode.Skill, resp.targets)
+                prefs.skillLevel.checkOnly = skillLevelCheckAvailable() && resp.checkOnly
 
                 ScriptModeEnum.SkillLevel
             }
@@ -66,6 +68,7 @@ class ScriptLauncherResponseHandler @Inject constructor(
 
             is ScriptLauncherResponse.AppendLevel -> {
                 prefs.skillLevel.setTargets(SkillLevelMode.Append, resp.targets)
+                prefs.skillLevel.checkOnly = skillLevelCheckAvailable() && resp.checkOnly
 
                 ScriptModeEnum.AppendLevel
             }

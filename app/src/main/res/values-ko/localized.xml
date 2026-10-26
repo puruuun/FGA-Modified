@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="skill_level_check_only">레벨 판독만 확인 (강화하지 않음)</string>
     <string name="accessibility_disable">"비활성화"</string>
     <string name="accessibility_disabled">"비활성화됨"</string>
     <string name="accessibility_disabled_go_to_settings">"설정으로 가기"</string>
