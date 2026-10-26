@@ -1,6 +1,6 @@
 # Import original FGA data
 
-[한국어](Original-FGA-Import-KR.md) | [English](Original-FGA-Import.md) | [日本語](Original-FGA-Import-JA.md)
+[한국어](Original-FGA-Import-KR.md) | [English](Original-FGA-Import.md)
 
 Open **More options → Additional features → Import original FGA data**. Choose **Scripts only**, **Support images only**, or **Scripts and support images**.
 

@@ -1,6 +1,6 @@
 # FGA(mod) detailed guide
 
-[한국어](Modified-Features-KR.md) | [English](Modified-Features.md) | [日本語](Modified-Features-JA.md)
+[한국어](Modified-Features-KR.md) | [English](Modified-Features.md)
 
 [Back to README](../../README.en.md)
 

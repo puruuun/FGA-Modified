@@ -1,6 +1,6 @@
 # 원본 FGA 데이터 가져오기
 
-[한국어](Original-FGA-Import-KR.md) | [English](Original-FGA-Import.md) | [日本語](Original-FGA-Import-JA.md)
+[한국어](Original-FGA-Import-KR.md) | [English](Original-FGA-Import.md)
 
 **더 많은 옵션 → 추가기능 → 원본 FGA 데이터 가져오기**에서 다음 중 하나를 선택합니다.
 
