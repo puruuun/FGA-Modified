@@ -119,7 +119,7 @@ internal class PanelAppendMatcher(
 
     companion object {
         internal fun combineBanks(own: PanelLevelEvidence, cross: PanelLevelEvidence): PanelLevelEvidence {
-            if (own.level == null) return own.copy(reason = "own-slot-${own.reason}")
+            if (own.level == null) return cross.copy(reason = "cross-slot-fallback-${cross.reason}")
             // The second opinion vetoes only a decided level. An abstention is not a vote.
             if (cross.level != null && cross.level != own.level)
                 return own.copy(level = null, reason = "own-cross-slot-conflict")

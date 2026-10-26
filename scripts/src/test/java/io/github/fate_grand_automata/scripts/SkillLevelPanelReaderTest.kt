@@ -83,8 +83,23 @@ class SkillLevelPanelReaderTest {
         assertEquals(4, PanelAppendMatcher.combineBanks(own, evidence(4, 0.8, 0.2)).level)
         assertEquals(4, PanelAppendMatcher.combineBanks(own, evidence(9, 0.6, 0.2)).level)
         assertNull(PanelAppendMatcher.combineBanks(own, evidence(9, 0.8, 0.2)).level)
-        assertNull(PanelAppendMatcher.combineBanks(evidence(4, 0.69, 0.3), evidence(4, 0.9, 0.2)).level)
-        assertNull(PanelAppendMatcher.combineBanks(evidence(4, 0.9, 0.09), evidence(4, 0.9, 0.2)).level)
+        assertEquals(4, PanelAppendMatcher.combineBanks(evidence(4, 0.69, 0.3), evidence(4, 0.9, 0.2)).level)
+        assertEquals(4, PanelAppendMatcher.combineBanks(evidence(4, 0.9, 0.09), evidence(4, 0.9, 0.2)).level)
+    }
+
+    @Test fun `own abstention preserves the complete beta three decision including abstention evidence`() {
+        val abstentions = listOf(evidence(9, 0.69, 0.3), evidence(9, 0.9, 0.09),
+            PanelAppendMatcher.combine(evidence(9, 0.9, 0.2), evidence(4, 0.6, 0.09)),
+            PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-samples"))
+        val crossResults = listOf(
+            PanelAppendMatcher.combine(evidence(4, 0.85, 0.2), evidence(4, 0.6, 0.2)),
+            PanelAppendMatcher.combine(evidence(4, 0.69, 0.3), evidence(4, 0.9, 0.09)),
+            PanelAppendMatcher.combine(evidence(4, 0.85, 0.2), evidence(9, 0.6, 0.09)),
+            PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-outline"))
+        for (own in abstentions) for (cross in crossResults) {
+            assertEquals(cross.copy(reason = "cross-slot-fallback-${cross.reason}"),
+                PanelAppendMatcher.combineBanks(own, cross))
+        }
     }
 
     @Test fun `yellow prefix changes cannot alter the digit decision`() {
