@@ -9,7 +9,23 @@ enum class SkillLevelMode(val slots: Int) {
 }
 
 /** The two levels read from the confirm dialog (`Lv.current > Lv.next`). Null means not read. */
-data class SkillLevelReading(val current: Int?, val next: Int?)
+data class SkillLevelReading(
+    val current: Int?, val next: Int?,
+    val currentInferred: Boolean = false, val nextInferred: Boolean = false
+) {
+    /** Fill only an unread side. Read zeroes and contradictory pairs must reach the existing guards unchanged. */
+    fun inferMissing(): SkillLevelReading = when {
+        current == null && next != null && next in 1..10 -> copy(current = next - 1, currentInferred = true)
+        next == null && current != null && current in 1..9 -> copy(next = current + 1, nextInferred = true)
+        else -> this
+    }
+
+    val currentText: String get() = "${current ?: "unread"}" + if (currentInferred) "(inferred)" else ""
+    val nextText: String get() = "${next ?: "unread"}" + if (nextInferred) "(inferred)" else ""
+    val dialogLevel: Int? get() = current?.takeIf { it in 1..9 && next == it + 1 }
+    val dialogText: String get() = if (dialogLevel == null) "unread" else
+        currentText + if (nextInferred) "(next-inferred)" else ""
+}
 
 enum class SkillLevelStep(val token: String) {
     Select("select"), Enhance("enhance"), Dialog("dialog"), Ocr("ocr"), Confirm("confirm"), Skip("skip")
@@ -96,8 +112,8 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
     private var partial: SlotResult? = null
 
     private fun line(fields: String) = log("slot=${activeSlot + 1} step=${activeStep.token} $fields")
-    private fun readings(panel: String, dialog: Int? = null, source: String = "panel", evidence: PanelLevelEvidence? = null) {
-        line("panel=$panel dialog=${dialog ?: "unread"} source=$source" +
+    private fun readings(panel: String, dialog: String = "unread", source: String = "panel", evidence: PanelLevelEvidence? = null) {
+        line("panel=$panel dialog=$dialog source=$source" +
             (evidence?.let { " score=${it.score} margin=${it.margin}" } ?: ""))
     }
     private fun summary(result: SlotResult) = log("summary slot=${result.slot + 1} step=${result.step.token} " +
@@ -186,15 +202,15 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                 return finish(closeDialog(SlotStop.UnexpectedDialog))
             }
             activeStep = SkillLevelStep.Ocr
-            val reading = panel.readLevels()
-            line("current=${reading.current ?: "unread"} next=${reading.next ?: "unread"}")
-            val dialogLevel = reading.current?.takeIf { it in 1..9 && reading.next == it + 1 }
+            val reading = panel.readLevels().inferMissing()
+            line("current=${reading.currentText} next=${reading.nextText}")
+            val dialogLevel = reading.dialogLevel
             val source = when {
                 panelLevel != null && dialogLevel != null -> "both"
                 dialogLevel != null -> "dialog"
                 else -> "panel"
             }
-            readings(panelText, dialogLevel, source, evidence)
+            readings(panelText, reading.dialogText, source, evidence)
             // A visible zero remains an unlock guard even with a confident panel reading.
             if (reading.current == 0 || reading.next == 0) return finish(closeDialog(SlotStop.Unreadable))
             if (panelLevel != null && dialogLevel != null && panelLevel != dialogLevel)

@@ -200,8 +200,7 @@ class SkillLevelFlowTest {
     }
 
     @Test fun `invalid dialog pairs are unread and may use a confident panel`() {
-        for (reading in listOf(SkillLevelReading(null, 4), SkillLevelReading(3, null),
-            SkillLevelReading(3, 5), SkillLevelReading(10, 11))) {
+        for (reading in listOf(SkillLevelReading(3, 5), SkillLevelReading(10, 11))) {
             val panel = FakePanel(mutableListOf(3), panelRead = { it }, read = { reading })
             assertEquals(SlotStop.Reached, run(panel, 4).single().stop)
             assertEquals(1, panel.confirms)
@@ -443,13 +442,70 @@ class SkillLevelFlowTest {
         assertEquals(SlotResult(0, 9, 9, 9, SlotStop.Reached, SkillLevelStep.Ocr), result)
     }
 
-    @Test fun `an unread next level cancels even when current is unambiguous`() {
+    @Test fun `an unread next level is inferred from an unambiguous current nine`() {
         val panel = FakePanel(mutableListOf(9), read = { SkillLevelReading(9, null) })
         val result = run(panel, 10).single()
-        assertEquals(0, panel.confirms)
-        assertEquals(1, panel.cancels)
-        assertEquals(9, panel.levels[0])
-        assertEquals(SlotStop.Unreadable, result.stop)
+        assertEquals(1, panel.confirms)
+        assertEquals(0, panel.cancels)
+        assertEquals(10, panel.levels[0])
+        assertEquals(SlotStop.Reached, result.stop)
+    }
+
+    @Test fun `issue 38 table applies to the regular flow without a panel fallback`() {
+        val cases = listOf(
+            SkillLevelReading(8, 9) to "8",
+            SkillLevelReading(8, 10) to "unread",
+            SkillLevelReading(null, 9) to "8(inferred)",
+            SkillLevelReading(8, null) to "8(next-inferred)",
+            SkillLevelReading(null, null) to "unread"
+        )
+        for ((reading, text) in cases) {
+            val logs = mutableListOf<String>()
+            val panel = FakePanel(mutableListOf(8), read = { reading })
+            val result = SkillLevelFlow(panel, logs::add).runSlot(0, 8)
+            assertEquals(if (text == "unread") SlotStop.Unreadable else SlotStop.Reached, result.stop, "$reading")
+            assertEquals(0, panel.confirms)
+            assertEquals(1, panel.cancels)
+            assertTrue(logs.any { "dialog=$text source=" in it }, "$reading: $logs")
+        }
+    }
+
+    @Test fun `one side inference reaches every target without exceeding it`() {
+        for (missingCurrent in listOf(true, false)) for (start in 1..9) for (target in 1..10) {
+            val panel = FakePanel(mutableListOf(start), read = {
+                if (missingCurrent) SkillLevelReading(null, it + 1) else SkillLevelReading(it, null)
+            })
+            run(panel, target)
+            assertEquals(maxOf(start, target), panel.levels[0])
+            assertEquals(maxOf(start, target), panel.peak[0])
+        }
+    }
+
+    @Test fun `inferred current zero cancels even with a confident panel`() {
+        for (panelLevel in listOf(null, 3)) {
+            val logs = mutableListOf<String>()
+            val panel = FakePanel(mutableListOf(3), panelRead = { panelLevel }, read = { SkillLevelReading(null, 1) })
+            assertEquals(SlotStop.Unreadable, SkillLevelFlow(panel, logs::add).runSlot(0, 8).stop)
+            assertEquals(0, panel.confirms)
+            assertEquals(1, panel.cancels)
+            assertTrue(logs.any { "current=0(inferred) next=1" in it })
+        }
+    }
+
+    @Test fun `inferred levels still pass through panel mismatch and no increase guards`() {
+        for (missingCurrent in listOf(true, false)) {
+            val read: (Int) -> SkillLevelReading = {
+                if (missingCurrent) SkillLevelReading(null, it + 1) else SkillLevelReading(it, null)
+            }
+            val mismatch = FakePanel(mutableListOf(3), panelRead = { 4 }, read = read)
+            assertEquals(SlotStop.PanelMismatch, run(mismatch, 8).single().stop)
+            assertEquals(0, mismatch.confirms)
+            assertEquals(1, mismatch.cancels)
+            val noIncrease = FakePanel(mutableListOf(3), confirmWorks = false, read = read)
+            assertEquals(SlotStop.NoIncrease, run(noIncrease, 8).single().stop)
+            assertEquals(1, noIncrease.confirms)
+            assertEquals(1, noIncrease.cancels)
+        }
     }
 
     @Test fun `template fallback never replaces confident invalid or conflicting primary digits`() {

@@ -94,15 +94,15 @@ class SkillLevelCheckFlow(panel: SkillLevelPanel, private val log: (String) -> U
                 return
             }
             activeStep = SkillLevelStep.Ocr
-            val reading = panel.readLevels()
-            val dialogLevel = reading.current?.takeIf { it in 1..9 && reading.next == it + 1 }
+            val reading = panel.readLevels().inferMissing()
+            val dialogLevel = reading.dialogLevel
             val verdict = when {
                 panelLevel != null && dialogLevel != null -> if (panelLevel == dialogLevel) SkillLevelCheckVerdict.Match else SkillLevelCheckVerdict.Mismatch
                 panelLevel != null -> SkillLevelCheckVerdict.PanelOnly
                 dialogLevel != null -> SkillLevelCheckVerdict.DialogOnly
                 else -> SkillLevelCheckVerdict.BothUnread
             }
-            report = report.copy(dialog = dialogLevel?.toString() ?: "unread", verdict = verdict, reason = "cancelled")
+            report = report.copy(dialog = reading.dialogText, verdict = verdict, reason = "cancelled")
             stop = SlotStop.Reached
         } finally {
             val cause = activeStep

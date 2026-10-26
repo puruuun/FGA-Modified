@@ -4,6 +4,37 @@ import io.github.fate_grand_automata.scripts.modules.*
 import kotlin.test.*
 
 class SkillLevelCheckFlowTest {
+    @Test fun `issue 38 table applies to check reports logs and the end dialog line`() {
+        val cases = listOf(
+            SkillLevelReading(8, 9) to "8",
+            SkillLevelReading(8, 10) to "unread",
+            SkillLevelReading(null, 9) to "8(inferred)",
+            SkillLevelReading(8, null) to "8(next-inferred)",
+            SkillLevelReading(null, null) to "unread",
+            SkillLevelReading(null, 10) to "9(inferred)",
+            SkillLevelReading(null, 1) to "unread"
+        )
+        for ((reading, text) in cases) for (panelLevel in listOf(null, 8, 9)) {
+            val panel = Panel(level = panelLevel, reading = reading)
+            val logs = mutableListOf<String>()
+            val results = SkillLevelCheckFlow(panel, logs::add).runAll(SkillLevelMode.Skill)
+            val report = checkNotNull(results.first().check)
+            assertEquals(text, report.dialog, "$reading")
+            val dialogLevel = when (text) { "unread" -> null; "9(inferred)" -> 9; else -> 8 }
+            val verdict = when {
+                panelLevel != null && dialogLevel != null -> if (panelLevel == dialogLevel) SkillLevelCheckVerdict.Match else SkillLevelCheckVerdict.Mismatch
+                panelLevel != null -> SkillLevelCheckVerdict.PanelOnly
+                dialogLevel != null -> SkillLevelCheckVerdict.DialogOnly
+                else -> SkillLevelCheckVerdict.BothUnread
+            }
+            assertEquals(verdict, report.verdict, "$reading panel=$panelLevel")
+            assertTrue("dialog=$text verdict=" in report.line(0))
+            assertTrue("check ${report.line(0)}" in logs)
+            assertEquals(3, panel.cancels)
+            assertEquals(0, panel.confirms)
+        }
+    }
+
     private class Panel(
         var level: Int? = 3,
         var reading: SkillLevelReading = SkillLevelReading(3, 4),

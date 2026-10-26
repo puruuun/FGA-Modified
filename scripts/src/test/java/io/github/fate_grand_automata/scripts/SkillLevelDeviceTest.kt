@@ -63,6 +63,25 @@ class SkillLevelDeviceTest {
         verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
         verify(exactly=0) { with(run.api) { any<Duration>().wait(any()) } }
     }
+    @Test fun `real dialog reader retains next one for inferred zero without relaxing consensus`() {
+        val run = Run()
+        val current = Region(1, 2, 3, 4)
+        val next = Region(5, 6, 7, 8)
+        every { run.loc.currentLevel(SkillLevelMode.Skill) } returns current
+        every { run.loc.nextLevel(SkillLevelMode.Skill) } returns next
+        val digits = spyk(SkillLevelDigits(run.api, run.loc, mockk()))
+        every { digits.readings(current, SkillLevelMode.Skill) } returns listOf(OcrText("", 0))
+        every { digits.templateScores(current, any()) } returns emptyList()
+        every { digits.readings(next, SkillLevelMode.Skill) } returns listOf(OcrText("1", 95), OcrText("1", 95))
+        val inferred = digits.read(SkillLevelMode.Skill).inferMissing()
+        assertEquals(0, inferred.current)
+        assertTrue(inferred.currentInferred)
+        assertNull(inferred.dialogLevel)
+        every { digits.readings(next, SkillLevelMode.Skill) } returns listOf(OcrText("1", 95))
+        assertEquals(SkillLevelReading(null, null), digits.read(SkillLevelMode.Skill).inferMissing())
+        every { digits.readings(next, SkillLevelMode.Skill) } returns listOf(OcrText("1", 95), OcrText("2", 95))
+        assertEquals(SkillLevelReading(null, null), digits.read(SkillLevelMode.Skill).inferMissing())
+    }
     @Test fun `the last unlock guard still prevents both the enhance tap and its delay`() {
         val run=Run()
         every { run.screens.unlockButtonVisible() } returns true

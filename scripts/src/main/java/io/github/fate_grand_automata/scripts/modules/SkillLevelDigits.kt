@@ -77,8 +77,8 @@ class SkillLevelDigits @Inject constructor(
     }
 
     /** Template evidence for offline QA, using exactly the product fallback path. */
-    fun templateScores(region: Region): List<Pair<Int, Double>> = digitTemplates.orEmpty().map { (digit, pattern) ->
-        digit to (region.find(pattern, similarity = 0.7)?.score ?: 0.0)
+    fun templateScores(region: Region, similarity: Double = 0.7): List<Pair<Int, Double>> = digitTemplates.orEmpty().map { (digit, pattern) ->
+        digit to (region.find(pattern, similarity = similarity)?.score ?: 0.0)
     }
 
     private fun readDigit(region: Region, valid: IntRange, mode: SkillLevelMode): Int? {
@@ -93,8 +93,8 @@ class SkillLevelDigits @Inject constructor(
         return templateNine(scores)?.takeIf { it in valid }
     }
 
-    /** Current 1..9, next 2..10; zero is an explicit unlock signal. Other unread/conflicting values are null. */
+    /** Raw sides before inference. Next 1 is retained so an inferred current 0 reaches the unlock guard. */
     fun read(mode: SkillLevelMode): SkillLevelReading = useSameSnapIn {
-        SkillLevelReading(readDigit(loc.currentLevel(mode), 1..9, mode), readDigit(loc.nextLevel(mode), 2..10, mode))
+        SkillLevelReading(readDigit(loc.currentLevel(mode), 1..9, mode), readDigit(loc.nextLevel(mode), 1..10, mode))
     }
 }
