@@ -75,11 +75,11 @@ class SkillLevelCheckFlow(panel: SkillLevelPanel, private val log: (String) -> U
         val band = panel.band()
         activeStep = SkillLevelStep.Enhance
         if (evidence?.locked == true || band == SkillLevelBand.Unlock || panel.unlockButtonVisible()) return locked()
-        val noDialogReason = when {
-            panelLevel == 10 || panel.maxButtonVisible() -> "max"
-            band == SkillLevelBand.Shortage -> "shortage"
-            band != SkillLevelBand.Enhance -> "band-other"
-            else -> null
+        // The panel itself is under test: even a reading of 10 must not suppress a dialog comparison.
+        val noDialogReason = when (band) {
+            SkillLevelBand.Enhance -> null
+            SkillLevelBand.Shortage -> "shortage"
+            else -> if (panel.maxButtonVisible()) "max" else "band-other"
         }
         if (noDialogReason != null) {
             report = report.copy(reason = noDialogReason)

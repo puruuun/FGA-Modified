@@ -114,7 +114,7 @@ class SkillLevelCheckFlowTest {
         assertEquals(0, panel.enhances)
     }
     @Test fun `max panel is read without pressing enhance`() {
-        val panel = Panel(level = 10)
+        val panel = Panel(level = 10, bandValue = SkillLevelBand.Other, max = true)
         val result = report(panel)
         assertEquals("10", result.panel)
         assertEquals("max", result.reason)
@@ -122,7 +122,7 @@ class SkillLevelCheckFlowTest {
         assertEquals(0, panel.enhances)
     }
     @Test fun `max button with unread panel reports reason`() {
-        val panel = Panel(level = null, max = true)
+        val panel = Panel(level = null, bandValue = SkillLevelBand.Other, max = true)
         assertEquals("max", report(panel).reason)
         assertEquals(0, panel.enhances)
     }
@@ -132,6 +132,20 @@ class SkillLevelCheckFlowTest {
         assertEquals("3", result.panel)
         assertEquals("shortage", result.reason)
         assertEquals(0, panel.enhances)
+    }
+    @Test fun `panel ten must still be cross checked when enhance band is visible`() {
+        val panel = Panel(level = 10, reading = SkillLevelReading(9, 10))
+        assertEquals(SkillLevelCheckVerdict.Mismatch, report(panel).verdict)
+        assertEquals(3, panel.enhances)
+        assertEquals(3, panel.cancels)
+    }
+    @Test fun `disabled max button after enhance band gives no dialog reason`() {
+        val panel = Panel(level = null, max = true, dialog = false)
+        val result = report(panel)
+        assertEquals(SkillLevelCheckVerdict.NoDialog, result.verdict)
+        assertEquals("max", result.reason)
+        assertEquals(3, panel.enhances)
+        assertEquals(0, panel.cancels)
     }
     @Test fun `other band is not pressed`() {
         val panel = Panel(bandValue = SkillLevelBand.Other)
