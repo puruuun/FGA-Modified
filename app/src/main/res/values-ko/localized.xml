@@ -187,6 +187,8 @@
     <string name="p_battle_config_support_friend_name_hint">"친구 이름 이미지는 '서포트 이미지 메이커' 스크립트를 사용하여 만들 수 있습니다"</string>
     <string name="p_battle_config_support_friend_names">"친구 이름"</string>
     <string name="p_battle_config_support_friends_only">"친구 한정"</string>
+    <string name="p_battle_config_support_auto_friend_request">"퀘스트 후 친구 신청"</string>
+    <string name="p_battle_config_support_auto_friend_request_summary">"친구가 아닌 서포트를 쓴 뒤 거절 대신 친구 신청을 보냅니다"</string>
     <string name="p_battle_config_support_grand_servant">"관위 서번트"</string>
     <string name="p_battle_config_support_max_ascended">"최종재림"</string>
     <string name="p_battle_config_support_mlb">"최대해방 / 풀돌"</string>

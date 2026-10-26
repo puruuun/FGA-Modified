@@ -54,6 +54,9 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.FriendRequest -> Timber.i(
+                "friend-request sent=%s fallbackReject=%s", item.sent, item.fallbackReject
+            )
             is ScriptLog.Bond -> {
                 if (BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest")) Timber.tag(BOND_TAG).i(item.message)
                 Unit

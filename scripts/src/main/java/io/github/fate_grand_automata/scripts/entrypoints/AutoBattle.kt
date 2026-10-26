@@ -2,10 +2,12 @@ package io.github.fate_grand_automata.scripts.entrypoints
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.ScriptNotify
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
+import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
 import io.github.fate_grand_automata.scripts.models.BoostItem
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
@@ -441,8 +443,22 @@ class AutoBattle @Inject constructor(
         images[Images.SupportExtra] in locations.resultFriendRequestRegion
 
     private fun skipFriendRequestScreen() {
-        // Friend request dialogue. Appears when non-friend support was selected this battle. Ofc it's defaulted not sending request.
-        locations.resultFriendRequestRejectClick.click()
+        val supportPrefs = prefs.selectedBattleConfig.support
+        val sendRequest = supportPrefs.selectionMode == SupportSelectionModeEnum.Preferred &&
+            supportPrefs.autoFriendRequest && !supportPrefs.friendsOnly
+
+        if (!sendRequest) {
+            locations.resultFriendRequestRejectClick.click()
+            messages.log(ScriptLog.FriendRequest(sent = false, fallbackReject = false))
+            return
+        }
+
+        locations.resultFriendRequestSendClick.click()
+        1.seconds.wait()
+        // Capture again after the tap and wait; never reuse the loop's detection frame.
+        val fallbackReject = useSameSnapIn { isFriendRequestScreen() }
+        if (fallbackReject) locations.resultFriendRequestRejectClick.click()
+        messages.log(ScriptLog.FriendRequest(sent = true, fallbackReject = fallbackReject))
     }
 
     private fun isInInterludeEndScreen() =

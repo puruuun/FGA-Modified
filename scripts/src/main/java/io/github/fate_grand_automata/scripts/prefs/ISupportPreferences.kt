@@ -12,6 +12,7 @@ interface ISupportPreferences {
     /** Noble Phantasm name images (0006). Empty means no NP condition. */
     val preferredNoblePhantasms: List<String>
     val friendsOnly: Boolean
+    val autoFriendRequest: Boolean
     val selectionMode: SupportSelectionModeEnum
     val fallbackTo: SupportSelectionModeEnum
     val supportClass: SupportClass

@@ -39,6 +39,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
 | [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고릅니다. |
+| [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 선호 모드에서 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. |
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |

@@ -9,6 +9,7 @@ import io.github.lib_automata.CompareBy
 import io.github.lib_automata.Location
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
+import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,6 +36,16 @@ class WideScreenLocationsTest {
 
     private val sixteenNine = transforms(2560)
     private val twentyOneNine = transforms(3360)
+
+    @Test fun `friend request send mirrors reject around the centre on 16 9 and wide screens`() {
+        for (transforms in listOf(sixteenNine, twentyOneNine)) {
+            val loc = Locations(transforms, mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+            val centre = transforms.scriptArea.center.x
+            assertEquals(Location(centre - 680, 1200), loc.resultFriendRequestRejectClick)
+            assertEquals(Location(centre + 680, 1200), loc.resultFriendRequestSendClick)
+            assertEquals(2 * centre, loc.resultFriendRequestRejectClick.x + loc.resultFriendRequestSendClick.x)
+        }
+    }
 
     @Test fun `weekly scrollbar follows the right safe edge`() {
         assertEquals(Region(2506, 190, 16, 988), WeeklyRouteLocations(sixteenNine).listScrollbar)

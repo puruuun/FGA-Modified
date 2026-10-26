@@ -125,6 +125,8 @@ Skills"</string>
     <string name="p_battle_config_support_mlb">"Max-limit broken"</string>
     <string name="p_battle_config_support_friend_names">"Friend names"</string>
     <string name="p_battle_config_support_friends_only">"Friends Only"</string>
+    <string name="p_battle_config_support_auto_friend_request">"Send friend request after quest"</string>
+    <string name="p_battle_config_support_auto_friend_request_summary">"Sends a friend request instead of declining when a non-friend support was used"</string>
     <string name="p_battle_config_support_friend_name_hint">"Friend name images can be added using 'Support Image Maker' script"</string>
     <string name="p_battle_config_support_also_check_all">"Also check All"</string>
     <string name="p_max_skills">"Max Skills"</string>

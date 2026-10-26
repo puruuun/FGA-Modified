@@ -14,6 +14,7 @@ import androidx.compose.material3.CardDefaults.cardElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -243,11 +244,22 @@ private fun PreferredSupport(
                         title = stringResource(R.string.p_support_mode_friend)
                     )
 
+                    val friendsOnly by config.friendsOnly.remember()
+                    val autoFriendRequest by config.autoFriendRequest.remember()
+
+                    LaunchedEffect(config, friendsOnly, autoFriendRequest) {
+                        if (friendsOnly && autoFriendRequest) config.autoFriendRequest.set(false)
+                    }
+
                     config.friendsOnly.SwitchPreference(
                         title = stringResource(R.string.p_battle_config_support_friends_only)
                     )
 
-                    val friendsOnly by config.friendsOnly.remember()
+                    config.autoFriendRequest.SwitchPreference(
+                        title = stringResource(R.string.p_battle_config_support_auto_friend_request),
+                        summary = stringResource(R.string.p_battle_config_support_auto_friend_request_summary),
+                        enabled = !friendsOnly
+                    )
 
                     AnimatedVisibility (friendsOnly) {
                         if (vm.friends.isNotEmpty()) {

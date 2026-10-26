@@ -15,6 +15,7 @@ class SupportPrefsCore(
     val preferredCEs = maker.stringSet("support_pref_ce_list")
     val preferredNoblePhantasms = maker.stringSet("support_pref_np_list")
     val friendsOnly = maker.bool("support_friends_only")
+    val autoFriendRequest = maker.bool("support_auto_friend_request")
 
     val selectionMode = maker.enum(
         "support_mode",

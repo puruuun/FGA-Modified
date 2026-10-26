@@ -22,6 +22,7 @@ internal class SupportPreferences(
         .map { it.toList() }
 
     override val friendsOnly by prefs.friendsOnly
+    override val autoFriendRequest by prefs.autoFriendRequest
 
     override val selectionMode by prefs.selectionMode
 
