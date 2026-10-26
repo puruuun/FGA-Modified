@@ -28,6 +28,11 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - Each issue covers the symptom, the reproduction conditions (server, device, resolution, settings), the evidence (logs and measurements; captures are not committed, so give their local path), the suspected cause with file names, and the proposed work.
   - Filing an issue does not start the work. Start only when the owner asks.
   - A PR that resolves an issue says `Closes #N` in its description.
+- Workflow review before development (owner decision, 2026-10-26). When the owner proposes a feature or a behaviour change and asks for an analysis, the planner answers with a step-by-step walkthrough of the planned logic before any implementation starts:
+  - the trigger (how the script is chosen and started) and the start checks;
+  - each step in order: what is tapped, how long it waits, which screen region is read and how (template and threshold, OCR, colour, sample bank), and what each result leads to;
+  - the safety guards and every end state (stop reasons), plus what changes against the current behaviour.
+  - Write it in Korean, in the owner's terms. Start development (issue, agent prompt, branch) only after the owner approves the walkthrough or after the amendments they ask for.
 - For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use Codex as author, committer, or co-author unless the user requests it. Do not add `Co-Authored-By` trailers or "Generated with" lines for any AI agent (Codex, Claude, Copilot, …) to commits or PR descriptions; GitHub should show only `puruuun`. Preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
 - Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
