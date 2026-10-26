@@ -44,3 +44,5 @@ The detailed guides are written in Korean. See the [full guide](wiki/scripts/Mod
 [Upstream repository](https://github.com/Fate-Grand-Automata/FGA) · [Original documentation](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT license](LICENSE)
 
 Based on official FGA v3059 ([source commit](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)). Upstream copyright notices are retained. Additions and changes are Copyright (c) 2026 puruuun and are distributed under the same MIT license.
+
+Credit: the conversion rules behind "Chaldea command import" follow the logic of [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter) (commit `1c95510`), ported to Kotlin. That repository has no license file, so the author is being asked for permission; the related code will be removed if the author prefers.
