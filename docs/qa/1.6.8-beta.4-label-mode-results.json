@@ -1,0 +1,183 @@
+{
+  "report": "build/device-qa/20261026-213930/report-skillLevel.json",
+  "cases": [
+    {
+      "name": "beta4-label-Jp-wide-Skill",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/56-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-wide-Skill",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/50-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-wide-Append",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/24-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-wide-Append",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Skill",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/57-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Skill",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/60-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Append",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/58-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Append",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/61-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    }
+  ],
+  "results": [
+    {
+      "name": "beta4-label-Jp-wide-Skill",
+      "actual": {
+        "mode": "Skill",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 183,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Kr-wide-Skill",
+      "actual": {
+        "mode": "Skill",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 111,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Jp-wide-Append",
+      "actual": {
+        "mode": "Append",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 111,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Kr-wide-Append",
+      "actual": {
+        "mode": "Append",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 118,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Skill",
+      "actual": {
+        "mode": "Skill",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 98,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Skill",
+      "actual": {
+        "mode": "Skill",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 100,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Append",
+      "actual": {
+        "mode": "Append",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 93,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Append",
+      "actual": {
+        "mode": "Append",
+        "servantSelected": true
+      },
+      "passed": true,
+      "elapsedMs": 94,
+      "ocrCalls": 0,
+      "ocrMs": 0
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "suite": "skillLevel",
+  "cases": [
+    {
+      "name": "beta4-label-Jp-wide-Skill",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/56-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-wide-Skill",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/50-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-wide-Append",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/24-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-wide-Append",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Skill",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/57-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Skill",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/60-skill.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Skill",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Jp-16x9-Append",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/58-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    },
+    {
+      "name": "beta4-label-Kr-16x9-Append",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/61-append-real.png",
+      "view": "mode",
+      "expected": {
+        "mode": "Append",
+        "servantSelected": true
+      }
+    }
+  ]
+}

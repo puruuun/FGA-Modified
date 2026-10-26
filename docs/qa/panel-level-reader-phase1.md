@@ -347,10 +347,10 @@ python tools/device-qa/prepare_panel_levels.py
 gradlew :scripts:panelAppendEvaluation
 set ANDROID_HOME=C:\Users\rl\AppData\Local\Android\Sdk
 python tools/device-qa/run.py --build --serial 127.0.0.1:5555 --suite support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp,skillLevelPanel
-python tools/device-qa/report_append_own_samples.py --before build/device-qa/20261026-155510/report-skillLevelPanel.json --after build/device-qa/20261026-160002/report-skillLevelPanel.json --output build/beta4-tables.md
+python tools/device-qa/report_append_own_samples.py --before build/device-qa/20261026-155510/report-skillLevelPanel.json --after build/device-qa/20261026-214010/report-skillLevelPanel.json --output build/beta4-tables.md
 ```
 
-beta.3 기기 보고서: `build/device-qa/20261026-155510/`. beta.4 전체 기기 보고서: `build/device-qa/20261026-160002/`. 호스트: `build/panel-append-evaluation.json`. 게임 조작·다른 기기·ADB 서버 명령은 사용하지 않았습니다.
+beta.3 기기 보고서: `build/device-qa/20261026-155510/`. beta.4 전체 기기 보고서: `build/device-qa/20261026-214010/`. 호스트: `build/panel-append-evaluation.json`. 게임 조작·다른 기기·ADB 서버 명령은 사용하지 않았습니다.
 
 ### device-product-bank
 
@@ -427,7 +427,7 @@ beta.3 기기 보고서: `build/device-qa/20261026-155510/`. beta.4 전체 기�
 | Jp | 4 | 1/1/1/2/1/1/1/1/1/6 |
 | Jp | 5 | 1/1/1/2/1/1/1/1/1/6 |
 
-호스트 잔여 기권 5건입니다. 모두 프레임 제외 후 해당 슬롯·레벨의 자체 샘플이 없습니다. fallback 확정 75건·fallback 기권 1건, 은행 간 충돌 기권 4건입니다.
+호스트 잔여 기권 5건 중 5건은 프레임 제외 후 해당 슬롯·레벨의 샘플이 없습니다.
 
 | 케이스 | 기대 | 이유 | score | margin |
 |---|---|---|---|---|
@@ -437,4 +437,4 @@ beta.3 기기 보고서: `build/device-qa/20261026-155510/`. beta.4 전체 기�
 | Kr-31-Append-4 | 6 | own-cross-slot-conflict | 0.7393 | 0.1033 |
 | Kr-40-Append-2 | 8 | own-cross-slot-conflict | 0.7331 | 0.1143 |
 
-동일 픽셀 중복 프레임 그룹은 이번 0021 참조 집합에서 0개였습니다. 위 기기 표는 fallback 수정 전 제품 은행 결과이며, 수정 후 전체 기기 QA 재실행은 지정 BlueStacks 실행을 기다리고 있습니다.
+동일 픽셀 중복 프레임 그룹은 이번 0021 참조 집합에서 0개였습니다. 호스트 fallback 확정 75건·fallback 기권 1건이며, 별도로 은행 간 확정값 충돌 4건을 기권했습니다. 교차 은행의 거부로 이 4건의 최종 오독을 막았습니다. 기기 제품 은행의 잔여 기권은 0건입니다.

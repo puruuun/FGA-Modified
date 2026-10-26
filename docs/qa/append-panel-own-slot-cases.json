@@ -1,6 +1,6 @@
 {
   "beforeReport": "build\\device-qa\\20261026-155510\\report-skillLevelPanel.json",
-  "afterReport": "build\\device-qa\\20261026-160002\\report-skillLevelPanel.json",
+  "afterReport": "build\\device-qa\\20261026-214010\\report-skillLevelPanel.json",
   "device": {
     "beta.3": [
       {

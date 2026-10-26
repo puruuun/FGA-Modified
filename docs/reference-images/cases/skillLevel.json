@@ -42,9 +42,10 @@
       "file": "docs/reference-images/Jp/skill-level/04.png",
       "view": "mode",
       "expected": {
-        "mode": "Skill",
+        "mode": "none",
         "servantSelected": true
-      }
+      },
+      "note": "Issue #33: the enhancement confirmation dialog covers the material label; this is not an exposed panel. Keep separate dialog and level checks."
     },
     {
       "name": "JP-05-mode",
@@ -174,9 +175,10 @@
       "file": "docs/reference-images/Kr/skill-level/16.png",
       "view": "mode",
       "expected": {
-        "mode": "Skill",
+        "mode": "none",
         "servantSelected": true
-      }
+      },
+      "note": "Issue #33: the enhancement confirmation dialog covers the material label; this is not an exposed panel. Keep separate dialog and level checks."
     },
     {
       "name": "KR-17-mode",
@@ -185,9 +187,10 @@
       "file": "docs/reference-images/Kr/skill-level/17.png",
       "view": "mode",
       "expected": {
-        "mode": "Append",
+        "mode": "none",
         "servantSelected": true
-      }
+      },
+      "note": "Issue #33: the enhancement confirmation dialog covers the material label; this is not an exposed panel. Keep separate dialog and level checks."
     },
     {
       "name": "JP-18-mode",
@@ -196,9 +199,10 @@
       "file": "docs/reference-images/Jp/skill-level/18.png",
       "view": "mode",
       "expected": {
-        "mode": "Append",
+        "mode": "none",
         "servantSelected": true
-      }
+      },
+      "note": "Issue #33: the enhancement confirmation dialog covers the material label; this is not an exposed panel. Keep separate dialog and level checks."
     },
     {
       "name": "KR-19-mode",
@@ -1076,9 +1080,10 @@
       "view": "mode",
       "slotMode": "Skill",
       "expected": {
-        "mode": "Skill",
+        "mode": "none",
         "servantSelected": true
-      }
+      },
+      "note": "Issue #33: the enhancement confirmation dialog covers the material label; this is not an exposed panel. Keep separate dialog and level checks."
     },
     {
       "name": "JP-w2560-15-dialog",
