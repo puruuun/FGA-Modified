@@ -145,8 +145,10 @@ class CESelection @Inject constructor(
 
     private fun bestMatch(region: Region, template: Pattern): Match? = region.getPattern().use { crop ->
         if (crop.width < template.width || crop.height < template.height) return@use null
-        // Take only the first (highest) result, including scores below the product threshold.
-        crop.findMatches(template, -1.0).firstOrNull()?.let { Match(it.region * 2.0 + region.location, it.score) }
+        // Exhaust the lazy matcher so its native result Mat is released. A positive diagnostic floor
+        // stops after suppressed matches reach zero; it never feeds the product decision.
+        crop.findMatches(template, 0.01).maxByOrNull { it.score }
+            ?.let { Match(it.region * 2.0 + region.location, it.score) }
     }
 
     private fun describe(match: Match?): String = match?.let {

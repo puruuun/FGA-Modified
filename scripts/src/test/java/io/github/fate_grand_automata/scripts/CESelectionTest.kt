@@ -110,10 +110,17 @@ class CESelectionTest {
         val crop = mockk<Pattern>(relaxed = true)
         every { crop.width } returns 1000
         every { crop.height } returns 1000
-        every { crop.findMatches(any(), -1.0) } answers { sequenceOf(Match(Region(0, 0, 10, 10), 0.1)) }
+        var openScans = 0
+        every { crop.findMatches(any(), 0.01) } answers {
+            sequence {
+                openScans++
+                try { yield(Match(Region(0, 0, 10, 10), 0.1)) } finally { openScans-- }
+            }
+        }
         every { with(f.api) { any<Region>().getPattern(any()) } } returns crop
         assertTrue(f.check())
         verify(exactly = 1) { f.messages.log(match { it is ScriptLog.SupportCe && it.matched && it.np?.score == 0.1 }) }
         verify { with(f.api) { f.bond.find(f.np, 0.70) } }
+        assertEquals(0, openScans)
     }
 }
