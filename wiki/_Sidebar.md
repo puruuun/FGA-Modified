@@ -2,5 +2,6 @@
 - [Troubleshooting](Troubleshooting)
 - [Emulators](Running-on-Emulators)
 - [Scripts](Battle)
+- [개념예장 자동 강화](scripts/CE-Auto-Enhance-KR.md)
 - [Fine tune](Fine-tune)
 - [Donations](Donations)

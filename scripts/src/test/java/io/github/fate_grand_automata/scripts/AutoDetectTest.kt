@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.entrypoints.AutoDetect
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
+import io.github.fate_grand_automata.scripts.modules.CEEnhanceScreens
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.mockk.*
@@ -13,11 +14,12 @@ class AutoDetectTest {
     private class Fixture {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val screens = mockk<SkillLevelScreens>(relaxed = true)
+        val ceScreens = mockk<CEEnhanceScreens>(relaxed = true)
         val patterns = mutableMapOf<Images, Pattern>()
         val banner = Region(10, 20, 30, 40)
         val initialBanner = Region(50, 60, 30, 40)
         var visibleBanner: Region? = null
-        val detector = AutoDetect(api, screens)
+        val detector = AutoDetect(api, screens, ceScreens)
 
         init {
             every { api.prefs.gameServer } returns GameServer.Kr
@@ -47,5 +49,14 @@ class AutoDetectTest {
         val f = Fixture()
         assertEquals(ScriptModeEnum.Battle, f.detector.get())
         verify(exactly = 0) { f.api.findImage(any(), Images.FPSummonContinue) }
+    }
+
+    @Test fun `CE screen wins over the identical servant recommended button`() {
+        val f = Fixture()
+        every { with(f.api) { any<Map<Pattern, Region>>().exists(any(), any(), any()) } } returns true
+        every { f.ceScreens.onScreen() } returns true
+        assertEquals(ScriptModeEnum.CEEnhance, f.detector.get())
+        every { f.ceScreens.onScreen() } returns false
+        assertEquals(ScriptModeEnum.ServantLevel, f.detector.get())
     }
 }

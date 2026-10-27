@@ -4,6 +4,8 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 
 ## Case files
 
+- `cases/ceEnhance.json`: #42 owner JP/KR CE enhancement screens, 16:9 and wide, under `{Jp,Kr}/ce-enhance/` (32 lossless 720p WebP frames). Sources are `build/orchestration/inputs/ce-enhance/{jp,kr}/`; cases retain each original filename. The game-area borders are removed using the `extract-template-asset` rules. Two existing KR servant frames guard against false CE detection. Every case checks the execute/reselect, recommended states, moved auto-set toggle, Close and confirm regions. KR 16:9 has no unobscured execute-dialog capture; its no-match popup is an absence case.
+
 | File | Suite | Labels from | Cases |
 |---|---|---|---|
 | `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), the device-side full screens (20), `Jp/wide-2340/` 0013 (2340x1080 score crops 2, full frame 1) | 191 |
