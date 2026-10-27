@@ -1,5 +1,5 @@
 ---
-paths: "version.properties,docs/releases/**,wiki/releases/**,app/build.gradle.kts"
+paths: "version.properties,README.md,docs/releases/**,wiki/releases/**,app/build.gradle.kts"
 description: Semantic versioning (patch vs minor bumps) and the beta-first APK testing workflow before stable releases.
 ---
 

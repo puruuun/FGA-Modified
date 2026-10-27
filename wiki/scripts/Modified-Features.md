@@ -2,7 +2,7 @@
 
 [한국어](Modified-Features-KR.md) | [English](Modified-Features.md)
 
-[Back to README](../../README.en.md)
+[Back to README](../../README.md)
 
 **Testing is limited to the KR (Korean) and JP (Japanese) servers. Behavior on other servers has not been verified.**
 
