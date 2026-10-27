@@ -46,6 +46,7 @@ sealed class SkillMakerEntry {
         }
 
         override fun toString() = when (action) {
+            is AutoSkillAction.ShuffleUntil -> action.toCommandString()
             is AutoSkillAction.Atk -> action.toCommandString()
 
             is AutoSkillAction.ServantSkill -> toString(action.skill, action.targets)

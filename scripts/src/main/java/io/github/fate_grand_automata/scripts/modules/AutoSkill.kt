@@ -10,10 +10,12 @@ import javax.inject.Inject
 class AutoSkill @Inject constructor(
     api: IFgoAutomataApi,
     private val execution: BattleExecution,
-    private val caster: Caster
+    private val caster: Caster,
+    private val shuffleUntil: ShuffleUntil
 ) : IFgoAutomataApi by api {
     private fun act(action: AutoSkillAction) = when (action) {
         is AutoSkillAction.Atk -> {}
+        is AutoSkillAction.ShuffleUntil -> shuffleUntil.execute(action)
         is AutoSkillAction.ServantSkill -> caster.castServantSkill(action.skill, action.targets)
         is AutoSkillAction.MasterSkill -> caster.castMasterSkill(action.skill, action.target)
         is AutoSkillAction.CommandSpell -> caster.castCommandSpell(action.skill, action.target)

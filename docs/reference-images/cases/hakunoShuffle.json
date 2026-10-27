@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "suite": "hakunoShuffle",
+  "cases": [
+    {
+      "name": "close-Kr-2560x1080",
+      "suite": "hakunoShuffle",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/hakuno-shuffle/2560x1080.webp",
+      "found": true,
+      "minScore": 0.95,
+      "maxScore": 1
+    },
+    {
+      "name": "close-Kr-1920x1080",
+      "suite": "hakunoShuffle",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/hakuno-shuffle/1920x1080.webp",
+      "found": true,
+      "minScore": 0.95,
+      "maxScore": 1
+    },
+    {
+      "name": "normal-battle-no-close",
+      "suite": "hakunoShuffle",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle-screen.png",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.6
+    }
+  ]
+}

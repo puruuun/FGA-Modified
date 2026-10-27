@@ -4,6 +4,8 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 
 ## Case files
 
+- `cases/hakunoShuffle.json`: #45 KR NP-shortage Close popup on the owner's 2560×1080 wide and 1920×1080 frames, normalized to 720p game areas as lossless WebP under `Kr/hakuno-shuffle/`. Sources: `build/orchestration/inputs/hakuno-np-close-kr-{2560x1080,1920x1080}.png`. The suite uses the product's named Close region and existing `Kr/close.png`; `Kr/battle-screen.png` is the absence control. No game input.
+
 | File | Suite | Labels from | Cases |
 |---|---|---|---|
 | `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), the device-side full screens (20), `Jp/wide-2340/` 0013 (2340x1080 score crops 2, full frame 1) | 191 |
