@@ -27,6 +27,7 @@ const val WEEKLY_ROUTE_TAG = "WeeklyRoute"
 const val SKILL_LEVEL_TAG = "SkillLevel"
 
 const val BOND_TAG = "Bond"
+const val SUPPORT_CE_TAG = "FGA.SupportCe"
 
 @ServiceScoped
 class ScriptMessages @Inject constructor(
@@ -34,6 +35,7 @@ class ScriptMessages @Inject constructor(
     private val notification: ScriptRunnerNotification,
     private val prefs: IPreferences
 ) : IScriptMessages {
+    override val supportCeDiagnosticsEnabled = BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest")
     private val context: Context = service
 
     private val handler by lazy {
@@ -54,6 +56,10 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.SupportCe -> {
+                if (supportCeDiagnosticsEnabled) Timber.tag(SUPPORT_CE_TAG).i(item.message)
+                Unit
+            }
             is ScriptLog.FriendRequest -> Timber.i(
                 "friend-request sent=%s fallbackReject=%s", item.sent, item.fallbackReject
             )

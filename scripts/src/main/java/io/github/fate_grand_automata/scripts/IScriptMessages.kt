@@ -25,6 +25,9 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    /** One Grand CE decision; extra template scans are enabled only for beta/deviceTest. */
+    class SupportCe(val message: String, val np: io.github.lib_automata.Match?,
+                    val default: io.github.lib_automata.Match?, val matched: Boolean) : ScriptLog()
     class FriendRequest(val sent: Boolean, val fallbackReject: Boolean) : ScriptLog()
     /** Beta-only per-frame bond evidence and final agreement. */
     class Bond(val message: String) : ScriptLog()
@@ -72,6 +75,8 @@ sealed class ScriptLog {
 }
 
 interface IScriptMessages {
+    val supportCeDiagnosticsEnabled: Boolean get() = false
+
     fun notify(action: ScriptNotify)
 
     fun log(item: ScriptLog)

@@ -20,6 +20,9 @@ py -3 tools/device-qa/run.py --build --suite support,bond,questItems
 
 ## Case format (v1)
 
+- Support `view: "CESelection"`: saved full frame through `SupportBoundsFinder` and `CESelection.check`, with `builtInCes`, `mlb`, `bothSlots` and per-row `effects` expectations. Reports contain both bond-template scores and the beta diagnostic line. An explicitly labelled `partial` row uses its measured `y` when its confirm button is outside the capture.
+- `Jp/wide-2560/27-grand-lancer-support.webp`: #23 owner JP 2560×1080 frame, lossless WebP with player names/comments masked. Row 1 Scáthach uses Foreign God + Chaldea Teatime, MLB and both slots on; NP=true, Default=false, Ignore=true. Partial Grand row 3 has the Default icon and NP=false.
+
 - `frame: "crop"`: the fixture is a crop, placed at `region720` on a black 1280x720 canvas. Reads outside the crop fail the case (coverage, D-4).
 - `bleedRight720`: a single crop case may read this many 720p pixels past its right edge (black canvas there). Set to 5 on the 55x30 score crops, since the score region is 60 px wide.
 - `pieces`: several crops of one screen, each with its own `region720`. Used by the quest item suite.

@@ -42,7 +42,7 @@ class SupportScreenLocations @Inject constructor(
 
     val listRegion = Region(-24, 332, 378, 1091) + supportOffset
     val grandCeListRegion = Region(335, 332,342, 1091) + supportOffset
-    val bondCeRegion = Region(348, 192, 53, 55) + supportOffset
+    val bondCeRegion = Region(348, 192, 53, 67) + supportOffset
     val grandCeLabelRegion = Region(335, 0,  60, 60) + supportOffset
     val grandCeRegion1 = Region(346, 100, 320, 94) + supportOffset
     val grandCeRegion2 = Region(346, 192, 320, 94) + supportOffset

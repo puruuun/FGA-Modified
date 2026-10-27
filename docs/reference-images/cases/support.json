@@ -5299,6 +5299,58 @@
           "display": "Ordinary"
         }
       ]
+    },
+    {
+      "name": "0023-Jp-wide-2560-grand-lancer-CE-selection",
+      "server": "Jp",
+      "view": "CESelection",
+      "file": "docs/reference-images/Jp/wide-2560/27-grand-lancer-support.webp",
+      "source": "build/orchestration/inputs/0023-grand-support/jp-lancer-grand-support-2560x1080.png",
+      "builtInCes": [
+        "Foreign God",
+        "Chaldea Teatime"
+      ],
+      "mlb": true,
+      "bothSlots": true,
+      "masked720": [
+        [
+          616,
+          196,
+          428,
+          88
+        ],
+        [
+          616,
+          396,
+          428,
+          88
+        ],
+        [
+          616,
+          596,
+          428,
+          88
+        ]
+      ],
+      "rows": [
+        {
+          "y": 179,
+          "bondIcon": "NP",
+          "effects": {
+            "NP": true,
+            "Default": false,
+            "Ignore": true
+          }
+        },
+        {
+          "y": 579,
+          "partial": true,
+          "bondIcon": "Default",
+          "effects": {
+            "NP": false
+          }
+        }
+      ]
     }
   ]
 }

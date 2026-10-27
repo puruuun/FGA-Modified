@@ -45,10 +45,26 @@ internal class FixtureApi(
     private val server = GameServers.deserialize(case.optString("server", "Kr"))!!
     private val common = properties<ISupportPreferencesCommon> { if (it == "getMlbSimilarity") 0.8 else error("Unexpected preference $it") }
     override val prefs = properties<IPreferences> { when (it) { "getGameServer" -> server; "getSupport" -> common; else -> error("Unexpected preference $it") } }
-    override val messages = properties<IScriptMessages> { Unit }
+    internal val supportCeLogs = mutableListOf<ScriptLog.SupportCe>()
+    override val messages = object : IScriptMessages {
+        override val supportCeDiagnosticsEnabled = case.optString("view") == "CESelection"
+        override fun notify(action: ScriptNotify) = Unit
+        override fun log(item: ScriptLog) {
+            if (item is ScriptLog.SupportCe) {
+                supportCeLogs += item
+                // Instrumentation has its own Timber class loader; mirror the product line into logcat.
+                android.util.Log.i("FGA.SupportCe", item.message)
+            }
+        }
+    }
     private val storage = Proxy.newProxyInstance(IStorageProvider::class.java.classLoader, arrayOf(IStorageProvider::class.java)) { _, method, args ->
         check(method.name == "readSupportImage") { "Unexpected storage operation ${method.name}" }
-        val files = imports.getJSONArray("${args!![0]}:${args[1]}")
+        val builtInCes = case.optJSONArray("builtInCes")
+        if (args!![0] == io.github.fate_grand_automata.SupportImageKind.CE && builtInCes != null &&
+            (0 until builtInCes.length()).any { builtInCes.getString(it) == args[1] }) {
+            return@newProxyInstance listOf(runner.targetContext.assets.open("Support/ce/${args[1]}.png"))
+        }
+        val files = imports.getJSONArray("${args[0]}:${args[1]}")
         (0 until files.length()).map { ByteArrayInputStream(runner.fixture(files.getString(it))) }
     } as IStorageProvider
     override val images = ImageLoader(storage, prefs, runner.targetContext, colors)

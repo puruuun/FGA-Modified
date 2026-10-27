@@ -167,6 +167,19 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
             lines += [f"### {r['name']}", "", "```", (r.get("error") or "")[:2000], "```", ""]
     if skipped:
         lines += ["## Skip 케이스 (원본 범위 불일치 등)", ""] + [f"- {name}" for name in skipped] + [""]
+    ce_rows = [
+        (result["name"], row["y"], check)
+        for result in results if result.get("actual", {}).get("view") == "CESelection"
+        for row in result["actual"]["rows"] for check in row["checks"]
+    ]
+    if ce_rows:
+        lines += ["## Grand CE 인연 효과 점수", "", "| 케이스 / 행 y720 | 설정 | NP | Default | 선택 |",
+                  "|---|---|---:|---:|---|"]
+        for name, y, check in ce_rows:
+            np_score = (check.get("bondNP") or {}).get("score")
+            default_score = (check.get("bondDefault") or {}).get("score")
+            lines.append(f"| {name} / {y} | {check['effect']} | {np_score} | {default_score} | {check['matched']} |")
+        lines.append("")
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:

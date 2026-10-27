@@ -4,6 +4,14 @@ import android.util.Log
 import kotlin.test.*
 
 class BondLogPolicyTest {
+    @Test fun `Grand CE evidence is emitted only in beta and deviceTest`() {
+        for (debug in listOf(false, true)) {
+            assertFalse(isFgaLoggable(SUPPORT_CE_TAG, Log.INFO, debug, beta = false))
+            assertFalse(isFgaLoggable(SUPPORT_CE_TAG, Log.WARN, debug, beta = false))
+            assertFalse(isFgaLoggable(SUPPORT_CE_TAG, Log.DEBUG, debug, beta = true))
+            assertTrue(isFgaLoggable(SUPPORT_CE_TAG, Log.INFO, debug, beta = true))
+        }
+    }
     @Test fun `bond evidence is emitted only in beta at INFO or higher`() {
         for (debug in listOf(false, true)) {
             assertFalse(isFgaLoggable(BOND_TAG, Log.INFO, debug, beta = false))

@@ -28,6 +28,7 @@ private fun supportPrefs(minimum: Int = 2) = properties<ISupportPreferences> {
  * their `policy` expectations use the same rule as tools/validate_support_scores.py.
  */
 internal fun FixtureApi.verifySupport(): JSONObject {
+    if (case.optString("view") == "CESelection") return verifySupportCe()
     val result = JSONObject(); val display = SupportSkillDisplay(this)
     val full = !isCrop
     var view = SupportSkillDisplay.View.Normal
@@ -125,4 +126,60 @@ internal fun FixtureApi.verifySupport(): JSONObject {
     }
     if (scoreDiagnostics.enabled) result.put("scoreDiagnostics", scoreEvidence)
     return result.put("rows", rows)
+}
+
+/** Owner Grand CE settings through CESelection.check, with the product ImageLoader and OpenCV. No gestures. */
+private fun FixtureApi.verifySupportCe(): JSONObject {
+    check(!live && !isCrop) { "CE selection QA requires a saved full frame" }
+    val ces = case.getJSONArray("builtInCes").let { list -> (0 until list.length()).map { list.getString(it) } }
+    val bounds = useSameSnapIn { SupportBoundsFinder(this).all() }
+    val rows = JSONArray()
+    val expected = case.getJSONArray("rows")
+    for (i in 0 until expected.length()) {
+        val row = expected.getJSONObject(i)
+        val y = row.getInt("y")
+        // The bottom row's confirm button is outside the capture. Only that explicitly labelled partial
+        // row uses measured bounds; complete rows must be found by the product SupportBoundsFinder.
+        val bound = if (row.optBoolean("partial")) SupportBounds(locations.support.defaultBounds.copy(y = y * 2))
+            else checkNotNull(bounds.minByOrNull { abs(it.region.y / 2 - y) }).also {
+                check(abs(it.region.y / 2 - y) <= 2) { "Missing CE row $y: $bounds" }
+            }
+        val star = SupportSelectionStarChecker(this)
+        val grand = SupportSelectionGrandChecker(this)
+        val search = bound.region.clip(locations.support.grandCeListRegion)
+        val isGrand = useSameSnapIn {
+            grand.isGrandPresent(locations.support.grandCeLabelRegion.copy(y = search.y + 40))
+        }
+        check(isGrand) { "Expected Grand row at $y" }
+        val checks = JSONArray()
+        val effects = row.getJSONObject("effects")
+        for (effect in BondCEEffectEnum.entries) {
+            if (!effects.has(effect.name)) continue
+            val prefs = properties<ISupportPreferences> {
+                when (it) {
+                    "getMlb" -> case.getBoolean("mlb")
+                    "getRequireBothNormalAndRewardMatch" -> case.getBoolean("bothSlots")
+                    "getBondCEEffect" -> effect
+                    else -> error("Unexpected CE preference $it")
+                }
+            }
+            val before = supportCeLogs.size
+            val matched = useSameSnapIn { CESelection(this, prefs, star, grand).check(ces, bound) }
+            check(supportCeLogs.size == before + 1) { "Expected one Grand CE diagnostic per check" }
+            val evidence = supportCeLogs.last()
+            fun match(value: Match?) = value?.let {
+                JSONObject().put("score", it.score).put("region", it.region.toString())
+            } ?: JSONObject.NULL
+            checks.put(JSONObject().put("effect", effect.name).put("matched", matched)
+                .put("bondNP", match(evidence.np)).put("bondDefault", match(evidence.default))
+                .put("log", evidence.message))
+            check(matched == effects.getBoolean(effect.name)) { "CE $effect at $y: ${evidence.message}" }
+            check(evidence.matched == matched)
+            val expectedBond = row.getString("bondIcon")
+            check((evidence.np?.score ?: -1.0) >= CESelection.BOND_EFFECT_SIMILARITY == (expectedBond == "NP"))
+            check((evidence.default?.score ?: -1.0) >= CESelection.BOND_EFFECT_SIMILARITY == (expectedBond == "Default"))
+        }
+        rows.put(JSONObject().put("y", y).put("grand", isGrand).put("checks", checks))
+    }
+    return JSONObject().put("view", "CESelection").put("rows", rows)
 }
