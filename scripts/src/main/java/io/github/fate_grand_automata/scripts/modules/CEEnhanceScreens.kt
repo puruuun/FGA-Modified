@@ -24,10 +24,9 @@ class CEEnhanceScreens @Inject constructor(
     fun onScreen(): Boolean = (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr) &&
         loc.reselect.exists(images[Images.CEEnhanceReselect])
 
-    fun recommendedScores(): Pair<Double, Double> = useSameSnapIn {
-        val region = locations.servant.servantAutoSelectRegion
-        (region.findAll(images[Images.ServantAutoSelect], 0.01).maxOfOrNull { it.score } ?: 0.0) to
-            (region.findAll(images[Images.ServantAutoSelectOff], 0.01).maxOfOrNull { it.score } ?: 0.0)
+    fun recommendedScores(): Pair<Double, Double> = locations.servant.servantAutoSelectRegion.getPattern().use { crop ->
+        fun score(image: Images) = crop.findMatches(images[image], 0.01).maxOfOrNull { it.score } ?: 0.0
+        score(Images.ServantAutoSelect) to score(Images.ServantAutoSelectOff)
     }
 
     fun recommended(): Recommended = recommendedScores().let { (active, disabled) -> recommended(active, disabled) }
