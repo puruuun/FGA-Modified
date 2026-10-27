@@ -33,7 +33,7 @@ class CESelectionTest {
         val np = mockk<Pattern>(relaxed = true)
         val default = mockk<Pattern>(relaxed = true)
         var effect = BondCEEffectEnum.NP
-        var npScore = 0.75
+        var npScore = 0.739
         var defaultScore = 0.20
         var ceScore = 0.90
         var mlb = true
@@ -66,15 +66,15 @@ class CESelectionTest {
         fun check() = selection.check(listOf("Foreign God", "Chaldea Teatime"), bounds)
     }
 
-    @Test fun `both bond templates explicitly use 0_70 and preserve their distinction`() {
+    @Test fun `both bond templates explicitly use 0_60 and preserve their distinction`() {
         for (effect in listOf(BondCEEffectEnum.NP, BondCEEffectEnum.Default)) {
             val f = Fixture()
             f.effect = effect
-            for (score in listOf(0.699, 0.70, 0.79, 0.85)) {
+            for (score in listOf(0.20, 0.22, 0.45, 0.599, 0.60, 0.739, 0.844)) {
                 if (effect == BondCEEffectEnum.NP) f.npScore = score else f.defaultScore = score
-                assertEquals(score >= 0.70, f.check())
+                assertEquals(score >= 0.60, f.check())
             }
-            verify(exactly = 4) { with(f.api) { f.bond.find(if (effect == BondCEEffectEnum.NP) f.np else f.default, 0.70) } }
+            verify(exactly = 7) { with(f.api) { f.bond.find(if (effect == BondCEEffectEnum.NP) f.np else f.default, 0.60) } }
         }
         val f = Fixture()
         assertTrue(f.check())
@@ -120,7 +120,7 @@ class CESelectionTest {
         every { with(f.api) { any<Region>().getPattern(any()) } } returns crop
         assertTrue(f.check())
         verify(exactly = 1) { f.messages.log(match { it is ScriptLog.SupportCe && it.matched && it.np?.score == 0.1 }) }
-        verify { with(f.api) { f.bond.find(f.np, 0.70) } }
+        verify { with(f.api) { f.bond.find(f.np, 0.60) } }
         assertEquals(0, openScans)
     }
 }

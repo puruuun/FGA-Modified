@@ -21,8 +21,9 @@ class CESelection @Inject constructor(
     private val grandChecker: SupportSelectionGrandChecker
 ) : IFgoAutomataApi by api {
     companion object {
-        // #23: tiny bond icons need margin after screenshot scaling. Other checks keep their own thresholds.
-        const val BOND_EFFECT_SIMILARITY = 0.70
+        // #23 owner-approved calibration: device true NP 0.739, other icon 0.20–0.22,
+        // host CE-column background <= 0.45. Keep scaling margin; other checks retain their thresholds.
+        const val BOND_EFFECT_SIMILARITY = 0.60
     }
 
     fun check(ces: List<String>, bounds: SupportBounds): Boolean {
