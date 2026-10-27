@@ -60,9 +60,9 @@ class CESelection @Inject constructor(
             }
 
             val (np, default) = if (supportPrefs.bondCEEffect != BondCEEffectEnum.Ignore || messages.supportCeDiagnosticsEnabled) {
-                useSameSnapIn {
-                    bestMatch(bondRegion, images[Images.BondCeEffectNP]) to
-                        bestMatch(bondRegion, images[Images.BondCeEffectDefault])
+                bondRegion.getPattern().use { crop ->
+                    bestMatch(bondRegion, crop, images[Images.BondCeEffectNP]) to
+                        bestMatch(bondRegion, crop, images[Images.BondCeEffectDefault])
                 }
             } else null to null
             val npScore = np?.score ?: 0.0
@@ -145,10 +145,14 @@ class CESelection @Inject constructor(
     }
 
     private fun bestMatch(region: Region, template: Pattern): Match? = region.getPattern().use { crop ->
-        if (crop.width < template.width || crop.height < template.height) return@use null
+        bestMatch(region, crop, template)
+    }
+
+    private fun bestMatch(region: Region, crop: Pattern, template: Pattern): Match? {
+        if (crop.width < template.width || crop.height < template.height) return null
         // Exhaust the lazy matcher so its native result Mat is released. The positive scan floor
         // stops after suppressed matches reach zero; the decision applies its own threshold.
-        crop.findMatches(template, 0.01).maxByOrNull { it.score }
+        return crop.findMatches(template, 0.01).maxByOrNull { it.score }
             ?.let { Match(it.region * 2.0 + region.location, it.score) }
     }
 

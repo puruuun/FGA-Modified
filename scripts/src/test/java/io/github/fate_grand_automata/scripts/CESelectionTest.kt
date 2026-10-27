@@ -42,7 +42,6 @@ class CESelectionTest {
         init {
             every { api.locations.support } returns loc
             every { api.messages } returns messages
-            every { api.useSameSnapIn<Pair<Match?, Match?>>(any()) } answers { firstArg<() -> Pair<Match?, Match?>>()() }
             every { messages.supportCeDiagnosticsEnabled } returns false
             every { api.images.loadSupportPattern(SupportImageKind.CE, "Foreign God") } returns listOf(first)
             every { api.images.loadSupportPattern(SupportImageKind.CE, "Chaldea Teatime") } returns listOf(third)
@@ -109,6 +108,13 @@ class CESelectionTest {
                 assertEquals(effect == winner, f.check(), "$effect: NP=$np Default=$default")
             }
         }
+    }
+
+    @Test fun `both scores use one crop without nesting snapshots`() {
+        val f = Fixture()
+        assertTrue(f.check())
+        verify(exactly = 1) { with(f.api) { f.bond.getPattern(any()) } }
+        verify(exactly = 0) { f.api.useSameSnapIn<Any?>(any()) }
     }
 
     @Test fun `CE similarity and MLB gates remain unchanged`() {
