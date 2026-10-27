@@ -3,12 +3,14 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -53,11 +55,21 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
     val scope = rememberCoroutineScope()
     val cache = remember { File(context.cacheDir, "atlas-weekly") }
     val disabled by prefs.weeklyRoute.disabled.remember()
+    var unselected by prefs.weeklyRoute.unselected.remember()
+    val currentUnselected = state.data?.let { data ->
+        unselected.filter { it.startsWith("${data.server}:${data.week.id}:") }.toSet()
+    }.orEmpty()
 
     LaunchedEffect(server) {
         state.data = withContext(Dispatchers.IO) { AtlasRouteRepository(cache).cached(server) }
     }
-    LaunchedEffect(state.data, disabled) {
+    LaunchedEffect(state.data) {
+        state.data?.let { data ->
+            val pruned = WeeklyMissionSelection.prune(unselected, data.server, data.week.id)
+            if (pruned != unselected) unselected = pruned
+        }
+    }
+    LaunchedEffect(state.data, disabled, currentUnselected) {
         state.plan = null
         state.counts.clear()
         state.data?.let { data ->
@@ -65,7 +77,7 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
             state.stage = "solve"
             try {
                 val plan = withContext(Dispatchers.Default) {
-                    WeeklyRouteSolver.solve(data.week.missions,
+                    WeeklyRouteSolver.solve(WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id),
                         WeeklyCandidateSettings.candidates(server, data.quests, disabled), WeeklyRouteSolver.EXCLUDED_WARS)
                 }
                 state.counts.putAll(plan.items.associate { it.quest.id to it.count })
@@ -114,15 +126,29 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
         if (probeAvailable && data != null && state.probe) ProbeOptions(state, data, disabled, Modifier.weight(1f))
         else if (data != null && plan != null) {
             val manualIds = plan.manual.map { it.id }.toSet()
+            val selected = WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id)
+            val selectedIds = selected.map { it.id }.toSet()
+            val excluded = data.week.missions.filter { !it.meta && it.id !in selectedIds }
+            fun select(mission: RouteMission, checked: Boolean) {
+                val key = WeeklyMissionSelection.key(data.server, data.week.id, mission.id)
+                unselected = if (checked) unselected - key else unselected + key
+            }
             LazyColumn(Modifier.weight(1f)) {
                 item { PanelHeading(stringResource(R.string.weekly_route_missions)) }
-                items(data.week.missions.filter { !it.meta && it.id !in manualIds }) {
-                    Text("· ${it.name.replace('\n', ' ')}", style = MaterialTheme.typography.bodySmall)
+                items(selected.filter { !it.meta && it.id !in manualIds }) { mission ->
+                    MissionRow(mission, true) { select(mission, it) }
                 }
                 item { PanelHeading(stringResource(R.string.weekly_route_manual)) }
-                items(plan.manual) { Text("· ${it.name.replace('\n', ' ')}", style = MaterialTheme.typography.bodySmall) }
+                items(plan.manual) { mission -> MissionRow(mission, true) { select(mission, it) } }
+                if (excluded.isNotEmpty()) {
+                    item { PanelHeading(stringResource(R.string.weekly_route_excluded_missions)) }
+                    items(excluded) { mission -> MissionRow(mission, false) { select(mission, it) } }
+                    item { Text(stringResource(R.string.weekly_route_clear_all_note), style = MaterialTheme.typography.bodySmall) }
+                }
                 item { PanelHeading(stringResource(R.string.weekly_route_route)) }
-                if (plan.items.isEmpty()) item { Text(stringResource(R.string.weekly_route_route_empty)) }
+                if (plan.items.isEmpty()) item {
+                    Text(stringResource(R.string.weekly_route_empty_battle_warning), color = MaterialTheme.colorScheme.error)
+                }
                 items(plan.items, key = { it.quest.id }) { item ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.weekly_route_quest_line, item.quest.chapter.replace('\n', ' '),
@@ -143,6 +169,16 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MissionRow(mission: RouteMission, selected: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().toggleable(value = selected, role = Role.Checkbox, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = selected, onCheckedChange = null)
+        Text(mission.name.replace('\n', ' '), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (selected) 1f else 0.5f))
     }
 }
 

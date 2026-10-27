@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="weekly_route_excluded_missions">Excluded missions</string>
+    <string name="weekly_route_clear_all_note">The clear-all mission may need to be finished by hand.</string>
+    <string name="weekly_route_empty_battle_warning">The route is empty. OK will start an ordinary battle.</string>
     <string name="skill_level_check_only">Check level reading only (no enhancement)</string>
     <string name="tapper_service_description">"This accessibility service is used to perform clicks and swipes without root. It also enables automatic detection of FGO version (NA/JP/CN/TW/KR) by checking the APK name of the foreground app. In case you see the service malfunctioning, try turning it OFF and then turn ON again. If it still doesn't work, you might have to adjust your device's Battery optimization settings for the app."</string>
     <string name="battle_config_item_copy">"Copy"</string>
