@@ -151,8 +151,8 @@ class WideScreenLocationsTest {
     }
 
     @Test fun `quest item party heading and weekly header buttons follow the right and left inset`() {
-        assertEquals(Region(10, 30, 330, 140), WeeklyRouteLocations(sixteenNine).topLeftButton)
-        assertEquals(Region(181, 30, 330, 140), WeeklyRouteLocations(twentyOneNine).topLeftButton)
+        assertEquals(Region(10, 30, 380, 140), WeeklyRouteLocations(sixteenNine).topLeftButton)
+        assertEquals(Region(181, 30, 380, 140), WeeklyRouteLocations(twentyOneNine).topLeftButton)
         assertEquals(Region(1230, 250, 330, 1100), WeeklyRouteLocations(sixteenNine).panelColumn)
         assertEquals(Region(1859, 250, 330, 1100), WeeklyRouteLocations(twentyOneNine).panelColumn)
     }
