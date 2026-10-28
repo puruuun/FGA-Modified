@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="servant_name_flora">플로라</string>
+    <string name="servant_name_omii_san">헤비 뇨보</string>
+    <string name="servant_name_tiamat_summer">라바/티아마트(아처)</string>
+    <string name="servant_name_u_olga_marie">U-올가마리</string>
     <string name="hakuno_shuffle">하쿠노 셔플</string>
     <string name="hakuno_shuffle_confirmation_off">게임의 스킬 사용 확인을 끄세요.</string>
     <string name="hakuno_shuffle_min">최소 횟수</string>

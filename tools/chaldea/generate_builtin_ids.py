@@ -10,6 +10,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "app/src/main/assets/Support"
 
+# Owner-approved internal ID / JP collection number. Folder names are persistent preference keys.
+SERVANT_MATCHES = {
+    'Artoria (Caster)': (504500, 284),
+    'Chloe (Avenger)': (1101600, 388),
+    'Douman': (1001000, 297),
+    'Kazuradrop': (1001800, 426),
+    'Koyanskaya': (604200, 314),
+    'Koyanskaya of the Darkness (Foreigner)': (2500900, 334),
+    'Lady Avalon': (2800300, 353),
+    'Merlin': (500800, 150),
+    'Nero (Bride)': (100600, 90),
+    'Oberon': (2800100, 316),
+    'Sima Yi (Reines)': (403200, 241),
+    'Skadi': (503900, 215),
+    'Skadi (Ruler)': (901400, 357),
+    'Tamamo': (500300, 62),
+    'Waver': (501900, 37),
+}
+
 NA_CE_ALIASES = {
     "Black Grail.png": ("The Black Grail", 48, 9400480),
 }
@@ -63,9 +82,39 @@ def match_ce(file, na_equips, kr_equips, jp_equips):
     return None
 
 
+def validate_servant_matches(servants):
+    if len({item[0] for item in SERVANT_MATCHES.values()}) != len(SERVANT_MATCHES):
+        raise ValueError("Duplicate servant ID in SERVANT_MATCHES")
+    for folder, (servant_id, number) in SERVANT_MATCHES.items():
+        if not (ASSETS / "servant" / folder).is_dir():
+            raise ValueError(f"SERVANT_MATCHES folder is missing: {folder}")
+        record = servants.get(servant_id)
+        if record is None or record["collectionNo"] != number:
+            raise ValueError(f"SERVANT_MATCHES {folder}: expected ID {servant_id}, JP No. {number}; got {record}")
+
+
+def match_servant(folder, servants):
+    ids = set()
+    for file in folder.glob("*.png"):
+        match = re.fullmatch(r"f_(\d+)\d\.png", file.name)
+        if match:
+            ids.add(int(match[1]))
+    explicit = SERVANT_MATCHES.get(folder.name)
+    if explicit and ids and ids != {explicit[0]}:
+        raise ValueError(f"{folder.name}: filename IDs {sorted(ids)} disagree with explicit ID {explicit[0]}")
+    # Costume face IDs need not be catalog servant IDs. Preserve the existing filename logic.
+    records = [servants[i] for i in ids if i in servants]
+    if len(records) == 1:
+        return records[0]
+    if not ids and explicit:
+        return servants[explicit[0]]
+    return None
+
+
 def generate():
     servants = {s["id"]: s for s in catalog("JP", "servant")
                 if s["type"] in ("normal", "heroine") and s["collectionNo"] > 0}
+    validate_servant_matches(servants)
     na_equips = [s for s in catalog("NA", "equip")
                  if s["type"] == "servantEquip" and s["collectionNo"] > 0]
     kr_equips = [s for s in catalog("KR", "equip")
@@ -74,15 +123,7 @@ def generate():
                  if s["type"] == "servantEquip" and s["collectionNo"] > 0}
     rows = []
     for folder in sorted((ASSETS / "servant").iterdir()):
-        ids = set()
-        for file in folder.glob("*.png"):
-            match = re.fullmatch(r"f_(\d+)\d\.png", file.name)
-            if match:
-                ids.add(int(match[1]))
-        records = [servants[i] for i in ids if i in servants]
-        # Costume face IDs need not be catalog servant IDs. Only actual catalog
-        # identities count; more than one identity is deliberately ambiguous.
-        record = records[0] if len(records) == 1 else None
+        record = match_servant(folder, servants)
         rows.append(row("servant", folder.name, record))
     for file in sorted((ASSETS / "ce").glob("*.png")):
         record = match_ce(file, na_equips, kr_equips, jp_equips)
@@ -101,6 +142,18 @@ def generate():
         before, rest = text.split(start, 1)
         _, after = rest.split(end, 1)
         manual.write_text(before + start + "\n" + "\n".join(table[4:]) + "\n" + end + after, encoding="utf-8")
+    servant_table = ["# 내장 서번트 연결표", "", "Atlas JP 데이터로 검증된 내장 서번트 24종 연결표입니다. 번호는 JP 도감 번호 기준입니다.", "",
+                     "| 폴더 | JP No. | Atlas name |", "|---|---|---|"]
+    servant_table += [f'| {item["folder"]} | {item["number"] or "미연결"} | {item["name"] or "—"} |'
+                      for item in rows if item["kind"] == "servant"]
+    (ROOT / "docs/design/0018-builtin-servant-table.md").write_text("\n".join(servant_table) + "\n", encoding="utf-8")
+    text = manual.read_text(encoding="utf-8")
+    start, end = "<!-- builtin-servant-table:start -->", "<!-- builtin-servant-table:end -->"
+    if start not in text or end not in text:
+        raise ValueError("The manual must contain the builtin servant table markers")
+    before, rest = text.split(start, 1)
+    _, after = rest.split(end, 1)
+    manual.write_text(before + start + "\n" + "\n".join(servant_table[4:]) + "\n" + end + after, encoding="utf-8")
     for kind in ("servant", "ce"):
         selected = [r for r in rows if r["kind"] == kind]
         mapped = sum(r["id"] is not None for r in selected)

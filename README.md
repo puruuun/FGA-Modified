@@ -30,7 +30,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-KR.md) | Runs weekly missions with content-based navigation; the feature can be hidden and empty routes do not start. |
 | [Servant number images](wiki/scripts/Servant-Number-Portraits-KR.md) | Creates and saves support images by Servant number. |
 | [Import original FGA data](wiki/scripts/Original-FGA-Import.md) | Imports scripts and support images from the original FGA. |
-| [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts a Chaldea share link into script commands. |
+| [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts Chaldea commands and reuses all 24 built-in Servants and 23 CEs. |
 | [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when enough face cards are dealt. |
 | [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Shuffles and rechecks first-turn conditions; Hakuno settings and messages support Korean. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
@@ -93,7 +93,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 목록 내용으로 이동하며 빈 경로는 실행하지 않습니다. 추가기능에서 버튼을 숨길 수 있습니다. |
 | [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 서포트 이미지를 만들어 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
-| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | Chaldea 공유 링크를 커맨드로 변환해 입력합니다. |
+| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 커맨드를 변환하고 내장 서번트 24종·예장 23종 이미지를 재사용합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 일반 카드가 충분할 때만 커맨드를 시작합니다. |
 | [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플 설정·안내를 한국어로 표시합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |

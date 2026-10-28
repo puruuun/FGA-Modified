@@ -69,3 +69,5 @@
   - 취소 시 무변경
 - 문서: `wiki/scripts/Chaldea-Import-KR.md`에 서포트 가져오기를 추가하고, 내장 예장 연결표를 문서에 넣습니다.
 - 실기기: 소유자가 칼데아 링크로 가져온 뒤 서포트 선택을 1회 돌려 봅니다.
+
+내부 ID가 없는 15개 서번트 폴더는 `generate_builtin_ids.py`의 명시적 ID·JP 도감 번호 표로 연결하며, Atlas JP와 폴더 존재·파일명 ID 일치를 검증합니다. [내장 서번트 연결표](0018-builtin-servant-table.md)에 24종을 기록합니다.

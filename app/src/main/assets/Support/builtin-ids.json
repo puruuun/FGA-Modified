@@ -10,9 +10,9 @@
   {
     "kind": "servant",
     "folder": "Artoria (Caster)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 504500,
+    "number": 284,
+    "name": "アルトリア・キャスター",
     "region": null
   },
   {
@@ -26,9 +26,9 @@
   {
     "kind": "servant",
     "folder": "Chloe (Avenger)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 1101600,
+    "number": 388,
+    "name": "クロエ・フォン・アインツベルン",
     "region": null
   },
   {
@@ -42,9 +42,9 @@
   {
     "kind": "servant",
     "folder": "Douman",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 1001000,
+    "number": 297,
+    "name": "蘆屋道満",
     "region": null
   },
   {
@@ -66,33 +66,33 @@
   {
     "kind": "servant",
     "folder": "Kazuradrop",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 1001800,
+    "number": 426,
+    "name": "カズラドロップ",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Koyanskaya",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 604200,
+    "number": 314,
+    "name": "光のコヤンスカヤ",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Koyanskaya of the Darkness (Foreigner)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 2500900,
+    "number": 334,
+    "name": "闇のコヤンスカヤ",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Lady Avalon",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 2800300,
+    "number": 353,
+    "name": "レディ・アヴァロン",
     "region": null
   },
   {
@@ -106,25 +106,25 @@
   {
     "kind": "servant",
     "folder": "Merlin",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 500800,
+    "number": 150,
+    "name": "マーリン",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Nero (Bride)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 100600,
+    "number": 90,
+    "name": "ネロ・クラウディウス〔ブライド〕",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Oberon",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 2800100,
+    "number": 316,
+    "name": "オベロン",
     "region": null
   },
   {
@@ -138,33 +138,33 @@
   {
     "kind": "servant",
     "folder": "Sima Yi (Reines)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 403200,
+    "number": 241,
+    "name": "司馬懿〔ライネス〕",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Skadi",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 503900,
+    "number": 215,
+    "name": "スカサハ＝スカディ",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Skadi (Ruler)",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 901400,
+    "number": 357,
+    "name": "スカサハ＝スカディ",
     "region": null
   },
   {
     "kind": "servant",
     "folder": "Tamamo",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 500300,
+    "number": 62,
+    "name": "玉藻の前",
     "region": null
   },
   {
@@ -186,9 +186,9 @@
   {
     "kind": "servant",
     "folder": "Waver",
-    "id": null,
-    "number": null,
-    "name": null,
+    "id": 501900,
+    "number": 37,
+    "name": "諸葛孔明〔エルメロイⅡ世〕",
     "region": null
   },
   {

@@ -175,13 +175,34 @@ class ChaldeaSupportImportTest {
             val folders = File(assets, kind).listFiles()!!.map { it.name }.toSet()
             assertEquals(folders, rows.filter { it.kind == kind }.map { it.folder }.toSet())
         }
-        assertEquals(9, rows.count { it.kind == "servant" && it.id != null })
+        assertEquals(24, rows.count { it.kind == "servant" && it.id != null })
+        assertEquals(0, rows.count { it.kind == "servant" && it.id == null })
         assertEquals(23, rows.count { it.kind == "ce" && it.id != null })
         assertEquals(0, rows.count { it.kind == "ce" && it.id == null })
+        val explicit = mapOf(
+            "Artoria (Caster)" to (504500 to 284),
+            "Chloe (Avenger)" to (1101600 to 388),
+            "Douman" to (1001000 to 297),
+            "Kazuradrop" to (1001800 to 426),
+            "Koyanskaya" to (604200 to 314),
+            "Koyanskaya of the Darkness (Foreigner)" to (2500900 to 334),
+            "Lady Avalon" to (2800300 to 353),
+            "Merlin" to (500800 to 150),
+            "Nero (Bride)" to (100600 to 90),
+            "Oberon" to (2800100 to 316),
+            "Sima Yi (Reines)" to (403200 to 241),
+            "Skadi" to (503900 to 215),
+            "Skadi (Ruler)" to (901400 to 357),
+            "Tamamo" to (500300 to 62),
+            "Waver" to (501900 to 37)
+        )
         for (row in rows.filter { it.kind == "servant" && it.id != null }) {
-            assertTrue(File(assets, "servant/${row.folder}").listFiles()!!.any {
-                Regex("f_${row.id}[0-9]\\.png").matches(it.name)
-            })
+            val files = File(assets, "servant/${row.folder}").listFiles()!!
+            if (files.any { Regex("f_[0-9]+[0-9]\\.png").matches(it.name) }) {
+                assertTrue(files.any { Regex("f_${row.id}[0-9]\\.png").matches(it.name) })
+            } else {
+                assertEquals(explicit.getValue(row.folder), row.id to row.number, row.folder)
+            }
         }
         val text = File(assets, "builtin-ids.json").readText()
         val array = Json.parseToJsonElement(text).jsonArray
