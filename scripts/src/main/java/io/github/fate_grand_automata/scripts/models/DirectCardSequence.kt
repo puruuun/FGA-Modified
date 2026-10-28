@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.models
 
+import io.github.fate_grand_automata.scripts.enums.CardAffinityEnum
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 
 /** A complete three-card attack; optional priority replacement fills only missing colors. */
@@ -21,7 +22,13 @@ data class DirectCardSequence private constructor(val code: String, val fallback
     ): List<CommandCard>? {
         if (cards.size != 5 || cards.map { it.card }.toSet() != CommandCard.Face.list.toSet() ||
             cards.any { !it.isStunned && it.type == CardTypeEnum.Unknown }) return null
-        val remaining = cards.filter { !it.isStunned }.sortedBy { it.card.index }.toMutableList()
+        val remaining = cards.filter { !it.isStunned }.sortedWith(compareBy<ParsedCard> {
+            when (it.affinity) {
+                CardAffinityEnum.Weak -> 0
+                CardAffinityEnum.Normal -> 1
+                CardAffinityEnum.Resist -> 2
+            }
+        }.thenBy { it.card.index }).toMutableList()
         // Reserve matching colors across ALL slots before any priority replacement.
         // Repeated colors belong to the earliest requesting slot first.
         val result = code.map { token ->

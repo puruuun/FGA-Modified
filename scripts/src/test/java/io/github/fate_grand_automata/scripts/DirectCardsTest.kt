@@ -75,12 +75,12 @@ class DirectCardsTest {
     @Test
     fun `all slots including mixed NP positions are tapped in exact order without automatic policies`() {
         val expected = mapOf(
-            "ba4" to listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.NP.A),
-            "bba" to listOf(CommandCard.Face.A, CommandCard.Face.C, CommandCard.Face.B),
-            "b5a" to listOf(CommandCard.Face.A, CommandCard.NP.B, CommandCard.Face.B),
-            "a4b" to listOf(CommandCard.Face.B, CommandCard.NP.A, CommandCard.Face.A),
-            "4ba" to listOf(CommandCard.NP.A, CommandCard.Face.A, CommandCard.Face.B),
-            "baq" to listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.E),
+            "ba4" to listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.NP.A),
+            "bba" to listOf(CommandCard.Face.C, CommandCard.Face.A, CommandCard.Face.B),
+            "b5a" to listOf(CommandCard.Face.C, CommandCard.NP.B, CommandCard.Face.B),
+            "a4b" to listOf(CommandCard.Face.B, CommandCard.NP.A, CommandCard.Face.C),
+            "4ba" to listOf(CommandCard.NP.A, CommandCard.Face.C, CommandCard.Face.B),
+            "baq" to listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.Face.E),
             "4a5" to listOf(CommandCard.NP.A, CommandCard.Face.B, CommandCard.NP.B),
             "456" to listOf(CommandCard.NP.A, CommandCard.NP.B, CommandCard.NP.C)
         )
@@ -94,11 +94,54 @@ class DirectCardsTest {
     }
 
     @Test
-    fun `WB B and RB are all selected as B regardless of order in input`() {
+    fun `Weak Normal Resist Busters are selected in affinity order regardless of input order`() {
         val sequence = DirectCardSequence.parse("bbb")
         val cards = hand().mapIndexed { index, card -> if (index < 3) card.copy(type = CardTypeEnum.Buster,
             affinity = CardAffinityEnum.entries[index]) else card }
-        assertThat(sequence.resolve(cards.reversed())).isEqualTo(listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C))
+        assertThat(sequence.resolve(cards.reversed())).isEqualTo(listOf(CommandCard.Face.B, CommandCard.Face.A, CommandCard.Face.C))
+    }
+
+    @Test
+    fun `every requested colour prefers Weak then Normal then Resist`() {
+        for ((token, colour) in listOf('b' to CardTypeEnum.Buster, 'a' to CardTypeEnum.Arts, 'q' to CardTypeEnum.Quick)) {
+            val cards = hand().mapIndexed { index, card ->
+                card.copy(type = colour, affinity = when (index) {
+                    2 -> CardAffinityEnum.Weak
+                    1 -> CardAffinityEnum.Normal
+                    else -> CardAffinityEnum.Resist
+                })
+            }
+            assertThat(DirectCardSequence.parse("${token}45").resolve(cards.reversed())?.first())
+                .isEqualTo(CommandCard.Face.C)
+            assertThat(DirectCardSequence.parse("${token}45").resolve(cards.map {
+                if (it.card == CommandCard.Face.C) it.copy(isStunned = true) else it
+            })?.first()).isEqualTo(CommandCard.Face.B)
+        }
+    }
+
+    @Test
+    fun `affinity ties stay leftmost even with shuffled input`() {
+        val cards = hand().map { it.copy(type = CardTypeEnum.Buster, affinity = CardAffinityEnum.Weak) }
+        assertThat(DirectCardSequence.parse("bbb").resolve(cards.reversed()))
+            .isEqualTo(listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C))
+    }
+
+    @Test
+    fun `bba and bbb reserve the best Buster for the earliest slot`() {
+        val cards = hand().mapIndexed { index, card -> card.copy(
+            type = if (index < 3) CardTypeEnum.Buster else CardTypeEnum.Arts,
+            affinity = when (index) { 0 -> CardAffinityEnum.Resist; 2 -> CardAffinityEnum.Weak; else -> CardAffinityEnum.Normal }) }
+        assertThat(DirectCardSequence.parse("bba").resolve(cards))
+            .isEqualTo(listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.Face.D))
+        assertThat(DirectCardSequence.parse("bbb").resolve(cards))
+            .isEqualTo(listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.Face.A))
+    }
+
+    @Test
+    fun `fallback still uses supplied priority for gaps after affinity reservation`() {
+        val cards = hand().map { if (it.type == CardTypeEnum.Quick) it.copy(type = CardTypeEnum.Arts) else it }
+        assertThat(DirectCardSequence.parse("?q4b").resolve(cards) { remaining -> remaining.sortedBy { it.card.index } })
+            .isEqualTo(listOf(CommandCard.Face.A, CommandCard.NP.A, CommandCard.Face.C))
     }
 
     @Test
@@ -170,7 +213,7 @@ class DirectCardsTest {
         assertThat(f.autoSkill.execute(0, 1)).isEqualTo(NPUsage.none)
         f.execution.select(1)
         f.card.clickCommandCards(hand(), f.autoSkill.execute(0, 0))
-        assertThat(f.taps).isEqualTo(listOf(CommandCard.Face.B, CommandCard.NP.B, CommandCard.Face.A))
+        assertThat(f.taps).isEqualTo(listOf(CommandCard.Face.B, CommandCard.NP.B, CommandCard.Face.C))
     }
 
     private fun artsAndQuicks() = hand().mapIndexed { index, card ->
@@ -216,7 +259,7 @@ class DirectCardsTest {
     }
 
     @Test
-    fun `satisfied fallback is exactly strict leftmost selection and never sorts or logs`() {
+    fun `satisfied fallback is exactly strict affinity selection and never calls priority sorter or logs`() {
         for (code in listOf("bba", "ba4", "b5a", "4ba", "456")) {
             val f = Fixture(command = "&?$code")
             f.card.clickCommandCards(hand().reversed(), f.autoSkill.execute(0, 0))

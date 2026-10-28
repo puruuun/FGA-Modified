@@ -73,7 +73,6 @@ internal fun DirectCardsDialog(
                     Checkbox(checked = fallback, onCheckedChange = { fallback = it }, enabled = enabled)
                     Text(stringResource(R.string.skill_maker_direct_cards_fallback))
                 }
-                Text(stringResource(R.string.skill_maker_direct_cards_help))
                 repeat(3) { index ->
                     var expanded by rememberSaveable { mutableStateOf(false) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
