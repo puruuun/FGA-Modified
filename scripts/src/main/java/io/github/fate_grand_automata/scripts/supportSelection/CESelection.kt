@@ -21,9 +21,9 @@ class CESelection @Inject constructor(
     private val grandChecker: SupportSelectionGrandChecker
 ) : IFgoAutomataApi by api {
     companion object {
-        // #23 owner-approved calibration: device true NP 0.739, other icon 0.20–0.22,
-        // host CE-column background <= 0.45. Keep scaling margin; other checks retain their thresholds.
-        const val BOND_EFFECT_SIMILARITY = 0.60
+        // #43 KR device: true NP 0.5926–0.7317, Default 0.737/0.874, wrong icon 0.15–0.25;
+        // host CE-column background <= 0.45. Require the selected icon to beat its opposite too.
+        const val BOND_EFFECT_SIMILARITY = 0.55
     }
 
     fun check(ces: List<String>, bounds: SupportBounds): Boolean {
@@ -59,21 +59,23 @@ class CESelection @Inject constructor(
                 normalMatch || rewardMatch
             }
 
+            val (np, default) = if (supportPrefs.bondCEEffect != BondCEEffectEnum.Ignore || messages.supportCeDiagnosticsEnabled) {
+                bondRegion.getPattern().use { crop ->
+                    bestMatch(bondRegion, crop, images[Images.BondCeEffectNP]) to
+                        bestMatch(bondRegion, crop, images[Images.BondCeEffectDefault])
+                }
+            } else null to null
+            val npScore = np?.score ?: 0.0
+            val defaultScore = default?.score ?: 0.0
             val bondEffectMatch = when (supportPrefs.bondCEEffect) {
-                BondCEEffectEnum.Default -> {
-                    bondRegion.find(images[Images.BondCeEffectDefault], similarity = BOND_EFFECT_SIMILARITY) != null
-                }
-                BondCEEffectEnum.NP -> {
-                    bondRegion.find(images[Images.BondCeEffectNP], similarity = BOND_EFFECT_SIMILARITY) != null
-                }
-                else -> {
-                    true
-                }
+                BondCEEffectEnum.NP -> npScore >= BOND_EFFECT_SIMILARITY && npScore > defaultScore
+                BondCEEffectEnum.Default -> defaultScore >= BOND_EFFECT_SIMILARITY && defaultScore > npScore
+                BondCEEffectEnum.Ignore -> true
             }
 
             val decision = ceSlotMatch && bondEffectMatch
             if (messages.supportCeDiagnosticsEnabled) {
-                logGrandDecision(ces, grandSearchRegion, grandCeRegion1, grandCeRegion3, bondRegion, bondEffectMatch, decision)
+                logGrandDecision(ces, grandSearchRegion, grandCeRegion1, grandCeRegion3, bondRegion, np, default, bondEffectMatch, decision)
             }
             return decision
         } else {
@@ -115,7 +117,7 @@ class CESelection @Inject constructor(
     /** Diagnostic scans never feed the selection decision or change its configured similarity. */
     private fun logGrandDecision(
         ces: List<String>, search: Region, normal: Region, reward: Region, bond: Region,
-        bondMatched: Boolean, decision: Boolean
+        np: Match?, default: Match?, bondMatched: Boolean, decision: Boolean
     ) {
         val label = locations.support.grandCeLabelRegion.copy(y = search.y + 40)
         val patterns = ces.flatMap { name -> images.loadSupportPattern(SupportImageKind.CE, name).map { name to it } }
@@ -126,8 +128,6 @@ class CESelection @Inject constructor(
             val mlb = best?.let { isGrandLimitBroken(it.second.region) }
             return "$name={ce=${best?.first ?: "none"} best=${describe(best?.second)} search=$region mlb=$mlb}"
         }
-        val np = bestMatch(bond, images[Images.BondCeEffectNP])
-        val default = bestMatch(bond, images[Images.BondCeEffectDefault])
         val selected = when (supportPrefs.bondCEEffect) {
             BondCEEffectEnum.NP -> np
             BondCEEffectEnum.Default -> default
@@ -145,10 +145,14 @@ class CESelection @Inject constructor(
     }
 
     private fun bestMatch(region: Region, template: Pattern): Match? = region.getPattern().use { crop ->
-        if (crop.width < template.width || crop.height < template.height) return@use null
-        // Exhaust the lazy matcher so its native result Mat is released. A positive diagnostic floor
-        // stops after suppressed matches reach zero; it never feeds the product decision.
-        crop.findMatches(template, 0.01).maxByOrNull { it.score }
+        bestMatch(region, crop, template)
+    }
+
+    private fun bestMatch(region: Region, crop: Pattern, template: Pattern): Match? {
+        if (crop.width < template.width || crop.height < template.height) return null
+        // Exhaust the lazy matcher so its native result Mat is released. The positive scan floor
+        // stops after suppressed matches reach zero; the decision applies its own threshold.
+        return crop.findMatches(template, 0.01).maxByOrNull { it.score }
             ?.let { Match(it.region * 2.0 + region.location, it.score) }
     }
 

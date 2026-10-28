@@ -15,10 +15,27 @@ import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 class BattleExecutionTest {
+    @Test fun `shuffle runs in command order and preserves subsequent direct cards or NP actions`() {
+        for (suffix in listOf("&ba4", "456")) {
+            val execution = BattleExecution(config(first = TestExecutionProfile(skillCommand = "b1a{8:13}d2$suffix")))
+            val caster = mockk<Caster>(relaxed = true)
+            val shuffle = mockk<ShuffleUntil>(relaxed = true)
+            val autoSkill = AutoSkill(mockk(relaxed = true), execution, caster, shuffle)
+            val usage = autoSkill.execute(0, 0)
+            verifyOrder {
+                caster.castServantSkill(Skill.Servant.A2, listOf(ServantTarget.A))
+                shuffle.execute(any())
+                caster.castServantSkill(Skill.Servant.B1, listOf(ServantTarget.B))
+            }
+            if (suffix.startsWith('&')) assertThat(usage.directCards?.code).isEqualTo("ba4")
+            else assertThat(usage.nps).isEqualTo(CommandCard.NP.list.toSet())
+        }
+    }
     private fun config(
         first: TestExecutionProfile = TestExecutionProfile(skillCommand = "a4"),
         second: TestExecutionProfile = TestExecutionProfile(skillCommand = "d5,e5,#,f5"),
@@ -47,7 +64,7 @@ class BattleExecutionTest {
         val execution = BattleExecution(config())
         execution.select(1)
         val caster = mockk<Caster>(relaxed = true)
-        val autoSkill = AutoSkill(mockk<IFgoAutomataApi>(relaxed = true), execution, caster)
+        val autoSkill = AutoSkill(mockk<IFgoAutomataApi>(relaxed = true), execution, caster, mockk(relaxed = true))
         assertThat(autoSkill.execute(0, 0)).isEqualTo(NPUsage(setOf(CommandCard.NP.B), 0))
         autoSkill.execute(0, 1)
         autoSkill.execute(1, 0)

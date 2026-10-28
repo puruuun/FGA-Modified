@@ -90,6 +90,14 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.CommandStartDuplicateTargets -> stringResource(R.string.command_start_duplicate_targets)
     AutoBattle.ExitReason.CommandStartTargetsUnavailable -> stringResource(R.string.command_start_targets_unavailable)
     AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
+    AutoBattle.ExitReason.ShuffleUntilFaceCheckDisabled -> stringResource(R.string.hakuno_shuffle_face_check_disabled)
+    AutoBattle.ExitReason.ShuffleUntilReturnFailed -> stringResource(R.string.hakuno_shuffle_return_failed)
+    is AutoBattle.ExitReason.ShuffleUntilUnmet -> stringResource(R.string.hakuno_shuffle_unmet, presses,
+        stringResource(when (reason) {
+            io.github.fate_grand_automata.scripts.modules.ShuffleEndReason.NPShortage -> R.string.hakuno_shuffle_np_shortage
+            io.github.fate_grand_automata.scripts.modules.ShuffleEndReason.MaxReached -> R.string.hakuno_shuffle_max_reached
+            else -> R.string.hakuno_shuffle_read_failed
+        }))
 }
 
 @Composable

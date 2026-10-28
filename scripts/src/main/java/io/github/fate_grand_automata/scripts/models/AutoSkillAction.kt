@@ -1,6 +1,29 @@
 package io.github.fate_grand_automata.scripts.models
 
 sealed class AutoSkillAction {
+    data class ShuffleUntil(
+        val skill: Skill.Servant,
+        val min: Int,
+        val max: Int,
+        val conditions: List<ShuffleCondition>,
+        val stopIfUnmet: Boolean = false
+    ) : AutoSkillAction() {
+        init {
+            require(skill in Skill.Servant.skill1)
+            require(max in 1..30 && min in 0..max)
+            require(conditions.isNotEmpty())
+        }
+
+        fun toCommandString() = "${skill.autoSkillCode}{" +
+            (if (min == 0) "$max" else "$min-$max") + ":" +
+            conditions.joinToString("|") { "${it.slot.position}${it.count}" } +
+            (if (stopIfUnmet) "!" else "") + "}"
+    }
+
+    data class ShuffleCondition(val slot: FieldSlot, val count: Int) {
+        init { require(count in 1..5) }
+    }
+
     data class Atk constructor(
         val nps: Set<CommandCard.NP>,
         val cardsBeforeNP: Int,

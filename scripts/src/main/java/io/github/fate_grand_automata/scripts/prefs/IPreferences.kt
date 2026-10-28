@@ -54,7 +54,6 @@ interface IPreferences {
     val platformPrefs: PlatformPrefs
     val gestures: IGesturesPreferences
 
-    var ceBombTargetRarity: Int
 
     val servant: IServantEnhancementPreferences
 

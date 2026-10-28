@@ -36,6 +36,19 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class BattleCommandStartTest {
+    @Test fun `Hakuno token skips plug suit shuffle that turn but normal card selection still runs`() {
+        val f = Fixture(mode = CommandStartMode.Basic, shuffleMode = ShuffleCardsEnum.NoEffective)
+        every { f.card.readCommandCards() } returns hand(3)
+        every { f.shuffle.shouldShuffle(any(), any(), any()) } returns true
+        every { f.autoSkill.execute(any(), any()) } answers {
+            f.state.hakunoShuffledThisTurn = true
+            NPUsage.none
+        }
+        f.battle.performBattle()
+        verify(exactly = 0) { f.shuffle.shouldShuffle(any(), any(), any()) }
+        verify(exactly = 0) { f.caster.castMasterSkill(any(), any()) }
+        verify(exactly = 1) { f.card.clickCommandCards(any(), NPUsage.none, true) }
+    }
     private fun hand(count: Int, secondCount: Int = 5 - count) = CommandCard.Face.list.mapIndexed { index, card ->
         ParsedCard(
             card,

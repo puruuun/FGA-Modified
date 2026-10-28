@@ -58,7 +58,7 @@ class DirectCardsTest {
             execution = BattleExecution(config)
             state = BattleState().also { it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
             card = Card(api, tracker, state, caster, mockk<CardParser>(), chains, execution)
-            autoSkill = AutoSkill(api, execution, caster)
+            autoSkill = AutoSkill(api, execution, caster, mockk(relaxed = true))
         }
     }
 

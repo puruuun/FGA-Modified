@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ce_enhance_max_level">개념예장이 최대 레벨에 도달했습니다.</string>
+    <string name="ce_enhance_no_matching_ce">추천 선택 필터에 맞는 개념예장이 없습니다.</string>
+    <string name="ce_enhance_no_materials_or_qp">강화 재료 또는 QP가 부족합니다.</string>
+    <string name="ce_enhance_aborted">개념예장 강화를 중단했습니다.</string>
     <string name="skill_level_check_only">레벨 판독만 확인 (강화하지 않음)</string>
     <string name="accessibility_disable">"비활성화"</string>
     <string name="accessibility_disabled">"비활성화됨"</string>

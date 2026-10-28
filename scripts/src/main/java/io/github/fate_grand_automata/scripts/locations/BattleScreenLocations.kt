@@ -94,6 +94,7 @@ class BattleScreenLocations @Inject constructor(
     val orderChangeOkClick = Location(0, 1260).xFromCenter()
     val extraInfoWindowCloseClick = Location(-300, 940).xFromRight()
     val skillUseRegion = Region(-210, 320, 420, 85).xFromCenter()
+    val shuffleNPShortageRegion = Region(-160, 1060, 320, 130).xFromCenter()
 
     fun servantOpenDetailsClick(slot: FieldSlot) =
         Location(locate(slot.skill2()).x, 810)

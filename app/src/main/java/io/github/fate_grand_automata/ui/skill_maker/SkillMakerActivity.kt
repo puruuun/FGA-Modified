@@ -158,6 +158,7 @@ fun SkillMakerUI(
             is SkillMakerNav.SkillTarget -> {
                 SkillMakerTarget(
                     slot = nav.skill.slot(),
+                    onShuffle = vm::shuffleUntil,
                     onSkillTarget = { vm.targetSkill(it) },
                     onNpType2 = {
                         navigate(SkillMakerNav.ChangeNpType2(nav.skill))

@@ -30,6 +30,7 @@ class Battle @Inject constructor(
     private val commandStart: CommandStartGate,
     private val execution: BattleExecution
 ) : IFgoAutomataApi by api {
+    private val hand by lazy { CommandHand(api, card) }
     init {
         prefs.stopAfterThisRun = false
         state.markStartTime()
@@ -65,16 +66,7 @@ class Battle @Inject constructor(
 
     fun isIdle() = images[Images.BattleScreen] in locations.battle.screenCheckRegion
 
-    fun clickAttack(): List<ParsedCard> {
-        locations.battle.attackClick.click()
-
-        // Wait for Attack button to disappear
-        locations.battle.screenCheckRegion.waitVanish(images[Images.BattleScreen], 5.seconds)
-
-        prefs.waitBeforeCards.wait()
-
-        return card.readCommandCards()
-    }
+    fun clickAttack(): List<ParsedCard> = hand.open()
 
     fun performBattle() {
         prefs.waitBeforeTurn.wait()
@@ -129,8 +121,7 @@ class Battle @Inject constructor(
 
         when (val checked = result) {
             is CommandStartGate.Result.Ready -> {
-                locations.attack.backClick.click()
-                if (!locations.battle.screenCheckRegion.exists(images[Images.BattleScreen], 5.seconds)) {
+                if (!hand.back()) {
                     throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartReturnFailed)
                 }
                 execution.select(checked.profileIndex)
@@ -189,6 +180,7 @@ class Battle @Inject constructor(
     }
 
     private fun shouldShuffle(cards: List<ParsedCard>, npUsage: NPUsage): Boolean {
+        if (state.hakunoShuffledThisTurn) return false
         // Not this wave
         if (state.commandStage != (execution.shuffleCardsWave - 1)) {
             return false

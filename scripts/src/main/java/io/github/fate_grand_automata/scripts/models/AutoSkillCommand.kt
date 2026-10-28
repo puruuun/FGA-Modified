@@ -129,6 +129,7 @@ class AutoSkillCommand private constructor(
                 return when (val c = queue.remove()) {
                     in Skill.Servant.list.map { it.autoSkillCode } -> {
                         val skill = Skill.Servant.list.first { it.autoSkillCode == c }
+                        if (queue.peek() == '{') return parseShuffle(skill, queue)
                         val targets = getTargets(queue)
 
                         AutoSkillAction.ServantSkill(skill, targets)
@@ -197,6 +198,22 @@ class AutoSkillCommand private constructor(
             } catch (e: Exception) {
                 throw AutoBattle.BattleExitException(AutoBattle.ExitReason.SkillCommandParseError(e))
             }
+        }
+
+        private fun parseShuffle(skill: Skill.Servant, queue: Queue<Char>): AutoSkillAction.ShuffleUntil {
+            queue.remove() // {
+            val body = StringBuilder()
+            while (queue.isNotEmpty() && queue.peek() != '}') body.append(queue.remove())
+            require(queue.poll() == '}') { "Unclosed shuffle token" }
+            val match = Regex("(?:(\\d+)-)?(\\d+):([1-3][1-5](?:\\|[1-3][1-5])*)(!?)").matchEntire(body)
+                ?: throw IllegalArgumentException("Invalid shuffle token: $body")
+            return AutoSkillAction.ShuffleUntil(
+                skill, match.groupValues[1].takeIf { it.isNotEmpty() }?.toInt() ?: 0,
+                match.groupValues[2].toInt(),
+                match.groupValues[3].split('|').map {
+                    AutoSkillAction.ShuffleCondition(FieldSlot.list[it[0].digitToInt() - 1], it[1].digitToInt())
+                }, match.groupValues[4].isNotEmpty()
+            )
         }
 
         fun parse(command: String): AutoSkillCommand {
