@@ -92,7 +92,7 @@ class FpSellProgressTest {
             for (c in cells) {
                 val column = c[2].toInt() - 1; val y = c[3].toInt()
                 val cell = FpSellPolicy.Cell(c[4].toBoolean(), FpSellPolicy.Lock.valueOf(c[5]),
-                    c[7].toBooleanStrictOrNull(), c[6].toBoolean())
+                    c[7].toBooleanStrictOrNull())
                 if (p.seen(column,y,cell) == null && FpSellPolicy.select(cell,FpSellPolicy.Options(true)) && !p.samePosition(column,y))
                     p.tapped(column,y,cell.lock)
             }
@@ -150,8 +150,6 @@ class FpSellProgressTest {
         assertNotEquals("tap-rejected",p.seen(2,1142,locked))
         assertEquals(0,p.rejected)
         assertEquals(1,p.selected)
-        val excluded=FpSellPolicy.Cell(true,FpSellPolicy.Lock.Unlocked,false,excluded=true)
-        assertNotEquals("tap-rejected",p.seen(2,1142,excluded))
         assertEquals(0,p.rejected)
     }
 }

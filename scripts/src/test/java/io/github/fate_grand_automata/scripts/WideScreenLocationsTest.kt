@@ -75,13 +75,10 @@ class WideScreenLocationsTest {
 
     @Test fun `FP sell keeps its 16 9 coordinates`() {
         val loc = FpSellLocations(sixteenNine)
-        assertEquals(Region(0, 0, 380, 180), loc.screenClose)
         assertEquals(Location(160, 80), loc.close)
         assertEquals(Region(30, 185, 340, 140), loc.servantTab)
         assertEquals(Location(160, 254), loc.servantTabClick)
         assertEquals(Location(100, 1320), loc.sizeSwitch)
-        assertEquals(Region(2040, 0, 500, 160), loc.heading)
-        assertEquals(Region(1830, 0, 710, 160), loc.shop)
         assertEquals(Region(2170, 1210, 380, 200), loc.menu)
         assertEquals(Region(2100, 1240, 440, 180), loc.confirm)
         assertEquals(Region(150, 338, 1850, 1102), loc.grid)
@@ -92,12 +89,9 @@ class WideScreenLocationsTest {
     @Test fun `FP sell follows the measured 21 9 layout`() {
         val loc = FpSellLocations(twentyOneNine)
         // Edge UI: owner capture 14, 閉じる button at x 105-258, tab at 127, title at 1354, 決定 at 1439, MENU at 1456 (720p).
-        assertEquals(Region(171, 0, 380, 180), loc.screenClose)
         assertEquals(Location(331, 80), loc.close)
         assertEquals(Region(201, 185, 340, 140), loc.servantTab)
         assertEquals(Location(271, 1268), loc.sizeSwitch)
-        assertEquals(Region(2669, 0, 500, 160), loc.heading)
-        assertEquals(Region(2459, 0, 710, 160), loc.shop)
         assertEquals(Region(2799, 1210, 380, 200), loc.menu)
         assertEquals(Region(2729, 1240, 440, 180), loc.confirm)
         // The grid stays centred between the two edge columns, 5 px (720p) to the right of the screen centre.

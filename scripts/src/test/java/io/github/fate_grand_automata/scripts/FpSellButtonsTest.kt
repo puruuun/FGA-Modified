@@ -32,7 +32,7 @@ class FpSellButtonsTest {
 
     @Test fun `missing button stops after two seconds without any tap`() {
         every { with(api) { region.find(any<Pattern>(),any()) } } returns null
-        assertFailsWith<Missing> { buttons.click(region,Images.FpSellConfirm) { throw Missing() } }
+        assertFailsWith<Missing> { buttons.click(region,Images.FpSellSell) { throw Missing() } }
         verify(exactly=21) { with(api) { region.find(any<Pattern>(),any()) } }
         verify(exactly=0) { with(api) { region.click(any()) } }
     }
@@ -71,7 +71,7 @@ class FpSellButtonsTest {
     }
 
     @Test fun `FP summon confirm cancel and convert cannot enter menu retry and single click never repeats`() {
-        for (image in listOf(Images.FpSellSummonButton,Images.FpSellConfirm,Images.FpSellCancel,Images.FpSellConvert)) {
+        for (image in listOf(Images.FpSellSummonButton,Images.FpSellSell,Images.FpSellLeftArrow,Images.FpSellTab)) {
             clearMocks(api,answers=false)
             assertFailsWith<IllegalArgumentException> { buttons.menu(region,image,{ false },{ throw Missing() }) }
             verify(exactly=0) { with(api) { region.click(any()) } }
@@ -92,7 +92,7 @@ class FpSellButtonsTest {
         verify(exactly=2) { with(api) { FpSellTiming.FIND_POLL.wait() } }
     }
     @Test fun `one second settle happens before the first find and before its short retry window`() {
-        buttons.click(region,Images.FpSellScreenClose) { throw Missing() }
+        buttons.click(region,Images.FpSellMenu) { throw Missing() }
         verifyOrder {
             with(api) {
                 FpSellTiming.BUTTON_SETTLE.wait(true)
@@ -103,11 +103,4 @@ class FpSellButtonsTest {
         verify(exactly=1) { with(api) { FpSellTiming.BUTTON_SETTLE.wait(true) } }
     }
 
-    @Test fun `sell screen close retries once after three seconds and settles again before the retry`() {
-        var signals=0
-        buttons.closeSell(region,{ ++signals==32 },{ throw Missing() })
-        assertEquals(32,signals)
-        verify(exactly=30) { with(api) { FpSellTiming.FIND_POLL.wait() } }
-        verify(exactly=2) { with(api) { FpSellTiming.BUTTON_SETTLE.wait();region.click(1) } }
-    }
 }

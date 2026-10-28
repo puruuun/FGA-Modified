@@ -40,7 +40,7 @@ class AutoFriendGacha @Inject constructor(
         object SellScreenUnknown : ExitReason()
         /** A sell step stopped without selling. Every one carries the dry-run state and the tiles selected so far (D-21). */
         sealed class SellStopped(val dryRun: Boolean, val selected: Int, val unknownLock: Int) : ExitReason()
-        /** The sell button, heading or servant tab was not found. */
+        /** The sell button, card grid or servant tab was not found. */
         class SellEntryFailed(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
         /** The seven-column layout was not reached. */
         class ColumnSwitchFailed(dryRun: Boolean, selected: Int, unknownLock: Int = 0) : SellStopped(dryRun, selected, unknownLock)
@@ -68,8 +68,6 @@ class AutoFriendGacha @Inject constructor(
 
     private var saleStarted = false
     private var returning = false
-    private var previousSale: FpAutoSell.Result? = null
-    private var awaitingDryFull = false
     private var count = 0
     private var isInLoop = false
     private var initialScreen = false
@@ -87,16 +85,8 @@ class AutoFriendGacha @Inject constructor(
             { isInventoryFull() || (prefs.fpAutoSell && reader.servantFullWarning()) } to {
                 if (!prefs.fpAutoSell) throw ExitException(ExitReason.InventoryFull)
                 if (!reader.servantFullWarning()) throw ExitException(ExitReason.InventoryFullNotServant)
-                previousSale?.let { previous ->
-                    if (previous.summary.total == 0) throw ExitException(ExitReason.InventoryFullNothingToSell)
-                    if (previous.dryRun) {
-                        if (!awaitingDryFull) throw ExitException(ExitReason.SellFlowFailed(true, previous.summary.total, previous.summary.unknownLock))
-                        messages.log(ScriptLog.FpSell("stop reason=dry-run-flow-banner-resummon-verified selected=${previous.summary.total}"))
-                        throw ExitException(ExitReason.SellDryRunDone(previous.summary))
-                    }
-                }
                 saleStarted = true
-                previousSale = autoSell.run()
+                autoSell.run()
                 banner.restore()
                 returning = true
             },
@@ -123,14 +113,9 @@ class AutoFriendGacha @Inject constructor(
                 }
                 if (prefs.fpAutoSell) {
                     unknownFrames = if (actor == null) unknownFrames + 1 else 0
-                    if (awaitingDryFull && unknownFrames >= 40) {
-                        val summary = checkNotNull(previousSale).summary
-                        messages.log(ScriptLog.FpSell("stop reason=second-full-warning-not-seen selected=${summary.total} dryRun=true"))
-                        throw ExitException(ExitReason.SellFlowFailed(true, summary.total, summary.unknownLock))
-                    }
                     if (unknownFrames >= 120) throw ExitException(ExitReason.SellScreenUnknown)
                 }
-                val action = actor ?: { if (!awaitingDryFull) locations.fp.skipRapidClick.click(15) }
+                val action = actor ?: { locations.fp.skipRapidClick.click(15) }
                 action.invoke()
                 FpSellTiming.SUMMON_LOOP.wait()
             }
@@ -153,7 +138,6 @@ class AutoFriendGacha @Inject constructor(
         banner.verifySummon()
         isInLoop = true
         returning = false
-        awaitingDryFull = checkNotNull(previousSale).dryRun
         summon(dailyFree)
     }
 
@@ -170,16 +154,16 @@ class AutoFriendGacha @Inject constructor(
         FpSellTiming.SUMMON_ANIMATION.wait()
     }
 
-    private fun isSummonButtonVisible() = !awaitingDryFull && findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)
+    private fun isSummonButtonVisible() = findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)
 
     private fun isFirstSummon(): Boolean {
-        if (awaitingDryFull || (isInLoop && !returning)) return false
+        if (isInLoop && !returning) return false
 
         return images[Images.FriendSummon] in locations.fp.summonCheck
     }
 
     private fun isDailyFree(): Boolean {
-        if (awaitingDryFull || (isInLoop && !returning)) return false
+        if (isInLoop && !returning) return false
 
         return images[Images.FriendSummon] in locations.fp.initialSummonCheck
     }

@@ -21,8 +21,7 @@ class FpBannerReturnTest {
         val banner: FpBannerReturn
         init {
             every { loc.bannerTitle } returns titleRegion
-            every { loc.screenClose } returns Region(0,0,40,20)
-            every { loc.shop } returns Region(100,0,40,20)
+            every { loc.close } returns Location(20,20)
             every { loc.menu } returns Region(100,700,40,20)
             every { loc.summonMenu } returns Region(400,700,40,20)
             every { loc.leftArrow } returns left
@@ -98,25 +97,6 @@ class FpBannerReturnTest {
         verify(exactly=0) { with(run.api) { any<Region>().click(any()); any<Location>().click(any()) } }
         assertEquals(0,run.presses)
     }
-    @Test fun `workshop MENU summon and title failures each log their own stop step`() {
-        val reasons = listOf(AutoFriendGacha.ExitReason.WorkshopNotReached,
-            AutoFriendGacha.ExitReason.WorkshopMenuFailed, AutoFriendGacha.ExitReason.SummonMenuFailed)
-        for (reason in reasons) {
-            val run = Run(0)
-            val region = when (reason) {
-                AutoFriendGacha.ExitReason.WorkshopNotReached -> run.loc.shop
-                AutoFriendGacha.ExitReason.WorkshopMenuFailed -> run.loc.summonMenu
-                else -> run.loc.leftArrowRegion
-            }
-            every { with(run.api) { region.exists(any(),any(),any()) } } returns false
-            assertSame(reason, assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
-            verify(exactly=1) { run.api.messages.log(match { it is ScriptLog.FpSell && it.message == "stop step=bannerReturn reason=${reason.label}" }) }
-        }
-        val run=Run(11)
-        assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }
-        verify(exactly=1) { run.api.messages.log(match { it is ScriptLog.FpSell && it.message == "stop step=bannerReturn reason=title" }) }
-    }
-
     @Test fun `fading workshop MENU waits for a fresh match and taps once`() {
         val run=Run(0)
         var reads=0
@@ -129,45 +109,6 @@ class FpBannerReturnTest {
         assertEquals(8,reads)
         verify(exactly=1) { with(run.api) { menu.click(1) } }
     }
-    @Test fun `recognized workshop after selling advances to MENU without closing it again`() {
-        val run = Run(0)
-        val close = run.loc.screenClose
-        val menu = run.loc.menu
-        val shop = run.loc.shop
-        run.banner.restore()
-        verify(exactly = 1) { with(run.api) { close.click(1) } }
-        verify(exactly = 1) { with(run.api) { menu.click(1) } }
-        verifyOrder {
-            with(run.api) { close.click(1) }
-            with(run.api) { shop.exists(any(), any(), any()) }
-            with(run.api) { menu.click(1) }
-        }
-    }
-
-    @Test fun `ignored first sell close is retried once and workshop arrival permits MENU`() {
-        val run=Run(0)
-        val close=run.loc.screenClose
-        val shop=run.loc.shop
-        var closes=0
-        every { with(run.api) { close.click(any()) } } answers { closes++ }
-        every { with(run.api) { shop.exists(any(),any(),any()) } } answers { closes==2 }
-        run.banner.restore()
-        assertEquals(2,closes)
-        verify(exactly=30) { with(run.api) { FpSellTiming.FIND_POLL.wait() } }
-        verify(exactly=4) { with(run.api) { FpSellTiming.BUTTON_SETTLE.wait() } }
-    }
-
-    @Test fun `sell close stops with workshop reason after its single retry`() {
-        val run=Run(0)
-        val close=run.loc.screenClose
-        val shop=run.loc.shop
-        every { with(run.api) { shop.exists(any(),any(),any()) } } returns false
-        assertSame(AutoFriendGacha.ExitReason.WorkshopNotReached,
-            assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
-        verify(exactly=2) { with(run.api) { close.click(1) } }
-        verify(exactly=60) { with(run.api) { FpSellTiming.FIND_POLL.wait() } }
-    }
-
     @Test fun `left arrow retains its delay while resummon verification never taps`() {
         val run=Run(1)
         val summon=Region(900,1000,100,50)
@@ -202,5 +143,13 @@ class FpBannerReturnTest {
             assertFailsWith<AutoFriendGacha.ExitException> { run.banner.restore() }.reason)
         verify(exactly=1) { with(run.api) { icon.click(1) } }
         verify(exactly=1) { with(run.api) { FpSellTiming.SUMMON_LOAD_WAIT.wait() } }
+    }
+    @Test fun `sell screen close is fixed once then waits four seconds before MENU with no shop check`() {
+        val run = Run(0)
+        val close = run.loc.close
+        val menu = run.loc.menu
+        run.banner.restore()
+        verify(exactly = 1) { with(run.api) { close.click(1) } }
+        verifyOrder { with(run.api) { close.click(1); 4.seconds.wait(); menu.click(1) } }
     }
 }

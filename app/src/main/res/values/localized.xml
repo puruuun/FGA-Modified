@@ -774,7 +774,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="fp_sell_title">Auto-sell</string>
     <string name="fp_sell_safety">Locked, unselectable, temporary, Grand Servant and PARTY cards are never selected. Dry run cancels the final sale, returns to the FP banner and verifies the next full-box warning.</string>
     <string name="fp_auto_sell">Enable auto-sell</string>
-    <string name="fp_sell_dry_run">Dry-run (cancel final sale)</string>
+    <string name="fp_sell_dry_run">Dry-run (stop after Confirm)</string>
     <string name="fp_sell_nothing">Inventory is still full and nothing was sold.</string>
     <string name="fp_sell_not_servant">The full warning is not for servant slots (Craft Essence, command code or unknown). Stopped without selling.</string>
     <string name="fp_sell_return_workshop">Could not return to the workshop after selling or canceling. Stopped.</string>
@@ -788,7 +788,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="fp_sell_stop_state">Dry-run: %1$s / Selected cards: %2$d\nLock state unknown: %3$d cells</string>
     <string name="fp_sell_state_on">on</string>
     <string name="fp_sell_state_off">off</string>
-    <string name="fp_sell_dry_done">Dry-run complete. Sell flow, banner return and re-summon verified. Cancel was pressed; nothing was sold.</string>
+    <string name="fp_sell_dry_done">Dry-run complete. Stopped after Confirm; review the selected cards and cancel in the game. Nothing was sold.</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
     <string name="fp_sell_warning">Every visible unlocked servant, EXP card and Fou card on the sell screen will be selected and sold. Check the sell-screen filter before starting.</string>
     <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>

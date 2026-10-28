@@ -55,7 +55,7 @@ class FpSellProgress(private val pitch: Int) {
         val tap = history[id(column, y)] ?: return null
         if (tap.rejected) return "skip:tap-rejected"
         if (cell.selected == true) return "skip:already-selected"
-        if (cell.lock == FpSellPolicy.Lock.Locked || cell.excluded) return null
+        if (cell.lock == FpSellPolicy.Lock.Locked) return null
         if (cell.present && cell.selected == false) {
             val sameSpot = tap.column == column && abs(tap.y - y) <= ROW_TOLERANCE
             if (pageStationary && sameSpot && tap.page == pages - 1) {

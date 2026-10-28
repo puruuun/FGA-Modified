@@ -7,7 +7,7 @@ import io.github.lib_automata.Region
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
-/** D-39: settle before finding; only MENU, summon-menu and sell-screen Close may retry. */
+/** D-39: settle before finding; only MENU and summon-menu may retry. */
 class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSource = TimeSource.Monotonic) : IFgoAutomataApi by api {
     fun awaitSignal(polls: Int, signal: () -> Boolean): Boolean {
         val started = clock.markNow()
@@ -46,9 +46,6 @@ class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSou
         require(image == Images.FpSellMenu || image == Images.FpSellSummonMenu)
         navigate(region, image, next, missing)
     }
-
-    fun closeSell(region: Region, next: () -> Boolean, missing: () -> Nothing) =
-        navigate(region, Images.FpSellScreenClose, next, missing)
 
     private fun navigate(region: Region, image: Images, next: () -> Boolean, missing: () -> Nothing) {
         repeat(2) {

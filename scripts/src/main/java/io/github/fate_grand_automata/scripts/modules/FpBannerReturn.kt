@@ -46,9 +46,8 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
 
     fun restore() {
         val savedTitle = title ?: stop()
-        buttons.closeSell(loc.screenClose,
-            { buttons.visible(loc.shop, Images.FpSellShop) },
-            { stop(ExitReason.WorkshopNotReached) })
+        loc.close.click()
+        FpSellTiming.AFTER_CLOSE.wait()
         buttons.menu(loc.menu, Images.FpSellMenu,
             { buttons.visible(loc.summonMenu, Images.FpSellSummonMenu) },
             { stop(ExitReason.WorkshopMenuFailed) })

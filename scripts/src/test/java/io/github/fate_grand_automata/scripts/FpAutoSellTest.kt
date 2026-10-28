@@ -17,10 +17,10 @@ import kotlin.time.Duration.Companion.seconds
 class FpAutoSellTest {
     @Test fun `every tile combination follows D29 with only dry run admitting an unknown lock`() {
         for (present in listOf(true, false)) for (lock in Lock.entries)
-            for (selected in listOf(true, false, null)) for (excluded in listOf(true, false))
+            for (selected in listOf(true, false, null))
                 for (dry in listOf(true, false)) {
-                    val cell = Cell(present, lock, selected, excluded)
-                    val expected = present && lock != Lock.Locked && !excluded && selected == false &&
+                    val cell = Cell(present, lock, selected)
+                    val expected = present && lock != Lock.Locked && selected == false &&
                         (dry || lock == Lock.Unlocked)
                     assertEquals(expected, FpSellPolicy.select(cell, Options(dry)), cell.toString())
                     assertEquals(expected, FpSellPolicy.decision(cell, Options(dry)) == "select")
@@ -80,7 +80,7 @@ class FpAutoSellTest {
         every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
         every { with(api) { any<Region>().exists(any(), any(), any()) } } returns true
         val sale = mockk<FpAutoSell>(relaxed = true)
-        every { sale.run() } returns FpAutoSell.Result(FpSellPolicy.Summary(0, 0), false)
+        every { sale.run() } throws AutoFriendGacha.ExitException(AutoFriendGacha.ExitReason.InventoryFullNothingToSell)
         val banner = mockk<FpBannerReturn>(relaxed = true)
         val reader = mockk<FpSellReader>(relaxed = true)
         every { reader.servantFullWarning() } returns true
@@ -88,7 +88,8 @@ class FpAutoSellTest {
             AutoFriendGacha(mockk(), api, sale, banner, reader).script()
         }
         assertSame(AutoFriendGacha.ExitReason.InventoryFullNothingToSell, error.reason)
-        verify(exactly = 1) { sale.run(); banner.restore() }
+        verify(exactly = 1) { sale.run() }
+        verify(exactly = 0) { banner.restore() }
     }
 
     @Test fun `full warning that is not a servant warning stops without selling`() {
@@ -164,7 +165,6 @@ class FpAutoSellTest {
             every { loc.rowPitch } returns 284
             every { loc.fullSell } returns sell
             every { loc.confirm } returns confirm
-            every { loc.cancel } returns cancel
             every { loc.convert } returns convert
             every { loc.doneClose } returns close
             every { api.images[any(), any()] } returns mockk<Pattern>()
@@ -174,25 +174,44 @@ class FpAutoSellTest {
             every { api.messages.log(any()) } answers { (firstArg<ScriptLog>() as? ScriptLog.FpSell)?.let { logs.add(it.message) }; Unit }
             every { reader.loc } returns loc
             every { reader.hasLockTemplate } returns true
-            every { reader.onSellHeading() } returns true
             every { reader.onServantTab() } returns true
-            every { reader.onSellScreen() } returns true
+            every { reader.gridReadable() } returns true
             every { reader.isSevenColumns() } returns sevenColumns
             every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null))
             every { reader.readCard(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
             sale = FpAutoSell(api, reader, mockk(relaxed = true))
         }
-        fun result() = try { sale.run() } finally { sale.logFinalSummary() }
-        fun failure() = assertFailsWith<AutoFriendGacha.ExitException> { result() }
+        fun result() = try { sale.run() } catch (e: AutoFriendGacha.ExitException) {
+            val dry = e.reason as? AutoFriendGacha.ExitReason.SellDryRunDone ?: throw e
+            FpAutoSell.Result(dry.summary, true)
+        } finally { sale.logFinalSummary() }
+        fun failure() = assertFailsWith<AutoFriendGacha.ExitException> { try { sale.run() } finally { sale.logFinalSummary() } }
     }
 
-    @Test fun `dry run taps once and cancels final confirmation without ever tapping Convert`() {
+    @Test fun `dry run stops immediately after Confirm without reading or tapping final dialog`() {
         val run = SellRun()
-        assertEquals(FpAutoSell.Result(FpSellPolicy.Summary(1, 1), true), run.result())
-        verify(exactly = 1) { with(run.api) { run.card.click(1); run.confirm.click(1); run.cancel.click(1) } }
-        verify(exactly = 0) { with(run.api) { run.convert.click(any()); run.close.click(any()) } }
-        verify(exactly = 0) { run.reader.selection(any()) }
-        assertTrue(run.logs.any { it.contains("final-summary pages=3 taps=1 rejected=0") })
+        assertEquals(FpSellPolicy.Summary(1, 1), assertIs<AutoFriendGacha.ExitReason.SellDryRunDone>(run.failure().reason).summary)
+        verify(exactly = 1) { with(run.api) { run.confirm.click(1) } }
+        verify(exactly = 0) { with(run.api) { run.convert.click(any()); run.close.click(any()); run.cancel.click(any()) } }
+    }
+
+    @Test fun `real final taps use fixed locations and exact one one four second waits`() {
+        val run = SellRun(dry = false, lock = Lock.Unlocked)
+        run.result()
+        verifyOrder { with(run.api) {
+            run.confirm.click(1); 1.seconds.wait(); run.convert.click(1); 1.seconds.wait()
+            run.close.click(1); 4.seconds.wait()
+        } }
+        verify(exactly = 0) { with(run.api) { run.confirm.find(any<Pattern>(), any()); run.convert.find(any<Pattern>(), any()); run.close.find(any<Pattern>(), any()) } }
+        verify(exactly = 1) { run.reader.onServantTab() }
+    }
+
+    @Test fun `entry waits for any column grid before checking the tab and seven columns`() {
+        val run = SellRun()
+        every { run.reader.gridReadable() } returnsMany listOf(false, false, true)
+        run.result()
+        verifyOrder { run.reader.gridReadable(); run.reader.onServantTab(); run.reader.isSevenColumns() }
+        verify(exactly = 3) { run.reader.gridReadable() }
     }
 
     @Test fun `real mode finds and taps Convert and completion Close but never Cancel`() {
@@ -202,31 +221,17 @@ class FpAutoSellTest {
         verify(exactly = 0) { with(run.api) { run.cancel.click(any()) } }
     }
 
-    @Test fun `dry run missing cancel stops and cannot fall through to Convert`() {
-        val run = SellRun()
-        every { with(run.api) { run.cancel.find(any<Pattern>(), any()) } } returns null
-        assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
-        verify(exactly = 0) { with(run.api) { run.convert.click(any()) } }
-    }
-
-    @Test fun `dry run missing final dialog never taps either final button`() {
-        val run = SellRun()
-        every { with(run.api) { run.cancel.exists(any(), any(), any()) } } returns false
-        assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
-        verify(exactly = 0) { with(run.api) { run.convert.click(any()); run.cancel.click(any()) } }
-    }
-
     @Test fun `unknown selection never taps and zero selections bypass Confirm`() {
         val run = SellRun()
         every { run.reader.readCard(run.card) } returns run.unselected.copy(selected = null)
-        assertEquals(0, run.result().summary.total)
+        assertSame(AutoFriendGacha.ExitReason.InventoryFullNothingToSell, run.failure().reason)
         verify(exactly = 0) { with(run.api) { run.card.click(any()); run.confirm.click(any()); run.convert.click(any()) } }
     }
 
     @Test fun `rejected overlap is subtracted including unknown lock and never tapped again`() {
         val run = SellRun()
         every { run.reader.readCard(run.card) } returns run.unselected
-        assertEquals(FpSellPolicy.Summary(0, 0), run.result().summary)
+        assertSame(AutoFriendGacha.ExitReason.InventoryFullNothingToSell, run.failure().reason)
         verify(exactly = 1) { with(run.api) { run.card.click(1) } }
         verify(exactly = 0) { with(run.api) { run.confirm.click(any()); run.convert.click(any()) } }
         assertTrue(run.logs.any { it.contains("decision=tap-rejected") })
@@ -304,7 +309,7 @@ class FpAutoSellTest {
 
     @Test fun `summary and tile log have one selected count and safety signals only`() {
         assertEquals(7, FpSellPolicy.Summary(7, 2).total)
-        assertEquals("page=2 r1c4 present=true lock=Unlocked excluded=false selected=false decision=select",
+        assertEquals("page=2 r1c4 present=true lock=Unlocked selected=false decision=select",
             FpSellPolicy.tileLine(2, 0, 3, Cell(true, Lock.Unlocked, false), "select"))
     }
     @Test fun `final summary is printed once across normal completion and outer cleanup`() {
@@ -315,62 +320,13 @@ class FpAutoSellTest {
         assertEquals(1,run.logs.count { it.startsWith("final-summary ") })
     }
 
-    @Test fun `delayed sell buttons are each tapped once with no retry`() {
-        for (dry in listOf(true,false)) {
-            val run=SellRun(dry=dry,lock=Lock.Unlocked)
-            val counts=mutableMapOf<Region,Int>()
-            for (region in listOf(run.confirm,run.cancel,run.convert,run.close)) {
-                every { with(run.api) { region.find(any<Pattern>(),any()) } } answers {
-                    val count=(counts[region] ?: 0)+1
-                    counts[region]=count
-                    if (count < 5) null else Match(region,1.0)
-                }
-            }
-            run.result()
-            verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
-            verify(exactly=if(dry) 1 else 0) { with(run.api) { run.cancel.click(1) } }
-            verify(exactly=if(dry) 0 else 1) { with(run.api) { run.convert.click(1);run.close.click(1) } }
-        }
-    }
     @Test fun `sale does not print final summary before script cleanup even across multiple cycles`() {
         val run=SellRun()
-        run.sale.run()
-        run.sale.run()
+        repeat(2) { assertFailsWith<AutoFriendGacha.ExitException> { run.sale.run() } }
         assertEquals(0,run.logs.count { it.startsWith("final-summary ") })
         run.sale.logFinalSummary()
         run.sale.logFinalSummary()
         assertEquals(1,run.logs.count { it.startsWith("final-summary ") })
-    }
-    @Test fun `failed screen after confirm cancel or convert never causes another tap`() {
-        for (button in listOf("confirm","cancel","convert")) {
-            val run=SellRun(dry=button!="convert",lock=Lock.Unlocked)
-            when (button) {
-                "confirm" -> every { with(run.api) { run.cancel.exists(any(),any(),any()) } } returns false
-                "cancel" -> {
-                    var canceled=false
-                    every { with(run.api) { run.cancel.click(any()) } } answers { canceled=true }
-                    every { run.reader.onSellScreen() } answers { !canceled }
-                }
-                else -> {
-                    val done=Region(900,800,40,30)
-                    val loc=run.reader.loc
-                    every { loc.done } returns done
-                    every { with(run.api) { done.exists(any(),any(),any()) } } returns false
-                }
-            }
-            assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
-            verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
-            verify(exactly=if(button=="cancel") 1 else 0) { with(run.api) { run.cancel.click(1) } }
-            verify(exactly=if(button=="convert") 1 else 0) { with(run.api) { run.convert.click(1) } }
-        }
-    }
-    @Test fun `missing final confirmation keeps the half second poll and twenty second cap`() {
-        val run=SellRun()
-        every { with(run.api) { run.cancel.exists(any(),any(),any()) } } returns false
-        assertIs<AutoFriendGacha.ExitReason.SellFlowFailed>(run.failure().reason)
-        verify(exactly=40) { with(run.api) { FpSellTiming.SCREEN_POLL.wait() } }
-        verify(exactly=1) { with(run.api) { run.confirm.click(1) } }
-        verify(exactly=0) { with(run.api) { run.cancel.click(any());run.convert.click(any()) } }
     }
     @Test fun `selection keeps immediate tile taps and exactly the existing two scroll waits`() {
         val run=SellRun()
@@ -392,9 +348,9 @@ class FpAutoSellTest {
         }
         assertEquals(2,run.result().summary.total)
         assertEquals(listOf(0.7.seconds,0.7.seconds),selectionWaits)
-        verify(exactly=9) { with(run.api) { any<Duration>().wait(any()) } }
+        verify(exactly=5) { with(run.api) { any<Duration>().wait(any()) } }
         verify(exactly=1) { with(run.api) { run.card.click(1);second.click(1) } }
-        verify(exactly=6) { with(run.api) { 1.seconds.wait(any()) } }
+        verify(exactly=2) { with(run.api) { 1.seconds.wait(any()) } }
     }
 
     @Test fun `servant tab and column switch apply one second settle and increased post tap wait`() {
@@ -406,29 +362,13 @@ class FpAutoSellTest {
         every { loc.sizeSwitch } returns size
         every { run.reader.onServantTab() } returns false
         every { run.reader.isSevenColumns() } returnsMany listOf(false,true)
+        every { run.reader.onServantTab() } returnsMany listOf(false,true)
         run.result()
         verifyOrder { with(run.api) {
             1.seconds.wait();tab.click(1);1.seconds.wait()
             1.seconds.wait();size.click(1);1.seconds.wait()
         } }
     }
-    @Test fun `D45 waits after entering sale and adds convert delay only in real mode`() {
-        for (dry in listOf(true, false)) {
-            val run = SellRun(dry = dry, lock = Lock.Unlocked)
-            assertEquals(2.seconds, FpSellTiming.SELL_SCREEN_LOAD)
-            assertEquals(0.3.seconds, FpSellTiming.AFTER_CONVERT_EXTRA)
-            run.result()
-            verifyOrder {
-                with(run.api) { run.sell.click(1); FpSellTiming.SELL_SCREEN_LOAD.wait() }
-                run.reader.onSellHeading()
-            }
-            verify(exactly = if (dry) 0 else 1) { with(run.api) { FpSellTiming.AFTER_CONVERT_EXTRA.wait() } }
-            if (!dry) verifyOrder { with(run.api) {
-                run.convert.click(1); FpSellTiming.AFTER_ACTION.wait(); FpSellTiming.AFTER_CONVERT_EXTRA.wait(); run.close.click(1)
-            } }
-        }
-    }
-
     @Test fun `stable blocked by real sale gate stops before any gesture and never falls back to dry run`() {
         val run = SellRun(dry = true)
         every { run.api.prefs.fpSellStableBuild } returns true

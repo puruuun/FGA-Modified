@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
-import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
 import io.github.lib_automata.MeanColor
 import io.github.lib_automata.Pattern
@@ -13,7 +12,7 @@ import kotlin.math.sqrt
 
 class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLocations) : IFgoAutomataApi by api {
     companion object {
-        const val EXCLUSION_SIMILARITY = 0.8
+        const val LOCK_SIMILARITY = 0.8
         /**
          * D-19: the selection frame is teal (about RGB 92/245/190) on every server. Unselected frames are gold, silver,
          * bronze or gray, at least 50 RGB units away on KR 18/20/27/28, JP 29 and JP 45. A strip of frame within
@@ -55,23 +54,16 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
     private val lockTemplate get() = lockIcon
     val hasLockTemplate get() = lockIcon != null
 
-    /** Overlay words that mark a tile as not selectable: 잠금 중 / ロック中, 選択不可, グランドサーヴァント, PARTY. */
-    private val lockedTexts by lazy { listOf(Images.FpSellLockedText, Images.FpSellLockedTextAlt).mapNotNull { template(it) } }
-    private val exclusionWords by lazy {
-        listOf(Images.FpSellUnselectable, Images.FpSellGrandServant, Images.FpSellParty)
-            .mapNotNull { template(it) }
-    }
-
-    private val temporaryWords by lazy {
-        listOf(Images.FpSellTemporary, Images.FpSellTemporaryServant).mapNotNull { template(it) }
-    }
-
-    /** KR wide header art needs its own template; keep the same confidence floor as 16:9. */
-    fun onSellHeading() = loc.heading.exists(images[Images.FpSellHeading], similarity = 0.9) ||
-        (loc.isWide && prefs.gameServer is GameServer.Kr &&
-            loc.heading.exists(images[Images.FpSellHeadingWide], similarity = 0.9))
     fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)
-    fun onSellScreen() = onSellHeading() && onServantTab()
+
+    /** Wait for frame edges at any supported size, including an initially open CE tab. */
+    fun gridReadable(): Boolean = loc.grid.getPattern().use { image ->
+        val pixels = image.grayPixels() ?: return@use false
+        (5..7).any { columns ->
+            FpSellGrid.read(pixels, image.width, image.height, loc.layoutColumns(columns), loc.grid.y / 2,
+                loc.layoutPitch(columns), loc.layoutCardHeight(columns))?.readable == true
+        }
+    }
 
     /** D-11: the warning is a servant-slot warning only when the first line holds the servant word. */
     fun servantFullWarning(): Boolean = useSameSnapIn {
@@ -140,16 +132,13 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         if (!present) return FpSellPolicy.Cell(false, FpSellPolicy.Lock.Unknown, null)
         val gray = useSameSnapIn {
             val area = loc.lock(card)
-            val padlock = lockTemplate?.let { area.exists(it, similarity = EXCLUSION_SIMILARITY) } == true
-            val word = lockedTexts.any { area.exists(it, similarity = EXCLUSION_SIMILARITY) }
-            val temporary = temporaryWords.any { loc.temporary(card).exists(it, similarity = EXCLUSION_SIMILARITY) }
-            val excluded = exclusionWords.any { area.exists(it, similarity = EXCLUSION_SIMILARITY) }
+            val padlock = lockTemplate?.let { area.exists(it, similarity = LOCK_SIMILARITY) } == true
             val lock = when {
-                padlock || word || excluded -> FpSellPolicy.Lock.Locked
+                padlock -> FpSellPolicy.Lock.Locked
                 lockTemplate == null -> FpSellPolicy.Lock.Unknown
                 else -> FpSellPolicy.Lock.Unlocked
             }
-            FpSellPolicy.Cell(true, lock, null, padlock || word || excluded || temporary)
+            FpSellPolicy.Cell(true, lock, null)
         }
         return gray.copy(selected = selection(card))
     }

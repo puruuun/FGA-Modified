@@ -2,7 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 /** Frame geometry at the matching resolution (720p); no card artwork, labels or rarity are interpreted. */
 object FpSellGrid {
-    data class Result(val seven: Boolean, val tops: List<Int>)
+    data class Result(val seven: Boolean, val tops: List<Int>, val readable: Boolean = seven)
     private fun median(values: List<Double>) = values.sorted()[values.size / 2]
     private fun pixel(data: ByteArray, width: Int, x: Int, y: Int) = data[y * width + x].toInt() and 255
     private fun edge(data: ByteArray, width: Int, y: Int, x: Int, rising: Boolean): Double =
@@ -13,20 +13,23 @@ object FpSellGrid {
         }
 
     fun read(data: ByteArray, width: Int, height: Int, columns: List<Int>, originY: Int, pitch: Int, cardHeight: Int): Result? {
-        if (width <= 0 || pitch <= 0 || height < pitch || data.size != width * height || columns.size != 7) return null
+        if (width <= 0 || pitch <= 0 || height < pitch || data.size != width * height || columns.size !in 5..7) return null
         val edges = columns.map { x -> DoubleArray(height) { y -> edge(data, width, y, x, true) } }
         val profile = DoubleArray(height) { y -> median(edges.map { it[y] }) }
+        val scale = pitch / 142.0
+        val frameBand = (15 * scale).toInt()..(110 * scale).toInt()
+        val gapBand = (130 * scale).toInt()..(139 * scale).toInt()
         fun score(phase: Int): Double {
-            val inside = profile.indices.filter { (it + originY - phase).mod(pitch) in 15..110 }
-            val gap = profile.indices.filter { (it + originY - phase).mod(pitch) in 130..139 }
+            val inside = profile.indices.filter { (it + originY - phase).mod(pitch) in frameBand }
+            val gap = profile.indices.filter { (it + originY - phase).mod(pitch) in gapBand }
             return inside.map { profile[it] }.average() - gap.map { profile[it] }.average()
         }
         val phase = (0 until pitch).maxByOrNull { score(it) } ?: return null
         // The periodic frame/gap contrast cleanly separates 7 columns from 5/6. A darkened dialog is never a live sell screen.
-        val seven = score(phase) >= 30.0
+        val readable = score(phase) >= 30.0
         val tops = generateSequence(phase) { it + pitch }.takeWhile { it < originY + height }
             .filter { it + cardHeight > originY }.toList()
-        return Result(seven, tops)
+        return Result(columns.size == 7 && readable, tops, readable)
     }
 
     fun present(data: ByteArray, width: Int, height: Int, left: Int, cardWidth: Int): Boolean {

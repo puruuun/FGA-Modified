@@ -52,15 +52,15 @@ class FpResummonPathTest {
         return events
     }
 
-    @Test fun `normal resummon uses the same first10 wait and ok as the first summon in both modes`() {
+    @Test fun `normal resummon uses the same first10 wait and ok as the first summon in real mode`() {
         val expected = listOf("first10","wait:0.3","ok")
         assertEquals(expected,taps(afterSale=false,daily=false,dry=false))
-        for (dry in listOf(true,false)) assertEquals(expected,taps(afterSale=true,daily=false,dry=dry))
+        for (dry in listOf(false)) assertEquals(expected,taps(afterSale=true,daily=false,dry=dry))
     }
     @Test fun `daily free resummon uses the same initial wait and continue as the first daily summon`() {
         val expected = listOf("daily","wait:0.3","dailyContinue")
         assertEquals(expected,taps(afterSale=false,daily=true,dry=false))
-        for (dry in listOf(true,false)) assertEquals(expected,taps(afterSale=true,daily=true,dry=dry))
+        for (dry in listOf(false)) assertEquals(expected,taps(afterSale=true,daily=true,dry=dry))
     }
     @Test fun `banner verification failure prevents all original summon taps`() {
         val api = mockk<IFgoAutomataApi>(relaxed = true)

@@ -6,18 +6,17 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 /** D-29: the owner configures the sell filter. FGA checks only presence and safety signals. */
 object FpSellPolicy {
     enum class Lock { Locked, Unlocked, Unknown }
-    data class Cell(val present: Boolean, val lock: Lock, val selected: Boolean?, val excluded: Boolean = false)
+    data class Cell(val present: Boolean, val lock: Lock, val selected: Boolean?)
     data class Options(val dryRun: Boolean, val allowed: Boolean = true)
     data class Summary(val total: Int, val unknownLock: Int)
 
     fun select(cell: Cell, options: Options): Boolean =
-        options.allowed && cell.present && !cell.excluded && cell.lock != Lock.Locked && cell.selected == false &&
+        options.allowed && cell.present && cell.lock != Lock.Locked && cell.selected == false &&
             (options.dryRun || cell.lock == Lock.Unlocked)
 
     fun decision(cell: Cell, options: Options): String = when {
         !cell.present -> "skip:empty"
         cell.lock == Lock.Locked -> "skip:locked"
-        cell.excluded -> "skip:excluded"
         cell.selected == true -> "skip:already-selected"
         cell.selected == null -> "skip:selection-unknown"
         !select(cell, options) -> "skip:lock-unknown"
@@ -26,7 +25,7 @@ object FpSellPolicy {
 
     fun tileLine(page: Int, row: Int, column: Int, cell: Cell, decision: String): String =
         "page=$page r${row + 1}c${column + 1} present=${cell.present} lock=${cell.lock} " +
-            "excluded=${cell.excluded} selected=${cell.selected ?: "?"} decision=$decision"
+            "selected=${cell.selected ?: "?"} decision=$decision"
 
     const val REAL_SELL_VALIDATED = true
     const val DEFAULT_DRY_RUN = true

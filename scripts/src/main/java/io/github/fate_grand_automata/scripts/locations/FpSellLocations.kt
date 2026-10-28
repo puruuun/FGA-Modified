@@ -19,7 +19,6 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** First line of the warning dialog (centered text, so the word is searched across the whole band). */
     val fullDialogLine = Region(-920, 290, 1840, 90).xFromCenter()
     val fullSell = Region(-850, 880, 580, 160).xFromCenter()
-    val heading = Region(-520, 0, 500, 160).xFromRightEdge()
     val servantTab = Region(30, 185, 340, 140).xFromLeftEdge()
     /** Tapped to bring the servant tab forward when the sell screen opens on the Craft Essence tab (D-17). */
     val servantTabClick = Location(160, 254).xFromLeftEdge()
@@ -29,19 +28,13 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** Left column's last button (cards per row). The wide left column is packed closer together: 25 px higher on 21:9. */
     val sizeSwitch = (if (isWide) Location(100, 1268) else Location(100, 1320)).xFromLeftEdge()
     val confirm = Region(-460, 1240, 440, 180).xFromRightEdge()
-    val convertHeading = Region(-180, 40, 400, 120).xFromCenter()
-    val cancel = Region(-680, 1170, 580, 170).xFromCenter()
     val convert = Region(100, 1170, 620, 170).xFromCenter()
-    val done = Region(-380, 400, 800, 160).xFromCenter()
     val doneClose = Region(-300, 1170, 600, 170).xFromCenter()
     val close = Location(160, 80).xFromLeftEdge()
-    val screenClose = Region(0, 0, 380, 180).xFromLeftEdge()
     /** Banner arrow of the summon screen: left-edge UI with the shared wide inset (owner capture 17). */
     val leftArrowRegion = Region(0, 600, 150, 250).xFromLeftEdge()
     val summonButton = Region(250, 940, 500, 180).xFromCenter()
     val dailySummonButton = Region(-220, 940, 440, 180).xFromCenter()
-    /** Covers both localized right-edge titles, including the KR glyph crop (frame 36); avoid background in templates. */
-    val shop = Region(-730, 0, 710, 160).xFromRightEdge()
     val menu = Region(-390, 1210, 380, 200).xFromRightEdge()
     /** Wide enough for the JP summon icon (around x 533-596 at 720p) and the KR one (615-674). */
     val summonMenu = Region(-260, 1180, 340, 180).xFromCenter()
@@ -52,6 +45,11 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     fun swipeEnd(distance: Int) = swipeStart - Location(0, distance)
     // Fixed seven-column pitch (133.25 px at 720p); one row phase is fitted per page.
     fun columnX(column: Int) = Location(-1124 + gridShift + kotlin.math.round(column * 266.5).toInt(), 0).xFromCenter().x
+    /** 720p frame positions for the existing 5/6/7 size cycle (JP fp-sell/42,43 and KR/18). */
+    fun layoutColumns(columns: Int) = if (columns == 7) (0..6).map { (columnX(it) - grid.x) / 2 }
+        else (0 until columns).map { 5 + kotlin.math.round(it * 937.5 / columns).toInt() }
+    fun layoutPitch(columns: Int) = when (columns) { 5 -> 200; 6 -> 166; else -> rowPitch / 2 }
+    fun layoutCardHeight(columns: Int) = when (columns) { 5 -> 180; 6 -> 150; else -> cardHeight / 2 }
     val rowPitch = 284
     val cardWidth = 232
     val cardHeight = 252
@@ -61,7 +59,6 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val frameBands = listOf(72, 120, 160)
     /** Single-pixel columns across the outer edge, at independent bands clear of class/number badges and card art. */
     fun frameStrip(card: Region, offset: Int, band: Int) = Region(card.x + offset * 2, card.y + band, 2, 32)
-    /** The padlock sits on the left edge of a locked tile, and the overlay words cover the tile. */
-    fun temporary(card: Region) = Region(card.x, card.y - 32, card.width, card.height + 32)
+    /** The padlock sits on the left edge of a locked tile. */
     fun lock(card: Region) = Region(card.x - 32, card.y, card.width + 32, card.height)
 }

@@ -8,7 +8,7 @@ import io.github.lib_automata.Region
 import io.github.lib_automata.Swiper
 import javax.inject.Inject
 
-/** D-36: dry run cancels the final confirmation; only real selling can reach Convert. */
+/** A dry run stops at Confirm; only real selling can reach Convert. */
 class FpAutoSell @Inject constructor(
     api: IFgoAutomataApi,
     private val reader: FpSellReader,
@@ -63,14 +63,14 @@ class FpAutoSell @Inject constructor(
         log("start dryRun=$dryRun")
         click(loc.fullSell, Images.FpSellSell)
         FpSellTiming.SELL_SCREEN_LOAD.wait()
-        awaitScreen("sell heading") { reader.onSellHeading() }
+        awaitScreen("card grid") { reader.gridReadable() }
         // The sell screen may open on the Craft Essence tab. Only the servant tab is read (D-17).
         if (!useSameSnapIn { reader.onServantTab() }) {
             FpSellTiming.BUTTON_SETTLE.wait()
             loc.servantTabClick.click()
             FpSellTiming.AFTER_ACTION.wait()
+            if (!useSameSnapIn { reader.onServantTab() }) stop("servant tab not reached")
         }
-        awaitScreen("servant tab") { reader.onSellScreen() }
         step = SellStep.Columns
         // The size toggle cycles 5 -> 6 -> 7 -> 5, so reaching 7 columns takes at most two presses (D-17).
         var presses = 0
@@ -79,14 +79,13 @@ class FpAutoSell @Inject constructor(
             FpSellTiming.BUTTON_SETTLE.wait()
             loc.sizeSwitch.click()
             FpSellTiming.AFTER_ACTION.wait()
-            awaitScreen("sell screen after size switch") { reader.onSellScreen() }
+            awaitScreen("card grid after size switch") { reader.gridReadable() }
         }
         step = SellStep.Selection
         var anchorRetry = false
         var ended = false
         var requestedScroll = 0
         for (page in 0 until 500) {
-            if (!useSameSnapIn { reader.onSellScreen() }) stop("sell screen lost on page $page")
             val tiles = reader.readPage()
             val rowYs = tiles.map { it.region.y }.distinct().sorted()
             fun row(tile: FpSellReader.PageTile) = rowYs.indexOf(tile.region.y)
@@ -134,29 +133,20 @@ class FpAutoSell @Inject constructor(
         if (!ended) stop("page limit reached without the list ending")
         val summary = tracker.summary()
         messages.log(ScriptLog.FpSellSelection(summary))
-        if (summary.total > 0) finishSale(dryRun)
+        if (summary.total == 0) throw ExitException(AutoFriendGacha.ExitReason.InventoryFullNothingToSell)
+        finishSale(summary)
         return Result(summary, dryRun)
     }
 
-    /** Final dialog is verified in both modes. The dry branch returns before any Convert access. */
-    private fun finishSale(cancel: Boolean) {
+    /** Fixed taps and delays; a dry run leaves the confirmation visible for owner review. */
+    private fun finishSale(summary: FpSellPolicy.Summary) {
         step = SellStep.Flow
-        click(loc.confirm, Images.FpSellConfirm)
-        awaitScreen("final confirmation") {
-            loc.convertHeading.exists(images[Images.FpSellConvertHeading], similarity = 0.9) &&
-                loc.cancel.exists(images[Images.FpSellCancel], similarity = 0.9) &&
-                loc.convert.exists(images[Images.FpSellConvert], similarity = 0.9)
-        }
-        if (cancel) {
-            click(loc.cancel, Images.FpSellCancel)
-            awaitScreen("sell screen after cancel") { reader.onSellScreen() }
-            log("flow dry-run-cancel verified selected=$selectedSoFar")
-            return
-        }
-        click(loc.convert, Images.FpSellConvert)
-        FpSellTiming.AFTER_CONVERT_EXTRA.wait()
-        awaitScreen("done") { loc.done.exists(images[Images.FpSellDone], similarity = 0.9) }
-        click(loc.doneClose, Images.FpSellClose)
-        awaitScreen("sell heading after close") { reader.onSellHeading() }
+        loc.confirm.click()
+        if (dryRun) throw ExitException(AutoFriendGacha.ExitReason.SellDryRunDone(summary))
+        FpSellTiming.AFTER_ACTION.wait()
+        loc.convert.click()
+        FpSellTiming.AFTER_ACTION.wait()
+        loc.doneClose.click()
+        FpSellTiming.AFTER_CLOSE.wait()
     }
 }

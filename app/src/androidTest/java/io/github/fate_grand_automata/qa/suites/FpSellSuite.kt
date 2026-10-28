@@ -11,29 +11,20 @@ import io.github.lib_automata.Region
 import org.json.JSONObject
 import org.json.JSONArray
 
-/** Offline fixtures only: production geometry, lock/exclusion, selected state and policy, without gestures. */
+/** Offline fixtures only: production geometry, padlock, selected state and policy, without gestures. */
 internal fun FixtureApi.verifyFpSell(): JSONObject {
     check(!live) { "FP sell QA must never operate a live game" }
     val reader = FpSellReader(this, FpSellLocations(locations))
     fun cell(card: Region): JSONObject {
         val value = reader.readCard(card)
-        return JSONObject().put("present", value.present).put("lock", value.lock.name).put("excluded", value.excluded)
+        return JSONObject().put("present", value.present).put("lock", value.lock.name)
             .put("selected", value.selected ?: "unknown")
             .put("candidate", FpSellPolicy.select(value, FpSellPolicy.Options(true)))
             .put("candidateReal", FpSellPolicy.select(value, FpSellPolicy.Options(false)))
     }
     val actual = when (case.getString("view")) {
-        "closeTransition" -> useSameSnapIn {
-            val buttons = FpSellButtons(this)
-            JSONObject().put("close", buttons.visible(reader.loc.screenClose, Images.FpSellScreenClose))
-                .put("workshop", buttons.visible(reader.loc.shop, Images.FpSellShop))
-        }
         "workshopButtons" -> JSONObject().put("menu",
             useSameSnapIn { FpSellButtons(this).visible(reader.loc.menu, Images.FpSellMenu) })
-        "finalButtons" -> JSONObject()
-            .put("heading", reader.loc.convertHeading.exists(images[Images.FpSellConvertHeading], similarity = 0.9))
-            .put("cancelLeft", reader.loc.cancel.exists(images[Images.FpSellCancel], similarity = 0.9))
-            .put("convertRight", reader.loc.convert.exists(images[Images.FpSellConvert], similarity = 0.9))
         "returnButtons" -> {
             val patterns = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
                 .mapNotNull { runCatching { images[it] }.getOrNull() }
@@ -63,11 +54,10 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
                 JSONObject().put("verified", true)
             } finally { banner.release() }
         }
-        "doneDialog" -> JSONObject()
-            .put("done", reader.loc.done.exists(images[Images.FpSellDone], similarity = 0.9))
-            .put("close", reader.loc.doneClose.exists(images[Images.FpSellClose], similarity = 0.9))
         "limitSell" -> JSONObject().put("sell", reader.loc.fullSell.exists(images[Images.FpSellSell], similarity = 0.9))
-        "layout" -> JSONObject().put("seven", reader.isSevenColumns()).put("sellScreen", useSameSnapIn { reader.onSellScreen() })
+        "layout" -> JSONObject().put("seven", reader.isSevenColumns())
+            .put("grid", useSameSnapIn { reader.gridReadable() })
+            .put("servantTab", useSameSnapIn { reader.onServantTab() })
         "bannerTitle" -> fixturePattern(case.getJSONArray("pieces").getJSONObject(0).getString("file")).use {
             JSONObject().put("matches", useSameSnapIn { FpBannerReturn(this, reader.loc).matches(it) })
         }
