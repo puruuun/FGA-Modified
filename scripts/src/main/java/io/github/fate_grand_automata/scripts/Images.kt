@@ -1,6 +1,11 @@
 package io.github.fate_grand_automata.scripts
 
 enum class Images(val path: String) {
+    WeeklyGate("weekly_gate.png"),
+    WeeklyGateTitle("weekly_gate_title.png"),
+    WeeklyDaily("weekly_daily.png"),
+    WeeklyDailyTitle("weekly_daily_title.png"),
+    WeeklyDailyQuest("weekly_daily_quest.png"),
     FpSellTemporary("fp_sell_temporary.png"),
     FpSellTemporaryServant("fp_sell_temporary_servant.png"),
     FpSellCancel("fp_sell_cancel.png"),

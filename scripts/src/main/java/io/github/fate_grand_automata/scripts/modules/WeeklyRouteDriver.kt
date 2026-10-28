@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.scripts.locations.QuestPanelLocations
 import io.github.fate_grand_automata.scripts.locations.WeeklyRouteLocations
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.weekly.AtlasAssets
+import io.github.fate_grand_automata.scripts.weekly.AtlasWeekly
 import io.github.fate_grand_automata.scripts.weekly.BattleOutcome
 import io.github.fate_grand_automata.scripts.weekly.ChapterList
 import io.github.fate_grand_automata.scripts.weekly.IPatternFileLoader
@@ -53,7 +54,8 @@ class WeeklyRouteDriver @Inject constructor(
     private val state: BattleState,
     private val session: IWeeklyRouteSession,
     private val loader: IPatternFileLoader,
-    private val diagnostics: io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics
+    private val diagnostics: io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics,
+    private val vaultReader: WeeklyVaultReader
 ) : RouteDriver, IFgoAutomataApi by api, AutoCloseable {
     companion object {
         /** Chapter banner match score: the corrected opaque crop scores above 0.90 on owner captures; absent chapters below 0.61. */
@@ -119,19 +121,19 @@ class WeeklyRouteDriver @Inject constructor(
         700.milliseconds.wait()
     }
 
-    private fun findColor(template: Pattern, similarity: Double): Match? = useColor {
+    private fun findColor(template: Pattern, similarity: Double, label: String = "banner"): Match? = useColor {
         useSameSnapIn {
             // 0.3 keeps near misses in the log (D-32); only the threshold below accepts a banner.
             val best = loc.listArea.findAll(template, 0.3).maxByOrNull { it.score }
-            log("banner score=${best?.score} threshold=$similarity point=${best?.region?.center}")
+            log("$label score=${best?.score} threshold=$similarity point=${best?.region?.center}")
             best?.takeIf { it.score >= similarity }
         }
     }
 
     /** Search lower content first, then upper content; never leave the expected list or exceed either bound. */
-    private fun scanList(onEnd: (ListSearchDirection) -> Unit = {}, find: () -> Match?): Match? {
+    private fun <T> scanList(onEnd: (ListSearchDirection) -> Unit = {}, find: () -> T?): T? {
         val expected = screen()
-        if (expected !in setOf(RouteScreen.Home, RouteScreen.List)) return null
+        if (expected !in setOf(RouteScreen.Home, RouteScreen.List, RouteScreen.GateList, RouteScreen.DailyList)) return null
         return io.github.fate_grand_automata.scripts.weekly.WeeklyListScan.run(
             maxScrolls = MAX_LIST_SCROLLS,
             capture = {
@@ -154,26 +156,30 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun openList(list: ChapterList): Boolean {
+        if (list == ChapterList.ChaldeaGate && screen() != RouteScreen.Home) return false
         val image = when (list) {
             ChapterList.MainRecord1 -> Images.WeeklyMainRecord1
             ChapterList.MainRecord15 -> Images.WeeklyMainRecord15
             ChapterList.MainRecord2 -> Images.WeeklyMainRecord2
             ChapterList.MainInterlude -> Images.WeeklyMainInterlude
+            ChapterList.ChaldeaGate -> Images.WeeklyGate
             ChapterList.Home -> return true
         }
         // The Main Interlude button has a template for JP only; a server without one cannot enter the list.
         val template = runCatching { useColor { images[image] } }.getOrNull()
             ?: return false.also { log("list $list button has no template for this server") }
-        val match = scanList { findColor(template, BUTTON_SIMILARITY) }
+        val match = scanList { findColor(template, BUTTON_SIMILARITY, if (list == ChapterList.ChaldeaGate) "gate" else "banner") }
         if (match == null) {
             log("list $list button not found")
             return false
         }
         log("list $list button score=${"%.2f".format(match.score)} at ${match.region.center}")
-        if(screen() !in setOf(RouteScreen.Home,RouteScreen.List)) return false
+        val beforeTap = screen()
+        if (list == ChapterList.ChaldeaGate && beforeTap != RouteScreen.Home) return false
+        if (beforeTap !in setOf(RouteScreen.Home, RouteScreen.List)) return false
         match.region.center.click()
         2.seconds.wait()
-        val opened = waitScreen(RouteScreen.List)
+        val opened = waitScreen(if (list == ChapterList.ChaldeaGate) RouteScreen.GateList else RouteScreen.List)
         log("list $list opened=$opened")
         return opened
     }
@@ -181,6 +187,17 @@ class WeeklyRouteDriver @Inject constructor(
     private fun bannerFor(war: WarInfo): Pattern? = banners.getOrPut(war.id) { assets.banner(server, war) }
 
     override fun openChapter(warId: Int): Boolean {
+        if (warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) {
+            if (screen() != RouteScreen.GateList) return false
+            val template = useColor { images[Images.WeeklyDaily] }
+            val match = scanList { findColor(template, BANNER_SIMILARITY, "daily banner") }
+                ?: return false.also { abortDiagnostic() }
+            if (screen() != RouteScreen.GateList) return false
+            match.region.center.click()
+            3.seconds.wait()
+            return waitScreen(RouteScreen.DailyList, timeout = 12)
+        }
+        if (screen() !in setOf(RouteScreen.Home, RouteScreen.List)) return false
         val war = run.wars[warId] ?: return false.also { log("chapter $warId has no data") }
         val banner = bannerFor(war) ?: return false.also { log("chapter $warId banner unavailable") }
         // D-32: a chapter that is never found leaves one list frame per scan direction for the owner to compare with the Atlas banner.
@@ -201,20 +218,27 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun closeList(): Boolean {
-        if (screen() != RouteScreen.List) return false
+        if (screen() !in setOf(RouteScreen.List, RouteScreen.GateList)) return false
         loc.topLeftButton.click()
         2.seconds.wait()
         return waitScreen(RouteScreen.Home).also { log("close list home=$it") }
     }
 
     override fun terminal(): Boolean {
+        if (screen() == RouteScreen.DailyList) {
+            loc.topLeftButton.click()
+            2.seconds.wait()
+            return waitScreen(RouteScreen.GateList)
+        }
         if (screen() != RouteScreen.Map) return false.also { log("terminal button not visible") }
         loc.topLeftButton.click()
         io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.leaveMapWait.wait()
         return waitScreen(RouteScreen.List, RouteScreen.Home).also { log("terminal returned=$it") }
     }
 
-    override fun closePanel(): Boolean = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelClose.run(
+    override fun closePanel(): Boolean {
+        if (screen() == RouteScreen.DailyList) return true
+        return io.github.fate_grand_automata.scripts.weekly.WeeklyPanelClose.run(
         tap = { if (screen() == RouteScreen.List) { loc.topLeftButton.click(); true } else false },
         waitMap = { waitScreen(RouteScreen.Map, timeout = 3) },
         diagnostic = { abortDiagnostic() },
@@ -227,6 +251,7 @@ class WeeklyRouteDriver @Inject constructor(
             }
         }
     ).also { log("panel closed=$it") }
+    }
 
     fun abortDiagnostic() {
         runCatching {
@@ -250,6 +275,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun prepareMap(warId: Int): Boolean {
+        if (warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) return true
         2.seconds.wait()
         // Diagnostic fits use the broad scale range so the initial, still zoomed-in map is observable.
         val quest = run.items.firstOrNull { it.quest.warId == warId }?.quest
@@ -508,6 +534,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     private fun open(quest: RouteQuest, tap: Boolean): SpotOutcome {
+        if (quest.warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) return openVault(quest, tap)
         val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
         if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
         val map = mapFor(war, quest.mapId)
@@ -590,6 +617,56 @@ class WeeklyRouteDriver @Inject constructor(
 
     // ---- battle --------------------------------------------------------------------------------------------------
 
+    private fun readVault(): List<VaultPanel> = vaultReader.read().also { panels ->
+        panels.forEach { panel ->
+            log("vault anchor=${panel.anchor.mark} hue=${panel.color?.hue} saturation=${panel.color?.saturation} " +
+                "name=${panel.name} ap=${panel.ap} verdict=${panel.reason} tap=${panel.anchor.tap} rawNames=[${rawText(panel.rawNames)}]")
+        }
+    }
+
+    private fun openVault(quest: RouteQuest, tap: Boolean): SpotOutcome {
+        evidence = null
+        if (quest.id !in AtlasWeekly.TREASURE_VAULT_QUESTS || screen() != RouteScreen.DailyList) {
+            return SpotOutcome.NotFound("vault panel not found")
+        }
+        var problem = "vault panel not found"
+        val panel = scanList {
+            val panels = readVault()
+            if (panels.isNotEmpty()) problem = if (panels.any { it.color?.yellow == true } || problem == "vault name mismatch")
+                "vault name mismatch" else "vault colour mismatch"
+            panels.firstOrNull { it.accepted }
+        }
+        if (panel == null) {
+            panelDiagnostic(quest.id, 0)
+            return SpotOutcome.NotFound(problem)
+        }
+        if (screen() != RouteScreen.DailyList) return SpotOutcome.NotFound("vault panel not found")
+        if (tap) {
+            log("tap step=vault quest=${quest.id} point=${panel.anchor.tap}")
+            panel.anchor.tap.click()
+        } else {
+            val file = runCatching { useColor { panel.anchor.name.getPattern().use { diagnostics.saveEvidence(it, quest.id) } } }.getOrNull()
+            evidence = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(file = file.orEmpty(), by = "vault-yellow+name", questRead = panel.name.orEmpty())
+            log("probe quest=${quest.id} verdict=Match vault panel left untapped")
+        }
+        return SpotOutcome.Started
+    }
+
+    private fun settleOnDaily(): Boolean {
+        var closed = false
+        val start = kotlin.time.TimeSource.Monotonic.markNow()
+        while (start.elapsedNow() < 30.seconds) {
+            if (screen() == RouteScreen.DailyList && readVault().any { it.accepted }) return true
+            if (!closed && closeRepeatDialog()) {
+                closed = true
+                log("repeat dialog closed; settling daily list for 5s")
+                5.seconds.wait()
+            }
+            500.milliseconds.wait()
+        }
+        return false
+    }
+
     /** Only called after the existing battle flow reaches its final run limit. */
     private fun closeRepeatDialog(): Boolean = WeeklyRepeatDialog(this, loc).closeIfVisible()
 
@@ -621,9 +698,11 @@ class WeeklyRouteDriver @Inject constructor(
         } catch (e: AutoBattle.ExitException) {
             val done = state.runs - before
             return if (e.reason is AutoBattle.ExitReason.LimitRuns && done == count) {
-                val settled = settleOnMap()
+                val vault = quest.warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR && quest.id in AtlasWeekly.TREASURE_VAULT_QUESTS
+                val settled = if (vault) settleOnDaily() else settleOnMap()
                 log("battle done quest=${quest.id} runs=$done onMap=$settled")
-                if (settled) BattleOutcome(done, true) else BattleOutcome(done, false, "map with the quest panel not reached")
+                if (settled) BattleOutcome(done, true) else BattleOutcome(done, false,
+                    if (vault) "daily list with the vault panel not reached" else "map with the quest panel not reached")
             } else {
                 log("battle stopped quest=${quest.id} runs=$done reason=${if (e.reason is AutoBattle.ExitReason.Abort) "Abort" else "BattleStopped"}")
                 battleStop = e

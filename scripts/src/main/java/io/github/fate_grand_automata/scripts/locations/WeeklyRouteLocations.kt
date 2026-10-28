@@ -15,6 +15,7 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
      * Header UI: on wide screens it sits one safe-area inset further in (owner 21:9 captures 01-03: +85 px at 720p).
      */
     val topLeftButton = Region(10, 30, 330, 140).xFromLeftEdge()
+    val gateHeader = Region(-900, 0, 900, 180).xFromRightEdge()
 
     /** D-16: repeat dialog's RIGHT button is a signal only; never tap it when exiting the weekly repeat. */
     val repeatDialogSignal = Region(180, 1100, 560, 130).xFromCenter()
@@ -23,6 +24,7 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
 
     /** The scrolling button column of the main screen and the chapter lists: everything right of the portrait, below the title. */
     val listArea = Region(-1500, 200, 1500, 1140).xFromRight()
+    val homeOtherBanner = listArea.copy(height = 360)
 
     /** Owner 0009 and 0012: rail y=95..589, core x=right-27..right-19 at 720p. */
     val listScrollbar = Region(-54, 190, 16, 988).xFromRightEdge()

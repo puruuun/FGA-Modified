@@ -14,6 +14,7 @@ import org.json.JSONObject
  */
 internal fun FixtureApi.verifyWeeklyRoute(): JSONObject {
     check(!live) { "weekly route QA must never operate a live game" }
+    if (case.optString("view") == "vault") return verifyWeeklyVault()
     if (case.has("view")) return verifyWeeklyNavigation()
     val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)
     val server = prefs.gameServer

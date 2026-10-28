@@ -8,6 +8,8 @@ import kotlinx.serialization.json.*
 
 /** Strict adapter for official Atlas JSON. Unknown condition combinations stay manual. */
 object AtlasWeekly {
+    const val CHALDEA_GATE_DAILY_WAR = 1002
+    val TREASURE_VAULT_QUESTS = setOf(94061636)
     private fun JsonObject.text(k: String) = this[k]?.jsonPrimitive?.contentOrNull.orEmpty()
     private fun JsonObject.number(k: String) = this[k]?.jsonPrimitive?.intOrNull ?: 0
     private fun JsonObject.array(k: String) = this[k] as? JsonArray ?: JsonArray(emptyList())
@@ -73,19 +75,19 @@ object AtlasWeekly {
     )
     private val lenient = Json { ignoreUnknownKeys = true }
 
-    fun quests(json: String, now: Long): List<RouteQuest> = select(lenient.decodeFromString<List<WarDto>>(json), now)
+    fun quests(json: String, now: Long, log: (String) -> Unit = {}): List<RouteQuest> = select(lenient.decodeFromString<List<WarDto>>(json), now, log)
     @OptIn(ExperimentalSerializationApi::class)
-    fun quests(stream: InputStream, now: Long): List<RouteQuest> = select(lenient.decodeFromStream<List<WarDto>>(stream), now)
+    fun quests(stream: InputStream, now: Long, log: (String) -> Unit = {}): List<RouteQuest> = select(lenient.decodeFromStream<List<WarDto>>(stream), now, log)
 
     /** The route quests and the chapter data of their wars, read from the same war export. */
     class Wars(val quests: List<RouteQuest>, val wars: Map<Int, WarInfo>)
 
-    fun wars(json: String, now: Long): Wars = withWars(lenient.decodeFromString<List<WarDto>>(json), now)
+    fun wars(json: String, now: Long, log: (String) -> Unit = {}): Wars = withWars(lenient.decodeFromString<List<WarDto>>(json), now, log)
     @OptIn(ExperimentalSerializationApi::class)
-    fun wars(stream: InputStream, now: Long): Wars = withWars(lenient.decodeFromStream<List<WarDto>>(stream), now)
+    fun wars(stream: InputStream, now: Long, log: (String) -> Unit = {}): Wars = withWars(lenient.decodeFromStream<List<WarDto>>(stream), now, log)
 
-    private fun withWars(wars: List<WarDto>, now: Long): Wars {
-        val quests = select(wars, now)
+    private fun withWars(wars: List<WarDto>, now: Long, log: (String) -> Unit): Wars {
+        val quests = select(wars, now, log)
         val used = quests.map { it.warId }.toSet()
         return Wars(quests, wars.filter { it.id in used }.associate { w ->
             w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) }, w.spots.associate { it.id to it.name },
@@ -94,10 +96,15 @@ object AtlasWeekly {
     }
 
     /** Repeatable main-story free quests: AP cost, still open, and not closed by an `afterClear` such as Fuyuki's danger zone. */
-    private fun select(wars: List<WarDto>, now: Long): List<RouteQuest> = wars.flatMap { w ->
-        if (!mainStoryWar(w.id) || w.eventId != 0) emptyList() else
+    private fun select(wars: List<WarDto>, now: Long, log: (String) -> Unit): List<RouteQuest> = wars.flatMap { w ->
+        val daily = w.id == CHALDEA_GATE_DAILY_WAR
+        if (!daily && (!mainStoryWar(w.id) || w.eventId != 0)) emptyList() else
             w.spots.flatMap { spot -> spot.quests.mapNotNull { q ->
-                if (q.type != "free" || q.consumeType != "ap" || q.afterClear != "repeatLast" || now < q.openedAt || now >= q.closedAt) null
+                val eligible = if (daily) q.id in TREASURE_VAULT_QUESTS else q.type == "free"
+                if (daily && eligible && !q.name.contains("宝物庫") && !q.name.contains("보물창고")) {
+                    log("drop quest=${q.id} reason=vaultNameMismatch name=${q.name}")
+                    null
+                } else if (!eligible || q.consumeType != "ap" || q.afterClear != "repeatLast" || now < q.openedAt || now >= q.closedAt) null
                 else RouteQuest(q.id, w.id, w.priority, w.longName, spot.name, q.name, q.consume, q.type, q.afterClear,
                     enemyDataAvailable = false, repeatPhase = q.phases.maxOrNull() ?: 0,
                     spotId = spot.id, spotX = spot.x, spotY = spot.y, mapId = spot.mapId,

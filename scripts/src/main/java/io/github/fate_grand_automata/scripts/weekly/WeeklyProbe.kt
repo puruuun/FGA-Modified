@@ -18,6 +18,8 @@ enum class ProbeStatus(val csv: String) {
             reason in mapFit || reason.endsWith("image unavailable") -> MapFitFailed
             reason == "no panel at the spot" -> NoPanel
             reason == "no free panel with the AP and name" -> Mismatch
+            reason == "vault panel not found" -> NoPanel
+            reason == "vault colour mismatch" || reason == "vault name mismatch" -> Mismatch
             else -> ChapterNotFound
         }
     }
@@ -40,7 +42,7 @@ object WeeklyProbe {
     const val DIAGNOSTIC_LIMIT = 100
 
     fun select(server: String, quests: List<RouteQuest>, scope: ProbeScope, chapters: Set<Int>, disabled: Set<String>): List<RouteItem> =
-        quests.filter { it.type == "free" && it.ap > 0 && it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }
+        quests.filter { (it.type == "free" || it.id in AtlasWeekly.TREASURE_VAULT_QUESTS) && it.ap > 0 && it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }
             .filter {
                 when (scope) {
                     ProbeScope.All -> true

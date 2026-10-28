@@ -1,7 +1,7 @@
 package io.github.fate_grand_automata.scripts.weekly
 
 /** The list a chapter button sits in (design 0009 D-8). [Home] is the main screen itself. [MainInterlude] is the bottom home button (D-35). */
-enum class ChapterList { Home, MainRecord1, MainRecord15, MainRecord2, MainInterlude }
+enum class ChapterList { Home, MainRecord1, MainRecord15, MainRecord2, MainInterlude, ChaldeaGate }
 
 object ChapterLists {
     /**
@@ -13,6 +13,7 @@ object ChapterLists {
     val MAIN_INTERLUDE_WARS = setOf(307, 310)
 
     fun of(server: String, warId: Int): ChapterList = when {
+        warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR -> ChapterList.ChaldeaGate
         warId in MAIN_INTERLUDE_WARS -> ChapterList.MainInterlude
         warId in 100..108 -> ChapterList.MainRecord1
         warId in 200..299 -> ChapterList.MainRecord15
@@ -27,6 +28,7 @@ object ChapterLists {
         ChapterList.MainRecord2 -> 2
         ChapterList.Home -> 3
         ChapterList.MainInterlude -> 4
+        ChapterList.ChaldeaGate -> 5
     }
 }
 
@@ -53,7 +55,7 @@ enum class StopStatus { Done, NotFound, Aborted, NotRun }
 data class StopResult(val item: RouteItem, val done: Int, val status: StopStatus, val note: String = "")
 
 /** What the screen shows, as far as the route needs to tell. */
-enum class RouteScreen { Home, List, Map, Unknown }
+enum class RouteScreen { Home, List, GateList, DailyList, Map, Unknown }
 
 sealed class SpotOutcome {
     /** The matching quest panel was tapped; the game is in the support selection or the battle. */

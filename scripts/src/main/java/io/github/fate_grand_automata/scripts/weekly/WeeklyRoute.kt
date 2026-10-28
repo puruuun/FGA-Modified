@@ -17,7 +17,7 @@ data class RouteQuest(
     val spotFreeQuests: Int = 0
 ) {
     fun repeatable(excludedWars: Set<Int>): Boolean = warId !in excludedWars && ap > 0 &&
-        type == "free" && afterClear == "repeatLast"
+        (type == "free" || id in AtlasWeekly.TREASURE_VAULT_QUESTS) && afterClear == "repeatLast"
 }
 
 /** One map image of a war. [width] and [height] are the display size in map pixels; the PNG itself is a power-of-two texture. */

@@ -1,0 +1,157 @@
+package io.github.fate_grand_automata.scripts
+
+import io.github.fate_grand_automata.scripts.enums.GameServer
+import io.github.fate_grand_automata.scripts.modules.*
+import io.github.fate_grand_automata.scripts.weekly.*
+import io.github.lib_automata.MeanColor
+import io.github.lib_automata.OcrText
+import io.github.lib_automata.Location
+import io.github.fate_grand_automata.scripts.locations.WeeklyVaultAnchor
+import io.github.fate_grand_automata.scripts.models.battle.BattleState
+import io.mockk.*
+import kotlin.test.*
+
+class WeeklyVaultTest {
+    @Test fun `product driver probe accepts vault without tapping and route taps only the name line`() {
+        for (probe in listOf(false, true)) {
+            val api = mockk<IFgoAutomataApi>(relaxed = true)
+            every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>()() }
+            every { api.useColor<Any?>(any()) } answers { firstArg<() -> Any?>()() }
+            val reader = mockk<WeeklyVaultReader>(relaxed = true)
+            val panel = VaultPanel(WeeklyVaultAnchor(Location(2194, 700)), VaultColor(43.5, 0.99), "宝物庫初級", emptyList(), 5, true)
+            every { reader.read() } returns listOf(panel)
+            val driver = spyk(WeeklyRouteDriver(api, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+                mockk(relaxed = true), mockk(relaxed = true), BattleState(), mockk(relaxed = true), mockk(relaxed = true),
+                mockk(relaxed = true), reader))
+            every { driver.screen() } returns RouteScreen.DailyList
+            val quest = item(1002).quest
+            assertEquals(SpotOutcome.Started, if (probe) driver.probeSpot(quest) else driver.openSpot(quest))
+            verify(exactly = if (probe) 0 else 1) { with(api) { panel.anchor.tap.click(1) } }
+            if (probe) verify(exactly = 0) { with(api) { any<Location>().click(any()) } }
+            assertTrue(driver.closePanel())
+        }
+    }
+
+    private fun export(id: Int = 94061636, name: String = "宝物庫の扉を開け 初級", war: Int = 1002,
+                       consume: String = "ap", after: String = "repeatLast", opened: Int = 0, closed: Int = 999) = """
+        [{"id":$war,"eventId":1,"longName":"daily","banner":"daily.png","maps":[],"spots":[{"id":99002,"quests":[
+        {"id":$id,"name":"$name","type":"event","consumeType":"$consume","consume":10,"afterClear":"$after",
+        "openedAt":$opened,"closedAt":$closed,"phases":[1]}]}]}]
+    """.trimIndent()
+
+    @Test fun `only allowlisted open AP repeat vault in war 1002 is selected and retains event type`() {
+        val q = AtlasWeekly.quests(export(), 100).single()
+        assertEquals(94061636, q.id); assertEquals("event", q.type)
+        assertTrue(q.repeatable(emptySet()))
+        assertTrue(AtlasWeekly.quests(export(name = "보물창고의 문을 열어라 《초급》"), 100).isNotEmpty())
+        for (raw in listOf(export(id = 94061637), export(id = 94061601), export(id = 94006801), export(war = 1003),
+            export(consume = "item"), export(after = "close"), export(opened = 101), export(closed = 100))) {
+            assertTrue(AtlasWeekly.quests(raw, 100).isEmpty())
+        }
+        assertFalse(q.copy(id = 94061637).repeatable(emptySet()))
+        assertFalse(q.copy(ap = 0).repeatable(emptySet()))
+        assertFalse(q.repeatable(setOf(1002)))
+        assertFalse(AtlasWeekly.mainStoryWar(1002))
+    }
+
+    @Test fun `failed name check logs the drop and mapless daily war data is retained`() {
+        val logs = mutableListOf<String>()
+        assertTrue(AtlasWeekly.quests(export(name = "種火集め 初級"), 100, logs::add).isEmpty())
+        assertTrue(logs.single().contains("vaultNameMismatch"))
+        val war = AtlasWeekly.wars(export(), 100).wars.getValue(1002)
+        assertEquals("daily.png", war.banner); assertTrue(war.maps.isEmpty())
+    }
+
+    @Test fun `vault is enabled by default in candidates and probe and covers caster missions`() {
+        val q = AtlasWeekly.quests(export(), 100).single().copy(enemyDataAvailable = true,
+            enemies = List(9) { RouteEnemy(1, 5, emptySet()) })
+        assertEquals(listOf(q), WeeklyCandidateSettings.candidates("KR", listOf(q), emptySet()))
+        assertEquals(listOf(q.id), WeeklyProbe.select("KR", listOf(q), ProbeScope.All, emptySet(), emptySet()).map { it.quest.id })
+        val disabled = setOf(WeeklyCandidateSettings.chapterKey("KR", 1002))
+        assertTrue(WeeklyProbe.select("KR", listOf(q), ProbeScope.Enabled, emptySet(), disabled).isEmpty())
+        val plan = WeeklyRouteSolver.solve(listOf(RouteMission(1, "Caster", 15, MissionKind.EnemyClass, setOf(5))), listOf(q), emptySet())
+        assertEquals(2, plan.items.single().count); assertEquals(20L, plan.totalAp)
+        assertEquals(ProbeStatus.NoPanel, ProbeStatus.classify("vault panel not found"))
+        assertEquals(ProbeStatus.Mismatch, ProbeStatus.classify("vault name mismatch"))
+    }
+
+    @Test fun `Beginner accepts prefixes but rejects every other difficulty and mixed or confused names`() {
+        for (name in listOf("宝物庫の扉を開け 初級", "[応援] 宝物庫 初級")) assertTrue(WeeklyVaultPolicy.beginner(name, GameServer.Jp.Original))
+        for (difficulty in listOf("中級", "上級", "超級", "極級", "超級/初級")) assertFalse(WeeklyVaultPolicy.beginner("宝物庫 $difficulty", GameServer.Jp.Original))
+        for (name in listOf("보물창고의 문을 열어라 《초급》", "[라이더 강화 응원] 보물창고 초급")) assertTrue(WeeklyVaultPolicy.beginner(name, GameServer.Kr))
+        for (difficulty in listOf("중급", "상급", "초월급", "극급", "초월급/초급")) assertFalse(WeeklyVaultPolicy.beginner("보물창고 $difficulty", GameServer.Kr))
+        assertFalse(WeeklyVaultPolicy.beginner("種火集め 初級", GameServer.Jp.Original))
+        assertFalse(WeeklyVaultPolicy.beginner("보물창고 초급", GameServer.En.Original))
+        assertNull(WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90))))
+        assertEquals("宝物庫初級", WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90), OcrText("宝物庫《初級》", 85))))
+        assertNull(WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90), OcrText("宝物庫 超級", 90))))
+    }
+
+    @Test fun `measured yellow green and red backgrounds only accept yellow`() {
+        val yellow = WeeklyVaultPolicy.color(MeanColor(218.69, 159.04, 1.20))
+        assertTrue(yellow.yellow); assertTrue(yellow.hue in 43.0..44.0)
+        assertFalse(WeeklyVaultPolicy.color(MeanColor(120.02, 144.02, 25.88)).yellow)
+        assertFalse(WeeklyVaultPolicy.color(MeanColor(170.05, 51.20, 37.83)).yellow)
+        assertFalse(WeeklyVaultPolicy.color(MeanColor(220.0, 220.0, 220.0)).yellow)
+    }
+
+    @Test fun `header scores require threshold and lead while Close alone retains List`() {
+        assertEquals(RouteScreen.GateList, WeeklyRouteScreens.listScreen(0.9, 0.6))
+        assertEquals(RouteScreen.DailyList, WeeklyRouteScreens.listScreen(0.6, 0.9))
+        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.listScreen(0.9, 0.9))
+        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.listScreen(0.84, 0.2))
+        assertEquals(RouteScreen.List, WeeklyRouteScreens.listScreen(0.3, 0.4))
+    }
+
+    private fun item(war: Int) = RouteItem(RouteQuest(if (war == 1002) 94061636 else war, war, war, "chapter", "spot", "name", 10,
+        if (war == 1002) "event" else "free", "repeatLast"), 1)
+
+    private class Fake : RouteDriver {
+        var shown = RouteScreen.Home
+        var war = 0
+        var failVault = false
+        val actions = mutableListOf<String>()
+        override fun log(message: String) = Unit
+        override fun screen() = shown
+        override fun openList(list: ChapterList) = true.also { actions += "list:$list"; shown = if (list == ChapterList.ChaldeaGate) RouteScreen.GateList else RouteScreen.List }
+        override fun openChapter(warId: Int): Boolean {
+            actions += "chapter:$warId"; war = warId
+            if (failVault && warId == 1002) return false
+            shown = if (warId == 1002) RouteScreen.DailyList else RouteScreen.Map
+            return true
+        }
+        override fun prepareMap(warId: Int) = true
+        override fun openSpot(quest: RouteQuest) = SpotOutcome.Started
+        override fun probeSpot(quest: RouteQuest) = SpotOutcome.Started.also { actions += "probe" }
+        override fun battle(quest: RouteQuest, count: Int) = BattleOutcome(count, true).also { actions += "battle:$war" }
+        override fun closePanel() = true.also { if (war != 1002) shown = RouteScreen.Map }
+        override fun terminal() = true.also { actions += "terminal:$shown"; shown = if (war == 1002) RouteScreen.GateList else RouteScreen.List }
+        override fun closeList() = true.also { actions += "close:$shown"; shown = RouteScreen.Home }
+    }
+
+    @Test fun `vault visits last and route and probe end on daily list without a map`() {
+        for (server in listOf("JP", "KR")) {
+            val visits = WeeklyVisitOrder.order(server, listOf(item(1002), item(307), item(100), item(301)))
+            assertEquals(1002, visits.last().warId)
+            assertEquals(ChapterList.ChaldeaGate, visits.last().list)
+            for (probe in listOf(false, true)) {
+                val fake = Fake()
+                val result = WeeklyRouteMachine(fake, server, probe).run(visits)
+                assertTrue(result.all { it.status == StopStatus.Done })
+                assertEquals(RouteScreen.DailyList, fake.shown)
+                assertEquals(probe, "probe" in fake.actions)
+                if (probe) assertTrue(fake.actions.none { it.startsWith("battle:") })
+            }
+        }
+    }
+
+    @Test fun `leaving vault closes daily to gate to home and gate failure keeps earlier completed stops`() {
+        val fake = Fake()
+        val visits = listOf(ChapterVisit(1002, ChapterList.ChaldeaGate, listOf(item(1002))), ChapterVisit(100, ChapterList.MainRecord1, listOf(item(100))))
+        WeeklyRouteMachine(fake, "JP").run(visits)
+        assertTrue("terminal:DailyList" in fake.actions); assertTrue("close:GateList" in fake.actions)
+        val failed = Fake().apply { failVault = true }
+        val result = WeeklyRouteMachine(failed, "JP").run(WeeklyVisitOrder.order("JP", listOf(item(100), item(1002))))
+        assertEquals(listOf(StopStatus.Done, StopStatus.NotFound), result.map { it.status })
+    }
+}

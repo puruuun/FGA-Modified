@@ -4,6 +4,8 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 
 ## Case files
 
+- `weeklyRoute`의 `view: "vault"` 14건: #44 소유자 캡처 `build/orchestration/inputs/weekly-vault/1.webp`…`14.webp`를 `{Jp,Kr}/weekly-vault/`에 720p 게임 영역·무손실 WebP로 보관합니다. JP 2는 홈, 3/4/5는 게이트, 6/7/8은 요일 목록이고 KR 9는 홈, 1/10/14는 게이트, 11/12/13은 요일 목록입니다. 배너·헤더의 부재/교차 판정, JP 8·KR 11의 노란 초급 수락과 탭 위치, 빨강/초록/다른 난이도 거부를 확인합니다. 템플릿 재추출: `tools/device-qa/cut_weekly_vault_templates.py`; 공용 `En/weekly_daily_quest.png`는 JP 8의 문자만 잘라 양 서버에 사용합니다.
+
 | File | Suite | Labels from | Cases |
 |---|---|---|---|
 | `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), the device-side full screens (20), `Jp/wide-2340/` 0013 (2340x1080 score crops 2, full frame 1) | 191 |

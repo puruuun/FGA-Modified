@@ -6306,6 +6306,162 @@
       "expected": {
         "position": 1.0
       }
+    },
+    {
+      "name": "vault-Jp-02",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/02.webp",
+      "screen": "Home",
+      "gate": true,
+      "daily": false
+    },
+    {
+      "name": "vault-Jp-03",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/03.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": true
+    },
+    {
+      "name": "vault-Jp-04",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/04.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": false
+    },
+    {
+      "name": "vault-Jp-05",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/05.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": true
+    },
+    {
+      "name": "vault-Jp-06",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/06.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": false
+    },
+    {
+      "name": "vault-Jp-07",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/07.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": false
+    },
+    {
+      "name": "vault-Jp-08",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/08.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": true,
+      "tap720": [
+        1197,
+        332
+      ],
+      "expectedAp": 10
+    },
+    {
+      "name": "vault-Kr-01",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/01.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": false
+    },
+    {
+      "name": "vault-Kr-09",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/09.webp",
+      "screen": "Home",
+      "gate": true,
+      "daily": false
+    },
+    {
+      "name": "vault-Kr-10",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/10.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": true
+    },
+    {
+      "name": "vault-Kr-11",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/11.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": true,
+      "tap720": [
+        881,
+        330
+      ],
+      "expectedAp": 10
+    },
+    {
+      "name": "vault-Kr-12",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/12.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": false
+    },
+    {
+      "name": "vault-Kr-13",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/13.webp",
+      "screen": "DailyList",
+      "gate": false,
+      "daily": false,
+      "accepted": false
+    },
+    {
+      "name": "vault-Kr-14",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "view": "vault",
+      "file": "docs/reference-images/Kr/weekly-vault/14.webp",
+      "screen": "GateList",
+      "gate": false,
+      "daily": false
     }
   ],
   "imports": {
