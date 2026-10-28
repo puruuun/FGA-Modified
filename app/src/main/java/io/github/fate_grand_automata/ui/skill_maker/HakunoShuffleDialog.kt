@@ -92,8 +92,8 @@ internal fun HakunoShuffleDialog(
                         }
                         ShuffleColour(condition.type) { update(condition.copy(type = it)) }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(stringResource(R.string.hakuno_shuffle_at_least))
                             ShuffleNumber(condition.count, 1..5) { value -> update(condition.copy(count = value)) }
+                            Text(stringResource(R.string.hakuno_shuffle_cards_or_more))
                         }
                     }
                     TextButton(onClick = { rows = rows.filterIndexed { i, _ -> i != index } }, enabled = rows.size > 1) {

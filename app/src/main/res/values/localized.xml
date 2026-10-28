@@ -8,11 +8,11 @@
     <string name="switch_to_servant_enhancement">Switch to servant level-up</string>
     <string name="hakuno_shuffle">Hakuno Shuffle</string>
     <string name="hakuno_shuffle_confirmation_off">Turn off the in-game skill use confirmation.</string>
-    <string name="hakuno_shuffle_min">Min presses</string>
-    <string name="hakuno_shuffle_max">Max presses</string>
-    <string name="hakuno_shuffle_conditions">Meet any condition (OR), counting non-stunned face cards.</string>
+    <string name="hakuno_shuffle_min">Min shuffle presses</string>
+    <string name="hakuno_shuffle_max">Max shuffle presses</string>
+    <string name="hakuno_shuffle_conditions">Counts non-stunned command cards. Stops when any condition is met.</string>
     <string name="hakuno_shuffle_field_slot">Slot</string>
-    <string name="hakuno_shuffle_at_least">At least</string>
+    <string name="hakuno_shuffle_cards_or_more">or more cards</string>
     <string name="hakuno_shuffle_remove">Remove</string>
     <string name="hakuno_shuffle_add">Add condition</string>
     <string name="hakuno_shuffle_stop">Stop the battle if the condition is not met</string>

@@ -7,11 +7,11 @@
     <string name="servant_name_u_olga_marie">U-올가마리</string>
     <string name="hakuno_shuffle">하쿠노 셔플</string>
     <string name="hakuno_shuffle_confirmation_off">게임의 스킬 사용 확인을 끄세요.</string>
-    <string name="hakuno_shuffle_min">최소 횟수</string>
-    <string name="hakuno_shuffle_max">최대 횟수</string>
-    <string name="hakuno_shuffle_conditions">스턴이 아닌 일반 카드를 세어 조건 중 하나 이상을 만족합니다(OR).</string>
+    <string name="hakuno_shuffle_min">최소 셔플 횟수</string>
+    <string name="hakuno_shuffle_max">최대 셔플 횟수</string>
+    <string name="hakuno_shuffle_conditions">스턴이 아닌 커맨드 카드를 셉니다. 조건 중 하나라도 만족하면 멈춥니다.</string>
     <string name="hakuno_shuffle_field_slot">칸</string>
-    <string name="hakuno_shuffle_at_least">최소</string>
+    <string name="hakuno_shuffle_cards_or_more">장 이상</string>
     <string name="hakuno_shuffle_remove">삭제</string>
     <string name="hakuno_shuffle_add">조건 추가</string>
     <string name="hakuno_shuffle_stop">조건을 만족하지 못하면 전투 정지</string>
