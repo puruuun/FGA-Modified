@@ -1,4 +1,4 @@
-"""Reproduce SupportPortraitTemplate's bilinear resize/crop, with a mandatory shipped-image check.
+"""Reproduce SupportPortraitTemplate's bilinear resize/crop, with a real-frame match-score gate.
 
 Requires opencv-python and numpy. Run --check first. A failed check never writes an asset.
 Usage: python tools/chaldea/make_support_portrait.py --check
@@ -32,16 +32,16 @@ def portrait(face):
 
 
 def check_pipeline():
-    expected = cv2.imread(str(ROOT / "app/src/main/assets/Support/servant/U-Olga Marie/f_40001000.png"), cv2.IMREAD_UNCHANGED)
-    actual = portrait("f_40001000.png")
-    same_size = expected is not None and actual.shape == expected.shape
-    difference = float(np.abs(actual.astype(float) - expected.astype(float)).mean()) if same_size else float("inf")
-    # Report RGB separately: opaque alpha must not dilute the colour comparison.
-    rgb_difference = float(np.abs(actual[:, :, :3].astype(float) - expected[:, :, :3].astype(float)).mean()) if same_size else float("inf")
-    print(f"Pipeline check: output={actual.shape[1]}x{actual.shape[0]}, same_size={same_size}, "
-          f"mean_absolute_difference_RGB={rgb_difference:.6f}, all_channels={difference:.6f}")
-    if not same_size or rgb_difference > 3.0:
-        raise SystemExit("Pipeline differs from the shipped portrait; no costume asset was written.")
+    frame = cv2.imread(str(ROOT / "docs/reference-images/Jp/np-20261018-r3/4-grand-olga-masked720.png"), cv2.IMREAD_COLOR)
+    shipped = cv2.imread(str(ROOT / "app/src/main/assets/Support/servant/U-Olga Marie/f_40001002.png"), cv2.IMREAD_COLOR)
+    actual = portrait("f_40001002.png")[:, :, :3]  # BGR; opaque alpha is not a matching channel.
+    if frame is None or shipped is None or shipped.shape != actual.shape:
+        raise SystemExit("Missing frame or incompatible portrait dimensions; no costume asset was written.")
+    importer_score = cv2.minMaxLoc(cv2.matchTemplate(frame, actual, cv2.TM_CCOEFF_NORMED))[1]
+    shipped_score = cv2.minMaxLoc(cv2.matchTemplate(frame, shipped, cv2.TM_CCOEFF_NORMED))[1]
+    print(f"Pipeline check (colour TM_CCOEFF_NORMED): importer={importer_score:.6f}, shipped={shipped_score:.6f}")
+    if not (importer_score >= 0.9 and importer_score >= shipped_score):
+        raise SystemExit("Importer score must be at least 0.9 and no lower than shipped; no costume asset was written.")
 
 
 def main():
