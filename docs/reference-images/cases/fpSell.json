@@ -2549,10 +2549,10 @@
       ],
       "expected": {
         "present": true,
-        "lock": "Unlocked",
+        "lock": "Locked",
         "selected": false,
-        "candidate": true,
-        "candidateReal": true
+        "candidate": false,
+        "candidateReal": false
       }
     },
     {
@@ -11532,8 +11532,8 @@
       "expected": {
         "present": true,
         "selected": false,
-        "lock": "Locked",
-        "candidate": false,
+        "lock": "Unlocked",
+        "candidate": true,
         "inGrid": true
       },
       "checkGrid": true,
@@ -11576,8 +11576,8 @@
       "expected": {
         "present": true,
         "selected": false,
-        "lock": "Locked",
-        "candidate": false,
+        "lock": "Unlocked",
+        "candidate": true,
         "inGrid": true
       },
       "checkGrid": true,
@@ -15576,8 +15576,8 @@
       "checkGrid": true,
       "expected": {
         "present": true,
-        "candidate": false,
-        "candidateReal": false,
+        "candidate": true,
+        "candidateReal": true,
         "lock": "Unlocked",
         "selected": false,
         "inGrid": true
@@ -15733,8 +15733,8 @@
       "checkGrid": true,
       "expected": {
         "present": true,
-        "candidate": false,
-        "candidateReal": false,
+        "candidate": true,
+        "candidateReal": true,
         "lock": "Unlocked",
         "selected": false,
         "inGrid": true
@@ -15890,8 +15890,8 @@
       "checkGrid": true,
       "expected": {
         "present": true,
-        "candidate": false,
-        "candidateReal": false,
+        "candidate": true,
+        "candidateReal": true,
         "lock": "Unlocked",
         "selected": false,
         "inGrid": true
@@ -16047,8 +16047,8 @@
       "checkGrid": true,
       "expected": {
         "present": true,
-        "candidate": false,
-        "candidateReal": false,
+        "candidate": true,
+        "candidateReal": true,
         "lock": "Unlocked",
         "selected": false,
         "inGrid": true
