@@ -17,6 +17,12 @@ object WeeklyCandidateSettings {
 }
 
 object WeeklyLauncherPolicy {
+    enum class Action { Battle, Weekly, Empty }
+    fun action(panelOpen: Boolean, counts: List<Int>, probe: Boolean = false): Action = when {
+        !panelOpen -> Action.Battle
+        probe || counts.any { it > 0 } -> Action.Weekly
+        else -> Action.Empty
+    }
     fun weekly(panelOpen: Boolean, positiveRouteCounts: List<Int>, probe: Boolean = false): Boolean =
-        panelOpen && (probe || positiveRouteCounts.any { it > 0 })
+        action(panelOpen, positiveRouteCounts, probe) == Action.Weekly
 }

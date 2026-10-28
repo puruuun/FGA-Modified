@@ -37,14 +37,14 @@ class WeeklyMissionSelectionTest {
         assertEquals(listOf(1), plan.items.map { it.quest.id })
     }
 
-    @Test fun `unchecked manual mission leaves manual summary and all unchecked gives empty route`() {
+    @Test fun `stored manual exclusions are ignored while unchecked route missions give an empty route`() {
         val missions = listOf(mission(1), mission(2, MissionKind.Unsupported))
         val selected = WeeklyMissionSelection.selected(missions, setOf("KR:1:2"), "KR", 1)
-        assertTrue(WeeklyRouteSolver.solve(selected, listOf(quest(1)), emptySet()).manual.isEmpty())
+        assertEquals(listOf(2), WeeklyRouteSolver.solve(selected, listOf(quest(1)), emptySet()).manual.map { it.id })
         val empty = WeeklyMissionSelection.selected(missions, setOf("KR:1:1", "KR:1:2"), "KR", 1)
         val plan = WeeklyRouteSolver.solve(empty, listOf(quest(1)), emptySet())
         assertTrue(plan.items.isEmpty())
-        assertTrue(plan.manual.isEmpty())
+        assertEquals(listOf(2), plan.manual.map { it.id })
         assertFalse(WeeklyLauncherPolicy.weekly(true, plan.items.map { it.count }))
     }
 }

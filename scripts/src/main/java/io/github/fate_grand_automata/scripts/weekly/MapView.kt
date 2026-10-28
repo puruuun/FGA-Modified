@@ -30,11 +30,15 @@ object MapView {
         val s = height / 720.0
         val fromRight = width - x
         val inset = inset(width, height)
+        val portraitRight = (if (inset > 0) 248 else 238) * s + inset
+        val portraitTop = (if (inset > 0) 442 else 484) * s
         return when {
             x < 190 * s + inset && y < 100 * s -> true                      // terminal / close button
             fromRight < 560 * s + inset && y < 140 * s -> true               // chapter title
-            x < 225 * s + inset && y > 495 * s -> true                       // master portrait and status
-            x < 380 * s + inset && y > 560 * s -> true                       // level and AP status
+            // Measured at 720p: JP 16:9 diamond x=0..226, top=496; KR wide x=102..321, top=454.
+            // Include the full diamond and a 12px margin; wide UI sits 42px higher.
+            x < portraitRight && y > portraitTop -> true                    // master portrait
+            x < 410 * s + inset && y > 548 * s -> true                       // level and AP status
             x in 375 * s + inset..600 * s + inset && y > 560 * s -> true     // gift box and mission note
             fromRight < 250 * s + inset && y > 605 * s -> true               // menu button
             fromRight < 90 * s + inset && y in 100 * s..440 * s -> true      // quest list scroll bar column

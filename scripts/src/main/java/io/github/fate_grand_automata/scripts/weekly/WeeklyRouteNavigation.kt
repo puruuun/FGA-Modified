@@ -55,7 +55,7 @@ enum class StopStatus { Done, NotFound, Aborted, NotRun }
 data class StopResult(val item: RouteItem, val done: Int, val status: StopStatus, val note: String = "")
 
 /** What the screen shows, as far as the route needs to tell. */
-enum class RouteScreen { Home, List, GateList, DailyList, Map, Unknown }
+enum class RouteScreen { Home, List, Map, Unknown }
 
 sealed class SpotOutcome {
     /** The matching quest panel was tapped; the game is in the support selection or the battle. */
@@ -221,6 +221,10 @@ class WeeklyRouteMachine(
         if (here is Loc.InList && here.list != visit.list) {
             if (!driver.closeList()) { loc = Loc.Lost; return "close button not found" }
             loc = Loc.Home
+        }
+        if (visit.list == ChapterList.ChaldeaGate && driver.screen() != RouteScreen.Home) {
+            loc = Loc.Lost
+            return "home not reached before vault"
         }
         if (loc == Loc.Home && visit.list != ChapterList.Home) {
             if (!driver.openList(visit.list)) return "main record list ${visit.list} not found"

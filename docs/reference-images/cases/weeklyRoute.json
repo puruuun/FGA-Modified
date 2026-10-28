@@ -6323,7 +6323,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/03.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": true
     },
@@ -6333,7 +6333,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/04.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": false
     },
@@ -6343,7 +6343,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/05.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": true
     },
@@ -6353,7 +6353,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/06.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": false
@@ -6364,7 +6364,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/07.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": false
@@ -6375,7 +6375,7 @@
       "server": "Jp",
       "view": "vault",
       "file": "docs/reference-images/Jp/weekly-vault/08.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": true,
@@ -6391,7 +6391,7 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/01.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": false
     },
@@ -6411,7 +6411,7 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/10.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": true
     },
@@ -6421,7 +6421,7 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/11.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": true,
@@ -6437,7 +6437,7 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/12.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": false
@@ -6448,7 +6448,7 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/13.webp",
-      "screen": "DailyList",
+      "screen": "List",
       "gate": false,
       "daily": false,
       "accepted": false
@@ -6459,9 +6459,34 @@
       "server": "Kr",
       "view": "vault",
       "file": "docs/reference-images/Kr/weekly-vault/14.webp",
-      "screen": "GateList",
+      "screen": "List",
       "gate": false,
       "daily": false
+    },
+    {
+      "name": "KR-event-gate-list",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-gate-list.png",
+      "view": "screen",
+      "expected": {
+        "screen": "List"
+      }
+    },
+    {
+      "name": "KR-okeanos-gundo-covered",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-okeanos-map.png",
+      "view": "spotTappable",
+      "spotX": 273.0,
+      "spotY": 486.0,
+      "expected": {
+        "tappable": false,
+        "needsScroll": true,
+        "fallback": false,
+        "screen": "Map"
+      }
     }
   ],
   "imports": {

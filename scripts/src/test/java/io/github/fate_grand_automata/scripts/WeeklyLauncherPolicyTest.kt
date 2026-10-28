@@ -4,6 +4,13 @@ import io.github.fate_grand_automata.scripts.weekly.*
 import kotlin.test.*
 
 class WeeklyLauncherPolicyTest {
+    @Test fun `empty route never falls through to an ordinary battle`() {
+        assertEquals(WeeklyLauncherPolicy.Action.Empty, WeeklyLauncherPolicy.action(true, emptyList()))
+        assertEquals(WeeklyLauncherPolicy.Action.Empty, WeeklyLauncherPolicy.action(true, listOf(0, 0)))
+        assertEquals(WeeklyLauncherPolicy.Action.Weekly, WeeklyLauncherPolicy.action(true, listOf(1)))
+        assertEquals(WeeklyLauncherPolicy.Action.Battle, WeeklyLauncherPolicy.action(false, emptyList()))
+    }
+
     @Test fun `finding lower content moves finger up and reverse search moves it down`() {
         assertEquals(1180 to 540, ListSearchDirection.Down.fingerY(1180, 540))
         assertEquals(540 to 1180, ListSearchDirection.Up.fingerY(1180, 540))

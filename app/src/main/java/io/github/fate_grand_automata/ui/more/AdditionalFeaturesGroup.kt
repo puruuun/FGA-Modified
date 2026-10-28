@@ -44,6 +44,12 @@ fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: 
     }
 
     item {
+        prefs.weeklyRouteFeatureEnabled.SwitchPreference(
+            title = stringResource(R.string.p_weekly_route_feature_enabled),
+            icon = icon(R.drawable.ic_gift)
+        )
+    }
+    item {
         prefs.bondTrackingFeatureEnabled.SwitchPreference(
             title = stringResource(R.string.p_bond_tracking_feature_enabled),
             icon = icon(R.drawable.ic_gift)

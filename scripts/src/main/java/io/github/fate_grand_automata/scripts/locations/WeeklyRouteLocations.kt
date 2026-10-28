@@ -15,7 +15,6 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
      * Header UI: on wide screens it sits one safe-area inset further in (owner 21:9 captures 01-03: +85 px at 720p).
      */
     val topLeftButton = Region(10, 30, 330, 140).xFromLeftEdge()
-    val gateHeader = Region(-900, 0, 900, 180).xFromRightEdge()
 
     /** D-16: repeat dialog's RIGHT button is a signal only; never tap it when exiting the weekly repeat. */
     val repeatDialogSignal = Region(180, 1100, 560, 130).xFromCenter()

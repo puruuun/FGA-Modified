@@ -15,8 +15,6 @@ internal fun FixtureApi.verifyWeeklyVault(): JSONObject {
     val screen = WeeklyRouteScreens(this, loc).read()
     actual.put("screen", screen.name)
     check(screen.name == case.getString("screen")) { "screen=$screen expected=${case.getString("screen")}" }
-    val titles = useSameSnapIn { WeeklyRouteScreens(this, loc).titleScores() }
-    actual.put("gateTitle", titles.first).put("dailyTitle", titles.second)
     for ((name, image, threshold) in listOf(Triple("gate", Images.WeeklyGate, 0.8), Triple("daily", Images.WeeklyDaily, 0.85))) {
         val score = useColor {
             val best = loc.listArea.findAll(images[image], 0.01).maxOfOrNull { it.score } ?: 0.0

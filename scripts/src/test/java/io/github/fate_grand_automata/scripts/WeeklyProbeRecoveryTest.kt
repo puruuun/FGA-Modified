@@ -39,10 +39,11 @@ class WeeklyProbeRecoveryTest {
         }
     }
 
-    @Test fun `X G is tappable and tightened UI zones remain blocked at different ratios`() {
+    @Test fun `X G is tappable on standard maps and wide portrait overlap stays blocked`() {
         for ((w, h) in listOf(1280 to 720, 1152 to 720, 1600 to 720, 2560 to 1440)) {
             val s = h / 720.0
-            assertTrue(MapView.isTappable(243*s, 485*s, w, h))
+            val wide = w.toDouble() / h > 2.0
+            assertEquals(!wide, MapView.isTappable(243*s, 485*s, w, h))
             for ((x,y) in listOf(100.0 to 600.0, 300.0 to 600.0, 500.0 to 600.0, 100.0 to 50.0)) {
                 assertFalse(MapView.isTappable(x*s, y*s, w, h))
             }
@@ -51,7 +52,7 @@ class WeeklyProbeRecoveryTest {
             assertFalse(MapView.isTappable(w-40*s, 300*s, w, h))
             assertTrue(MapView.isTappable(12*s, 360*s, w, h))
             assertFalse(MapView.isTappable(11*s, 360*s, w, h))
-            assertNull(MapView.dragToward(243*s, 485*s, w, h))
+            assertEquals(wide, MapView.dragToward(243*s, 485*s, w, h) != null)
         }
     }
 

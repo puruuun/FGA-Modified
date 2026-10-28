@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="weekly_route_no_quests">실행할 퀘스트가 없습니다</string>
+    <string name="p_weekly_route_feature_enabled">주간 미션 경로 활성화</string>
     <string name="ce_enhancement">개념예장 강화</string>
     <string name="switch_to_ce_enhancement">개념예장 강화로 전환</string>
     <string name="switch_to_servant_enhancement">서번트 레벨업으로 전환</string>
@@ -750,17 +752,12 @@
     <string name="weekly_route_solve_failed">경로를 계산하지 못했습니다: %1$s</string>
     <string name="weekly_route_header">%1$s 서버 · 미션 세트 %2$d</string>
     <string name="weekly_route_missions">이번 주 미션</string>
-    <string name="weekly_route_manual">수동 미션(경로에 없음)</string>
     <string name="weekly_route_route">경로</string>
     <string name="weekly_route_route_empty">지원하는 미션을 채우는 데 퀘스트가 필요하지 않습니다.</string>
     <string name="weekly_route_quest_line">%1$s / %2$s / %3$s · AP %4$d</string>
     <string name="weekly_route_total_ap">총 AP: %1$d</string>
     <string name="weekly_route_chapters">장 선택(열지 않은 장은 끄세요)</string>
-    <string name="weekly_route_mictlan">제외됨: Lostbelt No.7 믹틀란(지도 층 전환은 아직 지원하지 않음), 주장 Ⅰ~Ⅳ</string>
-    <string name="weekly_route_kr_note">KR 적 구성은 JP 데이터 기준(같은 퀘스트 ID)</string>
-    <string name="weekly_route_dropped">데이터 불일치로 뺀 퀘스트: %1$d개</string>
     <string name="weekly_route_battle_config">전투 설정</string>
-    <string name="weekly_route_start_note">경로는 메인 화면에서 시작합니다. 먼저 메인 화면을 여세요. 장마다 들어가 지도에서 퀘스트 지점을 찾고, 고른 전투 설정으로 퀘스트를 돌립니다.</string>
     <string name="weekly_route_run">경로 실행</string>
     <string name="weekly_route_stop_no_route">확인된 주간 경로가 없습니다.</string>
     <string name="weekly_route_stop_not_main">메인 화면을 찾지 못했습니다. 왼쪽 위에 공지 버튼이 있는 메인 화면에서 시작하세요. 아무것도 누르지 않았습니다.</string>

@@ -23,7 +23,8 @@ class WeeklyVaultTest {
             val driver = spyk(WeeklyRouteDriver(api, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), BattleState(), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), reader))
-            every { driver.screen() } returns RouteScreen.DailyList
+            every { driver.screen() } returns RouteScreen.List
+            every { driver.dailyList() } returns true
             val quest = item(1002).quest
             assertEquals(SpotOutcome.Started, if (probe) driver.probeSpot(quest) else driver.openSpot(quest))
             verify(exactly = if (probe) 0 else 1) { with(api) { panel.anchor.tap.click(1) } }
@@ -95,12 +96,13 @@ class WeeklyVaultTest {
         assertFalse(WeeklyVaultPolicy.color(MeanColor(220.0, 220.0, 220.0)).yellow)
     }
 
-    @Test fun `header scores require threshold and lead while Close alone retains List`() {
-        assertEquals(RouteScreen.GateList, WeeklyRouteScreens.listScreen(0.9, 0.6))
-        assertEquals(RouteScreen.DailyList, WeeklyRouteScreens.listScreen(0.6, 0.9))
-        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.listScreen(0.9, 0.9))
-        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.listScreen(0.84, 0.2))
-        assertEquals(RouteScreen.List, WeeklyRouteScreens.listScreen(0.3, 0.4))
+    @Test fun `only top-left scores classify Home Map List and ambiguous frames stay unknown`() {
+        assertEquals(RouteScreen.Home, WeeklyRouteScreens.classify(0.95, 0.2, 0.3))
+        assertEquals(RouteScreen.Map, WeeklyRouteScreens.classify(0.2, 0.95, 0.3))
+        assertEquals(RouteScreen.List, WeeklyRouteScreens.classify(0.2, 0.3, 0.95))
+        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.classify(0.9, 0.9, 0.2))
+        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.classify(0.2, 0.3, 0.87))
+        assertEquals(RouteScreen.Unknown, WeeklyRouteScreens.classify(0.1, 0.2, 0.3))
     }
 
     private fun item(war: Int) = RouteItem(RouteQuest(if (war == 1002) 94061636 else war, war, war, "chapter", "spot", "name", 10,
@@ -112,20 +114,20 @@ class WeeklyVaultTest {
         var failVault = false
         val actions = mutableListOf<String>()
         override fun log(message: String) = Unit
-        override fun screen() = shown
-        override fun openList(list: ChapterList) = true.also { actions += "list:$list"; shown = if (list == ChapterList.ChaldeaGate) RouteScreen.GateList else RouteScreen.List }
+        override fun screen() = shown.also { actions += "screen:$it" }
+        override fun openList(list: ChapterList) = true.also { actions += "list:$list"; shown = if (list == ChapterList.ChaldeaGate) RouteScreen.List else RouteScreen.List }
         override fun openChapter(warId: Int): Boolean {
             actions += "chapter:$warId"; war = warId
             if (failVault && warId == 1002) return false
-            shown = if (warId == 1002) RouteScreen.DailyList else RouteScreen.Map
+            shown = if (warId == 1002) RouteScreen.List else RouteScreen.Map
             return true
         }
         override fun prepareMap(warId: Int) = true
-        override fun openSpot(quest: RouteQuest) = SpotOutcome.Started
+        override fun openSpot(quest: RouteQuest) = SpotOutcome.Started.also { actions += "panel:${quest.warId}" }
         override fun probeSpot(quest: RouteQuest) = SpotOutcome.Started.also { actions += "probe" }
         override fun battle(quest: RouteQuest, count: Int) = BattleOutcome(count, true).also { actions += "battle:$war" }
         override fun closePanel() = true.also { if (war != 1002) shown = RouteScreen.Map }
-        override fun terminal() = true.also { actions += "terminal:$shown"; shown = if (war == 1002) RouteScreen.GateList else RouteScreen.List }
+        override fun terminal() = true.also { actions += "terminal:$shown"; shown = if (war == 1002) RouteScreen.List else RouteScreen.List }
         override fun closeList() = true.also { actions += "close:$shown"; shown = RouteScreen.Home }
     }
 
@@ -138,7 +140,11 @@ class WeeklyVaultTest {
                 val fake = Fake()
                 val result = WeeklyRouteMachine(fake, server, probe).run(visits)
                 assertTrue(result.all { it.status == StopStatus.Done })
-                assertEquals(RouteScreen.DailyList, fake.shown)
+                assertEquals(RouteScreen.List, fake.shown)
+                val gate = fake.actions.indexOf("list:ChaldeaGate")
+                assertEquals("screen:Home", fake.actions[gate - 1])
+                assertTrue(gate < fake.actions.indexOf("chapter:1002"))
+                if (!probe) assertTrue(fake.actions.indexOf("chapter:1002") < fake.actions.indexOf("panel:1002"))
                 assertEquals(probe, "probe" in fake.actions)
                 if (probe) assertTrue(fake.actions.none { it.startsWith("battle:") })
             }
@@ -149,7 +155,7 @@ class WeeklyVaultTest {
         val fake = Fake()
         val visits = listOf(ChapterVisit(1002, ChapterList.ChaldeaGate, listOf(item(1002))), ChapterVisit(100, ChapterList.MainRecord1, listOf(item(100))))
         WeeklyRouteMachine(fake, "JP").run(visits)
-        assertTrue("terminal:DailyList" in fake.actions); assertTrue("close:GateList" in fake.actions)
+        assertTrue("terminal:List" in fake.actions); assertTrue("close:List" in fake.actions)
         val failed = Fake().apply { failVault = true }
         val result = WeeklyRouteMachine(failed, "JP").run(WeeklyVisitOrder.order("JP", listOf(item(100), item(1002))))
         assertEquals(listOf(StopStatus.Done, StopStatus.NotFound), result.map { it.status })

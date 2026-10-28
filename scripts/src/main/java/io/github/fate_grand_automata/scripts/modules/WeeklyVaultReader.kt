@@ -60,8 +60,10 @@ class WeeklyVaultReader @Inject constructor(
         val AP_PROFILES = QuestPanelReader.AP_PROFILES.filter { it.invert }
     }
 
-    fun anchors() = loc.listArea.findAll(images[Images.WeeklyDailyQuest], ANCHOR_SIMILARITY)
-        .sortedBy { it.region.y }.map { WeeklyVaultAnchor(it.region.location) }.filter { it.fits(loc.scriptArea) }.take(8)
+    fun anchorMatches() = loc.listArea.findAll(images[Images.WeeklyDailyQuest], ANCHOR_SIMILARITY)
+        .filter { WeeklyVaultAnchor(it.region.location).fits(loc.scriptArea) }.toList()
+
+    fun anchors() = anchorMatches().sortedBy { it.region.y }.map { WeeklyVaultAnchor(it.region.location) }.take(8)
 
     fun read(): List<VaultPanel> {
         val anchors = useSameSnapIn { anchors() }

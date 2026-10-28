@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="weekly_route_no_quests">There are no quests to run</string>
+    <string name="p_weekly_route_feature_enabled">Enable weekly mission route</string>
     <string name="ce_enhancement">CE enhancement</string>
     <string name="switch_to_ce_enhancement">Switch to CE enhancement</string>
     <string name="switch_to_servant_enhancement">Switch to servant level-up</string>
-    <string name="weekly_route_excluded_missions">Excluded missions</string>
-    <string name="weekly_route_clear_all_note">The clear-all mission may need to be finished by hand.</string>
-    <string name="weekly_route_empty_battle_warning">The route is empty. OK will start an ordinary battle.</string>
     <string name="hakuno_shuffle">Hakuno Shuffle</string>
     <string name="hakuno_shuffle_confirmation_off">Turn off the in-game skill use confirmation.</string>
     <string name="hakuno_shuffle_min">Min presses</string>
@@ -832,17 +831,12 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="weekly_route_solve_failed">Could not compute a route: %1$s</string>
     <string name="weekly_route_header">%1$s server · mission set %2$d</string>
     <string name="weekly_route_missions">This week\'s missions</string>
-    <string name="weekly_route_manual">Manual missions (not in the route)</string>
     <string name="weekly_route_route">Route</string>
     <string name="weekly_route_route_empty">None of the supported missions needs a quest.</string>
     <string name="weekly_route_quest_line">%1$s / %2$s / %3$s · AP %4$d</string>
     <string name="weekly_route_total_ap">Total AP: %1$d</string>
     <string name="weekly_route_chapters">Chapters (turn off the ones you have not opened)</string>
-    <string name="weekly_route_mictlan">Excluded: Lostbelt No.7 Mictlan (map layers are not supported yet) and Ordeal Calls I-IV</string>
-    <string name="weekly_route_kr_note">KR enemy data follows the JP data of the same quest ID.</string>
-    <string name="weekly_route_dropped">Left out because of a data mismatch: %1$d quests</string>
     <string name="weekly_route_battle_config">Battle config</string>
-    <string name="weekly_route_start_note">The route starts from the main screen: open the main screen first. It visits each chapter, finds each quest\'s spot on the map and runs the quest with the chosen battle config.</string>
     <string name="weekly_route_run">Run route</string>
     <string name="weekly_route_stop_no_route">No weekly route was confirmed.</string>
     <string name="weekly_route_stop_not_main">The main screen was not found. Start the weekly route from the main screen (the one with the notice button at the top left). Nothing was tapped.</string>

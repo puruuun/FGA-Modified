@@ -77,7 +77,8 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
             state.stage = "solve"
             try {
                 val plan = withContext(Dispatchers.Default) {
-                    WeeklyRouteSolver.solve(WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id),
+                    WeeklyRouteSolver.solve(WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id,
+                        WeeklyMissionSelection.manualIds(data.week.missions, WeeklyCandidateSettings.candidates(server, data.quests, disabled))),
                         WeeklyCandidateSettings.candidates(server, data.quests, disabled), WeeklyRouteSolver.EXCLUDED_WARS)
                 }
                 state.counts.putAll(plan.items.associate { it.quest.id to it.count })
@@ -125,29 +126,23 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
         }
         if (probeAvailable && data != null && state.probe) ProbeOptions(state, data, disabled, Modifier.weight(1f))
         else if (data != null && plan != null) {
-            val manualIds = plan.manual.map { it.id }.toSet()
-            val selected = WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id)
+            val manualIds = WeeklyMissionSelection.manualIds(data.week.missions,
+                WeeklyCandidateSettings.candidates(server, data.quests, disabled))
+            val selected = WeeklyMissionSelection.selected(data.week.missions, currentUnselected, data.server, data.week.id,
+                        WeeklyMissionSelection.manualIds(data.week.missions, WeeklyCandidateSettings.candidates(server, data.quests, disabled)))
             val selectedIds = selected.map { it.id }.toSet()
-            val excluded = data.week.missions.filter { !it.meta && it.id !in selectedIds }
             fun select(mission: RouteMission, checked: Boolean) {
                 val key = WeeklyMissionSelection.key(data.server, data.week.id, mission.id)
                 unselected = if (checked) unselected - key else unselected + key
             }
             LazyColumn(Modifier.weight(1f)) {
                 item { PanelHeading(stringResource(R.string.weekly_route_missions)) }
-                items(selected.filter { !it.meta && it.id !in manualIds }) { mission ->
-                    MissionRow(mission, true) { select(mission, it) }
-                }
-                item { PanelHeading(stringResource(R.string.weekly_route_manual)) }
-                items(plan.manual) { mission -> MissionRow(mission, true) { select(mission, it) } }
-                if (excluded.isNotEmpty()) {
-                    item { PanelHeading(stringResource(R.string.weekly_route_excluded_missions)) }
-                    items(excluded) { mission -> MissionRow(mission, false) { select(mission, it) } }
-                    item { Text(stringResource(R.string.weekly_route_clear_all_note), style = MaterialTheme.typography.bodySmall) }
+                items(data.week.missions.filter { !it.meta }, key = { it.id }) { mission ->
+                    MissionRow(mission, mission.id in selectedIds, mission.id in manualIds) { select(mission, it) }
                 }
                 item { PanelHeading(stringResource(R.string.weekly_route_route)) }
                 if (plan.items.isEmpty()) item {
-                    Text(stringResource(R.string.weekly_route_empty_battle_warning), color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.weekly_route_no_quests), color = MaterialTheme.colorScheme.error)
                 }
                 items(plan.items, key = { it.quest.id }) { item ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -161,11 +156,7 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
                 item {
                     Text(stringResource(R.string.weekly_route_total_ap,
                         state.chosen.sumOf { it.quest.ap.toLong() * it.count }), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.weekly_route_start_note), style = MaterialTheme.typography.bodySmall)
-                    if (server == "KR") Text(stringResource(R.string.weekly_route_kr_note), style = MaterialTheme.typography.bodySmall)
-                    val dropped = data.missing.size + data.mismatched.size
-                    if (dropped > 0) Text(stringResource(R.string.weekly_route_dropped, dropped), style = MaterialTheme.typography.bodySmall)
-                    Text(stringResource(R.string.weekly_route_mictlan), style = MaterialTheme.typography.bodySmall)
+
                 }
             }
         }
@@ -173,10 +164,11 @@ fun WeeklyLauncherPanel(server: String, prefs: PrefsCore, state: WeeklyPanelStat
 }
 
 @Composable
-private fun MissionRow(mission: RouteMission, selected: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().toggleable(value = selected, role = Role.Checkbox, onValueChange = onChange),
+private fun MissionRow(mission: RouteMission, selected: Boolean, manual: Boolean, onChange: (Boolean) -> Unit) {
+    val modifier = Modifier.fillMaxWidth()
+    Row(if (manual) modifier else modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = selected, onCheckedChange = null)
+        if (!manual) Checkbox(checked = selected, onCheckedChange = null)
         Text(mission.name.replace('\n', ' '), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (selected) 1f else 0.5f))
     }

@@ -5,6 +5,20 @@ import kotlin.math.abs
 import kotlin.test.*
 
 class WeeklyMapEdgeTest {
+    @Test fun `measured portrait diamonds and AP blocks include twelve pixel margins`() {
+        // KR 2560x1080 scaled to 720: diamond x102..321 y454..679; status x284..483 y570..676.
+        assertFalse(MapView.isTappable(273.0, 486.0, 1707, 720)) // Okeanos 군도, inside the portrait.
+        assertFalse(MapView.isTappable(332.0, 454.0, 1707, 720))
+        assertFalse(MapView.isTappable(200.0, 443.0, 1707, 720))
+        assertFalse(MapView.isTappable(494.0, 600.0, 1707, 720))
+        // JP weekly-route/11.png, 1280x720: diamond x0..226 y496..720; status x178..390 y609..720.
+        assertFalse(MapView.isTappable(237.0, 510.0, 1280, 720))
+        assertFalse(MapView.isTappable(115.0, 485.0, 1280, 720))
+        assertFalse(MapView.isTappable(401.0, 610.0, 1280, 720))
+        assertNotNull(MapView.dragToward(273.0, 486.0, 1707, 720))
+        assertNull(MapView.visibleTap(273.0, 486.0, 1707, 720))
+    }
+
     @Test fun `Traum 93031211 at 1083 696 reaches safe target with half distance gestures`() {
         // Owner beta.7 log: initial edge request -36 moved only -18; the map later reaches -179.
         val target = assertNotNull(MapView.targetOrigin(1083.0, 696.0, 0.0, 180.0, 1280, 720))

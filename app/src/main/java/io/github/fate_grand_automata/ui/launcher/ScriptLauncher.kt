@@ -11,6 +11,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.*
 import io.github.fate_grand_automata.scripts.weekly.*
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import io.github.fate_grand_automata.ui.prefs.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
@@ -34,6 +37,7 @@ fun ScriptLauncher(
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
     var weeklyOpen by remember { mutableStateOf(false) }
     val weekly = remember { WeeklyPanelState() }
+    val weeklyEnabled by prefsCore.weeklyRouteFeatureEnabled.remember()
     FgaScreen {
         Column(
             modifier = Modifier
@@ -76,7 +80,7 @@ fun ScriptLauncher(
                     }
 
                     // The weekly mission route starts from the same screens as a battle, so it is offered next to it.
-                    if (scriptMode == ScriptModeEnum.Battle &&
+                    if (scriptMode == ScriptModeEnum.Battle && weeklyEnabled &&
                         (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
                     ) {
                         TextButton(onClick = { weeklyOpen = !weeklyOpen; onWeeklyExpanded(weeklyOpen) }) {
@@ -113,6 +117,7 @@ private fun expandedBattleLauncher(
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit,
     modifier: Modifier
 ): ScriptLauncherResponseBuilder {
+    val context = LocalContext.current
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
     Row(modifier) {
         left = battleLauncher(prefs, Modifier.weight(1f), core, showLimits = !open)
@@ -120,9 +125,12 @@ private fun expandedBattleLauncher(
             core, weekly, Modifier.weight(0.7f))
     }
     return ScriptLauncherResponseBuilder(
-        canBuild = { left.canBuild() && (!open || !weekly.busy) && (!open || !weekly.probe || weekly.data?.let { weekly.probeItems(it, core.weeklyRoute.disabled.get()).isNotEmpty() } == true) },
+        canBuild = { (left.canBuild() || WeeklyLauncherPolicy.action(open, weekly.chosen.map { it.count }) == WeeklyLauncherPolicy.Action.Empty) && (!open || !weekly.busy) && (!open || !weekly.probe || weekly.data?.let { weekly.probeItems(it, core.weeklyRoute.disabled.get()).isNotEmpty() } == true) },
         build = {
-            val normal = left.build()
+            if (WeeklyLauncherPolicy.action(open, weekly.chosen.map { it.count }, weekly.probe) == WeeklyLauncherPolicy.Action.Empty) {
+                Toast.makeText(context, R.string.weekly_route_no_quests, Toast.LENGTH_SHORT).show()
+                return@ScriptLauncherResponseBuilder ScriptLauncherResponse.Cancel
+            }
             val data = weekly.data
             if (data != null && open && weekly.probe && weekly.probeItems(data, core.weeklyRoute.disabled.get()).isNotEmpty()) {
                 prepareProbe(data, weekly.probeItems(data, core.weeklyRoute.disabled.get()), weekly.skipSucceeded)
@@ -130,7 +138,7 @@ private fun expandedBattleLauncher(
             } else if (data != null && !weekly.probe && WeeklyLauncherPolicy.weekly(open, weekly.chosen.map { it.count })) {
                 prepare(data, weekly.chosen, weekly.manual)
                 ScriptLauncherResponse.WeeklyRoute
-            } else normal
+            } else left.build()
         }
     )
 }

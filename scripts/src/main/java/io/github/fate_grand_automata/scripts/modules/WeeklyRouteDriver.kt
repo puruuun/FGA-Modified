@@ -99,7 +99,29 @@ class WeeklyRouteDriver @Inject constructor(
 
     private fun topLeft(image: Images) = images[image] in loc.topLeftButton
 
-    override fun screen(): RouteScreen = WeeklyRouteScreens(this,loc).read().also { log("screen detected=$it") }
+    override fun screen(): RouteScreen = useSameSnapIn {
+        val (notice, terminal, close) = WeeklyRouteScreens(this, loc).scores()
+        WeeklyRouteScreens.classify(notice, terminal, close).also {
+            log("screen detected=$it notice=$notice terminal=$terminal close=$close")
+        }
+    }
+
+    /** Daily content is identified by panel anchors, independently of its title or event art. */
+    fun dailyList(): Boolean = useSameSnapIn {
+        val (notice, terminal, close) = WeeklyRouteScreens(this, loc).scores()
+        val anchors = vaultReader.anchorMatches()
+        val daily = WeeklyRouteScreens.classify(notice, terminal, close) == RouteScreen.List && anchors.isNotEmpty()
+        log("vault step=daily-list close=$close anchor=${anchors.maxOfOrNull { it.score }} found=$daily")
+        daily
+    }
+
+    private fun waitDaily(): Boolean {
+        repeat(24) {
+            if (dailyList()) return true
+            500.milliseconds.wait()
+        }
+        return false
+    }
 
     private fun waitScreen(vararg wanted: RouteScreen, timeout: Int = SCREEN_TIMEOUT_SECONDS): Boolean {
         repeat(timeout * 2) {
@@ -133,7 +155,7 @@ class WeeklyRouteDriver @Inject constructor(
     /** Search lower content first, then upper content; never leave the expected list or exceed either bound. */
     private fun <T> scanList(onEnd: (ListSearchDirection) -> Unit = {}, find: () -> T?): T? {
         val expected = screen()
-        if (expected !in setOf(RouteScreen.Home, RouteScreen.List, RouteScreen.GateList, RouteScreen.DailyList)) return null
+        if (expected !in setOf(RouteScreen.Home, RouteScreen.List)) return null
         return io.github.fate_grand_automata.scripts.weekly.WeeklyListScan.run(
             maxScrolls = MAX_LIST_SCROLLS,
             capture = {
@@ -179,7 +201,7 @@ class WeeklyRouteDriver @Inject constructor(
         if (beforeTap !in setOf(RouteScreen.Home, RouteScreen.List)) return false
         match.region.center.click()
         2.seconds.wait()
-        val opened = waitScreen(if (list == ChapterList.ChaldeaGate) RouteScreen.GateList else RouteScreen.List)
+        val opened = waitScreen(RouteScreen.List)
         log("list $list opened=$opened")
         return opened
     }
@@ -188,14 +210,14 @@ class WeeklyRouteDriver @Inject constructor(
 
     override fun openChapter(warId: Int): Boolean {
         if (warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) {
-            if (screen() != RouteScreen.GateList) return false
+            if (screen() != RouteScreen.List) return false
             val template = useColor { images[Images.WeeklyDaily] }
             val match = scanList { findColor(template, BANNER_SIMILARITY, "daily banner") }
                 ?: return false.also { abortDiagnostic() }
-            if (screen() != RouteScreen.GateList) return false
+            if (screen() != RouteScreen.List) return false
             match.region.center.click()
             3.seconds.wait()
-            return waitScreen(RouteScreen.DailyList, timeout = 12)
+            return waitDaily()
         }
         if (screen() !in setOf(RouteScreen.Home, RouteScreen.List)) return false
         val war = run.wars[warId] ?: return false.also { log("chapter $warId has no data") }
@@ -218,17 +240,17 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun closeList(): Boolean {
-        if (screen() !in setOf(RouteScreen.List, RouteScreen.GateList)) return false
+        if (screen() !in setOf(RouteScreen.List)) return false
         loc.topLeftButton.click()
         2.seconds.wait()
         return waitScreen(RouteScreen.Home).also { log("close list home=$it") }
     }
 
     override fun terminal(): Boolean {
-        if (screen() == RouteScreen.DailyList) {
+        if (dailyList()) {
             loc.topLeftButton.click()
             2.seconds.wait()
-            return waitScreen(RouteScreen.GateList)
+            return waitScreen(RouteScreen.List)
         }
         if (screen() != RouteScreen.Map) return false.also { log("terminal button not visible") }
         loc.topLeftButton.click()
@@ -237,7 +259,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun closePanel(): Boolean {
-        if (screen() == RouteScreen.DailyList) return true
+        if (dailyList()) return true
         return io.github.fate_grand_automata.scripts.weekly.WeeklyPanelClose.run(
         tap = { if (screen() == RouteScreen.List) { loc.topLeftButton.click(); true } else false },
         waitMap = { waitScreen(RouteScreen.Map, timeout = 3) },
@@ -626,7 +648,7 @@ class WeeklyRouteDriver @Inject constructor(
 
     private fun openVault(quest: RouteQuest, tap: Boolean): SpotOutcome {
         evidence = null
-        if (quest.id !in AtlasWeekly.TREASURE_VAULT_QUESTS || screen() != RouteScreen.DailyList) {
+        if (quest.id !in AtlasWeekly.TREASURE_VAULT_QUESTS || !dailyList()) {
             return SpotOutcome.NotFound("vault panel not found")
         }
         var problem = "vault panel not found"
@@ -640,7 +662,6 @@ class WeeklyRouteDriver @Inject constructor(
             panelDiagnostic(quest.id, 0)
             return SpotOutcome.NotFound(problem)
         }
-        if (screen() != RouteScreen.DailyList) return SpotOutcome.NotFound("vault panel not found")
         if (tap) {
             log("tap step=vault quest=${quest.id} point=${panel.anchor.tap}")
             panel.anchor.tap.click()
@@ -656,7 +677,7 @@ class WeeklyRouteDriver @Inject constructor(
         var closed = false
         val start = kotlin.time.TimeSource.Monotonic.markNow()
         while (start.elapsedNow() < 30.seconds) {
-            if (screen() == RouteScreen.DailyList && readVault().any { it.accepted }) return true
+            if (dailyList()) return true
             if (!closed && closeRepeatDialog()) {
                 closed = true
                 log("repeat dialog closed; settling daily list for 5s")
