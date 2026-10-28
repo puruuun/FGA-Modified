@@ -14,7 +14,8 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
      * The top-left button: notice (main screen), close (chapter list, quest panel open) or terminal (map).
      * Header UI: on wide screens it sits one safe-area inset further in (owner 21:9 captures 01-03: +85 px at 720p).
      */
-    val topLeftButton = Region(10, 30, 330, 140).xFromLeftEdge()
+    // Owner 2560x1080 captures include an extra 13px edge strip: the text crop ends at x266 at 720p.
+    val topLeftButton = Region(10, 30, 380, 140).xFromLeftEdge()
 
     /** D-16: repeat dialog's RIGHT button is a signal only; never tap it when exiting the weekly repeat. */
     val repeatDialogSignal = Region(180, 1100, 560, 130).xFromCenter()
