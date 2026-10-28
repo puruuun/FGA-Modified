@@ -11,12 +11,11 @@ sealed class AutoSkillAction {
         val stopIfUnmet: Boolean = false
     ) : AutoSkillAction() {
         init {
-            require(skill in Skill.Servant.skill1)
             require(max in 1..30 && min in 0..max)
             require(conditions.isNotEmpty())
         }
 
-        fun toCommandString() = "${skill.autoSkillCode}{" +
+        fun toCommandString() = "${skill.autoSkillCode}H{" +
             (if (min == 0) "$max" else "$min-$max") + ":" +
             conditions.joinToString("|") { it.toCommandString() } +
             (if (stopIfUnmet) "!" else "") + "}"

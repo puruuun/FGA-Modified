@@ -22,7 +22,7 @@ import kotlin.test.assertFailsWith
 class BattleExecutionTest {
     @Test fun `shuffle runs in command order and preserves subsequent direct cards or NP actions`() {
         for (suffix in listOf("&ba4", "456")) {
-            val execution = BattleExecution(config(first = TestExecutionProfile(skillCommand = "b1a{8:13}d2$suffix")))
+            val execution = BattleExecution(config(first = TestExecutionProfile(skillCommand = "b1aH{8:13}d2$suffix")))
             val caster = mockk<Caster>(relaxed = true)
             val shuffle = mockk<ShuffleUntil>(relaxed = true)
             val autoSkill = AutoSkill(mockk(relaxed = true), execution, caster, shuffle)

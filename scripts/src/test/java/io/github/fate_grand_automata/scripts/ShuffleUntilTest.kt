@@ -168,7 +168,7 @@ class ShuffleUntilTest {
     @Test fun `OR across colours stops when Quick meets even if Buster does not and logs both counts`() {
         val f = Fixture()
         every { f.handReader.open() } returns colouredHand()
-        val action = AutoSkillCommand.parse("a{1:1b2|1q2}")[0, 0].single() as AutoSkillAction.ShuffleUntil
+        val action = AutoSkillCommand.parse("aH{1:1b2|1q2}")[0, 0].single() as AutoSkillAction.ShuffleUntil
         f.module.execute(action)
         assertThat(f.presses).isEqualTo(0)
         assertThat(f.logs.single().message).isEqualTo("presses=0 reason=Met counts=1b:1,1q:2")
@@ -188,7 +188,7 @@ class ShuffleUntilTest {
     @Test fun `old 13 condition still meets across mixed card colours`() {
         val f = Fixture()
         every { f.handReader.open() } returns colouredHand()
-        f.module.execute(AutoSkillCommand.parse("a{1:13}")[0, 0].single() as AutoSkillAction.ShuffleUntil)
+        f.module.execute(AutoSkillCommand.parse("aH{1:13}")[0, 0].single() as AutoSkillAction.ShuffleUntil)
         assertThat(f.presses).isEqualTo(0)
         assertThat(f.logs.single().message).isEqualTo("presses=0 reason=Met counts=1:3")
     }

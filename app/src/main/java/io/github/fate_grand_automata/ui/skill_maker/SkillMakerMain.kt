@@ -259,8 +259,8 @@ val SkillMakerEntry?.colorRes: Int
 
                 // Servants
                 is AutoSkillAction.ShuffleUntil -> when (this.action.skill.autoSkillCode) {
-                    'a' -> R.color.colorServant1
-                    'd' -> R.color.colorServant2
+                    'a', 'b', 'c' -> R.color.colorServant1
+                    'd', 'e', 'f' -> R.color.colorServant2
                     else -> R.color.colorServant3
                 }
                 is AutoSkillAction.ServantSkill -> when (this.action.skill.autoSkillCode) {

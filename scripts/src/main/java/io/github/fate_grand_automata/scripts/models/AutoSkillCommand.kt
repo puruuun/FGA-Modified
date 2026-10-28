@@ -129,7 +129,8 @@ class AutoSkillCommand private constructor(
                 return when (val c = queue.remove()) {
                     in Skill.Servant.list.map { it.autoSkillCode } -> {
                         val skill = Skill.Servant.list.first { it.autoSkillCode == c }
-                        if (queue.peek() == '{') return parseShuffle(skill, queue)
+                        require(queue.peek() != '{') { "Shuffle requires H before {" }
+                        if (queue.peek() == 'H') return parseShuffle(skill, queue)
                         val targets = getTargets(queue)
 
                         AutoSkillAction.ServantSkill(skill, targets)
@@ -201,7 +202,8 @@ class AutoSkillCommand private constructor(
         }
 
         private fun parseShuffle(skill: Skill.Servant, queue: Queue<Char>): AutoSkillAction.ShuffleUntil {
-            queue.remove() // {
+            queue.remove() // H
+            require(queue.poll() == '{') { "Expected { after shuffle H" }
             val body = StringBuilder()
             while (queue.isNotEmpty() && queue.peek() != '}') body.append(queue.remove())
             require(queue.poll() == '}') { "Unclosed shuffle token" }
