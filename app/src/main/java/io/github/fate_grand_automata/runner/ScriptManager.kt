@@ -16,7 +16,7 @@ import io.github.fate_grand_automata.di.script.ScriptEntryPoint
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
-import io.github.fate_grand_automata.scripts.entrypoints.AutoCEBomb
+import io.github.fate_grand_automata.scripts.entrypoints.AutoCEEnhance
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.entrypoints.AutoGiftBox
 import io.github.fate_grand_automata.scripts.entrypoints.AutoLottery
@@ -377,9 +377,13 @@ class ScriptManager @Inject constructor(
                 // user aborted. do nothing
             }
 
-            is AutoCEBomb.ExitException -> {
-                val msg = when (e.reason) {
-                    AutoCEBomb.ExitReason.NoSuitableTargetCEFound -> context.getString(R.string.error_no_suitable_target_ce_found)
+            is AutoCEEnhance.ExitException -> {
+                val msg = when (val reason = e.reason) {
+                    AutoCEEnhance.ExitReason.MaxLevel -> context.getString(R.string.ce_enhance_max_level)
+                    AutoCEEnhance.ExitReason.NoMatchingCE -> context.getString(R.string.ce_enhance_no_matching_ce)
+                    AutoCEEnhance.ExitReason.NoMaterialsOrQP -> context.getString(R.string.ce_enhance_no_materials_or_qp)
+                    AutoCEEnhance.ExitReason.Abort -> context.getString(R.string.ce_enhance_aborted)
+                    is AutoCEEnhance.ExitReason.Unexpected -> context.getString(R.string.unexpected_error) + ": " + reason.exception.message
                 }
 
                 messages.notify(msg)
@@ -414,7 +418,7 @@ class ScriptManager @Inject constructor(
             ScriptModeEnum.Lottery -> entryPoint.lottery()
             ScriptModeEnum.PresentBox -> entryPoint.giftBox()
             ScriptModeEnum.SupportImageMaker -> entryPoint.supportImageMaker()
-            ScriptModeEnum.CEBomb -> entryPoint.ceBomb()
+            ScriptModeEnum.CEEnhance -> entryPoint.ceEnhance()
             ScriptModeEnum.ServantLevel -> entryPoint.servantLevel()
             ScriptModeEnum.SkillLevel -> entryPoint.skillLevel()
             ScriptModeEnum.AppendLevel -> entryPoint.appendLevel()
@@ -560,7 +564,8 @@ class ScriptManager @Inject constructor(
                 return@launch
             }
 
-            val resp = scriptPicker(context, detectedMode)
+            val resp = if (detectedMode == ScriptModeEnum.CEEnhance) ScriptLauncherResponse.CEEnhance
+                else scriptPicker(context, detectedMode)
 
             uiStateHolder.isPlayButtonEnabled = true
             val effectiveResp = resp

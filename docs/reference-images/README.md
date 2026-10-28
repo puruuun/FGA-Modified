@@ -5,6 +5,7 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 ## Case files
 
 - `cases/hakunoShuffle.json`: #45 KR NP-shortage Close popup on the owner's 2560×1080 wide and 1920×1080 frames, normalized to 720p game areas as lossless WebP under `Kr/hakuno-shuffle/`. Sources: `build/orchestration/inputs/hakuno-np-close-kr-{2560x1080,1920x1080}.png`. The suite uses the product's named Close region and existing `Kr/close.png`; `Kr/battle-screen.png` is the absence control. No game input.
+- `cases/ceEnhance.json`: #42 owner JP/KR CE enhancement screens, 16:9 and wide, under `{Jp,Kr}/ce-enhance/` (32 lossless 720p WebP frames). Sources are `build/orchestration/inputs/ce-enhance/{jp,kr}/`; cases retain each original filename. The game-area borders are removed using the `extract-template-asset` rules. Two existing KR servant frames guard against false CE detection. Every case checks the execute/reselect, recommended states, moved auto-set toggle, Close and confirm regions. KR 16:9 has no unobscured execute-dialog capture; its no-match popup is an absence case.
 
 | File | Suite | Labels from | Cases |
 |---|---|---|---|

@@ -26,7 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
-KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "hakunoShuffle"}
+KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "ceEnhance", "hakunoShuffle"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
