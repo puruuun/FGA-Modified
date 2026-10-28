@@ -6,7 +6,6 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -32,7 +31,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.Heading
@@ -42,7 +40,6 @@ import io.github.fate_grand_automata.util.OpenDocTreePersistable
 import io.github.fate_grand_automata.util.SupportImageExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 abstract class OnboardingItem(val vm: OnboardingViewModel, val canSkip: Boolean = false) {
     abstract fun shouldSkip(): Boolean
@@ -80,7 +77,6 @@ class PickLanguage(vm: OnboardingViewModel) : OnboardingItem(vm, true) {
 fun LocaleDropdownMenu() {
 
     val locales = LanguagePref.availableLanguages()
-        .mapKeys { Locale.forLanguageTag(it.key) }
 
     // boilerplate: https://developer.android.com/reference/kotlin/androidx/compose/material/package-summary#ExposedDropdownMenuBox(kotlin.Boolean,kotlin.Function1,androidx.compose.ui.Modifier,kotlin.Function1)
     var expanded by remember { mutableStateOf(false) }
@@ -90,16 +86,7 @@ fun LocaleDropdownMenu() {
             expanded = !expanded
         }
     ) {
-        val selectedLocales = AppCompatDelegate.getApplicationLocales()
-        val locale: String = if (!selectedLocales.isEmpty) {
-            locales[selectedLocales.get(0)!!]!!
-        } else {
-            val currentLocale = Locale.getDefault()
-            locales.filterKeys {
-                // set correct default if system language matches one of the offered languages
-                it.language == currentLocale.language && (it.country.isEmpty() || it.country == currentLocale.country)
-            }.values.firstOrNull() ?: locales.values.first()
-        }
+        val locale = locales.getValue(LanguagePref().get())
         TextField(
             readOnly = true,
             value = locale,
@@ -122,11 +109,7 @@ fun LocaleDropdownMenu() {
                     onClick = {
                         expanded = false
                         // set app locale given the user's selected locale
-                        AppCompatDelegate.setApplicationLocales(
-                            LocaleListCompat.forLanguageTags(
-                                selectionLocale.key.toLanguageTag()
-                            )
-                        )
+                        LanguagePref().set(selectionLocale.key)
                     },
                     text = { Text(selectionLocale.value) }
                 )

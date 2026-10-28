@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
+import io.github.fate_grand_automata.ui.prefs.initializeApplicationLanguage
 import io.github.fate_grand_automata.util.CutoutManager
 import javax.inject.Inject
 
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initializeApplicationLanguage()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {

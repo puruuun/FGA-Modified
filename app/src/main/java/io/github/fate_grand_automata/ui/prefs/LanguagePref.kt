@@ -58,7 +58,8 @@ class LanguagePref : Pref<String> {
     }
 
     override fun get(): String {
-        return AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "en"
+        return AppCompatDelegate.getApplicationLocales().get(0)?.let(::resolveApplicationLanguage)
+            ?: systemApplicationLanguage()
     }
 
     override fun isNotSet(): Boolean {

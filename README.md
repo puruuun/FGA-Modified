@@ -23,6 +23,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 
 | Feature | Summary |
 |---|---|
+| [App language](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | Saves a supported system language on first launch and shares it with settings and onboarding. |
 | [CE enhancement](wiki/scripts/CE-Auto-Enhance-KR.md) | Confirms before starting and switches between Servant and CE enhancement on JP/KR. |
 | [FP summon auto-sell](wiki/scripts/FP-Auto-Sell-KR.md) | Uses padlock-only selection and fixed sale timing; dry runs stop at Confirm. |
 | [Skill / Append Skill auto-upgrade](wiki/scripts/Auto-Skill-Level-KR.md) | Upgrades each skill to its target level. |
@@ -31,7 +32,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Import original FGA data](wiki/scripts/Original-FGA-Import.md) | Imports scripts and support images from the original FGA. |
 | [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts a Chaldea share link into script commands. |
 | [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when enough face cards are dealt. |
-| [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Shuffles and rechecks when first-turn conditions are not met. |
+| [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Shuffles and rechecks first-turn conditions; Hakuno settings and messages support Korean. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
 | [Support scores](wiki/scripts/Support-Score-62-KR.md) | Picks Class +62 / Grand +16 supports. |
 | [Support NP level](wiki/scripts/Support-NP-Level-KR.md) | Picks supports at or above a minimum NP level. |
@@ -85,6 +86,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 설명 |
 |---|---|
+| [앱 언어](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | 최초 실행에 지원하는 시스템 언어를 저장하고 온보딩·설정에 같은 값을 표시합니다. |
 | [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 확인하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
 | [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 자물쇠로 선택하고 고정 시간으로 판매합니다. 시험 모드는 결정 직후 멈춥니다. |
 | [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 칸마다 정한 목표 레벨까지 스킬을 강화합니다. |
@@ -93,7 +95,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | Chaldea 공유 링크를 커맨드로 변환해 입력합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 일반 카드가 충분할 때만 커맨드를 시작합니다. |
-| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건이 부족하면 셔플 후 다시 검사합니다. |
+| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플 설정·안내를 한국어로 표시합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
 | [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고릅니다. |

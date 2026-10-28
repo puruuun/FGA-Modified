@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="hakuno_shuffle">하쿠노 셔플</string>
+    <string name="hakuno_shuffle_confirmation_off">게임의 스킬 사용 확인을 끄세요.</string>
+    <string name="hakuno_shuffle_min">최소 횟수</string>
+    <string name="hakuno_shuffle_max">최대 횟수</string>
+    <string name="hakuno_shuffle_conditions">스턴이 아닌 일반 카드를 세어 조건 중 하나 이상을 만족합니다(OR).</string>
+    <string name="hakuno_shuffle_field_slot">칸</string>
+    <string name="hakuno_shuffle_at_least">최소</string>
+    <string name="hakuno_shuffle_remove">삭제</string>
+    <string name="hakuno_shuffle_add">조건 추가</string>
+    <string name="hakuno_shuffle_stop">조건을 만족하지 못하면 전투 정지</string>
+    <string name="hakuno_shuffle_face_check_disabled">하쿠노 셔플에는 일반 카드 확인이 필요합니다.</string>
+    <string name="hakuno_shuffle_return_failed">하쿠노 셔플 후 전투 화면으로 돌아오지 못했습니다.</string>
+    <string name="hakuno_shuffle_unmet">하쿠노 셔플 %1$d회 후 조건 미충족: %2$s</string>
+    <string name="hakuno_shuffle_np_shortage">NP 부족</string>
+    <string name="hakuno_shuffle_max_reached">최대 횟수 도달</string>
+    <string name="hakuno_shuffle_read_failed">카드를 읽지 못했습니다.</string>
     <string name="weekly_route_no_quests">실행할 퀘스트가 없습니다</string>
     <string name="p_weekly_route_feature_enabled">주간 미션 경로 활성화</string>
     <string name="ce_enhancement">개념예장 강화</string>
