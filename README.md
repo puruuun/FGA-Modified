@@ -23,6 +23,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 
 | Feature | Summary |
 |---|---|
+| [CE enhancement](wiki/scripts/CE-Auto-Enhance-KR.md) | Confirms before starting and switches between Servant and CE enhancement on JP/KR. |
 | [FP summon auto-sell](wiki/scripts/FP-Auto-Sell-KR.md) | Sells unlocked cards when the Servant box is full and continues summoning. |
 | [Skill / Append Skill auto-upgrade](wiki/scripts/Auto-Skill-Level-KR.md) | Upgrades each skill to its target level. |
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-KR.md) | Clears this week's missions on the lowest-AP route. |
@@ -84,6 +85,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 설명 |
 |---|---|
+| [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 확인하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
 | [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 잠금이 아닌 카드를 판매하고 소환을 이어 갑니다. |
 | [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 칸마다 정한 목표 레벨까지 스킬을 강화합니다. |
 | [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션을 최소 AP 경로로 클리어합니다. |

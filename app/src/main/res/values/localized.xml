@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ce_enhancement">CE enhancement</string>
+    <string name="switch_to_ce_enhancement">Switch to CE enhancement</string>
+    <string name="switch_to_servant_enhancement">Switch to servant level-up</string>
     <string name="weekly_route_excluded_missions">Excluded missions</string>
     <string name="weekly_route_clear_all_note">The clear-all mission may need to be finished by hand.</string>
     <string name="weekly_route_empty_battle_warning">The route is empty. OK will start an ordinary battle.</string>

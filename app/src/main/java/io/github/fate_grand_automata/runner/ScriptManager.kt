@@ -564,8 +564,7 @@ class ScriptManager @Inject constructor(
                 return@launch
             }
 
-            val resp = if (detectedMode == ScriptModeEnum.CEEnhance) ScriptLauncherResponse.CEEnhance
-                else scriptPicker(context, detectedMode)
+            val resp = scriptPicker(context, detectedMode)
 
             uiStateHolder.isPlayButtonEnabled = true
             val effectiveResp = resp

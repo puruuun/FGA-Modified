@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ce_enhancement">개념예장 강화</string>
+    <string name="switch_to_ce_enhancement">개념예장 강화로 전환</string>
+    <string name="switch_to_servant_enhancement">서번트 레벨업으로 전환</string>
     <string name="ce_enhance_max_level">개념예장이 최대 레벨에 도달했습니다.</string>
     <string name="ce_enhance_no_matching_ce">추천 선택 필터에 맞는 개념예장이 없습니다.</string>
     <string name="ce_enhance_no_materials_or_qp">강화 재료 또는 QP가 부족합니다.</string>

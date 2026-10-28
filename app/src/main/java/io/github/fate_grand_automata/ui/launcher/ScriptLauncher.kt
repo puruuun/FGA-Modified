@@ -31,6 +31,7 @@ fun ScriptLauncher(
     prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> },
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> }
 ) {
+    var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
     var weeklyOpen by remember { mutableStateOf(false) }
     val weekly = remember { WeeklyPanelState() }
     FgaScreen {
@@ -40,7 +41,7 @@ fun ScriptLauncher(
         ) {
             val modifier = Modifier.weight(1f)
 
-            val responseBuilder = when (scriptMode) {
+            val responseBuilder = when (shownMode) {
                 ScriptModeEnum.Battle -> expandedBattleLauncher(prefs, prefsCore, weeklyOpen, weekly, prepareWeekly, prepareProbe, modifier)
                 ScriptModeEnum.SupportImageMaker ->
                     battleLauncher(prefs, modifier, prefsCore)
@@ -48,7 +49,7 @@ fun ScriptLauncher(
                 ScriptModeEnum.FP -> fpLauncher(prefs, modifier)
                 ScriptModeEnum.Lottery -> lotteryLauncher(prefs, modifier)
                 ScriptModeEnum.PresentBox -> giftBoxLauncher(prefs, modifier)
-                ScriptModeEnum.CEEnhance -> ScriptLauncherResponseBuilder({ true }, { ScriptLauncherResponse.CEEnhance })
+                ScriptModeEnum.CEEnhance -> ceEnhanceLauncher(modifier)
                 ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
                 ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
                 ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
@@ -62,6 +63,12 @@ fun ScriptLauncher(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row {
+                    EnhancementLauncherPolicy.switchTarget(shownMode, prefs.gameServer)?.let { target ->
+                        TextButton(onClick = { shownMode = target }) {
+                            Text(stringResource(if (target == ScriptModeEnum.CEEnhance)
+                                R.string.switch_to_ce_enhancement else R.string.switch_to_servant_enhancement))
+                        }
+                    }
                     if (scriptMode == ScriptModeEnum.SupportImageMaker) {
                         TextButton(onClick = { onResponse(ScriptLauncherResponse.SupportImageMaker) }) {
                             Text(stringResource(R.string.p_script_mode_support_image_maker))

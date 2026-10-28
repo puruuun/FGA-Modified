@@ -144,7 +144,7 @@ fun servantLevelLauncher(
     return ScriptLauncherResponseBuilder(
         canBuild = { true },
         build = {
-            ScriptLauncherResponse.ServantEnhancement
+            EnhancementLauncherPolicy.response(io.github.fate_grand_automata.scripts.enums.ScriptModeEnum.ServantLevel)
         }
     )
 }
