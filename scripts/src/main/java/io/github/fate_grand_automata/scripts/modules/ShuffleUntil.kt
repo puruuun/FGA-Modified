@@ -11,6 +11,7 @@ import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 enum class ShuffleEndReason { Met, NPShortage, MaxReached, ReadFailed }
@@ -25,6 +26,7 @@ class ShuffleUntil @Inject constructor(
     private val hand: CommandHand
 ) : IFgoAutomataApi by api {
     companion object {
+        private val SETTLE_WAIT = 500.milliseconds
         fun counts(cards: List<ParsedCard>, deployed: Map<FieldSlot, TeamSlot>,
                    conditions: List<AutoSkillAction.ShuffleCondition> = FieldSlot.list.map { AutoSkillAction.ShuffleCondition(it, 1) }): List<Int> =
             conditions.map { condition ->
@@ -64,6 +66,7 @@ class ShuffleUntil @Inject constructor(
                 finalCounts = counts(cards, servantTracker.deployed, action.conditions)
                 val met = valid && action.conditions.zip(finalCounts).any { (condition, count) -> count >= condition.count }
                 requireBattle(hand.back())
+                SETTLE_WAIT.wait()
                 if (!valid || met) {
                     finish(if (met) ShuffleEndReason.Met else ShuffleEndReason.ReadFailed)
                     return
@@ -75,12 +78,14 @@ class ShuffleUntil @Inject constructor(
             }
             // Confirmation OFF is required. Never call Caster's confirmation path or alter its cache.
             locations.battle.locate(action.skill).click()
+            SETTLE_WAIT.wait()
             val region = locations.battle.shuffleNPShortageRegion
             if (region.exists(images[Images.Close], 1.seconds)) {
                 val close = region.find(images[Images.Close]) ?: throw AutoBattle.BattleExitException(
                     AutoBattle.ExitReason.ShuffleUntilReturnFailed)
                 close.region.click()
                 requireBattle(hand.battleVisible())
+                SETTLE_WAIT.wait()
                 finish(ShuffleEndReason.NPShortage)
                 return
             }

@@ -32,7 +32,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Import original FGA data](wiki/scripts/Original-FGA-Import.md) | Imports scripts and support images from the original FGA. |
 | [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts Chaldea commands and reuses all 24 built-in Servants and 23 CEs, including U-Olga Marie's costume portrait. |
 | [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when enough face cards are dealt. |
-| [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Rechecks first-turn hands; Hakuno uses `aH{…}` with optional B/A/Q counts and separate labels for shuffle presses and command card counts. |
+| [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Rechecks first-turn hands; Hakuno uses `aH{…}` with optional B/A/Q counts, clear count labels and 0.5-second settle waits. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
 | [Support scores](wiki/scripts/Support-Score-62-KR.md) | Picks Class +62 / Grand +16 supports. |
 | [Support NP level](wiki/scripts/Support-NP-Level-KR.md) | Picks supports at or above a minimum NP level. |
@@ -95,7 +95,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 커맨드를 변환하고 U-올가마리 영의를 포함한 내장 서번트 24종·예장 23종 이미지를 재사용합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 일반 카드가 충분할 때만 커맨드를 시작합니다. |
-| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플은 `aH{…}` 구문과 색별 장수 조건을 지원하고 셔플 횟수와 커맨드 카드 수를 구분해 표시합니다. |
+| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플은 `aH{…}` 구문과 색별 장수 조건, 구분된 횟수 표시와 화면 전환 0.5초 대기를 지원합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
 | [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고릅니다. |

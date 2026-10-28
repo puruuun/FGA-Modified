@@ -10,9 +10,55 @@ import io.github.fate_grand_automata.scripts.modules.*
 import io.github.lib_automata.*
 import io.mockk.*
 import kotlin.test.*
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ShuffleUntilTest {
+    @Test fun `skill tap settles before the existing one second NP shortage check`() {
+        val f = Fixture(shortageAt = 0)
+        f.run(min = 1)
+        verifyOrder {
+            with(f.api) {
+                f.icon.click(1)
+                500.milliseconds.wait()
+                f.popup.exists(any<Pattern>(), 1.seconds, any())
+            }
+        }
+        assertEquals(0, f.presses)
+    }
+
+    @Test fun `shortage Close checks battle then settles before finishing under either stop policy`() {
+        for (stop in listOf(false, true)) {
+            val f = Fixture(shortageAt = 0)
+            if (stop) {
+                assertEquals(AutoBattle.ExitReason.ShuffleUntilUnmet(ShuffleEndReason.NPShortage, 0),
+                    assertFailsWith<AutoBattle.BattleExitException> { f.run(min = 1, stop = true) }.reason)
+            } else f.run(min = 1)
+            verifyOrder {
+                with(f.api) { f.close.click(1) }
+                f.handReader.battleVisible()
+                with(f.api) { 500.milliseconds.wait() }
+                f.api.messages.log(any())
+            }
+            verify(exactly = 2) { with(f.api) { 500.milliseconds.wait() } }
+        }
+    }
+
+    @Test fun `hand back settles before the next skill tap without changing press counts`() {
+        val f = Fixture(meetAfter = 1)
+        f.run(max = 1)
+        verifyOrder {
+            f.handReader.open()
+            f.handReader.back()
+            with(f.api) { 500.milliseconds.wait(); f.icon.click(1) }
+        }
+        verify(exactly = 1) { with(f.api) { f.icon.click(1) } }
+        verify(exactly = 3) { with(f.api) { 500.milliseconds.wait() } }
+        assertEquals(listOf(0, 1), f.readsAt)
+        assertEquals(1, f.presses)
+        assertTrue(f.logs.single().message.contains("reason=Met"))
+    }
+
     private fun hand(count: Int) = CommandCard.Face.list.mapIndexed { index, card ->
         ParsedCard(card, if (index < count) TeamSlot.A else TeamSlot.B, null, CardTypeEnum.Buster)
     }
