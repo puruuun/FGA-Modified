@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.scripts
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.models.*
@@ -155,6 +157,40 @@ class ShuffleUntilTest {
             AutoSkillAction.ShuffleCondition(FieldSlot.A, 3), AutoSkillAction.ShuffleCondition(FieldSlot.B, 3))))
         assertEquals(0, f.presses)
         assertTrue(f.logs.single().message.contains("reason=Met"))
+    }
+
+    private fun colouredHand() = hand(3).mapIndexed { index, card -> card.copy(type = when (index) {
+        0 -> CardTypeEnum.Buster
+        1, 2 -> CardTypeEnum.Quick
+        else -> CardTypeEnum.Arts
+    }) }
+
+    @Test fun `OR across colours stops when Quick meets even if Buster does not and logs both counts`() {
+        val f = Fixture()
+        every { f.handReader.open() } returns colouredHand()
+        val action = AutoSkillCommand.parse("a{1:1b2|1q2}")[0, 0].single() as AutoSkillAction.ShuffleUntil
+        f.module.execute(action)
+        assertThat(f.presses).isEqualTo(0)
+        assertThat(f.logs.single().message).isEqualTo("presses=0 reason=Met counts=1b:1,1q:2")
+        verify(exactly = 1) { f.handReader.back() }
+    }
+
+    @Test fun `stunned coloured card does not satisfy a condition`() {
+        val f = Fixture()
+        val cards = colouredHand().map { if (it.card == CommandCard.Face.C) it.copy(isStunned = true) else it }
+        every { f.handReader.open() } returns cards
+        f.module.execute(AutoSkillAction.ShuffleUntil(Skill.Servant.A1, 0, 1,
+            listOf(AutoSkillAction.ShuffleCondition(FieldSlot.A, 2, CardTypeEnum.Quick))))
+        assertThat(f.presses).isEqualTo(1)
+        assertThat(f.logs.single().message).isEqualTo("presses=1 reason=MaxReached counts=1q:1")
+    }
+
+    @Test fun `old 13 condition still meets across mixed card colours`() {
+        val f = Fixture()
+        every { f.handReader.open() } returns colouredHand()
+        f.module.execute(AutoSkillCommand.parse("a{1:13}")[0, 0].single() as AutoSkillAction.ShuffleUntil)
+        assertThat(f.presses).isEqualTo(0)
+        assertThat(f.logs.single().message).isEqualTo("presses=0 reason=Met counts=1:3")
     }
 
     @Test fun `turn and run boundaries clear the shuffle flag`() {

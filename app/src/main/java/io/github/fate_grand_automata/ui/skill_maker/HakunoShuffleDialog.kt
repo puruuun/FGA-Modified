@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.models.AutoSkillAction
+import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 
 @Composable
@@ -22,6 +23,32 @@ private fun ShuffleNumber(value: Int, range: IntRange, onChange: (Int) -> Unit) 
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             range.forEach { number ->
                 DropdownMenuItem(text = { Text(number.toString()) }, onClick = { onChange(number); expanded = false })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShuffleColour(value: CardTypeEnum?, onChange: (CardTypeEnum?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf(
+        null to stringResource(R.string.hakuno_shuffle_colour_all),
+        CardTypeEnum.Buster to stringResource(R.string.skill_maker_buster),
+        CardTypeEnum.Arts to stringResource(R.string.skill_maker_arts),
+        CardTypeEnum.Quick to stringResource(R.string.skill_maker_quick)
+    )
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text(when (value) {
+                CardTypeEnum.Buster -> "B"
+                CardTypeEnum.Arts -> "A"
+                CardTypeEnum.Quick -> "Q"
+                else -> stringResource(R.string.hakuno_shuffle_colour_all)
+            })
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (colour, label) ->
+                DropdownMenuItem(text = { Text(label) }, onClick = { onChange(colour); expanded = false })
             }
         }
     }
@@ -52,14 +79,21 @@ internal fun HakunoShuffleDialog(
                 }
                 Text(stringResource(R.string.hakuno_shuffle_conditions))
                 rows.forEachIndexed { index, row ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(stringResource(R.string.hakuno_shuffle_field_slot))
-                        ShuffleNumber(row[0].digitToInt(), 1..3) { value ->
-                            rows = rows.toMutableList().apply { set(index, "$value${row[1]}") }
+                    val condition = AutoSkillAction.ShuffleCondition.fromCode(row)
+                    fun update(value: AutoSkillAction.ShuffleCondition) {
+                        rows = rows.toMutableList().apply { set(index, value.toCommandString()) }
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.hakuno_shuffle_field_slot))
+                            ShuffleNumber(condition.slot.position, 1..3) { value ->
+                                update(condition.copy(slot = FieldSlot.list[value - 1]))
+                            }
                         }
-                        Text(stringResource(R.string.hakuno_shuffle_at_least))
-                        ShuffleNumber(row[1].digitToInt(), 1..5) { value ->
-                            rows = rows.toMutableList().apply { set(index, "${row[0]}$value") }
+                        ShuffleColour(condition.type) { update(condition.copy(type = it)) }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.hakuno_shuffle_at_least))
+                            ShuffleNumber(condition.count, 1..5) { value -> update(condition.copy(count = value)) }
                         }
                     }
                     TextButton(onClick = { rows = rows.filterIndexed { i, _ -> i != index } }, enabled = rows.size > 1) {
@@ -75,9 +109,7 @@ internal fun HakunoShuffleDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onApply(min, max, rows.map {
-                    AutoSkillAction.ShuffleCondition(FieldSlot.list[it[0].digitToInt() - 1], it[1].digitToInt())
-                }, stop)
+                onApply(min, max, rows.map { AutoSkillAction.ShuffleCondition.fromCode(it) }, stop)
             }) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } }

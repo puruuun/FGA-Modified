@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="hakuno_shuffle_colour_all">전체</string>
     <string name="servant_name_flora">플로라</string>
     <string name="servant_name_omii_san">헤비 뇨보</string>
     <string name="servant_name_tiamat_summer">라바/티아마트(아처)</string>

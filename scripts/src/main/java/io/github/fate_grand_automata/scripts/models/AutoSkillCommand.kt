@@ -205,14 +205,12 @@ class AutoSkillCommand private constructor(
             val body = StringBuilder()
             while (queue.isNotEmpty() && queue.peek() != '}') body.append(queue.remove())
             require(queue.poll() == '}') { "Unclosed shuffle token" }
-            val match = Regex("(?:(\\d+)-)?(\\d+):([1-3][1-5](?:\\|[1-3][1-5])*)(!?)").matchEntire(body)
+            val match = Regex("(?:(\\d+)-)?(\\d+):([1-3][baq]?[1-5](?:\\|[1-3][baq]?[1-5])*)(!?)", RegexOption.IGNORE_CASE).matchEntire(body)
                 ?: throw IllegalArgumentException("Invalid shuffle token: $body")
             return AutoSkillAction.ShuffleUntil(
                 skill, match.groupValues[1].takeIf { it.isNotEmpty() }?.toInt() ?: 0,
                 match.groupValues[2].toInt(),
-                match.groupValues[3].split('|').map {
-                    AutoSkillAction.ShuffleCondition(FieldSlot.list[it[0].digitToInt() - 1], it[1].digitToInt())
-                }, match.groupValues[4].isNotEmpty()
+                match.groupValues[3].split('|').map { AutoSkillAction.ShuffleCondition.fromCode(it) }, match.groupValues[4].isNotEmpty()
             )
         }
 

@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.scripts.models
 
+import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
+
 sealed class AutoSkillAction {
     data class ShuffleUntil(
         val skill: Skill.Servant,
@@ -16,12 +18,37 @@ sealed class AutoSkillAction {
 
         fun toCommandString() = "${skill.autoSkillCode}{" +
             (if (min == 0) "$max" else "$min-$max") + ":" +
-            conditions.joinToString("|") { "${it.slot.position}${it.count}" } +
+            conditions.joinToString("|") { it.toCommandString() } +
             (if (stopIfUnmet) "!" else "") + "}"
     }
 
-    data class ShuffleCondition(val slot: FieldSlot, val count: Int) {
-        init { require(count in 1..5) }
+    data class ShuffleCondition(val slot: FieldSlot, val count: Int, val type: CardTypeEnum? = null) {
+        init {
+            require(count in 1..5)
+            require(type == null || type in listOf(CardTypeEnum.Buster, CardTypeEnum.Arts, CardTypeEnum.Quick))
+        }
+
+        val key: String get() = "${slot.position}" + when (type) {
+            null -> ""
+            CardTypeEnum.Buster -> "b"
+            CardTypeEnum.Arts -> "a"
+            CardTypeEnum.Quick -> "q"
+            CardTypeEnum.Unknown -> error("Unknown is not a shuffle condition colour")
+        }
+        fun toCommandString() = "$key$count"
+
+        companion object {
+            fun fromCode(code: String): ShuffleCondition {
+                require(code.length in 2..3 && code.first() in '1'..'3' && code.last() in '1'..'5')
+                val type = if (code.length == 2) null else when (code[1].lowercaseChar()) {
+                    'b' -> CardTypeEnum.Buster
+                    'a' -> CardTypeEnum.Arts
+                    'q' -> CardTypeEnum.Quick
+                    else -> throw IllegalArgumentException("Invalid shuffle condition colour: $code")
+                }
+                return ShuffleCondition(FieldSlot.list[code.first().digitToInt() - 1], code.last().digitToInt(), type)
+            }
+        }
     }
 
     data class Atk constructor(

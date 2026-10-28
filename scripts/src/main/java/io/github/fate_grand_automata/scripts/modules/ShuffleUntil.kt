@@ -25,11 +25,13 @@ class ShuffleUntil @Inject constructor(
     private val hand: CommandHand
 ) : IFgoAutomataApi by api {
     companion object {
-        fun counts(cards: List<ParsedCard>, deployed: Map<FieldSlot, TeamSlot>): List<Int> = FieldSlot.list.map { slot ->
-            val servant = deployed[slot]
-            if (servant == null || servant == TeamSlot.Unknown) 0
-            else cards.count { !it.isStunned && it.servant == servant }
-        }
+        fun counts(cards: List<ParsedCard>, deployed: Map<FieldSlot, TeamSlot>,
+                   conditions: List<AutoSkillAction.ShuffleCondition> = FieldSlot.list.map { AutoSkillAction.ShuffleCondition(it, 1) }): List<Int> =
+            conditions.map { condition ->
+                val servant = deployed[condition.slot]
+                if (servant == null || servant == TeamSlot.Unknown) 0
+                else cards.count { !it.isStunned && it.servant == servant && (condition.type == null || it.type == condition.type) }
+            }
     }
 
     fun execute(action: AutoSkillAction.ShuffleUntil) {
@@ -38,9 +40,10 @@ class ShuffleUntil @Inject constructor(
         }
         state.hakunoShuffledThisTurn = true
         var presses = 0
-        var finalCounts = listOf(0, 0, 0)
+        var finalCounts = action.conditions.map { 0 }
         fun finish(reason: ShuffleEndReason) {
-            messages.log(ScriptLog.ShuffleUntil("presses=$presses reason=$reason counts=$finalCounts"))
+            val counts = action.conditions.zip(finalCounts).joinToString(",") { (condition, count) -> "${condition.key}:$count" }
+            messages.log(ScriptLog.ShuffleUntil("presses=$presses reason=$reason counts=$counts"))
             if (reason != ShuffleEndReason.Met && action.stopIfUnmet) {
                 throw AutoBattle.BattleExitException(AutoBattle.ExitReason.ShuffleUntilUnmet(reason, presses))
             }
@@ -58,8 +61,8 @@ class ShuffleUntil @Inject constructor(
                     }
                 }
                 val valid = CommandHand.valid(cards)
-                finalCounts = counts(cards, servantTracker.deployed)
-                val met = valid && action.conditions.any { finalCounts[it.slot.position - 1] >= it.count }
+                finalCounts = counts(cards, servantTracker.deployed, action.conditions)
+                val met = valid && action.conditions.zip(finalCounts).any { (condition, count) -> count >= condition.count }
                 requireBattle(hand.back())
                 if (!valid || met) {
                     finish(if (met) ShuffleEndReason.Met else ShuffleEndReason.ReadFailed)
