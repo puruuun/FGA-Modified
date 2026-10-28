@@ -104,7 +104,7 @@ class WeeklyRouteTest {
         fun phase(id: Int, war: Int) = """{"id":$id,"warId":$war,"individuality":[],"phaseIndividuality":[],"stages":[{"enemies":[{"deck":"enemy","svt":{"id":1,"classId":1},"traits":[{"id":5}]}]}]}"""
         val mission = """[{"id":1,"startedAt":0,"endedAt":4102444800,"missions":[{"id":9,"name":"m","type":"weekly","conds":[{"missionProgressType":"clear","condType":"missionConditionDetail","targetNum":1,"targetIds":[],"details":[{"missionCondType":2,"logicType":1,"targetIds":[5],"addTargetIds":[],"conditionLinkType":"masterMissionStart","targetEventIds":[],"targetQuestIndividualities":[]}]}]}]}]"""
         val dir = kotlin.io.path.createTempDirectory("weekly").toFile()
-        val log = mutableListOf<String>()
+        val log = java.util.Collections.synchronizedList(mutableListOf<String>()) // the loader logs from its worker threads
         val repo = AtlasRouteRepository(dir, fetch = { path, target ->
             target.writeText(when {
                 path == "export/KR/nice_master_mission.json" -> mission
