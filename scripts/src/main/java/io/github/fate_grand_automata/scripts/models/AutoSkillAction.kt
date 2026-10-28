@@ -11,6 +11,7 @@ sealed class AutoSkillAction {
         val stopIfUnmet: Boolean = false
     ) : AutoSkillAction() {
         init {
+            require(skill in Skill.Servant.skill1)
             require(max in 1..30 && min in 0..max)
             require(conditions.isNotEmpty())
         }

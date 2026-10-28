@@ -5,8 +5,8 @@ import io.github.fate_grand_automata.scripts.models.*
 import kotlin.test.*
 
 class SkillMakerShuffleTest {
-    @Test fun `all servant shuffle skills save and reopen with uppercase H`() {
-        for (skill in Skill.Servant.list) {
+    @Test fun `each servant first skill shuffle saves and reopens with uppercase H`() {
+        for (skill in Skill.Servant.skill1) {
             val action = AutoSkillAction.ShuffleUntil(skill, 0, 8, listOf(AutoSkillAction.ShuffleCondition(FieldSlot.A, 3)))
             val entry = SkillMakerEntry.Action(action)
             val expected = "${skill.autoSkillCode}H{8:13}"
@@ -15,15 +15,15 @@ class SkillMakerShuffleTest {
             assertEquals(expected, reopened.toString())
             assertEquals(action, AutoSkillCommand.parse(reopened.toString())[0, 0].single())
             assertEquals(when (skill) {
-                Skill.Servant.A1, Skill.Servant.A2, Skill.Servant.A3 -> R.color.colorServant1
-                Skill.Servant.B1, Skill.Servant.B2, Skill.Servant.B3 -> R.color.colorServant2
+                Skill.Servant.A1 -> R.color.colorServant1
+                Skill.Servant.B1 -> R.color.colorServant2
                 else -> R.color.colorServant3
             }, entry.colorRes)
         }
     }
 
     @Test fun `editor model rejects old and mistyped shuffle forms`() {
-        for (command in listOf("a{8:13}", "ah{8:13}")) {
+        for (command in listOf("a{8:13}", "ah{8:13}", "bH{8:13}", "hH{8:13}")) {
             assertFailsWith<Exception>(command) { SkillMakerModel(command) }
         }
     }

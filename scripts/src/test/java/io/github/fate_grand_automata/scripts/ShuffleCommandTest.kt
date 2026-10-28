@@ -5,8 +5,8 @@ import io.github.fate_grand_automata.scripts.models.*
 import kotlin.test.*
 
 class ShuffleCommandTest {
-    @Test fun `uppercase H parses every servant skill with optional min colours and stop`() {
-        for (skill in Skill.Servant.list) {
+    @Test fun `uppercase H parses each servant first skill with optional min colours and stop`() {
+        for (skill in Skill.Servant.skill1) {
             for (min in listOf("", "0-", "2-")) {
                 for (conditions in listOf("13|22", "1b2|2a3|3q1")) {
                     for (stop in listOf("", "!")) {
@@ -21,6 +21,17 @@ class ShuffleCommandTest {
                         assertEquals(action, AutoSkillCommand.parse(action.toCommandString())[0, 0].single(), token)
                     }
                 }
+            }
+        }
+    }
+
+    @Test fun `shuffle rejects every servant second and third skill`() {
+        for (skill in Skill.Servant.skill2 + Skill.Servant.skill3) {
+            val token = "${skill.autoSkillCode}H{8:13}"
+            assertIs<AutoBattle.ExitReason.SkillCommandParseError>(
+                assertFailsWith<AutoBattle.BattleExitException>(token) { AutoSkillCommand.parse(token) }.reason)
+            assertFailsWith<IllegalArgumentException>(token) {
+                AutoSkillAction.ShuffleUntil(skill, 0, 8, listOf(AutoSkillAction.ShuffleCondition(FieldSlot.A, 3)))
             }
         }
     }
