@@ -212,6 +212,12 @@ class SkillMakerViewModel @AssistedInject constructor(
         targetSkill(listOfNotNull(target))
     }
 
+    fun shuffleUntil(min: Int, max: Int, conditions: List<AutoSkillAction.ShuffleCondition>, stop: Boolean) {
+        val skill = Skill.Servant.skill1.first { it.autoSkillCode == currentSkill }
+        add(SkillMakerEntry.Action(AutoSkillAction.ShuffleUntil(skill, min, max, conditions, stop)))
+        back()
+    }
+
     fun targetSkill(targets: List<ServantTarget>) {
         val skill = (Skill.Servant.list + Skill.Master.list + Skill.CommandSpell.list)
             .first { it.autoSkillCode == currentSkill }

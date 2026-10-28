@@ -71,13 +71,18 @@ class BattleState @Inject constructor() {
     val turn get() = runState.turn
 
     var commandPosition: CommandPosition? = null
+    var hakunoShuffledThisTurn = false
     val commandStage get() = commandPosition?.stage ?: stage
     val commandTurn get() = commandPosition?.turn ?: turn
 
-    fun nextTurn() = runState.nextTurn()
+    fun nextTurn() {
+        hakunoShuffledThisTurn = false
+        runState.nextTurn()
+    }
     fun nextStage() = runState.nextStage()
 
     fun nextRun(): Int {
+        hakunoShuffledThisTurn = false
         commandPosition = null
         return ++runs
     }

@@ -35,7 +35,7 @@ class Caster @Inject constructor(
         return weCanSpam || weAreInDanger
     }
 
-    private fun waitForAnimationToFinish(timeout: Duration = 5.seconds) {
+    fun waitForAnimationToFinish(timeout: Duration = 5.seconds) {
         val img = images[Images.BattleScreen]
         // slow devices need this. do not remove.
         locations.battle.screenCheckRegion.waitVanish(img, 2.seconds)

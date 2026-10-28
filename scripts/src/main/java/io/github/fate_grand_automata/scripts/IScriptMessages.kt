@@ -25,6 +25,7 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    class ShuffleUntil(val message: String) : ScriptLog()
     /** One Grand CE decision; extra template scans are enabled only for beta/deviceTest. */
     class SupportCe(val message: String, val np: io.github.lib_automata.Match?,
                     val default: io.github.lib_automata.Match?, val matched: Boolean) : ScriptLog()

@@ -12,7 +12,7 @@ sealed class ScriptLauncherResponse {
         val maxGoldEmberTotalCount: Int
     ) : ScriptLauncherResponse()
 
-    data class CEBomb(val targetRarity: Int) : ScriptLauncherResponse()
+    data object CEEnhance : ScriptLauncherResponse()
     data object SupportImageMaker : ScriptLauncherResponse()
     data object Battle : ScriptLauncherResponse()
 

@@ -5,6 +5,8 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 ## Case files
 
 - `weeklyRoute`의 `view: "vault"` 14건: #44 소유자 캡처 `build/orchestration/inputs/weekly-vault/1.webp`…`14.webp`를 `{Jp,Kr}/weekly-vault/`에 720p 게임 영역·무손실 WebP로 보관합니다. JP 2는 홈, 3/4/5는 게이트, 6/7/8은 요일 목록이고 KR 9는 홈, 1/10/14는 게이트, 11/12/13은 요일 목록입니다. 배너·헤더의 부재/교차 판정, JP 8·KR 11의 노란 초급 수락과 탭 위치, 빨강/초록/다른 난이도 거부를 확인합니다. 템플릿 재추출: `tools/device-qa/cut_weekly_vault_templates.py`; 공용 `En/weekly_daily_quest.png`는 JP 8의 문자만 잘라 양 서버에 사용합니다.
+- `cases/hakunoShuffle.json`: #45 KR NP-shortage Close popup on the owner's 2560×1080 wide and 1920×1080 frames, normalized to 720p game areas as lossless WebP under `Kr/hakuno-shuffle/`. Sources: `build/orchestration/inputs/hakuno-np-close-kr-{2560x1080,1920x1080}.png`. The suite uses the product's named Close region and existing `Kr/close.png`; `Kr/battle-screen.png` is the absence control. No game input.
+- `cases/ceEnhance.json`: #42 owner JP/KR CE enhancement screens, 16:9 and wide, under `{Jp,Kr}/ce-enhance/` (32 lossless 720p WebP frames). Sources are `build/orchestration/inputs/ce-enhance/{jp,kr}/`; cases retain each original filename. The game-area borders are removed using the `extract-template-asset` rules. Two existing KR servant frames guard against false CE detection. Every case checks the execute/reselect, recommended states, moved auto-set toggle, Close and confirm regions. KR 16:9 has no unobscured execute-dialog capture; its no-match popup is an absence case.
 
 | File | Suite | Labels from | Cases |
 |---|---|---|---|

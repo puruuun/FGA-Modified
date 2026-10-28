@@ -69,8 +69,14 @@ fun SkillMakerTarget(
     onNpType3: () -> Unit,
     onChoice2: (SkillSlot) -> Unit,
     onChoice3: (SkillSlot) -> Unit,
-    onTransform: () -> Unit
+    onTransform: () -> Unit,
+    onShuffle: (Int, Int, List<io.github.fate_grand_automata.scripts.models.AutoSkillAction.ShuffleCondition>, Boolean) -> Unit = { _, _, _, _ -> }
 ) {
+    var shuffleDialog by remember { mutableStateOf(false) }
+    if (shuffleDialog) HakunoShuffleDialog(
+        onApply = { min, max, conditions, stop -> shuffleDialog = false; onShuffle(min, max, conditions, stop) },
+        onDismiss = { shuffleDialog = false }
+    )
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -178,6 +184,17 @@ fun SkillMakerTarget(
                         modifier = Modifier
                             .fillMaxWidth()
                     ) {
+                        if (slot == SkillSlot.First) {
+                            item {
+                                ButtonWithHint(
+                                    onClick = { shuffleDialog = true },
+                                    text = stringResource(R.string.hakuno_shuffle),
+                                    hint = stringResource(R.string.hakuno_shuffle_confirmation_off),
+                                    image = R.drawable.skill_maker_shuffle,
+                                    servants = stringResource(R.string.hakuno_shuffle_conditions)
+                                )
+                            }
+                        }
                         if (slot == SkillSlot.Third) {
                             item {
                                 ButtonWithHint(

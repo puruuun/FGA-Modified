@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
 import io.github.fate_grand_automata.scripts.modules.SkillLevelScreens
+import io.github.fate_grand_automata.scripts.modules.CEEnhanceScreens
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
@@ -14,6 +15,7 @@ import javax.inject.Inject
 class AutoDetect @Inject constructor(
     api: IFgoAutomataApi,
     private val skillScreens: SkillLevelScreens,
+    private val ceScreens: CEEnhanceScreens,
 ) : IFgoAutomataApi by api {
     /** D-10: only a screen with a selected servant gets a settings dialog. */
     fun skillServantSelected() = skillScreens.servantSelected()
@@ -51,15 +53,14 @@ class AutoDetect @Inject constructor(
 
             skillMode == SkillLevelMode.Append -> ScriptModeEnum.AppendLevel
 
+            ceScreens.onScreen() -> ScriptModeEnum.CEEnhance
+
             mapOf(
                 images[Images.ServantAutoSelect] to locations.servant.servantAutoSelectRegion,
                 images[Images.ServantAutoSelectOff] to locations.servant.servantAutoSelectRegion,
                 images[Images.ServantAscensionBanner] to locations.enhancementBannerRegion
             ).exists()->
                 ScriptModeEnum.ServantLevel
-
-            images[Images.EmptyEnhance] in locations.emptyEnhanceRegion ->
-                ScriptModeEnum.CEBomb
 
             else -> ScriptModeEnum.Battle
         }

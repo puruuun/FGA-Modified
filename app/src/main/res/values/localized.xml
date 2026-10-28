@@ -3,6 +3,22 @@
     <string name="weekly_route_excluded_missions">Excluded missions</string>
     <string name="weekly_route_clear_all_note">The clear-all mission may need to be finished by hand.</string>
     <string name="weekly_route_empty_battle_warning">The route is empty. OK will start an ordinary battle.</string>
+    <string name="hakuno_shuffle">Hakuno Shuffle</string>
+    <string name="hakuno_shuffle_confirmation_off">Turn off the in-game skill use confirmation.</string>
+    <string name="hakuno_shuffle_min">Min presses</string>
+    <string name="hakuno_shuffle_max">Max presses</string>
+    <string name="hakuno_shuffle_conditions">Meet any condition (OR), counting non-stunned face cards.</string>
+    <string name="hakuno_shuffle_field_slot">Slot</string>
+    <string name="hakuno_shuffle_at_least">At least</string>
+    <string name="hakuno_shuffle_remove">Remove</string>
+    <string name="hakuno_shuffle_add">Add condition</string>
+    <string name="hakuno_shuffle_stop">Stop the battle if the condition is not met</string>
+    <string name="hakuno_shuffle_face_check_disabled">Hakuno Shuffle requires face-card checking.</string>
+    <string name="hakuno_shuffle_return_failed">Could not return to the battle screen after Hakuno Shuffle.</string>
+    <string name="hakuno_shuffle_unmet">Hakuno Shuffle unmet after %1$d presses: %2$s</string>
+    <string name="hakuno_shuffle_np_shortage">NP shortage</string>
+    <string name="hakuno_shuffle_max_reached">Maximum presses reached</string>
+    <string name="hakuno_shuffle_read_failed">Could not read the hand</string>
     <string name="skill_level_check_only">Check level reading only (no enhancement)</string>
     <string name="tapper_service_description">"This accessibility service is used to perform clicks and swipes without root. It also enables automatic detection of FGO version (NA/JP/CN/TW/KR) by checking the APK name of the foreground app. In case you see the service malfunctioning, try turning it OFF and then turn ON again. If it still doesn't work, you might have to adjust your device's Battery optimization settings for the app."</string>
     <string name="battle_config_item_copy">"Copy"</string>
@@ -565,7 +581,10 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="error_no_virtual_display">"Screen capture couldn't be set up. Restart FGA and grant the screen capture permission again."</string>
     <string name="error_no_screenshot_received">"Screen capture didn't deliver any image. Restart FGA and grant the screen capture permission again."</string>
     <string name="error_screen_capture_stopped">"Screen capture was stopped. This happens when the system or another app takes it over, or when the display changes. Restart FGA and grant the screen capture permission again."</string>
-    <string name="error_no_suitable_target_ce_found">"No suitable target CE found"</string>
+    <string name="ce_enhance_max_level">CE reached its maximum level.</string>
+    <string name="ce_enhance_no_matching_ce">No CE matches the recommended-selection filters.</string>
+    <string name="ce_enhance_no_materials_or_qp">No enhancement materials or QP remain.</string>
+    <string name="ce_enhance_aborted">CE enhancement stopped.</string>
     <string name="error_game_server_not_detected">"FGA couldn't detect which FGO server is running. Leave FGO and open it again, then retry.
 
 If your FGO version isn't recognized or runs inside an app cloner, select your server under %1$s > %2$s > %3$s instead."</string>

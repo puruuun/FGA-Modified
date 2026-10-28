@@ -56,6 +56,7 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.ShuffleUntil -> Timber.tag("HakunoShuffle").i(item.message)
             is ScriptLog.SupportCe -> {
                 if (supportCeDiagnosticsEnabled) Timber.tag(SUPPORT_CE_TAG).i(item.message)
                 Unit
