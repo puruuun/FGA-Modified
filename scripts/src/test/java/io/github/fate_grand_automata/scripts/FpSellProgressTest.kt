@@ -51,11 +51,12 @@ class FpSellProgressTest {
         assertFailsWith<IllegalStateException> { p.tapped(4,650,tile.lock) }
     }
 
-    @Test fun `two consecutive row matches end despite image bounce and no image equality check`() {
+    @Test fun `stationary rows keep rejection inference but no longer end the list`() {
         val p=FpSellProgress(284)
         p.beginPage(listOf(578,862,1146),0);assertNull(p.finishPage())
         p.beginPage(listOf(574,858,1142),560);assertNull(p.finishPage())
-        p.beginPage(listOf(578,862,1146),560);assertEquals("stationary-rows",p.finishPage())
+        p.beginPage(listOf(578,862,1146),560);assertNull(p.finishPage())
+        assertEquals(2, p.stationary)
         assertTrue(FpSellProgress.sameRows(listOf(400,684),listOf(412,696)))
         assertFalse(FpSellProgress.sameRows(listOf(400,684),listOf(413,697)))
         assertFalse(FpSellProgress.sameRows(emptyList(),emptyList()))
@@ -124,7 +125,7 @@ class FpSellProgressTest {
         assertEquals(0,p.rejected)
     }
 
-    @Test fun `stationary end with a rejected tile never re-taps it`() {
+    @Test fun `scrollbar end with a rejected tile never re-taps it`() {
         val p=FpSellProgress(284)
         p.beginPage(listOf(578,862,1146),0)
         p.tapped(2,1146,FpSellPolicy.Lock.Unlocked)
@@ -134,10 +135,19 @@ class FpSellProgressTest {
         p.finishPage()
         p.beginPage(listOf(578,862,1146),560)
         assertEquals("skip:tap-rejected",p.seen(2,1146,tile))
-        assertEquals("stationary-rows",p.finishPage())
+        assertEquals("scrollbar-end",p.finishPage(railPresent = true, bottom = true))
         assertEquals(FpSellPolicy.Summary(0,0),p.summary())
         assertEquals(1,p.taps)
         assertEquals(1,p.rejected)
+    }
+
+    @Test fun `missing rail completes one page and stops without a swipe`() {
+        val p = FpSellProgress(284)
+        p.beginPage(listOf(400, 684), 0)
+        p.tapped(0, 400, FpSellPolicy.Lock.Unlocked)
+        assertEquals("no-scrollbar", p.finishPage(railPresent = false))
+        assertEquals(1, p.pages)
+        assertEquals(1, p.selected)
     }
 
     @Test fun `a locked tile is never tap-rejected`() {

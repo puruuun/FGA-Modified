@@ -23,6 +23,9 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
             .put("candidateReal", FpSellPolicy.select(value, FpSellPolicy.Options(false)))
     }
     val actual = when (case.getString("view")) {
+        "scrollbar" -> reader.scrollbar().let {
+            JSONObject().put("railPresent", it.railPresent).put("bottom", it.bottom).put("boxes", it.toString())
+        }
         "workshopButtons" -> JSONObject().put("menu",
             useSameSnapIn { FpSellButtons(this).visible(reader.loc.menu, Images.FpSellMenu) })
         "returnButtons" -> {

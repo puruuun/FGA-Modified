@@ -152,6 +152,7 @@ class FpAutoSellTest {
         val convert = Region(600, 500, 20, 20)
         val close = Region(100, 800, 20, 20)
         val reader = mockk<FpSellReader>()
+        val swiper = mockk<Swiper>(relaxed = true)
         val unselected = Cell(true, lock, false)
         val logs = mutableListOf<String>()
         val sale: FpAutoSell
@@ -179,13 +180,28 @@ class FpAutoSellTest {
             every { reader.isSevenColumns() } returns sevenColumns
             every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null))
             every { reader.readCard(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
-            sale = FpAutoSell(api, reader, mockk(relaxed = true))
+            every { reader.scrollbar() } returnsMany listOf(
+                FpSellReader.ScrollbarState(true, false, null, null),
+                FpSellReader.ScrollbarState(true, false, null, null),
+                FpSellReader.ScrollbarState(true, true, null, null))
+            sale = FpAutoSell(api, reader, swiper)
         }
         fun result() = try { sale.run() } catch (e: AutoFriendGacha.ExitException) {
             val dry = e.reason as? AutoFriendGacha.ExitReason.SellDryRunDone ?: throw e
             FpAutoSell.Result(dry.summary, true)
         } finally { sale.logFinalSummary() }
         fun failure() = assertFailsWith<AutoFriendGacha.ExitException> { try { sale.run() } finally { sale.logFinalSummary() } }
+    }
+
+    @Test fun `bottom or missing rail finishes after tile taps with no extra swipe`() {
+        for (bar in listOf(FpSellReader.ScrollbarState(true, true, null, null), FpSellReader.ScrollbarState(false, false, null, null))) {
+            val run = SellRun()
+            every { run.reader.scrollbar() } returns bar
+            assertEquals(1, run.result().summary.total)
+            verifyOrder { run.reader.readPage(); run.reader.readCard(run.card); with(run.api) { run.card.click(1) }; run.reader.scrollbar() }
+            verify(exactly = 0) { run.swiper.scroll(any(), any()) }
+            assertTrue(run.logs.any { "reason=${if (bar.railPresent) "scrollbar-end" else "no-scrollbar"}" in it })
+        }
     }
 
     @Test fun `dry run stops immediately after Confirm without reading or tapping final dialog`() {

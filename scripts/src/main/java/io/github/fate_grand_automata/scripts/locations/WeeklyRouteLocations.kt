@@ -26,10 +26,11 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
     val listArea = Region(-1500, 200, 1500, 1140).xFromRight()
     val homeOtherBanner = listArea.copy(height = 360)
 
-    /** Owner 0009 and 0012: rail y=95..589, core x=right-27..right-19 at 720p. */
-    val listScrollbar = Region(-54, 190, 16, 988).xFromRightEdge()
-    /** Banner column only: exclude the animated portrait, header, scrollbar and MENU. */
-    val listContent = Region(-1280, 250, 1140, 930).xFromRightEdge()
+    /** 720p: 28px boxes centred on x=right-23 (16:9), right-108 (wide safe area). */
+    private val scrollbarX = if (isWide) -73 else -74
+    val topScrollbarRegion = Region(scrollbarX, 204, 56, 12).xFromRightEdge()
+    val bottomScrollbarRegion = Region(scrollbarX, 1156, 56, 12).xFromRightEdge()
+    val scrollbarRailRegion = Region(scrollbarX, 660, 56, 48).xFromRightEdge()
 
     /** Where a list scroll starts and its finger travel: up 640 px moves the list down by 640 px. */
     val listScrollStart = Location(-700, 1180).xFromRight()

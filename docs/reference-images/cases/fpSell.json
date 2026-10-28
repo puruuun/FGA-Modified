@@ -17291,6 +17291,50 @@
         "normal": false,
         "daily": false
       }
+    },
+    {
+      "name": "fp-bottom-scrollbar",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/fp-bottom.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": true
+      }
+    },
+    {
+      "name": "fp-16x9-mid-scrollbar",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": false
+      }
+    },
+    {
+      "name": "fp-wide-mid-scrollbar",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": false
+      }
+    },
+    {
+      "name": "fp-no-rail-scrollbar",
+      "suite": "fpSell",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": false,
+        "bottom": false
+      }
     }
   ]
 }

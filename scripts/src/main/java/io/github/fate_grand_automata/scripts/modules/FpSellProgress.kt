@@ -7,7 +7,6 @@ import kotlin.math.roundToInt
 class FpSellProgress(private val pitch: Int) {
     companion object {
         const val ROW_TOLERANCE = 12
-        const val STATIONARY_LIMIT = 2
         const val IDLE_LIMIT = 5
         fun sameRows(a: List<Int>, b: List<Int>): Boolean =
             a.isNotEmpty() && a.size == b.size && a.zip(b).all { (x, y) -> abs(x - y) <= ROW_TOLERANCE }
@@ -85,10 +84,11 @@ class FpSellProgress(private val pitch: Int) {
         if (lock == FpSellPolicy.Lock.Unknown) unknownLock++
     }
 
-    fun finishPage(): String? {
+    fun finishPage(railPresent: Boolean = true, bottom: Boolean = false): String? {
         idle = if (pageTaps == 0) idle + 1 else 0
         return when {
-            stationary >= STATIONARY_LIMIT -> "stationary-rows"
+            !railPresent -> "no-scrollbar"
+            bottom -> "scrollbar-end"
             idle >= IDLE_LIMIT -> "no-new-taps"
             else -> null
         }

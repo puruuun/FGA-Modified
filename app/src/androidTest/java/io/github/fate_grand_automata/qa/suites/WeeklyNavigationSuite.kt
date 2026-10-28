@@ -14,19 +14,13 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
     val actual=JSONObject()
     when(case.getString("view")) {
         "scrollbar" -> {
-            val position = loc.listScrollbar.getPattern("weekly scrollbar QA").use {
-                ListScrollbar.position(it.grayPixels(), it.width, it.height)
-            }
-            val expected = case.getJSONObject("expected")
-            if (expected.has("position")) {
-                check(position != null && kotlin.math.abs(position - expected.getDouble("position")) <= 0.025) {
-                    "scrollbar position=$position expected=$expected"
+            useSameSnapIn {
+                fun sample(region: io.github.lib_automata.Region) = region.getPattern("weekly scrollbar QA").use {
+                    ListScrollbar.boxes.sample(it.grayPixels(), it.width, it.height)
                 }
-                // Keep the raw measurement in the report; the shared exact verifier checks the rounded target.
-                actual.put("measured", position).put("position", expected.get("position"))
-            } else {
-                check(position == null) { "expected unreadable scrollbar, got $position" }
-                actual.put("unknown", true)
+                val state = ListScrollbar.read(sample(loc.topScrollbarRegion), sample(loc.bottomScrollbarRegion), sample(loc.scrollbarRailRegion))
+                actual.put("railPresent", state.railPresent).put("top", state.top).put("bottom", state.bottom)
+                    .put("boxes", state.toString())
             }
         }
         "spotPanel" -> useSameSnapIn {

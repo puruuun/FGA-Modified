@@ -117,9 +117,10 @@ class FpAutoSell @Inject constructor(
                 tile.region.click()
                 tracker.tapped(tile.column, tile.region.y, cell.lock)
             }
-            val end = tracker.finishPage()
+            val bar = reader.scrollbar()
+            val end = tracker.finishPage(bar.railPresent, bar.bottom)
             log("page=$page summary selected=${tracker.selected} rejected=${tracker.rejected} " +
-                "stationary=${tracker.stationary} idle=${tracker.idle}")
+                "stationary=${tracker.stationary} idle=${tracker.idle} scrollbar=$bar")
             if (ended || end != null) {
                 log("end of list reason=${end ?: "selection-cap"} selected=${tracker.selected}")
                 ended = true

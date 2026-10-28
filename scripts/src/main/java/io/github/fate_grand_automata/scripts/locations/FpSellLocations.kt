@@ -25,6 +25,10 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     /** The grid is centred between the left button column and the scroll bar; on 21:9 it sits 5 px (720p) right of the centre. */
     private val gridShift = if (isWide) 10 else 0
     val grid = Region(-1130 + gridShift, 338, 1850, 1102).xFromCenter()
+    /** Sale-list rail core x=right-258 at 720p, with the separate wide safe-area inset. */
+    private val scrollbarX = if (isWide) -545 else -544
+    val bottomScrollbarRegion = Region(scrollbarX, 1330, 56, 12).xFromRightEdge()
+    val scrollbarRailRegion = Region(scrollbarX, 660, 56, 48).xFromRightEdge()
     /** Left column's last button (cards per row). The wide left column is packed closer together: 25 px higher on 21:9. */
     val sizeSwitch = (if (isWide) Location(100, 1268) else Location(100, 1320)).xFromLeftEdge()
     val confirm = Region(-460, 1240, 440, 180).xFromRightEdge()

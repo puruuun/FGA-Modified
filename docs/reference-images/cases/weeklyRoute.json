@@ -6014,7 +6014,9 @@
       "file": "docs/reference-images/Jp/weekly-route/02.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6024,7 +6026,9 @@
       "file": "docs/reference-images/Jp/weekly-route/03.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.76
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6034,7 +6038,9 @@
       "file": "docs/reference-images/Jp/weekly-route/04.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6044,7 +6050,9 @@
       "file": "docs/reference-images/Jp/weekly-route/05.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.85
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6054,7 +6062,9 @@
       "file": "docs/reference-images/Jp/weekly-route/12.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.59
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6064,7 +6074,9 @@
       "file": "docs/reference-images/Jp/weekly-route/13.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6074,7 +6086,9 @@
       "file": "docs/reference-images/Jp/weekly-route/14.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.21
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6084,7 +6098,9 @@
       "file": "docs/reference-images/Jp/weekly-route/15.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.43
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6094,7 +6110,9 @@
       "file": "docs/reference-images/Jp/weekly-route/16.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.74
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6104,7 +6122,9 @@
       "file": "docs/reference-images/Jp/weekly-route/17.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.19
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6114,7 +6134,9 @@
       "file": "docs/reference-images/Jp/weekly-route/18.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.5
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6124,7 +6146,9 @@
       "file": "docs/reference-images/Jp/weekly-route/35.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.81
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6134,7 +6158,9 @@
       "file": "docs/reference-images/Jp/weekly-route/36.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.16
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6144,7 +6170,9 @@
       "file": "docs/reference-images/Kr/weekly-route/24.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.76
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6154,7 +6182,9 @@
       "file": "docs/reference-images/Kr/weekly-route/25.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.2
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6164,7 +6194,9 @@
       "file": "docs/reference-images/Kr/weekly-route/26.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.05
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6174,7 +6206,9 @@
       "file": "docs/reference-images/Kr/weekly-route/27.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6184,7 +6218,9 @@
       "file": "docs/reference-images/Kr/weekly-route/37.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.86
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6194,7 +6230,9 @@
       "file": "docs/reference-images/Kr/weekly-route/38.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.16
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6204,7 +6242,9 @@
       "file": "docs/reference-images/Jp/wide-21x9/01.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6214,7 +6254,9 @@
       "file": "docs/reference-images/Jp/wide-2560/23.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0.76
+        "railPresent": true,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6224,7 +6266,9 @@
       "file": "docs/reference-images/Jp/wide-2560/24.webp",
       "view": "scrollbar",
       "expected": {
-        "position": 0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6234,7 +6278,9 @@
       "file": "docs/reference-images/Jp/weekly-route/06.webp",
       "view": "scrollbar",
       "expected": {
-        "unknown": true
+        "railPresent": false,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6244,7 +6290,9 @@
       "file": "docs/reference-images/Kr/weekly-route/28.webp",
       "view": "scrollbar",
       "expected": {
-        "unknown": true
+        "railPresent": false,
+        "top": false,
+        "bottom": false
       }
     },
     {
@@ -6254,7 +6302,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/01-home-top.png",
       "view": "scrollbar",
       "expected": {
-        "position": 0.0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6264,7 +6314,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/02-home-bottom.png",
       "view": "scrollbar",
       "expected": {
-        "position": 1.0
+        "railPresent": true,
+        "top": false,
+        "bottom": true
       }
     },
     {
@@ -6274,7 +6326,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/03-mainrecord-top.png",
       "view": "scrollbar",
       "expected": {
-        "position": 0.0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6284,7 +6338,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/04-mainrecord-bottom.png",
       "view": "scrollbar",
       "expected": {
-        "position": 1.0
+        "railPresent": true,
+        "top": false,
+        "bottom": true
       }
     },
     {
@@ -6294,7 +6350,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/05-interlude-top.png",
       "view": "scrollbar",
       "expected": {
-        "position": 0.0
+        "railPresent": true,
+        "top": true,
+        "bottom": false
       }
     },
     {
@@ -6304,7 +6362,9 @@
       "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/06-interlude-bottom.png",
       "view": "scrollbar",
       "expected": {
-        "position": 1.0
+        "railPresent": true,
+        "top": false,
+        "bottom": true
       }
     },
     {
@@ -6486,6 +6546,66 @@
         "needsScroll": true,
         "fallback": false,
         "screen": "Map"
+      }
+    },
+    {
+      "name": "weekly-bottom-1-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-1.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": true,
+        "top": false
+      }
+    },
+    {
+      "name": "weekly-bottom-2-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-2.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": true,
+        "top": false
+      }
+    },
+    {
+      "name": "weekly-bottom-3-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-3.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": true,
+        "top": false
+      }
+    },
+    {
+      "name": "weekly-top-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/weekly-top.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": false,
+        "top": true
+      }
+    },
+    {
+      "name": "weekly-middle-scrollbar",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/scroll-end/weekly-middle.png",
+      "view": "scrollbar",
+      "expected": {
+        "railPresent": true,
+        "bottom": false,
+        "top": false
       }
     }
   ],
