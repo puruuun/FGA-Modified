@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
@@ -17,9 +18,17 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
     class Profile(source: IExecutionProfile) {
         val skillCommand = AutoSkillCommand.parse(source.skillCommand)
         val prioritySplit = source.cardPrioritySplit
-        val priority = FaceCardPriority(source.cardPriority, source.servantPriority.takeIf { source.useServantPriority })
-        val braveChains: List<BraveChainEnum> = source.braveChains.toList()
-        val rearrangeCards = source.rearrangeCards.toList()
+        val style = source.cardPriorityStyle
+        private val servantStyle = style == CardPriorityStyle.Servant
+        // The servant style ignores the servant priority toggle, brave chains and rearrange.
+        val priority = FaceCardPriority(
+            source.cardPriority,
+            source.servantPriority.takeIf { source.useServantPriority && !servantStyle },
+            style,
+            source.servantCardPriority
+        )
+        val braveChains: List<BraveChainEnum> = if (servantStyle) emptyList() else source.braveChains.toList()
+        val rearrangeCards = if (servantStyle) emptyList() else source.rearrangeCards.toList()
 
         /** The index of the card priority, brave chain and rearrange entries to use. */
         fun priorityIndex(stage: Int, totalTurn: Int) =

@@ -12,6 +12,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.models.CardPriority
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 
 @HiltViewModel(assistedFactory = CardPriorityViewModel.Factory::class)
@@ -29,6 +30,7 @@ class CardPriorityViewModel @AssistedInject constructor(
     val cardPriorityItems: SnapshotStateList<CardPriorityListItem> by lazy {
         val cardPriority = battleConfig.cardPriority.get()
         val servantPriority = battleConfig.servantPriority.get()
+        val servantCards = battleConfig.servantCardPriority.get()
 
         val rearrangeCards = battleConfig.rearrangeCards.get()
         val braveChains = battleConfig.braveChains.get()
@@ -41,6 +43,7 @@ class CardPriorityViewModel @AssistedInject constructor(
                 CardPriorityListItem(
                     it.value,
                     servantPriority.atWave(it.index).toMutableStateList(),
+                    servantCards.atWave(it.index).toMutableStateList(),
                     mutableStateOf(rearrangeCards.getOrElse(it.index) { false }),
                     mutableStateOf(braveChains.getOrElse(it.index) { BraveChainEnum.None })
                 )
@@ -50,6 +53,7 @@ class CardPriorityViewModel @AssistedInject constructor(
 
     val useServantPriority = battleConfig.useServantPriority
     val cardPrioritySplit = battleConfig.cardPrioritySplit
+    val cardPriorityStyle = battleConfig.cardPriorityStyle
 
     fun save() {
         battleConfig.cardPriority.set(
@@ -61,6 +65,12 @@ class CardPriorityViewModel @AssistedInject constructor(
         battleConfig.servantPriority.set(
             ServantPriorityPerWave.from(
                 cardPriorityItems.map { it.servantPriority.toList() }
+            )
+        )
+
+        battleConfig.servantCardPriority.set(
+            ServantCardPriorityPerWave.from(
+                cardPriorityItems.map { it.servantCards.toList() }
             )
         )
 

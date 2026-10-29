@@ -50,6 +50,8 @@ class BattleExecutionTest {
         every { config.servantPriority } returns first.servantPriority
         every { config.useServantPriority } returns first.useServantPriority
         every { config.cardPrioritySplit } returns first.cardPrioritySplit
+        every { config.cardPriorityStyle } returns first.cardPriorityStyle
+        every { config.servantCardPriority } returns first.servantCardPriority
         every { config.rearrangeCards } returns first.rearrangeCards
         every { config.braveChains } returns first.braveChains
         every { config.spam } returns spam

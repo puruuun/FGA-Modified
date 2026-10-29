@@ -73,6 +73,10 @@
     <string name="card_priority_wave_number">"웨이브 %d"</string>
     <string name="card_priority_turn_number">"턴 %d"</string>
     <string name="card_priority_split_by">"구분 기준"</string>
+    <string name="card_priority_style">"방식"</string>
+    <string name="card_priority_style_affinity">"상성"</string>
+    <string name="card_priority_style_servant">"서번트"</string>
+    <string name="card_priority_servant_style_note">"서번트 방식은 이 순서대로 카드를 고릅니다. 서번트 우선순위, 브레이브 체인, 카드 재배열은 무시됩니다."</string>
     <string name="card_priority_split_wave">"웨이브"</string>
     <string name="card_priority_split_turn">"턴"</string>
     <string name="ce_dropped">"개념예장 드롭됨!"</string>

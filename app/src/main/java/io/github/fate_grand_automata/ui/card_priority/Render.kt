@@ -17,12 +17,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.ui.FGAListItemColors
 import io.github.fate_grand_automata.ui.drag_sort.DragSort
@@ -32,18 +34,34 @@ import io.github.fate_grand_automata.util.stringRes
 
 @Composable
 fun CardPriorityListItem.Render(
-    useServantPriority: Boolean
+    useServantPriority: Boolean,
+    style: CardPriorityStyle = CardPriorityStyle.Affinity
 ) {
+    val servantStyle = style == CardPriorityStyle.Servant
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        CardPriorityDragSort(scores)
+        if (servantStyle) {
+            ServantCardDragSort(servantCards)
+        } else {
+            CardPriorityDragSort(scores)
+        }
 
         ReorderHint()
 
+        if (servantStyle) {
+            Text(
+                stringResource(R.string.card_priority_servant_style_note),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
         Card(
             modifier = Modifier
-                .padding(16.dp),
+                .padding(16.dp)
+                .alpha(if (servantStyle) 0.38f else 1f),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -65,7 +83,7 @@ fun CardPriorityListItem.Render(
                 ListItem(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { braveChainDialog.show() },
+                        .clickable(enabled = !servantStyle) { braveChainDialog.show() },
                     headlineContent = { Text(stringResource(R.string.p_brave_chains)) },
                     supportingContent = { Text(stringResource(braveChains.stringRes)) },
                     colors = FGAListItemColors()
@@ -76,12 +94,13 @@ fun CardPriorityListItem.Render(
                 ListItem(
                     modifier = Modifier
                         .weight(1.1f)
-                        .clickable { rearrange = !rearrange },
+                        .clickable(enabled = !servantStyle) { rearrange = !rearrange },
                     headlineContent = { Text(stringResource(R.string.p_rearrange_cards)) },
                     trailingContent = {
                         Checkbox(
                             checked = rearrange,
-                            onCheckedChange = { rearrange = it }
+                            onCheckedChange = { rearrange = it },
+                            enabled = !servantStyle
                         )
                     },
                     colors = FGAListItemColors()
@@ -89,7 +108,7 @@ fun CardPriorityListItem.Render(
             }
         }
 
-        if (useServantPriority) {
+        if (useServantPriority && !servantStyle) {
             ServantPriority(
                 priorities = servantPriority
             )

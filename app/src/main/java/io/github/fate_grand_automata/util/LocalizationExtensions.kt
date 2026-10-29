@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
@@ -34,6 +35,12 @@ val CardPrioritySplit.stringRes
     get() = when (this) {
         CardPrioritySplit.Wave -> R.string.card_priority_split_wave
         CardPrioritySplit.Turn -> R.string.card_priority_split_turn
+    }
+
+val CardPriorityStyle.stringRes
+    get() = when (this) {
+        CardPriorityStyle.Affinity -> R.string.card_priority_style_affinity
+        CardPriorityStyle.Servant -> R.string.card_priority_style_servant
     }
 
 val CardPrioritySplit.entryStringRes

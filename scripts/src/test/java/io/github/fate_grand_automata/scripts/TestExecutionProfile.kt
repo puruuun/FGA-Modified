@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.scripts
 
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
+import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 import io.github.fate_grand_automata.scripts.prefs.IExecutionProfile
@@ -10,6 +12,8 @@ class TestExecutionProfile(
     override var skillCommand: String = "",
     override var cardPriority: CardPriorityPerWave = CardPriorityPerWave.default,
     override val cardPrioritySplit: CardPrioritySplit = CardPrioritySplit.Wave,
+    override val cardPriorityStyle: CardPriorityStyle = CardPriorityStyle.Affinity,
+    override val servantCardPriority: ServantCardPriorityPerWave = ServantCardPriorityPerWave.default,
     override val useServantPriority: Boolean = false,
     override val servantPriority: ServantPriorityPerWave = ServantPriorityPerWave.default,
     override val braveChains: List<BraveChainEnum> = emptyList(),

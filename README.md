@@ -39,6 +39,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Post-quest friend request](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support in Preferred mode; the toggle shows its title only. |
 | [Ascension select](wiki/scripts/Ascension-Select-KR.md) | Tells ascensions apart by Servant name and NP image. |
 | [Fixed attack order](wiki/scripts/Direct-Cards-KR.md) | Sets the order of cards and NPs for a turn. |
+| [Card priority: 10 entries, wave or turn, servant style](wiki/scripts/Card-Priority-KR.md) | Up to 10 priority entries that follow the wave or the turn, plus a servant style that picks cards by field position and type. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-KR.md) | Sets ON/OFF before the quest starts. |
 | [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-KR.md) | Adds up bond gains and stops at MAX or a confirmed level-up to 10–16, without needing the result column. |
 
@@ -102,6 +103,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 선호 모드에서 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. 설정에는 제목만 표시합니다. |
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
+| [카드 우선순위: 10개 항목·웨이브/턴·서번트 방식](wiki/scripts/Card-Priority-KR.md) | 우선순위를 웨이브 또는 턴 기준으로 최대 10개 두고, 서번트 위치·카드 종류 순서로 고르는 서번트 방식을 고를 수 있습니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
 | [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX 또는 도달 레벨 10~16 확인 시 결과 칸을 몰라도 멈춥니다. |
 

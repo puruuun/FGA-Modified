@@ -11,6 +11,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.CardAffinityEnum
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.models.CardScore
+import io.github.fate_grand_automata.scripts.models.ServantCardKey
 import io.github.fate_grand_automata.ui.drag_sort.DragSort
 import io.github.fate_grand_automata.ui.drag_sort.DragSortItemStyle
 
@@ -24,6 +25,24 @@ fun CardPriorityDragSort(
         style = {
             DragSortItemStyle(
                 backgroundColor = colorResource(it.getColorRes()),
+                contentColor = Color.White,
+                text = it.toString()
+            )
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+fun ServantCardDragSort(
+    cards: SnapshotStateList<ServantCardKey>
+) {
+    DragSort(
+        items = cards,
+        key = { it.toString() },
+        style = {
+            DragSortItemStyle(
+                backgroundColor = colorResource(CardScore(it.type, CardAffinityEnum.Normal).getColorRes()),
                 contentColor = Color.White,
                 text = it.toString()
             )

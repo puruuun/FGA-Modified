@@ -98,6 +98,10 @@ Skills"</string>
     <string name="card_priority_wave_number">"WAVE %d"</string>
     <string name="card_priority_turn_number">"TURN %d"</string>
     <string name="card_priority_split_by">"Split by"</string>
+    <string name="card_priority_style">"Style"</string>
+    <string name="card_priority_style_affinity">"Affinity"</string>
+    <string name="card_priority_style_servant">"Servant"</string>
+    <string name="card_priority_servant_style_note">"Servant style picks cards in this order. Servant priority, brave chains and rearrange cards are ignored."</string>
     <string name="card_priority_split_wave">"Wave"</string>
     <string name="card_priority_split_turn">"Turn"</string>
     <string name="card_priority_hint_move_item">"Hold and drag to reorder"</string>
