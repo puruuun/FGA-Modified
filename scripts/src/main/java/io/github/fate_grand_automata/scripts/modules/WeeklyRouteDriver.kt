@@ -70,6 +70,8 @@ class WeeklyRouteDriver @Inject constructor(
         /** Waits for the Free Quest mark (500 ms each) and reads of the panel (about 2 s in total). */
         const val PANEL_SETTLE_ATTEMPTS = 6
         const val PANEL_READ_ATTEMPTS = 4
+        /** Map lines written to the run's diagnostics folder (issue #91). */
+        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ")
     }
 
     private val run: WeeklyRouteRun get() = checkNotNull(session.run) { "no weekly route" }
@@ -84,6 +86,7 @@ class WeeklyRouteDriver @Inject constructor(
         private set
 
     override fun log(message: String) {
+        if (MAP_LOG_PREFIXES.any { message.startsWith(it) }) diagnostics.mapLog(message)
         if (message.startsWith("abort ") && !message.startsWith("abort diagnostic")) abortDiagnostic()
         messages.log(ScriptLog.WeeklyRoute(if (session.run?.probe == true) "mode=probe $message" else message))
     }
@@ -355,6 +358,7 @@ class WeeklyRouteDriver @Inject constructor(
         var pinched = false
         var scrolls = 0
         var movement: io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag? = null
+        var plan = MapView.OriginPlan(0.0, "spot")
         while (true) {
             val fit = localize(map)
             if (!MapLocalizer.accepts(fit)) {
@@ -371,21 +375,23 @@ class WeeklyRouteDriver @Inject constructor(
                 "origin=${"%.0f".format(fit.originX)},${"%.0f".format(fit.originY)} spot=${"%.0f".format(x)},${"%.0f".format(y)} icon=${"%.0f".format(x)},${"%.0f".format(iy)}")
             if (movement == null) {
                 val range = (map.height * fit.scaleY - screenHeight).coerceAtLeast(0.0)
-                val target = MapView.targetOrigin(x, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range,
+                // Issue #91: the spot point plans the move as before #78; the icon point only when the spot has no safe row.
+                plan = MapView.planOrigin(x, quest.spotY * fit.scaleY, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range,
                     screenWidth, screenHeight, centre, edgeFirst)
-                    ?: return tapPoint(quest, x, iy, y, screenWidth, screenHeight) ?: (null to "spot out of reach")
-                movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(target, screenWidth, screenHeight)
+                    ?: return tapPoint(quest, x, iy, y, screenWidth, screenHeight, "none") ?: (null to "spot out of reach")
+                log("plan quest=${quest.id} plan=${plan.plan} target=${"%.1f".format(plan.target)} range=${"%.0f".format(range)} origin=${"%.0f".format(fit.originY)}")
+                movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(plan.target, screenWidth, screenHeight)
             }
             val drag = movement.next(fit.originY)
             if (drag == null) {
-                return tapPoint(quest, x, iy, y, screenWidth, screenHeight) ?:
+                return tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan) ?:
                     (null to if (movement.stationary) "spot out of reach" else "map movement did not converge")
             }
-            if (edgeFirst && MapView.edgeDrag(x, iy, screenWidth, screenHeight) != null) edgeDrag = drag
+            if (edgeFirst && MapView.edgeDrag(x, if (plan.icon) iy else y, screenWidth, screenHeight) != null) edgeDrag = drag
             if (scrolls >= MAX_MAP_SCROLLS) return null to "map movement safety limit"
             scrolls++
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
-            log("scroll quest=${quest.id} drag=0,${"%.0f".format(drag.y)} targetOrigin=${"%.1f".format(movement.target)} ratio=${"%.2f".format(movement.ratio)}")
+            log("scroll quest=${quest.id} plan=${plan.plan} drag=0,${"%.0f".format(drag.y)} targetOrigin=${"%.1f".format(movement.target)} ratio=${"%.2f".format(movement.ratio)}")
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
             1.seconds.wait()
         }
@@ -402,9 +408,9 @@ class WeeklyRouteDriver @Inject constructor(
      * Issue #78: tap the spot icon's centre, else the visible part of the icon (D-33), else the spot point if it is clear.
      * Null when every point is covered; the caller then reports "spot out of reach".
      */
-    private fun tapPoint(quest: RouteQuest, x: Double, iconY: Double, spotY: Double, width: Int, height: Int): Pair<Location?, String>? {
+    private fun tapPoint(quest: RouteQuest, x: Double, iconY: Double, spotY: Double, width: Int, height: Int, plan: String): Pair<Location?, String>? {
         val choice = MapView.resolveTap(x, iconY, x, spotY, width, height) ?: return null
-        log("tap point quest=${quest.id} kind=${choice.kind} icon=${"%.0f".format(x)},${"%.0f".format(iconY)} spot=${"%.0f".format(x)},${"%.0f".format(spotY)} " +
+        log("tap point quest=${quest.id} plan=$plan kind=${choice.kind} icon=${"%.0f".format(x)},${"%.0f".format(iconY)} spot=${"%.0f".format(x)},${"%.0f".format(spotY)} " +
             "used=${"%.0f".format(choice.point.x)},${"%.0f".format(choice.point.y)}")
         return Location(MapView.toScript(choice.point.x), MapView.toScript(choice.point.y)) to "ok"
     }
@@ -447,9 +453,9 @@ class WeeklyRouteDriver @Inject constructor(
         val x = actual.screenX(quest.spotX)
         val y = actual.screenY(quest.spotY)
         val iy = actual.screenY(quest.spotY - MapView.ICON_OFFSET_MAP)
-        MapView.edgeDrag(x, iy, width, height)?.let { edgeDrag = it }
-        log("placeholder map quest=${quest.id} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
-        return tapPoint(quest, x, iy, y, width, height) ?: (null to "spot out of reach")
+        MapView.edgeDrag(x, if (target.plan == "icon") iy else y, width, height)?.let { edgeDrag = it }
+        log("placeholder map quest=${quest.id} plan=${target.plan} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
+        return tapPoint(quest, x, iy, y, width, height, target.plan) ?: (null to "spot out of reach")
     }
 
     /** Relative motion for maps without reference art. Both crops are map pixels, never fixed UI. */

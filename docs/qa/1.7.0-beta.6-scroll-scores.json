@@ -1,0 +1,1591 @@
+{
+ "method": "real production boxes (1440p halved to 720p, rail-sized: end position +-4 px x, +-3 px y; wide boxes centre-anchored), 720p grayscale TM_CCOEFF_NORMED with the upstream support_scrollbar_top/bottom templates. Frames as in 1.7.0-beta.5-scroll-scores.json, but raw 2560x1080 captures keep their true 2.37:1 aspect (1707x720) instead of being squeezed to 1680x720; the 6 Kr/scroll-end fixtures are added.",
+ "boxes1440p": {
+  "weekly-top-16:9": "x -82 (right edge) y 178 74x38",
+  "weekly-bottom-16:9": "x -82 (right edge) y 1152 74x34",
+  "weekly-top-wide": "x +1430 (centre) y 178 72x42",
+  "weekly-bottom-wide": "x +1430 (centre) y 1152 72x34",
+  "fp-bottom-16:9": "x -554 (right edge) y 1330 72x34",
+  "fp-bottom-wide": "x +956 (centre) y 1330 72x34"
+ },
+ "thresholds": {
+  "weekly": 0.6,
+  "fp": 0.72
+ },
+ "summary": {
+  "fp-bottom-16:9": {
+   "endMinimum": 0.9045,
+   "nonEndMaximum": 0.5317,
+   "endFrames": 4,
+   "nonEndFrames": 41
+  },
+  "fp-bottom-wide": {
+   "endMinimum": 0.9128,
+   "nonEndMaximum": 0.1566,
+   "endFrames": 2,
+   "nonEndFrames": 4
+  },
+  "weekly-bottom-16:9": {
+   "endMinimum": 0.8172,
+   "nonEndMaximum": 0.3806,
+   "endFrames": 5,
+   "nonEndFrames": 53
+  },
+  "weekly-bottom-wide": {
+   "endMinimum": 0.8315,
+   "nonEndMaximum": -0.1728,
+   "endFrames": 8,
+   "nonEndFrames": 9
+  },
+  "weekly-top-16:9": {
+   "endMinimum": 0.8336,
+   "nonEndMaximum": 0.2302,
+   "endFrames": 13,
+   "nonEndFrames": 45
+  },
+  "weekly-top-wide": {
+   "endMinimum": 0.8208,
+   "nonEndMaximum": 0.0084,
+   "endFrames": 5,
+   "nonEndFrames": 12
+  }
+ },
+ "frames": [
+  {
+   "file": "docs/reference-images/Jp/weekly-route/02.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.8344,
+    "bottom": -0.1938
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/03.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1917,
+    "bottom": -0.1833
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/04.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.8354,
+    "bottom": -0.1814
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/05.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1918,
+    "bottom": -0.1868
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/12.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1925,
+    "bottom": -0.1837
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/13.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.8336,
+    "bottom": -0.1855
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/14.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1863,
+    "bottom": -0.1907
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/15.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1887,
+    "bottom": -0.1698
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/16.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1895,
+    "bottom": -0.1805
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/17.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1299,
+    "bottom": -0.1823
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/18.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1909,
+    "bottom": -0.1849
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/35.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1896,
+    "bottom": -0.1903
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/36.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1819,
+    "bottom": -0.1921
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/24.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.026,
+    "bottom": -0.1647
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/25.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0696,
+    "bottom": -0.1762
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/26.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0176,
+    "bottom": -0.1859
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/27.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9453,
+    "bottom": -0.1671
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/37.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0057,
+    "bottom": -0.2143
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/38.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0762,
+    "bottom": -0.2261
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/wide-21x9/01.webp",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.8684,
+    "bottom": -0.1961
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/wide-2560/23.webp",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.2003,
+    "bottom": -0.1971
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/wide-2560/24.webp",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.8208,
+    "bottom": -0.2022
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/weekly-route/06.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.2302,
+    "bottom": 0.3806
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/28.webp",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.1187,
+    "bottom": 0.3595
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/01-home-top.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9737,
+    "bottom": -0.1659
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/02-home-bottom.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.0047,
+    "bottom": 0.8172
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/03-mainrecord-top.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9706,
+    "bottom": -0.1929
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/04-mainrecord-bottom.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0382,
+    "bottom": 0.8569
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/05-interlude-top.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9707,
+    "bottom": -0.1827
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/06-interlude-bottom.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.044,
+    "bottom": 0.8406
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/18.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0586
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/19.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0592
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/22.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.5317
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/24.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.4946
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/27.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0611
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/28.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0611
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/29.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.022
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.23.41.181.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.119,
+    "bottom": -0.1061
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.11.031.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0825,
+    "bottom": -0.0607
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.17.515.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0783,
+    "bottom": -0.1844
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.32.464.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.051,
+    "bottom": -0.1844
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.54.36.073.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1174,
+    "bottom": -0.1199
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.03.181.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0444,
+    "bottom": -0.2638
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.36.397.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.0047,
+    "bottom": -0.0657
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.47.631.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9668,
+    "bottom": -0.2517
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.50.664.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0717,
+    "bottom": 0.8613
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.57.564.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9791,
+    "bottom": -0.2015
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.56.02.464.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1257,
+    "bottom": 0.8312
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.22.980.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1715,
+    "bottom": -0.1745
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.42.030.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.8722,
+    "bottom": -0.1733
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.47.213.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1796,
+    "bottom": 0.8376
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.50.446.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1822,
+    "bottom": -0.1728
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.53.697.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.8754,
+    "bottom": -0.1744
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.56.580.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1809,
+    "bottom": 0.8315
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.25.04.947.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1819,
+    "bottom": -0.177
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-18 185843.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.191,
+    "bottom": -0.2033
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-18 185850.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1907,
+    "bottom": -0.203
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012038.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.8441,
+    "bottom": -0.203
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012056.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1869,
+    "bottom": -0.1978
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012102.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.845,
+    "bottom": -0.1955
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012113.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1853,
+    "bottom": -0.2013
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014725.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1875,
+    "bottom": -0.1972
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014731.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.8438,
+    "bottom": -0.2011
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014737.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1877,
+    "bottom": -0.202
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014744.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1859,
+    "bottom": -0.1886
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014750.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1874,
+    "bottom": -0.1963
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014804.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1229,
+    "bottom": -0.1988
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014811.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1884,
+    "bottom": -0.2001
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134539.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0599,
+    "bottom": -0.1909
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134610.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1005,
+    "bottom": -0.2138
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134642.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.059,
+    "bottom": -0.2222
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134650.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": 0.9444,
+    "bottom": -0.201
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-21 190553.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0218,
+    "bottom": -0.2199
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-21 190610.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.0824,
+    "bottom": -0.239
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s1.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.0084,
+    "bottom": 0.8673
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s2.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.0996,
+    "bottom": 0.8828
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s3.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.0753,
+    "bottom": 0.8768
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\fp-sell-bottom-2560x1080.png",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.9156
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/37.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0219
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/42-jp-5col.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0155
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/43-jp-6col.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0173
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.2373
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/46-empty-slots-synthetic.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0173
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/46.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/47.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/48.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.9045
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.9045
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.9049
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.9049
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023440-448-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023451-308-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023502-070-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023512-711-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023523-435-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023534-233-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023544-989-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023551-342-stopped-dialog.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023555-510-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023606-019-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023616-563-watch.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0461
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023618-706-final-game-selection-9.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0401
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.0439
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/20.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0603
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/fp-sell/38.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0607
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/wide-2560/31.webp",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.1555
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/wide-2560/39.webp",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.1566
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\울트라 와이드\\판매창.png",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.1112
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\13 (1).png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\13 (2).png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\4.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\5.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\6.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 215300.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1012
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 221106.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1012
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 221118.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1012
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-19 001138.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0956
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-19 002411.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.0919
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\잠금 jp.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1012
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\잠금 kr.png",
+   "screen": "fp",
+   "wide": false,
+   "scores": {
+    "bottom": 0.1581
+   },
+   "ends": {
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/weekly-top.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": 0.8779,
+    "bottom": -0.1854
+   },
+   "ends": {
+    "top": true,
+    "bottom": false
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-1.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.0064,
+    "bottom": 0.8608
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-2.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.1168,
+    "bottom": 0.8767
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/weekly-bottom-3.png",
+   "screen": "weekly",
+   "wide": true,
+   "scores": {
+    "top": -0.0982,
+    "bottom": 0.8702
+   },
+   "ends": {
+    "top": false,
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/fp-bottom.png",
+   "screen": "fp",
+   "wide": true,
+   "scores": {
+    "bottom": 0.9128
+   },
+   "ends": {
+    "bottom": true
+   }
+  },
+  {
+   "file": "docs/reference-images/Kr/scroll-end/weekly-middle.png",
+   "screen": "weekly",
+   "wide": false,
+   "scores": {
+    "top": -0.1917,
+    "bottom": -0.1833
+   },
+   "ends": {
+    "top": false,
+    "bottom": false
+   }
+  }
+ ]
+}

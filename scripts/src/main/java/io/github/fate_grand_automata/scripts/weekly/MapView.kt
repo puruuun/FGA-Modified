@@ -139,6 +139,19 @@ object MapView {
             ?: origin.coerceIn(-range, 0.0).takeIf { isTappable(x, y, width, height) }
     }
 
+    /** Which point the map move was planned on: the Atlas spot point (as before issue #78) or, when that has no safe row, the icon. */
+    data class OriginPlan(val target: Double, val plan: String) { val icon get() = plan == "icon" }
+
+    /**
+     * Issue #91: plan the map move on the spot point exactly as before #78; only when that finds no safe row (the spot can
+     * never leave a fixed-button zone, e.g. Okeanos 10352 under the bubbles) plan on the icon point, [ICON_OFFSET_MAP] above it.
+     * [spotMapY] and [iconMapY] are map pixels already multiplied by the vertical scale.
+     */
+    fun planOrigin(x: Double, spotMapY: Double, iconMapY: Double, origin: Double, range: Double, width: Int, height: Int,
+                   centre: Boolean = false, edgeFirst: Boolean = true): OriginPlan? =
+        targetOrigin(x, spotMapY, origin, range, width, height, centre, edgeFirst)?.let { OriginPlan(it, "spot") }
+            ?: targetOrigin(x, iconMapY, origin, range, width, height, centre, edgeFirst)?.let { OriginPlan(it, "icon") }
+
     /**
      * Start and end of the finger for [drag], centred in the part of the map that no fixed button covers. A drag longer
      * than that part is shortened (the route re-localizes and drags again), so neither end lands on a button.

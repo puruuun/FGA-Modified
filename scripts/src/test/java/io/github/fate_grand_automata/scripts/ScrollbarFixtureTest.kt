@@ -16,24 +16,36 @@ class ScrollbarFixtureTest {
             (0.299 * (rgb shr 16 and 255) + 0.587 * (rgb shr 8 and 255) + 0.114 * (rgb and 255)).roundToInt().toDouble()
         } }
     }
-    /** Independent normalized correlation over the exact upstream-sized production window. */
-    private fun score(file: String, screen: String, end: String): Double {
+    /**
+     * Independent normalized correlation over the exact production window (beta.6 rail-sized boxes, 1440p halved to 720p).
+     * [dy] moves the picture down by that many 720p rows, as if the thumb stood that far from the end.
+     */
+    private fun score(file: String, screen: String, end: String, dy: Int = 0): Double {
         val im = gray("../docs/reference-images/$file")
         val template = gray("../app/src/main/assets/En/support_scrollbar_$end.png")
-        val wide = im[0].size > 1440
-        val left = (im[0].size - (if (wide) 85.5 else 0.0) -
-            if (screen == "weekly") (if (wide) 60 else 50) else (if (wide) 293 else 283)).roundToInt()
-        val top = if (screen == "fp") 658 else if (end == "top") 84 else 570
+        val width = im[0].size
+        val wide = width > 1440
+        // 1440p box (x, y, w, h); wide boxes are centre-anchored, 16:9 boxes sit on the right edge.
+        val (bx, by, bw, bh) = when {
+            screen == "fp" && wide -> listOf(956, 1330, 72, 34)
+            screen == "fp" -> listOf(-554, 1330, 72, 34)
+            end == "top" && wide -> listOf(1430, 178, 72, 42)
+            end == "top" -> listOf(-82, 178, 74, 38)
+            wide -> listOf(1430, 1152, 72, 34)
+            else -> listOf(-82, 1152, 74, 34)
+        }
+        val left = ((if (wide) width else 2 * width) + bx) / 2
+        val top = by / 2
         val tw = template[0].size; val th = template.size
         val tm = template.flatMap { it.toList() }.average()
         val tv = template.sumOf { row -> row.sumOf { (it - tm) * (it - tm) } }
         var best = -1.0
-        for (y in top..top + 28 - th) for (x in left..minOf(left + (if (wide) 70 else 50), im[0].size) - tw) {
-            val mean = (0 until th).sumOf { dy -> (0 until tw).sumOf { dx -> im[y + dy][x + dx] } } / (tw * th)
+        for (y in top..top + (bh + 1) / 2 - th) for (x in left..left + bw / 2 - tw) {
+            val mean = (0 until th).sumOf { ty -> (0 until tw).sumOf { tx -> im[y + ty - dy][x + tx] } } / (tw * th)
             var dot = 0.0; var variance = 0.0
-            for (dy in 0 until th) for (dx in 0 until tw) {
-                val v = im[y + dy][x + dx] - mean
-                dot += v * (template[dy][dx] - tm); variance += v * v
+            for (ty in 0 until th) for (tx in 0 until tw) {
+                val v = im[y + ty - dy][x + tx] - mean
+                dot += v * (template[ty][tx] - tm); variance += v * v
             }
             if (variance > 0) best = maxOf(best, dot / sqrt(variance * tv))
         }
@@ -66,6 +78,17 @@ class ScrollbarFixtureTest {
     }
     @Test fun `FP top and middle stay below the separately measured threshold`() {
         for (n in listOf(18,19,22,24,27,28)) assertTrue(score("Kr/fp-sell/$n.png", "fp", "bottom") < FpSellReader.SCROLLBAR_SIMILARITY)
+    }
+    @Test fun `a thumb a few pixels away from the end does not count as the end`() {
+        // Small drift (3 px) still reads as the end; 8 px away (the thumb has left the cap) does not.
+        for (dy in listOf(-3, 3)) {
+            assertTrue(ListScrollbar.read(score("Kr/scroll-end/weekly-top.png", "weekly", "top", dy), null).top)
+            assertTrue(ListScrollbar.read(null, score("Kr/scroll-end/weekly-bottom-1.png", "weekly", "bottom", dy)).bottom)
+            assertTrue(score("Kr/scroll-end/fp-bottom.png", "fp", "bottom", dy) >= FpSellReader.SCROLLBAR_SIMILARITY)
+        }
+        assertFalse(ListScrollbar.read(score("Kr/scroll-end/weekly-top.png", "weekly", "top", 8), null).top)
+        assertFalse(ListScrollbar.read(null, score("Kr/scroll-end/weekly-bottom-1.png", "weekly", "bottom", -8)).bottom)
+        assertTrue(score("Kr/scroll-end/fp-bottom.png", "fp", "bottom", -8) < FpSellReader.SCROLLBAR_SIMILARITY)
     }
     @Test fun `missing end scores never imply a one page list`() {
         assertEquals(ListScrollbar.State(false, false), ListScrollbar.read(null, null))

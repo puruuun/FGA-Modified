@@ -11,4 +11,6 @@ interface IWeeklyPanelDiagnostics {
     fun save(frame: Pattern, questId: Int, attempt: Int): String?
     /** D-30: the evidence picture of a probe success. Not counted against [WeeklyProbe.DIAGNOSTIC_LIMIT]. Returns the path or null. */
     fun saveEvidence(image: Pattern, questId: Int): String? = null
+    /** Issue #91: one weekly-route map line (localize, plan, scroll, tap point) for the run's `map.log`. Beta builds only. */
+    fun mapLog(line: String) {}
 }

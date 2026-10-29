@@ -12,8 +12,8 @@ import kotlin.math.sqrt
 
 class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLocations) : IFgoAutomataApi by api {
     companion object {
-        // End minimum .904529; non-end maximum .551095. Rounded midpoint, >=.176 margin.
-        const val SCROLLBAR_SIMILARITY = 0.728
+        // Rail-sized window (beta.6, #90): end minimum .905; non-end maximum .532. Midpoint, >=.18 margin.
+        const val SCROLLBAR_SIMILARITY = 0.72
         const val LOCK_SIMILARITY = 0.8
         /**
          * D-19: the selection frame is teal (about RGB 92/245/190) on every server. Unselected frames are gold, silver,
