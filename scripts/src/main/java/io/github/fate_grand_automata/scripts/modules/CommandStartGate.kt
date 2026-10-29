@@ -17,18 +17,19 @@ import javax.inject.Inject
 class CommandStartGate @Inject constructor(config: IBattleConfig) {
     val mode = config.commandStartMode
     val target = TeamSlot.list[config.commandStartServant.coerceIn(1..3) - 1]
-    val requiredCards = config.commandStartCardCount.coerceIn(1..5)
     val secondaryEnabled = mode == CommandStartMode.CardCount && config.secondaryStartEnabled
     val secondaryTarget = if (secondaryEnabled) TeamSlot.list[config.secondaryStartServant.coerceIn(1..3) - 1] else null
-    val secondaryRequired = if (secondaryEnabled) config.secondaryStartCardCount.coerceIn(1..5) else 0
     val hasDuplicateTargets get() = secondaryEnabled && target == secondaryTarget
     private val primaryColours = CardColourCounts(
         config.commandStartBuster.coerceIn(0..5), config.commandStartArts.coerceIn(0..5), config.commandStartQuick.coerceIn(0..5)
     )
+    /** Count 0 means the Any row is unused; with no colour either, the gate falls back to Any 1. */
+    val requiredCards = effectiveCount(config.commandStartCardCount, primaryColours)
     private val primaryCombineMode = config.commandStartCombineMode
     private val secondaryColours = if (secondaryEnabled) CardColourCounts(
         config.secondaryStartBuster.coerceIn(0..5), config.secondaryStartArts.coerceIn(0..5), config.secondaryStartQuick.coerceIn(0..5)
     ) else CardColourCounts()
+    val secondaryRequired = if (secondaryEnabled) effectiveCount(config.secondaryStartCardCount, secondaryColours) else 0
     private val secondaryCombineMode = if (secondaryEnabled) config.secondaryStartCombineMode else CommandStartCombineMode.And
     private val maxWaitingTurns = config.commandStartMaxTurns.coerceAtLeast(0)
 
@@ -78,6 +79,11 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
         }
     }
 
+    private fun effectiveCount(raw: Int, colours: CardColourCounts): Int {
+        val count = raw.coerceIn(0..5)
+        return if (count == 0 && colours.buster == 0 && colours.arts == 0 && colours.quick == 0) 1 else count
+    }
+
     private fun countColours(cards: List<ParsedCard>) = CardColourCounts(
         cards.count { it.type == CardTypeEnum.Buster },
         cards.count { it.type == CardTypeEnum.Arts },
@@ -86,11 +92,12 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
 
     private fun meets(count: Int, colours: CardColourCounts, required: Int, minimums: CardColourCounts, mode: CommandStartCombineMode): Boolean {
         val rules = listOfNotNull(
-            count >= required,
+            (count >= required).takeIf { required > 0 },
             (colours.buster >= minimums.buster).takeIf { minimums.buster > 0 },
             (colours.arts >= minimums.arts).takeIf { minimums.arts > 0 },
             (colours.quick >= minimums.quick).takeIf { minimums.quick > 0 }
         )
+        if (rules.isEmpty()) return count >= 1
         return when (mode) {
             CommandStartCombineMode.And -> rules.all { it }
             CommandStartCombineMode.Or -> rules.any { it }

@@ -201,14 +201,14 @@ class ScriptMessages @Inject constructor(
                 )
             }
             is ScriptNotify.CommandStartWaiting -> notification.status(
-                context.getString(R.string.command_start_waiting_colours, action.servant, action.count, action.required, action.colours.toString())
+                context.getString(R.string.command_start_waiting_colours, action.servant, action.count, requiredText(action.required), action.colours.toString())
                     .also { Timber.i(it) }
             )
             is ScriptNotify.CommandStartWaitingBoth -> notification.status(
                 context.getString(
                     R.string.command_start_waiting_both_colours,
-                    action.firstServant, action.firstCount, action.firstRequired,
-                    action.secondServant, action.secondCount, action.secondRequired,
+                    action.firstServant, action.firstCount, requiredText(action.firstRequired),
+                    action.secondServant, action.secondCount, requiredText(action.secondRequired),
                     action.firstColours.toString(), action.secondColours.toString()
                 ).also { Timber.i(it) }
             )
@@ -251,4 +251,6 @@ class ScriptMessages @Inject constructor(
             }
         }
     }.trimEnd()
+
+    private fun requiredText(required: Int) = if (required > 0) required.toString() else "-"
 }
