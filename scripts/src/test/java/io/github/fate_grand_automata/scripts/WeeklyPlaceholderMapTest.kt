@@ -67,10 +67,4 @@ class WeeklyPlaceholderMapTest {
         assertNull(PlaceholderMap.geometry(WarMap(1, "", 0, 0), 1280, 720))
         assertNull(geometry.target(Double.NaN, 3.0))
     }
-
-    @Test fun `placeholder textures are told apart from maps`() {
-        assertTrue(PlaceholderMap.isPlaceholder(8, 8))
-        assertTrue(PlaceholderMap.isPlaceholder(64, 2048))
-        assertFalse(PlaceholderMap.isPlaceholder(2048, 1440))
-    }
 }

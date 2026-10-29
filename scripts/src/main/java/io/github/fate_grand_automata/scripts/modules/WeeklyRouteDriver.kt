@@ -18,6 +18,8 @@ import io.github.fate_grand_automata.scripts.weekly.ListSearchDirection
 import io.github.fate_grand_automata.scripts.weekly.MapFit
 import io.github.fate_grand_automata.scripts.weekly.MapLocalizer
 import io.github.fate_grand_automata.scripts.weekly.MapView
+import io.github.fate_grand_automata.scripts.weekly.MapZoom
+import io.github.fate_grand_automata.scripts.weekly.WarMap
 import io.github.fate_grand_automata.scripts.weekly.PlaceholderMap
 import io.github.fate_grand_automata.scripts.weekly.ScreenPoint
 import io.github.fate_grand_automata.scripts.weekly.RouteDriver
@@ -66,22 +68,27 @@ class WeeklyRouteDriver @Inject constructor(
         const val BUTTON_SIMILARITY = 0.8
         const val MAX_LIST_SCROLLS = 14
         const val MAX_MAP_SCROLLS = 16
-        /** Screen pixels per map pixel after the full zoom-out (width of the game area / width of the map). */
-        val ZOOMED_OUT_SCALE = 0.45..1.0
+        /** Largest requested drag of one measured step: the motion crop is 300 px tall, so at least 100 px overlap stay at a 1:1 gain. */
+        const val MAX_STEP_DRAG = 180.0
+        /** Long drag that pushes the map to an end (the finger path is capped by the free map area). */
+        const val PUSH_DRAG = 268.0
+        /** Measured drag that shows whether the end is reached. */
+        const val VERIFY_DRAG = 120.0
+        /** Smallest finger-to-map gain seen on devices (0.66..1.00); the count of long drags assumes a bit less. */
+        const val MIN_GAIN = 0.6
+        const val DEFAULT_GAIN = 0.85
         const val SCREEN_TIMEOUT_SECONDS = 8
         /** Waits for the Free Quest mark (500 ms each) and reads of the panel (about 2 s in total). */
         const val PANEL_SETTLE_ATTEMPTS = 6
         const val PANEL_READ_ATTEMPTS = 4
         /** Map lines written to the run's diagnostics folder (issue #91). */
-        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ", "mismatch ", "vault ", "map gimmick ", "map composited ")
+        private val MAP_LOG_PREFIXES = listOf("edge quest=", "step quest=", "zoom ", "tap point ", "tap fallback ", "mismatch ", "vault ")
     }
 
     private val run: WeeklyRouteRun get() = checkNotNull(session.run) { "no weekly route" }
     private val server get() = run.server
-    private val localizer = MapLocalizer()
     private val assets by lazy { AtlasAssets(File(run.cacheDir, "navigation"), loader, log = ::log) }
     private val banners = mutableMapOf<Int, Pattern?>()
-    private var mapCache: Triple<Int, Int, Pattern>? = null
 
     /** The ordinary battle's exit when it stopped for a reason other than the run limit (AP, defeat, user): the route ends with it. */
     var battleStop: AutoBattle.ExitException? = null
@@ -97,8 +104,6 @@ class WeeklyRouteDriver @Inject constructor(
         diagnostics.flushMapLog()
         banners.values.forEach { it?.close() }
         banners.clear()
-        mapCache?.third?.close()
-        mapCache = null
     }
 
     // ---- screens -------------------------------------------------------------------------------------------------
@@ -298,115 +303,144 @@ class WeeklyRouteDriver @Inject constructor(
         return ok
     }
 
+    /** Scale between two frames of the map motion crop, or null when they cannot be fitted. */
+    private fun frameScale(before: Pattern, after: Pattern): Double? =
+        MapLocalizer.fit(before.featureMatches(after, Region(0, 0, after.width, after.height)))
+            ?.takeIf { kotlin.math.abs(it.scaleX / it.scaleY - 1) <= 0.05 }?.let { (it.scaleX + it.scaleY) / 2 }
+
+    /** Issue #111: pinch out until two pinches in a row leave the map unchanged (see [MapZoom]). No map image is involved. */
     override fun prepareMap(warId: Int): Boolean {
+        mapProblem = null
         if (warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) return true
         addedTuning.weekly.delay(2.seconds).wait()
-        // Diagnostic fits use the broad scale range so the initial, still zoomed-in map is observable.
-        val quest = run.items.firstOrNull { it.quest.warId == warId }?.quest
-        val war = run.wars[warId]
-        val map = if (war != null && quest != null) mapFor(war, quest.mapId) else null
-        fun measure(stage: String) {
-            val fit = map?.let { pattern ->
-                useSameSnapIn {
-                    loc.scriptArea.getPattern("weekly pinch diagnostic").use { shot -> localizer.localize(shot, pattern) }
-                }
+        val history = mutableListOf<Double?>()
+        repeat(MapZoom.MAX_PINCHES) {
+            val scale = loc.mapMotion.getPattern("map zoom before").use { before ->
+                if (!pinchOut()) return false
+                loc.mapMotion.getPattern("map zoom after").use { after -> frameScale(before, after) }
             }
-            log("pinch $stage war=$warId scale=${fit?.scaleX}/${fit?.scaleY} origin=${fit?.originX},${fit?.originY} score=${fit?.score}")
+            history += scale
+            log("zoom pinch=${history.size} scale=${scale?.let { "%.3f".format(it) }}")
+            if (MapZoom.confirmed(history)) {
+                log("chapter $warId zoomed out")
+                return true
+            }
         }
-        measure("before")
-        repeat(2) { if (!pinchOut()) return false }
-        measure("after")
-        log("chapter $warId zoomed out")
-        return checkFreeQuestMap(warId, war, map)
+        log("chapter $warId zoom not confirmed")
+        return false
     }
 
     private var mapProblem: String? = null
     override fun mapProblem() = mapProblem
 
-    /**
-     * D-35: a chapter with several maps whose free quests are all on one other map (Heian-kyo: 4 maps, free quests on 30702) is
-     * entered on the first map. When the zoomed-out screen does not fit that map, the chapter is skipped with a diagnostic frame;
-     * switching the map is not guessed.
-     */
-    private fun checkFreeQuestMap(warId: Int, war: WarInfo?, map: Pattern?): Boolean {
-        mapProblem = null
-        if (war == null || map == null || warId !in io.github.fate_grand_automata.scripts.weekly.ChapterLists.MAIN_INTERLUDE_WARS || war.maps.size < 2) return true
-        val fit = localize(map)
-        val ok = MapLocalizer.accepts(fit)
-        log("free quest map war=$warId maps=${war.maps.size} fitted=$ok score=${fit?.score?.let { "%.2f".format(it) }}")
-        if (ok) return true
-        mapProblem = "entered map is not the free quest map"
-        log("chapter $warId skipped reason=$mapProblem")
-        probeDiagnostic(900_000 + warId, 2)
-        return false
-    }
-
-    private fun mapFor(war: WarInfo, mapId: Int): Pattern? {
-        mapCache?.let { (w, m, p) -> if (w == war.id && m == mapId) return p }
-        mapCache?.third?.close()
-        mapCache = null
-        val pattern = assets.map(server, war, mapId) ?: return null
-        mapCache = Triple(war.id, mapId, pattern)
-        return pattern
-    }
-
-    private fun localize(map: Pattern): MapFit? = useSameSnapIn {
-        loc.scriptArea.getPattern("weekly map").use { screen -> localizer.localize(screen, map, ZOOMED_OUT_SCALE) }
-    }
-
-    /** The tappable screen position of the quest's spot in 720p, or why it could not be located. */
     private var edgeDrag: ScreenPoint? = null
-    private var placeholderPlacement: Pair<PlaceholderMap.Geometry, MapFit>? = null
+    private var mapPlacement: Pair<PlaceholderMap.Geometry, MapFit>? = null
 
-    private fun locateSpot(quest: RouteQuest, map: Pattern, screenWidth: Int, screenHeight: Int, centre: Boolean = false, edgeFirst: Boolean = true): Pair<Location?, String> {
-        var pinched = false
-        var scrolls = 0
-        var movement: io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag? = null
-        var plan = MapView.OriginPlan(0.0, "spot")
+    /** A frame-to-frame measurement failed; the locate flow starts again from the map end once. */
+    private class MapMeasurementFailed : RuntimeException(null, null, false, false)
+
+    /**
+     * Issue #111: the tappable screen position of the quest's spot in 720p, or why it could not be located. The map is
+     * never matched against a picture. The zoom is the smallest one, so the map is the game-area width wide and its
+     * vertical position is known at its top and bottom end ([PlaceholderMap.Geometry]); the flow pushes to an end, checks
+     * that the end is reached (one more drag shows no motion) and from there moves by measured drags only.
+     */
+    private fun locateSpot(quest: RouteQuest, map: WarMap, width: Int, height: Int, centre: Boolean = false, edgeFirst: Boolean = true): Pair<Location?, String> {
+        val geometry = PlaceholderMap.geometry(map, width, height) ?: run {
+            log("edge quest=${quest.id} map=${map.id} is not limited by the screen width ${map.width}x${map.height} view=${width}x$height")
+            return null to "map not recognized"
+        }
+        repeat(2) { attempt ->
+            try {
+                return locateFromEdge(quest, geometry, width, height, centre, edgeFirst)
+            } catch (e: MapMeasurementFailed) {
+                log("step quest=${quest.id} measurement failed attempt=${attempt + 1}")
+            }
+        }
+        return null to "map movement did not converge"
+    }
+
+    private fun locateFromEdge(quest: RouteQuest, geometry: PlaceholderMap.Geometry, width: Int, height: Int, centre: Boolean, edgeFirst: Boolean): Pair<Location?, String> {
+        val scale = geometry.scale
+        val range = geometry.range
+        val target = geometry.target(quest.spotX, quest.spotY)
+        // Edge spots go to the end Geometry.target picked; middle spots start from the end nearer to the spot's row.
+        val middleOrigin = height / 2.0 - scale * quest.spotY
+        val edge = target?.edge ?: if (kotlin.math.abs(middleOrigin) <= kotlin.math.abs(middleOrigin + range)) PlaceholderMap.Edge.Top else PlaceholderMap.Edge.Bottom
+        log("edge quest=${quest.id} edge=$edge scale=${"%.3f".format(scale)} range=${"%.0f".format(range)}")
+        val ratio = pushToEdge(geometry, edge, width, height)
+        val endFit = geometry.fit(edge)
+        var origin = endFit.originY
+        val x = scale * quest.spotX
+        val spotMapY = scale * quest.spotY
+        val iconMapY = scale * (quest.spotY - MapView.ICON_OFFSET_MAP)
+        val desired: Double
+        val plan: String
+        if (target != null) {
+            desired = target.fit.originY
+            plan = target.plan
+        } else {
+            val chosen = MapView.planOrigin(x, spotMapY, iconMapY, origin, range, width, height, centre, edgeFirst)
+                ?: MapView.bestEffortOrigin(x, spotMapY, iconMapY, origin, range, width, height)
+                ?: return (tapPoint(quest, x, origin + iconMapY, origin + spotMapY, width, height, "none") ?: (null to "spot out of reach"))
+            desired = chosen.target
+            plan = chosen.plan
+        }
+        fun remember(iy: Double, y: Double) {
+            mapPlacement = geometry to endFit.copy(originY = origin)
+            MapView.edgeDrag(x, if (plan == "icon") iy else y, width, height)?.let { edgeDrag = it }
+        }
+        val movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(desired, width, height, ratio, maxTravel = MAX_STEP_DRAG)
+        var steps = 0
         while (true) {
-            val fit = localize(map)
-            if (!MapLocalizer.accepts(fit)) {
-                log("localize quest=${quest.id} rejected score=${fit?.score?.let { "%.2f".format(it) }} inliers=${fit?.inliers}")
-                // Zoom resets on every entry and a pinch can be missed once; one more try before giving up on the chapter map.
-                if (!pinched) { pinched = true; if (!pinchOut()) return null to "pinch failed"; continue }
-                return null to "map not recognized"
-            }
-            fit!!
-            val x = fit.screenX(quest.spotX)
-            val y = fit.screenY(quest.spotY)
-            val iy = fit.screenY(quest.spotY - MapView.ICON_OFFSET_MAP)
-            log("localize quest=${quest.id} score=${"%.2f".format(fit.score)} scale=${"%.3f".format(fit.scaleX)}/${"%.3f".format(fit.scaleY)} " +
-                "origin=${"%.0f".format(fit.originX)},${"%.0f".format(fit.originY)} spot=${"%.0f".format(x)},${"%.0f".format(y)} icon=${"%.0f".format(x)},${"%.0f".format(iy)}")
-            if (movement == null) {
-                val range = (map.height * fit.scaleY - screenHeight).coerceAtLeast(0.0)
-                // Issue #91: the spot point plans the move as before #78; the icon point only when the spot has no safe row.
-                plan = MapView.planOrigin(x, quest.spotY * fit.scaleY, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range,
-                    screenWidth, screenHeight, centre, edgeFirst)
-                    // Issue #102: no safe row at all (16:9 knife edge) -> move to the reachable end that is closest to clear, then resolveTap.
-                    ?: MapView.bestEffortOrigin(x, quest.spotY * fit.scaleY, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range, screenWidth, screenHeight)
-                    ?: return tapPoint(quest, x, iy, y, screenWidth, screenHeight, "none") ?: (null to "spot out of reach")
-                log("plan quest=${quest.id} plan=${plan.plan} target=${"%.1f".format(plan.target)} range=${"%.0f".format(range)} origin=${"%.0f".format(fit.originY)}")
-                movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(plan.target, screenWidth, screenHeight)
-            }
-            // Issue #96: use the fresh fit as soon as the resolved tap is clear and inside the edge-first band.
-            // A panel retry deliberately centres the spot and must still finish its full move.
-            // Issue #102: only a clear icon centre taps early; a shifted icon or the spot point waits until the move has ended.
+            val iy = origin + iconMapY
+            val y = origin + spotMapY
+            // Issue #96/#102: only a clear icon centre taps before the move has ended.
             if (!centre) {
-                tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan, reason = "early", edgeFirst = edgeFirst, onlyKind = "icon")?.let { return it }
+                tapPoint(quest, x, iy, y, width, height, plan, reason = "early", edgeFirst = edgeFirst, onlyKind = "icon")?.let {
+                    remember(iy, y)
+                    return it
+                }
             }
-            val drag = movement.next(fit.originY)
+            val drag = movement.next(origin)
             if (drag == null) {
-                return tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan) ?:
-                    (null to if (movement.stationary) "spot out of reach" else "map movement did not converge")
+                remember(iy, y)
+                return tapPoint(quest, x, iy, y, width, height, plan)
+                    ?: (null to if (movement.stationary) "spot out of reach" else "map movement did not converge")
             }
-            if (edgeFirst && MapView.edgeDrag(x, if (plan.icon) iy else y, screenWidth, screenHeight) != null) edgeDrag = drag
-            if (scrolls >= MAX_MAP_SCROLLS) return null to "map movement safety limit"
-            scrolls++
-            val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
-            log("scroll quest=${quest.id} plan=${plan.plan} drag=0,${"%.0f".format(drag.y)} targetOrigin=${"%.1f".format(movement.target)} ratio=${"%.2f".format(movement.ratio)}")
-            swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
+            if (steps >= MAX_MAP_SCROLLS) return null to "map movement did not converge"
+            steps++
+            val moved = measure(drag, width, height)
+            origin = (origin + moved).coerceIn(-range, 0.0)
+            log("step quest=${quest.id} drag=${"%.0f".format(drag.y)} measured=${"%.1f".format(moved)} origin=${"%.1f".format(origin)}")
+        }
+    }
+
+    private fun measure(drag: ScreenPoint, width: Int, height: Int): Double = measuredMapDrag(drag, width, height) ?: throw MapMeasurementFailed()
+
+    /**
+     * Drags the map to [edge] and checks that it got there: long drags first (the range over the smallest gain seen on
+     * device), then measured drags until one shows no motion. Returns the finger-to-map gain seen on the way.
+     */
+    private fun pushToEdge(geometry: PlaceholderMap.Geometry, edge: PlaceholderMap.Edge, width: Int, height: Int): Double {
+        if (geometry.range <= 0.0) return DEFAULT_GAIN
+        val down = edge == PlaceholderMap.Edge.Top
+        val far = ScreenPoint(0.0, if (down) PUSH_DRAG else -PUSH_DRAG)
+        val (farFrom, farTo) = MapView.dragPath(far, width, height)
+        repeat(kotlin.math.ceil(geometry.range / (MIN_GAIN * kotlin.math.abs(farTo.y - farFrom.y))).toInt() + 1) {
+            swipe.scroll(Location(MapView.toScript(farFrom.x), MapView.toScript(farFrom.y)), Location(MapView.toScript(farTo.x), MapView.toScript(farTo.y)))
             addedTuning.weekly.delay(1.seconds).wait()
         }
+        val gains = mutableListOf<Double>()
+        repeat(MAX_MAP_SCROLLS) {
+            // The 300 px motion crop keeps more than 100 px of overlap even at a 1:1 gain.
+            val drag = ScreenPoint(0.0, if (down) VERIFY_DRAG else -VERIFY_DRAG)
+            val path = MapView.dragPath(drag, width, height)
+            val delta = measure(drag, width, height)
+            if (kotlin.math.abs(delta) < 0.75) return if (gains.isEmpty()) DEFAULT_GAIN else gains.average().coerceIn(0.1, 2.0)
+            gains += kotlin.math.abs(delta / (path.second.y - path.first.y))
+        }
+        throw MapMeasurementFailed()
     }
 
     private fun rawText(raw: List<io.github.lib_automata.OcrText>) = raw.joinToString("|") { "${it.text.trim()}@${it.confidence}" }
@@ -430,50 +464,7 @@ class WeeklyRouteDriver @Inject constructor(
         return Location(MapView.toScript(choice.point.x), MapView.toScript(choice.point.y)) to "ok"
     }
 
-    /**
-     * D-31: the spot on a map the Atlas has no picture of. The map is dragged to its top or bottom border (it stops there),
-     * which fixes its position, and the spot is placed from its Atlas coordinates. A wrong tap can only open another spot's
-     * panel, whose names then fail the check, so nothing is started on a wrong spot.
-     */
-    private fun locatePlaceholderSpot(quest: RouteQuest, war: WarInfo, width: Int, height: Int): Pair<Location?, String> {
-        val map = war.maps.firstOrNull { it.id == quest.mapId } ?: return null to "map ${quest.mapId} image unavailable"
-        val geometry = PlaceholderMap.geometry(map, width, height) ?: return null to "map not recognized"
-        val target = geometry.target(quest.spotX, quest.spotY) ?: return null to "spot out of reach"
-        placeholderPlacement = geometry to target.fit
-        MapView.edgeDrag(geometry.fit(target.edge).screenX(quest.spotX), geometry.fit(target.edge).screenY(quest.spotY), width, height)?.let { edgeDrag = it }
-        val down = target.edge == PlaceholderMap.Edge.Top
-        var ratio = 1.0
-        var atBorder = false
-        for (attempt in 0 until MAX_MAP_SCROLLS) {
-            // Retain >100 px vertical overlap in the 300 px motion crop even at a 1:1 gain.
-            val drag = ScreenPoint(0.0, if (down) 120.0 else -120.0)
-            val path = MapView.dragPath(drag, width, height)
-            val delta = measuredMapDrag(drag, width, height) ?: return null to "map not recognized"
-            if (kotlin.math.abs(delta) < 0.75) { atBorder = true; break }
-            ratio = kotlin.math.abs(delta / (path.second.y - path.first.y)).coerceIn(0.1, 2.0)
-        }
-        if (!atBorder) return null to "map movement safety limit"
-        var origin = geometry.fit(target.edge).originY
-        val movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(target.fit.originY, width, height, ratio, maxTravel = 120.0)
-        var reached = false
-        for (attempt in 0 until MAX_MAP_SCROLLS) {
-            val drag = movement.next(origin)
-            if (drag == null) { reached = true; break }
-            val delta = measuredMapDrag(drag, width, height) ?: return null to "map not recognized"
-            origin = (origin + delta).coerceIn(-geometry.range, 0.0)
-        }
-        if (!reached) return null to "map movement safety limit"
-        val actual = target.fit.copy(originY = origin)
-        placeholderPlacement = geometry to actual
-        val x = actual.screenX(quest.spotX)
-        val y = actual.screenY(quest.spotY)
-        val iy = actual.screenY(quest.spotY - MapView.ICON_OFFSET_MAP)
-        MapView.edgeDrag(x, if (target.plan == "icon") iy else y, width, height)?.let { edgeDrag = it }
-        log("placeholder map quest=${quest.id} plan=${target.plan} edge=${target.edge} scale=${"%.3f".format(geometry.scale)} spot=${"%.0f".format(target.point.x)},${"%.0f".format(target.point.y)}")
-        return tapPoint(quest, x, iy, y, width, height, target.plan) ?: (null to "spot out of reach")
-    }
-
-    /** Relative motion for maps without reference art. Both crops are map pixels, never fixed UI. */
+    /** Relative motion of the map between two frames, from the central crop of the screen. Both crops are map pixels, never fixed UI. */
     private fun measuredMapDrag(drag: ScreenPoint, width: Int, height: Int): Double? {
         val (from, to) = MapView.dragPath(drag, width, height)
         return loc.mapMotion.getPattern("map motion before").use { before ->
@@ -582,18 +573,16 @@ class WeeklyRouteDriver @Inject constructor(
         if (quest.warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) return openVault(quest, tap)
         val war = run.wars[quest.warId] ?: return SpotOutcome.NotFound("no chapter data")
         if (screen() != RouteScreen.Map) return SpotOutcome.NotFound("not on the map")
-        val map = mapFor(war, quest.mapId)
-        // D-31: a placeholder Atlas map is located by geometry instead of by image.
-        val placeholder = map == null && assets.isPlaceholder(server, war, quest.mapId)
-        if (map == null && !placeholder) return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
+        // Issue #111: the map is located by edge geometry from its size; no map image is needed.
+        val map = war.maps.firstOrNull { it.id == quest.mapId } ?: return SpotOutcome.NotFound("map ${quest.mapId} image unavailable", skipChapter = true)
         val width = loc.scriptArea.width / 2
         val height = loc.scriptArea.height / 2
         var problem = "no matching free panel name"
         val failure = io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFailure()
         edgeDrag = null
-        placeholderPlacement = null
+        mapPlacement = null
         fun openPanel(centre: Boolean, edgeFirst: Boolean = true, recoveredSpot: Location? = null): Boolean {
-            val (spot, why) = if (recoveredSpot != null) recoveredSpot to "ok" else if (map != null) locateSpot(quest, map, width, height, centre, edgeFirst) else locatePlaceholderSpot(quest, war, width, height)
+            val (spot, why) = if (recoveredSpot != null) recoveredSpot to "ok" else locateSpot(quest, map, width, height, centre, edgeFirst)
             if (spot == null) { problem = why; return false }
             log("tap step=spot quest=${quest.id} centre=$centre point=$spot")
             spot.click()
@@ -613,15 +602,9 @@ class WeeklyRouteDriver @Inject constructor(
         var opened = openPanel(false)
         val edge = edgeDrag
         if (!opened && problem == "no panel at the spot" && edge != null && screen() == RouteScreen.Map) {
-            val (from, to) = MapView.dragPath(ScreenPoint(-edge.x, -edge.y), width, height)
             log("edge recovery quest=${quest.id} opposite=true")
-            val actualDelta = if (placeholderPlacement != null) measuredMapDrag(ScreenPoint(0.0, -edge.y), width, height)
-            else {
-                swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
-                addedTuning.weekly.delay(1.seconds).wait()
-                null
-            }
-            val recovered = placeholderPlacement?.let { (geometry, fit) ->
+            val actualDelta = if (mapPlacement != null) measuredMapDrag(ScreenPoint(0.0, -edge.y), width, height) else null
+            val recovered = mapPlacement?.let { (geometry, fit) ->
                 val delta = actualDelta ?: return@let null
                 val originY = (fit.originY + delta).coerceIn(-geometry.range, 0.0)
                 val y = originY + fit.scaleY * quest.spotY
@@ -629,7 +612,7 @@ class WeeklyRouteDriver @Inject constructor(
                 val point = MapView.resolveTap(x, originY + fit.scaleY * (quest.spotY - MapView.ICON_OFFSET_MAP), x, y, width, height)?.point
                 point?.let { Location(MapView.toScript(it.x), MapView.toScript(it.y)) }
             }
-            if (map != null || recovered != null) opened = openPanel(false, edgeFirst = false, recoveredSpot = recovered)
+            opened = openPanel(false, edgeFirst = false, recoveredSpot = recovered)
         }
         if (!opened) {
             if (!tap) probeDiagnostic(quest.id)

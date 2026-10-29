@@ -1,8 +1,6 @@
 package io.github.fate_grand_automata.scripts.weekly
 
 import io.github.lib_automata.ImageFeatureMatch
-import io.github.lib_automata.Pattern
-import io.github.lib_automata.Region
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -16,7 +14,8 @@ data class MapFit(val score: Double, val scaleX: Double, val scaleY: Double, val
 }
 
 /**
- * SIFT correspondences between the Atlas background and the visible screen, then deterministic RANSAC and least squares.
+ * Issue #111: only the frame-to-frame motion and zoom measurement uses this now (WeeklyRouteDriver.measuredMapDrag and the zoom check), never a map picture.
+ * SIFT correspondences between two frames of the map, then deterministic RANSAC and least squares.
  * Icons/roads/labels are occluders, never anchors. Fits with too little evidence, repeated motifs, large residuals, negative
  * scales, or insufficient 2-D support fail closed. No map coordinate can be tapped on the strength of a low NCC alone.
  */
@@ -68,7 +67,4 @@ class MapLocalizer {
             return f.takeIf(::accepts)
         }
     }
-    fun templateRegion(width: Int,height: Int) = Region(width*185/1280,height*110/720,width*1005/1280,height*480/720)
-    fun localize(screen: Pattern,map: Pattern,scaleRange: ClosedFloatingPointRange<Double> = 0.35..3.5): MapFit? =
-        fit(map.featureMatches(screen,templateRegion(screen.width,screen.height)),scaleRange)
 }

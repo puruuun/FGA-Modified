@@ -4,7 +4,10 @@ import kotlin.math.ceil
 import kotlin.math.max
 
 /**
- * Design 0009 D-31: chapters whose Atlas `mapImage` is no map. Shin (war 303) publishes an 8x8 texture; the real map is
+ * Issue #111: edge geometry for every chapter map (no map picture is matched any more). The zoomed-out map is the game-area
+ * width wide with its left edge on the screen's left edge; pushed to its top or bottom end its position is known exactly.
+ *
+ * Design 0009 D-31 (where this started): chapters whose Atlas `mapImage` is no map. Shin (war 303) publishes an 8x8 texture; the real map is
  * `mapGimmicks` layers whose base layer (gimmick_030301, depth -1100) is not on the Atlas static server in any region
  * (HTTP 404; the other layers are a fortress sprite, fog and rope pieces), so the map cannot be assembled for image fitting.
  *
@@ -16,11 +19,6 @@ import kotlin.math.max
  * `0.625 * (spotX, spotY)`, origin (0, -2).
  */
 object PlaceholderMap {
-    /** A texture this small on either side is a placeholder, not a map. */
-    const val MAX_PLACEHOLDER_SIDE = 64
-
-    fun isPlaceholder(textureWidth: Int, textureHeight: Int) = textureWidth <= MAX_PLACEHOLDER_SIDE || textureHeight <= MAX_PLACEHOLDER_SIDE
-
     enum class Edge { Top, Bottom }
 
     /** Where to tap once the map has been dragged to [edge]; [point] is in 720p game-area pixels. */
@@ -61,8 +59,8 @@ object PlaceholderMap {
             }
             for (edge in edges) {
                 val fit = fit(edge)
-                val point = if (plan == "spot") MapView.visibleTap(fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)
-                    else MapView.resolveTap(fit.screenX(spotX), fit.screenY(planY), fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)?.point
+                // Issue #111: the same rule as the final tap (MapView.resolveTap on the icon centre), so a target is never one the tap cannot reach.
+                val point = MapView.resolveTap(fit.screenX(spotX), fit.screenY(spotY - MapView.ICON_OFFSET_MAP), fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)?.point
                 point?.let { return Target(edge, it, fit, plan) }
             }
             return null

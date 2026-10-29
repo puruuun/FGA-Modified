@@ -6,7 +6,6 @@ import io.github.fate_grand_automata.scripts.locations.*
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.weekly.*
 import org.json.*
-import kotlin.math.hypot
 
 internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
     check(!live) { "navigation QA is offline only" }
@@ -133,27 +132,6 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             fixturePattern(imports.getJSONArray(case.getString("asset")).getString(0),true).use { pattern ->
                 val score=loc.listArea.findAll(pattern,0.1).maxOfOrNull { it.score } ?: 0.0
                 actual.put("match",score>=WeeklyRouteDriver.BANNER_SIMILARITY).put("score",score)
-            }
-        }
-        "map" -> {
-            fixturePattern(imports.getJSONArray(case.getString("asset")).getString(0)).use { map ->
-                loc.scriptArea.getPattern("weekly localization QA").use { screen ->
-                    val fit=MapLocalizer().localize(screen,map)
-                    actual.put("accepted",MapLocalizer.accepts(fit))
-                    if(fit!=null) {
-                        actual.put("scaleX",fit.scaleX).put("scaleY",fit.scaleY).put("originX",fit.originX).put("originY",fit.originY)
-                            .put("inliers",fit.inliers).put("ratio",fit.score).put("rms",fit.rms)
-                        val positions=JSONArray()
-                        val anchors=case.optJSONArray("anchors") ?: JSONArray()
-                        for(i in 0 until anchors.length()) {
-                            val e=anchors.getJSONObject(i);val x=fit.screenX(e.getDouble("mapX"));val y=fit.screenY(e.getDouble("mapY"))
-                            val error=hypot(x-e.getDouble("screenX"),y-e.getDouble("screenY"))
-                            check(error<=e.getDouble("tolerance")) { "spot ${e.getInt("id")} error=$error expected=$e fit=$fit" }
-                            positions.put(JSONObject().put("id",e.getInt("id")).put("x",x).put("y",y).put("error",error))
-                        }
-                        actual.put("positions",positions)
-                    }
-                }
             }
         }
         "strictPanel" -> {
