@@ -6,8 +6,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
-import io.github.fate_grand_automata.prefs.core.GameAreaMode
-import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
@@ -16,6 +14,8 @@ import io.github.fate_grand_automata.util.ImageLoader
 import io.github.fate_grand_automata.util.ScreenOffReceiver
 import io.github.fate_grand_automata.util.ScriptMessages
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -32,7 +32,7 @@ class ScriptRunnerServiceController @Inject constructor(
     private val imageLoader: ImageLoader,
     private val overlay: ScriptRunnerOverlay,
     private val prefs: IPreferences,
-    private val prefsCore: PrefsCore,
+    private val gameAreaCaptureSignal: GameAreaCaptureSignal,
     private val notification: ScriptRunnerNotification,
     private val displayHelper: DisplayHelper,
     private val messages: ScriptMessages,
@@ -61,6 +61,12 @@ class ScriptRunnerServiceController @Inject constructor(
 
     fun onCreate() {
         Timber.i("Script runner service created")
+
+        scope.launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
+            gameAreaCaptureSignal.changes.collect {
+                screenshotServiceHolder.resizeCapture()
+            }
+        }
 
         // Only claim the mediaProjection FGS type while we actually hold consent for it,
         // otherwise Android 14+ throws a SecurityException out of Service.onCreate().
@@ -127,8 +133,7 @@ class ScriptRunnerServiceController @Inject constructor(
 
         Timber.v(if (isLandscape) "LANDSCAPE" else "PORTRAIT")
 
-        // Hide overlay in Portrait orientation (unless Surface Duo)
-        return isLandscape || prefsCore.gameAreaMode.get() == GameAreaMode.Duo
+        return isLandscape
     }
 
     fun onNewMediaProjectionToken() {

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
@@ -61,7 +62,8 @@ fun Stepper(
     enabled: Boolean = true,
     delta: Int = 1,
     onValueChanging: ((Int) -> Unit)? = null,
-    valueRepresentation: (Int) -> String = { it.toString() }
+    valueRepresentation: (Int) -> String = { it.toString() },
+    onValueClick: (() -> Unit)? = null
 ) {
     var currentValue by remember(value) { mutableStateOf(value) }
 
@@ -88,6 +90,7 @@ fun Stepper(
                 valueRepresentation(currentValue),
                 textAlign = TextAlign.Center,
                 modifier = Modifier
+                    .then(if (onValueClick != null) Modifier.clickable(enabled = enabled, onClick = onValueClick) else Modifier)
                     .padding(horizontal = 5.dp)
             )
         }

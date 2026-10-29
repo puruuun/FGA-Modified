@@ -213,7 +213,7 @@ val MaterialEnum.stringRes: Int
 val GameAreaMode.stringRes
     get() = when (this) {
         GameAreaMode.Default -> R.string.p_game_area_default
-        GameAreaMode.Duo -> R.string.p_game_area_duo
+        GameAreaMode.Preset -> R.string.p_game_area_preset
         GameAreaMode.Custom -> R.string.p_game_area_custom
     }
 

@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MediaProjectionScreenshotService(
     private val context: Context,
     private val mediaProjection: MediaProjection,
-    private val imageSize: Size,
-    private val screenDensity: Int,
+    private var imageSize: Size,
+    private var screenDensity: Int,
     private val storageProvider: StorageProvider,
     private val colorManager: ColorManager
 ) : ScreenshotService {
@@ -38,7 +38,7 @@ class MediaProjectionScreenshotService(
     private val colorPattern = DroidCvPattern(colorMat, ownsMat = false)
 
     @SuppressLint("WrongConstant")
-    private val imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, PixelFormat.RGBA_8888, 2)
+    private var imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, PixelFormat.RGBA_8888, 2)
     private val closed = AtomicBoolean(false)
 
     /**
@@ -52,7 +52,8 @@ class MediaProjectionScreenshotService(
      * Counted down as soon as the [VirtualDisplay] hands out its first frame. Registered before
      * the display is created so no frame can slip past it.
      */
-    private val firstFrame = CountDownLatch(1)
+    @Volatile
+    private var firstFrame = CountDownLatch(1)
 
     /**
      * Whether a frame ever made it into [bufferMat]. Deliberately not derived from [firstFrame]:
@@ -62,9 +63,14 @@ class MediaProjectionScreenshotService(
     private var hasFrame = false
 
     init {
+        listenForFirstFrame()
+    }
+
+    private fun listenForFirstFrame() {
+        val latch = firstFrame
         imageReader.setOnImageAvailableListener(
             { reader ->
-                firstFrame.countDown()
+                latch.countDown()
 
                 // Only the first frame is waited on, so stop posting to the looper after it.
                 reader.setOnImageAvailableListener(null, null)
@@ -86,6 +92,32 @@ class MediaProjectionScreenshotService(
         imageSize.width, imageSize.height, screenDensity,
         0, imageReader.surface, null, null
     )
+
+    /** Reuse the projection and its VirtualDisplay: Android 14 tokens are single-use. */
+    @SuppressLint("WrongConstant")
+    fun resize(size: Size, density: Int) = synchronized(lock) {
+        if (closed.get() || (imageSize == size && screenDensity == density)) return@synchronized
+        val display = virtualDisplay ?: return@synchronized
+        val replacement = ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2)
+        val previous = imageReader
+        try {
+            display.surface = null
+            display.resize(size.width, size.height, density)
+            display.surface = replacement.surface
+        } catch (e: RuntimeException) {
+            replacement.close()
+            throw e
+        }
+        previous.setOnImageAvailableListener(null, null)
+        imageReader = replacement
+        imageSize = size
+        screenDensity = density
+        hasFrame = false
+        bufferMat.release()
+        firstFrame = CountDownLatch(1)
+        listenForFirstFrame()
+        previous.close()
+    }
 
     override fun takeScreenshot(): Pattern = synchronized(lock) {
         /*

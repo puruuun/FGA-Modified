@@ -113,11 +113,12 @@ class PrefsCore @Inject constructor(
         default = Location()
     )
 
-    val gameAreaMode = maker.enum("game_area_mode", GameAreaMode.Default)
-    val gameOffsetLeft = maker.int("game_offset_left", 0)
-    val gameOffsetTop = maker.int("game_offset_top", 0)
-    val gameOffsetRight = maker.int("game_offset_right", 0)
-    val gameOffsetBottom = maker.int("game_offset_bottom", 0)
+    val gameArea = GameAreaPrefsCore(maker)
+    val gameAreaMode = gameArea.mode
+    val gameOffsetLeft = gameArea.left
+    val gameOffsetTop = gameArea.top
+    val gameOffsetRight = gameArea.right
+    val gameOffsetBottom = gameArea.bottom
 
     val dirRoot = maker.string("dir_root")
 

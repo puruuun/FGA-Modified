@@ -10,16 +10,14 @@ import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.imaging.MediaProjectionScreenshotService
 import io.github.fate_grand_automata.root.RootScreenshotService
 import io.github.fate_grand_automata.root.SuperUser
-import io.github.fate_grand_automata.scripts.FgoGameAreaManager
+import io.github.fate_grand_automata.scripts.FgoCaptureGeometry
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.util.DisplayHelper
+import io.github.fate_grand_automata.util.CutoutManager
 import io.github.fate_grand_automata.util.StorageProvider
-import io.github.fate_grand_automata.util.makeLandscape
 import io.github.lib_automata.ColorManager
-import io.github.lib_automata.Location
 import io.github.lib_automata.PlatformImpl
-import io.github.lib_automata.RealScale
 import io.github.lib_automata.ResizedScreenshotProvider
 import io.github.lib_automata.ScreenshotService
 import io.github.lib_automata.Size
@@ -35,20 +33,17 @@ class ScreenshotServiceHolder @Inject constructor(
     private val display: DisplayHelper,
     private val colorManager: ColorManager,
     private val mediaProjectionManager: MediaProjectionManager,
-    private val platformImpl: PlatformImpl
+    private val platformImpl: PlatformImpl,
+    private val cutoutManager: CutoutManager
 ) : AutoCloseable {
     var screenshotService: ScreenshotService? = null
         private set
 
     fun prepareScreenshotService() {
-        val landscapeMetrics = display.metrics.makeLandscape()
-        val size = Size(landscapeMetrics.widthPixels, landscapeMetrics.heightPixels)
-        val scale = RealScale(
-            gameAreaManager = FgoGameAreaManager(
-                size,
-                offset = { Location() }
-            )
-        ).screenToImage
+        val metrics = display.metrics
+        val geometry = FgoCaptureGeometry.forLandscape(
+            Size(metrics.widthPixels, metrics.heightPixels), cutoutManager::getCutoutAppliedRegion)
+        val scale = geometry.scale
 
         screenshotService = try {
             if (prefs.wantsMediaProjectionToken) {
@@ -69,8 +64,8 @@ class ScreenshotServiceHolder @Inject constructor(
 
                     null
                 } else {
-                    val scaledSize = size * (scale ?: 1.0)
-                    val scaledDensity = (landscapeMetrics.densityDpi / (scale ?: 1.0)).roundToInt()
+                    val scaledSize = geometry.captureSize
+                    val scaledDensity = (metrics.densityDpi / scale).roundToInt()
 
                     MediaProjectionScreenshotService(
                         context,
@@ -87,13 +82,7 @@ class ScreenshotServiceHolder @Inject constructor(
                     colorManager
                 )
 
-                if (scale != null) {
-                    ResizedScreenshotProvider(
-                        rootSS,
-                        scale,
-                        platformImpl
-                    )
-                } else rootSS
+                ResizedScreenshotProvider(rootSS, scale, platformImpl)
             }
         } catch (e: Exception) {
             Timber.e(e, "Error preparing screenshot service")
@@ -104,5 +93,17 @@ class ScreenshotServiceHolder @Inject constructor(
     override fun close() {
         screenshotService?.close()
         screenshotService = null
+    }
+
+    fun resizeCapture() {
+        val service = screenshotService ?: return
+        val metrics = display.metrics
+        val geometry = FgoCaptureGeometry.forLandscape(
+            Size(metrics.widthPixels, metrics.heightPixels), cutoutManager::getCutoutAppliedRegion)
+        when (service) {
+            is MediaProjectionScreenshotService -> service.resize(
+                geometry.captureSize, (metrics.densityDpi / geometry.scale).roundToInt())
+            is ResizedScreenshotProvider -> service.resize(geometry.scale)
+        }
     }
 }
