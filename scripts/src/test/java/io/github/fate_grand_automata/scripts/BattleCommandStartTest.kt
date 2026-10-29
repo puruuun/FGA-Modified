@@ -5,6 +5,9 @@ import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
+import io.github.fate_grand_automata.scripts.models.CardColourCounts
+import io.github.fate_grand_automata.scripts.ScriptNotify
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
@@ -58,11 +61,95 @@ class BattleCommandStartTest {
         )
     }
 
+    @Test
+    fun `AND waits for the target colour and logs usable counts then starts in the same turn`() {
+        val f = Fixture(colours = CardColourCounts(arts = 1))
+        every { f.card.readCommandCards() } returns hand(2)
+        f.battle.performBattle()
+        verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+        verify { f.api.messages.notify(match<ScriptNotify.CommandStartWaiting> { it.colours == CardColourCounts(2) }) }
+        val mixed = hand(2).mapIndexed { index, card -> if (index == 0) card.copy(type = CardTypeEnum.Arts) else card }
+        every { f.card.readCommandCards() } returns mixed
+        f.battle.performBattle()
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+        verify { f.api.messages.notify(match<ScriptNotify.CommandStarted> { it.colours == CardColourCounts(1, 1) }) }
+        assertThat(f.gate.waitingTurns).isEqualTo(1)
+    }
+
+    @Test
+    fun `OR starts below the card count when one colour matches`() {
+        val f = Fixture(required = 5, colours = CardColourCounts(arts = 1, quick = 1), combine = CommandStartCombineMode.Or)
+        every { f.card.readCommandCards() } returns hand(1).mapIndexed { index, card ->
+            if (index == 0) card.copy(type = CardTypeEnum.Quick) else card
+        }
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(0)
+        assertThat(f.gate.waitingTurns).isEqualTo(0)
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+    }
+
+    @Test
+    fun `count one AND Buster one waits for a non stunned target Buster`() {
+        val f = Fixture(required = 1, colours = CardColourCounts(buster = 1))
+        every { f.card.readCommandCards() } returns hand(2).mapIndexed { index, card ->
+            when (index) {
+                0 -> card.copy(isStunned = true)
+                1 -> card.copy(type = CardTypeEnum.Arts)
+                else -> card
+            }
+        }
+        f.battle.performBattle()
+        verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+        every { f.card.readCommandCards() } returns hand(1)
+        f.battle.performBattle()
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+    }
+
+    @Test
+    fun `secondary colour condition selects only its own execution and reports both while waiting`() {
+        val f = Fixture(dual = true, colours = CardColourCounts(arts = 1),
+            secondRequired = 5, secondColours = CardColourCounts(quick = 1), secondCombine = CommandStartCombineMode.Or)
+        every { f.card.readCommandCards() } returns hand(2, 1)
+        f.battle.performBattle()
+        verify { f.api.messages.notify(match<ScriptNotify.CommandStartWaitingBoth> {
+            it.firstColours == CardColourCounts(2) && it.secondColours == CardColourCounts(1)
+        }) }
+        every { f.card.readCommandCards() } returns hand(2, 1).map {
+            if (it.servant == TeamSlot.B) it.copy(type = CardTypeEnum.Quick) else it
+        }
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(1)
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+    }
+
+    @Test
+    fun `first turn shuffle rechecks colour conditions with the new hand`() {
+        val f = Fixture(colours = CardColourCounts(arts = 1, quick = 1), shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
+        val mixed = hand(2).mapIndexed { index, card ->
+            when (index) {
+                0 -> card.copy(type = CardTypeEnum.Arts)
+                1 -> card.copy(type = CardTypeEnum.Quick)
+                else -> card
+            }
+        }
+        every { f.card.readCommandCards() } returnsMany listOf(hand(2), mixed, mixed)
+        f.battle.performBattle()
+        verify(exactly = 1) { f.caster.castMasterSkill(Skill.Master.C, null) }
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+        assertThat(f.gate.waitingTurns).isEqualTo(0)
+    }
+
     private class Fixture(
         mode: CommandStartMode = CommandStartMode.CardCount,
         dual: Boolean = false,
         shuffleMode: ShuffleCardsEnum = ShuffleCardsEnum.None,
-        shuffleWave: Int = 1
+        shuffleWave: Int = 1,
+        required: Int = 2,
+        colours: CardColourCounts = CardColourCounts(),
+        combine: CommandStartCombineMode = CommandStartCombineMode.And,
+        secondRequired: Int = 2,
+        secondColours: CardColourCounts = CardColourCounts(),
+        secondCombine: CommandStartCombineMode = CommandStartCombineMode.And
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val config = mockk<IBattleConfig>(relaxed = true)
@@ -85,11 +172,19 @@ class BattleCommandStartTest {
         init {
             every { config.commandStartMode } returns mode
             every { config.commandStartServant } returns 1
-            every { config.commandStartCardCount } returns 2
+            every { config.commandStartCardCount } returns required
+            every { config.commandStartBuster } returns colours.buster
+            every { config.commandStartArts } returns colours.arts
+            every { config.commandStartQuick } returns colours.quick
+            every { config.commandStartCombineMode } returns combine
+            every { config.secondaryStartBuster } returns secondColours.buster
+            every { config.secondaryStartArts } returns secondColours.arts
+            every { config.secondaryStartQuick } returns secondColours.quick
+            every { config.secondaryStartCombineMode } returns secondCombine
             every { config.commandStartMaxTurns } returns 0
             every { config.secondaryStartEnabled } returns dual
             every { config.secondaryStartServant } returns 2
-            every { config.secondaryStartCardCount } returns 2
+            every { config.secondaryStartCardCount } returns secondRequired
             every { config.secondaryExecution } returns TestExecutionProfile(skillCommand = "5")
             every { config.skillCommand } returns "4"
             every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default

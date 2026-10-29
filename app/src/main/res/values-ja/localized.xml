@@ -563,7 +563,6 @@
     <string name="github_update_open">リリースを開く</string>
     <string name="github_update_later">後で</string>
     <string name="p_enable_quest_item_control">ティーポット・ストームポッドの自動設定を使用</string>
-    <string name="p_enable_quest_item_control_summary">クエスト開始前に実行画面のアイテムON/OFF設定を確認して適用します。初期設定は無効です。</string>
     <string name="chaldea_import_button">リンクから入力</string>
     <string name="chaldea_import_title">Chaldeaのコマンドを取り込む</string>
     <string name="chaldea_import_url">Chaldea共有リンク</string>

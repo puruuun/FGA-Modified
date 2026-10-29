@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.util
 
+import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
@@ -21,12 +22,13 @@ class StorageReaderDiagnostics @Inject constructor(
     private val storage: IStorageProvider
 ) : IReaderDiagnostics {
     override val enabled: Boolean
-        get() = prefs.supportReaderDiagnostics
+        get() = BuildConfig.BUILD_TYPE == "beta" && prefs.supportReaderDiagnostics
 
     override val runId: String =
         SimpleDateFormat("yyyy-MM-dd-HHmmss-SSS", Locale.US).format(Date())
 
     override fun record(reader: String, stem: String, images: Map<String, Pattern>, json: String) {
+        if (!enabled) return
         val started = System.nanoTime()
         try {
             // The caller owns the patterns, so they are only read here and never closed.

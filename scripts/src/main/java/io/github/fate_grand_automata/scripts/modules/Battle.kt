@@ -126,7 +126,7 @@ class Battle @Inject constructor(
                 }
                 execution.select(checked.profileIndex)
                 commandStart.startAt(state.stage, state.turn, checked.profileIndex, state.runTotalTurns)
-                messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1, checked.profileIndex))
+                messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1, checked.profileIndex, checked.colours))
                 return true
             }
 
@@ -134,11 +134,12 @@ class Battle @Inject constructor(
                 messages.notify(if (checked.secondaryCount != null) {
                     ScriptNotify.CommandStartWaitingBoth(
                         commandStart.target.position, checked.count, commandStart.requiredCards,
-                        checkNotNull(commandStart.secondaryTarget).position, checked.secondaryCount, commandStart.secondaryRequired
+                        checkNotNull(commandStart.secondaryTarget).position, checked.secondaryCount, commandStart.secondaryRequired,
+                        checked.colours, checkNotNull(checked.secondaryColours)
                     )
                 } else {
                     ScriptNotify.CommandStartWaiting(
-                        commandStart.target.position, checked.count, commandStart.requiredCards
+                        commandStart.target.position, checked.count, commandStart.requiredCards, checked.colours
                     )
                 })
                 // NPUsage.none alone is insufficient: Card normally appends NP Spam.

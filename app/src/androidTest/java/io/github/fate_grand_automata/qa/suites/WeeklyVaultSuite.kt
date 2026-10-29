@@ -36,7 +36,7 @@ internal fun FixtureApi.verifyWeeklyVault(): JSONObject {
     }))
     if (case.has("accepted")) check(panels.any { it.accepted } == case.getBoolean("accepted")) { actual.toString() }
     if (case.has("tap720")) {
-        val panel = panels.single { it.accepted }
+        val panel = panels.first { it.accepted }
         actual.put("rawAp", JSONArray(panel.anchor.ap.getPattern().use { image ->
             WeeklyVaultReader.AP_PROFILES.map {
                 ocr.detectTextLine(image, it).let { read -> "${read.text}@${read.confidence}" }
@@ -47,6 +47,9 @@ internal fun FixtureApi.verifyWeeklyVault(): JSONObject {
         check(kotlin.math.abs(panel.anchor.tap.x / 2.0 - tap.getDouble(0)) <= 1 &&
             kotlin.math.abs(panel.anchor.tap.y / 2.0 - tap.getDouble(1)) <= 1) { actual.toString() }
         check(panel.anchor.name.contains(io.github.lib_automata.Region(panel.anchor.tap.x, panel.anchor.tap.y, 1, 1)))
+    }
+    if (case.has("acceptedIndex")) {
+        check(panels.indexOfFirst { it.accepted } == case.getInt("acceptedIndex")) { actual.toString() }
     }
     return actual
 }

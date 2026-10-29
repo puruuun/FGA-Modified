@@ -73,7 +73,7 @@ class WeeklyRouteDriver @Inject constructor(
         const val PANEL_SETTLE_ATTEMPTS = 6
         const val PANEL_READ_ATTEMPTS = 4
         /** Map lines written to the run's diagnostics folder (issue #91). */
-        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ", "mismatch ")
+        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ", "mismatch ", "vault ", "map gimmick ", "map composited ")
     }
 
     private val run: WeeklyRouteRun get() = checkNotNull(session.run) { "no weekly route" }
@@ -674,14 +674,12 @@ class WeeklyRouteDriver @Inject constructor(
         if (quest.id !in AtlasWeekly.TREASURE_VAULT_QUESTS || !dailyList()) {
             return SpotOutcome.NotFound("vault panel not found")
         }
-        var problem = "vault panel not found"
+        val problem = "vault panel not found"
         var vaultRead = ""
         val panel = scanList {
             val panels = readVault()
             panels.firstOrNull { it.color?.yellow == true }?.let { vaultRead = it.name.orEmpty() }
             if (vaultRead.isEmpty()) vaultRead = panels.firstOrNull()?.name.orEmpty()
-            if (panels.isNotEmpty()) problem = if (panels.any { it.color?.yellow == true } || problem == "vault name mismatch")
-                "vault name mismatch" else "vault colour mismatch"
             panels.firstOrNull { it.accepted }
         }
         if (panel == null) {
@@ -694,7 +692,7 @@ class WeeklyRouteDriver @Inject constructor(
             panel.anchor.tap.click()
         } else {
             val file = runCatching { useColor { panel.anchor.name.getPattern().use { diagnostics.saveEvidence(it, quest.id) } } }.getOrNull()
-            evidence = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(file = file.orEmpty(), by = "vault-yellow+name", questRead = panel.name.orEmpty())
+            evidence = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(file = file.orEmpty(), by = "vault-yellow", questRead = panel.name.orEmpty())
             log("probe quest=${quest.id} verdict=Match vault panel left untapped")
         }
         return SpotOutcome.Started

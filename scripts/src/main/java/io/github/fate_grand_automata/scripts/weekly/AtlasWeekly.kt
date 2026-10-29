@@ -63,7 +63,8 @@ object AtlasWeekly {
         val id: Int = 0, val eventId: Int = 0, val priority: Int = 0, val longName: String = "", val banner: String = "",
         val maps: List<MapDto> = emptyList(), val spots: List<SpotDto> = emptyList()
     )
-    @Serializable private class MapDto(val id: Int = 0, val mapImage: String = "", val mapImageW: Int = 0, val mapImageH: Int = 0)
+    @Serializable private class MapDto(val id: Int = 0, val mapImage: String = "", val mapImageW: Int = 0, val mapImageH: Int = 0,
+        val mapGimmicks: List<MapGimmick> = emptyList())
     @Serializable private class SpotDto(
         val id: Int = 0, val name: String = "", val x: Double = 0.0, val y: Double = 0.0, val mapId: Int = 0,
         val quests: List<QuestDto> = emptyList()
@@ -90,7 +91,7 @@ object AtlasWeekly {
         val quests = select(wars, now, log)
         val used = quests.map { it.warId }.toSet()
         return Wars(quests, wars.filter { it.id in used }.associate { w ->
-            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH) }, w.spots.associate { it.id to it.name },
+            w.id to WarInfo(w.id, w.longName, w.banner, w.maps.map { WarMap(it.id, it.mapImage, it.mapImageW, it.mapImageH, it.mapGimmicks) }, w.spots.associate { it.id to it.name },
                 w.spots.mapNotNull { spot -> spot.quests.filter { it.type == "free" }.map { it.name }.takeIf { it.isNotEmpty() }?.let { spot.id to it } }.toMap())
         })
     }

@@ -22,7 +22,13 @@ data class RouteQuest(
 
 /** One map image of a war. [width] and [height] are the display size in map pixels; the PNG itself is a power-of-two texture. */
 @Serializable
-data class WarMap(val id: Int, val image: String, val width: Int, val height: Int)
+data class WarMap(val id: Int, val image: String, val width: Int, val height: Int,
+    val mapGimmicks: List<MapGimmick> = emptyList())
+
+/** Atlas image centre in display-map pixels; scale is in thousandths. */
+@Serializable
+data class MapGimmick(val image: String = "", val x: Double = 0.0, val y: Double = 0.0,
+    val depthOffset: Int = 0, val scale: Int = 1000)
 
 /** Chapter data the navigation needs: the list button art and the map images. */
 @Serializable

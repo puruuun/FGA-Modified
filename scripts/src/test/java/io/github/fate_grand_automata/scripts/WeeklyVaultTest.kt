@@ -18,8 +18,10 @@ class WeeklyVaultTest {
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>()() }
             every { api.useColor<Any?>(any()) } answers { firstArg<() -> Any?>()() }
             val reader = mockk<WeeklyVaultReader>(relaxed = true)
-            val panel = VaultPanel(WeeklyVaultAnchor(Location(2194, 700)), VaultColor(43.5, 0.99), "宝物庫初級", emptyList(), 5, true)
-            every { reader.read() } returns listOf(panel)
+            // OCR can be blank or report a different difficulty; neither name nor AP vetoes yellow.
+            val panel = VaultPanel(WeeklyVaultAnchor(Location(2194, 700)), VaultColor(43.5, 0.99), null, emptyList(), null, true)
+            val later = panel.copy(anchor = WeeklyVaultAnchor(Location(2194, 1000)), name = "中級", ap = 40)
+            every { reader.read() } returns listOf(panel, later)
             val driver = spyk(WeeklyRouteDriver(api, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), BattleState(), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), reader))
@@ -28,6 +30,7 @@ class WeeklyVaultTest {
             val quest = item(1002).quest
             assertEquals(SpotOutcome.Started, if (probe) driver.probeSpot(quest) else driver.openSpot(quest))
             verify(exactly = if (probe) 0 else 1) { with(api) { panel.anchor.tap.click(1) } }
+            verify(exactly = 0) { with(api) { later.anchor.tap.click(any()) } }
             if (probe) verify(exactly = 0) { with(api) { any<Location>().click(any()) } }
             assertTrue(driver.closePanel())
         }
@@ -76,13 +79,7 @@ class WeeklyVaultTest {
         assertEquals(ProbeStatus.Mismatch, ProbeStatus.classify("vault name mismatch"))
     }
 
-    @Test fun `Beginner accepts prefixes but rejects every other difficulty and mixed or confused names`() {
-        for (name in listOf("宝物庫の扉を開け 初級", "[応援] 宝物庫 初級")) assertTrue(WeeklyVaultPolicy.beginner(name, GameServer.Jp.Original))
-        for (difficulty in listOf("中級", "上級", "超級", "極級", "超級/初級")) assertFalse(WeeklyVaultPolicy.beginner("宝物庫 $difficulty", GameServer.Jp.Original))
-        for (name in listOf("보물창고의 문을 열어라 《초급》", "[라이더 강화 응원] 보물창고 초급")) assertTrue(WeeklyVaultPolicy.beginner(name, GameServer.Kr))
-        for (difficulty in listOf("중급", "상급", "초월급", "극급", "초월급/초급")) assertFalse(WeeklyVaultPolicy.beginner("보물창고 $difficulty", GameServer.Kr))
-        assertFalse(WeeklyVaultPolicy.beginner("種火集め 初級", GameServer.Jp.Original))
-        assertFalse(WeeklyVaultPolicy.beginner("보물창고 초급", GameServer.En.Original))
+    @Test fun `name consensus remains diagnostic only`() {
         assertNull(WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90))))
         assertEquals("宝物庫初級", WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90), OcrText("宝物庫《初級》", 85))))
         assertNull(WeeklyVaultPolicy.consensus(listOf(OcrText("宝物庫 初級", 90), OcrText("宝物庫 超級", 90))))
@@ -94,6 +91,11 @@ class WeeklyVaultTest {
         assertFalse(WeeklyVaultPolicy.color(MeanColor(120.02, 144.02, 25.88)).yellow)
         assertFalse(WeeklyVaultPolicy.color(MeanColor(170.05, 51.20, 37.83)).yellow)
         assertFalse(WeeklyVaultPolicy.color(MeanColor(220.0, 220.0, 220.0)).yellow)
+        assertTrue(VaultColor(38.0, 0.80).yellow)
+        assertTrue(VaultColor(52.0, 1.0).yellow)
+        assertFalse(VaultColor(37.99, 1.0).yellow)
+        assertFalse(VaultColor(52.01, 1.0).yellow)
+        assertFalse(VaultColor(44.0, 0.799).yellow)
     }
 
     @Test fun `only top-left scores classify Home Map List and ambiguous frames stay unknown`() {

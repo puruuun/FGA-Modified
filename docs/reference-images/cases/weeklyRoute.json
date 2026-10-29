@@ -1572,7 +1572,7 @@
       "expected": {
         "found": true,
         "match": true,
-        "by": "spot-name+cells"
+        "by": "quest-name"
       },
       "spotNames": [
         "変動座標点０号",
@@ -1914,7 +1914,7 @@
       "expected": {
         "found": true,
         "match": true,
-        "by": "spot-name+cells"
+        "by": "quest-name"
       },
       "spotNames": [
         "アトラス院",
@@ -2211,8 +2211,8 @@
       "freeQuests": 1,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "厭離穢土城",
@@ -2273,8 +2273,8 @@
       "freeQuests": 1,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "厭離穢土城",
@@ -2981,8 +2981,8 @@
       "freeQuests": 0,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "アトラス院",
@@ -3437,8 +3437,8 @@
       "freeQuests": 2,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "ウル",
@@ -3565,8 +3565,8 @@
       "freeQuests": 1,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "ウル",
@@ -3608,8 +3608,8 @@
       "freeQuests": 1,
       "expected": {
         "found": true,
-        "match": false,
-        "by": "mismatch"
+        "match": true,
+        "by": "quest-name"
       },
       "spotNames": [
         "厭離穢土城",
@@ -6397,7 +6397,7 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": false
+      "accepted": true
     },
     {
       "name": "vault-Jp-08",
@@ -6481,7 +6481,7 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": false
+      "accepted": true
     },
     {
       "name": "vault-Kr-14",
@@ -6572,6 +6572,49 @@
         "bottom": false,
         "top": false
       }
+    },
+    {
+      "name": "JP-beta9-shimousa-free-panel-match",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/beta9-shimousa.webp",
+      "targetName": "千手千眼",
+      "targetAp": 21,
+      "expected": {
+        "free": true,
+        "name": "千手千眼",
+        "verdict": "Match"
+      }
+    },
+    {
+      "name": "JP-beta9-shimousa-anchored-name",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/beta9-shimousa.webp",
+      "view": "spotPanel",
+      "targetName": "千手千眼",
+      "targetSpot": "庵",
+      "freeQuests": 1,
+      "spotNames": [
+        "庵"
+      ],
+      "expected": {
+        "match": true,
+        "by": "quest-name",
+        "found": true
+      }
+    },
+    {
+      "name": "vault-Jp-beta9-clear-new",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "view": "vault",
+      "file": "docs/reference-images/Jp/weekly-vault/beta9-clear-new.webp",
+      "screen": "List",
+      "gate": false,
+      "daily": false,
+      "accepted": true,
+      "acceptedIndex": 1
     }
   ],
   "imports": {

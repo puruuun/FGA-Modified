@@ -12,6 +12,8 @@ import java.security.MessageDigest
 interface IPatternFileLoader {
     fun load(file: File, color: Boolean, tag: String = file.name): Pattern
     fun save(pattern: Pattern, file: File)
+    fun loadOverlay(file: File): MapOverlay = throw UnsupportedOperationException("loadOverlay")
+    fun fromGray(pixels: ByteArray, size: Size): Pattern = throw UnsupportedOperationException("fromGray")
 }
 
 /**
@@ -30,8 +32,8 @@ class AtlasAssets(
 ) {
     companion object {
         const val BANNER_SCALE = 1.25
-        /** D-36: bumped so maps cached by older versions (beta.8 kept a blurred 8x8 placeholder as the map) are fetched once more. */
-        const val MAP_CACHE_FORMAT = 2
+        /** Issue #103: rebuild base-only caches with the Atlas gimmick layers. */
+        const val MAP_CACHE_FORMAT = 3
         /** Button body inside the 450x125 banner image. */
         val BANNER_BODY = Region(14, 36, 420, 63)
         private const val HOST = "static.atlasacademy.io"
@@ -66,6 +68,8 @@ class AtlasAssets(
         }
     }
 
+    private fun mapHash(map: WarMap) = hash(map.image + map.mapGimmicks.takeIf { it.isNotEmpty() }.orEmpty().joinToString())
+
     private fun dir() = File(cache, "assets").also { it.mkdirs() }
 
     private fun download(url: String, name: String): File {
@@ -95,7 +99,7 @@ class AtlasAssets(
      */
     fun map(server: String, war: WarInfo, mapId: Int): Pattern? = runCatching {
         val map = war.maps.firstOrNull { it.id == mapId } ?: error("war ${war.id} has no map $mapId")
-        val stem = "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${hash(map.image)}"
+        val stem = "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${mapHash(map)}"
         val placeholderMark = File(dir(), "$stem.placeholder")
         val textureRecord = File(dir(), "$stem.texture")
         if (placeholderMark.exists()) return@runCatching null
@@ -113,7 +117,28 @@ class AtlasAssets(
             val placeholder = loader.load(raw, color = false, tag = "map-${map.id}").use { texture ->
                 textureRecord.writeText("${texture.width}x${texture.height}")
                 if (PlaceholderMap.isPlaceholder(texture.width, texture.height)) true
-                else { texture.resize(Size(map.width, map.height)).use { loader.save(it, ready) }; false }
+                else {
+                    texture.resize(Size(map.width, map.height)).use { base ->
+                        val layers = map.mapGimmicks.filter { it.image.isNotBlank() }.sortedBy { it.depthOffset }
+                        val gray = if (layers.isEmpty()) null else checkNotNull(base.grayPixels()) { "map is not grayscale" }
+                        var composited = 0
+                        for (gimmick in layers) {
+                            runCatching {
+                                val layer = download(gimmick.image, "$server-gimmick-${hash(gimmick.image)}.png")
+                                // Decode one layer at a time rather than retaining every full-size ARGB image.
+                                MapGimmickCompositor.composite(checkNotNull(gray), map.width, map.height,
+                                    listOf(gimmick to loader.loadOverlay(layer)))
+                                composited++
+                            }.onFailure { log("map gimmick skipped map=$mapId image=${gimmick.image}: ${it.message}") }
+                        }
+                        if (composited == 0) loader.save(base, ready)
+                        else {
+                            loader.fromGray(checkNotNull(gray), Size(map.width, map.height)).use { loader.save(it, ready) }
+                            log("map composited map=$mapId layers=$composited")
+                        }
+                    }
+                    false
+                }
             }
             raw.delete()
             if (placeholder) {
@@ -130,6 +155,6 @@ class AtlasAssets(
     /** D-31: true once [map] found that the Atlas map image of [mapId] is only a placeholder texture. */
     fun isPlaceholder(server: String, war: WarInfo, mapId: Int): Boolean {
         val map = war.maps.firstOrNull { it.id == mapId } ?: return false
-        return File(dir(), "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${hash(map.image)}.placeholder").exists()
+        return File(dir(), "$server-map-v$MAP_CACHE_FORMAT-${map.id}-${mapHash(map)}.placeholder").exists()
     }
 }

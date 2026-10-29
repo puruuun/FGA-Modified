@@ -32,6 +32,7 @@ internal fun FixtureApi.verifyWeeklyRoute(): JSONObject {
         .put("nameCells", panel.nameCells?.let { "%.2f".format(it) } ?: "none")
         .put("expectedCells", "%.2f".format(QuestPanelMatch.nameCells(case.getString("targetName"))))
     if (panel.free) actual.put("rawAp", JSONArray(reader.apReadings().map { "${it.text.trim()}@${it.confidence}" }))
+    if (panel.free) actual.put("rawNames", JSONArray(reader.nameReadings(server).map { "${it.text.trim()}@${it.confidence}" }))
     val expected = case.getJSONObject("expected")
     for (key in expected.keys()) check(actual.get(key).toString() == expected.get(key).toString()) { "weeklyRoute $key: $actual != $expected" }
     return actual

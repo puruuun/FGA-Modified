@@ -90,12 +90,12 @@ class QuestPanelReader @Inject constructor(
         anchor.name.getPattern("anchored_panel_name").use { band ->
             val width = band.grayPixels()?.let { QuestPanelMatch.inkExtent(it, band.width, band.height) }
             val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
-            val bounds = band.grayPixels()?.let { QuestPanelMatch.inkBounds(it, band.width, band.height) }
-            val reads = band.crop(bounds ?: Region(0, 0, band.width, band.height)).use { image -> textReadings(image, lang) }
             // D-37: a spot with several free quests is voted among its own quests only.
             val scoped = QuestPanelMatch.spotScoped(spotQuestNames)
-            val name = if (scoped.isNotEmpty()) QuestPanelMatch.canonicalSpotQuestName(reads, scoped)
+            fun choose(reads: List<OcrText>) = if (scoped.isNotEmpty()) QuestPanelMatch.canonicalSpotQuestName(reads, scoped)
                 else if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
+            val reads = panelNameReadings(band, lang, ::choose)
+            val name = choose(reads)
             QuestPanel(true, ap, width?.let { QuestPanelMatch.cellsOf(it, server) }, width, name,
                 reads, spot?.text, spot?.raw.orEmpty(), nameBySpot = scoped.isNotEmpty() && name != null)
         }
@@ -108,6 +108,24 @@ class QuestPanelReader @Inject constructor(
             TextLineOcrOptions(scale = 4, rawGrayscale = true, invert = true, padding = 12, language = lang),
             TextLineOcrOptions(scale = 4, threshold = 0.5, invert = true, padding = 12, language = lang)
         ).map { ocr.detectTextLine(image, it) }
+
+    /** Issue #103: tight crops lose thin kanji strokes. Retry unresolved JP names with a little more context.
+     * Keep every primary vote: additional profiles cannot override a contradictory readable name. */
+    private fun panelNameReadings(band: Pattern, lang: String, choose: (List<OcrText>) -> String?): List<OcrText> {
+        val bounds = band.grayPixels()?.let { QuestPanelMatch.inkBounds(it, band.width, band.height) }
+            ?: Region(0, 0, band.width, band.height)
+        val primary = band.crop(bounds).use { textReadings(it, lang) }
+        if (lang != "jpn_weekly" || choose(primary) != null) return primary
+        val left = maxOf(0, bounds.x - 4); val top = maxOf(0, bounds.y - 4)
+        val padded = Region(left, top, minOf(band.width, bounds.right + 4) - left, minOf(band.height, bounds.bottom + 4) - top)
+        return primary + band.crop(padded).use { image ->
+            listOf(
+                TextLineOcrOptions(scale = 1, threshold = 0.55, invert = true, padding = 12, language = lang),
+                TextLineOcrOptions(scale = 3, threshold = 0.55, invert = true, padding = 12, language = lang),
+                TextLineOcrOptions(scale = 3, rawGrayscale = true, invert = true, padding = 12, language = lang)
+            ).map { ocr.detectTextLine(image, it) }
+        }
+    }
 
     fun spotReadings(server: GameServer): List<OcrText> = loc.enlargedSpotName.getPattern("enlarged_spot_name").use { band ->
         val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
@@ -149,9 +167,12 @@ class QuestPanelReader @Inject constructor(
         QuestPanelMatch.inkExtent(gray, pattern.width, pattern.height)
     }
 
-    fun nameReadings(server: GameServer, slot: Int = 0): List<OcrText> =
+    fun nameReadings(server: GameServer, slot: Int = 0, questNames: Collection<String> = emptyList()): List<OcrText> =
         loc.slot(loc.name, slot).getPattern("quest_name").use { band ->
             val lang = if (server is GameServer.Kr) "kor_weekly" else "jpn_weekly"
+            if (server is GameServer.Jp) return@use panelNameReadings(band, lang) { reads ->
+                if (questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads, questNames)
+            }
             val width=(nameWidthPx(slot) ?: band.width)+8
             band.crop(Region(0,0,minOf(width,band.width),band.height)).use { pattern ->
                 listOf(2,3).map { scale -> ocr.detectTextLine(pattern,
@@ -160,7 +181,7 @@ class QuestPanelReader @Inject constructor(
         }
 
     fun readName(server: GameServer, slot: Int = 0, questNames: Collection<String> = emptyList()): String? {
-        val reads=nameReadings(server,slot)
+        val reads=nameReadings(server,slot,questNames)
         return if(questNames.isEmpty()) QuestPanelMatch.nameConsensus(reads) else QuestPanelMatch.canonicalName(reads,questNames)
     }
 

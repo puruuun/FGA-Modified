@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.ui.res.stringResource
+import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.ui.icon
@@ -17,9 +18,6 @@ fun LazyListScope.additionalFeaturesGroup(
     importOriginalData: () -> Unit,
     importPortraits: () -> Unit
 ) {
-    item {
-        GameAreaPreference(prefs, preview)
-    }
     item {
         prefs.checkForUpdates.SwitchPreference(
             title = stringResource(R.string.p_check_for_updates),
@@ -43,12 +41,14 @@ fun LazyListScope.additionalFeaturesGroup(
             onClick = importPortraits
         )
     }
-    item {
-        prefs.supportReaderDiagnostics.SwitchPreference(
-            title = stringResource(R.string.p_support_reader_diagnostics),
-            summary = stringResource(R.string.p_support_reader_diagnostics_summary),
-            icon = icon(R.drawable.ic_bug)
-        )
+    if (BuildConfig.BUILD_TYPE == "beta") {
+        item {
+            prefs.supportReaderDiagnostics.SwitchPreference(
+                title = stringResource(R.string.p_support_reader_diagnostics),
+                summary = stringResource(R.string.p_support_reader_diagnostics_summary),
+                icon = icon(R.drawable.ic_bug)
+            )
+        }
     }
 
     item {
@@ -66,8 +66,10 @@ fun LazyListScope.additionalFeaturesGroup(
     item {
         prefs.questItemControl.enabled.SwitchPreference(
             title = stringResource(R.string.p_enable_quest_item_control),
-            summary = stringResource(R.string.p_enable_quest_item_control_summary),
             icon = icon(R.drawable.ic_gift)
         )
+    }
+    item {
+        GameAreaPreference(prefs, preview)
     }
 }

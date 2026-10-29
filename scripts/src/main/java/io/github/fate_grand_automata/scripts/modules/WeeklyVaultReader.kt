@@ -9,26 +9,17 @@ import io.github.fate_grand_automata.scripts.locations.WeeklyVaultAnchor
 import io.github.lib_automata.MeanColor
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
+import io.github.lib_automata.ScriptAbortException
 import io.github.lib_automata.TextLineOcrOptions
 import java.text.Normalizer
 import javax.inject.Inject
 
 data class VaultColor(val hue: Double, val saturation: Double) {
-    val yellow get() = hue in 35.0..60.0 && saturation >= 0.5
+    val yellow get() = hue in 38.0..52.0 && saturation >= 0.80
 }
 
 object WeeklyVaultPolicy {
     fun normalize(text: String) = Normalizer.normalize(text, Normalizer.Form.NFKC).replace(Regex("[\\s\\p{P}\\p{S}]"), "")
-    fun beginner(text: String, server: GameServer): Boolean {
-        val name = normalize(text)
-        return when (server) {
-            is GameServer.Jp -> name.contains("宝物庫") && name.contains("初級") &&
-                listOf("中級", "上級", "超級", "極級").none(name::contains)
-            is GameServer.Kr -> name.contains("보물창고") && name.contains("초급") &&
-                listOf("중급", "상급", "초월급", "극급").none(name::contains)
-            else -> false
-        }
-    }
     fun consensus(reads: List<OcrText>): String? = reads.filter { it.text.isNotBlank() && it.confidence >= 50 }
         .groupBy { normalize(it.text) }.filter { it.value.size >= 2 }.maxByOrNull { it.value.size }?.key
 
@@ -47,10 +38,10 @@ object WeeklyVaultPolicy {
 
 data class VaultPanel(val anchor: WeeklyVaultAnchor, val color: VaultColor?, val name: String?,
                       val rawNames: List<OcrText>, val ap: Int?, val accepted: Boolean) {
-    val reason get() = when { color?.yellow != true -> "vault colour mismatch"; !accepted -> "vault name mismatch"; else -> "accepted" }
+    val reason get() = if (accepted) "accepted" else "vault colour mismatch"
 }
 
-/** The name and yellow background both authorize a tap; displayed campaign AP is evidence only. */
+/** The first yellow panel is Beginner. Name and displayed campaign AP are log-only evidence. */
 class WeeklyVaultReader @Inject constructor(
     api: IFgoAutomataApi, private val loc: WeeklyRouteLocations, private val ocr: OcrService,
     private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
@@ -67,13 +58,18 @@ class WeeklyVaultReader @Inject constructor(
 
     fun anchors() = anchorMatches().sortedBy { it.region.y }.map { WeeklyVaultAnchor(it.region.location) }.take(8)
 
+    private fun <T> diagnostic(read: () -> T): T? = try { read() }
+        catch (e: ScriptAbortException) { throw e }
+        catch (e: InterruptedException) { throw e }
+        catch (_: Exception) { null }
+
     fun read(): List<VaultPanel> {
         val anchors = useSameSnapIn { anchors() }
         return anchors.map { anchor ->
             val color = useColor { anchor.color.getPattern().use { it.meanColor()?.let(WeeklyVaultPolicy::color) } }
             val (reads, ap) = useSameSnapIn {
                 val language = if (prefs.gameServer is GameServer.Kr) "kor_weekly" else "jpn_weekly"
-                val reads = anchor.name.getPattern().use { image ->
+                val reads = diagnostic { anchor.name.getPattern().use { image ->
                     listOf(
                         TextLineOcrOptions(scale = 3, threshold = 0.85, invert = true, padding = 12, language = language),
                         TextLineOcrOptions(scale = 4, threshold = 0.85, invert = true, padding = 12, language = language),
@@ -81,15 +77,15 @@ class WeeklyVaultReader @Inject constructor(
                     ).map { ocr.detectTextLine(image, it) }
                 } + anchor.tightName.getPattern().use { image ->
                     ocr.detectTextLine(image, TextLineOcrOptions(scale = 2, threshold = 0.75, invert = true, padding = 12, language = language))
-                }
-                val ap = anchor.ap.getPattern().use { image ->
+                } }.orEmpty()
+                val ap = diagnostic { anchor.ap.getPattern().use { image ->
                     QuestPanelMatch.apConsensus(AP_PROFILES.map { ocr.detectTextLine(image, it) })
-                }
+                } }
                 reads to ap
             }
             val name = WeeklyVaultPolicy.consensus(reads)
             VaultPanel(anchor, color, name, reads, ap,
-                color?.yellow == true && name != null && WeeklyVaultPolicy.beginner(name, prefs.gameServer))
+                color?.yellow == true)
         }
     }
 }
