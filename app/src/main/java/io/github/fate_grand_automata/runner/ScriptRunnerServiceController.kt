@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
+import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
 import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.fate_grand_automata.util.ImageLoader
 import io.github.fate_grand_automata.util.ScreenOffReceiver
@@ -36,6 +37,7 @@ class ScriptRunnerServiceController @Inject constructor(
     private val displayHelper: DisplayHelper,
     private val messages: ScriptMessages,
     private val messageBox: ScriptRunnerMessageBox,
+    private val gameAreaPreview: GameAreaPreviewManager,
     @param:ServiceCoroutineScope private val scope: CoroutineScope
 ) {
     private val screenOffReceiver = ScreenOffReceiver()
@@ -52,6 +54,7 @@ class ScriptRunnerServiceController @Inject constructor(
 
         overlay.hide()
         scope.cancel()
+        gameAreaPreview.endScript()
 
         screenOffReceiver.unregister(service)
     }

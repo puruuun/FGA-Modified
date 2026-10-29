@@ -11,7 +11,15 @@ import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 
-fun LazyListScope.additionalFeaturesGroup(prefs: PrefsCore, importOriginalData: () -> Unit, importPortraits: () -> Unit) {
+fun LazyListScope.additionalFeaturesGroup(
+    prefs: PrefsCore,
+    preview: GameAreaPreviewManager,
+    importOriginalData: () -> Unit,
+    importPortraits: () -> Unit
+) {
+    item {
+        GameAreaPreference(prefs, preview)
+    }
     item {
         prefs.checkForUpdates.SwitchPreference(
             title = stringResource(R.string.p_check_for_updates),

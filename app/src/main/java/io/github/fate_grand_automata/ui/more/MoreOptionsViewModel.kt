@@ -37,6 +37,7 @@ import javax.inject.Inject
 class MoreOptionsViewModel @Inject constructor(
     val storageProvider: StorageProvider,
     val prefsCore: PrefsCore,
+    val gameAreaPreview: GameAreaPreviewManager,
     private val originalImporter: OriginalFgaImportService,
     private val portraitImporter: ServantPortraitImporter
 ) : ViewModel() {

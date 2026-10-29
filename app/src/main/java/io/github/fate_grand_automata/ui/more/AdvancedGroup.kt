@@ -1,41 +1,22 @@
 package io.github.fate_grand_automata.ui.more
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardDefaults.cardElevation
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.root.SuperUser
-import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.icon
-import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
-import io.github.fate_grand_automata.util.stringRes
 
 fun LazyListScope.advancedGroup(
     prefs: PrefsCore,
@@ -86,39 +67,6 @@ fun LazyListScope.advancedGroup(
     }
 
     item {
-        Column {
-            prefs.gameAreaMode.ListPreference(
-                title = stringResource(R.string.p_game_area_mode),
-                icon = icon(Icons.Default.Fullscreen),
-                entries = GameAreaMode.entries
-                    .associateWith { stringResource(it.stringRes) }
-            )
-
-            val gameAreaMode by prefs.gameAreaMode.remember()
-
-            AnimatedVisibility(gameAreaMode == GameAreaMode.Custom) {
-                Card(
-                    modifier = Modifier.padding(5.dp),
-                    elevation = cardElevation(5.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.scale(0.9f)
-                    ) {
-                        prefs.gameOffsetLeft.customOffset(stringResource(R.string.p_game_area_custom_left))
-                        prefs.gameOffsetRight.customOffset(stringResource(R.string.p_game_area_custom_right))
-                        prefs.gameOffsetTop.customOffset(stringResource(R.string.p_game_area_custom_top))
-                        prefs.gameOffsetBottom.customOffset(stringResource(R.string.p_game_area_custom_bottom))
-                    }
-                }
-            }
-        }
-    }
-
-    item {
         prefs.stageCounterNew.SwitchPreference(
             title = stringResource(R.string.p_thresholded_stage_counter),
             icon = icon(R.drawable.ic_counter)
@@ -130,23 +78,6 @@ fun LazyListScope.advancedGroup(
             title = stringResource(R.string.p_license),
             icon = icon(R.drawable.ic_info),
             onClick = goToLicense
-        )
-    }
-}
-
-@Composable
-private fun Pref<Int>.customOffset(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        var value by remember()
-
-        Text(text)
-        Stepper(
-            value = value,
-            onValueChange = { value = it },
-            valueRange = 0..999
         )
     }
 }

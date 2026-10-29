@@ -462,6 +462,11 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="p_shuffle_cards_when_no_effective">"No effective cards"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"No cards matching NP"</string>
     <string name="p_shuffle_cards_when_first_turn_start_condition">Start condition not met on first turn</string>
+    <string name="p_game_area">Game area</string>
+    <string name="p_game_area_preview">Area preview</string>
+    <string name="p_game_area_preview_summary">Red: configured area / Green: actual recognition area. Align the green border with the edges of the game image.</string>
+    <string name="p_game_area_preview_disabled">Turn on the accessibility service to show the preview.</string>
+    <string name="game_area_preview_dimensions">Region %1$d×%2$d · Game %3$d×%4$d · Ratio %5$.3f</string>
     <string name="p_game_area_mode">"Game Area Mode"</string>
     <string name="p_game_area_default">"Default"</string>
     <string name="p_game_area_duo">"Surface Duo"</string>

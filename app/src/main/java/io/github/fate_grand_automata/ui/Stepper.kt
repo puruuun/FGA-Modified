@@ -60,6 +60,7 @@ fun Stepper(
     valueRange: IntRange,
     enabled: Boolean = true,
     delta: Int = 1,
+    onValueChanging: ((Int) -> Unit)? = null,
     valueRepresentation: (Int) -> String = { it.toString() }
 ) {
     var currentValue by remember(value) { mutableStateOf(value) }
@@ -71,7 +72,10 @@ fun Stepper(
     ) {
         DeltaButton(
             currentValue = currentValue,
-            onCurrentValueChange = { currentValue = it },
+            onCurrentValueChange = {
+                currentValue = it
+                onValueChanging?.invoke(it)
+            },
             onCommit = onCommit,
             valueRange = valueRange,
             delta = -delta,
@@ -90,7 +94,10 @@ fun Stepper(
 
         DeltaButton(
             currentValue = currentValue,
-            onCurrentValueChange = { currentValue = it },
+            onCurrentValueChange = {
+                currentValue = it
+                onValueChanging?.invoke(it)
+            },
             onCommit = onCommit,
             valueRange = valueRange,
             delta = delta,

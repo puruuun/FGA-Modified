@@ -32,6 +32,7 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.exit.BattleExit
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncher
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncherResponse
+import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
 import io.github.fate_grand_automata.ui.runner.ScriptRunnerUIState
 import io.github.fate_grand_automata.ui.runner.ScriptRunnerUIStateHolder
 import io.github.fate_grand_automata.ui.support_img_namer.showSupportImageNamer
@@ -53,6 +54,7 @@ import io.github.lib_automata.ScreenshotService
 import io.github.lib_automata.ScriptAbortException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -78,7 +80,8 @@ class ScriptManager @Inject constructor(
     private val messageBox: ScriptRunnerMessageBox,
     @param:ServiceCoroutineScope private val scope: CoroutineScope,
     private val launcherResponseHandler: ScriptLauncherResponseHandler,
-    private val weeklyRoute: WeeklyRouteFlow
+    private val weeklyRoute: WeeklyRouteFlow,
+    private val gameAreaPreview: GameAreaPreviewManager
 ) {
     var scriptState: ScriptState = ScriptState.Stopped
         private set
@@ -170,6 +173,7 @@ class ScriptManager @Inject constructor(
     }
 
     private fun onScriptExit(e: Exception) = scope.launch {
+        withContext(Dispatchers.Main) { gameAreaPreview.endScript() }
         uiStateHolder.uiState = ScriptRunnerUIState.Idle
         uiStateHolder.isPlayButtonEnabled = false
         imageLoader.clearSupportCache()
@@ -528,57 +532,66 @@ class ScriptManager @Inject constructor(
         ocrService = hiltEntryPoint.ocrService()
 
         scope.launch {
-            /*
-             * Screen detection needs a screenshot, which can fail when the projection never
-             * delivered a frame. Don't let that take the whole app down.
-             */
-            val detectedMode = try {
-                hiltEntryPoint.autoDetect().get()
-            } catch (e: Exception) {
-                Timber.e(e, "Screen detection failed")
+            val previewWasVisible = withContext(Dispatchers.Main) { gameAreaPreview.beginScript() }
+            try {
+                // Let MediaProjection replace the last frame containing the settings overlay.
+                if (previewWasVisible) delay(100.milliseconds)
+                /*
+                 * Screen detection needs a screenshot, which can fail when the projection never
+                 * delivered a frame. Don't let that take the whole app down.
+                 */
+                val detectedMode = try {
+                    hiltEntryPoint.autoDetect().get()
+                } catch (e: Exception) {
+                    Timber.e(e, "Screen detection failed")
 
-                val msg = if (e is KnownException)
-                    e.reason.msg(context)
-                else "${context.getString(R.string.unexpected_error)}: ${e.message}"
+                    val msg = if (e is KnownException)
+                        e.reason.msg(context)
+                    else "${context.getString(R.string.unexpected_error)}: ${e.message}"
+
+                    uiStateHolder.isPlayButtonEnabled = true
+                    releaseOcrService()
+
+                    messageBox.show(context.getString(R.string.unexpected_error), msg)
+
+                    return@launch
+                }
+
+                // D-10: no settings dialog on a skill / append screen that has no servant selected.
+                if ((detectedMode == ScriptModeEnum.SkillLevel || detectedMode == ScriptModeEnum.AppendLevel) &&
+                    !hiltEntryPoint.autoDetect().skillServantSelected()
+                ) {
+                    uiStateHolder.isPlayButtonEnabled = true
+                    releaseOcrService()
+
+                    messageBox.show(
+                        context.getString(R.string.script_exited),
+                        skillLevelStepMessage(context, SkillLevelStep.Select, context.getString(R.string.skill_level_select_servant))
+                    )
+
+                    return@launch
+                }
+
+                val resp = scriptPicker(context, detectedMode)
 
                 uiStateHolder.isPlayButtonEnabled = true
-                releaseOcrService()
+                val effectiveResp = resp
+                launcherResponseHandler.handle(effectiveResp)
 
-                messageBox.show(context.getString(R.string.unexpected_error), msg)
-
-                return@launch
-            }
-
-            // D-10: no settings dialog on a skill / append screen that has no servant selected.
-            if ((detectedMode == ScriptModeEnum.SkillLevel || detectedMode == ScriptModeEnum.AppendLevel) &&
-                !hiltEntryPoint.autoDetect().skillServantSelected()
-            ) {
-                uiStateHolder.isPlayButtonEnabled = true
-                releaseOcrService()
-
-                messageBox.show(
-                    context.getString(R.string.script_exited),
-                    skillLevelStepMessage(context, SkillLevelStep.Select, context.getString(R.string.skill_level_select_servant))
-                )
-
-                return@launch
-            }
-
-            val resp = scriptPicker(context, detectedMode)
-
-            uiStateHolder.isPlayButtonEnabled = true
-            val effectiveResp = resp
-            launcherResponseHandler.handle(effectiveResp)
-
-            if (effectiveResp !is ScriptLauncherResponse.Cancel) {
-                delay(500.milliseconds)
-                runEntryPoint(
-                    screenshotService = screenshotService,
-                    entryPointProvider = { getEntryPoint(hiltEntryPoint) }
-                )
-            } else {
-                // onScriptExit never runs on this path
-                releaseOcrService()
+                if (effectiveResp !is ScriptLauncherResponse.Cancel) {
+                    delay(500.milliseconds)
+                    runEntryPoint(
+                        screenshotService = screenshotService,
+                        entryPointProvider = { getEntryPoint(hiltEntryPoint) }
+                    )
+                } else {
+                    // onScriptExit never runs on this path
+                    releaseOcrService()
+                }
+            } finally {
+                if (scriptState is ScriptState.Stopped) {
+                    withContext(NonCancellable + Dispatchers.Main) { gameAreaPreview.endScript() }
+                }
             }
         }
     }

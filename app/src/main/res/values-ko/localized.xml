@@ -286,6 +286,11 @@
     <string name="p_game_area_custom_top">"상단 좌표"</string>
     <string name="p_game_area_default">"기본값"</string>
     <string name="p_game_area_duo">"Surface Duo"</string>
+    <string name="p_game_area">게임 영역</string>
+    <string name="p_game_area_preview">영역 미리보기</string>
+    <string name="p_game_area_preview_summary">빨간 선: 설정한 영역 / 초록 선: 실제 인식 영역. 초록 선을 게임 화면 가장자리에 맞추세요</string>
+    <string name="p_game_area_preview_disabled">접근성 서비스를 켜야 미리보기가 표시됩니다</string>
+    <string name="game_area_preview_dimensions">영역 %1$d×%2$d · 게임 %3$d×%4$d · 비율 %5$.3f</string>
     <string name="p_game_area_mode">"게임 영역 설정"</string>
     <string name="p_game_server">"게임 서버"</string>
     <string name="p_game_server_auto_detect">"자동 감지"</string>

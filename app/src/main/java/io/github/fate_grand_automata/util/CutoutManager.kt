@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
+import io.github.lib_automata.customGameArea
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -85,9 +86,10 @@ class CutoutManager @Inject constructor(
                 val r = prefsCore.gameOffsetRight.get()
                 val b = prefsCore.gameOffsetBottom.get()
 
-                // if the camera is on the right, use the right offset as x
-                val x = if (display.rotation == Surface.ROTATION_270) r else l
-                Region(x, t, w - l - r, h - t - b)
+                customGameArea(
+                    Size(w, h), l, t, r, b,
+                    reverseLandscape = display.rotation == Surface.ROTATION_270
+                )
             }
         }
     }

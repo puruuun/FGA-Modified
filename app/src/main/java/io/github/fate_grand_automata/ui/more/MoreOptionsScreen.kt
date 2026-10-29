@@ -31,6 +31,7 @@ fun MoreOptionsScreen(
     navigateToLicense: () -> Unit,
     navigateToWeeklySettings: () -> Unit = {}
 ) {
+    GameAreaPreviewEffect(vm.prefsCore, vm.gameAreaPreview)
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.pickedDirectory(it)
     }
@@ -128,7 +129,7 @@ private fun MoreOptionsContent(
                             }
 
                             MoreSettingsGroup.AdditionalFeatures -> {
-                                additionalFeaturesGroup(vm.prefsCore, vm::openOriginalImport, vm::openPortraitImport)
+                                additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview, vm::openOriginalImport, vm::openPortraitImport)
                                 item {
                                     io.github.fate_grand_automata.ui.prefs.Preference(
                                         title = stringResource(R.string.weekly_route_settings),

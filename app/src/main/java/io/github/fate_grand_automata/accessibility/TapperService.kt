@@ -6,11 +6,17 @@ import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import dagger.hilt.android.AndroidEntryPoint
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
+import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
 import timber.log.Timber
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class TapperService : AccessibilityService() {
+    @Inject lateinit var gameAreaPreview: GameAreaPreviewManager
+
     companion object {
         private val mServiceStarted = mutableStateOf(false)
         val serviceStarted: State<Boolean> = mServiceStarted
@@ -30,6 +36,7 @@ class TapperService : AccessibilityService() {
             packageNames = GameServers.packageNames.keys.toTypedArray()
         }
 
+        gameAreaPreview.hide()
         instance = this
 
         super.onServiceConnected()
@@ -38,9 +45,20 @@ class TapperService : AccessibilityService() {
     override fun onUnbind(intent: Intent?): Boolean {
         Timber.i("Accessibility Service unbind")
         Toast.makeText(this, "FGA Accessibility stopped", Toast.LENGTH_SHORT).show()
-        instance = null
+        if (instance === this) {
+            gameAreaPreview.hide()
+            instance = null
+        }
 
         return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        if (instance === this) {
+            gameAreaPreview.hide()
+            instance = null
+        }
+        super.onDestroy()
     }
 
     /**
