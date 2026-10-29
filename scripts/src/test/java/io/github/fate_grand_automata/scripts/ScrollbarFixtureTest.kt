@@ -62,11 +62,14 @@ class ScrollbarFixtureTest {
         assertEquals(1, progress.pages)
         assertEquals(1, progress.selected)
     }
-    @Test fun `FP existing sixteen nine page is not at the bottom`() {
-        val image = image("Kr/fp-sell/18.png")
+    @Test fun `FP existing sixteen nine top and middle pages are not at the bottom`() {
         val reader = FpSellReader.scrollbarBoxes
-        assertTrue(reader.rail(box(image, 1022, 330, 24, reader)))
-        assertFalse(reader.thumb(box(image, 1022, 665, 6, reader)))
+        // 18 is at the top; 27 and 28 have the thumb around y=275 and y=461 respectively.
+        for (file in listOf("18.png", "27.png", "28.png")) {
+            val image = image("Kr/fp-sell/$file")
+            assertTrue(reader.rail(box(image, 1022, 330, 24, reader)), file)
+            assertFalse(reader.thumb(box(image, 1022, 665, 6, reader)), file)
+        }
     }
     @Test fun `uniform dark and bright boxes have no rail or thumb and missing samples are rejected`() {
         for (reader in listOf(ListScrollbar.boxes, FpSellReader.scrollbarBoxes)) {
