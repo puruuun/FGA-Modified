@@ -43,17 +43,19 @@ object PlaceholderMap {
         fun target(spotX: Double, spotY: Double): Target? {
             if (!widthFit || !spotX.isFinite() || !spotY.isFinite()) return null
             val edges = Edge.entries.filter { it == Edge.Top || range > 0 }
+            val iconY = spotY - MapView.ICON_OFFSET_MAP
             for (edge in edges) {
                 val border = fit(edge)
-                val shift = MapView.edgeDrag(border.screenX(spotX), border.screenY(spotY), viewWidth, viewHeight)?.y ?: 0.0
+                val shift = MapView.edgeDrag(border.screenX(spotX), border.screenY(iconY), viewWidth, viewHeight)?.y ?: 0.0
                 val fit = border.copy(originY = (border.originY + shift).coerceIn(-range, 0.0))
                 val x = fit.screenX(spotX)
-                val y = fit.screenY(spotY)
+                val y = fit.screenY(iconY)
                 if (MapView.isTappable(x, y, viewWidth, viewHeight)) return Target(edge, ScreenPoint(x, y), fit)
             }
             for (edge in edges) {
                 val fit = fit(edge)
-                MapView.visibleTap(fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)?.let { return Target(edge, it, fit) }
+                MapView.resolveTap(fit.screenX(spotX), fit.screenY(iconY), fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)
+                    ?.let { return Target(edge, it.point, fit) }
             }
             return null
         }

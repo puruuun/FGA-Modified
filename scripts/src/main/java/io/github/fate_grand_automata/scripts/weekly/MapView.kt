@@ -39,7 +39,10 @@ object MapView {
             // Include the full diamond and a 12px margin; wide UI sits 42px higher.
             x < portraitRight && y > portraitTop -> true                    // master portrait
             x < 410 * s + inset && y > 548 * s -> true                       // level and AP status
-            x in 375 * s + inset..600 * s + inset && y > 560 * s -> true     // gift box and mission note
+            // Gift box, mission clipboard and their "기간한정" / "주간 미션" bubbles. Measured at 720p: the bubbles reach
+            // x 378..593 and top y=560 on 16:9 and tablet (1280x720 captures), x 476..691 and top y=519 on wide (the map
+            // UI sits 42 px higher); 12px margin each. On wide the right bubble edge is 13 px beyond the 16:9 edge plus inset.
+            x in 366 * s + inset..(if (inset > 0) 703 * s else 605 * s) && y > (if (inset > 0) 507 else 548) * s -> true
             fromRight < 250 * s + inset && y > 605 * s -> true               // menu button
             fromRight < 90 * s + inset && y in 100 * s..440 * s -> true      // quest list scroll bar column
             else -> false
@@ -74,6 +77,26 @@ object MapView {
             }
         }
         return null
+    }
+
+    /**
+     * The spot icon's centre sits this many Atlas map pixels above the spot point (measured on the KR Okeanos capture:
+     * icon art centre about 21 px above the point at a 0.889 fit; the name plate sits below it).
+     */
+    const val ICON_OFFSET_MAP = 25.0
+
+    /** Where a tap goes: the icon centre, the icon shifted to its visible part, or the plain spot point. */
+    data class TapChoice(val point: ScreenPoint, val kind: String)
+
+    /**
+     * Tap target for a spot whose icon centre is ([iconX], [iconY]) and whose Atlas point is ([spotX], [spotY]), screen
+     * 720p: the icon centre; else the nearest clear point of the icon ([visibleTap]); else the spot point when that is
+     * clear; else null. A covered point is never returned.
+     */
+    fun resolveTap(iconX: Double, iconY: Double, spotX: Double, spotY: Double, width: Int, height: Int): TapChoice? = when {
+        isTappable(iconX, iconY, width, height) -> TapChoice(ScreenPoint(iconX, iconY), "icon")
+        else -> visibleTap(iconX, iconY, width, height)?.let { TapChoice(it, "icon-shifted") }
+            ?: if (isTappable(spotX, spotY, width, height)) TapChoice(ScreenPoint(spotX, spotY), "spot") else null
     }
 
     const val MAX_SHIFT = 30.0

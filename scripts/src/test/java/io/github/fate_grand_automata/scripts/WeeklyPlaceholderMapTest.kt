@@ -44,7 +44,7 @@ class WeeklyPlaceholderMapTest {
         assertEquals(PlaceholderMap.Edge.Bottom, cold.edge)
         assertTrue(MapView.isTappable(cold.point.x, cold.point.y, 1280, 720))
         assertEquals(953.0 * 0.625, cold.point.x, 0.001)
-        assertEquals(1047.0 * 0.625 - 180, cold.point.y, 0.001)
+        assertEquals((1047.0 - MapView.ICON_OFFSET_MAP) * 0.625 - 180, cold.point.y, 0.001) // the icon centre, not the spot point
     }
 
     @Test fun `every Shin free quest spot gets a tap point`() {
