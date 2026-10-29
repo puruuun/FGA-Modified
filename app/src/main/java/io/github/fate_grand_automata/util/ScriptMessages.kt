@@ -201,17 +201,20 @@ class ScriptMessages @Inject constructor(
                 )
             }
             is ScriptNotify.CommandStartWaiting -> notification.status(
-                context.getString(R.string.command_start_waiting, action.servant, action.count, action.required)
+                context.getString(R.string.command_start_waiting_colours, action.servant, action.count, action.required, action.colours.toString())
+                    .also { Timber.i(it) }
             )
             is ScriptNotify.CommandStartWaitingBoth -> notification.status(
                 context.getString(
-                    R.string.command_start_waiting_both,
+                    R.string.command_start_waiting_both_colours,
                     action.firstServant, action.firstCount, action.firstRequired,
-                    action.secondServant, action.secondCount, action.secondRequired
-                )
+                    action.secondServant, action.secondCount, action.secondRequired,
+                    action.firstColours.toString(), action.secondColours.toString()
+                ).also { Timber.i(it) }
             )
             is ScriptNotify.CommandStarted -> notification.status(
-                context.getString(R.string.command_started_profile, action.profileIndex + 1, action.stage, action.turn)
+                context.getString(R.string.command_started_profile_colours, action.profileIndex + 1, action.stage, action.turn, action.colours.toString())
+                    .also { Timber.i(it) }
             )
             is ScriptNotify.CommandStartSkipped -> {
                 val msg = context.getString(R.string.command_start_skipped, action.waitingTurns)

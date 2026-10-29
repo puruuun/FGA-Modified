@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
+import io.github.fate_grand_automata.scripts.models.CardColourCounts
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.ParsedCard
 import io.github.fate_grand_automata.scripts.models.TeamSlot
@@ -20,6 +22,14 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
     val secondaryTarget = if (secondaryEnabled) TeamSlot.list[config.secondaryStartServant.coerceIn(1..3) - 1] else null
     val secondaryRequired = if (secondaryEnabled) config.secondaryStartCardCount.coerceIn(1..5) else 0
     val hasDuplicateTargets get() = secondaryEnabled && target == secondaryTarget
+    private val primaryColours = CardColourCounts(
+        config.commandStartBuster.coerceIn(0..5), config.commandStartArts.coerceIn(0..5), config.commandStartQuick.coerceIn(0..5)
+    )
+    private val primaryCombineMode = config.commandStartCombineMode
+    private val secondaryColours = if (secondaryEnabled) CardColourCounts(
+        config.secondaryStartBuster.coerceIn(0..5), config.secondaryStartArts.coerceIn(0..5), config.secondaryStartQuick.coerceIn(0..5)
+    ) else CardColourCounts()
+    private val secondaryCombineMode = if (secondaryEnabled) config.secondaryStartCombineMode else CommandStartCombineMode.And
     private val maxWaitingTurns = config.commandStartMaxTurns.coerceAtLeast(0)
 
     private var start: CommandPosition? = null
@@ -32,8 +42,11 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
     val isWaiting get() = mode == CommandStartMode.CardCount && start == null
 
     sealed class Result {
-        data class Ready(val count: Int, val profileIndex: Int = 0) : Result()
-        data class Wait(val count: Int, val secondaryCount: Int? = null) : Result()
+        data class Ready(val count: Int, val profileIndex: Int = 0, val colours: CardColourCounts = CardColourCounts()) : Result()
+        data class Wait(
+            val count: Int, val secondaryCount: Int? = null,
+            val colours: CardColourCounts = CardColourCounts(), val secondaryColours: CardColourCounts? = null
+        ) : Result()
         data object RecognitionFailed : Result()
         data object TargetUnavailable : Result()
         data object WaitLimitReached : Result()
@@ -51,13 +64,36 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
             cards.any { !it.isStunned && (it.servant == TeamSlot.Unknown || it.type == CardTypeEnum.Unknown) }
         ) return Result.RecognitionFailed
 
-        val count = if (target in deployed) cards.count { it.servant == target && !it.isStunned } else 0
-        val secondCount = if (secondaryTarget in deployed) cards.count { it.servant == secondaryTarget && !it.isStunned } else 0
+        fun usableCards(slot: TeamSlot?) = cards.filter { slot in deployed && it.servant == slot && !it.isStunned }
+        val primary = usableCards(target)
+        val secondary = usableCards(secondaryTarget)
+        val colours = countColours(primary)
+        val secondColours = countColours(secondary)
         return when {
-            count >= requiredCards -> Result.Ready(count)
-            secondaryEnabled && secondCount >= secondaryRequired -> Result.Ready(secondCount, 1)
+            meets(primary.size, colours, requiredCards, primaryColours, primaryCombineMode) -> Result.Ready(primary.size, 0, colours)
+            secondaryEnabled && meets(secondary.size, secondColours, secondaryRequired, secondaryColours, secondaryCombineMode) ->
+                Result.Ready(secondary.size, 1, secondColours)
             maxWaitingTurns > 0 && waitingTurns >= maxWaitingTurns -> Result.WaitLimitReached
-            else -> Result.Wait(count, secondCount.takeIf { secondaryEnabled })
+            else -> Result.Wait(primary.size, secondary.size.takeIf { secondaryEnabled }, colours, secondColours.takeIf { secondaryEnabled })
+        }
+    }
+
+    private fun countColours(cards: List<ParsedCard>) = CardColourCounts(
+        cards.count { it.type == CardTypeEnum.Buster },
+        cards.count { it.type == CardTypeEnum.Arts },
+        cards.count { it.type == CardTypeEnum.Quick }
+    )
+
+    private fun meets(count: Int, colours: CardColourCounts, required: Int, minimums: CardColourCounts, mode: CommandStartCombineMode): Boolean {
+        val rules = listOfNotNull(
+            count >= required,
+            (colours.buster >= minimums.buster).takeIf { minimums.buster > 0 },
+            (colours.arts >= minimums.arts).takeIf { minimums.arts > 0 },
+            (colours.quick >= minimums.quick).takeIf { minimums.quick > 0 }
+        )
+        return when (mode) {
+            CommandStartCombineMode.And -> rules.all { it }
+            CommandStartCombineMode.Or -> rules.any { it }
         }
     }
 

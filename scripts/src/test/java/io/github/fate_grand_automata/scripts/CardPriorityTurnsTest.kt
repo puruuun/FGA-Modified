@@ -152,6 +152,10 @@ class CardPriorityTurnsTest {
         every { config.commandStartMode } returns mode
         every { config.commandStartServant } returns 1
         every { config.commandStartCardCount } returns 2
+        every { config.commandStartBuster } returns 0
+        every { config.commandStartArts } returns 0
+        every { config.commandStartQuick } returns 0
+        every { config.commandStartCombineMode } returns io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode.And
         every { config.commandStartMaxTurns } returns 0
         every { config.secondaryStartEnabled } returns false
         every { config.secondaryStartServant } returns 2

@@ -52,10 +52,20 @@ class BattleConfigCore(
     val commandStartMode = maker.enum("command_start_mode", CommandStartMode.Basic)
     val commandStartServant = maker.int("command_start_servant", 1)
     val commandStartCardCount = maker.int("command_start_card_count", 2)
+    private val commandStartColours = CommandStartColoursCore(maker, "command_start_")
+    val commandStartBuster get() = commandStartColours.buster
+    val commandStartArts get() = commandStartColours.arts
+    val commandStartQuick get() = commandStartColours.quick
+    val commandStartCombineMode get() = commandStartColours.combineMode
     val commandStartMaxTurns = maker.int("command_start_max_turns", 0)
     val secondaryStartEnabled = maker.bool("secondary_start_enabled")
     val secondaryStartServant = maker.int("secondary_start_servant", 2)
     val secondaryStartCardCount = maker.int("secondary_start_card_count", 2)
+    private val secondaryStartColours = CommandStartColoursCore(maker, "secondary_start_")
+    val secondaryStartBuster get() = secondaryStartColours.buster
+    val secondaryStartArts get() = secondaryStartColours.arts
+    val secondaryStartQuick get() = secondaryStartColours.quick
+    val secondaryStartCombineMode get() = secondaryStartColours.combineMode
     val bond = BondPrefsCore(maker)
     val notes = maker.string("autoskill_notes")
 
