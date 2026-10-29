@@ -124,7 +124,8 @@ class WeeklyMapEarlyTapTest {
             val tap = f.assertTap(f.locate(), "early")
             assertTrue(tap.contains("plan=icon"), tap)
             assertTrue(tap.contains("kind=icon"), tap)
-            assertEquals(if (start == -300.0) 1 else 0, f.drags)
+            // Issue #102: the icon must be clear (not on a 4 px knife edge) before the early tap, so mid-map needs one more half-gain drag.
+            assertEquals(if (start == -300.0) 2 else 0, f.drags)
         }
     }
 

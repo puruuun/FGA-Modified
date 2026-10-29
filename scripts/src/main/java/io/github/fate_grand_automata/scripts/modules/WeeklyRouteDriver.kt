@@ -65,13 +65,13 @@ class WeeklyRouteDriver @Inject constructor(
         const val MAX_LIST_SCROLLS = 14
         const val MAX_MAP_SCROLLS = 16
         /** Screen pixels per map pixel after the full zoom-out (width of the game area / width of the map). */
-        val ZOOMED_OUT_SCALE = 0.45..0.9
+        val ZOOMED_OUT_SCALE = 0.45..1.0
         const val SCREEN_TIMEOUT_SECONDS = 8
         /** Waits for the Free Quest mark (500 ms each) and reads of the panel (about 2 s in total). */
         const val PANEL_SETTLE_ATTEMPTS = 6
         const val PANEL_READ_ATTEMPTS = 4
         /** Map lines written to the run's diagnostics folder (issue #91). */
-        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ")
+        private val MAP_LOG_PREFIXES = listOf("localize ", "plan ", "scroll quest=", "tap point ", "placeholder map ", "tap fallback ", "mismatch ")
     }
 
     private val run: WeeklyRouteRun get() = checkNotNull(session.run) { "no weekly route" }
@@ -92,6 +92,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     override fun close() {
+        diagnostics.flushMapLog()
         banners.values.forEach { it?.close() }
         banners.clear()
         mapCache?.third?.close()
@@ -378,14 +379,17 @@ class WeeklyRouteDriver @Inject constructor(
                 // Issue #91: the spot point plans the move as before #78; the icon point only when the spot has no safe row.
                 plan = MapView.planOrigin(x, quest.spotY * fit.scaleY, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range,
                     screenWidth, screenHeight, centre, edgeFirst)
+                    // Issue #102: no safe row at all (16:9 knife edge) -> move to the reachable end that is closest to clear, then resolveTap.
+                    ?: MapView.bestEffortOrigin(x, quest.spotY * fit.scaleY, (quest.spotY - MapView.ICON_OFFSET_MAP) * fit.scaleY, fit.originY, range, screenWidth, screenHeight)
                     ?: return tapPoint(quest, x, iy, y, screenWidth, screenHeight, "none") ?: (null to "spot out of reach")
                 log("plan quest=${quest.id} plan=${plan.plan} target=${"%.1f".format(plan.target)} range=${"%.0f".format(range)} origin=${"%.0f".format(fit.originY)}")
                 movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(plan.target, screenWidth, screenHeight)
             }
             // Issue #96: use the fresh fit as soon as the resolved tap is clear and inside the edge-first band.
             // A panel retry deliberately centres the spot and must still finish its full move.
+            // Issue #102: only a clear icon centre taps early; a shifted icon or the spot point waits until the move has ended.
             if (!centre) {
-                tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan, reason = "early", edgeFirst = edgeFirst)?.let { return it }
+                tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan, reason = "early", edgeFirst = edgeFirst, onlyKind = "icon")?.let { return it }
             }
             val drag = movement.next(fit.originY)
             if (drag == null) {
@@ -414,8 +418,8 @@ class WeeklyRouteDriver @Inject constructor(
      * Null when every point is covered; the caller then reports "spot out of reach".
      */
     private fun tapPoint(quest: RouteQuest, x: Double, iconY: Double, spotY: Double, width: Int, height: Int, plan: String,
-                         reason: String = "converged", edgeFirst: Boolean = false): Pair<Location?, String>? {
-        val choice = MapView.resolveTap(x, iconY, x, spotY, width, height) ?: return null
+                         reason: String = "converged", edgeFirst: Boolean = false, onlyKind: String? = null): Pair<Location?, String>? {
+        val choice = MapView.resolveTap(x, iconY, x, spotY, width, height)?.takeIf { onlyKind == null || it.kind == onlyKind } ?: return null
         // edgeDrag uses the same scaled 60 px top/bottom margins as targetOrigin.
         if (edgeFirst && MapView.edgeDrag(choice.point.x, choice.point.y, width, height) != null) return null
         log("tap point quest=${quest.id} plan=$plan kind=${choice.kind} icon=${"%.0f".format(x)},${"%.0f".format(iconY)} spot=${"%.0f".format(x)},${"%.0f".format(spotY)} " +
@@ -507,6 +511,10 @@ class WeeklyRouteDriver @Inject constructor(
                     log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} spot=${panel.spotText} " +
                         "cells=${panel.nameCells?.let { "%.2f".format(it) }} by=${by ?: "none"} verdict=${QuestPanelMatch.label(verdict)}")
                     log("panel quest=${quest.id} attempt=$attempt rawNames=[${rawText(panel.rawNames)}] rawSpots=[${rawText(panel.rawSpots)}]")
+                    if (verdict != PanelVerdict.Match) {
+                        failure.panelRead(panel.nameText, panel.spotText)
+                        log("mismatch quest=${quest.id} read=${panel.nameText.orEmpty()} spotRead=${panel.spotText.orEmpty()} expected=${quest.name} expectedSpot=${quest.spot}")
+                    }
                     if (verdict == PanelVerdict.Match) {
                         evidenceAnchor = anchor
                         evidence = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(
@@ -646,7 +654,7 @@ class WeeklyRouteDriver @Inject constructor(
         if (matched) return SpotOutcome.Started
         if (!tap) probeDiagnostic(quest.id)
         if (screen() == RouteScreen.List) closePanel()
-        return SpotOutcome.NotFound(failure.reason(problem), skipChapter = !failure.opened && problem in setOf("map not recognized", "pinch failed"))
+        return SpotOutcome.NotFound(failure.reason(problem), skipChapter = !failure.opened && problem in setOf("map not recognized", "pinch failed"), read = failure.read)
     }
 
     // ---- battle --------------------------------------------------------------------------------------------------
@@ -664,15 +672,19 @@ class WeeklyRouteDriver @Inject constructor(
             return SpotOutcome.NotFound("vault panel not found")
         }
         var problem = "vault panel not found"
+        var vaultRead = ""
         val panel = scanList {
             val panels = readVault()
+            panels.firstOrNull { it.color?.yellow == true }?.let { vaultRead = it.name.orEmpty() }
+            if (vaultRead.isEmpty()) vaultRead = panels.firstOrNull()?.name.orEmpty()
             if (panels.isNotEmpty()) problem = if (panels.any { it.color?.yellow == true } || problem == "vault name mismatch")
                 "vault name mismatch" else "vault colour mismatch"
             panels.firstOrNull { it.accepted }
         }
         if (panel == null) {
             panelDiagnostic(quest.id, 0)
-            return SpotOutcome.NotFound(problem)
+            if (vaultRead.isNotEmpty()) log("mismatch quest=${quest.id} read=$vaultRead expected=${quest.name} problem=$problem")
+            return SpotOutcome.NotFound(problem, read = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(questRead = vaultRead))
         }
         if (tap) {
             log("tap step=vault quest=${quest.id} point=${panel.anchor.tap}")

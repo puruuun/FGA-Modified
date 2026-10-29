@@ -23,15 +23,26 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
     override fun mapLog(line: String) {
         if (BuildConfig.BUILD_TYPE != "beta" || mapLines.size >= MAP_LOG_LIMIT) return
         mapLines += line
+        // Issue #102: one file per run. Buffer the lines and rewrite the whole file every few lines (and at run end), so a
+        // crash loses at most the last few lines and the provider never sees one create per line.
+        if (mapLines.size - flushed >= MAP_LOG_FLUSH_EVERY) flushMapLog()
+    }
+
+    private var flushed = 0
+
+    override fun flushMapLog() {
+        if (BuildConfig.BUILD_TYPE != "beta" || mapLines.size == flushed) return
         val path = "weeklyRoute/$run/map.log"
         try {
-            storage.writeDiagnosticFile(path, "text/plain") { it.write(mapLines.joinToString("\n").toByteArray(Charsets.UTF_8)) }
+            // Not text/plain: SAF providers append ".txt" to that type, so the next findFile("map.log") misses and creates "map (1).log.txt".
+            storage.writeDiagnosticFile(path, "application/octet-stream") { it.write(mapLines.joinToString("\n").toByteArray(Charsets.UTF_8)) }
+            flushed = mapLines.size
         } catch (e: Exception) {
             timber.log.Timber.tag(WEEKLY_ROUTE_TAG).w(e, "map log write failed path=%s", path)
         }
     }
 
-    private companion object { const val MAP_LOG_LIMIT = 600 }
+    private companion object { const val MAP_LOG_LIMIT = 600; const val MAP_LOG_FLUSH_EVERY = 10 }
 
     override fun saveEvidence(image: Pattern, questId: Int): String? {
         if (BuildConfig.BUILD_TYPE != "beta" || !probe) return null

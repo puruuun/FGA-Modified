@@ -13,4 +13,6 @@ interface IWeeklyPanelDiagnostics {
     fun saveEvidence(image: Pattern, questId: Int): String? = null
     /** Issue #91: one weekly-route map line (localize, plan, scroll, tap point) for the run's `map.log`. Beta builds only. */
     fun mapLog(line: String) {}
+    /** Issue #102: writes any map lines still buffered. Called when the run ends. */
+    fun flushMapLog() {}
 }

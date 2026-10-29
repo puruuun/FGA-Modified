@@ -19,6 +19,12 @@ class WeeklyPanelFailure {
         private set
     var lastVerdict = "NoPanel"
         private set
+    /** What the OCR read at the last non-matching panel (probe CSV `read_quest` / `read_spot`, JP issue #103). */
+    var read = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence()
+        private set
+    fun panelRead(questRead: String?, spotRead: String?) {
+        read = io.github.fate_grand_automata.scripts.weekly.ProbeEvidence(questRead = questRead.orEmpty(), spotRead = spotRead.orEmpty())
+    }
     fun panelOpened() { opened = true }
     fun verdict(value: String) { lastVerdict = value }
     fun reason(recovery: String): String =

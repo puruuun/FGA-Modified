@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.isWide
 import io.github.fate_grand_automata.scripts.locations.WIDE_EDGE_INSET
 import io.github.lib_automata.Size
 import kotlin.math.abs
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 /** A point or displacement on the 720p game area. */
@@ -49,6 +50,9 @@ object MapView {
         }
     }
 
+    /** Test hook (issue #102 simulation): whether a fixed button zone covers the point. */
+    internal fun isCovered(x: Double, y: Double, width: Int, height: Int) = covered(x, y, width, height)
+
     /** True when a tap at ([x], [y]) lands on the map and not on a fixed button, with a margin around the point. */
     fun isTappable(x: Double, y: Double, width: Int, height: Int): Boolean {
         if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0) return false
@@ -57,6 +61,10 @@ object MapView {
         return !covered(x, y, width, height)
     }
 
+    /** Tappable and at least [CLEARANCE] px (per axis direction) away from every fixed button zone: not a knife edge. */
+    fun isClear(x: Double, y: Double, width: Int, height: Int): Boolean = isTappable(x, y, width, height) &&
+        listOf(-CLEARANCE to 0.0, CLEARANCE to 0.0, 0.0 to -CLEARANCE, 0.0 to CLEARANCE).none { (dx, dy) -> covered(x + dx, y + dy, width, height) }
+
     /**
      * D-33: a spot icon that lies at most [MAX_SHIFT] px inside a fixed button's zone, on a map that cannot be moved any
      * further, still shows its upper or outer part. Returns the nearest point within [MAX_SHIFT] px of ([x], [y]) that is
@@ -64,9 +72,8 @@ object MapView {
      * smallest shift first (up, right, left, down on ties); a spot that already is tappable returns null (no shift needed).
      */
     fun visibleTap(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
-        if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0 || isTappable(x, y, width, height)) return null
-        fun clear(px: Double, py: Double): Boolean = isTappable(px, py, width, height) &&
-            listOf(-CLEARANCE to 0.0, CLEARANCE to 0.0, 0.0 to -CLEARANCE, 0.0 to CLEARANCE).none { (dx, dy) -> covered(px + dx, py + dy, width, height) }
+        if (!x.isFinite() || !y.isFinite() || width <= 0 || height <= 0 || isClear(x, y, width, height)) return null
+        fun clear(px: Double, py: Double) = isClear(px, py, width, height)
         val s = height / 720.0
         val directions = listOf(0.0 to -1.0, 1.0 to 0.0, -1.0 to 0.0, 0.0 to 1.0)
         for (step in 1..(MAX_SHIFT * s).toInt()) {
@@ -94,13 +101,17 @@ object MapView {
      * clear; else null. A covered point is never returned.
      */
     fun resolveTap(iconX: Double, iconY: Double, spotX: Double, spotY: Double, width: Int, height: Int): TapChoice? = when {
-        isTappable(iconX, iconY, width, height) -> TapChoice(ScreenPoint(iconX, iconY), "icon")
+        // Issue #102: a clear icon centre ("icon"); else the nearest clear point of the icon; else a clear spot point; and only
+        // when nothing is clear, an icon or spot point that merely is not covered (knife edge, "icon-edge" / "spot-edge").
+        isClear(iconX, iconY, width, height) -> TapChoice(ScreenPoint(iconX, iconY), "icon")
         else -> visibleTap(iconX, iconY, width, height)?.let { TapChoice(it, "icon-shifted") }
-            ?: if (isTappable(spotX, spotY, width, height)) TapChoice(ScreenPoint(spotX, spotY), "spot") else null
+            ?: if (isClear(spotX, spotY, width, height)) TapChoice(ScreenPoint(spotX, spotY), "spot")
+            else if (isTappable(iconX, iconY, width, height)) TapChoice(ScreenPoint(iconX, iconY), "icon-edge")
+            else if (isTappable(spotX, spotY, width, height)) TapChoice(ScreenPoint(spotX, spotY), "spot-edge") else null
     }
 
     const val MAX_SHIFT = 30.0
-    private const val CLEARANCE = 4.0
+    internal const val CLEARANCE = 4.0
 
     /** D-39: image maps establish the boundary by fitting again after this inward drag. */
     fun edgeDrag(x: Double, y: Double, width: Int, height: Int): ScreenPoint? {
@@ -151,6 +162,39 @@ object MapView {
                    centre: Boolean = false, edgeFirst: Boolean = true): OriginPlan? =
         targetOrigin(x, spotMapY, origin, range, width, height, centre, edgeFirst)?.let { OriginPlan(it, "spot") }
             ?: targetOrigin(x, iconMapY, origin, range, width, height, centre, edgeFirst)?.let { OriginPlan(it, "icon") }
+
+    /**
+     * Issue #102: [planOrigin] found no row that keeps the spot or the icon clear of every zone by the safe-row margin (16:9
+     * knife edge, e.g. Fuyuki X-G). Instead of giving up, pick the reachable origin (0 down to -[range]) where the icon point
+     * needs the smallest [visibleTap] shift, or only the plain spot point is clear. A candidate is rated by its worst result
+     * within 2 px of the origin (the drag converges within 2 px), so a one-pixel knife edge never wins. Ties go to the origin
+     * nearest to [origin] (fewest scrolls). Null when no reachable origin yields a tap point.
+     */
+    fun bestEffortOrigin(x: Double, spotMapY: Double, iconMapY: Double, origin: Double, range: Double, width: Int, height: Int): OriginPlan? {
+        if (listOf(x, spotMapY, iconMapY, origin, range).any { !it.isFinite() } || range < 0) return null
+        fun cost(o: Double): Double? {
+            val c = resolveTap(x, o + iconMapY, x, o + spotMapY, width, height) ?: return null
+            return when (c.kind) {
+                "icon" -> 0.0
+                "icon-shifted" -> hypot(c.point.x - x, c.point.y - (o + iconMapY))
+                "spot" -> MAX_SHIFT + 1
+                else -> MAX_SHIFT + 2
+            }
+        }
+        var best: Triple<Double, Double, Double>? = null // cost, distance from the current origin, origin
+        var o = 0.0
+        while (true) {
+            val costs = listOf(-2.0, 0.0, 2.0).map { cost((o + it).coerceIn(-range, 0.0)) }
+            if (costs.none { it == null }) {
+                val c = costs.maxOf { it!! }
+                val d = abs(o - origin)
+                if (best == null || c < best.first - 1e-9 || (abs(c - best.first) <= 1e-9 && d < best.second)) best = Triple(c, d, o)
+            }
+            if (o <= -range) break
+            o = maxOf(o - 1.0, -range)
+        }
+        return best?.let { OriginPlan(it.third, "icon") }
+    }
 
     /**
      * Start and end of the finger for [drag], centred in the part of the map that no fixed button covers. A drag longer

@@ -60,7 +60,8 @@ enum class RouteScreen { Home, List, Map, Unknown }
 sealed class SpotOutcome {
     /** The matching quest panel was tapped; the game is in the support selection or the battle. */
     data object Started : SpotOutcome()
-    data class NotFound(val reason: String, val skipChapter: Boolean = false) : SpotOutcome()
+    /** [read] is what the OCR actually read at a panel that did not match (blank when nothing was read); the probe CSV records it. */
+    data class NotFound(val reason: String, val skipChapter: Boolean = false, val read: ProbeEvidence = ProbeEvidence()) : SpotOutcome()
 }
 
 data class BattleOutcome(val runs: Int, val completed: Boolean, val note: String = "")
@@ -168,7 +169,7 @@ class WeeklyRouteMachine(
             driver.log("probe quest=${item.quest.id} status=${ProbeStatus.classify(spot.reason).csv} reason=${spot.reason} ms=$elapsed")
             if (spot.skipChapter) rejectedChapters += item.quest.warId
             results += StopResult(item, 0, StopStatus.NotFound, spot.reason)
-            probeResults += ProbeResult(item.quest, ProbeStatus.classify(spot.reason), spot.reason, elapsed)
+            probeResults += ProbeResult(item.quest, ProbeStatus.classify(spot.reason), spot.reason, elapsed, spot.read)
             return true
         }
         driver.log("probe quest=${item.quest.id} status=success ms=$elapsed")

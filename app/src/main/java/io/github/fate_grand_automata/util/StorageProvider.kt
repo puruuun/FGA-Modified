@@ -298,7 +298,8 @@ class StorageProvider @Inject constructor(
             folder = folder.getOrCreateDir(name)
         }
         val file = folder.getOrCreateFile(names.last(), mimeType)
-        resolver.openOutputStream(file.uri)?.use(write)
+        // "wt" truncates: a rewritten diagnostic file (map.log) must not keep stale bytes.
+        resolver.openOutputStream(file.uri, "wt")?.use(write)
             ?: error("Could not open diagnostic file: $path")
     }
 }
