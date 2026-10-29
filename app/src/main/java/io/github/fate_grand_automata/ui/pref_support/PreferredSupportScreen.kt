@@ -156,8 +156,7 @@ private fun PreferredSupport(
                         }
                     }
                     config.npLevelCheck.SwitchPreference(
-                        title = stringResource(R.string.p_np_level_check),
-                        summary = stringResource(R.string.p_np_level_check_summary)
+                        title = stringResource(R.string.p_np_level_check)
                     )
                     val npEnabled by config.npLevelCheck.remember()
                     AnimatedVisibility(npEnabled) {
@@ -257,7 +256,6 @@ private fun PreferredSupport(
 
                     config.autoFriendRequest.SwitchPreference(
                         title = stringResource(R.string.p_battle_config_support_auto_friend_request),
-                        summary = stringResource(R.string.p_battle_config_support_auto_friend_request_summary),
                         enabled = !friendsOnly
                     )
 

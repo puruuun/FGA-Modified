@@ -218,7 +218,6 @@
     <string name="p_battle_config_support_friend_names">"친구 이름"</string>
     <string name="p_battle_config_support_friends_only">"친구 한정"</string>
     <string name="p_battle_config_support_auto_friend_request">"퀘스트 후 친구 신청"</string>
-    <string name="p_battle_config_support_auto_friend_request_summary">"친구가 아닌 서포트를 쓴 뒤 거절 대신 친구 신청을 보냅니다"</string>
     <string name="p_battle_config_support_grand_servant">"관위 서번트"</string>
     <string name="p_battle_config_support_max_ascended">"최종재림"</string>
     <string name="p_battle_config_support_mlb">"최대해방 / 풀돌"</string>
@@ -295,7 +294,6 @@
     <string name="p_grand_score_16_check">그랜드 스코어 +16 판독</string>
     <string name="grand_score_not_supported">이 서버에는 그랜드 점수가 없어 +16 조건을 무시합니다.</string>
     <string name="p_np_level_check">보구 레벨 판독</string>
-    <string name="p_np_level_check_summary">설정한 보구 레벨 이상인 서포트를 선택합니다. 판독 실패 시 다음 서포트를 찾습니다.</string>
     <string name="p_np_min_level">최소 보구 레벨</string>
     <string name="p_np_min_level_entry">Lv.%1$d 이상</string>
     <string name="skill_maker_direct_cards">일반 카드 직접 지정</string>

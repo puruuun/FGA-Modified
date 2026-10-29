@@ -35,8 +35,8 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Rechecks first-turn hands; Hakuno uses `aH{…}` with optional B/A/Q counts, clear count labels and 0.5-second settle waits. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
 | [Support scores](wiki/scripts/Support-Score-62-KR.md) | Picks Class +62 / Grand +16 supports. |
-| [Support NP level](wiki/scripts/Support-NP-Level-KR.md) | Picks supports at or above a minimum NP level. |
-| [Post-quest friend request](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support in Preferred mode. |
+| [Support NP level](wiki/scripts/Support-NP-Level-KR.md) | Picks supports at or above a minimum NP level; the toggle shows its title only. |
+| [Post-quest friend request](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support in Preferred mode; the toggle shows its title only. |
 | [Ascension select](wiki/scripts/Ascension-Select-KR.md) | Tells ascensions apart by Servant name and NP image. |
 | [Fixed attack order](wiki/scripts/Direct-Cards-KR.md) | Sets the order of cards and NPs for a turn. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-KR.md) | Sets ON/OFF before the quest starts. |
@@ -98,8 +98,8 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플은 `aH{…}` 구문과 색별 장수 조건, 구분된 횟수 표시와 화면 전환 0.5초 대기를 지원합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
-| [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고릅니다. |
-| [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 선호 모드에서 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. |
+| [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고르며 설정에는 제목만 표시합니다. |
+| [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 선호 모드에서 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. 설정에는 제목만 표시합니다. |
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
