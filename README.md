@@ -23,7 +23,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 
 | Feature | Summary |
 |---|---|
-| [Game area preview](wiki/scripts/Game-Area-Preview-KR.md) | Moves Game area to Additional features and previews Custom offsets with red region and green recognition borders. |
+| [Game area and presets](wiki/scripts/Game-Area-Preview-KR.md) | Previews Custom and saved areas, applies capture scaling when settings are finished, and offers Reset and saved presets with a 1280×720 minimum. |
 | [App language](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | Saves a supported system language on first launch and shares it with settings and onboarding. |
 | [CE enhancement](wiki/scripts/CE-Auto-Enhance-KR.md) | Reminds you to check in-game filters before starting and switches between Servant and CE enhancement on JP/KR. |
 | [FP summon auto-sell](wiki/scripts/FP-Auto-Sell-KR.md) | Uses padlock-only selection and fixed sale timing, stops at the upstream scrollbar template end, and leaves dry runs at Confirm. |
@@ -88,7 +88,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 설명 |
 |---|---|
-| [게임 영역 미리보기](wiki/scripts/Game-Area-Preview-KR.md) | 게임 영역을 추가기능으로 옮기고 사용자 지정 좌표를 빨간 영역·초록 인식 테두리로 미리 봅니다. |
+| [게임 영역·저장된 설정](wiki/scripts/Game-Area-Preview-KR.md) | 사용자 지정·저장된 영역을 미리 보고 설정 완료 시 캡처 배율을 적용합니다. 초기화·설정 추가·삭제와 최소 1280×720 제한을 제공합니다. |
 | [앱 언어](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | 최초 실행에 지원하는 시스템 언어를 저장하고 온보딩·설정에 같은 값을 표시합니다. |
 | [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 게임 내 필터 확인을 안내하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
 | [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 자물쇠로 선택하고 원본 FGA의 스크롤바 끝 이미지로 탐색을 마친 뒤 고정 시간으로 판매합니다. 시험 모드는 결정 직후 멈춥니다. |

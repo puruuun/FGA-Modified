@@ -223,7 +223,6 @@
     <string name="p_game_area_custom_right">"右（像素）"</string>
     <string name="p_game_area_custom_top">"下（像素）"</string>
     <string name="p_game_area_default">"預設"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
     <string name="p_game_area_mode">"遊戲畫面偏移（校正黑邊）"</string>
     <string name="p_game_server">"伺服器"</string>
     <string name="p_game_server_auto_detect">"自動偵測"</string>

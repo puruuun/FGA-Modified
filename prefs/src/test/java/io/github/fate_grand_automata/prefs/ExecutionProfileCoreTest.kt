@@ -4,6 +4,11 @@ import android.content.SharedPreferences
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.prefs.core.GameAreaPrefsCore
+import io.github.fate_grand_automata.prefs.core.GameAreaMode
+import io.github.lib_automata.GameAreaOffsets
+import io.github.lib_automata.Region
+import io.github.lib_automata.Size
 import io.github.fate_grand_automata.prefs.core.QuestItemPrefsCore
 import io.github.fate_grand_automata.prefs.core.QuestItemControlPrefsCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
@@ -19,6 +24,59 @@ import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 import kotlin.test.Test
 
 class ExecutionProfileCoreTest {
+    @Test
+    fun `retired Duo setting reads as Default and keeps custom offsets`() {
+        val store = MemoryPrefs()
+        store.data["game_area_mode"] = "Duo"
+        store.data["game_offset_left"] = 1037
+        val settings = GameAreaPrefsCore(PrefMaker(store))
+        assertThat(settings.mode.get()).isEqualTo(GameAreaMode.Default)
+        assertThat(settings.selectedOffsets()).isEqualTo(null)
+        assertThat(settings.left.get()).isEqualTo(1037)
+    }
+
+    @Test
+    fun `saved areas retain stable ids names offsets and selection after reopening`() {
+        val store = MemoryPrefs()
+        val settings = GameAreaPrefsCore(PrefMaker(store))
+        settings.setCustomOffsets(GameAreaOffsets(1037, 97, 0, 11))
+        settings.addPreset("분할화면 1 \"FGO\"")
+        val preset = settings.presets.get().single()
+        settings.presetId.set(preset.id)
+        settings.mode.set(GameAreaMode.Preset)
+        settings.setCustomOffsets(GameAreaOffsets())
+        val reopened = GameAreaPrefsCore(PrefMaker(store))
+        assertThat(reopened.selectedPreset()).isEqualTo(preset)
+        assertThat(reopened.selectedOffsets()?.region(Size(3040, 1904), false))
+            .isEqualTo(Region(1037, 97, 2003, 1796))
+        assertThat(reopened.customOffsets()).isEqualTo(GameAreaOffsets())
+    }
+
+    @Test
+    fun `deleting selected preset returns to Default and keeps other same name presets`() {
+        val settings = GameAreaPrefsCore(PrefMaker(MemoryPrefs()))
+        settings.addPreset("same name")
+        settings.addPreset("same name")
+        val presets = settings.presets.get()
+        settings.mode.set(GameAreaMode.Preset)
+        settings.presetId.set(presets.first().id)
+        settings.deleteSelectedPreset()
+        assertThat(settings.mode.get()).isEqualTo(GameAreaMode.Default)
+        assertThat(settings.selectedOffsets()).isEqualTo(null)
+        assertThat(settings.presets.get()).isEqualTo(listOf(presets.last()))
+    }
+
+    @Test
+    fun `invalid saved list or missing selected id falls back to the full display`() {
+        val store = MemoryPrefs()
+        store.data["game_area_presets"] = "invalid"
+        val settings = GameAreaPrefsCore(PrefMaker(store))
+        assertThat(settings.presets.get()).isEqualTo(emptyList())
+        settings.mode.set(GameAreaMode.Preset)
+        settings.presetId.set("missing")
+        assertThat(settings.selectedOffsets()).isEqualTo(null)
+    }
+
     /** In-memory Android interface, so these tests need neither a device nor a new dependency. */
     private class MemoryPrefs : SharedPreferences {
         val data = mutableMapOf<String, Any?>()

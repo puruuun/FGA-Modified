@@ -17,11 +17,13 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.runner.GameAreaCaptureSignal
 import io.github.fate_grand_automata.scripts.FgoGameAreaManager
 import io.github.fate_grand_automata.util.CutoutManager
 import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
+import io.github.lib_automata.GameAreaOffsets
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,7 +33,8 @@ import javax.inject.Singleton
 class GameAreaPreviewManager @Inject constructor(
     private val cutoutManager: CutoutManager,
     private val prefs: PrefsCore,
-    private val display: DisplayHelper
+    private val display: DisplayHelper,
+    private val captureSignal: GameAreaCaptureSignal
 ) {
     val screenSize: Size
         get() = display.metrics.let { Size(it.widthPixels, it.heightPixels) }
@@ -43,10 +46,28 @@ class GameAreaPreviewManager @Inject constructor(
 
     private var attachedTo: TapperService? = null
     private var previewView: GameAreaPreviewView? = null
+    private var appliedOffsets: GameAreaOffsets? = null
+
+    fun beginSettings() {
+        appliedOffsets = prefs.gameArea.customOffsets()
+    }
+
+    fun applyCaptureSettings() {
+        appliedOffsets = prefs.gameArea.customOffsets()
+        captureSignal.apply()
+    }
+
+    fun finishSettings() {
+        if (appliedOffsets != null && appliedOffsets != prefs.gameArea.customOffsets()) {
+            applyCaptureSettings()
+        }
+        appliedOffsets = null
+        hide()
+    }
 
     @MainThread
     fun show() {
-        if (scriptActive || prefs.gameAreaMode.get() != GameAreaMode.Custom) return
+        if (scriptActive || prefs.gameAreaMode.get() == GameAreaMode.Default) return
 
         // Resolve the service again on every attach: accessibility tokens can die independently
         // of both the activity and the script runner.
@@ -96,7 +117,7 @@ class GameAreaPreviewManager @Inject constructor(
     @MainThread
     fun update() {
         if (!visible) return
-        if (attachedTo !== TapperService.instance || prefs.gameAreaMode.get() != GameAreaMode.Custom) {
+        if (attachedTo !== TapperService.instance || prefs.gameAreaMode.get() == GameAreaMode.Default) {
             hide()
             return
         }

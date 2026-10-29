@@ -285,7 +285,14 @@
     <string name="p_game_area_custom_right">"우측 좌표"</string>
     <string name="p_game_area_custom_top">"상단 좌표"</string>
     <string name="p_game_area_default">"기본값"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
+    <string name="p_game_area_preset">저장된 설정</string>
+    <string name="p_game_area_reset">초기화</string>
+    <string name="p_game_area_add">설정 추가</string>
+    <string name="p_game_area_delete">삭제</string>
+    <string name="p_game_area_preset_name">이름</string>
+    <string name="p_game_area_preset_default_name">분할화면 %1$d</string>
+    <string name="p_game_area_preset_read_only">저장된 좌표는 수정할 수 없습니다. 사용자 지정에서 조정한 뒤 새 설정으로 추가하세요.</string>
+    <string name="p_game_area_minimum">최소 영역: 화면 픽셀 기준 1280×720. 숫자를 누르면 좌표를 입력할 수 있습니다. 더 작은 화면에서는 모든 좌표가 0으로 제한됩니다.</string>
     <string name="p_game_area">게임 영역</string>
     <string name="p_game_area_preview">영역 미리보기</string>
     <string name="p_game_area_preview_summary">빨간 선: 설정한 영역 / 초록 선: 실제 인식 영역. 초록 선을 게임 화면 가장자리에 맞추세요</string>

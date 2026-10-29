@@ -3,11 +3,9 @@ package io.github.fate_grand_automata.util
 import android.app.Activity
 import android.os.Build
 import android.view.Surface
-import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
-import io.github.lib_automata.customGameArea
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -74,23 +72,11 @@ class CutoutManager @Inject constructor(
         return Size(metrics.widthPixels, metrics.heightPixels)
     }
 
-    fun getCutoutAppliedRegion(): Region {
-        val (w, h) = getScreenSize()
+    fun getCutoutAppliedRegion(screenSize: Size = getScreenSize()): Region {
+        val (w, h) = screenSize
 
-        return when (prefsCore.gameAreaMode.get()) {
-            GameAreaMode.Default -> Region(0, 0, w, h)
-            GameAreaMode.Duo -> Region(192, 0, 2400, h)
-            GameAreaMode.Custom -> {
-                val l = prefsCore.gameOffsetLeft.get()
-                val t = prefsCore.gameOffsetTop.get()
-                val r = prefsCore.gameOffsetRight.get()
-                val b = prefsCore.gameOffsetBottom.get()
-
-                customGameArea(
-                    Size(w, h), l, t, r, b,
-                    reverseLandscape = display.rotation == Surface.ROTATION_270
-                )
-            }
-        }
+        return prefsCore.gameArea.selectedOffsets()?.region(
+            Size(w, h), reverseLandscape = display.rotation == Surface.ROTATION_270
+        ) ?: Region(0, 0, w, h)
     }
 }

@@ -239,7 +239,6 @@
     <string name="p_game_area_custom_right">"右侧（像素）"</string>
     <string name="p_game_area_custom_top">"顶部（像素）"</string>
     <string name="p_game_area_default">"默认"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
     <string name="p_game_area_mode">"游戏区域偏移（消除黑边影响）"</string>
     <string name="p_game_server">"服务器"</string>
     <string name="p_game_server_auto_detect">"自动检测"</string>
