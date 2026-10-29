@@ -60,9 +60,9 @@ When promoting to stable `X.Y.Z`:
 
 1. Update `version.properties`: set `stable.versionName=X.Y.Z` and increment `stable.versionCode`
    by 1 (keeping `beta.versionName=X.Y.Z-beta.N` and `beta.versionCode` aligned with `X.Y.Z`).
-2. Add `wiki/releases/<version>-KR.md` and update both the English release notes link
-   (`- [Release notes (Korean)](wiki/releases/<version>-KR.md)`) and the Korean latest-release line
-   (`**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`) in `README.md`.
+2. Add `wiki/releases/<version>-KR.md` and update the Korean latest-release line
+   (`**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`) in `README.md` and the English release notes link
+   (`- [Release notes (Korean)](wiki/releases/<version>-KR.md)`) in `README.en.md`.
 3. Deliver via PR (`release/<version>`), wait for `Main CI` to pass, and fast-forward merge into
    `main`.
 4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` and

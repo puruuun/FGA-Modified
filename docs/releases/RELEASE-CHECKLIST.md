@@ -13,7 +13,7 @@
 4. **기기 검사.** 블루스택에서 `py -3 tools/device-qa/run.py --build --suite support,bond,questItems`를 실행합니다. 모든 suite가 실패 없이 끝나야 합니다. skip은 `docs/reference-images/README.md`의 목록과 같아야 합니다.
 5. **실제 게임 수동 확인 (소유자).** 범위와 결과를 검증 리포트에 적습니다.
 6. **정규 APK 만들기.** `Stable APK` 워크플로를 실행합니다. 확인 단계(`aapt`의 패키지·버전·앱 이름·ABI, `apksigner` 서명)가 통과해야 합니다.
-7. **문서 작성.** `docs/releases/<버전>-validation.md`와 `wiki/releases/<버전>-KR.md`를 작성합니다. 게시 직전에 `README.md`의 영문 릴리스 노트 링크(`Release notes (Korean)`)와 한국어 정규판 줄을 함께 바꿉니다.
+7. **문서 작성.** `docs/releases/<버전>-validation.md`와 `wiki/releases/<버전>-KR.md`를 작성합니다. 게시 직전에 `README.en.md`의 영문 릴리스 노트 링크(`Release notes (Korean)`)와 `README.md`의 한국어 정규판 줄을 함께 바꿉니다.
 8. **GitHub Release 게시 (소유자).** 태그는 `v<버전>`, 첨부 파일은 `FGA-mod-<버전>-arm.apk`와 `FGA-mod-<버전>-arm.apk.sha256`입니다. 파일 이름 형식은 앱 내 업데이트 확인(`GitHubUpdateChecker`)과 Obtainium 필터(`^FGA-mod-.*-arm\.apk$`)가 요구하므로 바꾸지 않습니다.
 
 ## 서명

@@ -4,11 +4,11 @@ The user manual at <https://puruuun.github.io/FGA-Modified/> is built from `wiki
 
 ## Every user-facing feature ships with its manual page and README entries
 
-A change that adds or changes something a user sees (a setting, a script, a stop message, a workflow) is not done until its Korean manual page under `wiki/scripts/` and **both** language sections in `README.md` are added or updated in the same change.
+A change that adds or changes something a user sees (a setting, a script, a stop message, a workflow) is not done until its Korean manual page under `wiki/scripts/` and the feature tables in **both** `README.md` (Korean) and `README.en.md` (English) are added or updated in the same change.
 
-- **Single bilingual `README.md`**: `README.md` contains both languages in one file — the **English section on top (`#english`)** and the **Korean section below (`#korean`)** (do not create a separate `README.en.md`).
-  - Whenever a user-facing feature is added, renamed, or changed, update **both** the English feature table (`## Added and modified features`) and the Korean feature table (`## 추가·수정된 기능`) in `README.md` so the two tables stay in 1:1 order.
-  - Whenever a stable release is promoted, update **both** the English release notes link (`- [Release notes (Korean)](wiki/releases/<version>-KR.md)`) and the Korean latest-release summary line (`**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`) in `README.md`.
+- **Two README files**: `README.md` is the Korean main README; `README.en.md` is the English version. Both carry the same language switch line at the top.
+  - Whenever a user-facing feature is added, renamed, or changed, update the Korean feature table (`## 추가·수정된 기능`) in `README.md` and the English feature table (`## Added and modified features`) in `README.en.md` so the two tables stay in 1:1 order.
+  - Whenever a stable release is promoted, update the Korean latest-release summary line (`**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`) in `README.md` and the English release notes link (`- [Release notes (Korean)](wiki/releases/<version>-KR.md)`) in `README.en.md`.
 - **Manual page (`wiki/scripts/`)**:
   - New feature: add `wiki/scripts/<Feature-Name>-KR.md` (and link/summarize it in `wiki/scripts/Modified-Features-KR.md` if applicable). Its first line is `# <title>` and that title becomes the menu entry, so make it the feature name. A trailing version such as `— 1.4.0` or `(1.4.0-beta.10)` is stripped from the menu.
   - The page appears under the **기능 설명서** tab automatically. Do not edit `mkdocs.yml` to list it.
