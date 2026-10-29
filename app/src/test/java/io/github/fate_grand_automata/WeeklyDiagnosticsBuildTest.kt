@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata
 
 import io.github.fate_grand_automata.util.WeeklyPanelDiagnostics
+import io.github.fate_grand_automata.util.StorageReaderDiagnostics
+import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.lib_automata.Pattern
 import java.lang.reflect.Proxy
 import kotlin.test.Test
@@ -23,5 +25,11 @@ class WeeklyDiagnosticsBuildTest {
         assertNull(diagnostics.saveEvidence(frame, 1))
         assertNull(diagnostics.saveAbort(frame))
         diagnostics.mapLog("plan quest=1 plan=spot")
+    }
+
+    @Test fun `non beta support diagnostics cannot read preferences or write even when called directly`() {
+        val diagnostics = StorageReaderDiagnostics(untouched<IPreferences>(), untouched<IStorageProvider>())
+        assertFalse(diagnostics.enabled)
+        diagnostics.record("support", "frame", mapOf("" to untouched<Pattern>()), "{}")
     }
 }

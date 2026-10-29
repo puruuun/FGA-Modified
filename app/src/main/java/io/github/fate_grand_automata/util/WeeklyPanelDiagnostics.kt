@@ -42,7 +42,7 @@ class WeeklyPanelDiagnostics @Inject constructor(private val storage: IStoragePr
         }
     }
 
-    private companion object { const val MAP_LOG_LIMIT = 600; const val MAP_LOG_FLUSH_EVERY = 10 }
+    private companion object { const val MAP_LOG_LIMIT = 5000; const val MAP_LOG_FLUSH_EVERY = 10 }
 
     override fun saveEvidence(image: Pattern, questId: Int): String? {
         if (BuildConfig.BUILD_TYPE != "beta" || !probe) return null

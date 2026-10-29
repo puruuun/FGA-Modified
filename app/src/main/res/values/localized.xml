@@ -2,7 +2,7 @@
 <resources>
     <string name="hakuno_shuffle_colour_all">All</string>
     <string name="weekly_route_no_quests">There are no quests to run</string>
-    <string name="p_weekly_route_feature_enabled">Enable weekly mission route</string>
+    <string name="p_weekly_route_feature_enabled">Use weekly mission automation</string>
     <string name="ce_enhancement">CE enhancement</string>
     <string name="switch_to_ce_enhancement">Switch to CE enhancement</string>
     <string name="switch_to_servant_enhancement">Switch to servant level-up</string>
@@ -462,7 +462,7 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="p_shuffle_cards_when_no_effective">"No effective cards"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"No cards matching NP"</string>
     <string name="p_shuffle_cards_when_first_turn_start_condition">Start condition not met on first turn</string>
-    <string name="p_game_area">Game area</string>
+    <string name="p_game_area">Game area (experimental)</string>
     <string name="p_game_area_preview">Area preview</string>
     <string name="p_game_area_preview_summary">Red: configured area / Green: actual recognition area. Align the green border with the edges of the game image.</string>
     <string name="p_game_area_preview_disabled">Turn on the accessibility service to show the preview.</string>
@@ -715,7 +715,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="github_update_open">Open release</string>
     <string name="github_update_later">Later</string>
     <string name="p_enable_quest_item_control">Enable Teapot/Storm Pod control</string>
-    <string name="p_enable_quest_item_control_summary">Check and apply the launcher’s item ON/OFF choices before Quest Start. Enabled by default.</string>
     <string name="chaldea_import_button">Import from link</string>
     <string name="chaldea_import_title">Import Chaldea command</string>
     <string name="chaldea_import_url">Chaldea share URL</string>

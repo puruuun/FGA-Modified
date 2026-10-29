@@ -22,7 +22,7 @@
     <string name="hakuno_shuffle_max_reached">최대 횟수 도달</string>
     <string name="hakuno_shuffle_read_failed">카드를 읽지 못했습니다.</string>
     <string name="weekly_route_no_quests">실행할 퀘스트가 없습니다</string>
-    <string name="p_weekly_route_feature_enabled">주간 미션 경로 활성화</string>
+    <string name="p_weekly_route_feature_enabled">주간 미션 자동화 기능 사용</string>
     <string name="ce_enhancement">개념예장 강화</string>
     <string name="switch_to_ce_enhancement">개념예장 강화로 전환</string>
     <string name="switch_to_servant_enhancement">서번트 레벨업으로 전환</string>
@@ -293,7 +293,7 @@
     <string name="p_game_area_preset_default_name">분할화면 %1$d</string>
     <string name="p_game_area_preset_read_only">저장된 좌표는 수정할 수 없습니다. 사용자 지정에서 조정한 뒤 새 설정으로 추가하세요.</string>
     <string name="p_game_area_minimum">최소 영역: 화면 픽셀 기준 1280×720. 숫자를 누르면 좌표를 입력할 수 있습니다. 더 작은 화면에서는 모든 좌표가 0으로 제한됩니다.</string>
-    <string name="p_game_area">게임 영역</string>
+    <string name="p_game_area">게임 영역 (시험기능)</string>
     <string name="p_game_area_preview">영역 미리보기</string>
     <string name="p_game_area_preview_summary">빨간 선: 설정한 영역 / 초록 선: 실제 인식 영역. 초록 선을 게임 화면 가장자리에 맞추세요</string>
     <string name="p_game_area_preview_disabled">접근성 서비스를 켜야 미리보기가 표시됩니다</string>
@@ -656,7 +656,6 @@
     <string name="github_update_open">릴리스 열기</string>
     <string name="github_update_later">나중에</string>
     <string name="p_enable_quest_item_control">티포트·스톰포드 자동 설정 사용</string>
-    <string name="p_enable_quest_item_control_summary">퀘스트 시작 전 실행 창의 아이템 ON/OFF 선택을 검사하고 적용합니다. 기본값은 켜짐입니다.</string>
     <string name="chaldea_import_button">링크로 입력</string>
     <string name="chaldea_import_title">Chaldea 커맨드 가져오기</string>
     <string name="chaldea_import_url">Chaldea 공유 링크</string>
