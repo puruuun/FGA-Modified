@@ -14,12 +14,32 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.Pref
+import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.StepperPreference
 import io.github.fate_grand_automata.ui.prefs.remember
+
+@Composable
+private fun CommandStartColours(buster: Pref<Int>, arts: Pref<Int>, quick: Pref<Int>, combineMode: Pref<CommandStartCombineMode>) {
+    combineMode.DropdownPreference(
+        title = stringResource(R.string.p_command_start_combine_mode),
+        entries = mapOf(
+            CommandStartCombineMode.And to stringResource(R.string.command_start_combine_and),
+            CommandStartCombineMode.Or to stringResource(R.string.command_start_combine_or)
+        )
+    )
+    for ((pref, title) in listOf(
+        buster to R.string.p_command_start_buster,
+        arts to R.string.p_command_start_arts,
+        quick to R.string.p_command_start_quick
+    )) {
+        pref.StepperPreference(title = stringResource(title), valueRange = 0..5)
+    }
+}
 
 @Composable
 fun CommandStartGroup(config: BattleConfigCore) {
@@ -55,6 +75,9 @@ fun CommandStartGroup(config: BattleConfigCore) {
                     title = stringResource(R.string.p_command_start_card_count),
                     valueRange = 1..5
                 )
+                CommandStartColours(
+                    config.commandStartBuster, config.commandStartArts, config.commandStartQuick, config.commandStartCombineMode
+                )
 
                 var secondEnabled by config.secondaryStartEnabled.remember()
                 var secondTarget by config.secondaryStartServant.remember()
@@ -76,6 +99,9 @@ fun CommandStartGroup(config: BattleConfigCore) {
                     config.secondaryStartCardCount.StepperPreference(
                         title = stringResource(R.string.p_command_start_card_count),
                         valueRange = 1..5
+                    )
+                    CommandStartColours(
+                        config.secondaryStartBuster, config.secondaryStartArts, config.secondaryStartQuick, config.secondaryStartCombineMode
                     )
                     val first by config.commandStartServant.remember()
                     if (first == secondTarget) {

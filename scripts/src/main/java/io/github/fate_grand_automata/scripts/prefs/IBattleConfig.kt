@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.prefs
 
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
+import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
@@ -12,11 +13,19 @@ interface IBattleConfig : IExecutionProfile {
     val commandStartMode: CommandStartMode
     val commandStartServant: Int
     val commandStartCardCount: Int
+    val commandStartBuster: Int
+    val commandStartArts: Int
+    val commandStartQuick: Int
+    val commandStartCombineMode: CommandStartCombineMode
     /** Maximum number of skipped turns; zero means unlimited. */
     val commandStartMaxTurns: Int
     val secondaryStartEnabled: Boolean
     val secondaryStartServant: Int
     val secondaryStartCardCount: Int
+    val secondaryStartBuster: Int
+    val secondaryStartArts: Int
+    val secondaryStartQuick: Int
+    val secondaryStartCombineMode: CommandStartCombineMode
     val secondaryExecution: IExecutionProfile
     /** Skill and NP automatic use is shared by both start conditions. */
     var spam: List<ServantSpamConfig>

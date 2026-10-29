@@ -913,4 +913,13 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_support_np_disabled">Off (Lv.1; saved minimum unchanged)</string>
     <string name="ce_enhancement_filter_note">Check the in-game filter settings before starting.</string>
     <string name="bond_max_popup_stop">Stopped after confirming a bond level-up to 10 or higher.</string>
+    <string name="p_command_start_combine_mode">Combine count and colours</string>
+    <string name="command_start_combine_and">AND — all active minimums</string>
+    <string name="command_start_combine_or">OR — any active minimum</string>
+    <string name="p_command_start_buster">Buster (B) minimum (0 = unused)</string>
+    <string name="p_command_start_arts">Arts (A) minimum (0 = unused)</string>
+    <string name="p_command_start_quick">Quick (Q) minimum (0 = unused)</string>
+    <string name="command_start_waiting_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$d), %4$s</string>
+    <string name="command_start_waiting_both_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$d), %7$s; Servant %4$d, cards %5$d (minimum %6$d), %8$s</string>
+    <string name="command_started_profile_colours">Command profile %1$d started at wave %2$d, turn %3$d (%4$s)</string>
 </resources>

@@ -4,6 +4,8 @@ import android.content.SharedPreferences
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.prefs.core.CommandStartColoursCore
+import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
 import io.github.fate_grand_automata.prefs.core.GameAreaPrefsCore
 import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.lib_automata.GameAreaOffsets
@@ -24,6 +26,61 @@ import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 import kotlin.test.Test
 
 class ExecutionProfileCoreTest {
+    @Test
+    fun `old card start exports import with unused colours and AND for each condition`() {
+        val store = MemoryPrefs()
+        store.edit().also { it.import(BattleConfigFile.decode(
+            """{"command_start_mode":"CardCount","command_start_card_count":3,"secondary_start_enabled":true,"secondary_start_card_count":2}"""
+        )) }.apply()
+        for (prefix in listOf("command_start_", "secondary_start_")) {
+            val colours = CommandStartColoursCore(PrefMaker(store), prefix)
+            assertThat(colours.buster.get()).isEqualTo(0)
+            assertThat(colours.arts.get()).isEqualTo(0)
+            assertThat(colours.quick.get()).isEqualTo(0)
+            assertThat(colours.combineMode.get()).isEqualTo(CommandStartCombineMode.And)
+        }
+        assertThat(store.getInt("command_start_card_count", 0)).isEqualTo(3)
+        assertThat(store.getInt("secondary_start_card_count", 0)).isEqualTo(2)
+    }
+
+    @Test
+    fun `both conditions retain independent colour minimums and modes through reopen duplicate and file import`() {
+        val store = MemoryPrefs()
+        val first = CommandStartColoursCore(PrefMaker(store), "command_start_")
+        val second = CommandStartColoursCore(PrefMaker(store), "secondary_start_")
+        first.buster.set(1)
+        first.arts.set(2)
+        first.quick.set(3)
+        first.combineMode.set(CommandStartCombineMode.Or)
+        second.buster.set(4)
+        second.arts.set(5)
+        second.quick.set(0)
+        second.combineMode.set(CommandStartCombineMode.And)
+        val copied = MemoryPrefs()
+        copied.edit().also { it.import(store.all) }.apply()
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(store.all))) }.apply()
+        for (storage in listOf(store, copied, restored)) {
+            val primary = CommandStartColoursCore(PrefMaker(storage), "command_start_")
+            val secondary = CommandStartColoursCore(PrefMaker(storage), "secondary_start_")
+            assertThat(listOf(primary.buster.get(), primary.arts.get(), primary.quick.get())).isEqualTo(listOf(1, 2, 3))
+            assertThat(primary.combineMode.get()).isEqualTo(CommandStartCombineMode.Or)
+            assertThat(listOf(secondary.buster.get(), secondary.arts.get(), secondary.quick.get())).isEqualTo(listOf(4, 5, 0))
+            assertThat(secondary.combineMode.get()).isEqualTo(CommandStartCombineMode.And)
+        }
+        CommandStartColoursCore(PrefMaker(copied), "command_start_").buster.set(5)
+        assertThat(first.buster.get()).isEqualTo(1)
+        assertThat(second.buster.get()).isEqualTo(4)
+    }
+
+    @Test
+    fun `unknown imported combine modes fall back to AND`() {
+        val store = MemoryPrefs()
+        store.edit().putString("command_start_combine_mode", "FutureMode").apply()
+        assertThat(CommandStartColoursCore(PrefMaker(store), "command_start_").combineMode.get())
+            .isEqualTo(CommandStartCombineMode.And)
+    }
+
     @Test
     fun `retired Duo setting reads as Default and keeps custom offsets`() {
         val store = MemoryPrefs()

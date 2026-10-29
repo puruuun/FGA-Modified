@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts
 
 import io.github.fate_grand_automata.scripts.models.CommandCard
+import io.github.fate_grand_automata.scripts.models.CardColourCounts
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import kotlin.time.Duration
@@ -15,11 +16,12 @@ sealed class ScriptNotify {
     data object GrandScoreNotSupported : ScriptNotify()
     class BetweenRuns(val refills: Int, val runs: Int, val ceDrops: Int) : ScriptNotify()
     data object BondLevelUp : ScriptNotify()
-    class CommandStartWaiting(val servant: Int, val count: Int, val required: Int) : ScriptNotify()
-    class CommandStarted(val stage: Int, val turn: Int, val profileIndex: Int = 0) : ScriptNotify()
+    class CommandStartWaiting(val servant: Int, val count: Int, val required: Int, val colours: CardColourCounts) : ScriptNotify()
+    class CommandStarted(val stage: Int, val turn: Int, val profileIndex: Int = 0, val colours: CardColourCounts) : ScriptNotify()
     class CommandStartWaitingBoth(
         val firstServant: Int, val firstCount: Int, val firstRequired: Int,
-        val secondServant: Int, val secondCount: Int, val secondRequired: Int
+        val secondServant: Int, val secondCount: Int, val secondRequired: Int,
+        val firstColours: CardColourCounts, val secondColours: CardColourCounts
     ) : ScriptNotify()
     class CommandStartSkipped(val waitingTurns: Int) : ScriptNotify()
 }
