@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.*
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitException
@@ -12,14 +13,15 @@ import javax.inject.Inject
 class FpAutoSell @Inject constructor(
     api: IFgoAutomataApi,
     private val reader: FpSellReader,
-    private val swipe: Swiper
+    private val swipe: Swiper,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     data class Result(val summary: FpSellPolicy.Summary, val dryRun: Boolean)
     private val loc get() = reader.loc
     private var step = SellStep.Entry
     private var dryRun = true
     private var progress: FpSellProgress? = null
-    private val buttons = FpSellButtons(api)
+    private val buttons = FpSellButtons(api, addedTuning = addedTuning)
     private var summaryLogged = false
     private val selectedSoFar get() = progress?.selected ?: 0
     private val unknownLockSoFar get() = progress?.unknownLock ?: 0
@@ -46,7 +48,7 @@ class FpAutoSell @Inject constructor(
     }
     private fun click(region: Region, image: Images) {
         buttons.click(region, image) { stop("button not found after 2s: $image") }
-        FpSellTiming.AFTER_ACTION.wait()
+        addedTuning.fp.delay(FpSellTiming.AFTER_ACTION).wait()
     }
 
     fun run(): Result {
@@ -62,13 +64,13 @@ class FpAutoSell @Inject constructor(
         val tracker = checkNotNull(progress)
         log("start dryRun=$dryRun")
         click(loc.fullSell, Images.FpSellSell)
-        FpSellTiming.SELL_SCREEN_LOAD.wait()
+        addedTuning.fp.delay(FpSellTiming.SELL_SCREEN_LOAD).wait()
         awaitScreen("card grid") { reader.gridReadable() }
         // The sell screen may open on the Craft Essence tab. Only the servant tab is read (D-17).
         if (!useSameSnapIn { reader.onServantTab() }) {
-            FpSellTiming.BUTTON_SETTLE.wait()
+            addedTuning.fp.delay(FpSellTiming.BUTTON_SETTLE).wait()
             loc.servantTabClick.click()
-            FpSellTiming.AFTER_ACTION.wait()
+            addedTuning.fp.delay(FpSellTiming.AFTER_ACTION).wait()
             if (!useSameSnapIn { reader.onServantTab() }) stop("servant tab not reached")
         }
         step = SellStep.Columns
@@ -76,9 +78,9 @@ class FpAutoSell @Inject constructor(
         var presses = 0
         while (!useSameSnapIn { reader.isSevenColumns() }) {
             if (presses++ == 2) stop("seven columns not reached after 2 presses")
-            FpSellTiming.BUTTON_SETTLE.wait()
+            addedTuning.fp.delay(FpSellTiming.BUTTON_SETTLE).wait()
             loc.sizeSwitch.click()
-            FpSellTiming.AFTER_ACTION.wait()
+            addedTuning.fp.delay(FpSellTiming.AFTER_ACTION).wait()
             awaitScreen("card grid after size switch") { reader.gridReadable() }
         }
         step = SellStep.Selection
@@ -98,7 +100,7 @@ class FpAutoSell @Inject constructor(
                 requestedScroll += loc.rowPitch
                 log("page=$page rows=$evaluatedRows swipe=$requestedScroll reanchor=true")
                 swipe.scroll(loc.swipeStart, loc.swipeEnd(loc.rowPitch))
-                FpSellTiming.SELECTION_SCROLL.wait()
+                addedTuning.fp.delay(FpSellTiming.SELECTION_SCROLL).wait()
                 continue
             }
             anchorRetry = false
@@ -129,7 +131,7 @@ class FpAutoSell @Inject constructor(
             requestedScroll = distance
             swipe.scroll(loc.swipeStart, loc.swipeEnd(distance))
             log("page=$page swiped distance=$distance rows=$evaluatedRows")
-            FpSellTiming.SELECTION_SCROLL.wait()
+            addedTuning.fp.delay(FpSellTiming.SELECTION_SCROLL).wait()
         }
         if (!ended) stop("page limit reached without the list ending")
         val summary = tracker.summary()
@@ -144,10 +146,10 @@ class FpAutoSell @Inject constructor(
         step = SellStep.Flow
         loc.confirm.click()
         if (dryRun) throw ExitException(AutoFriendGacha.ExitReason.SellDryRunDone(summary))
-        FpSellTiming.AFTER_ACTION.wait()
+        addedTuning.fp.delay(FpSellTiming.AFTER_ACTION).wait()
         loc.convert.click()
-        FpSellTiming.AFTER_ACTION.wait()
+        addedTuning.fp.delay(FpSellTiming.AFTER_ACTION).wait()
         loc.doneClose.click()
-        FpSellTiming.AFTER_CLOSE.wait()
+        addedTuning.fp.delay(FpSellTiming.AFTER_CLOSE).wait()
     }
 }

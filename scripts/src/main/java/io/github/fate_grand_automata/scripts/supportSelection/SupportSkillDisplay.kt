@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
@@ -9,7 +10,9 @@ import kotlin.time.Duration.Companion.seconds
 
 /** The global list display cycles normal -> append -> both -> normal. */
 @ScriptScope
-class SupportSkillDisplay @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataApi by api {
+class SupportSkillDisplay @Inject constructor(api: IFgoAutomataApi,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     enum class View { Normal, Append, Both, Unknown }
 
     companion object {
@@ -20,8 +23,8 @@ class SupportSkillDisplay @Inject constructor(api: IFgoAutomataApi) : IFgoAutoma
     fun read(): View = useColor {
         useSameSnapIn {
             val region = locations.support.skillDisplayLabelsRegion
-            val normal = region.exists(images[Images.SupportNormalSkills], similarity = LABEL_SIMILARITY)
-            val append = region.exists(images[Images.SupportAppendSkills], similarity = LABEL_SIMILARITY)
+            val normal = region.exists(images[Images.SupportNormalSkills], similarity = addedTuning.support.similarity(LABEL_SIMILARITY))
+            val append = region.exists(images[Images.SupportAppendSkills], similarity = addedTuning.support.similarity(LABEL_SIMILARITY))
             when {
                 normal && append -> View.Both
                 normal -> View.Normal
@@ -45,7 +48,7 @@ class SupportSkillDisplay @Inject constructor(api: IFgoAutomataApi) : IFgoAutoma
         repeat(4) {
             val view = read()
             if (view != View.Unknown) return view
-            0.2.seconds.wait()
+            addedTuning.support.delay(0.2.seconds).wait()
         }
         return View.Unknown
     }
@@ -64,13 +67,13 @@ class SupportSkillDisplay @Inject constructor(api: IFgoAutomataApi) : IFgoAutoma
 
     private fun toggle() {
         locations.support.skillDisplaySwitchClick.click()
-        0.3.seconds.wait()
+        addedTuning.support.delay(0.3.seconds).wait()
     }
 
     private fun expect(view: View) {
         repeat(4) {
             if (read() == view) return
-            0.2.seconds.wait()
+            addedTuning.support.delay(0.2.seconds).wait()
         }
         fail()
     }

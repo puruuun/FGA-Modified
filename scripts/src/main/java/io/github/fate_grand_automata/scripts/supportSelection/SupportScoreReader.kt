@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptLog
@@ -34,7 +35,8 @@ data class SupportScores(
 class SupportScoreReader @Inject constructor(
     api: IFgoAutomataApi,
     private val ocr: OcrService,
-    private val diagnostics: IReaderDiagnostics = NoReaderDiagnostics
+    private val diagnostics: IReaderDiagnostics = NoReaderDiagnostics,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         const val MIN_OCR_CONFIDENCE = 75
@@ -241,7 +243,7 @@ class SupportScoreReader @Inject constructor(
         // Preserve the validated ordinary +62 matcher; compact +62/+16 uses a different font.
         val legacyClass62 = evidence.template(
             Images.SupportScore62,
-            region.exists(images[Images.SupportScore62], similarity = SupportScoreSelection.SCORE_SIMILARITY)
+            region.exists(images[Images.SupportScore62], similarity = addedTuning.support.similarity(SupportScoreSelection.SCORE_SIMILARITY))
         )
         var blockedClass = false
         var blockedGrand = false
@@ -271,7 +273,7 @@ class SupportScoreReader @Inject constructor(
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
                 if (prefs.gameServer is GameServer.Jp) {
-                    blocks = pattern.grayPixels()?.let { SupportScoreBlocks.read(it, pattern.width, pattern.height) }
+                    blocks = pattern.grayPixels()?.let { SupportScoreBlocks.read(it, pattern.width, pattern.height, addedTuning.support) }
                 }
                 val primary = OCR_PROFILES.mapIndexed { profile, options ->
                     detect(pattern, options, "primary", profile, evidence).also { inspect(pattern, options, it) }
@@ -297,16 +299,16 @@ class SupportScoreReader @Inject constructor(
         var differentGrandDigit = false
         fun matches(templates: List<Images>, verifyGrandDigit: Boolean = false) = templates.any { image ->
             val template = images[image]
-            val hit = if (!verifyGrandDigit) region.exists(template, similarity = COMPACT_FIELD_SIMILARITY)
+            val hit = if (!verifyGrandDigit) region.exists(template, similarity = addedTuning.support.similarity(COMPACT_FIELD_SIMILARITY))
             else {
-                val candidates = region.findAll(template, similarity = GRAND_FIELD_SIMILARITY)
+                val candidates = region.findAll(template, similarity = addedTuning.support.similarity(GRAND_FIELD_SIMILARITY))
                 if (candidates.isEmpty()) false else {
                     // The common /+1 prefix must not hide a different final digit.
                     val pixels = SupportScoreLayout.grandLastDigit(template.width, template.height)
                     template.crop(pixels).use { digit ->
                         candidates.any { match ->
                             SupportScoreLayout.matchedPixels(match.region, template.width, template.height, pixels)
-                                .exists(digit, similarity = GRAND_FIELD_SIMILARITY).also {
+                                .exists(digit, similarity = addedTuning.support.similarity(GRAND_FIELD_SIMILARITY)).also {
                                     if (!it) differentGrandDigit = true
                                 }
                         }

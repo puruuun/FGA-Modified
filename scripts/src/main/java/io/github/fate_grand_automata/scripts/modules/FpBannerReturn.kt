@@ -1,14 +1,20 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.*
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitException
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitReason
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
 import io.github.lib_automata.Pattern
+import io.github.lib_automata.Region
+import io.github.fate_grand_automata.scripts.enums.GameServer
+import io.github.fate_grand_automata.scripts.enums.GameServers
 import javax.inject.Inject
 
 /** D-31: remember only the title; compare in place and after each of at most ten left presses. */
-class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: FpSellLocations) : IFgoAutomataApi by api {
+class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: FpSellLocations,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     companion object {
         const val MAX_STEPS = 10
         fun search(matches: () -> Boolean, left: () -> Unit): Boolean {
@@ -18,7 +24,7 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
         }
     }
     private var title: Pattern? = null
-    private val buttons = FpSellButtons(api)
+    private val buttons = FpSellButtons(api, addedTuning = addedTuning)
     private fun stop(reason: ExitReason.BannerReturnStopped = ExitReason.BannerTitleNotFound): Nothing {
         messages.log(ScriptLog.FpSell("stop step=bannerReturn reason=${reason.label}"))
         throw ExitException(reason)
@@ -26,9 +32,15 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
     fun release() { title?.close(); title = null }
     fun remember() { if (title == null) title = loc.bannerTitle.getPattern() }
     fun matches(savedTitle: Pattern): Boolean =
-        loc.bannerTitle.exists(savedTitle, similarity = 0.85) &&
-            (findImage(locations.fp.summonCheck, Images.FriendSummon) ||
-                findImage(locations.fp.initialSummonCheck, Images.FriendSummon))
+        loc.bannerTitle.exists(savedTitle, similarity = addedTuning.fp.similarity(0.85)) &&
+            (fpLabel(locations.fp.summonCheck) || fpLabel(locations.fp.initialSummonCheck))
+
+    private fun fpLabel(region: Region): Boolean {
+        if (addedTuning.fp.similarityOffsetPercent == 0) return findImage(region, Images.FriendSummon)
+        val similarity = addedTuning.fp.similarity(prefs.platformPrefs.minSimilarity)
+        return region.exists(images[Images.FriendSummon], similarity = similarity) ||
+            (prefs.gameServer is GameServer.Jp && region.exists(images[Images.FriendSummon, GameServers.default], similarity = similarity))
+    }
 
     /** D-31: guard the original FGA summon taps with the saved title, FP label and visible button. */
     fun verifySummon() {
@@ -38,8 +50,8 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             .mapNotNull { runCatching { images[it] }.getOrNull() }
         buttons.awaitMatch {
             if (!matches(saved)) null else {
-                patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = 0.9) }
-                    ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = 0.9) }
+                patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
+                    ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
             }
         } ?: stop(ExitReason.SummonMenuFailed)
     }
@@ -47,19 +59,19 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
     fun restore() {
         val savedTitle = title ?: stop()
         loc.close.click()
-        FpSellTiming.AFTER_CLOSE.wait()
+        addedTuning.fp.delay(FpSellTiming.AFTER_CLOSE).wait()
         buttons.menu(loc.menu, Images.FpSellMenu,
             { buttons.visible(loc.summonMenu, Images.FpSellSummonMenu) },
             { stop(ExitReason.WorkshopMenuFailed) })
         // D-40: the summon screen loads behind a long black screen. Tap once, wait, poll, never re-tap.
         buttons.click(loc.summonMenu, Images.FpSellSummonMenu) { stop(ExitReason.SummonMenuFailed) }
-        FpSellTiming.SUMMON_LOAD_WAIT.wait()
+        addedTuning.fp.delay(FpSellTiming.SUMMON_LOAD_WAIT).wait()
         if (!buttons.awaitSignal(FpSellTiming.SUMMON_LOAD_POLLS) {
                 buttons.visible(loc.leftArrowRegion, Images.FpSellLeftArrow)
             }) stop(ExitReason.SummonMenuFailed)
         if (!search({ useSameSnapIn { matches(savedTitle) } }, {
             buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop() }
-            FpSellTiming.AFTER_ARROW.wait()
+            addedTuning.fp.delay(FpSellTiming.AFTER_ARROW).wait()
         })) stop()
     }
 }

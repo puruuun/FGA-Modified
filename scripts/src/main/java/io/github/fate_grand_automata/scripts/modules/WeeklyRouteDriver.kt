@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptLog
@@ -55,7 +56,8 @@ class WeeklyRouteDriver @Inject constructor(
     private val session: IWeeklyRouteSession,
     private val loader: IPatternFileLoader,
     private val diagnostics: io.github.fate_grand_automata.scripts.weekly.IWeeklyPanelDiagnostics,
-    private val vaultReader: WeeklyVaultReader
+    private val vaultReader: WeeklyVaultReader,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : RouteDriver, IFgoAutomataApi by api, AutoCloseable {
     companion object {
         /** Chapter banner match score: the corrected opaque crop scores above 0.90 on owner captures; absent chapters below 0.61. */
@@ -101,20 +103,21 @@ class WeeklyRouteDriver @Inject constructor(
 
     // ---- screens -------------------------------------------------------------------------------------------------
 
-    private fun topLeft(image: Images) = images[image] in loc.topLeftButton
+    private fun topLeft(image: Images) = loc.topLeftButton.exists(images[image],
+        similarity = addedTuning.weekly.defaultSimilarity { prefs.platformPrefs.minSimilarity })
 
     override fun screen(): RouteScreen = useSameSnapIn {
-        val (notice, terminal, close) = WeeklyRouteScreens(this, loc).scores()
-        WeeklyRouteScreens.classify(notice, terminal, close).also {
+        val (notice, terminal, close) = WeeklyRouteScreens(this, loc, addedTuning).scores()
+        WeeklyRouteScreens.classify(notice, terminal, close, addedTuning.weekly).also {
             log("screen detected=$it notice=$notice terminal=$terminal close=$close")
         }
     }
 
     /** Daily content is identified by panel anchors, independently of its title or event art. */
     fun dailyList(): Boolean = useSameSnapIn {
-        val (notice, terminal, close) = WeeklyRouteScreens(this, loc).scores()
+        val (notice, terminal, close) = WeeklyRouteScreens(this, loc, addedTuning).scores()
         val anchors = vaultReader.anchorMatches()
-        val daily = WeeklyRouteScreens.classify(notice, terminal, close) == RouteScreen.List && anchors.isNotEmpty()
+        val daily = WeeklyRouteScreens.classify(notice, terminal, close, addedTuning.weekly) == RouteScreen.List && anchors.isNotEmpty()
         log("vault step=daily-list close=$close anchor=${anchors.maxOfOrNull { it.score }} found=$daily")
         daily
     }
@@ -144,7 +147,7 @@ class WeeklyRouteDriver @Inject constructor(
         val to = loc.listScrollEnd.copy(y = endY)
         log("scroll direction=$direction finger=${if (endY < startY) "UP" else "DOWN"} count=$count from=$from to=$to")
         swipe.scroll(from, to)
-        700.milliseconds.wait()
+        addedTuning.weekly.delay(700.milliseconds).wait()
     }
 
     private fun findColor(template: Pattern, similarity: Double, label: String = "banner"): Match? = useColor {
@@ -152,7 +155,7 @@ class WeeklyRouteDriver @Inject constructor(
             // 0.3 keeps near misses in the log (D-32); only the threshold below accepts a banner.
             val best = loc.listArea.findAll(template, 0.3).maxByOrNull { it.score }
             log("$label score=${best?.score} threshold=$similarity point=${best?.region?.center}")
-            best?.takeIf { it.score >= similarity }
+            best?.takeIf { it.score >= addedTuning.weekly.similarity(similarity) }
         }
     }
 
@@ -166,7 +169,7 @@ class WeeklyRouteDriver @Inject constructor(
                 val valid = screen() == expected
                 // Colour banner matching finishes before the separate grayscale end-template snapshot.
                 val match = if (valid) find() else null
-                val bar = if (valid) io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(this, loc)
+                val bar = if (valid) io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(this, loc, addedTuning.weekly)
                     else io.github.fate_grand_automata.scripts.weekly.ListScrollbar.State(false, false)
                 io.github.fate_grand_automata.scripts.weekly.ListScanFrame(valid, match, bar)
             },
@@ -199,7 +202,7 @@ class WeeklyRouteDriver @Inject constructor(
         if (list == ChapterList.ChaldeaGate && beforeTap != RouteScreen.Home) return false
         if (beforeTap !in setOf(RouteScreen.Home, RouteScreen.List)) return false
         match.region.center.click()
-        2.seconds.wait()
+        addedTuning.weekly.delay(2.seconds).wait()
         val opened = waitScreen(RouteScreen.List)
         log("list $list opened=$opened")
         return opened
@@ -215,7 +218,7 @@ class WeeklyRouteDriver @Inject constructor(
                 ?: return false.also { abortDiagnostic() }
             if (screen() != RouteScreen.List) return false
             match.region.center.click()
-            3.seconds.wait()
+            addedTuning.weekly.delay(3.seconds).wait()
             return waitDaily()
         }
         if (screen() !in setOf(RouteScreen.Home, RouteScreen.List)) return false
@@ -232,7 +235,7 @@ class WeeklyRouteDriver @Inject constructor(
         log("chapter $warId banner score=${"%.2f".format(match.score)} at ${match.region.center}")
         if(screen() !in setOf(RouteScreen.Home,RouteScreen.List)) return false
         match.region.center.click()
-        io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.enterMapWait.wait()
+        addedTuning.weekly.delay(io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.enterMapWait).wait()
         val opened = waitScreen(RouteScreen.Map, timeout = 12)
         log("chapter $warId opened=$opened")
         return opened
@@ -241,19 +244,19 @@ class WeeklyRouteDriver @Inject constructor(
     override fun closeList(): Boolean {
         if (screen() !in setOf(RouteScreen.List)) return false
         loc.topLeftButton.click()
-        2.seconds.wait()
+        addedTuning.weekly.delay(2.seconds).wait()
         return waitScreen(RouteScreen.Home).also { log("close list home=$it") }
     }
 
     override fun terminal(): Boolean {
         if (dailyList()) {
             loc.topLeftButton.click()
-            2.seconds.wait()
+            addedTuning.weekly.delay(2.seconds).wait()
             return waitScreen(RouteScreen.List)
         }
         if (screen() != RouteScreen.Map) return false.also { log("terminal button not visible") }
         loc.topLeftButton.click()
-        io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.leaveMapWait.wait()
+        addedTuning.weekly.delay(io.github.fate_grand_automata.scripts.weekly.WeeklyPanelFlow.leaveMapWait).wait()
         return waitScreen(RouteScreen.List, RouteScreen.Home).also { log("terminal returned=$it") }
     }
 
@@ -290,14 +293,14 @@ class WeeklyRouteDriver @Inject constructor(
         if (screen() != RouteScreen.Map) return false
         log("pinch before screen=Map")
         val ok = swipe.pinch(PinchGesture.zoomOut(loc.pinchBounds))
-        1.seconds.wait()
+        addedTuning.weekly.delay(1.seconds).wait()
         log("pinch after completed=$ok")
         return ok
     }
 
     override fun prepareMap(warId: Int): Boolean {
         if (warId == AtlasWeekly.CHALDEA_GATE_DAILY_WAR) return true
-        2.seconds.wait()
+        addedTuning.weekly.delay(2.seconds).wait()
         // Diagnostic fits use the broad scale range so the initial, still zoomed-in map is observable.
         val quest = run.items.firstOrNull { it.quest.warId == warId }?.quest
         val war = run.wars[warId]
@@ -402,7 +405,7 @@ class WeeklyRouteDriver @Inject constructor(
             val (from, to) = MapView.dragPath(drag, screenWidth, screenHeight)
             log("scroll quest=${quest.id} plan=${plan.plan} drag=0,${"%.0f".format(drag.y)} targetOrigin=${"%.1f".format(movement.target)} ratio=${"%.2f".format(movement.ratio)}")
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
-            1.seconds.wait()
+            addedTuning.weekly.delay(1.seconds).wait()
         }
     }
 
@@ -475,7 +478,7 @@ class WeeklyRouteDriver @Inject constructor(
         val (from, to) = MapView.dragPath(drag, width, height)
         return loc.mapMotion.getPattern("map motion before").use { before ->
             swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
-            1.seconds.wait()
+            addedTuning.weekly.delay(1.seconds).wait()
             loc.mapMotion.getPattern("map motion after").use { after ->
                 MapLocalizer.fit(before.featureMatches(after, io.github.lib_automata.Region(0, 0, after.width, after.height)), 0.98..1.02)
                     ?.takeIf { kotlin.math.abs(it.originX) <= 2.0 }?.originY
@@ -488,9 +491,9 @@ class WeeklyRouteDriver @Inject constructor(
         evidenceAnchor = null
         for (i in 0 until PANEL_SETTLE_ATTEMPTS) {
             if (useSameSnapIn { reader.anchors().isNotEmpty() }) break
-            500.milliseconds.wait()
+            addedTuning.weekly.delay(500.milliseconds).wait()
         }
-        300.milliseconds.wait()
+        addedTuning.weekly.delay(300.milliseconds).wait()
         // D-29: the spot ribbon is read against the spot names of this chapter only.
         val spotNames = run.wars[quest.warId]?.spots?.values?.filter { it.isNotBlank() }?.distinct().orEmpty()
         val spotQuestNames = run.wars[quest.warId]?.spotQuests?.get(quest.spotId).orEmpty()
@@ -539,7 +542,7 @@ class WeeklyRouteDriver @Inject constructor(
                 if (!tap && anchor != null) evidence = evidence?.copy(file = saveEvidence(quest.id, anchor).orEmpty())
                 return true
             }
-            if (attempt < PANEL_READ_ATTEMPTS - 1) 500.milliseconds.wait()
+            if (attempt < PANEL_READ_ATTEMPTS - 1) addedTuning.weekly.delay(500.milliseconds).wait()
         }
         return false
     }
@@ -594,14 +597,14 @@ class WeeklyRouteDriver @Inject constructor(
             if (spot == null) { problem = why; return false }
             log("tap step=spot quest=${quest.id} centre=$centre point=$spot")
             spot.click()
-            2.seconds.wait()
+            addedTuning.weekly.delay(2.seconds).wait()
             if (!waitScreen(RouteScreen.List, timeout = 4)) {
                 // D-33: keep the frame right after the tap, then tap the same point once more before giving up.
                 log("no panel quest=${quest.id} retap=true point=$spot")
                 if (!tap) probeDiagnostic(quest.id, 1)
-                1.seconds.wait()
+                addedTuning.weekly.delay(1.seconds).wait()
                 spot.click()
-                2.seconds.wait()
+                addedTuning.weekly.delay(2.seconds).wait()
                 if (!waitScreen(RouteScreen.List, timeout = 4)) { problem = "no panel at the spot"; return false }
             }
             failure.panelOpened()
@@ -615,7 +618,7 @@ class WeeklyRouteDriver @Inject constructor(
             val actualDelta = if (placeholderPlacement != null) measuredMapDrag(ScreenPoint(0.0, -edge.y), width, height)
             else {
                 swipe.scroll(Location(MapView.toScript(from.x), MapView.toScript(from.y)), Location(MapView.toScript(to.x), MapView.toScript(to.y)))
-                1.seconds.wait()
+                addedTuning.weekly.delay(1.seconds).wait()
                 null
             }
             val recovered = placeholderPlacement?.let { (geometry, fit) ->
@@ -642,7 +645,7 @@ class WeeklyRouteDriver @Inject constructor(
                 } else {
                     log("panel reset finger=DOWN from=${anchor.resetStart} to=${anchor.resetEnd}")
                     swipe.scroll(anchor.resetStart, anchor.resetEnd)
-                    300.milliseconds.wait()
+                    addedTuning.weekly.delay(300.milliseconds).wait()
                     true
                 }
             },
@@ -713,7 +716,7 @@ class WeeklyRouteDriver @Inject constructor(
     }
 
     /** Only called after the existing battle flow reaches its final run limit. */
-    private fun closeRepeatDialog(): Boolean = WeeklyRepeatDialog(this, loc).closeIfVisible()
+    private fun closeRepeatDialog(): Boolean = WeeklyRepeatDialog(this, loc, addedTuning).closeIfVisible()
 
     /** After the last run the game shows the map with the quest panel open (owner); a stuck repeat dialog is closed once. */
     private fun settleOnMap(): Boolean {

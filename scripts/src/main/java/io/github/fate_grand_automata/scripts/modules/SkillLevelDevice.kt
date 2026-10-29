@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 
@@ -10,14 +11,15 @@ class SkillLevelDevice(
     private val loc: SkillLevelLocations,
     private val screens: SkillLevelScreens,
     private val digits: SkillLevelDigits,
-    private val panelReader: SkillLevelPanelReader
+    private val panelReader: SkillLevelPanelReader,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : SkillLevelPanel, IFgoAutomataApi by api {
     /** The padlock only exists on append slots. */
     override fun isLocked(slot: Int) = mode == SkillLevelMode.Append && screens.slotLocked(mode, slot)
 
     override fun select(slot: Int) {
         loc.slotClick(mode, slot).click()
-        SkillLevelTiming.SELECT_SETTLE.wait()
+        addedTuning.skill.delay(SkillLevelTiming.SELECT_SETTLE).wait()
     }
 
     override fun unlockButtonVisible() = screens.unlockButtonVisible()
@@ -35,7 +37,7 @@ class SkillLevelDevice(
         // Last look before the one button that is also the unlock button.
         check(!screens.unlockButtonVisible()) { "refusing to press an unlock button" }
         locations.enhancementClick.click()
-        SkillLevelTiming.AFTER_ENHANCE.wait()
+        addedTuning.skill.delay(SkillLevelTiming.AFTER_ENHANCE).wait()
     }
 
     override fun awaitDialog() = poll(SkillLevelTiming.DIALOG_POLLS) { screens.dialogVisible() }
@@ -46,7 +48,7 @@ class SkillLevelDevice(
 
     override fun cancel(): Boolean {
         loc.dialogCancel(mode).click()
-        SkillLevelTiming.AFTER_CANCEL.wait()
+        addedTuning.skill.delay(SkillLevelTiming.AFTER_CANCEL).wait()
         return poll(SkillLevelTiming.CLOSE_POLLS) { !screens.dialogVisible() }
     }
 
@@ -62,7 +64,7 @@ class SkillLevelDevice(
             val back = useSameSnapIn { screens.onScreen(mode) && !screens.dialogVisible() }
             if (!back) left = true
             else if (left || tap >= SkillLevelTiming.SKIP_MIN_POLLS) {
-                SkillLevelTiming.AFTER_SKIP.wait()
+                addedTuning.skill.delay(SkillLevelTiming.AFTER_SKIP).wait()
                 return true
             }
         }

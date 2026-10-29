@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -9,7 +10,9 @@ import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
 @ScriptScope
-class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrService) : IFgoAutomataApi by api {
+class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrService,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     companion object {
         const val TEXT_CONFIDENCE = 85
         const val VOTE_CONFIDENCE = 60
@@ -151,9 +154,9 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
     private fun matches(region: Region, image: Images): List<Match> {
         val template = images[image]
         return IMAGE_SCALES.flatMap { scale ->
-            if (scale == 1.0) region.findAll(template, IMAGE_SIMILARITY)
+            if (scale == 1.0) region.findAll(template, addedTuning.bond.similarity(IMAGE_SIMILARITY))
             else template.resize(Size((template.width * scale).toInt(), (template.height * scale).toInt())).use {
-                region.findAll(it, IMAGE_SIMILARITY)
+                region.findAll(it, addedTuning.bond.similarity(IMAGE_SIMILARITY))
             }
         }
     }

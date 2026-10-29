@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -19,7 +20,8 @@ import kotlin.math.abs
 @ScriptScope
 class SupportNpLevelReader @Inject constructor(
     api: IFgoAutomataApi,
-    private val ocr: OcrService
+    private val ocr: OcrService,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         const val PREFIX_SIMILARITY = 0.80
@@ -72,7 +74,7 @@ class SupportNpLevelReader @Inject constructor(
     fun read(bounds: SupportBounds): Int? {
         val search = SupportNpLayout.nameRegion(bounds.region)
         val prefixes = prefixTemplates()
-        val matches = prefixes.flatMap { search.findAll(it, similarity = PREFIX_SIMILARITY) }
+        val matches = prefixes.flatMap { search.findAll(it, similarity = addedTuning.support.similarity(PREFIX_SIMILARITY)) }
         val best = matches.maxByOrNull { it.score }
         if (best != null) {
             if (ambiguous(matches, best)) return null
@@ -93,7 +95,7 @@ class SupportNpLevelReader @Inject constructor(
     fun findLevelPrefix(bounds: SupportBounds): Region? {
         val search = SupportNpLayout.nameRegion(bounds.region)
         val prefixes = prefixTemplates()
-        val matches = prefixes.flatMap { search.findAll(it, similarity = PREFIX_SIMILARITY) }
+        val matches = prefixes.flatMap { search.findAll(it, similarity = addedTuning.support.similarity(PREFIX_SIMILARITY)) }
         val best = matches.maxByOrNull { it.score }
         if (best != null) return if (ambiguous(matches, best)) null else best.region
         val recoveryMatches = recoveryMatches(search, prefixes)
@@ -114,10 +116,10 @@ class SupportNpLevelReader @Inject constructor(
             KR_RECOVERY_PREFIX_SIMILARITY else RECOVERY_PREFIX_SIMILARITY
         return prefixes.flatMap { template ->
             RECOVERY_PREFIX_SCALES.flatMap { scale ->
-                if (scale == 1.0) search.findAll(template, similarity = recoverySimilarity)
+                if (scale == 1.0) search.findAll(template, similarity = addedTuning.support.similarity(recoverySimilarity))
                 else template.resize(template.size * scale).use {
                     // Image-loader templates are borrowed; only resized copies belong to this reader.
-                    search.findAll(it, similarity = recoverySimilarity)
+                    search.findAll(it, similarity = addedTuning.support.similarity(recoverySimilarity))
                 }
             }
         }

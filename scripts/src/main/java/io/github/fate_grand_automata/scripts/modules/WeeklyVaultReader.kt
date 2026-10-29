@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -51,7 +52,8 @@ data class VaultPanel(val anchor: WeeklyVaultAnchor, val color: VaultColor?, val
 
 /** The name and yellow background both authorize a tap; displayed campaign AP is evidence only. */
 class WeeklyVaultReader @Inject constructor(
-    api: IFgoAutomataApi, private val loc: WeeklyRouteLocations, private val ocr: OcrService
+    api: IFgoAutomataApi, private val loc: WeeklyRouteLocations, private val ocr: OcrService,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         const val ANCHOR_SIMILARITY = 0.85
@@ -60,7 +62,7 @@ class WeeklyVaultReader @Inject constructor(
         val AP_PROFILES = QuestPanelReader.AP_PROFILES.filter { it.invert }
     }
 
-    fun anchorMatches() = loc.listArea.findAll(images[Images.WeeklyDailyQuest], ANCHOR_SIMILARITY)
+    fun anchorMatches() = loc.listArea.findAll(images[Images.WeeklyDailyQuest], addedTuning.weekly.similarity(ANCHOR_SIMILARITY))
         .filter { WeeklyVaultAnchor(it.region.location).fits(loc.scriptArea) }.toList()
 
     fun anchors() = anchorMatches().sortedBy { it.region.y }.map { WeeklyVaultAnchor(it.region.location) }.take(8)

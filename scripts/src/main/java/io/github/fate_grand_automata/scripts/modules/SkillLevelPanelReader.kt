@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
@@ -16,7 +17,8 @@ data class PanelLevelEvidence(
 
 /** Reads a panel level conservatively without clicks; the flow cross-checks it against the dialog. */
 class SkillLevelPanelReader @Inject constructor(
-    api: IFgoAutomataApi, private val loc: SkillLevelLocations, private val ocr: OcrService
+    api: IFgoAutomataApi, private val loc: SkillLevelLocations, private val ocr: OcrService,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         fun parse(text: String): Int? = Regex("(?:Lv[.]?)?(10|[1-9])/10", RegexOption.IGNORE_CASE).matchEntire(text.filterNot { it.isWhitespace() })
@@ -61,7 +63,7 @@ class SkillLevelPanelReader @Inject constructor(
         require(slot in 0 until if (mode == SkillLevelMode.Skill) 3 else 5)
         if (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp)
             return@useSameSnapIn PanelLevelEvidence(null, false, null, 0.0, 0.0, "unsupported-server")
-        if (mode == SkillLevelMode.Append && SkillLevelScreens(this, loc).slotLocked(mode, slot))
+        if (mode == SkillLevelMode.Append && SkillLevelScreens(this, loc, addedTuning).slotLocked(mode, slot))
             return@useSameSnapIn PanelLevelEvidence(null, true, null, 0.0, 0.0, "locked")
         if (mode == SkillLevelMode.Append) {
             val matcher = appendMatcher
@@ -72,7 +74,7 @@ class SkillLevelPanelReader @Inject constructor(
                 loc.panelLevel(mode, slot).getPattern("panel-level").use { pattern ->
                     val pixels = pattern.rgbPixels()
                     if (pixels == null) PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-color-pixels")
-                    else matcher.read(pixels, pattern.width, pattern.height, slot)
+                    else matcher.read(pixels, pattern.width, pattern.height, slot, addedTuning.skill)
                 }
             } }
         } else loc.panelLevel(mode, slot).getPattern("panel-level").use { pattern ->

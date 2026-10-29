@@ -3,19 +3,20 @@ package io.github.fate_grand_automata.scripts.weekly
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.WeeklyRouteLocations
+import io.github.fate_grand_automata.scripts.prefs.FeatureTuning
 
 /** Upstream end templates, with a threshold measured independently for the weekly list. */
 object ListScrollbar {
     // Rail-sized windows (beta.6, #90): end minimum .817; non-end maximum .381. Midpoint, >=.21 margin.
     const val SIMILARITY = 0.60
     data class State(val top: Boolean, val bottom: Boolean, val topScore: Double? = null, val bottomScore: Double? = null)
-    fun read(top: Double?, bottom: Double?) = State(top != null && top >= SIMILARITY,
-        bottom != null && bottom >= SIMILARITY, top, bottom)
+    fun read(top: Double?, bottom: Double?, tuning: FeatureTuning = FeatureTuning()) = State(top != null && top >= tuning.similarity(SIMILARITY),
+        bottom != null && bottom >= tuning.similarity(SIMILARITY), top, bottom)
 
-    fun read(api: IFgoAutomataApi, loc: WeeklyRouteLocations): State = with(api) {
+    fun read(api: IFgoAutomataApi, loc: WeeklyRouteLocations, tuning: FeatureTuning = FeatureTuning()): State = with(api) {
         useSameSnapIn {
             read(loc.topScrollbarRegion.find(images[Images.SupportScrollBarTop], 0.01)?.score,
-                loc.bottomScrollbarRegion.find(images[Images.SupportScrollBarBottom], 0.01)?.score)
+                loc.bottomScrollbarRegion.find(images[Images.SupportScrollBarBottom], 0.01)?.score, tuning)
         }
     }
 }

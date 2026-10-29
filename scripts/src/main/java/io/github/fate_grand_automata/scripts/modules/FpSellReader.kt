@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
@@ -10,7 +11,9 @@ import javax.inject.Inject
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLocations) : IFgoAutomataApi by api {
+class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLocations,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     companion object {
         // Rail-sized window (beta.6, #90): end minimum .905; non-end maximum .532. Midpoint, >=.18 margin.
         const val SCROLLBAR_SIMILARITY = 0.72
@@ -60,10 +63,10 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
 
     fun scrollbar(): ScrollbarState = useSameSnapIn {
         val score = loc.bottomScrollbarRegion.find(images[Images.SupportScrollBarBottom], 0.01)?.score
-        ScrollbarState(score != null && score >= SCROLLBAR_SIMILARITY, score)
+        ScrollbarState(score != null && score >= addedTuning.fp.similarity(SCROLLBAR_SIMILARITY), score)
     }
 
-    fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)
+    fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = addedTuning.fp.similarity(0.9))
 
     /** Wait for frame edges at any supported size, including an initially open CE tab. */
     fun gridReadable(): Boolean = loc.grid.getPattern().use { image ->
@@ -76,7 +79,7 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
 
     /** D-11: the warning is a servant-slot warning only when the first line holds the servant word. */
     fun servantFullWarning(): Boolean = useSameSnapIn {
-        FpSellPolicy.isServantFullWarning(loc.fullDialogLine.exists(images[Images.FpSellWordServant], similarity = 0.9))
+        FpSellPolicy.isServantFullWarning(loc.fullDialogLine.exists(images[Images.FpSellWordServant], similarity = addedTuning.fp.similarity(0.9)))
     }
 
     data class PageTile(val column: Int, val region: Region, val skip: String?)
@@ -141,7 +144,7 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
         if (!present) return FpSellPolicy.Cell(false, FpSellPolicy.Lock.Unknown, null)
         val gray = useSameSnapIn {
             val area = loc.lock(card)
-            val padlock = lockTemplate?.let { area.exists(it, similarity = LOCK_SIMILARITY) } == true
+            val padlock = lockTemplate?.let { area.exists(it, similarity = addedTuning.fp.similarity(LOCK_SIMILARITY)) } == true
             val lock = when {
                 padlock -> FpSellPolicy.Lock.Locked
                 lockTemplate == null -> FpSellPolicy.Lock.Unknown

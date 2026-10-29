@@ -20,9 +20,18 @@ import io.github.fate_grand_automata.ui.prefs.remember
 
 fun LazyListScope.advancedGroup(
     prefs: PrefsCore,
+    goToAddedFeatureTuning: () -> Unit,
     goToFineTune: () -> Unit,
     goToLicense: () -> Unit
 ) {
+    item {
+        Preference(
+            title = stringResource(R.string.added_tuning_title),
+            icon = icon(R.drawable.ic_tune),
+            onClick = goToAddedFeatureTuning
+        )
+    }
+
     item {
         Preference(
             title = stringResource(R.string.p_fine_tune),

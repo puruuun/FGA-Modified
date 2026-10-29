@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -40,7 +41,8 @@ sealed class PanelVerdict {
 class QuestPanelReader @Inject constructor(
     api: IFgoAutomataApi,
     private val loc: QuestPanelLocations,
-    private val ocr: OcrService
+    private val ocr: OcrService,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         const val FREE_SIMILARITY = 0.75
@@ -57,7 +59,7 @@ class QuestPanelReader @Inject constructor(
 
     /** Fresh emblem positions, independent of panel slots or horizontal placement. */
     fun anchors(): List<QuestPanelAnchor> = label()?.let { pattern ->
-        loc.freeSearchBand.findAll(pattern, FREE_SIMILARITY)
+        loc.freeSearchBand.findAll(pattern, addedTuning.weekly.similarity(FREE_SIMILARITY))
             .sortedWith(compareBy({ it.region.y }, { it.region.x }))
             .map { QuestPanelAnchor(it.region.location) }.filter { it.fits(loc.scriptArea) }.take(8)
     }.orEmpty()
@@ -66,7 +68,7 @@ class QuestPanelReader @Inject constructor(
     fun resetAnchor(): QuestPanelAnchor? = anchors().firstOrNull() ?: label()?.let { full ->
         val half = full.height / 2
         full.crop(Region(0, half, full.width, full.height - half)).use { bottom ->
-            loc.freeSearchBand.findAll(bottom, 0.85).maxByOrNull { it.score }?.let { match ->
+            loc.freeSearchBand.findAll(bottom, addedTuning.weekly.similarity(0.85)).maxByOrNull { it.score }?.let { match ->
                 QuestPanelAnchor(match.region.location + io.github.lib_automata.Location(0, -half * 2))
             }
         }
@@ -81,7 +83,7 @@ class QuestPanelReader @Inject constructor(
         if (!anchor.fits(loc.scriptArea)) return@useSameSnapIn QuestPanel(false, null, null, null)
         val mark = label() ?: return@useSameSnapIn QuestPanel(false, null, null, null)
         if (!Region(anchor.mark.x, anchor.mark.y, mark.width * 2, mark.height * 2)
-                .exists(mark, similarity = FREE_SIMILARITY)) return@useSameSnapIn QuestPanel(false, null, null, null)
+                .exists(mark, similarity = addedTuning.weekly.similarity(FREE_SIMILARITY))) return@useSameSnapIn QuestPanel(false, null, null, null)
         val ap = anchor.ap.getPattern("anchored_panel_ap").use { image ->
             QuestPanelMatch.apConsensus(AP_PROFILES.map { ocr.detectTextLine(image, it) })
         }
@@ -133,7 +135,7 @@ class QuestPanelReader @Inject constructor(
 
     /** [slot] is the panel's place in the spot's panel list, 0 for the uppermost. */
     fun isFree(slot: Int = 0): Boolean =
-        label()?.let { loc.slot(loc.freeLabel, slot).exists(it, similarity = FREE_SIMILARITY) } == true
+        label()?.let { loc.slot(loc.freeLabel, slot).exists(it, similarity = addedTuning.weekly.similarity(FREE_SIMILARITY)) } == true
 
     /** Raw OCR readings of the AP number, kept for the QA report. */
     fun apReadings(slot: Int = 0): List<OcrText> = loc.slot(loc.apDigits, slot).getPattern("quest_panel_ap").use { pattern ->

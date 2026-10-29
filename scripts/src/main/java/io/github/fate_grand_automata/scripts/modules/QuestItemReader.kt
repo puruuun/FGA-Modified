@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -11,7 +12,9 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 @ScriptScope
-class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataApi by api {
+class QuestItemReader @Inject constructor(api: IFgoAutomataApi,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     enum class Kind { StormPod, Teapot }
     data class Button(val on: Boolean, val click: Location)
     sealed interface View {
@@ -31,19 +34,19 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataAp
     /** Each invocation captures one fresh frame. Never retain it across a click. */
     fun read(): View = useSameSnapIn {
         val loc = locations.questItems
-        val dialog = loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = SCREEN_SIMILARITY) ||
+        val dialog = loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)) ||
             // Native KR captures and window-resampled captures have different glyph antialiasing.
             (prefs.gameServer is GameServer.Kr && loc.dialogHeading.exists(
-                images[Images.QuestItemDialogKrNative], similarity = SCREEN_SIMILARITY))
-        val close = loc.dialogClose.findAll(images[Images.QuestItemDialogClose], similarity = SCREEN_SIMILARITY).maxByOrNull { it.score }
+                images[Images.QuestItemDialogKrNative], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)))
+        val close = loc.dialogClose.findAll(images[Images.QuestItemDialogClose], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)).maxByOrNull { it.score }
         if (dialog || close != null) {
             val storm = button(loc.stormPodControl)
             val tea = button(loc.teapotControl)
             return@useSameSnapIn if (dialog && close != null && storm != null && tea != null)
                 View.Dialog(storm, tea, close.region.center) else View.Unknown
         }
-        val tea = loc.mainControl.exists(images[Images.QuestItemTeapot], similarity = ICON_SIMILARITY)
-        val storm = loc.mainControl.exists(images[Images.QuestItemStormPod], similarity = ICON_SIMILARITY)
+        val tea = loc.mainControl.exists(images[Images.QuestItemTeapot], similarity = addedTuning.quest.similarity(ICON_SIMILARITY))
+        val storm = loc.mainControl.exists(images[Images.QuestItemStormPod], similarity = addedTuning.quest.similarity(ICON_SIMILARITY))
         val button = button(loc.mainControl)
         when {
             tea && !storm && button != null -> View.Single(Kind.Teapot, button)
@@ -56,7 +59,7 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi) : IFgoAutomataAp
     private fun stateMatches(region: Region): List<Pair<Boolean, Match>> =
         listOf(true to Images.QuestItemOn, true to Images.QuestItemOnMain,
             false to Images.QuestItemOff, false to Images.QuestItemOffMain).flatMap { (on, image) ->
-            region.findAll(images[image], similarity = STATE_SIMILARITY).map { on to it }
+            region.findAll(images[image], similarity = addedTuning.quest.similarity(STATE_SIMILARITY)).map { on to it }
         }
 
     private fun button(region: Region): Button? {

@@ -834,4 +834,22 @@
     <string name="chaldea_support_np_disabled">꺼짐(레벨 1, 저장된 최소 레벨 유지)</string>
     <string name="ce_enhancement_filter_note">시작전 필터설정 확인하세요</string>
     <string name="bond_max_popup_stop">도달 인연 레벨 10 이상을 확인하여 정지했습니다.</string>
+    <string name="added_tuning_title">추가 기능 미세 조정</string>
+    <string name="added_tuning_summary">변경한 값은 다음 스크립트 실행부터 적용됩니다. 안전 제한, OCR과 색상 판정은 유지됩니다.</string>
+    <string name="added_tuning_weekly">주간 미션 자동화</string>
+    <string name="added_tuning_fp">FP 자동 매각 및 배너 복귀</string>
+    <string name="added_tuning_skill">스킬 / 어펜드 레벨</string>
+    <string name="added_tuning_ce">예장 자동 강화</string>
+    <string name="added_tuning_quest">스톰 포드 / 찻주전자 및 퀘스트 시작</string>
+    <string name="added_tuning_bond">인연 추적 및 정지</string>
+    <string name="added_tuning_support">추가 서포트 판독</string>
+    <string name="added_tuning_delay">대기 배율</string>
+    <string name="added_tuning_delay_hint">이 기능의 고정 대기에 곱합니다. 기존에 전체 대기 배율이 적용되던 대기는 두 배율을 함께 적용합니다. 안전 확인 간격과 시간 제한은 유지됩니다.</string>
+    <string name="added_tuning_similarity">유사도 보정</string>
+    <string name="added_tuning_similarity_hint">템플릿 판정 기준에 보정값을 더하고 0.40~0.99로 제한합니다. 음수는 더 약한 일치도 허용합니다. OCR, 색상, 잉크 비율과 점수 차이는 유지됩니다.</string>
+    <string name="added_tuning_tap_settle">아이템 조작 후 대기</string>
+    <string name="added_tuning_poll_interval">아이템 재확인 간격</string>
+    <string name="added_tuning_quest_hint">기능 배율을 곱하기 전의 기본 대기입니다. 조작 후 대기는 기능 배율만, 재확인 간격은 전체 배율도 적용합니다. 재시도 횟수는 10회로 유지됩니다.</string>
+    <string name="added_tuning_reset_section">기본값으로</string>
+    <string name="added_tuning_reset_all">전체 기본값으로</string>
 </resources>

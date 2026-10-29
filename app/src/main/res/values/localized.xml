@@ -914,4 +914,22 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_support_np_disabled">Off (Lv.1; saved minimum unchanged)</string>
     <string name="ce_enhancement_filter_note">Check the in-game filter settings before starting.</string>
     <string name="bond_max_popup_stop">Stopped after confirming a bond level-up to 10 or higher.</string>
+    <string name="added_tuning_title">Added features fine tune</string>
+    <string name="added_tuning_summary">Settings take effect on the next script run. Safety limits, OCR and colour rules stay unchanged.</string>
+    <string name="added_tuning_weekly">Weekly mission automation</string>
+    <string name="added_tuning_fp">FP auto-sell and banner return</string>
+    <string name="added_tuning_skill">Skill / append level</string>
+    <string name="added_tuning_ce">CE auto-enhance</string>
+    <string name="added_tuning_quest">Storm pod / teapot and quest launch</string>
+    <string name="added_tuning_bond">Bond tracking and stop</string>
+    <string name="added_tuning_support">Added support reading</string>
+    <string name="added_tuning_delay">Delay multiplier</string>
+    <string name="added_tuning_delay_hint">Multiplies this feature’s fixed waits. The global Wait Multiplier also applies where it did before. Safety polling and time limits are unchanged.</string>
+    <string name="added_tuning_similarity">Similarity offset</string>
+    <string name="added_tuning_similarity_hint">Adds this offset to template thresholds, clamped to 0.40–0.99. A negative value accepts weaker matches. OCR, colour, ink and score gaps are unchanged.</string>
+    <string name="added_tuning_tap_settle">Settle after item-control tap</string>
+    <string name="added_tuning_poll_interval">Item-control poll interval</string>
+    <string name="added_tuning_quest_hint">Base wait before the feature multiplier. Tap settling uses only this feature’s multiplier; polling also uses the global multiplier. The retry count remains 10.</string>
+    <string name="added_tuning_reset_section">Reset section</string>
+    <string name="added_tuning_reset_all">Reset all sections</string>
 </resources>

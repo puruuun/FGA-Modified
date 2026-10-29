@@ -8,6 +8,9 @@ import io.github.fate_grand_automata.scripts.locations.QuestItemLocations
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.Kind
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.View
+import io.github.fate_grand_automata.scripts.prefs.AddedFeatureTuning
+import io.github.fate_grand_automata.scripts.prefs.FeatureTuning
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.lib_automata.*
 import io.mockk.every
 import io.mockk.mockk
@@ -20,6 +23,30 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class QuestItemsTest {
+    @Test fun `custom item milliseconds and feature multiplier reach taps polls launch and matches`() {
+        val tuning = AddedFeatureTuning(quest = FeatureTuning(200, 3),
+            questTapSettle = 250.milliseconds, questPollInterval = 700.milliseconds)
+        val f = Fixture(tuning = tuning)
+        f.wanted(true, true)
+        f.launch.start()
+        verify(exactly = 4) { with(f.api) { 500.milliseconds.wait(false) } }
+        verify(atLeast = 4) { with(f.api) { 1400.milliseconds.wait(true) } }
+        verify(exactly = 2) { with(f.api) { 2.seconds.wait(true) } }
+        verify(exactly = 1) { with(f.api) { 4.seconds.wait(true) } }
+        verify { with(f.api) { f.heading.exists(any<Pattern>(), any(), 0.9 + 0.03) } }
+        verify { with(f.api) { f.main.exists(any<Pattern>(), any(), 0.88 + 0.03) } }
+        verify { with(f.api) { any<Region>().findAll(any<Pattern>(), 0.88 + 0.03) } }
+        assertThat(f.trace).isEqualTo(listOf("party", "main", "storm", "tea", "close", "quest"))
+    }
+
+    @Test fun `custom polling still stops after ten unsuccessful reads`() {
+        val f = Fixture(tuning = AddedFeatureTuning(questPollInterval = 1000.milliseconds))
+        f.hideState = true
+        f.items.prepare()
+        verify(exactly = 10) { with(f.api) { 1.seconds.wait(true) } }
+        assertTrue(f.trace.isEmpty())
+    }
+
     @Test
     fun `every item tap including dialog close gets an extra fixed 100 milliseconds`() {
         for (dialog in listOf(true, false)) {
@@ -36,7 +63,8 @@ class QuestItemsTest {
         }
     }
 
-    private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot, val server: GameServer = GameServer.Jp.Original) {
+    private class Fixture(val dialogMode: Boolean = true, val kind: Kind = Kind.Teapot, val server: GameServer = GameServer.Jp.Original,
+                          tuning: IAddedFeatureTuning = IAddedFeatureTuning.Default) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val party = mockk<PartySelection>()
         val loc = mockk<QuestItemLocations>()
@@ -146,9 +174,9 @@ class QuestItemsTest {
                     else -> error("Unexpected click")
                 }
             }
-            reader = QuestItemReader(api)
-            items = QuestItems(api, reader)
-            launch = QuestLaunch(api, party, items)
+            reader = QuestItemReader(api, tuning)
+            items = QuestItems(api, reader, tuning)
+            launch = QuestLaunch(api, party, items, tuning)
         }
         fun wanted(storm: Boolean, tea: Boolean) {
             every { api.prefs.selectedServerConfigPref.useStormPod } returns storm

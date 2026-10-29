@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
 import java.util.zip.GZIPInputStream
+import io.github.fate_grand_automata.scripts.prefs.FeatureTuning
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.max
@@ -27,7 +28,7 @@ internal object SupportScoreBlocks {
         }
     }
 
-    fun read(pixels: ByteArray, width: Int, height: Int): Result {
+    fun read(pixels: ByteArray, width: Int, height: Int, tuning: FeatureTuning = FeatureTuning()): Result {
         if (pixels.size != width * height || width < 1 || height < 1) return unknown()
         val w = width * 4; val h = height * 4
         // Bilinear enlargement preserves the gaps between tiny outlined JP glyphs.
@@ -156,8 +157,8 @@ internal object SupportScoreBlocks {
                 if (template.value == target) positive = max(positive, score) else negative = max(negative, score)
             }
             return when {
-                positive >= SIMILARITY && positive - negative >= MARGIN -> Decision.Positive
-                negative >= SIMILARITY && negative - positive >= MARGIN -> Decision.Negative
+                positive >= tuning.similarity(SIMILARITY) && positive - negative >= MARGIN -> Decision.Positive
+                negative >= tuning.similarity(SIMILARITY) && negative - positive >= MARGIN -> Decision.Negative
                 else -> Decision.Unknown
             }
         }

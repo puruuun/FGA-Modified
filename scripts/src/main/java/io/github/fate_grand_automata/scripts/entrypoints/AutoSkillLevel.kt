@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.entrypoints
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -31,7 +32,8 @@ abstract class SkillLevelScript(
     private val screens: SkillLevelScreens,
     private val digits: SkillLevelDigits,
     private val panelReader: SkillLevelPanelReader,
-    val mode: SkillLevelMode
+    val mode: SkillLevelMode,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
 
     sealed class ExitReason(
@@ -87,7 +89,7 @@ abstract class SkillLevelScript(
         val (onScreen, selected) = useSameSnapIn { screens.onLabel(mode) to screens.servantSelected() }
         if (!onScreen) return logScores(ExitReason.WrongScreen)
         if (!selected) return logScores(ExitReason.NoServantSelected)
-        val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader)
+        val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader, addedTuning)
         if (checkOnly) {
             log("check-only=true targets=ignored")
             val run = SkillLevelCheckFlow(device, ::log).also { flow = it }
@@ -101,11 +103,13 @@ abstract class SkillLevelScript(
 @ScriptScope
 class AutoSkillLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
-    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader
-) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Skill)
+    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader,
+    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Skill, addedTuning)
 
 @ScriptScope
 class AutoAppendLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
-    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader
-) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Append)
+    screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader,
+    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Append, addedTuning)

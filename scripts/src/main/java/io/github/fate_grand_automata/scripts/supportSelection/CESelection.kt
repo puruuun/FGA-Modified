@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
@@ -18,7 +19,8 @@ class CESelection @Inject constructor(
     api: IFgoAutomataApi,
     private val supportPrefs: ISupportPreferences,
     private val starChecker: SupportSelectionStarChecker,
-    private val grandChecker: SupportSelectionGrandChecker
+    private val grandChecker: SupportSelectionGrandChecker,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         // #43 KR device: true NP 0.5926–0.7317, Default 0.737/0.874, wrong icon 0.15–0.25;
@@ -40,7 +42,7 @@ class CESelection @Inject constructor(
             val matched = ces
                 .flatMap { entry -> images.loadSupportPattern(SupportImageKind.CE, entry) }
                 .mapNotNull {
-                    grandSearchRegion.find(it)
+                    grandSearchRegion.find(it, similarity = addedTuning.support.defaultSimilarity { prefs.platformPrefs.minSimilarity })
                 }
                 .filter {
                     !supportPrefs.mlb || isGrandLimitBroken(it.region)
@@ -68,8 +70,8 @@ class CESelection @Inject constructor(
             val npScore = np?.score ?: 0.0
             val defaultScore = default?.score ?: 0.0
             val bondEffectMatch = when (supportPrefs.bondCEEffect) {
-                BondCEEffectEnum.NP -> npScore >= BOND_EFFECT_SIMILARITY && npScore > defaultScore
-                BondCEEffectEnum.Default -> defaultScore >= BOND_EFFECT_SIMILARITY && defaultScore > npScore
+                BondCEEffectEnum.NP -> npScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && npScore > defaultScore
+                BondCEEffectEnum.Default -> defaultScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && defaultScore > npScore
                 BondCEEffectEnum.Ignore -> true
             }
 

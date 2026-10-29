@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
@@ -14,7 +15,8 @@ import javax.inject.Inject
  */
 @ScriptScope
 class NoblePhantasmSelection @Inject constructor(
-    api: IFgoAutomataApi
+    api: IFgoAutomataApi,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     companion object {
         // 0006 D-6. Not lower than 0.80: a threshold that only passes after lowering means the crop is wrong.
@@ -29,7 +31,7 @@ class NoblePhantasmSelection @Inject constructor(
         if (entries.isEmpty()) return true
         val band = SupportNpLayout.noblePhantasmBand(bounds.region)
         val best = bestScore(entries, band)
-        val matched = best != null && best >= NP_NAME_SIMILARITY
+        val matched = best != null && best >= addedTuning.support.similarity(NP_NAME_SIMILARITY)
         messages.log(ScriptLog.SupportNoblePhantasm(matched, best))
         return matched
     }

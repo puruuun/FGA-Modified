@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -8,12 +9,12 @@ import io.github.fate_grand_automata.scripts.modules.QuestItemReader.View
 import io.github.lib_automata.Location
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Duration.Companion.milliseconds
 
 /** Synchronizes only the auto-use controls; item counts never determine ON/OFF. */
 @ScriptScope
-class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: QuestItemReader) : IFgoAutomataApi by api {
+class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: QuestItemReader,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     fun prepare() {
         // Bypass must do no captures, template loads or taps. Other servers keep their old behavior.
         if (prefs.ignoreQuestItemUsage || (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp)) return
@@ -62,12 +63,12 @@ class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: Q
     private fun tapControl(location: Location) {
         location.click()
         // Additional settling time after every item-control tap, including dialog close.
-        100.milliseconds.wait(applyMultiplier = false)
+        addedTuning.quest.delay(addedTuning.questTapSettle).wait(applyMultiplier = false)
     }
 
     private fun await(initial: Boolean = false, accept: (View) -> Boolean): View {
         repeat(10) {
-            0.3.seconds.wait()
+            addedTuning.quest.delay(addedTuning.questPollInterval).wait()
             val view = reader.read()
             if (accept(view)) return view
         }

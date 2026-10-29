@@ -24,6 +24,7 @@ import io.github.fate_grand_automata.ui.battle_config_list.BattleConfigListScree
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityScreen
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityViewModel
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
+import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningScreen
 import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsScreen
 import io.github.fate_grand_automata.ui.onboarding.OnboardingScreen
@@ -140,6 +141,7 @@ fun FgaApp(
                         MoreOptionsScreen(
                             vm = hiltViewModel(),
                             navigateToFineTune = { backStack.add(Route.FineTune) },
+                            navigateToAddedFeatureTuning = { backStack.add(Route.AddedFeatureTuning) },
                             navigateToLicense = { backStack.add(Route.License) },
                             navigateToWeeklySettings = { backStack.add(Route.WeeklyRouteSettings) }
                         )
@@ -154,6 +156,9 @@ fun FgaApp(
                         FineTuneScreen(
                             vm = hiltViewModel()
                         )
+                    }
+                    entry<Route.AddedFeatureTuning> {
+                        AddedFeatureTuningScreen(vm = hiltViewModel())
                     }
                     entry<Route.BattleConfigItem> { key ->
                         val id = key.id

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.lib_automata.Match
@@ -8,7 +9,9 @@ import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 /** D-39: settle before finding; only MENU and summon-menu may retry. */
-class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSource = TimeSource.Monotonic) : IFgoAutomataApi by api {
+class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSource = TimeSource.Monotonic,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     fun awaitSignal(polls: Int, signal: () -> Boolean): Boolean {
         val started = clock.markNow()
         val timeout = FpSellTiming.FIND_POLL * polls
@@ -25,10 +28,10 @@ class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSou
     }
 
     fun visible(region: Region, image: Images): Boolean =
-        runCatching { images[image] }.getOrNull()?.let { region.exists(it, similarity = 0.9) } == true
+        runCatching { images[image] }.getOrNull()?.let { region.exists(it, similarity = addedTuning.fp.similarity(0.9)) } == true
 
     fun awaitMatch(find: () -> Match?): Match? {
-        FpSellTiming.BUTTON_SETTLE.wait()
+        addedTuning.fp.delay(FpSellTiming.BUTTON_SETTLE).wait()
         var match: Match? = null
         awaitSignal(FpSellTiming.FIND_POLLS) { match = find(); match != null }
         return match
@@ -37,7 +40,7 @@ class FpSellButtons(private val api: IFgoAutomataApi, private val clock: TimeSou
     /** No retry: FP summon and all sell buttons use this path. */
     fun click(region: Region, image: Images, missing: () -> Nothing) {
         val pattern = runCatching { images[image] }.getOrNull() ?: missing()
-        val match = awaitMatch { region.find(pattern, similarity = 0.9) } ?: missing()
+        val match = awaitMatch { region.find(pattern, similarity = addedTuning.fp.similarity(0.9)) } ?: missing()
         match.region.click()
     }
 

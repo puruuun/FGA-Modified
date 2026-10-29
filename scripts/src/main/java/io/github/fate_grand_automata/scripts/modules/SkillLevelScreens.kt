@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
@@ -11,7 +12,9 @@ import javax.inject.Inject
  * Cheap image checks of the skill (3 slot) and append (5 slot) enhancement screens, KR and JP.
  * A template missing on the current server only narrows what can be seen: it never counts as a match.
  */
-class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: SkillLevelLocations) : IFgoAutomataApi by api {
+class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: SkillLevelLocations,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+) : IFgoAutomataApi by api {
     companion object {
         /**
          * Centre-left material-list label with the pink chevron icon, 720p TM_CCOEFF_NORMED on the owner's 20 captures
@@ -39,7 +42,7 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     private fun template(image: Images): Pattern? = runCatching { images[image] }.getOrNull()
 
     private fun seen(region: Region, image: Images, similarity: Double): Boolean =
-        template(image)?.let { region.exists(it, similarity = similarity) } == true
+        template(image)?.let { region.exists(it, similarity = addedTuning.skill.similarity(similarity)) } == true
 
     private fun labelImage(mode: SkillLevelMode) =
         if (mode == SkillLevelMode.Skill) Images.SkillLevelLabel else Images.AppendLevelLabel

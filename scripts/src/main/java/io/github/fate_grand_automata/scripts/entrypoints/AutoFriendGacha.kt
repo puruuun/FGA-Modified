@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.entrypoints
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.lib_automata.EntryPoint
@@ -24,7 +25,8 @@ class AutoFriendGacha @Inject constructor(
     api: IFgoAutomataApi,
     private val autoSell: FpAutoSell,
     private val banner: FpBannerReturn,
-    private val reader: FpSellReader
+    private val reader: FpSellReader,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     sealed class ExitReason {
         object InventoryFull : ExitReason()
@@ -128,7 +130,7 @@ class AutoFriendGacha @Inject constructor(
     /** D-48: first summon and return use exactly the same original FGA taps and delay. */
     private fun summon(dailyFree: Boolean) {
         if (dailyFree) locations.fp.initialSummonClick.click() else locations.fp.first10SummonClick.click()
-        FpSellTiming.SUMMON_CONFIRM.wait()
+        summonWait(FpSellTiming.SUMMON_CONFIRM)
         if (dailyFree) locations.fp.initialSummonContinueClick.click() else locations.fp.okClick.click()
         initialScreen = true
     }
@@ -149,9 +151,13 @@ class AutoFriendGacha @Inject constructor(
         countNext()
 
         locations.fp.continueSummonClick.click()
-        FpSellTiming.SUMMON_CONFIRM.wait()
+        summonWait(FpSellTiming.SUMMON_CONFIRM)
         locations.fp.okClick.click()
-        FpSellTiming.SUMMON_ANIMATION.wait()
+        summonWait(FpSellTiming.SUMMON_ANIMATION)
+    }
+
+    private fun summonWait(base: kotlin.time.Duration) {
+        (if (prefs.fpAutoSell) addedTuning.fp.delay(base) else base).wait()
     }
 
     private fun isSummonButtonVisible() = findImage(locations.fp.continueSummonRegion, Images.FPSummonContinue)

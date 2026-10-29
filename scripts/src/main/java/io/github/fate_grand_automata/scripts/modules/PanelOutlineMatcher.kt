@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.modules
 
 import kotlin.math.sqrt
+import io.github.fate_grand_automata.scripts.prefs.FeatureTuning
 
 /** Same 720p digit window, Laplacian and NCC for own-slot and frozen cross-slot banks.
  * Exclusions address atlas cells, allowing host evaluation to remove entire source frames. */
@@ -48,7 +49,7 @@ internal class PanelOutlineMatcher(
         } }
     }
 
-    fun read(pixels: ByteArray, width: Int, height: Int, slot: Int): PanelLevelEvidence {
+    fun read(pixels: ByteArray, width: Int, height: Int, slot: Int, tuning: FeatureTuning = FeatureTuning()): PanelLevelEvidence {
         // Normalize to the template grid; source assets remain at 720p scale.
         if (width < 3 || height < 3 || pixels.size != width * height)
             return PanelLevelEvidence(null, false, null, 0.0, 0.0, "invalid-crop")
@@ -62,7 +63,7 @@ internal class PanelOutlineMatcher(
             ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "no-samples")
         // A lone remaining level cannot establish a meaningful runner-up margin.
         val margin = top.second - (scores.getOrNull(1)?.second ?: top.second)
-        val accepted = top.second >= MIN_SCORE && margin >= MIN_MARGIN
+        val accepted = top.second >= tuning.similarity(MIN_SCORE) && margin >= MIN_MARGIN
         return PanelLevelEvidence(if (accepted) top.first else null, false, top.first, top.second, margin,
             if (accepted) "outline-ncc" else "weak-outline-or-margin")
     }
@@ -106,14 +107,14 @@ internal class PanelAppendMatcher(
         }
     }
 
-    fun read(rgb: ByteArray, width: Int, height: Int, slot: Int): PanelLevelEvidence {
+    fun read(rgb: ByteArray, width: Int, height: Int, slot: Int, tuning: FeatureTuning = FeatureTuning()): PanelLevelEvidence {
         val channels = channels(rgb, width, height)
             ?: return PanelLevelEvidence(null, false, null, 0.0, 0.0, "invalid-color-crop")
-        val cross = combine(blue.read(channels.first, width, height, slot),
-            luminance.read(channels.second, width, height, slot))
+        val cross = combine(blue.read(channels.first, width, height, slot, tuning),
+            luminance.read(channels.second, width, height, slot, tuning))
         if (ownBlue == null || ownLuminance == null) return cross // beta.3 evaluation path
-        val primary = combine(ownBlue.read(channels.first, width, height, slot),
-            ownLuminance.read(channels.second, width, height, slot))
+        val primary = combine(ownBlue.read(channels.first, width, height, slot, tuning),
+            ownLuminance.read(channels.second, width, height, slot, tuning))
         return combineBanks(primary, cross)
     }
 

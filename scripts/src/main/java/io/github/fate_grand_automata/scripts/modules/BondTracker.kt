@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.modules
 
+import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
@@ -16,7 +17,8 @@ class BondTracker @Inject constructor(
     api: IFgoAutomataApi,
     private val reader: BondReader,
     private val state: BattleState,
-    private val config: IBattleConfig
+    private val config: IBattleConfig,
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
     private val ledger = BondLedger()
     private var battleRun: Int? = null
@@ -37,7 +39,7 @@ class BondTracker @Inject constructor(
         if (!enabled) return BondFrame.Other
         // Wait for the result animation before capturing a fresh frame. Keep the user's
         // requested 1.2 second delay independent of the general wait multiplier.
-        1200.milliseconds.wait(applyMultiplier = false)
+        addedTuning.bond.delay(1200.milliseconds).wait(applyMultiplier = false)
         val readGains = config.trackBond
         fun read(number: Int): BondFrame = reader.read(readGains).also { frame ->
             messages.log(ScriptLog.Bond("run=${state.runs} read=$number ${frame::class.simpleName}"))
@@ -69,7 +71,7 @@ class BondTracker @Inject constructor(
             val readings = mutableListOf(frame to reader.lastColumns)
             val stable = MutableList<BondValue>(5) { BondValue.Unknown }
             repeat(3) {
-                350.milliseconds.wait()
+                addedTuning.bond.delay(350.milliseconds).wait()
                 frame = read(it + 1)
                 val current = frame as? BondFrame.Normal
                 if (current == null) {
@@ -102,7 +104,7 @@ class BondTracker @Inject constructor(
             return frame
         }
         if (frame is BondFrame.LevelUp) {
-            350.milliseconds.wait()
+            addedTuning.bond.delay(350.milliseconds).wait()
             val confirmed = read(1)
             if (confirmed !is BondFrame.LevelUp || frame.atLeastTen == null || frame.atLeastTen != confirmed.atLeastTen) {
                 ledger.levelUp(state.runs, null, null)

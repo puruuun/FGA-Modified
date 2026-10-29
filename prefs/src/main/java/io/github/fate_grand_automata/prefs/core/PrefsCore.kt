@@ -58,6 +58,7 @@ class PrefsCore @Inject constructor(
     val bondTrackingFeatureEnabled = maker.bool("bond_tracking_feature_enabled", true)
     val questItemControl = QuestItemControlPrefsCore(maker)
     val weeklyRoute = WeeklyRoutePrefsCore(maker)
+    val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")
     val limitFP = maker.int("fp_limit", 1)

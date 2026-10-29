@@ -28,6 +28,7 @@ import io.github.fate_grand_automata.util.OpenDocTreePersistable
 fun MoreOptionsScreen(
     vm: MoreOptionsViewModel = viewModel(),
     navigateToFineTune: () -> Unit,
+    navigateToAddedFeatureTuning: () -> Unit,
     navigateToLicense: () -> Unit,
     navigateToWeeklySettings: () -> Unit = {}
 ) {
@@ -74,6 +75,7 @@ fun MoreOptionsScreen(
     MoreOptionsContent(
         vm = vm,
         goToFineTune = navigateToFineTune,
+        goToAddedFeatureTuning = navigateToAddedFeatureTuning,
         goToLicense = navigateToLicense,
         goToWeeklySettings = navigateToWeeklySettings,
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
@@ -84,6 +86,7 @@ fun MoreOptionsScreen(
 private fun MoreOptionsContent(
     vm: MoreOptionsViewModel,
     goToFineTune: () -> Unit,
+    goToAddedFeatureTuning: () -> Unit,
     goToLicense: () -> Unit,
     goToWeeklySettings: () -> Unit,
     pickDirectory: () -> Unit
@@ -142,6 +145,7 @@ private fun MoreOptionsContent(
                                 advancedGroup(
                                     vm.prefsCore,
                                     goToFineTune = goToFineTune,
+                                    goToAddedFeatureTuning = goToAddedFeatureTuning,
                                     goToLicense = goToLicense
                                 )
                             }
