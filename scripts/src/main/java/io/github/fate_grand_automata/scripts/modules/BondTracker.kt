@@ -104,17 +104,20 @@ class BondTracker @Inject constructor(
         if (frame is BondFrame.LevelUp) {
             350.milliseconds.wait()
             val confirmed = read(1)
-            if (frame != confirmed) {
+            if (confirmed !is BondFrame.LevelUp || frame.atLeastTen == null || frame.atLeastTen != confirmed.atLeastTen) {
                 ledger.levelUp(state.runs, null, null)
                 return confirmed
             }
+            // The stop requires agreement on 10+, never on the obscured result column or exact level.
+            frame = BondFrame.LevelUp(frame.reachedLevel.takeIf { it == confirmed.reachedLevel },
+                frame.resultIndex.takeIf { it == confirmed.resultIndex }, frame.atLeastTen)
         }
         return record(frame)
     }
 
     private fun record(frame: BondFrame): BondFrame {
         if (frame is BondFrame.LevelUp) {
-            ledger.levelUp(state.runs, frame.reachedLevel, frame.resultIndex)
+            ledger.levelUp(state.runs, frame.reachedLevel, frame.resultIndex, frame.atLeastTen)
         }
         checkStop()
         return frame
@@ -123,7 +126,7 @@ class BondTracker @Inject constructor(
     private fun checkStop() {
         if (!config.stopOnBondMax) return
         val watchedMax = ledger.maxPositions(state.runs) - config.bondMaxIgnoredCharacters
-        if (watchedMax.isNotEmpty()) {
+        if (ledger.hasMaxLevelUp(state.runs) || watchedMax.isNotEmpty()) {
             state.nextRun() // This quest has cleared even though we stop before the reward clicks.
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.BondMax(watchedMax.sorted()))
         }

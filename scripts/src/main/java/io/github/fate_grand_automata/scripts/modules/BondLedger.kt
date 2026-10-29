@@ -7,6 +7,7 @@ class BondLedger {
     private data class Cell(var gain: Long? = null, var max: Boolean = false)
     private val quests = linkedMapOf<Int, MutableMap<Int, Cell>>()
     private val unmapped = mutableSetOf<Int>()
+    private val maxLevelUps = mutableSetOf<Int>()
 
     fun ensure(run: Int) {
         quests.getOrPut(run) { (1..5).associateWith { Cell() }.toMutableMap() }
@@ -27,11 +28,12 @@ class BondLedger {
         }
     }
 
-    fun levelUp(run: Int, reached: Int?, index: Int?) {
+    fun levelUp(run: Int, reached: Int?, index: Int?, atLeastTen: Boolean? = reached?.let { it >= 10 }) {
         ensure(run)
+        if (atLeastTen == true) maxLevelUps += run
         val position = index?.takeIf { it in 0..4 }?.plus(1)
         if (position == null || reached == null) {
-            // User policy: skip the obscured popup and recheck normal MAX next quest.
+            // Keep hidden gains unmapped even when the popup independently establishes the stop.
             unmapped += run
             quests.getValue(run).values.filter { it.max && it.gain == 0L }.forEach { it.gain = null }
             return
@@ -43,6 +45,8 @@ class BondLedger {
             cell.max = true
         }
     }
+
+    fun hasMaxLevelUp(run: Int) = run in maxLevelUps
 
     fun maxPositions(run: Int): Set<Int> = quests[run].orEmpty().filterValues { it.max }.keys
 

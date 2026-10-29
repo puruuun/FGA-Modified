@@ -813,4 +813,5 @@
     <string name="chaldea_support_ce_failed">예장 정보 또는 이미지를 준비하지 못했습니다. 기존 선호 예장을 유지합니다.</string>
     <string name="chaldea_support_np_disabled">꺼짐(레벨 1, 저장된 최소 레벨 유지)</string>
     <string name="ce_enhancement_filter_note">시작전 필터설정 확인하세요</string>
+    <string name="bond_max_popup_stop">도달 인연 레벨 10 이상을 확인하여 정지했습니다.</string>
 </resources>

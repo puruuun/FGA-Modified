@@ -195,11 +195,12 @@ class BondTrackingTest {
         }
     }
 
-    @Test fun `unknown popup position waits for a normal MAX in the next quest`() {
+    @Test fun `unmapped ten records the stop without fabricating a result column`() {
         val ledger = BondLedger()
         ledger.levelUp(0, 10, null)
         ledger.levelUp(0, 10, null)
         assertTrue(ledger.maxPositions(0).isEmpty())
+        assertTrue(ledger.hasMaxLevelUp(0))
         assertEquals(1, ledger.summary().unmappedLevelUpRuns)
         ledger.normal(1, listOf(gain, gain, BondValue.Max, gain, gain))
         assertEquals(setOf(3), ledger.maxPositions(1))
@@ -274,12 +275,11 @@ class BondTrackingTest {
         fun start() { tracker.beginBattle() }
     }
 
-    @Test fun `normal and popup MAX respect watched result characters`() {
-        for (popup in listOf(false, true)) for (ignored in listOf(false, true)) {
+    @Test fun `normal MAX respects watched result characters`() {
+        for (ignored in listOf(false, true)) {
             val f = Fixture(); f.start()
             every { f.config.bondMaxIgnoredCharacters } returns if (ignored) setOf(3) else emptySet()
-            every { f.reader.read() } returns if (popup) BondFrame.LevelUp(12, 2) else
-                BondFrame.Normal(List(5) { if (it == 2) BondValue.Max else BondValue.Gain(1, 2) })
+            every { f.reader.read() } returns BondFrame.Normal(List(5) { if (it == 2) BondValue.Max else BondValue.Gain(1, 2) })
             if (ignored) { f.tracker.process(); assertEquals(0, f.state.runs) }
             else {
                 val error = assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
@@ -289,12 +289,56 @@ class BondTrackingTest {
         }
     }
 
-    @Test fun `levels below ten and unmapped ten continue while unknown gains remain missing`() {
-        for (frame in listOf(BondFrame.LevelUp(7, 2), BondFrame.LevelUp(9, 2), BondFrame.LevelUp(10, null), BondFrame.LevelUp(null, 2))) {
+    @Test fun `levels below ten and unknown continue while gains remain missing`() {
+        for (frame in listOf(BondFrame.LevelUp(7, 2), BondFrame.LevelUp(9, 2), BondFrame.LevelUp(null, 2))) {
             val f = Fixture(); f.start(); every { f.reader.read() } returns frame
             f.tracker.process(); assertEquals(0, f.state.runs)
             assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 1 })
         }
+    }
+
+    @Test fun `all reached levels ten through sixteen stop with or without a column`() {
+        for (level in 10..16) for (column in listOf(null, 0, 2, 4)) {
+            val f = Fixture()
+            every { f.config.bondMaxIgnoredCharacters } returns (1..5).toSet()
+            every { f.reader.read() } returns BondFrame.LevelUp(level, column)
+            assertIs<AutoBattle.ExitReason.BondMax>(assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }.reason)
+            assertEquals(1, f.state.runs)
+            verify(exactly = 2) { f.reader.read(true) }
+        }
+    }
+
+    @Test fun `popup confirmation agrees on ten plus rather than exact level or column`() {
+        val f = Fixture()
+        every { f.reader.read() } returnsMany listOf(BondFrame.LevelUp(10, 1), BondFrame.LevelUp(16, null))
+        assertFailsWith<AutoBattle.BattleExitException> { f.tracker.process() }
+        val fallback = Fixture()
+        every { fallback.reader.read() } returns BondFrame.LevelUp(null, null, true)
+        assertFailsWith<AutoBattle.BattleExitException> { fallback.tracker.process() }
+        for (next in listOf(BondFrame.LevelUp(7, null), BondFrame.LevelUp(null, null), BondFrame.Other)) {
+            val changing = Fixture()
+            every { changing.reader.read() } returnsMany listOf(BondFrame.LevelUp(10, null), next)
+            changing.tracker.process()
+            assertEquals(0, changing.state.runs)
+        }
+        val disabled = Fixture()
+        every { disabled.config.stopOnBondMax } returns false
+        every { disabled.reader.read() } returns BondFrame.LevelUp(16, null)
+        disabled.tracker.process()
+        assertEquals(0, disabled.state.runs)
+    }
+
+    @Test fun `digit width leaves an uncertainty margin and rejects blank or horizontal lines`() {
+        for (width in listOf(27, 30, 35, 81)) assertNull(BondReader.widthAtLeastTen(width))
+        assertEquals(false, BondReader.widthAtLeastTen(21))
+        for (width in listOf(41, 49, 64)) assertEquals(true, BondReader.widthAtLeastTen(width))
+        val blank = ByteArray(90 * 55)
+        assertNull(BondReader.digitWidth(blank, 90, 55))
+        val line = blank.copyOf().also { for (x in 10..60) it[20 * 90 + x] = 255.toByte() }
+        assertNull(BondReader.digitWidth(line, 90, 55))
+        val strokes = blank.copyOf().also { for (y in 12..47) for (x in listOf(30,31,32,68,69,70)) it[y * 90 + x] = 200.toByte() }
+        assertEquals(41, BondReader.digitWidth(strokes, 90, 55))
+        assertNull(BondReader.digitWidth(strokes, 91, 55))
     }
 
     @Test fun `counting animation is not accumulated until fresh readings agree`() {

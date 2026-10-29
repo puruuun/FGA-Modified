@@ -67,6 +67,23 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
             return confirmedLevel(readings) ?: confirmedLevel(readings + fallback.map(read))
         }
 
+        /** 720p bright digit extent; require vertical strokes rather than a line or an empty crop. */
+        internal fun digitWidth(pixels: ByteArray?, width: Int, height: Int): Int? {
+            if (pixels == null || width <= 0 || height <= 0 || pixels.size != width * height) return null
+            fun bright(x: Int, y: Int) = (pixels[y * width + x].toInt() and 255) >= 180
+            val columns = (0 until width).filter { x -> (0 until height).count { y -> bright(x, y) } >= 3 }
+            val rows = (0 until height).filter { y -> (0 until width).count { x -> bright(x, y) } >= 3 }
+            if (columns.isEmpty() || rows.isEmpty() || rows.last() - rows.first() + 1 !in 24..53) return null
+            return columns.last() - columns.first() + 1
+        }
+
+        // Fixtures: one digit 21px; two digits 41..64px. Leave 27..35 undecided.
+        internal fun widthAtLeastTen(width: Int?): Boolean? = when (width) {
+            in 10..26 -> false
+            in 36..80 -> true
+            else -> null
+        }
+
         fun confirmedGain(readings: List<OcrText>): BondValue.Gain? = consensus(readings, ::parseGain)
         internal fun majorityGain(readings: List<OcrText>, base: Int? = null): BondValue.Gain? {
             val votes = readings.filter { it.confidence >= VOTE_CONFIDENCE }.mapNotNull { reading ->
@@ -150,11 +167,16 @@ class BondReader @Inject constructor(api: IFgoAutomataApi, private val ocr: OcrS
         lastColumns = emptyList()
         if (matches(locations.bond.popupTitle, Images.BondPopupTitle).isNotEmpty()) {
             val arrow = matches(locations.bond.popupArrow, Images.Bond).maxByOrNull { it.score }
+            var atLeastTen: Boolean? = null
             val level = arrow?.let { match ->
-                number(locations.bond.reachedLevel(match.region)) { pattern -> readLevel { ocr.detectTextLine(pattern, it) } }
+                number(locations.bond.reachedLevel(match.region)) { pattern ->
+                    val level = readLevel { ocr.detectTextLine(pattern, it) }
+                    atLeastTen = level?.let { it >= 10 } ?: widthAtLeastTen(digitWidth(pattern.grayPixels(), pattern.width, pattern.height))
+                    level
+                }
             }
             val columns = (0..4).filter { matches(locations.bond.levelUpMarker(it), Images.BondLevelUpMarker).isNotEmpty() }
-            return@useSameSnapIn BondFrame.LevelUp(level, columns.singleOrNull())
+            return@useSameSnapIn BondFrame.LevelUp(level, columns.singleOrNull(), atLeastTen)
         }
         if (matches(locations.bond.resultTitle, Images.BondResultTitle).isEmpty()) return@useSameSnapIn BondFrame.Other
         val columns = (0..4).map { index ->

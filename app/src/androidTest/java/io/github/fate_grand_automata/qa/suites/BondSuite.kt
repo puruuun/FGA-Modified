@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.qa.FixtureApi
 import io.github.fate_grand_automata.scripts.models.BondFrame
 import io.github.fate_grand_automata.scripts.models.BondValue
 import io.github.fate_grand_automata.scripts.modules.BondReader
+import io.github.lib_automata.*
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -13,7 +14,10 @@ import org.json.JSONObject
  * or "other" (a frame that is not a bond result).
  */
 internal fun FixtureApi.verifyBond(): JSONObject {
-    val reader = BondReader(this, ocr)
+    val levelOcr = if (case.optBoolean("forceLevelOcrFailure")) object : OcrService by ocr {
+        override fun detectTextLine(pattern: Pattern, options: TextLineOcrOptions) = OcrText("", 0)
+    } else ocr
+    val reader = BondReader(this, levelOcr)
     val frame = reader.read()
     val result = JSONObject().put("frame", frame::class.java.simpleName)
     result.put("evidence", JSONArray(reader.lastColumns.map { it.compact() }))
@@ -46,6 +50,10 @@ internal fun FixtureApi.verifyBond(): JSONObject {
             val level = frame.reachedLevel
             val column = frame.resultIndex
             result.put("level", level ?: JSONObject.NULL).put("column", column ?: JSONObject.NULL)
+            result.put("atLeastTen", frame.atLeastTen ?: JSONObject.NULL)
+            if (case.has("expected_stop")) {
+                check((frame.atLeastTen == true) == case.getBoolean("expected_stop")) { "unexpected popup stop: $frame" }
+            }
             check(level == case.optIntOrNull("expected_level")) { "level $level != ${case.opt("expected_level")}" }
             check(column == case.optIntOrNull("expected_column")) { "column $column != ${case.opt("expected_column")}" }
         }

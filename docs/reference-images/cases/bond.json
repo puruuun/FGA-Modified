@@ -69,7 +69,8 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr7.png",
       "expected_level": 7,
-      "expected_column": null
+      "expected_column": null,
+      "expected_stop": false
     },
     {
       "name": "kr10",
@@ -78,7 +79,8 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr10.png",
       "expected_level": 10,
-      "expected_column": null
+      "expected_column": null,
+      "expected_stop": true
     },
     {
       "name": "kr11",
@@ -87,7 +89,8 @@
       "kind": "popup",
       "file": "docs/reference-images/Kr/bond-kr11.png",
       "expected_level": 11,
-      "expected_column": null
+      "expected_column": null,
+      "expected_stop": true
     },
     {
       "name": "jp12",
@@ -96,7 +99,8 @@
       "kind": "popup",
       "file": "docs/reference-images/Jp/bond-jp12.png",
       "expected_level": 12,
-      "expected_column": 2
+      "expected_column": 2,
+      "expected_stop": true
     },
     {
       "name": "jp16",
@@ -105,7 +109,8 @@
       "kind": "popup",
       "file": "docs/reference-images/Jp/bond-jp16.png",
       "expected_level": 16,
-      "expected_column": null
+      "expected_column": null,
+      "expected_stop": true
     },
     {
       "name": "party-kr1-not-a-bond-result",
@@ -471,6 +476,61 @@
           1079
         ]
       ]
+    },
+    {
+      "name": "kr7-ocr-failure",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr7.png",
+      "expected_level": null,
+      "expected_column": null,
+      "expected_stop": false,
+      "forceLevelOcrFailure": true
+    },
+    {
+      "name": "kr10-ocr-failure",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr10.png",
+      "expected_level": null,
+      "expected_column": null,
+      "expected_stop": true,
+      "forceLevelOcrFailure": true
+    },
+    {
+      "name": "kr11-ocr-failure",
+      "suite": "bond",
+      "server": "Kr",
+      "kind": "popup",
+      "file": "docs/reference-images/Kr/bond-kr11.png",
+      "expected_level": null,
+      "expected_column": null,
+      "expected_stop": true,
+      "forceLevelOcrFailure": true
+    },
+    {
+      "name": "jp12-ocr-failure",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "popup",
+      "file": "docs/reference-images/Jp/bond-jp12.png",
+      "expected_level": null,
+      "expected_column": 2,
+      "expected_stop": true,
+      "forceLevelOcrFailure": true
+    },
+    {
+      "name": "jp16-ocr-failure",
+      "suite": "bond",
+      "server": "Jp",
+      "kind": "popup",
+      "file": "docs/reference-images/Jp/bond-jp16.png",
+      "expected_level": null,
+      "expected_column": null,
+      "expected_stop": true,
+      "forceLevelOcrFailure": true
     }
   ]
 }

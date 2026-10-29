@@ -40,7 +40,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Ascension select](wiki/scripts/Ascension-Select-KR.md) | Tells ascensions apart by Servant name and NP image. |
 | [Fixed attack order](wiki/scripts/Direct-Cards-KR.md) | Sets the order of cards and NPs for a turn. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-KR.md) | Sets ON/OFF before the quest starts. |
-| [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-KR.md) | Adds up bond gains and stops at MAX. |
+| [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-KR.md) | Adds up bond gains and stops at MAX or a confirmed level-up to 10–16, without needing the result column. |
 
 The detailed guides are written in Korean. See the [full guide](wiki/scripts/Modified-Features-KR.md) for setup and behavior.
 
@@ -103,7 +103,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
-| [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX가 되면 멈춥니다. |
+| [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX 또는 도달 레벨 10~16 확인 시 결과 칸을 몰라도 멈춥니다. |
 
 설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 

@@ -10,7 +10,8 @@ sealed interface BondValue {
 
 sealed interface BondFrame {
     data class Normal(val values: List<BondValue>) : BondFrame
-    data class LevelUp(val reachedLevel: Int?, val resultIndex: Int?) : BondFrame
+    data class LevelUp(val reachedLevel: Int?, val resultIndex: Int?,
+        val atLeastTen: Boolean? = reachedLevel?.let { it >= 10 }) : BondFrame
     data object Other : BondFrame
 }
 
