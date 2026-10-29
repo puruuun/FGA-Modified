@@ -6,8 +6,8 @@ import io.github.fate_grand_automata.scripts.locations.WeeklyRouteLocations
 
 /** Upstream end templates, with a threshold measured independently for the weekly list. */
 object ListScrollbar {
-    // End minimum .817175; non-end maximum .623848. Rounded midpoint, >=.096 margin.
-    const val SIMILARITY = 0.721
+    // Rail-sized windows (beta.6, #90): end minimum .817; non-end maximum .381. Midpoint, >=.21 margin.
+    const val SIMILARITY = 0.60
     data class State(val top: Boolean, val bottom: Boolean, val topScore: Double? = null, val bottomScore: Double? = null)
     fun read(top: Double?, bottom: Double?) = State(top != null && top >= SIMILARITY,
         bottom != null && bottom >= SIMILARITY, top, bottom)

@@ -56,10 +56,14 @@ class WideScreenLocationsTest {
     }
 
     @Test fun `weekly and FP scrollbar template windows follow their measured safe edges`() {
-        assertEquals(Region(2460, 168, 100, 55), WeeklyRouteLocations(sixteenNine).topScrollbarRegion)
-        assertEquals(Region(3069, 1140, 140, 55), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
-        assertEquals(Region(1994, 1316, 100, 55), FpSellLocations(sixteenNine).bottomScrollbarRegion)
-        assertEquals(Region(2603, 1316, 140, 55), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
+        assertEquals(Region(2478, 178, 74, 38), WeeklyRouteLocations(sixteenNine).topScrollbarRegion)
+        assertEquals(Region(2478, 1152, 74, 34), WeeklyRouteLocations(sixteenNine).bottomScrollbarRegion)
+        assertEquals(Region(3110, 178, 72, 42), WeeklyRouteLocations(twentyOneNine).topScrollbarRegion)
+        assertEquals(Region(3110, 1152, 72, 34), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
+        assertEquals(Region(2006, 1330, 72, 34), FpSellLocations(sixteenNine).bottomScrollbarRegion)
+        assertEquals(Region(2636, 1330, 72, 34), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
+        // The wide rail keeps its offset from the centre on 2.33:1 and 2.37:1 screens, so the box follows the centre.
+        assertEquals(1430, WeeklyRouteLocations(transforms(3414)).topScrollbarRegion.x - 1707)
     }
 
     @Test fun `the safe area inset exists only on wide screens`() {
