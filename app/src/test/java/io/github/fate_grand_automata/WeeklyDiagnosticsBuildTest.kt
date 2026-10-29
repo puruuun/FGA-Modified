@@ -22,5 +22,6 @@ class WeeklyDiagnosticsBuildTest {
         assertNull(diagnostics.save(frame, 1, 0))
         assertNull(diagnostics.saveEvidence(frame, 1))
         assertNull(diagnostics.saveAbort(frame))
+        diagnostics.mapLog("plan quest=1 plan=spot")
     }
 }

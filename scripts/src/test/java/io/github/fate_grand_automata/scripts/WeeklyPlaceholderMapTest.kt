@@ -44,7 +44,13 @@ class WeeklyPlaceholderMapTest {
         assertEquals(PlaceholderMap.Edge.Bottom, cold.edge)
         assertTrue(MapView.isTappable(cold.point.x, cold.point.y, 1280, 720))
         assertEquals(953.0 * 0.625, cold.point.x, 0.001)
-        assertEquals((1047.0 - MapView.ICON_OFFSET_MAP) * 0.625 - 180, cold.point.y, 0.001) // the icon centre, not the spot point
+        // Issue #91: the spot point plans the placement as in beta.4; the final tap (resolveTap) then goes to the icon centre.
+        assertEquals("spot", cold.plan)
+        assertEquals(1047.0 * 0.625 - 180, cold.point.y, 0.001)
+        val iconY = (1047.0 - MapView.ICON_OFFSET_MAP) * 0.625 - 180
+        val tap = assertNotNull(MapView.resolveTap(cold.point.x, iconY, cold.point.x, cold.point.y, 1280, 720))
+        assertEquals("icon", tap.kind)
+        assertEquals(iconY, tap.point.y, 0.001)
     }
 
     @Test fun `every Shin free quest spot gets a tap point`() {

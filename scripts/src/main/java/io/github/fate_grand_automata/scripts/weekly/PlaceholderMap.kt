@@ -24,7 +24,7 @@ object PlaceholderMap {
     enum class Edge { Top, Bottom }
 
     /** Where to tap once the map has been dragged to [edge]; [point] is in 720p game-area pixels. */
-    data class Target(val edge: Edge, val point: ScreenPoint, val fit: MapFit)
+    data class Target(val edge: Edge, val point: ScreenPoint, val fit: MapFit, val plan: String = "spot")
 
     class Geometry(val mapWidth: Int, val mapHeight: Int, val viewWidth: Int, val viewHeight: Int) {
         /** Smallest scale at which the map still covers the screen. */
@@ -39,23 +39,31 @@ object PlaceholderMap {
         /** Drags of [dragLength] px needed to be sure to reach a border from anywhere, one more than the range needs. */
         fun drags(dragLength: Double) = ceil(range / dragLength).toInt() + 1
 
-        /** The first edge (top, then bottom) on which the spot can be tapped, or on which its visible icon part can. */
+        /**
+         * Issue #91: the spot point decides first, exactly as before #78; the icon point ([MapView.ICON_OFFSET_MAP] above it)
+         * is searched only when no edge gives a tappable spot. Each plan tries the first edge (top, then bottom) on which the
+         * point can be tapped, then the one on which its visible part can.
+         */
         fun target(spotX: Double, spotY: Double): Target? {
             if (!widthFit || !spotX.isFinite() || !spotY.isFinite()) return null
+            return search(spotX, spotY, spotY, "spot") ?: search(spotX, spotY - MapView.ICON_OFFSET_MAP, spotY, "icon")
+        }
+
+        private fun search(spotX: Double, planY: Double, spotY: Double, plan: String): Target? {
             val edges = Edge.entries.filter { it == Edge.Top || range > 0 }
-            val iconY = spotY - MapView.ICON_OFFSET_MAP
             for (edge in edges) {
                 val border = fit(edge)
-                val shift = MapView.edgeDrag(border.screenX(spotX), border.screenY(iconY), viewWidth, viewHeight)?.y ?: 0.0
+                val shift = MapView.edgeDrag(border.screenX(spotX), border.screenY(planY), viewWidth, viewHeight)?.y ?: 0.0
                 val fit = border.copy(originY = (border.originY + shift).coerceIn(-range, 0.0))
                 val x = fit.screenX(spotX)
-                val y = fit.screenY(iconY)
-                if (MapView.isTappable(x, y, viewWidth, viewHeight)) return Target(edge, ScreenPoint(x, y), fit)
+                val y = fit.screenY(planY)
+                if (MapView.isTappable(x, y, viewWidth, viewHeight)) return Target(edge, ScreenPoint(x, y), fit, plan)
             }
             for (edge in edges) {
                 val fit = fit(edge)
-                MapView.resolveTap(fit.screenX(spotX), fit.screenY(iconY), fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)
-                    ?.let { return Target(edge, it.point, fit) }
+                val point = if (plan == "spot") MapView.visibleTap(fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)
+                    else MapView.resolveTap(fit.screenX(spotX), fit.screenY(planY), fit.screenX(spotX), fit.screenY(spotY), viewWidth, viewHeight)?.point
+                point?.let { return Target(edge, it, fit, plan) }
             }
             return null
         }
