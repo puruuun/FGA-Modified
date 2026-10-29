@@ -222,7 +222,6 @@ LƯU Ý: Bạn có thể phải sử dụng 'Hiển thị bộ nhớ trong' tron
     <string name="p_game_area_custom_right">"Phải"</string>
     <string name="p_game_area_custom_top">"Đứng đầu"</string>
     <string name="p_game_area_default">"Mặc định"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
     <string name="p_game_area_mode">"Chế độ khu vực trò chơi"</string>
     <string name="p_game_server">"Máy chủ của game"</string>
     <string name="p_game_server_auto_detect">"Tự động nhận diện"</string>

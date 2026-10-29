@@ -245,7 +245,6 @@
     <string name="p_game_area_custom_right">"右側"</string>
     <string name="p_game_area_custom_top">"上部"</string>
     <string name="p_game_area_default">"デフォルト"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
     <string name="p_game_area_mode">"ゲームエリア設定"</string>
     <string name="p_game_server">"ゲームサーバー"</string>
     <string name="p_game_server_auto_detect">"自動選択"</string>

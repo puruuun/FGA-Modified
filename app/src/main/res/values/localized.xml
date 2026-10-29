@@ -469,7 +469,14 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="game_area_preview_dimensions">Region %1$d×%2$d · Game %3$d×%4$d · Ratio %5$.3f</string>
     <string name="p_game_area_mode">"Game Area Mode"</string>
     <string name="p_game_area_default">"Default"</string>
-    <string name="p_game_area_duo">"Surface Duo"</string>
+    <string name="p_game_area_preset">Saved setting</string>
+    <string name="p_game_area_reset">Reset</string>
+    <string name="p_game_area_add">Add setting</string>
+    <string name="p_game_area_delete">Delete</string>
+    <string name="p_game_area_preset_name">Name</string>
+    <string name="p_game_area_preset_default_name">Split screen %1$d</string>
+    <string name="p_game_area_preset_read_only">Saved offsets are read-only. Adjust Custom and add a new setting to change them.</string>
+    <string name="p_game_area_minimum">Minimum area: 1280×720 screen pixels. Tap a number to enter an offset. Smaller screens only allow zero offsets.</string>
     <string name="p_game_area_custom">"Custom"</string>
     <string name="p_game_area_custom_left">"Left"</string>
     <string name="p_game_area_custom_top">"Top"</string>
