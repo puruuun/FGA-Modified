@@ -892,4 +892,5 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_support_servant_failed">Could not prepare servant images. The previous servant selection will be kept.</string>
     <string name="chaldea_support_ce_failed">Could not prepare CE details or images. The previous CE selection will be kept.</string>
     <string name="chaldea_support_np_disabled">Off (Lv.1; saved minimum unchanged)</string>
+    <string name="ce_enhancement_filter_note">Check the in-game filter settings before starting.</string>
 </resources>

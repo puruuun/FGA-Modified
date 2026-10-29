@@ -24,7 +24,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | Feature | Summary |
 |---|---|
 | [App language](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | Saves a supported system language on first launch and shares it with settings and onboarding. |
-| [CE enhancement](wiki/scripts/CE-Auto-Enhance-KR.md) | Confirms before starting and switches between Servant and CE enhancement on JP/KR. |
+| [CE enhancement](wiki/scripts/CE-Auto-Enhance-KR.md) | Reminds you to check in-game filters before starting and switches between Servant and CE enhancement on JP/KR. |
 | [FP summon auto-sell](wiki/scripts/FP-Auto-Sell-KR.md) | Uses padlock-only selection and fixed sale timing, stops at the scrollbar end, and leaves dry runs at Confirm. |
 | [Skill / Append Skill auto-upgrade](wiki/scripts/Auto-Skill-Level-KR.md) | Upgrades each skill to its target level. |
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-KR.md) | Runs weekly missions with content-based navigation and scrollbar end checks; the feature can be hidden and empty routes do not start. |
@@ -87,7 +87,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | 기능 | 설명 |
 |---|---|
 | [앱 언어](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | 최초 실행에 지원하는 시스템 언어를 저장하고 온보딩·설정에 같은 값을 표시합니다. |
-| [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 확인하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
+| [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 게임 내 필터 확인을 안내하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
 | [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 자물쇠로 선택하고 스크롤바 끝에서 탐색을 마친 뒤 고정 시간으로 판매합니다. 시험 모드는 결정 직후 멈춥니다. |
 | [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 칸마다 정한 목표 레벨까지 스킬을 강화합니다. |
 | [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 목록 내용과 스크롤바 끝을 읽어 이동하며 빈 경로는 실행하지 않습니다. 추가기능에서 버튼을 숨길 수 있습니다. |
