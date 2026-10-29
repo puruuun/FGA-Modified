@@ -17299,7 +17299,6 @@
       "file": "docs/reference-images/Kr/scroll-end/fp-bottom.png",
       "view": "scrollbar",
       "expected": {
-        "railPresent": true,
         "bottom": true
       }
     },
@@ -17310,7 +17309,6 @@
       "file": "docs/reference-images/Kr/fp-sell/18.png",
       "view": "scrollbar",
       "expected": {
-        "railPresent": true,
         "bottom": false
       }
     },
@@ -17321,7 +17319,6 @@
       "file": "docs/reference-images/Jp/wide-21x9/14.webp",
       "view": "scrollbar",
       "expected": {
-        "railPresent": true,
         "bottom": false
       }
     },
@@ -17332,8 +17329,47 @@
       "file": "docs/reference-images/Jp/wide-2560/23.webp",
       "view": "scrollbar",
       "expected": {
-        "railPresent": false,
         "bottom": false
+      }
+    },
+    {
+      "name": "20261019-104653-291-watch-bottom-template",
+      "suite": "fpSell",
+      "server": "Jp",
+      "view": "scrollbar",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "expected": {
+        "bottom": true
+      }
+    },
+    {
+      "name": "20261019-104713-290-watch-bottom-template",
+      "suite": "fpSell",
+      "server": "Jp",
+      "view": "scrollbar",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "expected": {
+        "bottom": true
+      }
+    },
+    {
+      "name": "20261019-104833-291-watch-bottom-template",
+      "suite": "fpSell",
+      "server": "Jp",
+      "view": "scrollbar",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "expected": {
+        "bottom": true
+      }
+    },
+    {
+      "name": "20261019-104838-653-final-game-selection-407-bottom-template",
+      "suite": "fpSell",
+      "server": "Jp",
+      "view": "scrollbar",
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "expected": {
+        "bottom": true
       }
     }
   ]

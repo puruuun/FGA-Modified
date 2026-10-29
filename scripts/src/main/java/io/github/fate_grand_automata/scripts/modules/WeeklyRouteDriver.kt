@@ -160,17 +160,11 @@ class WeeklyRouteDriver @Inject constructor(
             maxScrolls = MAX_LIST_SCROLLS,
             capture = {
                 val valid = screen() == expected
-                // Colour matching takes its own snapshot. Keep the small grayscale boxes together;
-                // ScreenshotManager does not support nesting snapshot blocks or changing their channels.
+                // Colour banner matching finishes before the separate grayscale end-template snapshot.
                 val match = if (valid) find() else null
-                useSameSnapIn {
-                    fun sample(region: Region) = if (valid) region.getPattern("weekly scrollbar box").use {
-                        io.github.fate_grand_automata.scripts.weekly.ListScrollbar.boxes.sample(it.grayPixels(), it.width, it.height)
-                    } else null
-                    val bar = io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(
-                        sample(loc.topScrollbarRegion), sample(loc.bottomScrollbarRegion), sample(loc.scrollbarRailRegion))
-                    io.github.fate_grand_automata.scripts.weekly.ListScanFrame(valid, match, bar)
-                }
+                val bar = if (valid) io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(this, loc)
+                    else io.github.fate_grand_automata.scripts.weekly.ListScrollbar.State(false, false)
+                io.github.fate_grand_automata.scripts.weekly.ListScanFrame(valid, match, bar)
             },
             scroll = { direction, count -> scrollList(direction, count) },
             onEnd = onEnd,

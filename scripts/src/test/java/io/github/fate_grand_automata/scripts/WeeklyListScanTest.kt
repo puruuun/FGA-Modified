@@ -6,8 +6,8 @@ import kotlin.test.*
 class WeeklyListScanTest {
     private val down = ListSearchDirection.Down
     private val up = ListSearchDirection.Up
-    private fun frame(top: Boolean = false, bottom: Boolean = false, rail: Boolean = true,
-        match: String? = null, valid: Boolean = true) = ListScanFrame(valid, match, ListScrollbar.State(rail, top, bottom))
+    private fun frame(top: Boolean = false, bottom: Boolean = false,
+        match: String? = null, valid: Boolean = true) = ListScanFrame(valid, match, ListScrollbar.State(top, bottom))
     private fun scan(frames: List<ListScanFrame<String>>, cap: Int = 14): Pair<List<ListSearchDirection>, List<String>> {
         val directions = mutableListOf<ListSearchDirection>()
         val logs = mutableListOf<String>()
@@ -40,19 +40,19 @@ class WeeklyListScanTest {
         assertEquals(List(14) { down } + List(14) { up }, directions)
         assertEquals(2, logs.count { "reason=safety-cap" in it })
     }
-    @Test fun `no rail searches one frame without swiping either way`() {
+    @Test fun `both end templates make a one page list with no swipes`() {
         var captures = 0
-        val result = WeeklyListScan.run(14, { captures++; frame(rail = false) }, { _, _ -> fail("Must not swipe") })
+        val result = WeeklyListScan.run(14, { captures++; frame(top = true, bottom = true) }, { _, _ -> fail("Must not swipe") })
         assertNull(result)
         assertEquals(1, captures)
     }
     @Test fun `one page can still contain the target`() {
-        assertEquals("target", WeeklyListScan.run(14, { frame(rail = false, match = "target") }, { _, _ -> fail("Must not swipe") }))
+        assertEquals("target", WeeklyListScan.run(14, { frame(top = true, bottom = true, match = "target") }, { _, _ -> fail("Must not swipe") }))
     }
-    @Test fun `rail disappearing after a swipe ends both directions`() {
-        val (directions, logs) = scan(listOf(frame(), frame(rail = false)))
-        assertEquals(listOf(down), directions)
-        assertTrue(logs.any { "reason=no-scrollbar" in it })
+    @Test fun `missing end templates never claim an end`() {
+        val (directions, logs) = scan(listOf(frame()))
+        assertEquals(28, directions.size)
+        assertTrue(logs.none { "no-scrollbar" in it })
     }
     @Test fun `changed screen aborts before another scroll`() {
         val (directions, _) = scan(listOf(frame(), frame(valid = false)))

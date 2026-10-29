@@ -118,7 +118,7 @@ class FpAutoSell @Inject constructor(
                 tracker.tapped(tile.column, tile.region.y, cell.lock)
             }
             val bar = reader.scrollbar()
-            val end = tracker.finishPage(bar.railPresent, bar.bottom)
+            val end = tracker.finishPage(bar.bottom)
             log("page=$page summary selected=${tracker.selected} rejected=${tracker.rejected} " +
                 "stationary=${tracker.stationary} idle=${tracker.idle} scrollbar=$bar")
             if (ended || end != null) {

@@ -12,8 +12,8 @@ import kotlin.math.sqrt
 
 class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLocations) : IFgoAutomataApi by api {
     companion object {
-        // Independently measured sale-list end: core 250/contrast 87; non-end cores <=184.
-        val scrollbarBoxes = ScrollbarBoxes(thumbMinimum = 225.0, endContrast = 40.0, railContrast = 25.0, railMinimumRows = 0.7)
+        // End minimum .904529; non-end maximum .551095. Rounded midpoint, >=.176 margin.
+        const val SCROLLBAR_SIMILARITY = 0.728
         const val LOCK_SIMILARITY = 0.8
         /**
          * D-19: the selection frame is teal (about RGB 92/245/190) on every server. Unselected frames are gold, silver,
@@ -56,16 +56,11 @@ class FpSellReader @Inject constructor(api: IFgoAutomataApi, val loc: FpSellLoca
     private val lockTemplate get() = lockIcon
     val hasLockTemplate get() = lockIcon != null
 
-    data class ScrollbarState(val railPresent: Boolean, val bottom: Boolean,
-        val bottomBox: ScrollbarBoxes.Sample?, val railBox: ScrollbarBoxes.Sample?)
+    data class ScrollbarState(val bottom: Boolean, val score: Double? = null)
 
     fun scrollbar(): ScrollbarState = useSameSnapIn {
-        fun sample(region: Region) = region.getPattern("FP sale scrollbar box").use {
-            scrollbarBoxes.sample(it.grayPixels(), it.width, it.height)
-        }
-        val bottom = sample(loc.bottomScrollbarRegion)
-        val rail = sample(loc.scrollbarRailRegion)
-        ScrollbarState(scrollbarBoxes.rail(rail), scrollbarBoxes.thumb(bottom), bottom, rail)
+        val score = loc.bottomScrollbarRegion.find(images[Images.SupportScrollBarBottom], 0.01)?.score
+        ScrollbarState(score != null && score >= SCROLLBAR_SIMILARITY, score)
     }
 
     fun onServantTab() = loc.servantTab.exists(images[Images.FpSellTab], similarity = 0.9)

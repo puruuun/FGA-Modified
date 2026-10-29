@@ -5,81 +5,70 @@ import io.github.fate_grand_automata.scripts.weekly.*
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.test.*
 
 class ScrollbarFixtureTest {
-    private fun image(name: String) = ImageIO.read(File("../docs/reference-images/$name"))!!
-    private fun box(image: java.awt.image.BufferedImage, centre: Int, y: Int, height: Int, reader: ScrollbarBoxes): ScrollbarBoxes.Sample? {
-        val pixels = ByteArray(28 * height) { i ->
-            val rgb = image.getRGB(centre - 14 + i % 28, y + i / 28)
-            (0.299 * (rgb shr 16 and 255) + 0.587 * (rgb shr 8 and 255) + 0.114 * (rgb and 255)).roundToInt().toByte()
+    private fun gray(path: String): Array<DoubleArray> {
+        val im = ImageIO.read(File(path))!!
+        return Array(im.height) { y -> DoubleArray(im.width) { x ->
+            val rgb = im.getRGB(x, y)
+            (0.299 * (rgb shr 16 and 255) + 0.587 * (rgb shr 8 and 255) + 0.114 * (rgb and 255)).roundToInt().toDouble()
+        } }
+    }
+    /** Independent normalized correlation over the exact upstream-sized production window. */
+    private fun score(file: String, screen: String, end: String): Double {
+        val im = gray("../docs/reference-images/$file")
+        val template = gray("../app/src/main/assets/En/support_scrollbar_$end.png")
+        val wide = im[0].size > 1440
+        val left = (im[0].size - (if (wide) 85.5 else 0.0) -
+            if (screen == "weekly") (if (wide) 60 else 50) else (if (wide) 293 else 283)).roundToInt()
+        val top = if (screen == "fp") 658 else if (end == "top") 84 else 570
+        val tw = template[0].size; val th = template.size
+        val tm = template.flatMap { it.toList() }.average()
+        val tv = template.sumOf { row -> row.sumOf { (it - tm) * (it - tm) } }
+        var best = -1.0
+        for (y in top..top + 28 - th) for (x in left..minOf(left + (if (wide) 70 else 50), im[0].size) - tw) {
+            val mean = (0 until th).sumOf { dy -> (0 until tw).sumOf { dx -> im[y + dy][x + dx] } } / (tw * th)
+            var dot = 0.0; var variance = 0.0
+            for (dy in 0 until th) for (dx in 0 until tw) {
+                val v = im[y + dy][x + dx] - mean
+                dot += v * (template[dy][dx] - tm); variance += v * v
+            }
+            if (variance > 0) best = maxOf(best, dot / sqrt(variance * tv))
         }
-        return reader.sample(pixels, 28, height)
+        return best
     }
-    private fun weekly(name: String): ListScrollbar.State {
-        val image = image("Kr/scroll-end/$name.png")
-        val centre = image.width - if (image.width > 1440) 108 else 23
-        return ListScrollbar.read(box(image, centre, 102, 6, ListScrollbar.boxes),
-            box(image, centre, 578, 6, ListScrollbar.boxes), box(image, centre, 330, 24, ListScrollbar.boxes))
-    }
+    private fun weekly(name: String) = ListScrollbar.read(score("Kr/scroll-end/$name.png", "weekly", "top"),
+        score("Kr/scroll-end/$name.png", "weekly", "bottom"))
 
-    @Test fun `three animated idle bottom captures skip down immediately`() {
-        for (index in 1..3) {
-            val bar = weekly("weekly-bottom-$index")
-            assertTrue(bar.railPresent)
-            assertTrue(bar.bottom)
-            assertFalse(bar.top)
-            assertTrue(WeeklyListScan.atEnd(bar, ListSearchDirection.Down))
+    @Test fun `animated bottom fixtures skip down before the first swipe`() {
+        for (i in 1..3) {
+            val bar = weekly("weekly-bottom-$i")
+            assertTrue(bar.bottom); assertFalse(bar.top)
             var captures = 0
             WeeklyListScan.run(14, { ListScanFrame(true, if (captures++ > 0) "found above" else null, bar) },
-                { direction, _ -> assertEquals(ListSearchDirection.Up, direction, "Down must never swipe") })
+                { direction, _ -> assertEquals(ListSearchDirection.Up, direction) })
         }
     }
-    @Test fun `owner top capture ends up immediately`() {
-        val bar = weekly("weekly-top")
-        assertTrue(bar.railPresent)
-        assertTrue(bar.top)
-        assertFalse(bar.bottom)
-        assertTrue(WeeklyListScan.atEnd(bar, ListSearchDirection.Up))
+    @Test fun `wide top and sixteen nine middle match upstream end templates`() {
+        assertTrue(weekly("weekly-top").top); assertFalse(weekly("weekly-top").bottom)
+        assertFalse(weekly("weekly-middle").top); assertFalse(weekly("weekly-middle").bottom)
     }
-    @Test fun `sixteen nine middle has a rail and neither end cap`() {
-        val bar = weekly("weekly-middle")
-        assertTrue(bar.railPresent)
-        assertFalse(bar.top)
-        assertFalse(bar.bottom)
-    }
-    @Test fun `FP bottom ends after completing its first page`() {
-        val image = image("Kr/scroll-end/fp-bottom.png")
-        val reader = FpSellReader.scrollbarBoxes
-        val centre = image.width - 344
-        assertTrue(reader.rail(box(image, centre, 330, 24, reader)))
-        val bottom = reader.thumb(box(image, centre, 665, 6, reader))
-        assertTrue(bottom)
-        val progress = FpSellProgress(284)
-        progress.beginPage(listOf(400, 684), 0)
-        progress.tapped(0, 400, FpSellPolicy.Lock.Unlocked)
-        assertEquals("scrollbar-end", progress.finishPage(railPresent = true, bottom = bottom))
-        assertEquals(1, progress.pages)
-        assertEquals(1, progress.selected)
-    }
-    @Test fun `FP existing sixteen nine top and middle pages are not at the bottom`() {
-        val reader = FpSellReader.scrollbarBoxes
-        // 18 is at the top; 27 and 28 have the thumb around y=275 and y=461 respectively.
-        for (file in listOf("18.png", "27.png", "28.png")) {
-            val image = image("Kr/fp-sell/$file")
-            assertTrue(reader.rail(box(image, 1022, 330, 24, reader)), file)
-            assertFalse(reader.thumb(box(image, 1022, 665, 6, reader)), file)
+    @Test fun `wide and sixteen nine FP bottoms complete their current page`() {
+        for (name in listOf("Kr/scroll-end/fp-bottom.png", "Jp/fp-sell/beta7/20261019-104653-291-watch.png")) {
+            assertTrue(score(name, "fp", "bottom") >= FpSellReader.SCROLLBAR_SIMILARITY)
+            val progress = FpSellProgress(284)
+            progress.beginPage(listOf(400, 684), 0); progress.tapped(0, 400, FpSellPolicy.Lock.Unlocked)
+            assertEquals("scrollbar-end", progress.finishPage(bottom = true))
+            assertEquals(1, progress.pages); assertEquals(1, progress.selected)
         }
     }
-    @Test fun `uniform dark and bright boxes have no rail or thumb and missing samples are rejected`() {
-        for (reader in listOf(ListScrollbar.boxes, FpSellReader.scrollbarBoxes)) {
-            for (grey in listOf(0, 255)) {
-                val sample = reader.sample(ByteArray(28 * 24) { grey.toByte() }, 28, 24)
-                assertFalse(reader.rail(sample))
-                assertFalse(reader.thumb(sample))
-            }
-            assertNull(reader.sample(null, 28, 24))
-            assertNull(reader.sample(ByteArray(1), 28, 24))
-        }
+    @Test fun `FP top and middle stay below the separately measured threshold`() {
+        for (n in listOf(18,19,22,24,27,28)) assertTrue(score("Kr/fp-sell/$n.png", "fp", "bottom") < FpSellReader.SCROLLBAR_SIMILARITY)
+    }
+    @Test fun `missing end scores never imply a one page list`() {
+        assertEquals(ListScrollbar.State(false, false), ListScrollbar.read(null, null))
+        assertTrue(ListScrollbar.read(.9, .9).let { it.top && it.bottom })
     }
 }

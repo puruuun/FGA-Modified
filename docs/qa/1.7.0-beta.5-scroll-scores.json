@@ -1,0 +1,2661 @@
+{
+  "method": "720p grayscale TM_CCOEFF_NORMED, production-sized regions; source window chrome and game borders removed",
+  "summary": {
+    "weekly": {
+      "endMinimum": 0.8171753287315369,
+      "nonEndMaximum": 0.6238477826118469,
+      "threshold": 0.721,
+      "endMargin": 0.09617532873153689,
+      "nonEndMargin": 0.09715221738815305,
+      "frames": 70
+    },
+    "fp": {
+      "endMinimum": 0.9045288562774658,
+      "nonEndMaximum": 0.5510954856872559,
+      "threshold": 0.728,
+      "endMargin": 0.17652885627746584,
+      "nonEndMargin": 0.17690451431274412,
+      "frames": 50
+    }
+  },
+  "frames": [
+    {
+      "file": "docs/reference-images/Jp/weekly-route/02.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.8343872427940369,
+        "bottom": 0.1768607646226883
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          98,
+          270
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/03.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5237502455711365,
+        "bottom": 0.17948494851589203
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          339,
+          511
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/04.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.8353715538978577,
+        "bottom": 0.17838700115680695
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          98,
+          296
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/05.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5229197144508362,
+        "bottom": 0.17661386728286743
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          346,
+          544
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/12.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5321576595306396,
+        "bottom": 0.1813015192747116
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          285,
+          457
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/13.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.8335974216461182,
+        "bottom": 0.1747254580259323
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          98,
+          255
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/14.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5240220427513123,
+        "bottom": 0.17130684852600098
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          166,
+          322
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/15.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.529949426651001,
+        "bottom": 0.18258967995643616
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          240,
+          396
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/16.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5324519276618958,
+        "bottom": 0.17798465490341187
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          343,
+          500
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/17.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5707839727401733,
+        "bottom": 0.17911167442798615
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          130,
+          438
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/18.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.527121365070343,
+        "bottom": 0.1754561811685562
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          242,
+          440
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/35.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5236932039260864,
+        "bottom": 0.16826263070106506
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          356,
+          529
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/36.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.5891347527503967,
+        "bottom": 0.16690319776535034
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          139,
+          352
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/24.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.2930337190628052,
+        "bottom": 0.20316056907176971
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          376,
+          501
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/25.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.25834861397743225,
+        "bottom": 0.22616663575172424
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          169,
+          295
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/26.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.6018480062484741,
+        "bottom": 0.33582109212875366
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          109,
+          307
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/27.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9452511072158813,
+        "bottom": 0.2736770808696747
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          99,
+          408
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/37.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.32583725452423096,
+        "bottom": 0.2153668850660324
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          407,
+          537
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/38.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.2807281017303467,
+        "bottom": 0.17426712810993195
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          138,
+          351
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/wide-21x9/01.webp",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.8684337735176086,
+        "bottom": 0.4634549915790558
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          101,
+          274
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/wide-2560/23.webp",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.6175984144210815,
+        "bottom": 0.5452895164489746
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [
+        [
+          340,
+          513
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/wide-2560/24.webp",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.8207780122756958,
+        "bottom": 0.4656693935394287
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          98,
+          311
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/weekly-route/06.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.3580085039138794,
+        "bottom": 0.42377349734306335
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/28.webp",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.4667220711708069,
+        "bottom": 0.6238477826118469
+      },
+      "expected": {
+        "top": false,
+        "bottom": false
+      },
+      "runs": [],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/01-home-top.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9737027883529663,
+        "bottom": 0.32775184512138367
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          97,
+          227
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/02-home-bottom.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.30742043256759644,
+        "bottom": 0.8171753287315369
+      },
+      "expected": {
+        "top": false,
+        "bottom": true
+      },
+      "runs": [
+        [
+          455,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/03-mainrecord-top.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9706204533576965,
+        "bottom": 0.2037055492401123
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          97,
+          295
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/04-mainrecord-bottom.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.33477458357810974,
+        "bottom": 0.8569122552871704
+      },
+      "expected": {
+        "top": false,
+        "bottom": true
+      },
+      "runs": [
+        [
+          387,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/05-interlude-top.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9707356095314026,
+        "bottom": 0.19723252952098846
+      },
+      "expected": {
+        "top": true,
+        "bottom": false
+      },
+      "runs": [
+        [
+          97,
+          310
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/weekly-route/tablet-scrollbar/06-interlude-bottom.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.2829805910587311,
+        "bottom": 0.8406282663345337
+      },
+      "expected": {
+        "top": false,
+        "bottom": true
+      },
+      "runs": [
+        [
+          373,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/18.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.47000038623809814
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          208
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/19.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.46907657384872437
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          202
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/22.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.5510954856872559
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/24.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.5405800938606262
+      },
+      "expected": null,
+      "runs": [
+        [
+          230,
+          245
+        ],
+        [
+          296,
+          341
+        ],
+        [
+          380,
+          395
+        ],
+        [
+          446,
+          494
+        ],
+        [
+          577,
+          627
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/27.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.46081581711769104
+      },
+      "expected": null,
+      "runs": [
+        [
+          276,
+          311
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/28.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.47213271260261536
+      },
+      "expected": null,
+      "runs": [
+        [
+          462,
+          497
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/29.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.38636353611946106
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          206
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.23.41.181.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.21819132566452026,
+        "bottom": 0.34875771403312683
+      },
+      "expected": null,
+      "runs": [
+        [
+          127,
+          256
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.11.031.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.34794431924819946,
+        "bottom": 0.3796754479408264
+      },
+      "expected": null,
+      "runs": [
+        [
+          262,
+          460
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.17.515.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.3413199186325073,
+        "bottom": 0.3359501361846924
+      },
+      "expected": null,
+      "runs": [
+        [
+          228,
+          329
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_17.24.32.464.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.3949510157108307,
+        "bottom": 0.23878435790538788
+      },
+      "expected": null,
+      "runs": [
+        [
+          394,
+          495
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.54.36.073.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.24767006933689117,
+        "bottom": 0.373917818069458
+      },
+      "expected": null,
+      "runs": [
+        [
+          149,
+          279
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.03.181.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.25821807980537415,
+        "bottom": 0.1678169071674347
+      },
+      "expected": null,
+      "runs": [
+        [
+          241,
+          439
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.36.397.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.2874484956264496,
+        "bottom": 0.445155531167984
+      },
+      "expected": null,
+      "runs": [
+        [
+          404,
+          505
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.47.631.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9668081998825073,
+        "bottom": 0.2564582824707031
+      },
+      "expected": null,
+      "runs": [
+        [
+          97,
+          198
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.50.664.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.27940699458122253,
+        "bottom": 0.86130291223526
+      },
+      "expected": null,
+      "runs": [
+        [
+          484,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.55.57.564.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.9791068434715271,
+        "bottom": 0.30674535036087036
+      },
+      "expected": null,
+      "runs": [
+        [
+          97,
+          295
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_18.56.02.464.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "top": 0.23673805594444275,
+        "bottom": 0.8312157988548279
+      },
+      "expected": null,
+      "runs": [
+        [
+          387,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.22.980.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.5677763819694519,
+        "bottom": 0.46476122736930847
+      },
+      "expected": null,
+      "runs": [
+        [
+          180,
+          343
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.42.030.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.873707115650177,
+        "bottom": 0.3706680238246918
+      },
+      "expected": null,
+      "runs": [
+        [
+          97,
+          348
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.47.213.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.5686829090118408,
+        "bottom": 0.8266246914863586
+      },
+      "expected": null,
+      "runs": [
+        [
+          334,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.50.446.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.5683680772781372,
+        "bottom": 0.37355321645736694
+      },
+      "expected": null,
+      "runs": [
+        [
+          153,
+          404
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.53.697.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.8779035806655884,
+        "bottom": 0.3716098964214325
+      },
+      "expected": null,
+      "runs": [
+        [
+          98,
+          216
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.24.56.580.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.5740224123001099,
+        "bottom": 0.8207534551620483
+      },
+      "expected": null,
+      "runs": [
+        [
+          468,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\Screenshot_2026.10.27_19.25.04.947.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.5638871788978577,
+        "bottom": 0.3639875650405884
+      },
+      "expected": null,
+      "runs": [
+        [
+          370,
+          488
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-18 185843.png",
+      "screen": "weekly",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "top": 0.48640677332878113,
+        "bottom": 0.17167004942893982
+      },
+      "expected": null,
+      "runs": [
+        [
+          337,
+          509
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-18 185850.png",
+      "screen": "weekly",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "top": 0.4879494607448578,
+        "bottom": 0.17085567116737366
+      },
+      "expected": null,
+      "runs": [
+        [
+          331,
+          529
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012038.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.8435499668121338,
+        "bottom": 0.16895152628421783
+      },
+      "expected": null,
+      "runs": [
+        [
+          95,
+          269
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012056.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.17893579602241516,
+        "bottom": 0.17198023200035095
+      },
+      "expected": null,
+      "runs": [
+        [
+          338,
+          511
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012102.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.8439597487449646,
+        "bottom": 0.17472060024738312
+      },
+      "expected": null,
+      "runs": [
+        [
+          95,
+          295
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 012113.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.1786598265171051,
+        "bottom": 0.16773514449596405
+      },
+      "expected": null,
+      "runs": [
+        [
+          345,
+          544
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014725.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.1787479966878891,
+        "bottom": 0.17433802783489227
+      },
+      "expected": null,
+      "runs": [
+        [
+          283,
+          457
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014731.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.8431364893913269,
+        "bottom": 0.16909421980381012
+      },
+      "expected": null,
+      "runs": [
+        [
+          95,
+          253
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014737.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.17997188866138458,
+        "bottom": 0.1658129096031189
+      },
+      "expected": null,
+      "runs": [
+        [
+          163,
+          321
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014744.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.180489182472229,
+        "bottom": 0.17317631840705872
+      },
+      "expected": null,
+      "runs": [
+        [
+          238,
+          396
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014750.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.18007110059261322,
+        "bottom": 0.17228154838085175
+      },
+      "expected": null,
+      "runs": [
+        [
+          342,
+          500
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014804.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.14873984456062317,
+        "bottom": 0.16940662264823914
+      },
+      "expected": null,
+      "runs": [
+        [
+          127,
+          438
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 014811.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1162
+      ],
+      "scores": {
+        "top": 0.17881141602993011,
+        "bottom": 0.17005150020122528
+      },
+      "expected": null,
+      "runs": [
+        [
+          240,
+          440
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134539.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        2007,
+        1178
+      ],
+      "scores": {
+        "top": 0.30462658405303955,
+        "bottom": 0.17590966820716858
+      },
+      "expected": null,
+      "runs": [
+        [
+          376,
+          501
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134610.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        2007,
+        1178
+      ],
+      "scores": {
+        "top": 0.25535428524017334,
+        "bottom": 0.19841568171977997
+      },
+      "expected": null,
+      "runs": [
+        [
+          170,
+          295
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134642.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        2007,
+        1178
+      ],
+      "scores": {
+        "top": 0.58514803647995,
+        "bottom": 0.288505494594574
+      },
+      "expected": null,
+      "runs": [
+        [
+          109,
+          307
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-20 134650.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        2007,
+        1178
+      ],
+      "scores": {
+        "top": 0.9502972364425659,
+        "bottom": 0.24301744997501373
+      },
+      "expected": null,
+      "runs": [
+        [
+          99,
+          407
+        ]
+      ],
+      "ends": {
+        "top": true,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-21 190553.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1153
+      ],
+      "scores": {
+        "top": 0.3178119957447052,
+        "bottom": 0.21013827621936798
+      },
+      "expected": null,
+      "runs": [
+        [
+          407,
+          536
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\주간퀘최단루트\\스크린샷 2026-10-21 190610.png",
+      "screen": "weekly",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1962,
+        1153
+      ],
+      "scores": {
+        "top": 0.27759096026420593,
+        "bottom": 0.16990864276885986
+      },
+      "expected": null,
+      "runs": [
+        [
+          138,
+          350
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s1.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.30063867568969727,
+        "bottom": 0.8607996106147766
+      },
+      "expected": null,
+      "runs": [
+        [
+          387,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s2.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.37746116518974304,
+        "bottom": 0.8767359256744385
+      },
+      "expected": null,
+      "runs": [
+        [
+          387,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\s3.png",
+      "screen": "weekly",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "top": 0.37750792503356934,
+        "bottom": 0.8701770305633545
+      },
+      "expected": null,
+      "runs": [
+        [
+          387,
+          585
+        ]
+      ],
+      "ends": {
+        "top": false,
+        "bottom": true
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Documents\\Codex\\FGA-Modified\\build\\orchestration\\inputs\\scroll-end\\fp-sell-bottom-2560x1080.png",
+      "screen": "fp",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "bottom": 0.9127697944641113
+      },
+      "expected": {
+        "bottom": true
+      },
+      "runs": [
+        [
+          604,
+          673
+        ]
+      ],
+      "ends": {
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/37.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.3838169574737549
+      },
+      "expected": null,
+      "runs": [
+        [
+          494,
+          529
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/42-jp-5col.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.3878554105758667
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          205
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/43-jp-6col.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.3851187527179718
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          210
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/45-jp-selected.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.2856875956058502
+      },
+      "expected": null,
+      "runs": [
+        [
+          177,
+          204
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/46-empty-slots-synthetic.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          272,
+          305
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/46.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          272,
+          305
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/47.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          269,
+          301
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/48.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104653-291-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.9045288562774658
+      },
+      "expected": null,
+      "runs": [
+        [
+          631,
+          673
+        ]
+      ],
+      "ends": {
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104713-290-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.9045290946960449
+      },
+      "expected": null,
+      "runs": [
+        [
+          635,
+          673
+        ]
+      ],
+      "ends": {
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104833-291-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.9049462676048279
+      },
+      "expected": null,
+      "runs": [
+        [
+          631,
+          673
+        ]
+      ],
+      "ends": {
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/beta7/20261019-104838-653-final-game-selection-407.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.9049462676048279
+      },
+      "expected": null,
+      "runs": [
+        [
+          631,
+          673
+        ]
+      ],
+      "ends": {
+        "bottom": true
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023440-448-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092997908592224
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          205
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023451-308-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092926383018494
+      },
+      "expected": null,
+      "runs": [
+        [
+          181,
+          214
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023502-070-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092950224876404
+      },
+      "expected": null,
+      "runs": [
+        [
+          190,
+          223
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023512-711-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          195,
+          228
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023523-435-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          200,
+          232
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023534-233-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092950224876404
+      },
+      "expected": null,
+      "runs": [
+        [
+          209,
+          241
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023544-989-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023551-342-stopped-dialog.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023555-510-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023606-019-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023616-563-watch.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44892236590385437
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/fp-sell/qa-beta5/20261019-023618-706-final-game-selection-9.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.44092974066734314
+      },
+      "expected": null,
+      "runs": [
+        [
+          213,
+          246
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Jp/wide-21x9/14.webp",
+      "screen": "fp",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "bottom": 0.5185574889183044
+      },
+      "expected": null,
+      "runs": [
+        [
+          171,
+          224
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/20.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.4632381796836853
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          208
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/fp-sell/38.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": null,
+      "scores": {
+        "bottom": 0.4720889925956726
+      },
+      "expected": null,
+      "runs": [
+        [
+          484,
+          520
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/wide-2560/31.webp",
+      "screen": "fp",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "bottom": 0.49500465393066406
+      },
+      "expected": null,
+      "runs": [
+        [
+          171,
+          238
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "docs/reference-images/Kr/wide-2560/39.webp",
+      "screen": "fp",
+      "width": 1680,
+      "crop": null,
+      "scores": {
+        "bottom": 0.48936641216278076
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          253
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\울트라 와이드\\판매창.png",
+      "screen": "fp",
+      "width": 1678,
+      "crop": [
+        1,
+        49,
+        2560,
+        1147
+      ],
+      "scores": {
+        "bottom": 0.5352550148963928
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          224
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\13 (1).png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          275,
+          310
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\13 (2).png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          461,
+          495
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\4.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          207
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\5.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          200
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\6.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          207
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 215300.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.44315624237060547
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          205
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 221106.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.44315680861473083
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          204
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-18 221118.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.44315654039382935
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          209
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-19 001138.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1975,
+        1160
+      ],
+      "scores": {
+        "bottom": 0.4959779679775238
+      },
+      "expected": null,
+      "runs": [],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\스크린샷 2026-10-19 002411.png",
+      "screen": "fp",
+      "width": 1280,
+      "crop": [
+        1,
+        49,
+        1975,
+        1160
+      ],
+      "scores": {
+        "bottom": 0.48888930678367615
+      },
+      "expected": null,
+      "runs": [
+        [
+          172,
+          206
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\잠금 jp.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.44315654039382935
+      },
+      "expected": null,
+      "runs": [
+        [
+          493,
+          528
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    },
+    {
+      "file": "C:\\Users\\rl\\Desktop\\작업\\자동프포\\잠금 kr.png",
+      "screen": "fp",
+      "width": 1279,
+      "crop": [
+        1,
+        49,
+        1938,
+        1139
+      ],
+      "scores": {
+        "bottom": 0.5408871173858643
+      },
+      "expected": null,
+      "runs": [
+        [
+          483,
+          519
+        ]
+      ],
+      "ends": {
+        "bottom": false
+      }
+    }
+  ]
+}

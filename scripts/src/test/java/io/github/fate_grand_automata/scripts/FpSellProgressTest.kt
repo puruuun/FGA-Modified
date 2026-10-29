@@ -135,17 +135,17 @@ class FpSellProgressTest {
         p.finishPage()
         p.beginPage(listOf(578,862,1146),560)
         assertEquals("skip:tap-rejected",p.seen(2,1146,tile))
-        assertEquals("scrollbar-end",p.finishPage(railPresent = true, bottom = true))
+        assertEquals("scrollbar-end",p.finishPage(bottom = true))
         assertEquals(FpSellPolicy.Summary(0,0),p.summary())
         assertEquals(1,p.taps)
         assertEquals(1,p.rejected)
     }
 
-    @Test fun `missing rail completes one page and stops without a swipe`() {
+    @Test fun `missing bottom template does not end a page with new taps`() {
         val p = FpSellProgress(284)
         p.beginPage(listOf(400, 684), 0)
         p.tapped(0, 400, FpSellPolicy.Lock.Unlocked)
-        assertEquals("no-scrollbar", p.finishPage(railPresent = false))
+        assertNull(p.finishPage(bottom = false))
         assertEquals(1, p.pages)
         assertEquals(1, p.selected)
     }

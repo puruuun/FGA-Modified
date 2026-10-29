@@ -55,12 +55,11 @@ class WideScreenLocationsTest {
         }
     }
 
-    @Test fun `weekly and FP scrollbar boxes follow their measured safe edges`() {
-        assertEquals(Region(2486, 204, 56, 12), WeeklyRouteLocations(sixteenNine).topScrollbarRegion)
-        assertEquals(Region(3116, 1156, 56, 12), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
-        assertEquals(Region(2486, 660, 56, 48), WeeklyRouteLocations(sixteenNine).scrollbarRailRegion)
-        assertEquals(Region(2016, 1330, 56, 12), FpSellLocations(sixteenNine).bottomScrollbarRegion)
-        assertEquals(Region(2644, 1330, 56, 12), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
+    @Test fun `weekly and FP scrollbar template windows follow their measured safe edges`() {
+        assertEquals(Region(2460, 168, 100, 55), WeeklyRouteLocations(sixteenNine).topScrollbarRegion)
+        assertEquals(Region(3069, 1140, 140, 55), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
+        assertEquals(Region(1994, 1316, 100, 55), FpSellLocations(sixteenNine).bottomScrollbarRegion)
+        assertEquals(Region(2603, 1316, 140, 55), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
     }
 
     @Test fun `the safe area inset exists only on wide screens`() {

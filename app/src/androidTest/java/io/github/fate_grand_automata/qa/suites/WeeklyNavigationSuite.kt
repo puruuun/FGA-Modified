@@ -14,14 +14,9 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
     val actual=JSONObject()
     when(case.getString("view")) {
         "scrollbar" -> {
-            useSameSnapIn {
-                fun sample(region: io.github.lib_automata.Region) = region.getPattern("weekly scrollbar QA").use {
-                    ListScrollbar.boxes.sample(it.grayPixels(), it.width, it.height)
-                }
-                val state = ListScrollbar.read(sample(loc.topScrollbarRegion), sample(loc.bottomScrollbarRegion), sample(loc.scrollbarRailRegion))
-                actual.put("railPresent", state.railPresent).put("top", state.top).put("bottom", state.bottom)
-                    .put("boxes", state.toString())
-            }
+            val state = ListScrollbar.read(this, loc)
+            actual.put("top", state.top).put("bottom", state.bottom)
+                .put("scores", state.toString())
         }
         "spotPanel" -> useSameSnapIn {
             val reader = QuestPanelReader(this, QuestPanelLocations(locations), ocr)

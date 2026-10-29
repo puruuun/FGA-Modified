@@ -181,9 +181,9 @@ class FpAutoSellTest {
             every { reader.readPage() } returns listOf(FpSellReader.PageTile(0, card, null))
             every { reader.readCard(card) } returnsMany listOf(unselected, unselected.copy(selected = true))
             every { reader.scrollbar() } returnsMany listOf(
-                FpSellReader.ScrollbarState(true, false, null, null),
-                FpSellReader.ScrollbarState(true, false, null, null),
-                FpSellReader.ScrollbarState(true, true, null, null))
+                FpSellReader.ScrollbarState(false),
+                FpSellReader.ScrollbarState(false),
+                FpSellReader.ScrollbarState(true))
             sale = FpAutoSell(api, reader, swiper)
         }
         fun result() = try { sale.run() } catch (e: AutoFriendGacha.ExitException) {
@@ -193,14 +193,14 @@ class FpAutoSellTest {
         fun failure() = assertFailsWith<AutoFriendGacha.ExitException> { try { sale.run() } finally { sale.logFinalSummary() } }
     }
 
-    @Test fun `bottom or missing rail finishes after tile taps with no extra swipe`() {
-        for (bar in listOf(FpSellReader.ScrollbarState(true, true, null, null), FpSellReader.ScrollbarState(false, false, null, null))) {
+    @Test fun `bottom template finishes after tile taps with no extra swipe`() {
+        for (bar in listOf(FpSellReader.ScrollbarState(true))) {
             val run = SellRun()
             every { run.reader.scrollbar() } returns bar
             assertEquals(1, run.result().summary.total)
             verifyOrder { run.reader.readPage(); run.reader.readCard(run.card); with(run.api) { run.card.click(1) }; run.reader.scrollbar() }
             verify(exactly = 0) { run.swiper.scroll(any(), any()) }
-            assertTrue(run.logs.any { "reason=${if (bar.railPresent) "scrollbar-end" else "no-scrollbar"}" in it })
+            assertTrue(run.logs.any { "reason=scrollbar-end" in it })
         }
     }
 

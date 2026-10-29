@@ -84,10 +84,9 @@ class FpSellProgress(private val pitch: Int) {
         if (lock == FpSellPolicy.Lock.Unknown) unknownLock++
     }
 
-    fun finishPage(railPresent: Boolean = true, bottom: Boolean = false): String? {
+    fun finishPage(bottom: Boolean = false): String? {
         idle = if (pageTaps == 0) idle + 1 else 0
         return when {
-            !railPresent -> "no-scrollbar"
             bottom -> "scrollbar-end"
             idle >= IDLE_LIMIT -> "no-new-taps"
             else -> null
