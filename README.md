@@ -28,26 +28,21 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 | 기능 | 설명 |
 |---|---|
-| [게임 영역·저장된 설정](wiki/scripts/Game-Area-Preview-KR.md) | 사용자 지정·저장된 영역을 미리 보고 설정 완료 시 캡처 배율을 적용합니다. 초기화·설정 추가·삭제와 최소 1280×720 제한을 제공합니다. |
-| [앱 언어](wiki/scripts/Hakuno-Shuffle-KR.md#앱-언어) | 최초 실행에 지원하는 시스템 언어를 저장하고 온보딩·설정에 같은 값을 표시합니다. |
-| [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 시작 창에서 게임 내 필터 확인을 안내하고 JP·KR에서 서번트/예장 강화 모드를 전환합니다. |
-| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 자물쇠로 선택하고 원본 FGA의 스크롤바 끝 이미지로 탐색을 마친 뒤 고정 시간으로 판매합니다. 시험 모드는 결정 직후 멈춥니다. |
+| [FP 소환 자동 판매](wiki/scripts/FP-Auto-Sell-KR.md) | 서번트칸이 가득 차면 잠금이 아닌 카드를 판매하고 소환을 이어 갑니다. |
 | [스킬·어펜드 스킬 자동 강화](wiki/scripts/Auto-Skill-Level-KR.md) | 칸마다 정한 목표 레벨까지 스킬을 강화합니다. |
-| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 목록 내용과 원본 FGA 스크롤바 끝 이미지를 읽어 이동하며 지도 지점이 UI와 가장자리 여백을 벗어나면 바로 누릅니다. 빈 경로는 실행하지 않으며 추가기능에서 버튼을 숨길 수 있습니다. |
+| [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 이번 주 주간 미션의 최소 AP 경로를 계산하고 전체 경로를 반복합니다. |
 | [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 서포트 이미지를 만들어 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
-| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 커맨드를 변환하고 U-올가마리 영의를 포함한 내장 서번트 24종·예장 23종 이미지를 재사용합니다. |
+| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 일반 카드가 충분할 때만 커맨드를 시작합니다. |
-| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 첫 턴 조건을 다시 검사하며 하쿠노 셔플은 `aH{…}` 구문과 색별 장수 조건, 구분된 횟수 표시와 NP 부족 창 닫기 전 0.5초 대기를 지원합니다. |
+| [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 시작 조건이 부족하면 셔플 후 다시 검사합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
-| [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 최소 보구 레벨 이상의 서포트를 고르며 설정에는 제목만 표시합니다. |
-| [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 선호 모드에서 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. 설정에는 제목만 표시합니다. |
+| [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 설정한 최소 보구 레벨 이상의 서포트를 선택합니다. |
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
-| [카드 우선순위: 10개 항목·웨이브/턴·서번트 방식](wiki/scripts/Card-Priority-KR.md) | 우선순위를 웨이브 또는 턴 기준으로 최대 10개 두고, 서번트 위치·카드 종류 순서로 고르는 서번트 방식을 고를 수 있습니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
-| [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX 또는 도달 레벨 10~16 확인 시 결과 칸을 몰라도 멈춥니다. |
+| [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX가 되면 멈춥니다. |
 
 설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 
