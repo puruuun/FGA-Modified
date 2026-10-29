@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
@@ -15,9 +16,14 @@ import javax.inject.Inject
 class BattleExecution @Inject constructor(config: IBattleConfig) {
     class Profile(source: IExecutionProfile) {
         val skillCommand = AutoSkillCommand.parse(source.skillCommand)
+        val prioritySplit = source.cardPrioritySplit
         val priority = FaceCardPriority(source.cardPriority, source.servantPriority.takeIf { source.useServantPriority })
         val braveChains: List<BraveChainEnum> = source.braveChains.toList()
         val rearrangeCards = source.rearrangeCards.toList()
+
+        /** The index of the card priority, brave chain and rearrange entries to use. */
+        fun priorityIndex(stage: Int, totalTurn: Int) =
+            if (prioritySplit == CardPrioritySplit.Turn) totalTurn else stage
     }
 
     private val primary = Profile(config)

@@ -23,7 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.ui.Heading
+import io.github.fate_grand_automata.ui.prefs.DropdownPreference
+import io.github.fate_grand_automata.util.stringRes
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
 import kotlinx.coroutines.launch
@@ -32,6 +35,7 @@ import kotlinx.coroutines.launch
 fun CardPriorityView(
     items: SnapshotStateList<CardPriorityListItem>,
     useServantPriority: Pref<Boolean>,
+    cardPrioritySplit: Pref<CardPrioritySplit>,
     profileIndex: Int = 0
 ) {
     val pagerState = rememberPagerState(pageCount = {items.size},)
@@ -48,6 +52,12 @@ fun CardPriorityView(
         ) {
             Heading(stringResource(R.string.card_priority) + " · " + stringResource(R.string.command_start_profile_caption, profileIndex + 1))
 
+            val split by cardPrioritySplit.remember()
+            cardPrioritySplit.DropdownPreference(
+                title = stringResource(R.string.card_priority_split_by),
+                entries = CardPrioritySplit.entries.associateWith { stringResource(it.stringRes) }
+            )
+
             val servantPriority by useServantPriority.remember()
             useServantPriority.SwitchPreference(
                 title = stringResource(R.string.p_battle_config_use_servant_priority),
@@ -58,6 +68,7 @@ fun CardPriorityView(
             CardPriorityWaveSelector(
                 items = items,
                 selectedWave = pagerState.currentPage,
+                split = split,
                 onSelectedWaveChange = { scope.launch { pagerState.animateScrollToPage(it) } },
             )
 

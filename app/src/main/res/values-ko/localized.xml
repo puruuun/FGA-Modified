@@ -71,6 +71,10 @@
     <string name="card_priority_high">"높음"</string>
     <string name="card_priority_low">"낮음"</string>
     <string name="card_priority_wave_number">"웨이브 %d"</string>
+    <string name="card_priority_turn_number">"턴 %d"</string>
+    <string name="card_priority_split_by">"구분 기준"</string>
+    <string name="card_priority_split_wave">"웨이브"</string>
+    <string name="card_priority_split_turn">"턴"</string>
     <string name="ce_dropped">"개념예장 드롭됨!"</string>
     <string name="ce_get">"개념예장 획득!"</string>
     <string name="ces_dropped">"예장 %d개 획득함"</string>

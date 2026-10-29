@@ -23,6 +23,7 @@ internal class BattleConfig(
     override val secondaryExecution = ExecutionProfile(prefs.secondaryExecution)
 
     override var cardPriority by prefs.cardPriority
+    override val cardPrioritySplit by prefs.cardPrioritySplit
     override val rearrangeCards by prefs.rearrangeCards
     override val braveChains by prefs.braveChains
 

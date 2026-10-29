@@ -81,7 +81,7 @@ class Battle @Inject constructor(
 
         if (commandStart.isWaiting && !tryStartCommand()) return
 
-        state.commandPosition = commandStart.position(state.stage, state.turn)
+        state.commandPosition = commandStart.position(state.stage, state.turn, state.runTotalTurns)
 
         val npUsage = autoSkill.execute(state.commandStage, state.commandTurn)
         skillSpam.spamSkills()
@@ -125,7 +125,7 @@ class Battle @Inject constructor(
                     throw AutoBattle.BattleExitException(AutoBattle.ExitReason.CommandStartReturnFailed)
                 }
                 execution.select(checked.profileIndex)
-                commandStart.startAt(state.stage, state.turn, checked.profileIndex)
+                commandStart.startAt(state.stage, state.turn, checked.profileIndex, state.runTotalTurns)
                 messages.notify(ScriptNotify.CommandStarted(state.stage + 1, state.turn + 1, checked.profileIndex))
                 return true
             }

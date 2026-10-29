@@ -49,6 +49,7 @@ class BattleExecutionTest {
         every { config.cardPriority } answers { first.cardPriority }
         every { config.servantPriority } returns first.servantPriority
         every { config.useServantPriority } returns first.useServantPriority
+        every { config.cardPrioritySplit } returns first.cardPrioritySplit
         every { config.rearrangeCards } returns first.rearrangeCards
         every { config.braveChains } returns first.braveChains
         every { config.spam } returns spam

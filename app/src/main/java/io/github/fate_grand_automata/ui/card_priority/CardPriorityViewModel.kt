@@ -34,7 +34,7 @@ class CardPriorityViewModel @AssistedInject constructor(
         val braveChains = battleConfig.braveChains.get()
 
         cardPriority
-            .take(3)
+            .take(CARD_PRIORITY_MAX_ENTRIES)
             .map { it.toMutableStateList() }
             .withIndex()
             .map {
@@ -49,6 +49,7 @@ class CardPriorityViewModel @AssistedInject constructor(
     }
 
     val useServantPriority = battleConfig.useServantPriority
+    val cardPrioritySplit = battleConfig.cardPrioritySplit
 
     fun save() {
         battleConfig.cardPriority.set(

@@ -29,12 +29,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.ui.PreventRtl
+import io.github.fate_grand_automata.util.entryStringRes
+
+/** Wave or turn entries a profile can hold. */
+const val CARD_PRIORITY_MAX_ENTRIES = 10
 
 @Composable
 fun CardPriorityWaveSelector(
     items: SnapshotStateList<CardPriorityListItem>,
     selectedWave: Int,
+    split: CardPrioritySplit,
     onSelectedWaveChange: (Int) -> Unit
 ) {
     PreventRtl {
@@ -63,7 +69,7 @@ fun CardPriorityWaveSelector(
                             .clickable { onSelectedWaveChange(index) }
                     ) {
                         Text(
-                            stringResource(R.string.card_priority_wave_number, index + 1),
+                            stringResource(split.entryStringRes, index + 1),
                             color = if (isSelected) MaterialTheme.colorScheme.onSecondary else Color.Unspecified,
                             modifier = Modifier.padding(5.dp, 2.dp)
                         )
@@ -92,7 +98,7 @@ fun CardPriorityWaveSelector(
             }
 
             AnimatedVisibility(
-                items.size < 3,
+                items.size < CARD_PRIORITY_MAX_ENTRIES,
                 enter = slideInHorizontally(initialOffsetX = { it * 2 }),
                 exit = slideOutHorizontally(targetOffsetX = { it * 2 })
             ) {
@@ -104,7 +110,7 @@ fun CardPriorityWaveSelector(
                         )
                         .clip(CircleShape)
                         .clickable {
-                            if (items.size < 3) {
+                            if (items.size < CARD_PRIORITY_MAX_ENTRIES) {
                                 items.add(
                                     CardPriorityListItem(
                                         items[0].scores.toMutableStateList(),

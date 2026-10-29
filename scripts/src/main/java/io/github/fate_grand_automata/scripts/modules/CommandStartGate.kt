@@ -23,6 +23,7 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
     private val maxWaitingTurns = config.commandStartMaxTurns.coerceAtLeast(0)
 
     private var start: CommandPosition? = null
+    private var startTotalTurns = 0
     var waitingTurns = 0
         private set
     var selectedProfile: Int? = null
@@ -68,25 +69,28 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
         ++waitingTurns
     }
 
-    fun startAt(stage: Int, turn: Int, profileIndex: Int = 0) {
+    fun startAt(stage: Int, turn: Int, profileIndex: Int = 0, totalTurns: Int = 0) {
         check(isWaiting)
         require(stage >= 0 && turn >= 0)
         require(profileIndex == 0 || (profileIndex == 1 && secondaryEnabled))
         selectedProfile = profileIndex
+        startTotalTurns = totalTurns
         start = CommandPosition(stage, turn)
     }
 
-    fun position(stage: Int, turn: Int): CommandPosition {
-        if (mode == CommandStartMode.Basic) return CommandPosition(stage, turn)
+    /** [totalTurns] is the cumulative turn counter of the run, including the current turn. */
+    fun position(stage: Int, turn: Int, totalTurns: Int = 0): CommandPosition {
+        if (mode == CommandStartMode.Basic) return CommandPosition(stage, turn, (totalTurns - 1).coerceAtLeast(0))
         val origin = checkNotNull(start) { "Command has not started" }
         require(stage >= origin.stage)
         val commandTurn = if (stage == origin.stage) turn - origin.turn else turn
         require(commandTurn >= 0)
-        return CommandPosition(stage - origin.stage, commandTurn)
+        return CommandPosition(stage - origin.stage, commandTurn, (totalTurns - startTotalTurns).coerceAtLeast(0))
     }
 
     fun nextRun() {
         start = null
+        startTotalTurns = 0
         waitingTurns = 0
         selectedProfile = null
     }

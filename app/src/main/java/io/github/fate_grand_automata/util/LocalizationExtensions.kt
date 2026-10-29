@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
@@ -27,6 +28,18 @@ val BraveChainEnum.stringRes
         BraveChainEnum.None -> R.string.p_brave_chains_don_t_care
         BraveChainEnum.WithNP -> R.string.p_brave_chains_with_np
         BraveChainEnum.Avoid -> R.string.p_brave_chains_avoid
+    }
+
+val CardPrioritySplit.stringRes
+    get() = when (this) {
+        CardPrioritySplit.Wave -> R.string.card_priority_split_wave
+        CardPrioritySplit.Turn -> R.string.card_priority_split_turn
+    }
+
+val CardPrioritySplit.entryStringRes
+    get() = when (this) {
+        CardPrioritySplit.Wave -> R.string.card_priority_wave_number
+        CardPrioritySplit.Turn -> R.string.card_priority_turn_number
     }
 
 val SpamEnum.stringRes

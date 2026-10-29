@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
@@ -311,10 +312,11 @@ private fun BattleConfigContent(
                                 ProfilePriorityPreference(config.execution, 0, navigate)
                             } else {
                                 val cardPriority by vm.cardPriority.collectAsState(null)
+                                val singleSplit by config.execution.cardPrioritySplit.remember()
                                 cardPriority?.let {
                                     Preference(
                                         title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
-                                        summary = { CardPrioritySummary(it) },
+                                        summary = { CardPrioritySummary(it, singleSplit) },
                                         onClick = { navigate(BattleConfigDestination.CardPriority()) }
                                     )
                                 }
@@ -361,11 +363,12 @@ private fun ProfilePriorityPreference(
 ) {
     val priority by profile.cardPriority.remember()
     val servantPriority by profile.useServantPriority.remember()
+    val split by profile.cardPrioritySplit.remember()
     Preference(
         title = { Text(stringResource(R.string.command_start_edit_priority, index + 1)) },
         summary = {
             Column {
-                CardPrioritySummary(priority)
+                CardPrioritySummary(priority, split)
                 Text(
                     stringResource(R.string.p_battle_config_use_servant_priority) + ": " +
                         stringResource(if (servantPriority) R.string.config_state_on else R.string.config_state_off)
@@ -382,7 +385,7 @@ private val CardScore.color: Color
     }
 
 @Composable
-private fun CardPrioritySummary(cardPriority: CardPriorityPerWave) {
+private fun CardPrioritySummary(cardPriority: CardPriorityPerWave, split: CardPrioritySplit) {
     Column(
         modifier = Modifier
             .padding(vertical = 5.dp)
@@ -394,7 +397,7 @@ private fun CardPrioritySummary(cardPriority: CardPriorityPerWave) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "W${wave + 1}: ",
+                    (if (split == CardPrioritySplit.Turn) "T" else "W") + "${wave + 1}: ",
                     modifier = Modifier
                         .padding(end = 16.dp),
                     style = MaterialTheme.typography.bodyMedium

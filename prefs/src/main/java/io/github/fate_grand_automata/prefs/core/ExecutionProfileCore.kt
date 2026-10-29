@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.prefs.core
 
 import com.fredporciuncula.flow.preferences.Serializer
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 
@@ -19,6 +20,8 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
         },
         default = CardPriorityPerWave.default
     )
+
+    val cardPrioritySplit = maker.enum(prefix + "card_priority_split", CardPrioritySplit.Wave)
 
     val rearrangeCards = maker.serialized(
         prefix + "auto_skill_rearrange_cards",

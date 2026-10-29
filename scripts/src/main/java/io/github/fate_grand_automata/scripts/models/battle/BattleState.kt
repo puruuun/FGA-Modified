@@ -69,11 +69,15 @@ class BattleState @Inject constructor() {
 
     val stage get() = runState.stage
     val turn get() = runState.turn
+    /** Turns taken in this run across all waves, counting the current one. */
+    val runTotalTurns get() = runState.totalTurns
 
     var commandPosition: CommandPosition? = null
     var hakunoShuffledThisTurn = false
     val commandStage get() = commandPosition?.stage ?: stage
     val commandTurn get() = commandPosition?.turn ?: turn
+    /** Zero-based turn of the command across waves; waiting turns before the command starts count as 0. */
+    val commandTotalTurn get() = commandPosition?.totalTurn ?: 0
 
     fun nextTurn() {
         hakunoShuffledThisTurn = false

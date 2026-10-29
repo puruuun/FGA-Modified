@@ -42,15 +42,20 @@ class Card @Inject constructor(
                 }
                 .toSet()
 
+    /** Wave or turn entry of the card priority settings, depending on the active profile. */
+    private fun priorityIndex() =
+        execution.active.priorityIndex(state.commandStage, state.commandTotalTurn)
+
     private fun pickCards(
         cards: List<ParsedCard>,
         npUsage: NPUsage
     ): List<CommandCard.Face> {
-        val cardsOrderedByPriority = execution.active.priority.sort(cards, state.commandStage)
+        val index = priorityIndex()
+        val cardsOrderedByPriority = execution.active.priority.sort(cards, index)
 
         fun <T> List<T>.inCurrentWave(default: T) =
             if (isNotEmpty())
-                this[state.commandStage.coerceIn(indices)]
+                this[index.coerceIn(indices)]
             else default
 
         val braveChainsPerWave = execution.active.braveChains
@@ -71,7 +76,7 @@ class Card @Inject constructor(
     ) {
         npUsage.directCards?.let { sequence ->
             val picked = sequence.resolve(cards) { remaining ->
-                execution.active.priority.sort(remaining, state.commandStage)
+                execution.active.priority.sort(remaining, priorityIndex())
             }
             if (picked == null || sequence.nps.any { it.toFieldSlot() !in servantTracker.deployed }) {
                 throw AutoBattle.BattleExitException(AutoBattle.ExitReason.DirectCardsUnavailable(sequence.toString()))
