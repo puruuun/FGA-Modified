@@ -336,4 +336,39 @@ class CommandStartGateTest {
         assertThat(gate.selectedProfile).isEqualTo(null)
     }
 
+
+    private fun typed(count: Int, type: CardTypeEnum) = hand(count).map { it.copy(type = type) }
+
+    @Test
+    fun `count zero with Buster two under AND needs only two Busters`() {
+        val gate = gate(required = 0, colours = CardColourCounts(buster = 2))
+        assertThat(gate.check(typed(2, CardTypeEnum.Buster), deployed)).isEqualTo(readyResult(2))
+        assertThat(gate.check(typed(3, CardTypeEnum.Arts), deployed))
+            .isEqualTo(CommandStartGate.Result.Wait(3, colours = CardColourCounts(arts = 3)))
+    }
+
+    @Test
+    fun `count zero with Buster two OR Quick two accepts either colour`() {
+        val gate = gate(required = 0, colours = CardColourCounts(buster = 2, quick = 2), combine = CommandStartCombineMode.Or)
+        assertThat(gate.check(typed(2, CardTypeEnum.Quick), deployed))
+            .isEqualTo(CommandStartGate.Result.Ready(2, 0, CardColourCounts(quick = 2)))
+        assertThat(gate.check(typed(2, CardTypeEnum.Buster), deployed)).isEqualTo(readyResult(2))
+        assertThat(gate.check(typed(3, CardTypeEnum.Arts), deployed))
+            .isEqualTo(CommandStartGate.Result.Wait(3, colours = CardColourCounts(arts = 3)))
+    }
+
+    @Test
+    fun `all rules zero falls back to Any one`() {
+        val gate = gate(required = 0)
+        assertThat(gate.requiredCards).isEqualTo(1)
+        assertThat(gate.check(hand(0), deployed)).isEqualTo(waitResult(0))
+        assertThat(gate.check(hand(1), deployed)).isEqualTo(readyResult(1))
+    }
+
+    @Test
+    fun `Any three with Buster two under AND still needs both`() {
+        val gate = gate(required = 3, colours = CardColourCounts(buster = 2))
+        assertThat(gate.check(hand(2), deployed)).isEqualTo(waitResult(2))
+        assertThat(gate.check(hand(3), deployed)).isEqualTo(readyResult(3))
+    }
 }

@@ -604,7 +604,6 @@
     <string name="command_start_mode_card_count">커맨드 카드 개수 선택 모드</string>
     <string name="p_command_start_servant">대상 서번트</string>
     <string name="command_start_servant_slot">전투 시작 시 전열 %1$d번</string>
-    <string name="p_command_start_card_count">필요한 일반 카드 수 (이상)</string>
     <string name="p_command_start_max_turns">최대 대기 턴</string>
     <string name="command_start_unlimited">무제한</string>
     <string name="command_start_turns">턴</string>
@@ -851,13 +850,20 @@
     <string name="added_tuning_quest_hint">기능 배율을 곱하기 전의 기본 대기입니다. 조작 후 대기는 기능 배율만, 재확인 간격은 전체 배율도 적용합니다. 재시도 횟수는 10회로 유지됩니다.</string>
     <string name="added_tuning_reset_section">기본값으로</string>
     <string name="added_tuning_reset_all">전체 기본값으로</string>
-    <string name="p_command_start_combine_mode">카드 수·색 조건 결합</string>
-    <string name="command_start_combine_and">AND — 사용 중인 조건 모두 충족</string>
-    <string name="command_start_combine_or">OR — 사용 중인 조건 하나 이상 충족</string>
-    <string name="p_command_start_buster">버스터 (B) 최소 수 (0 = 사용 안 함)</string>
-    <string name="p_command_start_arts">아츠 (A) 최소 수 (0 = 사용 안 함)</string>
-    <string name="p_command_start_quick">퀵 (Q) 최소 수 (0 = 사용 안 함)</string>
-    <string name="command_start_waiting_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$d장), %4$s</string>
-    <string name="command_start_waiting_both_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$d장), %7$s · 서번트 %4$d번, 현재 %5$d장 (최소 %6$d장), %8$s</string>
+    <string name="command_start_waiting_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$s장), %4$s</string>
+    <string name="command_start_waiting_both_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$s장), %7$s · 서번트 %4$d번, 현재 %5$d장 (최소 %6$s장), %8$s</string>
     <string name="command_started_profile_colours">%1$d번째 커맨드 시작: %2$d웨이브 %3$d턴 (%4$s)</string>
+    <string name="command_start_conditions">시작 조건</string>
+    <string name="command_start_cond_any">전체</string>
+    <string name="command_start_add_condition">조건 추가</string>
+    <string name="command_start_remove_condition">조건 삭제</string>
+    <string name="command_start_combine_and">AND</string>
+    <string name="command_start_combine_or">OR</string>
+    <string name="command_start_join_and"> 그리고 </string>
+    <string name="command_start_join_or"> 또는 </string>
+    <string name="command_start_sum_any">카드 %1$d장 이상</string>
+    <string name="command_start_sum_buster">버스터 %1$d장 이상</string>
+    <string name="command_start_sum_arts">아츠 %1$d장 이상</string>
+    <string name="command_start_sum_quick">퀵 %1$d장 이상</string>
+    <string name="command_start_summary">%1$s이면 시작</string>
 </resources>

@@ -665,7 +665,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="command_start_mode_card_count">Command card count mode</string>
     <string name="p_command_start_servant">Target Servant</string>
     <string name="command_start_servant_slot">Starting party slot %1$d</string>
-    <string name="p_command_start_card_count">Required face cards (at least)</string>
     <string name="p_command_start_max_turns">Maximum skipped turns</string>
     <string name="command_start_unlimited">Unlimited</string>
     <string name="command_start_turns">turns</string>
@@ -931,13 +930,20 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="added_tuning_quest_hint">Base wait before the feature multiplier. Tap settling uses only this feature’s multiplier; polling also uses the global multiplier. The retry count remains 10.</string>
     <string name="added_tuning_reset_section">Reset section</string>
     <string name="added_tuning_reset_all">Reset all sections</string>
-    <string name="p_command_start_combine_mode">Combine count and colours</string>
-    <string name="command_start_combine_and">AND — all active minimums</string>
-    <string name="command_start_combine_or">OR — any active minimum</string>
-    <string name="p_command_start_buster">Buster (B) minimum (0 = unused)</string>
-    <string name="p_command_start_arts">Arts (A) minimum (0 = unused)</string>
-    <string name="p_command_start_quick">Quick (Q) minimum (0 = unused)</string>
-    <string name="command_start_waiting_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$d), %4$s</string>
-    <string name="command_start_waiting_both_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$d), %7$s; Servant %4$d, cards %5$d (minimum %6$d), %8$s</string>
+    <string name="command_start_waiting_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$s), %4$s</string>
+    <string name="command_start_waiting_both_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$s), %7$s; Servant %4$d, cards %5$d (minimum %6$s), %8$s</string>
     <string name="command_started_profile_colours">Command profile %1$d started at wave %2$d, turn %3$d (%4$s)</string>
+    <string name="command_start_conditions">Start conditions</string>
+    <string name="command_start_cond_any">Any</string>
+    <string name="command_start_add_condition">Add condition</string>
+    <string name="command_start_remove_condition">Remove condition</string>
+    <string name="command_start_combine_and">AND</string>
+    <string name="command_start_combine_or">OR</string>
+    <string name="command_start_join_and"> and </string>
+    <string name="command_start_join_or"> or </string>
+    <string name="command_start_sum_any">any cards %1$d+</string>
+    <string name="command_start_sum_buster">Buster %1$d+</string>
+    <string name="command_start_sum_arts">Arts %1$d+</string>
+    <string name="command_start_sum_quick">Quick %1$d+</string>
+    <string name="command_start_summary">Start when %1$s</string>
 </resources>
