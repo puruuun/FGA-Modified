@@ -78,11 +78,11 @@ class ShuffleUntil @Inject constructor(
             }
             // Confirmation OFF is required. Never call Caster's confirmation path or alter its cache.
             locations.battle.locate(action.skill).click()
-            SETTLE_WAIT.wait()
             val region = locations.battle.shuffleNPShortageRegion
             if (region.exists(images[Images.Close], 1.seconds)) {
                 val close = region.find(images[Images.Close]) ?: throw AutoBattle.BattleExitException(
                     AutoBattle.ExitReason.ShuffleUntilReturnFailed)
+                SETTLE_WAIT.wait()
                 close.region.click()
                 requireBattle(hand.battleVisible())
                 SETTLE_WAIT.wait()

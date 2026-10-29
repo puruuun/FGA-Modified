@@ -14,17 +14,17 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ShuffleUntilTest {
-    @Test fun `skill tap settles before the existing one second NP shortage check`() {
+    @Test fun `skill tap checks shortage immediately and waits only before Close`() {
         val f = Fixture(shortageAt = 0)
         f.run(min = 1)
-        verifyOrder {
-            with(f.api) {
-                f.icon.click(1)
-                500.milliseconds.wait()
-                f.popup.exists(any<Pattern>(), 1.seconds, any())
-            }
-        }
+        assertEquals(listOf("skill", "check", "wait", "close", "battle", "wait"), f.events)
         assertEquals(0, f.presses)
+    }
+
+    @Test fun `no shortage immediately skips skill motion before waiting for animation`() {
+        val f = Fixture()
+        f.run(min = 1, max = 1)
+        assertEquals(listOf("skill", "check", "skip", "animation"), f.events.take(4))
     }
 
     @Test fun `shortage Close checks battle then settles before finishing under either stop policy`() {
@@ -35,7 +35,7 @@ class ShuffleUntilTest {
                     assertFailsWith<AutoBattle.BattleExitException> { f.run(min = 1, stop = true) }.reason)
             } else f.run(min = 1)
             verifyOrder {
-                with(f.api) { f.close.click(1) }
+                with(f.api) { 500.milliseconds.wait(); f.close.click(1) }
                 f.handReader.battleVisible()
                 with(f.api) { 500.milliseconds.wait() }
                 f.api.messages.log(any())
@@ -53,7 +53,7 @@ class ShuffleUntilTest {
             with(f.api) { 500.milliseconds.wait(); f.icon.click(1) }
         }
         verify(exactly = 1) { with(f.api) { f.icon.click(1) } }
-        verify(exactly = 3) { with(f.api) { 500.milliseconds.wait() } }
+        verify(exactly = 2) { with(f.api) { 500.milliseconds.wait() } }
         assertEquals(listOf(0, 1), f.readsAt)
         assertEquals(1, f.presses)
         assertTrue(f.logs.single().message.contains("reason=Met"))
@@ -73,6 +73,8 @@ class ShuffleUntilTest {
         val popup = Region(10, 10, 320, 130)
         val close = Region(20, 20, 100, 50)
         val icon = Location(50, 100)
+        val skip = Location(60, 110)
+        val events = mutableListOf<String>()
         var presses = 0
         val readsAt = mutableListOf<Int>()
         val logs = mutableListOf<ScriptLog.ShuffleUntil>()
@@ -85,11 +87,16 @@ class ShuffleUntilTest {
                 hand(if (presses >= meetAfter) 3 else 1)
             }
             every { handReader.back() } returns true
-            every { handReader.battleVisible() } returns true
-            every { caster.waitForAnimationToFinish(any()) } answers { presses++; Unit }
+            every { handReader.battleVisible() } answers { events += "battle"; true }
+            every { caster.waitForAnimationToFinish(any()) } answers { events += "animation"; presses++; Unit }
+            every { api.locations.battle.extraInfoWindowCloseClick } returns skip
+            every { with(api) { icon.click(1) } } answers { events += "skill" }
+            every { with(api) { close.click(1) } } answers { events += "close" }
+            every { with(api) { skip.click(1) } } answers { events += "skip" }
+            every { with(api) { 500.milliseconds.wait() } } answers { events += "wait" }
             every { api.locations.battle.shuffleNPShortageRegion } returns popup
             every { api.locations.battle.locate(any<Skill.Servant>()) } returns icon
-            every { with(api) { popup.exists(any<Pattern>(), 1.seconds, any()) } } answers { presses == shortageAt }
+            every { with(api) { popup.exists(any<Pattern>(), 1.seconds, any()) } } answers { events += "check"; presses == shortageAt }
             every { with(api) { popup.find(any<Pattern>(), any()) } } returns Match(close, 0.99)
             every { api.messages.log(any()) } answers { (firstArg<ScriptLog>() as? ScriptLog.ShuffleUntil)?.let(logs::add); Unit }
         }
