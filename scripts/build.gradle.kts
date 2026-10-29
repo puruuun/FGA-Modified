@@ -27,6 +27,7 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.willowtreeapps.assertk)
     testImplementation(libs.mockk)
+    testImplementation(libs.opencv.jvm)
 }
 
 java {

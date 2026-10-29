@@ -36,7 +36,7 @@ class AtlasRouteRepository(
 
     fun cached(server: String, now: Long = System.currentTimeMillis() / 1000): Dataset? = runCatching {
         val week = AtlasWeekly.activeWeek(File(cache, "$server-missions.json").readText(), now)
-        val it = json.decodeFromString<Saved>(File(cache, "$server-dataset6-${week.id}.json").readText())
+        val it = json.decodeFromString<Saved>(File(cache, "$server-dataset7-${week.id}.json").readText())
         Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing, it.wars, it.questNames)
     }.getOrNull()
 
@@ -56,7 +56,7 @@ class AtlasRouteRepository(
             AtlasWeekly.activeWeek(raw, now).also { replace(fresh, missionFile) }
         }
 
-        val saved = File(cache, "$server-dataset6-${week.id}.json")
+        val saved = File(cache, "$server-dataset7-${week.id}.json")
         saved.takeIf { it.exists() }?.let { file ->
             runCatching { json.decodeFromString<Saved>(file.readText()) }.getOrNull()?.let {
                 log("load server=$server week=${week.id} cached quests=${it.quests.size} mismatched=${it.mismatched.size} missing=${it.missing.size}")
