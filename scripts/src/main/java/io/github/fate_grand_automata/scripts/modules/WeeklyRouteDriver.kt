@@ -382,6 +382,11 @@ class WeeklyRouteDriver @Inject constructor(
                 log("plan quest=${quest.id} plan=${plan.plan} target=${"%.1f".format(plan.target)} range=${"%.0f".format(range)} origin=${"%.0f".format(fit.originY)}")
                 movement = io.github.fate_grand_automata.scripts.weekly.VerticalMapDrag(plan.target, screenWidth, screenHeight)
             }
+            // Issue #96: use the fresh fit as soon as the resolved tap is clear and inside the edge-first band.
+            // A panel retry deliberately centres the spot and must still finish its full move.
+            if (!centre) {
+                tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan, reason = "early", edgeFirst = edgeFirst)?.let { return it }
+            }
             val drag = movement.next(fit.originY)
             if (drag == null) {
                 return tapPoint(quest, x, iy, y, screenWidth, screenHeight, plan.plan) ?:
@@ -408,10 +413,13 @@ class WeeklyRouteDriver @Inject constructor(
      * Issue #78: tap the spot icon's centre, else the visible part of the icon (D-33), else the spot point if it is clear.
      * Null when every point is covered; the caller then reports "spot out of reach".
      */
-    private fun tapPoint(quest: RouteQuest, x: Double, iconY: Double, spotY: Double, width: Int, height: Int, plan: String): Pair<Location?, String>? {
+    private fun tapPoint(quest: RouteQuest, x: Double, iconY: Double, spotY: Double, width: Int, height: Int, plan: String,
+                         reason: String = "converged", edgeFirst: Boolean = false): Pair<Location?, String>? {
         val choice = MapView.resolveTap(x, iconY, x, spotY, width, height) ?: return null
+        // edgeDrag uses the same scaled 60 px top/bottom margins as targetOrigin.
+        if (edgeFirst && MapView.edgeDrag(choice.point.x, choice.point.y, width, height) != null) return null
         log("tap point quest=${quest.id} plan=$plan kind=${choice.kind} icon=${"%.0f".format(x)},${"%.0f".format(iconY)} spot=${"%.0f".format(x)},${"%.0f".format(spotY)} " +
-            "used=${"%.0f".format(choice.point.x)},${"%.0f".format(choice.point.y)}")
+            "used=${"%.0f".format(choice.point.x)},${"%.0f".format(choice.point.y)} reason=$reason")
         return Location(MapView.toScript(choice.point.x), MapView.toScript(choice.point.y)) to "ok"
     }
 
