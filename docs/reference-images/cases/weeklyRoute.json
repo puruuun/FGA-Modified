@@ -6397,7 +6397,8 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": true
+      "accepted": false,
+      "colourAccepted": true
     },
     {
       "name": "vault-Jp-08",
@@ -6408,12 +6409,13 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": true,
+      "accepted": false,
       "tap720": [
         1197,
         332
       ],
-      "expectedAp": 10
+      "expectedAp": 10,
+      "colourAccepted": true
     },
     {
       "name": "vault-Kr-01",
@@ -6454,12 +6456,13 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": true,
+      "accepted": false,
       "tap720": [
         881,
         330
       ],
-      "expectedAp": 10
+      "expectedAp": 10,
+      "colourAccepted": true
     },
     {
       "name": "vault-Kr-12",
@@ -6481,7 +6484,8 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": true
+      "accepted": false,
+      "colourAccepted": true
     },
     {
       "name": "vault-Kr-14",
@@ -6613,8 +6617,9 @@
       "screen": "List",
       "gate": false,
       "daily": false,
-      "accepted": true,
-      "acceptedIndex": 1
+      "accepted": false,
+      "acceptedIndex": 1,
+      "colourAccepted": true
     }
   ],
   "imports": {
