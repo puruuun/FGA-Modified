@@ -24,17 +24,6 @@ data class ListScanFrame<T>(val valid: Boolean, val match: T?, val scrollbar: Li
 
 /** Search lower content first, then upper; only template ends, screen departure and the cap stop scanning. */
 object WeeklyListScan {
-    /** Scrolls up until the top end template shows; false when the cap is reached first (#103). */
-    fun toTop(maxScrolls: Int, bar: () -> ListScrollbar.State, scroll: (ListSearchDirection, Int) -> Unit,
-        log: (String) -> Unit = {}): Boolean {
-        if (bar().top) return true
-        for (index in 1..maxScrolls) {
-            scroll(ListSearchDirection.Up, index)
-            if (bar().top) { log("vault step=top-confirmed scrolls=$index"); return true }
-        }
-        return false
-    }
-
     fun atEnd(state: ListScrollbar.State, direction: ListSearchDirection) =
         if (direction == ListSearchDirection.Down) state.bottom else state.top
 

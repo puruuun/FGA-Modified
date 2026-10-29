@@ -27,7 +27,6 @@ class WeeklyVaultTest {
                 mockk(relaxed = true), reader))
             every { driver.screen() } returns RouteScreen.List
             every { driver.dailyList() } returns true
-            every { driver.listScrollbar() } returns ListScrollbar.State(true, false)
             val quest = item(1002).quest
             assertEquals(SpotOutcome.Started, if (probe) driver.probeSpot(quest) else driver.openSpot(quest))
             verify(exactly = if (probe) 0 else 1) { with(api) { panel.anchor.tap.click(1) } }
@@ -35,48 +34,6 @@ class WeeklyVaultTest {
             if (probe) verify(exactly = 0) { with(api) { any<Location>().click(any()) } }
             assertTrue(driver.closePanel())
         }
-    }
-
-    private fun driverWith(panels: List<VaultPanel>, bars: ArrayDeque<ListScrollbar.State>, api: IFgoAutomataApi): WeeklyRouteDriver {
-        val reader = mockk<WeeklyVaultReader>(relaxed = true)
-        every { reader.read() } returns panels
-        val driver = spyk(WeeklyRouteDriver(api, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-            mockk(relaxed = true), mockk(relaxed = true), BattleState(), mockk(relaxed = true), mockk(relaxed = true),
-            mockk(relaxed = true), reader))
-        every { driver.screen() } returns RouteScreen.List
-        every { driver.dailyList() } returns true
-        every { driver.listScrollbar() } answers { if (bars.size > 1) bars.removeFirst() else bars.first() }
-        return driver
-    }
-
-    @Test fun `list starting mid-scroll scrolls up first then taps the first yellow below the top`() {
-        val api = mockk<IFgoAutomataApi>(relaxed = true)
-        every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>()() }
-        every { api.useColor<Any?>(any()) } answers { firstArg<() -> Any?>()() }
-        val panel = VaultPanel(WeeklyVaultAnchor(Location(2194, 700)), VaultColor(43.5, 0.99), null, emptyList(), null, true)
-        val bars = ArrayDeque(listOf(ListScrollbar.State(false, false), ListScrollbar.State(false, false), ListScrollbar.State(true, false)))
-        val driver = driverWith(listOf(panel), bars, api)
-        assertEquals(SpotOutcome.Started, driver.openSpot(item(1002).quest))
-        assertEquals(1, bars.size) // two bar reads were spent scrolling up before the top showed
-        verify(exactly = 1) { with(api) { panel.anchor.tap.click(1) } }
-    }
-
-    @Test fun `top never confirmed means no tap`() {
-        val api = mockk<IFgoAutomataApi>(relaxed = true)
-        every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>()() }
-        every { api.useColor<Any?>(any()) } answers { firstArg<() -> Any?>()() }
-        val panel = VaultPanel(WeeklyVaultAnchor(Location(2194, 700)), VaultColor(43.5, 0.99), null, emptyList(), null, true)
-        val driver = driverWith(listOf(panel), ArrayDeque(listOf(ListScrollbar.State(false, false))), api)
-        assertTrue(driver.openSpot(item(1002).quest) is SpotOutcome.NotFound)
-        verify(exactly = 0) { with(api) { any<Location>().click(any()) } }
-    }
-
-    @Test fun `toTop scrolls up until the top end and gives up at the cap`() {
-        val calls = mutableListOf<Int>()
-        var n = 0
-        assertTrue(WeeklyListScan.toTop(14, { ListScrollbar.State(n >= 3, false) }, { d, i -> assertEquals(ListSearchDirection.Up, d); n = i; calls += i }))
-        assertEquals(listOf(1, 2, 3), calls)
-        assertFalse(WeeklyListScan.toTop(4, { ListScrollbar.State(false, false) }, { _, _ -> }))
     }
 
     private fun export(id: Int = 94061636, name: String = "宝物庫の扉を開け 初級", war: Int = 1002,

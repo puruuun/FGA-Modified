@@ -659,8 +659,6 @@ class WeeklyRouteDriver @Inject constructor(
 
     // ---- battle --------------------------------------------------------------------------------------------------
 
-    internal fun listScrollbar() = io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(this, loc)
-
     private fun readVault(): List<VaultPanel> = vaultReader.read().also { panels ->
         panels.forEach { panel ->
             log("vault anchor=${panel.anchor.mark} hue=${panel.color?.hue} saturation=${panel.color?.saturation} " +
@@ -674,13 +672,6 @@ class WeeklyRouteDriver @Inject constructor(
             return SpotOutcome.NotFound("vault panel not found")
         }
         val problem = "vault panel not found"
-        // The first yellow panel FROM THE TOP is Beginner; a list left scrolled down would show a higher difficulty first.
-        val atTop = io.github.fate_grand_automata.scripts.weekly.WeeklyListScan.toTop(
-            maxScrolls = MAX_LIST_SCROLLS, bar = ::listScrollbar, scroll = { d, n -> scrollList(d, n) }, log = ::log)
-        if (!atTop) {
-            log("vault step=top-not-confirmed")
-            return SpotOutcome.NotFound(problem)
-        }
         var vaultRead = ""
         val panel = scanList {
             val panels = readVault()

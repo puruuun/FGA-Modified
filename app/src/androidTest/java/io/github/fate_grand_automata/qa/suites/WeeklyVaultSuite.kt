@@ -34,13 +34,7 @@ internal fun FixtureApi.verifyWeeklyVault(): JSONObject {
             .put("tap720", JSONArray(listOf(panel.anchor.tap.x / 2.0, panel.anchor.tap.y / 2.0)))
             .put("rawNames", JSONArray(panel.rawNames.map { "${it.text}@${it.confidence}" }))
     }))
-    // A frame is only the start of the list when the top end shows; mid-list frames are never accepted on their own.
-    val bar = if (case.has("accepted")) io.github.fate_grand_automata.scripts.weekly.ListScrollbar.read(this, loc) else null
-    val atTop = bar?.top == true
-    actual.put("top", atTop).put("topScore", bar?.topScore)
-    if (case.has("accepted")) check((atTop && panels.any { it.accepted }) == case.getBoolean("accepted")) { actual.toString() }
-    // The colour rule itself, independent of where the frame sits in the list.
-    if (case.has("colourAccepted")) check(panels.any { it.accepted } == case.getBoolean("colourAccepted")) { actual.toString() }
+    if (case.has("accepted")) check(panels.any { it.accepted } == case.getBoolean("accepted")) { actual.toString() }
     if (case.has("tap720")) {
         val panel = panels.first { it.accepted }
         actual.put("rawAp", JSONArray(panel.anchor.ap.getPattern().use { image ->
