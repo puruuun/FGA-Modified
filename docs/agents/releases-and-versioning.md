@@ -58,6 +58,10 @@ published (unless the owner explicitly requests an immediate stable release):
 
 When promoting to stable `X.Y.Z`:
 
+> **Next stable after 1.7.0:** do issue #128 first (owner, 2026-10-30). It replaces the public debug
+> signing key with the owner's private release key through APK key rotation. Plan it in the beta
+> cycle so the BlueStacks update experiment passes before promotion. Remove this note once done.
+
 1. Update `version.properties`: set `stable.versionName=X.Y.Z` and increment `stable.versionCode`
    by 1 (keeping `beta.versionName=X.Y.Z-beta.N` and `beta.versionCode` aligned with `X.Y.Z`).
 2. Add `wiki/releases/<version>-KR.md`. Then bring both READMEs up to this stable release; this is the only time they change.
