@@ -63,7 +63,7 @@ def _build_nav(docs: Path) -> list:
     features = sorted((entry(p) for p in korean if p not in used), key=lambda e: next(iter(e)))
     releases = [entry(p) for p in sorted((p for p in pages if p.startswith("releases/")), key=_version_key, reverse=True)]
     japanese = [entry(p) for p in pages if p not in used and p.endswith("-JA.md")]
-    # Original FGA (English) pages and research notes stay reachable by links but are not in the menu or search.
+    # The fork's English pages and research notes stay reachable by links but are not in the menu or search.
 
     nav = [{"홈": "index.md"}]
     for name, items in (("시작하기", getting_started), ("기능 설명서", features), ("릴리스 노트", releases),

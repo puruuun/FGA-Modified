@@ -1,8 +1,0 @@
-- [Home](Home)
-- [Troubleshooting](Troubleshooting)
-- [Emulators](Running-on-Emulators)
-- [Scripts](Battle)
-- [하쿠노 셔플](scripts/Hakuno-Shuffle-KR.md)
-- [개념예장 자동 강화](scripts/CE-Auto-Enhance-KR.md)
-- [Fine tune](Fine-tune)
-- [Donations](Donations)
