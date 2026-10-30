@@ -7,6 +7,8 @@ import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
+import android.os.Handler
+import android.os.Looper
 import io.github.fate_grand_automata.util.KnownException
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.lib_automata.ColorManager
@@ -75,7 +77,7 @@ class MediaProjectionScreenshotService(
                 // Only the first frame is waited on, so stop posting to the looper after it.
                 reader.setOnImageAvailableListener(null, null)
             },
-            null
+            Handler(Looper.getMainLooper())
         )
     }
 
@@ -142,6 +144,23 @@ class MediaProjectionScreenshotService(
 
             grayscalePattern
         }
+    }
+
+    /** Settings calibration only: reuse the projection, take an owned native-display grayscale frame, then restore.
+     * The same lock as ordinary captures keeps the temporary size invisible to script screenshots. */
+    fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern = synchronized(lock) {
+        val previousSize = imageSize
+        val previousDensity = screenDensity
+        try {
+            resize(size, density)
+            if (closed.get()) throw KnownException(KnownException.Reason.ScreenCaptureStopped)
+            screenshotIntoBuffer()
+            val gray = Mat()
+            try {
+                Imgproc.cvtColor(bufferMat, gray, Imgproc.COLOR_RGBA2GRAY)
+                DroidCvPattern(gray)
+            } catch (e: Exception) { gray.release(); throw e }
+        } finally { resize(previousSize, previousDensity) }
     }
 
     private fun screenshotIntoBuffer() {

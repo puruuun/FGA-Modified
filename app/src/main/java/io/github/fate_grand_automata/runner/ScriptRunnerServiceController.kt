@@ -13,6 +13,7 @@ import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.fate_grand_automata.util.ImageLoader
 import io.github.fate_grand_automata.util.ScreenOffReceiver
 import io.github.fate_grand_automata.util.ScriptMessages
+import io.github.fate_grand_automata.util.ScriptState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +42,9 @@ class ScriptRunnerServiceController @Inject constructor(
     @param:ServiceCoroutineScope private val scope: CoroutineScope
 ) {
     private val screenOffReceiver = ScreenOffReceiver()
+
+    suspend fun captureDisplayForCalibration() =
+        if (scriptManager.scriptState is ScriptState.Stopped) screenshotServiceHolder.takeFullDisplayScreenshot() else null
 
     fun onDestroy() {
         Timber.i("Script runner service destroyed")

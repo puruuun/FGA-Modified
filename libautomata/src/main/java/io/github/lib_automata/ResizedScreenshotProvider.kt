@@ -17,6 +17,10 @@ class ResizedScreenshotProvider(
         return resizeTarget
     }
 
+    /** An owned full-display snapshot for settings calibration, without this wrapper's resize. */
+    @Synchronized
+    fun takeFullDisplayScreenshot(): Pattern = original.takeScreenshot().copy()
+
     override fun startRecording() = original.startRecording()
 
     override fun close() {

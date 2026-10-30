@@ -38,6 +38,8 @@ class ScriptRunnerService: Service() {
             return context.stopService(intent)
         }
 
+        suspend fun captureDisplayForCalibration() = instance?.controller?.captureDisplayForCalibration()
+
         var mediaProjectionToken: Intent? = null
             set(value) {
                 field = value

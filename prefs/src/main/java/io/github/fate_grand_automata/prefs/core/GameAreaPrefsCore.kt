@@ -51,9 +51,14 @@ class GameAreaPrefsCore(maker: PrefMaker) {
     }
 
     fun addPreset(name: String) {
-        val offsets = customOffsets()
-        presets.set(presets.get() + GameAreaPreset(UUID.randomUUID().toString(), name,
-            offsets.left, offsets.top, offsets.right, offsets.bottom))
+        addPreset(name, customOffsets())
+    }
+
+    /** Adds a new snapshot without editing Custom or any existing preset. Selection is explicit. */
+    fun addPreset(name: String, offsets: GameAreaOffsets): GameAreaPreset {
+        val preset = GameAreaPreset(UUID.randomUUID().toString(), name, offsets.left, offsets.top, offsets.right, offsets.bottom)
+        presets.set(presets.get() + preset)
+        return preset
     }
 
     fun deleteSelectedPreset() {

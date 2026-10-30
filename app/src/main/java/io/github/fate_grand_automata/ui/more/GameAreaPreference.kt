@@ -146,6 +146,7 @@ fun GameAreaPreference(prefs: PrefsCore, preview: GameAreaPreviewManager) {
             enabled = editable,
             onClick = { picker.show() }
         )
+        GameAreaCalibrationPreference(prefs, preview)
         if (mode != GameAreaMode.Default) {
             Card(
                 modifier = Modifier.padding(5.dp),

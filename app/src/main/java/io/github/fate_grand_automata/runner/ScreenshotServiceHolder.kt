@@ -24,6 +24,10 @@ import io.github.lib_automata.Size
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import io.github.lib_automata.Pattern
 
 @ServiceScoped
 class ScreenshotServiceHolder @Inject constructor(
@@ -93,6 +97,21 @@ class ScreenshotServiceHolder @Inject constructor(
     override fun close() {
         screenshotService?.close()
         screenshotService = null
+    }
+
+    /** Does not prepare a service or consume a new MediaProjection token. Caller closes the owned frame. */
+    suspend fun takeFullDisplayScreenshot(): Pattern? {
+        val service = screenshotService ?: return null
+        val metrics = display.metrics
+        val size = Size(metrics.widthPixels, metrics.heightPixels)
+        val density = metrics.densityDpi
+        return withContext(NonCancellable + Dispatchers.Default) {
+            when (service) {
+                is MediaProjectionScreenshotService -> service.takeFullDisplayScreenshot(size, density)
+                is ResizedScreenshotProvider -> service.takeFullDisplayScreenshot()
+                else -> null
+            }
+        }
     }
 
     fun resizeCapture() {

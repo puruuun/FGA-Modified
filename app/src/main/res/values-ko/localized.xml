@@ -870,4 +870,16 @@
     <string name="command_start_sum_arts">아츠 %1$d장 이상</string>
     <string name="command_start_sum_quick">퀵 %1$d장 이상</string>
     <string name="command_start_summary">%1$s이면 시작</string>
+    <string name="p_game_area_calibrate">스크린샷으로 자동 맞춤</string>
+    <string name="p_game_area_calibrate_summary">JP·KR 메인 화면에서 팝업을 닫고 실행하세요. 미리보기를 확인한 뒤 저장하세요.</string>
+    <string name="game_area_calibrating">자동 맞춤 중…</string>
+    <string name="game_area_calibration_result">좌측 %1$d · 상단 %2$d · 우측 %3$d · 하단 %4$d\n게임 %5$d×%6$d · 배율 %7$.3f\n미리보기가 게임 그림의 가장자리를 따르는지 확인하세요.</string>
+    <string name="game_area_auto_preset">자동 맞춤</string>
+    <string name="game_area_save_calibration">새 설정으로 저장</string>
+    <string name="game_area_calibration_unsupported">스크린샷 자동 맞춤은 JP·KR 서버에서만 사용할 수 있습니다.</string>
+    <string name="game_area_calibration_no_capture">화면 캡처가 가능한 FGA 서비스를 먼저 시작하세요. 화면 배치를 유지하고 실행 중인 스크립트를 멈춘 뒤 다시 시도하세요.</string>
+    <string name="game_area_calibration_no_anchors">공지·MENU 버튼을 찾지 못했습니다. 게임 메인 화면에서 팝업과 미리보기 선을 닫은 뒤 다시 시도하세요.</string>
+    <string name="game_area_calibration_scales">두 버튼의 배율이 서로 다릅니다. 화면 배치를 유지하고 메인 화면에서 다시 시도하세요.</string>
+    <string name="game_area_calibration_bounds">화면 안에서 지원되는 비율의 게임 영역을 확정하지 못했습니다. 화면 배치를 확인하고 다시 시도하세요.</string>
+    <string name="game_area_calibration_check">계산한 영역을 적용한 뒤 MENU를 확인하지 못했습니다. 저장하지 않았습니다. 메인 화면에서 다시 시도하세요.</string>
 </resources>

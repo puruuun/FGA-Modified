@@ -950,4 +950,16 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="command_start_sum_arts">Arts %1$d+</string>
     <string name="command_start_sum_quick">Quick %1$d+</string>
     <string name="command_start_summary">Start when %1$s</string>
+    <string name="p_game_area_calibrate">Calibrate from screenshot</string>
+    <string name="p_game_area_calibrate_summary">Open the JP or KR main screen and close popups. Check the preview before saving.</string>
+    <string name="game_area_calibrating">Calibrating…</string>
+    <string name="game_area_calibration_result">Left %1$d · Top %2$d · Right %3$d · Bottom %4$d\nGame %5$d×%6$d · scale %7$.3f\nCheck that the preview follows the game picture.</string>
+    <string name="game_area_auto_preset">Auto</string>
+    <string name="game_area_save_calibration">Save as new preset</string>
+    <string name="game_area_calibration_unsupported">Screenshot calibration supports JP and KR only.</string>
+    <string name="game_area_calibration_no_capture">Start the FGA service with screen capture first. Keep the display unchanged and stop any running script before trying again.</string>
+    <string name="game_area_calibration_no_anchors">Could not find the notice and MENU buttons. Open the game main screen, close popups and turn off any preview lines, then try again.</string>
+    <string name="game_area_calibration_scales">The two buttons have different scales. Keep the display unchanged and try again on the main screen.</string>
+    <string name="game_area_calibration_bounds">Could not determine a game picture inside the display at a supported aspect ratio. Check the screen layout and try again.</string>
+    <string name="game_area_calibration_check">MENU was not found after applying the proposed crop. Nothing was saved. Try again on the main screen.</string>
 </resources>

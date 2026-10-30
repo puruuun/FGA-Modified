@@ -35,11 +35,8 @@ class Locations @Inject constructor(
     val interludeCloseClick = Location(-399, 1125).xFromCenter()
     val interludeEndScreenClose = Region(-515, 1080, 230, 90).xFromCenter()
 
-    val menuScreenRegion =
-        (if (isWide)
-            Region(-600, 1200, 600, 240)
-        else Region(-460, 1200, 460, 240))
-            .xFromRight()
+    val menuScreenRegion = GameAreaCalibrationLocations.menuSearch(scriptArea.width, isWide)
+        .let { it + Location(scriptArea.x, 0) }
 
     val menuSelectQuestClick =
         (if (isWide)

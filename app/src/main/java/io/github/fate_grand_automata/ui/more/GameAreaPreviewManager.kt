@@ -8,6 +8,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
 import android.view.View
+import android.view.Surface
 import android.view.WindowManager
 import androidx.annotation.MainThread
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import io.github.fate_grand_automata.prefs.core.GameAreaMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.runner.GameAreaCaptureSignal
 import io.github.fate_grand_automata.scripts.FgoGameAreaManager
+import io.github.fate_grand_automata.scripts.GameAreaCalibration
 import io.github.fate_grand_automata.util.CutoutManager
 import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.lib_automata.Region
@@ -47,6 +49,54 @@ class GameAreaPreviewManager @Inject constructor(
     private var attachedTo: TapperService? = null
     private var previewView: GameAreaPreviewView? = null
     private var appliedOffsets: GameAreaOffsets? = null
+    private var calibrationRegion: Region? = null
+    private var calibrationRotation: Int? = null
+    private var restorePreview = false
+
+    /** Preview a proposal without changing any stored values or capture settings. */
+    @MainThread
+    fun beginCalibration() {
+        restorePreview = visible
+        calibrationRotation = display.rotation
+        hide()
+    }
+
+    @MainThread
+    fun showCalibration(result: GameAreaCalibration.Success): Boolean {
+        if (scriptActive || result.displaySize != screenSize || calibrationRotation != display.rotation) return false
+        calibrationRegion = result.region
+        show()
+        return visible
+    }
+
+    @MainThread
+    fun cancelCalibration() {
+        if (calibrationRotation == null) return
+        calibrationRegion = null
+        calibrationRotation = null
+        hide()
+        val restore = restorePreview
+        restorePreview = false
+        if (restore) show()
+    }
+
+    @MainThread
+    fun saveCalibration(name: String, result: GameAreaCalibration.Success): Boolean {
+        if (scriptActive || result.displaySize != screenSize || calibrationRotation != display.rotation) return false
+        // CutoutManager mirrors persisted horizontal offsets in reverse landscape. Store in that same convention.
+        val offsets = result.offsets.let {
+            if (display.rotation == Surface.ROTATION_270) it.copy(left = it.right, right = it.left) else it
+        }
+        val preset = prefs.gameArea.addPreset(name, offsets)
+        prefs.gameArea.presetId.set(preset.id)
+        prefs.gameArea.mode.set(GameAreaMode.Preset)
+        calibrationRegion = null
+        calibrationRotation = null
+        restorePreview = false
+        applyCaptureSettings()
+        update()
+        return true
+    }
 
     fun beginSettings() {
         appliedOffsets = prefs.gameArea.customOffsets()
@@ -62,12 +112,15 @@ class GameAreaPreviewManager @Inject constructor(
             applyCaptureSettings()
         }
         appliedOffsets = null
+        calibrationRegion = null
+        calibrationRotation = null
+        restorePreview = false
         hide()
     }
 
     @MainThread
     fun show() {
-        if (scriptActive || prefs.gameAreaMode.get() == GameAreaMode.Default) return
+        if (scriptActive || calibrationRegion == null && prefs.gameAreaMode.get() == GameAreaMode.Default) return
 
         // Resolve the service again on every attach: accessibility tokens can die independently
         // of both the activity and the script runner.
@@ -117,7 +170,7 @@ class GameAreaPreviewManager @Inject constructor(
     @MainThread
     fun update() {
         if (!visible) return
-        if (attachedTo !== TapperService.instance || prefs.gameAreaMode.get() == GameAreaMode.Default) {
+        if (attachedTo !== TapperService.instance || calibrationRegion == null && prefs.gameAreaMode.get() == GameAreaMode.Default) {
             hide()
             return
         }
@@ -129,7 +182,7 @@ class GameAreaPreviewManager @Inject constructor(
     }
 
     private fun readRegion(): Region? = try {
-        cutoutManager.getCutoutAppliedRegion()
+        calibrationRegion ?: cutoutManager.getCutoutAppliedRegion()
     } catch (e: IllegalArgumentException) {
         // Existing offsets may exceed the display after rotation. Do not change stored values or
         // script behaviour; an invalid rectangle simply cannot be previewed.
