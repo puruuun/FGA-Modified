@@ -40,6 +40,24 @@ class FpBannerReturnTest {
         }
     }
 
+    @Test fun `restore presses left exactly the configured number for positions 1, 2 and 7`() {
+        for (n in listOf(1, 2, 7)) {
+            val run = Run(n)
+            run.banner.restore()
+            assertEquals(n, run.presses)
+            verify(exactly = n) { with(run.api) { FpSellTiming.AFTER_ARROW.wait() } }
+        }
+    }
+
+    @Test fun `out of range positions are clamped to 1 and 7`() {
+        val low = Run(0)
+        low.banner.restore()
+        assertEquals(1, low.presses)
+        val high = Run(8)
+        high.banner.restore()
+        assertEquals(7, high.presses)
+    }
+
     @Test fun `each left press waits the arrow delay`() {
         val run = Run(2)
         run.banner.restore()

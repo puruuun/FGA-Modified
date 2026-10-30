@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.scripts.modules.FpBannerReturn
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.Stepper
 
@@ -36,7 +36,7 @@ fun fpLauncher(
     var shouldLimit by remember { mutableStateOf(prefs.shouldLimitFP) }
     var rollLimit by remember { mutableStateOf(prefs.limitFP) }
     var autoSell by remember { mutableStateOf(prefs.fpAutoSell) }
-    var bannerPosition by remember { mutableStateOf(prefs.fpBannerPosition.coerceIn(1, 2)) }
+    var bannerPosition by remember { mutableStateOf(prefs.fpBannerPosition.coerceIn(FpBannerReturn.POSITIONS)) }
 
     Column(
         modifier = modifier
@@ -93,14 +93,21 @@ fun fpLauncher(
         Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
         if (autoSell) {
-            Text(stringResource(R.string.fp_banner_position), style = MaterialTheme.typography.bodyLarge)
-            for ((value, label) in listOf(
-                1 to R.string.fp_banner_position_last,
-                2 to R.string.fp_banner_position_second_last
-            )) Row(Modifier.fillMaxWidth().clickable { bannerPosition = value; prefs.fpBannerPosition = value },
-                verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = bannerPosition == value, onClick = { bannerPosition = value; prefs.fpBannerPosition = value })
-                Text(stringResource(label))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(R.string.fp_banner_position),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Stepper(
+                    value = bannerPosition,
+                    onValueChange = { bannerPosition = it; prefs.fpBannerPosition = it },
+                    valueRange = FpBannerReturn.POSITIONS
+                )
             }
             Text(stringResource(R.string.fp_banner_position_summary), style = MaterialTheme.typography.bodySmall)
         }

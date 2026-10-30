@@ -738,10 +738,8 @@
     <string name="fp_sell_return_menu">공방 MENU를 열지 못해 소환 전에 정지했습니다.</string>
     <string name="fp_sell_return_summon">소환 화면을 열거나 소환 버튼을 찾지 못해 정지했습니다.</string>
     <string name="fp_sell_return_position">배너에서 왼쪽으로 이동한 뒤 Friend Point 소환 화면과 소환 버튼이 보이지 않았습니다. FP 배너 위치 설정을 확인하세요. 소환 전에 정지했습니다.</string>
-    <string name="fp_banner_position">FP 배너 위치</string>
-    <string name="fp_banner_position_last">뒤에서 1번째 (맨 마지막)</string>
-    <string name="fp_banner_position_second_last">뒤에서 2번째</string>
-    <string name="fp_banner_position_summary">판매 후 소환 화면은 첫 번째 배너로 다시 열리며, 스크립트가 왼쪽 화살표를 이 횟수만큼 눌러 FP 배너로 이동합니다.</string>
+    <string name="fp_banner_position">FP 배너 위치 (뒤에서)</string>
+    <string name="fp_banner_position_summary">판매 후 소환 화면은 첫 번째 배너로 다시 열리며, 스크립트가 왼쪽 화살표를 이 횟수만큼 눌러 FP 배너로 이동합니다. 1은 맨 마지막 배너, 2는 뒤에서 두 번째 배너입니다.</string>
     <string name="fp_sell_screen_unknown">소환 중 알려진 화면을 오래 확인하지 못해 정지했습니다.</string>
     <string name="fp_sell_stop_entry">판매 화면에 들어가지 못했습니다(판매 버튼, 제목 또는 서번트 탭을 찾지 못함). 판매하지 않고 정지했습니다.</string>
     <string name="fp_sell_stop_columns">판매 화면을 7열로 바꾸지 못했습니다. 판매하지 않고 정지했습니다.</string>

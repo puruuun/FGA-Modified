@@ -22,6 +22,13 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
         throw ExitException(reason)
     }
 
+    companion object {
+        /** Selectable FP banner positions counted from the end (1 = last banner). Shared with the launcher UI. */
+        const val MIN_POSITION = 1
+        const val MAX_POSITION = 7
+        val POSITIONS = MIN_POSITION..MAX_POSITION
+    }
+
     private fun fpScreen(): Boolean = fpLabel(locations.fp.summonCheck) || fpLabel(locations.fp.initialSummonCheck)
 
     private fun summonPatterns() = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
@@ -60,7 +67,7 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
                 buttons.visible(loc.leftArrowRegion, Images.FpSellLeftArrow)
             }) stop(ExitReason.SummonMenuFailed)
         // The screen reopens on the first banner; left from the first banner wraps to the last.
-        repeat(prefs.fpBannerPosition.coerceIn(1, 2)) {
+        repeat(prefs.fpBannerPosition.coerceIn(POSITIONS)) {
             buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop(ExitReason.SummonMenuFailed) }
             addedTuning.fp.delay(FpSellTiming.AFTER_ARROW).wait()
         }

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.locations.WIDE_EDGE_INSET
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.weekly.*
 import java.io.File
@@ -10,31 +11,42 @@ import kotlin.test.*
 
 class ScrollbarFixtureTest {
     private fun gray(path: String): Array<DoubleArray> {
+        // ImageIO has no WebP reader; the native OpenCV (already a test dependency) decodes it.
+        if (path.endsWith(".webp")) {
+            nu.pattern.OpenCV.loadLocally()
+            val mat = org.opencv.imgcodecs.Imgcodecs.imread(File(path).absolutePath, org.opencv.imgcodecs.Imgcodecs.IMREAD_GRAYSCALE)
+            check(!mat.empty()) { "cannot read $path" }
+            return Array(mat.rows()) { y -> DoubleArray(mat.cols()) { x -> mat.get(y, x)[0] } }
+        }
         val im = ImageIO.read(File(path))!!
         return Array(im.height) { y -> DoubleArray(im.width) { x ->
             val rgb = im.getRGB(x, y)
             (0.299 * (rgb shr 16 and 255) + 0.587 * (rgb shr 8 and 255) + 0.114 * (rgb and 255)).roundToInt().toDouble()
         } }
     }
+    /** Frames wider than 21:9 are shown as a centred 21:9 picture on the device (FgoGameAreaManager.isUltraWide). */
+    private fun cropUltraWide(im: Array<DoubleArray>): Array<DoubleArray> {
+        val full = im.size * 21 / 9
+        if (im[0].size <= full) return im
+        val x0 = (im[0].size - full) / 2
+        return Array(im.size) { y -> im[y].copyOfRange(x0, x0 + full) }
+    }
     /**
      * Independent normalized correlation over the exact production window (beta.6 rail-sized boxes, 1440p halved to 720p).
      * [dy] moves the picture down by that many 720p rows, as if the thumb stood that far from the end.
      */
     private fun score(file: String, screen: String, end: String, dy: Int = 0): Double {
-        val im = gray("../docs/reference-images/$file")
+        val im = cropUltraWide(gray("../docs/reference-images/$file"))
         val template = gray("../app/src/main/assets/En/support_scrollbar_$end.png")
         val width = im[0].size
         val wide = width > 1440
-        // 1440p box (x, y, w, h); wide boxes are centre-anchored, 16:9 boxes sit on the right edge.
+        // 1440p box (x, y, w, h), on the right edge; wide screens move it in by the wide inset (beta.13, #122).
         val (bx, by, bw, bh) = when {
-            screen == "fp" && wide -> listOf(956, 1330, 72, 34)
             screen == "fp" -> listOf(-554, 1330, 72, 34)
-            end == "top" && wide -> listOf(1430, 178, 72, 42)
             end == "top" -> listOf(-82, 178, 74, 38)
-            wide -> listOf(1430, 1152, 72, 34)
             else -> listOf(-82, 1152, 74, 34)
         }
-        val left = ((if (wide) width else 2 * width) + bx) / 2
+        val left = (2 * width - (if (wide) WIDE_EDGE_INSET else 0) + bx) / 2
         val top = by / 2
         val tw = template[0].size; val th = template.size
         val tm = template.flatMap { it.toList() }.average()
@@ -75,6 +87,18 @@ class ScrollbarFixtureTest {
             assertEquals("scrollbar-end", progress.finishPage(bottom = true))
             assertEquals(1, progress.pages); assertEquals(1, progress.selected)
         }
+    }
+    @Test fun `KR 19 5 9 FP list top does not match the bottom end box`() {
+        val top = score("Kr/fp-sell/list-top-2340.webp", "fp", "bottom")
+        assertTrue(top < FpSellReader.SCROLLBAR_SIMILARITY, "score $top")
+    }
+    @Test fun `frames wider than 21 9 are cropped to a centred 21 9 picture`() {
+        val im = Array(720) { y -> DoubleArray(1707) { x -> x.toDouble() } }
+        val cropped = cropUltraWide(im)
+        assertEquals(1680, cropped[0].size)
+        assertEquals(13.0, cropped[0][0])
+        val exact = Array(720) { DoubleArray(1680) }
+        assertSame(exact, cropUltraWide(exact))
     }
     @Test fun `FP top and middle stay below the separately measured threshold`() {
         for (n in listOf(18,19,22,24,27,28)) assertTrue(score("Kr/fp-sell/$n.png", "fp", "bottom") < FpSellReader.SCROLLBAR_SIMILARITY)

@@ -28,13 +28,13 @@ class WeeklyRouteLocations @Inject constructor(transforms: IScriptAreaTransforms
 
     /**
      * End windows sized to the rail (beta.6, #90): the measured end positions of the upstream end templates (28x11 at
-     * 720p) plus 4 px horizontally and 3 px vertically. Independent of the support screen. On 16:9 the rail is 36-37 px
-     * (720p) in from the right edge; on wide screens it sits at a fixed offset from the screen centre (719 px at 720p on
-     * both the 2.33:1 and 2.37:1 captures, whereas the offset from the right edge differs by 13 px), so the wide windows
-     * are centre-anchored and never reach into the safe-area inset. Rail caps: top y 92-94 (wide 92-96), bottom y 579.
+     * 720p) plus 4 px horizontally and 3 px vertically. Independent of the support screen. The rail is 36-37 px
+     * (720p) in from the right edge on 16:9. beta.13 (#122): on wide screens it keeps following the right edge plus the
+     * wide inset (about 216 px from the right edge at 1440p on 19.5:9), so the same boxes are moved by [xFromRightEdge]
+     * on every ratio; the beta.6 centre anchor missed on 18:9 to 21:9. Rail caps: top y 92-94 (wide 92-96), bottom y 579.
      */
-    val topScrollbarRegion = if (isWide) Region(1430, 178, 72, 42).xFromCenter() else Region(-82, 178, 74, 38).xFromRightEdge()
-    val bottomScrollbarRegion = if (isWide) Region(1430, 1152, 72, 34).xFromCenter() else Region(-82, 1152, 74, 34).xFromRightEdge()
+    val topScrollbarRegion = Region(-82, 178, 74, 38).xFromRightEdge()
+    val bottomScrollbarRegion = Region(-82, 1152, 74, 34).xFromRightEdge()
 
     /** Where a list scroll starts and its finger travel: up 640 px moves the list down by 640 px. */
     val listScrollStart = Location(-700, 1180).xFromRight()

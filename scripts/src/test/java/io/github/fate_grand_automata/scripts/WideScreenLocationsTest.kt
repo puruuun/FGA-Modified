@@ -58,12 +58,25 @@ class WideScreenLocationsTest {
     @Test fun `weekly and FP scrollbar template windows follow their measured safe edges`() {
         assertEquals(Region(2478, 178, 74, 38), WeeklyRouteLocations(sixteenNine).topScrollbarRegion)
         assertEquals(Region(2478, 1152, 74, 34), WeeklyRouteLocations(sixteenNine).bottomScrollbarRegion)
-        assertEquals(Region(3110, 178, 72, 42), WeeklyRouteLocations(twentyOneNine).topScrollbarRegion)
-        assertEquals(Region(3110, 1152, 72, 34), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
+        assertEquals(Region(3107, 178, 74, 38), WeeklyRouteLocations(twentyOneNine).topScrollbarRegion)
+        assertEquals(Region(3107, 1152, 74, 34), WeeklyRouteLocations(twentyOneNine).bottomScrollbarRegion)
         assertEquals(Region(2006, 1330, 72, 34), FpSellLocations(sixteenNine).bottomScrollbarRegion)
-        assertEquals(Region(2636, 1330, 72, 34), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
-        // The wide rail keeps its offset from the centre on 2.33:1 and 2.37:1 screens, so the box follows the centre.
-        assertEquals(1430, WeeklyRouteLocations(transforms(3414)).topScrollbarRegion.x - 1707)
+        assertEquals(Region(2635, 1330, 72, 34), FpSellLocations(twentyOneNine).bottomScrollbarRegion)
+    }
+
+    @Test fun `scrollbar end boxes follow the right edge minus the wide inset on every ratio`() {
+        // beta.13 (#122): 16:9, 18:9 (not wide), 19.5:9 and 21:9 script areas, all 1440 high.
+        for (width in listOf(2560, 2880, 3120, 3360)) {
+            val inset = if (width <= 2880) 0 else WIDE_EDGE_INSET   // 18:9 is not wider than 18:9
+            val t = transforms(width)
+            assertEquals(Region(width - inset - 82, 178, 74, 38), WeeklyRouteLocations(t).topScrollbarRegion)
+            assertEquals(Region(width - inset - 82, 1152, 74, 34), WeeklyRouteLocations(t).bottomScrollbarRegion)
+            assertEquals(Region(width - inset - 554, 1330, 72, 34), FpSellLocations(t).bottomScrollbarRegion)
+        }
+        // 2340x1080 (19.5:9): FP rail centre 2432, weekly rail centre about 2904.
+        val phone = transforms(3120)
+        assertEquals(Region(2395, 1330, 72, 34), FpSellLocations(phone).bottomScrollbarRegion)
+        assertEquals(Region(2867, 178, 74, 38), WeeklyRouteLocations(phone).topScrollbarRegion)
     }
 
     @Test fun `the safe area inset exists only on wide screens`() {

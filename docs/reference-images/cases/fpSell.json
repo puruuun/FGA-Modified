@@ -17083,6 +17083,16 @@
       }
     },
     {
+      "name": "fp-kr-19x9-list-top-scrollbar",
+      "suite": "fpSell",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/fp-sell/list-top-2340.webp",
+      "view": "scrollbar",
+      "expected": {
+        "bottom": false
+      }
+    },
+    {
       "name": "fp-no-rail-scrollbar",
       "suite": "fpSell",
       "server": "Jp",

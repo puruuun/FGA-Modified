@@ -27,9 +27,11 @@ class FpSellLocations @Inject constructor(transforms: IScriptAreaTransforms) : I
     val grid = Region(-1130 + gridShift, 338, 1850, 1102).xFromCenter()
     /**
      * End window sized to the rail (beta.6, #90): the measured bottom cap position (720p y=668; x 273 px in from the
-     * right edge on 16:9, 482 px right of the centre on wide) plus 4 px horizontally and 3 px vertically.
+     * right edge on 16:9) plus 4 px horizontally and 3 px vertically. beta.13 (#122): the rail follows the right edge
+     * plus the wide inset on every wide ratio (688 px from the right edge at 1440p on 19.5:9, 518 on 16:9), so the
+     * 16:9 box is simply moved by [xFromRightEdge]; the centre anchor of beta.6 missed on 18:9 to 21:9.
      */
-    val bottomScrollbarRegion = if (isWide) Region(956, 1330, 72, 34).xFromCenter() else Region(-554, 1330, 72, 34).xFromRightEdge()
+    val bottomScrollbarRegion = Region(-554, 1330, 72, 34).xFromRightEdge()
     /** Left column's last button (cards per row). The wide left column is packed closer together: 25 px higher on 21:9. */
     val sizeSwitch = (if (isWide) Location(100, 1268) else Location(100, 1320)).xFromLeftEdge()
     val confirm = Region(-460, 1240, 440, 180).xFromRightEdge()
