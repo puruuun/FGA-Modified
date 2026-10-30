@@ -11,11 +11,6 @@ edit_uri: edit/main/wiki/
 docs_dir: wiki
 site_dir: build/site
 
-exclude_docs: |
-  _Sidebar.md
-  _Footer.md
-  scripts/_Sidebar.md
-
 hooks:
   - tools/docs-site/hooks.py
 
