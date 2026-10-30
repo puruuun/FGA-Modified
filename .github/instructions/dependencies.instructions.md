@@ -1,5 +1,5 @@
 ---
-applyTo: "gradle/libs.versions.toml,gradle/wrapper/**,**/build.gradle.kts,settings.gradle.kts,Gemfile,Gemfile.lock,.github/workflows/**"
+applyTo: "gradle/libs.versions.toml,gradle/wrapper/**,**/build.gradle.kts,settings.gradle.kts,.github/workflows/**"
 description: Toolchain pins (JDK/bytecode/AGP/compileSdk) and the order dependency bumps must follow.
 ---
 

@@ -41,8 +41,9 @@
   `cache: 'gradle'` — don't re-add the latter, it would cache the same directories twice
   with worse invalidation.
 - `release` builds need `app/fgautomata.keystore` (GPG-decrypted in CI) and `KEYSTORE_PASS`.
-  Play Store deploys are CI-only, through `fastlane` (`fastlane/Fastfile`, lanes `deploy`
-  and `download_apk`).
+  The fork does not publish to the Play Store. Upstream's `fastlane/`, `Gemfile` and
+  `Gemfile.lock` were removed (owner, 2026-10-30). Stable and beta APKs come from `stable.yml`
+  and `beta.yml`, or from local `:app:assembleCi` / `:app:assembleBeta`.
 
 ## Bump order
 
@@ -83,6 +84,3 @@ The chain can also be dragged forward **transitively**: any dependency pulling a
 
 When a bump fails, read the `checkAarMetadata` output first — it names the required AGP
 version and compileSdk directly, much faster than bisecting versions.
-
-Dependabot PRs here only touch `Gemfile.lock` (fastlane) and are often already behind
-`master`; check before applying one.

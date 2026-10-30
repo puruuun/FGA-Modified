@@ -1,5 +1,5 @@
 # User manual site, published to GitHub Pages by .github/workflows/pages.yml.
-# The pages are the files in wiki/ (the same source as the GitHub wiki); the navigation is built
+# The pages are the files in wiki/; the navigation is built
 # from them by tools/docs-site/hooks.py, so a new wiki page shows up without editing this file.
 site_name: FGA(mod) 사용 설명서
 site_description: Fate/Grand Automata 수정판 FGA(mod)의 기능별 사용 설명서

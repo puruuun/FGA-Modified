@@ -46,8 +46,9 @@ features, so every sync follows the same rules instead of being decided again ea
 | Translations `values-ko`, `values-ja` (and other `values-*`) | **Fork** — the fork does not use POEditor | Keep fork text; translate new upstream strings in ko and ja yourself |
 | `.github/workflows/` and `.github/workflows/actions.lock` | **Fork** | Keep the fork's set; do not take the lockfile, `ci.yml`, `close-issues.yml` or `upload-translations.yml` |
 | `AGENTS.md`, `docs/agents/`, `.claude/`, `.github/instructions/` | **Fork** | Keep the fork's text; take upstream guides only when they apply to the fork (not the lockfile guide) |
-| `version.properties`, `README.md`, `README.en.md`, `wiki/`, `docs/design/`, `docs/releases/`, `docs/qa/`, `fastlane/` | **Fork** | Keep the fork's files (`README.md` is Korean and `README.en.md` is English; keep both) |
-| `renovate.json`, `Gemfile*` | Upstream | Take upstream |
+| `version.properties`, `README.md`, `README.en.md`, `wiki/`, `docs/design/`, `docs/releases/`, `docs/qa/` | **Fork** | Keep the fork's files (`README.md` is Korean and `README.en.md` is English; keep both) |
+| `renovate.json` | Upstream | Take upstream |
+| Removed upstream leftovers: `fastlane/`, `Gemfile`, `Gemfile.lock`, `FUNDING.yml`, `.github/ISSUE_TEMPLATE/`, `.github/workflows/publish-wiki.yml` | **Fork (deleted)** | Keep them deleted (owner, 2026-10-30). The fork does not publish to the Play Store or the GitHub wiki, does not take donations for upstream, and files issues through the planner |
 
 When upstream changes something the fork has deleted (modify/delete conflict), keep it deleted
 unless the table says otherwise.

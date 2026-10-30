@@ -4,7 +4,6 @@ on:
   pull_request:
     paths-ignore:
       - '.idea/**'
-      - '.github/ISSUE_TEMPLATE/**'
       - '.github/instructions/**'
       - '.github/copilot-instructions.md'
       - '.gitattributes'

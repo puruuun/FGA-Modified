@@ -7,7 +7,6 @@ on:
     # commits that change a workflow are still checked.
     paths-ignore:
       - '.idea/**'
-      - '.github/ISSUE_TEMPLATE/**'
       - '.github/instructions/**'
       - '.github/copilot-instructions.md'
       - '.gitattributes'
@@ -24,7 +23,6 @@ on:
     # Same paths-ignore as push.
     paths-ignore:
       - '.idea/**'
-      - '.github/ISSUE_TEMPLATE/**'
       - '.github/instructions/**'
       - '.github/copilot-instructions.md'
       - '.gitattributes'

@@ -86,5 +86,5 @@ app  ──▶ scripts ──▶ libautomata
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
 - Hilt + KSP for DI; Compose (BOM-managed) with several `ExperimentalX` opt-ins already enabled in `app/build.gradle.kts`.
 - Dependencies live in `gradle/libs.versions.toml` — always add/bump there, never inline coordinates.
-- `wiki/` is the source of the GitHub wiki and of the GitHub Pages manual (`.github/workflows/pages.yml`) — detailed user-facing docs go there, while `README.md` (Korean) and `README.en.md` (English) are separate files that describe the latest stable release. Their feature tables and release links are updated together, at stable promotion only.
+- `wiki/` is the source of the GitHub Pages manual (`.github/workflows/pages.yml`); the GitHub wiki is not used — detailed user-facing docs go there, while `README.md` (Korean) and `README.en.md` (English) are separate files that describe the latest stable release. Their feature tables and release links are updated together, at stable promotion only.
 - Agent guidance: keep this file to what's true repo-wide and put path-specific rules in [`docs/agents/`](docs/agents), following [`docs/agents/README.md`](docs/agents/README.md).

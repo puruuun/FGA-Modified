@@ -1,6 +1,6 @@
 # User manual site (GitHub Pages)
 
-The user manual at <https://puruuun.github.io/FGA-Modified/> is built from `wiki/`, which is also the GitHub wiki source. It is built with MkDocs Material (`mkdocs.yml`) and deployed by `.github/workflows/pages.yml` **only when a stable GitHub Release is published** (owner, 2026-10-29). The workflow builds the site from that stable tag. A manual run of the workflow (no tag) rebuilds the site from the latest stable tag. Beta work on `main` therefore never reaches the published manual. Nobody edits the site by hand.
+The user manual at <https://puruuun.github.io/FGA-Modified/> is built from `wiki/`. The GitHub wiki is not used, and its upstream publish workflow was removed (owner, 2026-10-30). It is built with MkDocs Material (`mkdocs.yml`) and deployed by `.github/workflows/pages.yml` **only when a stable GitHub Release is published** (owner, 2026-10-29). The workflow builds the site from that stable tag. A manual run of the workflow (no tag) rebuilds the site from the latest stable tag. Beta work on `main` therefore never reaches the published manual. Nobody edits the site by hand.
 
 ## Every user-facing feature ships with its manual page; the README follows stable releases
 
