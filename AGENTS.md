@@ -49,9 +49,9 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ## Agent team
 
-- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex) implements, tests and opens the PR.
-- If the implementing agent hits its usage limit, it stops and leaves the work as it is. No other agent takes over; the work resumes in the same session once the owner says the limit is refilled.
-- Another implementer (for example Sonnet) is used only when the owner says so for the work at hand. That permission does not carry over to later work; never switch on your own.
+- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex, or the Sonnet fallback below) implements, tests and opens the PR.
+- Implementer order (owner decision, 2026-10-30): **Codex first; Sonnet 5.5 at medium effort is the fallback.** When Codex is unavailable (usage limit or not reachable), the planner hands the work to Sonnet 5.5 (medium), which continues from where Codex stopped on the same branch. No other model is used.
+- The fallback follows the same rules as Codex: same branch and PR flow, same commit identity, no device work unless the planner assigns it. The planner tells the owner when a task moved to Sonnet and why, and switches back to Codex for new work once its limit is refilled.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test
