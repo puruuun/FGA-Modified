@@ -28,8 +28,8 @@ features, so every sync follows the same rules instead of being decided again ea
    translation, and whether MLB grants a 20% Bond Point bonus), present the candidate list to the
    owner, and only include/exclude/format them (plus regenerate `builtin-ids.json`) per the
    owner's decision.
-5. Fork follow-ups (Korean/Japanese translations of new upstream strings, adaptations of fork
-   code) go in separate commits after the merge commit.
+5. Fork follow-ups (the owner's Korean/Japanese text for new or conflicting upstream strings,
+   adaptations of fork code) go in separate commits after the merge commit.
 6. Deliver it like any code change: full unit suite, PR, `Main CI`, `--ff-only` merge
    (see `AGENTS.md`). Device QA on BlueStacks covers the upstream behaviour changes that touch
    KR/JP play.
@@ -43,7 +43,8 @@ features, so every sync follows the same rules instead of being decided again ea
 | Built-in Craft Essences (`app/src/main/assets/Support/ce/`, `SupportNameResources.ceNameResIds`, `ce_name_*` in `localized.xml`, `builtin-ids.json`) | **Fork (owner-curated)** | Do not automatically add, rename, or restore deleted CEs from upstream; inspect Atlas Academy (`collectionNo`, `id`, KR translation, 20% Bond bonus condition) and ask the owner before applying |
 | Gradle wrapper, `gradle/libs.versions.toml`, `build.gradle.kts` | Upstream | Take upstream, keep fork-only additions |
 | English strings `values/localized.xml` | Upstream, plus fork strings | Merge both |
-| Translations `values-ko`, `values-ja` (and other `values-*`) | **Fork** — the fork does not use POEditor | Keep fork text; translate new upstream strings in ko and ja yourself |
+| Translations `values-ko`, `values-ja` | **Owner** — the fork does not use POEditor | Take upstream's changes to strings the fork never touched; list every conflicting string (fork text and upstream text) for the owner to choose; the owner decides the ko/ja text of new upstream strings (propose drafts). See `translations.md` |
+| Other translations (`values-b+zh+CN`, `values-vi`, …) | Upstream | Take upstream, conflicts included |
 | `.github/workflows/` and `.github/workflows/actions.lock` | **Fork** | Keep the fork's set; do not take the lockfile, `ci.yml`, `close-issues.yml` or `upload-translations.yml` |
 | `AGENTS.md`, `docs/agents/`, `.claude/`, `.github/instructions/` | **Fork** | Keep the fork's text; take upstream guides only when they apply to the fork (not the lockfile guide) |
 | `version.properties`, `README.md`, `README.en.md`, `wiki/`, `docs/design/`, `docs/releases/`, `docs/qa/` | **Fork** | Keep the fork's files (`README.md` is Korean and `README.en.md` is English; keep both) |

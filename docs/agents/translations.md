@@ -4,25 +4,28 @@
 string — add and edit them there, in the source tree. `values/strings.xml` is only for
 `translatable="false"` values (app name, server names, links, language labels).
 
-The translated `values-*/localized.xml` files are synced from POEditor, so translations are
-normally *not* edited in-repo; touch them only as a deliberate exception. The
-`MissingTranslation` lint errors that follow are the expected steady state.
+The fork does not use POEditor, upstream's crowd-translation service (owner, 2026-10-30). The
+translated `values-*/localized.xml` files are edited in the repo like any other file. The
+`MissingTranslation` lint errors for languages the fork does not maintain are expected.
 
-## The POEditor sync
+## Who owns which translation
 
-POEditor exchanges strings with the repo through the dedicated **`translations` branch** —
-never with `master` directly. Only the GitHub user **reconman** can trigger an import or an
-export from the POEditor website.
+- **Korean (`values-ko`) and Japanese (`values-ja`)** belong to the owner. The owner reviews
+  them and has them fixed directly in the repo; a fix needs no other approval.
+- **Every other language** (Chinese, Vietnamese, …) follows upstream: take upstream's files as
+  they are and do not edit them in the fork.
 
-Both directions follow the same rules:
+## Translations in an upstream sync
 
-1. Bring `translations` up to date with `master` first, so POEditor sees the current source
-   strings and the export cannot revert unrelated changes.
-2. Trigger the import (source strings from the repo into POEditor) or the export
-   (translations from POEditor back into the repo) on the POEditor website.
-3. **Review every export for lost translations before merging** — the export is lossy in
-   practice. Pay particular attention to `<string-array>` entries, which are the most
-   frequent casualty.
+See [`upstream-sync.md`](upstream-sync.md) for the merge itself. For strings:
+
+1. **Upstream changed a translation** the fork never touched: take upstream's text.
+2. **Both sides changed the same string** (a conflict, or a Korean/Japanese text the fork had
+   already rewritten): do not pick one yourself. List each string with the fork text and the
+   upstream text and let the owner choose.
+3. **Upstream added a new English string**: the owner decides its Korean and Japanese text.
+   Propose a draft for each, mark it as a draft, and use the owner's wording once they give it.
+4. **Other languages**: take upstream's text, conflicts included.
 
 ## Default support images carry translated names
 
@@ -42,8 +45,9 @@ Adding, renaming or removing anything under `assets/Support` therefore takes thr
 
 A missing entry fails silently: the lookup falls back to the raw English name, which is also
 how user-added custom supports are meant to display. A rename that skips step 3 breaks the
-mapping the same quiet way, so the existing translation just stops being used. New strings
-reach the other languages through the POEditor sync above like any other source string.
+mapping the same quiet way, so the existing translation just stops being used. A new name
+needs its Korean and Japanese strings in the same change; other languages fall back to English
+until upstream adds them.
 
 ### Looking up official names
 
