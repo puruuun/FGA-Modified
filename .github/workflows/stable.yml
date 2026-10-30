@@ -51,13 +51,11 @@ jobs:
         run: |
           VERSION=$(grep '^stable.versionName=' version.properties | cut -d= -f2)
           cp app/build/outputs/apk/ci/app-ci.apk "FGA-mod-${VERSION}-arm.apk"
-          sha256sum "FGA-mod-${VERSION}-arm.apk" > "FGA-mod-${VERSION}-arm.apk.sha256"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: FGA-stable-apk
           path: |
             FGA-mod-*-arm.apk
-            FGA-mod-*-arm.apk.sha256
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: stable-apk-verification

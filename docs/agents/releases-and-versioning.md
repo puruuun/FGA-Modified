@@ -46,7 +46,7 @@ published (unless the owner explicitly requests an immediate stable release):
      ```
    - Stage `app/build/outputs/apk/beta/app-beta.apk` (package
      `io.github.fate_grand_automata.beta`, app name `FGA Beta`) as
-     `build/release-assets/FGA-beta-<beta.versionName>-arm.apk` alongside its `.sha256` file.
+     `build/release-assets/FGA-beta-<beta.versionName>-arm.apk`. No `.sha256` file is made (owner, 2026-10-30).
    - Install onto BlueStacks (`adb -s 127.0.0.1:5555 install -r ...`) and/or provide the APK path
      to the owner for tablet testing.
    - Do **not** publish beta APKs to GitHub Releases unless the owner explicitly asks.
@@ -68,6 +68,6 @@ When promoting to stable `X.Y.Z`:
    Publishing the non-prerelease GitHub Release in step 4 rebuilds the user manual from that tag automatically. Check that the `Publish manual site` run succeeded.
 3. Deliver via PR (`release/<version>`), wait for `Main CI` to pass, and fast-forward merge into
    `main`.
-4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` and
-   `FGA-mod-<version>-arm.apk.sha256`, verify with `apksigner` / `aapt2`, install onto BlueStacks,
+4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` (no
+   `.sha256` file; GitHub shows each asset's SHA-256), verify with `apksigner` / `aapt2`, install onto BlueStacks,
    record `docs/releases/<version>-validation.md`, and publish the GitHub Release `v<version>`.
