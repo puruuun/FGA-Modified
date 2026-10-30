@@ -47,7 +47,7 @@ features, so every sync follows the same rules instead of being decided again ea
 | `.github/workflows/` and `.github/workflows/actions.lock` | **Fork** | Keep the fork's set; do not take the lockfile, `ci.yml`, `close-issues.yml` or `upload-translations.yml` |
 | `AGENTS.md`, `docs/agents/`, `.claude/`, `.github/instructions/` | **Fork** | Keep the fork's text; take upstream guides only when they apply to the fork (not the lockfile guide) |
 | `version.properties`, `README.md`, `README.en.md`, `wiki/`, `docs/design/`, `docs/releases/`, `docs/qa/` | **Fork** | Keep the fork's files (`README.md` is Korean and `README.en.md` is English; keep both) |
-| `renovate.json` | Upstream | Take upstream |
+| `renovate.json` | **Fork (deleted)** | Keep it deleted (owner, 2026-10-30). The Renovate app was never installed on the fork, so it opened no PRs; dependencies come in through upstream syncs |
 | Removed upstream leftovers: `fastlane/`, `Gemfile`, `Gemfile.lock`, `FUNDING.yml`, `.github/ISSUE_TEMPLATE/`, `.github/workflows/publish-wiki.yml` | **Fork (deleted)** | Keep them deleted (owner, 2026-10-30). The fork does not publish to the Play Store or the GitHub wiki, does not take donations for upstream, and files issues through the planner |
 | Removed upstream wiki pages: `wiki/Home.md`, `_Sidebar.md`, `_Footer.md`, `Donations.md`, `Privacy-Policy.md`, `Troubleshooting.md`, `Running-on-Emulators.md`, `Game-Area-detection.md`, `Fine-tune.md`, `Friend-Point-Summon.md`, `Gift-Box.md`, `wiki/scripts/_Sidebar.md`, `Battle.md`, `Lottery.md`, `Support-Image-Maker.md`, `wiki/img/` | **Fork (deleted)** | Keep them deleted (owner, 2026-10-30). `wiki/` holds only the fork's manual; readers who need the original guides use the upstream wiki linked from the README |
 
