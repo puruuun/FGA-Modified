@@ -9,13 +9,9 @@
     <string name="game_server_na_bfgo" translatable="false">NA (Better FGO)</string>
     <string name="game_server_jp_bfgo" translatable="false">JP (Better FGO)</string>
 
-    <string name="link_troubleshoot" translatable="false">https://github.com/Fate-Grand-Automata/FGA/wiki/Troubleshooting</string>
     <string name="link_releases" translatable="false">https://github.com/puruuun/FGA-Modified/releases</string>
-    <string name="link_discord" translatable="false">https://tinyurl.com/2z2d6wuz</string>
-    <string name="discord" translatable="false">Discord</string>
     <string name="link_youtube" translatable="false">https://www.youtube.com/watch?v=JOwupZ4W8AQ&amp;t=4m10s</string>
     <string name="link_dontkillmyapp" translatable="false">https://dontkillmyapp.com/</string>
-    <string name="link_donate" translatable="false">https://ko-fi.com/fategrandautomata</string>
 
     <string name="language_en" translatable="false">English</string>
     <string name="language_ja" translatable="false">日本語</string>

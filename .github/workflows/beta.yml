@@ -31,13 +31,11 @@ jobs:
         run: |
           VERSION=$(grep '^beta.versionName=' version.properties | cut -d= -f2)
           cp app/build/outputs/apk/beta/app-beta.apk "FGA-beta-${VERSION}-arm.apk"
-          sha256sum "FGA-beta-${VERSION}-arm.apk" > "FGA-beta-${VERSION}-arm.apk.sha256"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: FGA-beta-apk
           path: |
             FGA-beta-*-arm.apk
-            FGA-beta-*-arm.apk.sha256
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
