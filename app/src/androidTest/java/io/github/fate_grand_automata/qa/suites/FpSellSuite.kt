@@ -50,20 +50,13 @@ internal fun FixtureApi.verifyFpSell(): JSONObject {
                 .put("daily", patterns.any { reader.loc.dailySummonButton.exists(it, similarity = 0.9) })
         }
         "summonGuard" -> {
-            val banner = FpBannerReturn(this, reader.loc)
-            try {
-                banner.remember()
-                banner.verifySummon()
-                JSONObject().put("verified", true)
-            } finally { banner.release() }
+            FpBannerReturn(this, reader.loc).verifySummon()
+            JSONObject().put("verified", true)
         }
         "limitSell" -> JSONObject().put("sell", reader.loc.fullSell.exists(images[Images.FpSellSell], similarity = 0.9))
         "layout" -> JSONObject().put("seven", reader.isSevenColumns())
             .put("grid", useSameSnapIn { reader.gridReadable() })
             .put("servantTab", useSameSnapIn { reader.onServantTab() })
-        "bannerTitle" -> fixturePattern(case.getJSONArray("pieces").getJSONObject(0).getString("file")).use {
-            JSONObject().put("matches", useSameSnapIn { FpBannerReturn(this, reader.loc).matches(it) })
-        }
         "fullDialog" -> JSONObject().put("servantWarning", reader.servantFullWarning())
         "selection" -> {
             val b = case.getJSONArray("card720")

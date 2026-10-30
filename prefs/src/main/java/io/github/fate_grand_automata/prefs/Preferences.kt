@@ -121,6 +121,7 @@ class PreferencesImpl @Inject constructor(
     override var shouldLimitFP by prefs.shouldLimitFP
     override var limitFP by prefs.limitFP
     override var fpAutoSell by prefs.fpAutoSell
+    override var fpBannerPosition by prefs.fpBannerPosition
     override var fpSellDryRun by prefs.fpSellDryRun
 
 

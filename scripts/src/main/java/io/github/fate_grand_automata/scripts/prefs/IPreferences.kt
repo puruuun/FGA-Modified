@@ -39,6 +39,8 @@ interface IPreferences {
     var shouldLimitFP: Boolean
     var limitFP: Int
     var fpAutoSell: Boolean
+    /** Left-arrow presses from the first banner on return: 1 = last banner (default), 2 = second from the end. */
+    var fpBannerPosition: Int
     var fpSellDryRun: Boolean
     /** Build policy supplied by the app; never persisted. */
     val fpSellStableBuild: Boolean

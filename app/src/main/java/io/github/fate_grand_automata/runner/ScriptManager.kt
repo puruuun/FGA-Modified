@@ -262,7 +262,7 @@ class ScriptManager @Inject constructor(
                         AutoFriendGacha.ExitReason.WorkshopNotReached -> R.string.fp_sell_return_workshop
                         AutoFriendGacha.ExitReason.WorkshopMenuFailed -> R.string.fp_sell_return_menu
                         AutoFriendGacha.ExitReason.SummonMenuFailed -> R.string.fp_sell_return_summon
-                        AutoFriendGacha.ExitReason.BannerTitleNotFound -> R.string.fp_sell_return_title
+                        AutoFriendGacha.ExitReason.FpBannerNotAtPosition -> R.string.fp_sell_return_position
                     })
                     AutoFriendGacha.ExitReason.SellScreenUnknown -> context.getString(R.string.fp_sell_screen_unknown)
                     is AutoFriendGacha.ExitReason.SellStopped -> {

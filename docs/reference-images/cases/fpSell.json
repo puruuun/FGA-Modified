@@ -15304,171 +15304,6 @@
       }
     },
     {
-      "name": "Kr-15-title-15-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/15.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/15-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Kr-25-title-25-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/25.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/25-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": false
-      }
-    },
-    {
-      "name": "Kr-26-title-26-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/26.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/26-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Kr-27-title-27-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/27.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/27-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": false
-      }
-    },
-    {
-      "name": "Jp-34-title-34-FP-guard",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/34.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Jp/fp-sell/34-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": false
-      }
-    },
-    {
-      "name": "Jp-35-title-35-FP-guard",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/35.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Jp/fp-sell/35-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Jp-36-title-36-FP-guard",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/36.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Jp/fp-sell/36-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Jp-41-title-41-FP-guard",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/41.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Jp/fp-sell/41-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Kr-26-title-15-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/26.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/15-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": true
-      }
-    },
-    {
-      "name": "Kr-25-title-15-FP-guard",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/fp-sell/25.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/15-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": false
-      }
-    },
-    {
-      "name": "Jp-34-title-41-FP-guard",
-      "suite": "fpSell",
-      "server": "Jp",
-      "file": "docs/reference-images/Jp/fp-sell/34.png",
-      "view": "bannerTitle",
-      "pieces": [
-        {
-          "file": "docs/reference-images/Jp/fp-sell/41-banner-title.png"
-        }
-      ],
-      "expected": {
-        "matches": false
-      }
-    },
-    {
       "name": "JP-beta7-20261019-104653-291-end-c1",
       "suite": "fpSell",
       "server": "Jp",
@@ -16920,21 +16755,6 @@
       }
     },
     {
-      "name": "KR-w2560-36-not-banner",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/wide-2560/36.webp",
-      "view": "bannerTitle",
-      "expected": {
-        "matches": false
-      },
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/fp-sell/15-banner-title.png"
-        }
-      ]
-    },
-    {
       "name": "KR-23-menu-visible",
       "suite": "fpSell",
       "server": "Kr",
@@ -16995,21 +16815,6 @@
         "arrow": false,
         "summon": false
       }
-    },
-    {
-      "name": "KR-w2560-37-bannerTitle",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/wide-2560/37.webp",
-      "view": "bannerTitle",
-      "expected": {
-        "matches": false
-      },
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
-        }
-      ]
     },
     {
       "name": "KR-w2560-37-fpChecks",
@@ -17074,21 +16879,6 @@
         "arrow": true,
         "summon": true
       }
-    },
-    {
-      "name": "KR-w2560-38-bannerTitle",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/wide-2560/38.webp",
-      "view": "bannerTitle",
-      "expected": {
-        "matches": true
-      },
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
-        }
-      ]
     },
     {
       "name": "KR-w2560-38-fpChecks",
@@ -17165,21 +16955,6 @@
       }
     },
     {
-      "name": "KR-w2560-39-bannerTitle",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/wide-2560/39.webp",
-      "view": "bannerTitle",
-      "expected": {
-        "matches": false
-      },
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
-        }
-      ]
-    },
-    {
       "name": "KR-w2560-39-fpChecks",
       "suite": "fpSell",
       "server": "Kr",
@@ -17254,21 +17029,6 @@
         "arrow": false,
         "summon": false
       }
-    },
-    {
-      "name": "KR-w2560-40-bannerTitle",
-      "suite": "fpSell",
-      "server": "Kr",
-      "file": "docs/reference-images/Kr/wide-2560/40.webp",
-      "view": "bannerTitle",
-      "expected": {
-        "matches": false
-      },
-      "pieces": [
-        {
-          "file": "docs/reference-images/Kr/wide-2560/38-banner-title.png"
-        }
-      ]
     },
     {
       "name": "KR-w2560-40-fpChecks",

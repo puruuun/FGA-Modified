@@ -796,7 +796,11 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="fp_sell_return_workshop">Could not return to the workshop after selling or canceling. Stopped.</string>
     <string name="fp_sell_return_menu">Could not open the workshop MENU. Stopped before summoning.</string>
     <string name="fp_sell_return_summon">Could not open the summon screen or find its summon button. Stopped.</string>
-    <string name="fp_sell_return_title">Original FP banner title not found within 10 left presses. Stopped before summoning.</string>
+    <string name="fp_sell_return_position">The Friend Point summon screen and a summon button were not visible after pressing left on the banner. Check the FP banner position setting. Stopped before summoning.</string>
+    <string name="fp_banner_position">FP banner position</string>
+    <string name="fp_banner_position_last">Last</string>
+    <string name="fp_banner_position_second_last">Second from the end</string>
+    <string name="fp_banner_position_summary">After selling, the summon screen reopens on the first banner and the script presses left this many times to reach the FP banner.</string>
     <string name="fp_sell_screen_unknown">No known game screen was seen for too long while summoning. Stopped.</string>
     <string name="fp_sell_stop_entry">Could not enter the sell screen (sell button, title or servant tab not found). Stopped without selling.</string>
     <string name="fp_sell_stop_columns">Could not switch the sell screen to 7 columns. Stopped without selling.</string>

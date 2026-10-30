@@ -37,7 +37,7 @@ class AutoFriendGacha @Inject constructor(
         object WorkshopNotReached : BannerReturnStopped("workshop")
         object WorkshopMenuFailed : BannerReturnStopped("menu")
         object SummonMenuFailed : BannerReturnStopped("summon")
-        object BannerTitleNotFound : BannerReturnStopped("title")
+        object FpBannerNotAtPosition : BannerReturnStopped("position")
         /** The summon loop saw no known screen for too long (not a sell step). */
         object SellScreenUnknown : ExitReason()
         /** A sell step stopped without selling. Every one carries the dry-run state and the tiles selected so far (D-21). */
@@ -93,11 +93,9 @@ class AutoFriendGacha @Inject constructor(
                 returning = true
             },
             { isFirstSummon() } to {
-                if (prefs.fpAutoSell) banner.remember()
                 if (returning) resumeSummon(dailyFree = false) else summon(dailyFree = false)
             },
             { isDailyFree() } to {
-                if (prefs.fpAutoSell) banner.remember()
                 if (returning) resumeSummon(dailyFree = true) else summon(dailyFree = true)
             },
             { isSummonButtonVisible() } to { rollFPAgain() }
@@ -123,7 +121,6 @@ class AutoFriendGacha @Inject constructor(
             }
         } finally {
             if (saleStarted) autoSell.logFinalSummary()
-            banner.release()
         }
     }
 

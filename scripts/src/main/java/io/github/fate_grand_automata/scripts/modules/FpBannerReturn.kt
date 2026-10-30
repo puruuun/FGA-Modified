@@ -5,35 +5,34 @@ import io.github.fate_grand_automata.scripts.*
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitException
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha.ExitReason
 import io.github.fate_grand_automata.scripts.locations.FpSellLocations
+import io.github.lib_automata.Match
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import javax.inject.Inject
 
-/** D-31: remember only the title; compare in place and after each of at most ten left presses. */
+/** #114: the summon screen reopens on the first banner; press left a user-set number of times, then check the screen. */
 class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: FpSellLocations,
     private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
 ) : IFgoAutomataApi by api {
-    companion object {
-        const val MAX_STEPS = 10
-        fun search(matches: () -> Boolean, left: () -> Unit): Boolean {
-            if (matches()) return true
-            repeat(MAX_STEPS) { left(); if (matches()) return true }
-            return false
-        }
-    }
-    private var title: Pattern? = null
     private val buttons = FpSellButtons(api, addedTuning = addedTuning)
-    private fun stop(reason: ExitReason.BannerReturnStopped = ExitReason.BannerTitleNotFound): Nothing {
+    private fun stop(reason: ExitReason.BannerReturnStopped): Nothing {
         messages.log(ScriptLog.FpSell("stop step=bannerReturn reason=${reason.label}"))
         throw ExitException(reason)
     }
-    fun release() { title?.close(); title = null }
-    fun remember() { if (title == null) title = loc.bannerTitle.getPattern() }
-    fun matches(savedTitle: Pattern): Boolean =
-        loc.bannerTitle.exists(savedTitle, similarity = addedTuning.fp.similarity(0.85)) &&
-            (fpLabel(locations.fp.summonCheck) || fpLabel(locations.fp.initialSummonCheck))
+
+    private fun fpScreen(): Boolean = fpLabel(locations.fp.summonCheck) || fpLabel(locations.fp.initialSummonCheck)
+
+    private fun summonPatterns() = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
+        .mapNotNull { runCatching { images[it] }.getOrNull() }
+
+    /** The FP label and a summon button, in one frame. Returns the matched button or null. */
+    private fun fpScreenButton(patterns: List<Pattern>): Match? =
+        if (!fpScreen()) null else {
+            patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
+                ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
+        }
 
     private fun fpLabel(region: Region): Boolean {
         if (addedTuning.fp.similarityOffsetPercent == 0) return findImage(region, Images.FriendSummon)
@@ -42,22 +41,13 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
             (prefs.gameServer is GameServer.Jp && region.exists(images[Images.FriendSummon, GameServers.default], similarity = similarity))
     }
 
-    /** D-31: guard the original FGA summon taps with the saved title, FP label and visible button. */
+    /** Guard the original FGA summon taps with the FP label and a visible button. */
     fun verifySummon() {
-        val saved = title ?: stop()
-        if (!useSameSnapIn { matches(saved) }) stop()
-        val patterns = listOf(Images.FpSellSummonButton, Images.FpSellSummonButtonFree)
-            .mapNotNull { runCatching { images[it] }.getOrNull() }
-        buttons.awaitMatch {
-            if (!matches(saved)) null else {
-                patterns.firstNotNullOfOrNull { loc.summonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
-                    ?: patterns.firstNotNullOfOrNull { loc.dailySummonButton.find(it, similarity = addedTuning.fp.similarity(0.9)) }
-            }
-        } ?: stop(ExitReason.SummonMenuFailed)
+        val patterns = summonPatterns()
+        buttons.awaitMatch { fpScreenButton(patterns) } ?: stop(ExitReason.SummonMenuFailed)
     }
 
     fun restore() {
-        val savedTitle = title ?: stop()
         loc.close.click()
         addedTuning.fp.delay(FpSellTiming.AFTER_CLOSE).wait()
         buttons.menu(loc.menu, Images.FpSellMenu,
@@ -69,9 +59,12 @@ class FpBannerReturn @Inject constructor(api: IFgoAutomataApi, private val loc: 
         if (!buttons.awaitSignal(FpSellTiming.SUMMON_LOAD_POLLS) {
                 buttons.visible(loc.leftArrowRegion, Images.FpSellLeftArrow)
             }) stop(ExitReason.SummonMenuFailed)
-        if (!search({ useSameSnapIn { matches(savedTitle) } }, {
-            buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop() }
+        // The screen reopens on the first banner; left from the first banner wraps to the last.
+        repeat(prefs.fpBannerPosition.coerceIn(1, 2)) {
+            buttons.click(loc.leftArrowRegion, Images.FpSellLeftArrow) { stop(ExitReason.SummonMenuFailed) }
             addedTuning.fp.delay(FpSellTiming.AFTER_ARROW).wait()
-        })) stop()
+        }
+        val patterns = summonPatterns()
+        buttons.awaitMatch { fpScreenButton(patterns) } ?: stop(ExitReason.FpBannerNotAtPosition)
     }
 }

@@ -138,7 +138,7 @@ class FpAutoSellTest {
         }
         assertSame(AutoFriendGacha.ExitReason.InventoryFull, error.reason)
         verify { sale wasNot Called }
-        verify(exactly = 0) { banner.remember(); banner.restore() }
+        verify(exactly = 0) { banner.restore() }
     }
 
     /** The same fixture exercises the complete final-confirmation control flow without physical gestures. */
@@ -306,21 +306,6 @@ class FpAutoSellTest {
         assertNull(state(null), "grayscale capture carries no colour")
         assertNull(state(strip(0.0, 0.0, 0.0), null))
         assertNull(FpSellReader.selectionState(null))
-    }
-
-    @Test fun `banner checks in place and after each of at most ten left presses`() {
-        for (foundAfter in 0..10) {
-            var presses = 0
-            var reads = 0
-            assertTrue(FpBannerReturn.search({ reads++; presses == foundAfter }, { presses++ }))
-            assertEquals(foundAfter, presses)
-            assertEquals(foundAfter + 1, reads)
-        }
-        var presses = 0
-        var reads = 0
-        assertFalse(FpBannerReturn.search({ reads++; false }, { presses++ }))
-        assertEquals(10, presses)
-        assertEquals(11, reads)
     }
 
     @Test fun `summary and tile log have one selected count and safety signals only`() {

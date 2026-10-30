@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,8 @@ fun fpLauncher(
 ): ScriptLauncherResponseBuilder {
     var shouldLimit by remember { mutableStateOf(prefs.shouldLimitFP) }
     var rollLimit by remember { mutableStateOf(prefs.limitFP) }
+    var autoSell by remember { mutableStateOf(prefs.fpAutoSell) }
+    var bannerPosition by remember { mutableStateOf(prefs.fpBannerPosition.coerceIn(1, 2)) }
 
     Column(
         modifier = modifier
@@ -86,9 +89,21 @@ fun fpLauncher(
         if (!prefs.fpSellStableBuild) {
             Text(stringResource(R.string.fp_sell_safety), style = MaterialTheme.typography.bodySmall)
         }
-        fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it }
+        fpSellSwitch(R.string.fp_auto_sell, prefs.fpAutoSell) { prefs.fpAutoSell = it; autoSell = it }
         Text(stringResource(R.string.fp_sell_warning), style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+        if (autoSell) {
+            Text(stringResource(R.string.fp_banner_position), style = MaterialTheme.typography.bodyLarge)
+            for ((value, label) in listOf(
+                1 to R.string.fp_banner_position_last,
+                2 to R.string.fp_banner_position_second_last
+            )) Row(Modifier.fillMaxWidth().clickable { bannerPosition = value; prefs.fpBannerPosition = value },
+                verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = bannerPosition == value, onClick = { bannerPosition = value; prefs.fpBannerPosition = value })
+                Text(stringResource(label))
+            }
+            Text(stringResource(R.string.fp_banner_position_summary), style = MaterialTheme.typography.bodySmall)
+        }
         if (!prefs.fpSellStableBuild) {
             fpSellSwitch(R.string.fp_sell_dry_run, prefs.fpSellDryRun) { prefs.fpSellDryRun = it }
         }

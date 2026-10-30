@@ -82,8 +82,8 @@ class FpResummonPathTest {
         every { sale.run() } returns FpAutoSell.Result(FpSellPolicy.Summary(92,0),false)
         val banner = mockk<FpBannerReturn>(relaxed = true)
         every { banner.restore() } answers { returned=true }
-        every { banner.verifySummon() } throws AutoFriendGacha.ExitException(AutoFriendGacha.ExitReason.BannerTitleNotFound)
-        assertSame(AutoFriendGacha.ExitReason.BannerTitleNotFound,assertFailsWith<AutoFriendGacha.ExitException> {
+        every { banner.verifySummon() } throws AutoFriendGacha.ExitException(AutoFriendGacha.ExitReason.FpBannerNotAtPosition)
+        assertSame(AutoFriendGacha.ExitReason.FpBannerNotAtPosition,assertFailsWith<AutoFriendGacha.ExitException> {
             AutoFriendGacha(mockk(),api,sale,banner,reader).script()
         }.reason)
         verify(exactly=0) { with(api) { any<Location>().click(any()) } }
