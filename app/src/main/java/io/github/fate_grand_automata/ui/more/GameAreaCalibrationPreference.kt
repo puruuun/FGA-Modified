@@ -11,6 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.imaging.DroidCvPattern
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.runner.ScriptRunnerService
@@ -56,7 +57,7 @@ fun GameAreaCalibrationPreference(prefs: PrefsCore, preview: GameAreaPreviewMana
             job = scope.launch {
                 try {
                     delay(1000)
-                    val server = GameServers.deserialize(prefs.gameServerRaw.get()) ?: GameServers.default
+                    val server = calibrationServer(prefs.gameServerRaw.get())
                     val found = calibrateDisplay(context.applicationContext, server)
                     ensureActive()
                     result = if (found is GameAreaCalibration.Success && !preview.showCalibration(found))
@@ -100,6 +101,11 @@ private fun GameAreaCalibration.Reason.messageResource() = when (this) {
     GameAreaCalibration.Reason.InvalidRectangle -> R.string.game_area_calibration_bounds
     GameAreaCalibration.Reason.DoubleCheckFailed -> R.string.game_area_calibration_check
 }
+
+/** Same rule as script start (ScriptManager.updateGameServer): auto-detect uses the FGO app the accessibility service saw. */
+private fun calibrationServer(raw: String): GameServer =
+    if (raw == PrefsCore.GAME_SERVER_AUTO_DETECT) TapperService.instance?.detectedFgoServer ?: GameServers.default
+    else GameServers.deserialize(raw) ?: GameServers.default
 
 private suspend fun calibrateDisplay(context: Context, server: GameServer): GameAreaCalibration {
     if (server !is GameServer.Jp && server !is GameServer.Kr)
