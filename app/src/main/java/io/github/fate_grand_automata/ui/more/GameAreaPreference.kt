@@ -146,7 +146,6 @@ fun GameAreaPreference(prefs: PrefsCore, preview: GameAreaPreviewManager) {
             enabled = editable,
             onClick = { picker.show() }
         )
-        GameAreaCalibrationPreference(prefs, preview)
         if (mode != GameAreaMode.Default) {
             Card(
                 modifier = Modifier.padding(5.dp),
@@ -170,6 +169,7 @@ fun GameAreaPreference(prefs: PrefsCore, preview: GameAreaPreviewManager) {
                                 addDialog.show()
                             }) { Text(stringResource(R.string.p_game_area_add)) }
                         }
+                        GameAreaCalibrationPreference(prefs, preview)
                     } else if (preset != null) {
                         Text(stringResource(R.string.p_game_area_preset_read_only), style = MaterialTheme.typography.bodySmall)
                         Text("${stringResource(R.string.p_game_area_custom_left)}: ${preset.left}")
