@@ -150,6 +150,8 @@ enum class Images(val path: String) {
     QuestItemDialogClose("quest_item_close.png"),
     /** The English "Free Quest" emblem of a quest panel; identical on every server, so only En has a copy. */
     FreeQuestLabel("free_quest_label.png"),
+    /** D-42 (#130): the JP name band of quest 93020303 (千手千眼), matched when OCR cannot read it. JP only. */
+    WeeklyNameSenju("weekly_name_senju.png"),
     /** Weekly route navigation (JP and KR only): the top-left button on the main screen, in a chapter list and on a map. */
     WeeklyNotice("weekly_notice.png"),
     WeeklyClose("weekly_close.png"),

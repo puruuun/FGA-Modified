@@ -499,11 +499,17 @@ class WeeklyRouteDriver @Inject constructor(
                 val spot = if (anchors.isEmpty() || spotNames.isEmpty()) null else reader.readSpot(prefs.gameServer, spotNames)
                 for (anchor in anchors) {
                     val panel = reader.readAnchored(prefs.gameServer, anchor, run.questNames, spot, spotQuestNames)
-                    val by = QuestPanelMatch.matchBy(panel, quest.name, quest.spot, quest.spotFreeQuests)
+                    var by = QuestPanelMatch.matchBy(panel, quest.name, quest.spot, quest.spotFreeQuests)
+                    var imageScore: Double? = null
+                    if (by == null && panel.free) {
+                        // D-42 (#130): only quests with a name template, only after the OCR did not match.
+                        imageScore = reader.nameImageScore(prefs.gameServer, anchor, quest.id)
+                        by = QuestNameTemplates.matchBy(panel, imageScore, QuestNameTemplates.entry(prefs.gameServer, quest.id), quest.ap)
+                    }
                     val verdict = if (by != null) PanelVerdict.Match else QuestPanelMatch.strictVerdict(panel, quest.ap, quest.name, prefs.gameServer)
                     failure.verdict(QuestPanelMatch.label(verdict))
                     log("panel quest=${quest.id} anchor=${anchor.mark} attempt=$attempt ap=${panel.ap} name=${panel.nameText} spot=${panel.spotText} " +
-                        "cells=${panel.nameCells?.let { "%.2f".format(it) }} by=${by ?: "none"} verdict=${QuestPanelMatch.label(verdict)}")
+                        "cells=${panel.nameCells?.let { "%.2f".format(it) }} by=${by ?: "none"}${imageScore?.let { " nameImage=${"%.3f".format(it)}" }.orEmpty()} verdict=${QuestPanelMatch.label(verdict)}")
                     log("panel quest=${quest.id} attempt=$attempt rawNames=[${rawText(panel.rawNames)}] rawSpots=[${rawText(panel.rawSpots)}]")
                     if (verdict != PanelVerdict.Match) {
                         failure.panelRead(panel.nameText, panel.spotText)

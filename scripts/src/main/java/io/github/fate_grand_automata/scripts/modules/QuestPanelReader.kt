@@ -101,6 +101,21 @@ class QuestPanelReader @Inject constructor(
         }
     }
 
+    /**
+     * D-42 (#130): best correlation of the quest's name-band template inside the tapped panel's name band, or null when the
+     * quest has no template on this server. Call only when the OCR did not match.
+     */
+    fun nameImageScore(server: GameServer, anchor: QuestPanelAnchor, questId: Int): Double? {
+        val entry = QuestNameTemplates.entry(server, questId) ?: return null
+        if (!anchor.fits(loc.scriptArea)) return null
+        val template = runCatching { images[entry.image] }.getOrNull() ?: return null
+        val tplPixels = template.grayPixels() ?: return null
+        return anchor.name.getPattern("anchored_panel_name_image").use { band ->
+            val pixels = band.grayPixels() ?: return@use null
+            QuestNameTemplates.bestScore(pixels, band.width, band.height, tplPixels, template.width, template.height)
+        }
+    }
+
     private fun textReadings(image: Pattern, lang: String): List<OcrText> =
         listOf(
             TextLineOcrOptions(scale = 2, threshold = 0.6, invert = true, padding = 12, language = lang),
