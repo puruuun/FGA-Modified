@@ -1,9 +1,9 @@
 ---
 applyTo: "app/src/main/res/**,app/src/main/assets/Support/**"
-description: The English string source and the external POEditor translation flow.
+description: The English string source and who owns each translation (no POEditor in the fork).
 ---
 
-English strings live in `values/localized.xml` and are edited here; the translated
-`values-*` copies come from POEditor.
+English strings live in `values/localized.xml`. Korean and Japanese are the owner's and are
+edited here directly; other languages follow upstream. The fork does not use POEditor.
 
 Read [`docs/agents/translations.md`](../../docs/agents/translations.md).

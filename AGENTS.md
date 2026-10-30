@@ -12,7 +12,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **`gradle/libs.versions.toml`, the Gradle wrapper, any `build.gradle.kts`** — [`docs/agents/dependencies.md`](docs/agents/dependencies.md). The AGP/Gradle/Kotlin/androidx bumps only succeed in one order; it also holds the JDK, bytecode-target and `compileSdk` pins.
 - **Automation logic in `scripts/`, or the Hilt wiring in `app/di/` and `app/runner/`** — [`docs/agents/automation-scripts.md`](docs/agents/automation-scripts.md). Every run gets its own Hilt component, and `script()` never returns normally.
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
-- **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`; the translated `values-*` copies are synced from POEditor.
+- **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`. Korean and Japanese are the owner's and are edited in the repo; other languages follow upstream. The fork does not use POEditor.
 - **Any user-facing feature or change, `README.md`, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated. `README.md` and `README.en.md` describe the latest stable release only: feature and beta changes never edit them, and the planner updates both at stable promotion. The GitHub Pages manual is republished from the stable tag when a stable Release is published.
 - **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, curate built-in CEs with the owner, and record each sync in the log table.
 - **Any `adb` command, device QA run, APK install, or look at a live game screen** — [`docs/agents/devices-and-safety.md`](docs/agents/devices-and-safety.md). Agents never operate the game, never unlock appends or spend apples or quartz, and never run adb server commands; BlueStacks is `127.0.0.1:5555`.
@@ -51,6 +51,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex) implements, tests and opens the PR.
 - If the implementing agent hits its usage limit, it stops and leaves the work as it is. No other agent takes over; the work resumes in the same session once the owner says the limit is refilled.
+- Another implementer (for example Sonnet) is used only when the owner says so for the work at hand. That permission does not carry over to later work; never switch on your own.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test
