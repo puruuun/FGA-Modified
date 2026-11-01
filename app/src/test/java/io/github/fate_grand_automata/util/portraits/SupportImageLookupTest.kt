@@ -35,11 +35,16 @@ class SupportImageLookupTest {
         val catalogs = mutableMapOf<String, List<SupportCatalogRecord>>()
         val details = mutableMapOf<String, String?>()
         val names = mutableMapOf<String, Map<Int, Set<String>>>()
+        var dictionary: Map<Int, Set<String>> = emptyMap()
+        var failKr = false
+        override suspend fun koreanNames(): Map<Int, Set<String>> { calls += "ko-names"; return dictionary }
         override suspend fun servantNames(region: String): Map<Int, Set<String>> {
             calls += "names:$region"; return names[region].orEmpty()
         }
         override suspend fun catalog(kind: SupportCatalogKind, region: String): List<SupportCatalogRecord> {
-            calls += "catalog:$region"; return catalogs[region].orEmpty()
+            calls += "catalog:$region"
+            if (failKr && region == "KR") throw PortraitImportException(PortraitImportError.Network)
+            return catalogs[region].orEmpty()
         }
         override suspend fun detail(kind: SupportCatalogKind, region: String, id: Int): String? {
             calls += "detail:$region:$id"; return details[region]
@@ -181,6 +186,81 @@ class SupportImageLookupTest {
         SupportImageLookup(source).search(SupportCatalogKind.CE,"ネロ","ja")
         assertFalse(source.calls.any { it.startsWith("names:") })
     }
+    private val tamamo = 2301100
+    private fun dictSource(): Source {
+        val source = Source()
+        source.catalogs["JP"] = listOf(jp, record(tamamo, 448, "玉兎", "foreigner"))
+        source.catalogs["KR"] = listOf(kr)
+        source.dictionary = mapOf(tamamo to setOf("옥토끼", "료기 시키", "옥토끼 카구야"), 100600 to setOf("사전전용이름"))
+        return source
+    }
+    @Test fun `KR-missing servant is found by every dictionary name and keeps its JP display`() = runBlocking {
+        val lookup = SupportImageLookup(dictSource())
+        for (query in listOf("카구야", "옥토", "료기", "료기시키", "옥토끼 카구야")) {
+            val hit = lookup.search(SupportCatalogKind.Servant, query, "ko-KR").single()
+            assertEquals(tamamo, hit.id); assertEquals(448, hit.number)
+            assertEquals("玉兎", hit.name); assertEquals("No.448 玉兎", hit.folderName)
+            assertNull(hit.sourceRegion)
+        }
+    }
+    @Test fun `dictionary names are ignored once the servant exists in the KR catalog`() = runBlocking {
+        val lookup = SupportImageLookup(dictSource())
+        assertTrue(lookup.search(SupportCatalogKind.Servant, "사전전용", "ko-KR").isEmpty())
+        assertEquals(90, lookup.search(SupportCatalogKind.Servant, "네로", "ko-KR").single().number)
+    }
+    @Test fun `number and CE searches do not use the dictionary`() = runBlocking {
+        val source = dictSource()
+        assertEquals(448, SupportImageLookup(source).search(SupportCatalogKind.Servant, "448", "ko-KR").single().number)
+        assertFalse("ko-names" in source.calls)
+        source.calls.clear()
+        source.dictionary = mapOf(2301100 to setOf("옥토끼"))
+        assertTrue(SupportImageLookup(source).search(SupportCatalogKind.CE, "옥토끼", "ko-KR").isEmpty())
+        assertFalse("ko-names" in source.calls)
+    }
+    @Test fun `empty dictionary does not break search`() = runBlocking {
+        val source = dictSource(); source.dictionary = emptyMap()
+        assertEquals(90, SupportImageLookup(source).search(SupportCatalogKind.Servant, "ネロ", "ko-KR").single().number)
+        assertTrue(SupportImageLookup(source).search(SupportCatalogKind.Servant, "옥토끼", "ko-KR").isEmpty())
+    }
+    @Test fun `non-Korean language with a failing KR catalog still searches and applies the dictionary`() = runBlocking {
+        val source = dictSource(); source.failKr = true
+        val hit = SupportImageLookup(source).search(SupportCatalogKind.Servant, "카구야", "ja").single()
+        assertEquals(tamamo, hit.id)
+        // With KR unknown, the dictionary applies to every entry.
+        assertEquals(90, SupportImageLookup(source).search(SupportCatalogKind.Servant, "사전전용", "ja").single().number)
+    }
+    @Test fun `non-Korean language checks the KR catalog before applying the dictionary`() = runBlocking {
+        val lookup = SupportImageLookup(dictSource())
+        assertTrue(lookup.search(SupportCatalogKind.Servant, "사전전용", "ja").isEmpty())
+        assertEquals(tamamo, lookup.search(SupportCatalogKind.Servant, "옥토끼", "ja").single().id)
+    }
+
+    @Test fun `dictionary parser reads valid input and ignores unknown fields`() {
+        val parsed = SupportKoreanNames.parse("""{"source":"x","extra":1,"servants":[
+            {"id":2301100,"no":448,"jp":"玉兎","note":true,"ko":["옥토끼","료기 시키"]},
+            {"id":306000,"ko":["미유"]}]}""")
+        assertEquals(mapOf(2301100 to setOf("옥토끼", "료기 시키"), 306000 to setOf("미유")), parsed)
+    }
+    @Test fun `dictionary parser skips bad ids and blank names`() {
+        val parsed = SupportKoreanNames.parse("""{"servants":[
+            {"id":0,"ko":["영"]},{"id":-5,"ko":["음수"]},{"id":10,"ko":["", "  ", "좋음"]},{"id":11,"ko":[]}]}""")
+        assertEquals(mapOf(10 to setOf("좋음")), parsed)
+    }
+    @Test fun `dictionary parser rejects invalid structure`() {
+        for (bad in listOf("", "not json", "[]", "{}", """{"servants":{}}""", """{"servants":[1]}""",
+            """{"servants":[{"ko":["a"]}]}""", """{"servants":[{"id":"x","ko":["a"]}]}""",
+            """{"servants":[{"id":1}]}""", """{"servants":[{"id":1,"ko":[3]}]}""")) {
+            assertEquals(PortraitImportError.Metadata, assertFailsWith<PortraitImportException> { SupportKoreanNames.parse(bad) }.reason, bad)
+        }
+    }
+    @Test fun `bundled dictionary asset parses with the expected entries`() {
+        val file = java.io.File("src/main/assets/servant-names-ko.json")
+        assertTrue(file.isFile, file.absolutePath)
+        val parsed = SupportKoreanNames.parse(file.readText(Charsets.UTF_8))
+        assertEquals(44, parsed.size)
+        assertTrue(parsed.getValue(2301100).containsAll(listOf("옥토끼", "료기 시키", "옥토끼 카구야")))
+    }
+
     @Test fun `missing JP images fall back to KR and stop before NA`() = runBlocking {
         val source = Source();source.details["KR"] = detail("KR");source.details["NA"] = detail("NA")
         assertTrue(SupportImageLookup(source).portraits(entry()).single().url.contains("/KR/"))
