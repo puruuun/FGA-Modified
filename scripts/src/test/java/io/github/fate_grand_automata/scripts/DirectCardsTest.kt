@@ -351,4 +351,120 @@ class DirectCardsTest {
             assertFailsWith<AutoBattle.BattleExitException>(code) { AutoSkillCommand.parse(code) }
         }
     }
+
+    private val byIndex: (List<ParsedCard>) -> List<ParsedCard> = { remaining -> remaining.sortedBy { it.card.index } }
+    private fun faces(vararg c: CommandCard) = c.toList()
+
+    @Test
+    fun `unselected slots at front middle and back are filled by priority after fixed slots`() {
+        val cards = hand()
+        // b reserves C (Normal beats Resist A); p takes the first remaining card by priority.
+        assertThat(DirectCardSequence.parse("?pb4").resolve(cards, byIndex))
+            .isEqualTo(faces(CommandCard.Face.A, CommandCard.Face.C, CommandCard.NP.A))
+        assertThat(DirectCardSequence.parse("?bp4").resolve(cards, byIndex))
+            .isEqualTo(faces(CommandCard.Face.C, CommandCard.Face.A, CommandCard.NP.A))
+        assertThat(DirectCardSequence.parse("?b4p").resolve(cards, byIndex))
+            .isEqualTo(faces(CommandCard.Face.C, CommandCard.NP.A, CommandCard.Face.A))
+        assertThat(DirectCardSequence.parse("?pp4").resolve(cards, byIndex))
+            .isEqualTo(faces(CommandCard.Face.A, CommandCard.Face.B, CommandCard.NP.A))
+        assertThat(DirectCardSequence.parse("?ppp").resolve(cards, byIndex))
+            .isEqualTo(faces(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C))
+        assertThat(DirectCardSequence.parse("?pp4").cardsBeforeNP).isEqualTo(2)
+        assertThat(DirectCardSequence.parse("?ppp").nps).isEqualTo(emptySet())
+    }
+
+    @Test
+    fun `colour reservation beats an earlier unselected slot and cards are never picked twice`() {
+        // Only one Arts card (A) is in the hand, so slot 2 must get it even though slot 1 is unselected.
+        assertThat(DirectCardSequence.parse("?pa4").resolve(artsAndQuicks(), byIndex))
+            .isEqualTo(faces(CommandCard.Face.B, CommandCard.Face.A, CommandCard.NP.A))
+        for (code in listOf("?ppp", "?pap", "?qpp", "?pp4", "?pqa")) {
+            val result = DirectCardSequence.parse(code).resolve(artsAndQuicks(), byIndex)!!
+            assertThat(result.distinct().size).isEqualTo(3)
+        }
+    }
+
+    @Test
+    fun `colour shortage and unselected slots share one priority sort in slot order`() {
+        val noQuick = hand().map { if (it.type == CardTypeEnum.Quick) it.copy(type = CardTypeEnum.Arts) else it }
+        // slot 1 (q) is missing and slot 2 is unselected: they take priority 1 and 2 in slot order.
+        assertThat(DirectCardSequence.parse("?qp4").resolve(noQuick, byIndex))
+            .isEqualTo(faces(CommandCard.Face.A, CommandCard.Face.B, CommandCard.NP.A))
+        assertThat(DirectCardSequence.parse("?qp4").resolve(noQuick) { r -> r.sortedByDescending { it.card.index } })
+            .isEqualTo(faces(CommandCard.Face.E, CommandCard.Face.D, CommandCard.NP.A))
+        val detailed = DirectCardSequence.parse("?bp4").resolveDetailed(hand(), byIndex)!!
+        assertThat(detailed.usedPriority).isEqualTo(true)
+        assertThat(DirectCardSequence.parse("?bq4").resolveDetailed(hand(), byIndex)!!.usedPriority).isEqualTo(false)
+    }
+
+    @Test
+    fun `priority changes only affect the unselected slots`() {
+        val cards = hand()
+        val forward = DirectCardSequence.parse("?bp4").resolve(cards, byIndex)!!
+        val backward = DirectCardSequence.parse("?bp4").resolve(cards) { r -> r.sortedByDescending { it.card.index } }!!
+        assertThat(forward[0]).isEqualTo(backward[0])
+        assertThat(forward[2]).isEqualTo(backward[2])
+        assertThat(forward[1]).isEqualTo(CommandCard.Face.A)
+        assertThat(backward[1]).isEqualTo(CommandCard.Face.E)
+    }
+
+    @Test
+    fun `unselected skips stunned cards and stops on too few usable or unknown cards`() {
+        val stunB = hand().map { if (it.card == CommandCard.Face.B) it.copy(isStunned = true, type = CardTypeEnum.Unknown) else it }
+        assertThat(DirectCardSequence.parse("?ppp").resolve(stunB, byIndex))
+            .isEqualTo(faces(CommandCard.Face.A, CommandCard.Face.C, CommandCard.Face.D))
+        val twoUsable = hand().map { if (it.card in listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C)) it.copy(isStunned = true, type = CardTypeEnum.Unknown) else it }
+        assertThat(DirectCardSequence.parse("?ppp").resolve(twoUsable, byIndex)).isEqualTo(null)
+        assertThat(DirectCardSequence.parse("?pp4").resolve(twoUsable, byIndex))
+            .isEqualTo(faces(CommandCard.Face.D, CommandCard.Face.E, CommandCard.NP.A))
+        val unknown = hand().map { if (it.card == CommandCard.Face.E) it.copy(type = CardTypeEnum.Unknown) else it }
+        assertThat(DirectCardSequence.parse("?ppp").resolve(unknown, byIndex)).isEqualTo(null)
+        assertThat(DirectCardSequence.parse("?ppp").resolve(hand().dropLast(1), byIndex)).isEqualTo(null)
+    }
+
+    @Test
+    fun `unselected requires the fallback flag and uppercase normalizes and round trips`() {
+        assertFailsWith<IllegalArgumentException> { DirectCardSequence.parse("bp4") }
+        for (code in listOf("&bp4", "&ppp", "&4pp")) {
+            assertFailsWith<AutoBattle.BattleExitException>(code) { AutoSkillCommand.parse(code) }
+        }
+        for (code in listOf("&?bp4", "&?pp4", "&?ppp", "&?p4q")) {
+            assertThat((AutoSkillCommand.parse(code)[0, 0].single() as AutoSkillAction.Atk).toCommandString())
+                .isEqualTo(code)
+        }
+        assertThat((AutoSkillCommand.parse("&?BP4")[0, 0].single() as AutoSkillAction.Atk).toCommandString())
+            .isEqualTo("&?bp4")
+        assertThat(DirectCardSequence.parse("?bp4").toString()).isEqualTo("&?bp4")
+        for (code in listOf("&b4a", "&?b4a")) {
+            assertThat((AutoSkillCommand.parse(code)[0, 0].single() as AutoSkillAction.Atk).toCommandString()).isEqualTo(code)
+        }
+    }
+
+    @Test
+    fun `an unselected slot logs once and keeps brave chains rearrange NP spam and later turns out`() {
+        val f = Fixture(command = "&?bp4,0")
+        f.card.clickCommandCards(hand(), f.autoSkill.execute(0, 0))
+        assertThat(f.taps.size).isEqualTo(3)
+        assertThat(f.taps[0]).isEqualTo(CommandCard.Face.C)
+        assertThat(f.taps[2]).isEqualTo(CommandCard.NP.A)
+        assertThat(f.taps.distinct().size).isEqualTo(3)
+        verify(exactly = 1) { f.api.messages.log(match<ScriptLog.DirectCardsFallback> {
+            it.requested == "&?bp4" && it.cards == f.taps
+        }) }
+        verify(exactly = 0) { f.chains.pick(any(), any(), any(), any()) }
+        verify(exactly = 0) { f.caster.canSpam(any()) }
+        assertThat(f.autoSkill.execute(0, 1)).isEqualTo(NPUsage.none)
+    }
+
+    @Test
+    fun `too few usable cards for an unselected slot stop before any tap`() {
+        val f = Fixture(command = "&?ppp")
+        val cards = hand().map { if (it.card in listOf(CommandCard.Face.A, CommandCard.Face.B, CommandCard.Face.C)) it.copy(isStunned = true, type = CardTypeEnum.Unknown) else it }
+        val error = assertFailsWith<AutoBattle.BattleExitException> {
+            f.card.clickCommandCards(cards, f.autoSkill.execute(0, 0))
+        }
+        assertThat((error.reason as AutoBattle.ExitReason.DirectCardsUnavailable).sequence).isEqualTo("&?ppp")
+        assertThat(f.taps).isEqualTo(emptyList())
+        verify(exactly = 0) { f.api.messages.log(any<ScriptLog.DirectCardsFallback>()) }
+    }
 }

@@ -503,4 +503,28 @@ class ExecutionProfileCoreTest {
         assertThat(ExecutionProfileCore(PrefMaker(store)).skillCommand.get()).isEqualTo(commands[0])
         assertThat(ExecutionProfileCore(PrefMaker(copied), "secondary_").skillCommand.get()).isEqualTo(commands[1])
     }
+
+    @Test
+    fun `unselected direct cards in both profiles survive reopen copy and fga export import`() {
+        val store = MemoryPrefs()
+        val commands = listOf("a&?bp4,&?ppp,#,&?pp4", "&?p5b,&b4a")
+        val prefixes = listOf("", "secondary_")
+        for ((prefix, command) in prefixes.zip(commands)) {
+            ExecutionProfileCore(PrefMaker(store), prefix).skillCommand.set(command)
+        }
+        val copied = MemoryPrefs()
+        copied.edit().also { it.import(store.all) }.apply()
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(store.all))) }.apply()
+        for (storage in listOf(store, copied, restored)) {
+            for ((prefix, command) in prefixes.zip(commands)) {
+                val result = ExecutionProfileCore(PrefMaker(storage), prefix).skillCommand.get()
+                assertThat(result).isEqualTo(command)
+                val action = io.github.fate_grand_automata.scripts.models.AutoSkillCommand.parse(result)[0, 0]
+                    .last() as io.github.fate_grand_automata.scripts.models.AutoSkillAction.Atk
+                assertThat(action.directCards?.code?.contains('p')).isEqualTo(true)
+                assertThat(action.directCards?.fallback).isEqualTo(true)
+            }
+        }
+    }
 }
