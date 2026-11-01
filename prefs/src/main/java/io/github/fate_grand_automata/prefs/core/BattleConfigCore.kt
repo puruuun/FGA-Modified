@@ -129,7 +129,7 @@ class BattleConfigCore(
 
     val turnLimitRetreatEnabled = maker.bool("turn_limit_retreat_enabled")
 
-    val turnLimitRetreatTurns = maker.stringAsInt("turn_limit_retreat_turns", 4)
+    val turnLimitRetreatTurns = maker.stringAsInt("turn_limit_retreat_turns", 0)
 
     val turnLimitRetreatStopAfterStreak = maker.bool("turn_limit_retreat_stop_after_streak")
 }

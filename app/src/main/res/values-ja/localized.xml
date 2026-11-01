@@ -216,7 +216,6 @@
     <string name="p_debug_mode_summary">"一致した箇所をハイライトします"</string>
     <string name="p_support_reader_diagnostics">"サポート判定の診断を保存"</string>
     <string name="p_support_reader_diagnostics_summary">"確認したサポートごとに、得点欄の画像と判定の根拠を保存します。初期値はオフです。保存先はFGAの保存フォルダ内のdiagnosticsフォルダです。"</string>
-    <string name="p_enable_withdraw">"全滅時に撤退"</string>
     <string name="p_fine_tune">"微調整"</string>
     <string name="p_fine_tune_click_delay">"マルチクリック間隔"</string>
     <string name="p_fine_tune_click_duration">"クリックの継続時間"</string>
@@ -480,7 +479,6 @@
     <string name="times_ran">"%d 回実行"</string>
     <string name="times_ran_out_of">"%2$d 回中 %1$d 回実行"</string>
     <string name="times_rolled">"%d 回召喚しました"</string>
-    <string name="times_withdrew">"%d 回撤退しました"</string>
     <string name="troubleshoot">"Troubleshooting"</string>
     <string name="turns_count">"ターン数: %d"</string>
 
@@ -643,13 +641,14 @@
     <string name="fp_sell_not_servant">サーヴァント枠の警告ではないため（概念礼装・コマンドコード等）、販売せずに停止しました。</string>
     <string name="fp_sell_screen_unknown">販売画面を確認できなかったため、販売せずに停止しました。</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
-    <string name="p_battle_config_turn_limit_retreat">"ターン制限で撤退"</string>
-    <string name="p_battle_config_turn_limit_retreat_label">"撤退"</string>
-    <string name="p_battle_config_turn_limit_retreat_message">"このターンに達したら、そのターンを進めずにクエストから撤退し、再度開始します。コマンド開始のカード枚数条件で待機したターンは数えません。撤退はAPを消費し、周回数に数えません。韓国サーバーと日本サーバーのみ対応しています。"</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">"ターン制限での撤退は韓国サーバーと日本サーバーのみ対応しています。"</string>
+    <string name="p_battle_config_turn_limit_retreat">"撤退して再開"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"撤退して再開"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"戦闘がこのターンに達したら、そのターンを進めずにクエストから撤退し、再度開始します。コマンド開始のカード枚数条件で待機したターンは数えません。0ターンの場合は、パーティーが全滅したときだけ撤退します。"</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">"このサーバーでは0ターン(全滅時に撤退)のみ使用できます。ターン制限は韓国サーバーと日本サーバーで使用できます。"</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"3回連続で撤退したら停止"</string>
     <string name="turn_limit_retreat_turns_value">"%dターンで撤退"</string>
-    <string name="turn_limit_retreat_count">"ターン制限で %d 回撤退しました"</string>
+    <string name="turn_limit_retreat_wipe_only">"全滅時に撤退"</string>
+    <string name="retreat_count">"%1$d 回撤退しました(全滅 %2$d 回、ターン制限 %3$d 回)"</string>
     <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
-    <string name="turn_limit_retreat_streak_stop">"ターン制限で3回連続して撤退したため停止しました。"</string>
+    <string name="turn_limit_retreat_streak_stop">"3回連続して撤退したため停止しました。"</string>
 </resources>

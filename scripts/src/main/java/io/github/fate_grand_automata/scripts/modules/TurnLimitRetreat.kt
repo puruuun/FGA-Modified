@@ -26,9 +26,16 @@ class TurnLimitRetreat @Inject constructor(
         const val MAX_ATTEMPTS_PER_RUN = 2
     }
 
-    /** Retreats performed, shown on the exit screen. Retreated runs are not runs. */
+    /** Retreats performed (party wipes and turn limits together). Retreated runs are not runs. */
     var count = 0
         private set
+
+    /** Party wipe withdraws among [count]. */
+    var wipeCount = 0
+        private set
+
+    /** Turn-limit retreats among [count]. */
+    val turnLimitCount get() = count - wipeCount
 
     /** Consecutive retreats; a normally cleared run resets it. */
     var streak = 0
@@ -45,13 +52,19 @@ class TurnLimitRetreat @Inject constructor(
 
     val isSupportedServer get() = prefs.gameServer.let { it is GameServer.Kr || it is GameServer.Jp }
 
+    /** The one switch of "retreat and restart": off stops on a party wipe, on withdraws and restarts. */
+    val isEnabled get() = config.turnLimitRetreatEnabled
+
+    /** The configured turn limit; 0 (wipe only) outside Kr and Jp. */
+    val limitTurns get() = if (isSupportedServer) config.turnLimitRetreatTurns.coerceAtLeast(0) else 0
+
     /**
      * Decides at the start of a turn. [effectiveTurn] is the run's turn counter minus the card-count
      * waiting turns, so the limit counts only turns the user's setup actually played.
      */
     fun shouldRetreat(effectiveTurn: Int): Boolean {
-        if (!config.turnLimitRetreatEnabled || disabled || !isSupportedServer) return false
-        if (effectiveTurn < config.turnLimitRetreatTurns.coerceAtLeast(1)) return false
+        if (!isEnabled || disabled || !isSupportedServer) return false
+        if (limitTurns < 1 || effectiveTurn < limitTurns) return false
         pending = true
         return true
     }
@@ -67,6 +80,13 @@ class TurnLimitRetreat @Inject constructor(
         acceptAndClose()
 
         ++count
+        ++streak
+    }
+
+    /** A party wipe was withdrawn from: it counts like a turn-limit retreat and never resets the streak. */
+    fun recordWipeWithdraw() {
+        ++count
+        ++wipeCount
         ++streak
     }
 

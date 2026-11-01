@@ -194,7 +194,6 @@
     <string name="p_choose_folder_title">"選擇資料夾"</string>
     <string name="p_debug_mode">"除錯模式"</string>
     <string name="p_debug_mode_summary">"將框出比對影像的區域"</string>
-    <string name="p_enable_withdraw">"啟用撤退"</string>
     <string name="p_fine_tune">"微調"</string>
     <string name="p_fine_tune_click_delay">"連擊間隔（ms）"</string>
     <string name="p_fine_tune_click_duration">"點選時間（ms）"</string>
@@ -390,7 +389,6 @@ Order Change"</string>
     <string name="times_ran">"已執行 %d 次"</string>
     <string name="times_ran_out_of">"已執行 %1$d / %2$d 次"</string>
     <string name="times_rolled">"已抽取 %d 次"</string>
-    <string name="times_withdrew">"已撤退 %d 次"</string>
     <string name="troubleshoot">"若 FGA 有問題請先參考此處（GitHub連結）"</string>
     <string name="turns_count">"回合 %d"</string>
 

@@ -8,6 +8,8 @@ import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.Battle
 import io.github.fate_grand_automata.scripts.modules.CommandStartGate
 import io.github.fate_grand_automata.scripts.modules.TurnLimitRetreat
+import io.github.fate_grand_automata.scripts.modules.Withdraw
+import io.github.lib_automata.ScriptAbortException
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.lib_automata.Location
 import io.github.lib_automata.Match
@@ -56,9 +58,30 @@ class TurnLimitRetreatTest {
         val searchRegion = Region(500, 0, 10, 10)
         val retryRegion = Region(600, 0, 10, 10)
 
+        // Party wipe screen
+        val withdrawRegion = Region(700, 0, 10, 10)
+        val wipeMatch = Match(Region(710, 10, 20, 20), 0.99)
+        val wipeCloseClick = Location(5, 5)
+        val menuScreenRegion = Region(800, 0, 10, 10)
+        var wipeVisible = true
+        var wipeStaysVisible = true
+        private var inWipe = false
+
         val retreat = TurnLimitRetreat(api, config)
+        val withdraw = Withdraw(api, retreat)
 
         init {
+            every { api.locations.withdrawRegion } returns withdrawRegion
+            every { api.locations.withdrawCloseClick } returns wipeCloseClick
+            every { api.locations.menuScreenRegion } returns menuScreenRegion
+            every { with(api) { any<Region>().contains(any<Pattern>()) } } answers {
+                val image = patterns.entries.first { it.value == secondArg<Pattern>() }.key
+                when (image) {
+                    Images.Withdraw -> firstArg<Region>() == withdrawRegion && wipeVisible
+                    Images.Menu -> firstArg<Region>() == menuScreenRegion && Images.Menu in visible
+                    else -> false
+                }
+            }
             every { config.turnLimitRetreatEnabled } returns enabled
             every { config.turnLimitRetreatTurns } returns turns
             every { config.turnLimitRetreatStopAfterStreak } returns stopAfterStreak
@@ -76,7 +99,11 @@ class TurnLimitRetreatTest {
             every { api.images[any(), any()] } answers { patterns.getOrPut(firstArg()) { mockk() } }
             every { with(api) { any<Region>().find(any<Pattern>(), any()) } } answers {
                 val image = patterns.entries.first { it.value == secondArg<Pattern>() }.key
-                if (image == Images.BattleMenu && firstArg<Region>() == searchRegion) menuMatch else null
+                when {
+                    image == Images.BattleMenu && firstArg<Region>() == searchRegion -> menuMatch
+                    image == Images.Withdraw && firstArg<Region>() == withdrawRegion && wipeVisible -> wipeMatch
+                    else -> null
+                }
             }
             every { with(api) { any<Region>().exists(any<Pattern>(), any(), any()) } } answers {
                 val image = patterns.entries.first { it.value == secondArg<Pattern>() }.key
@@ -90,14 +117,26 @@ class TurnLimitRetreatTest {
                 }
             }
             every { with(api) { any<Region>().click(any()) } } answers {
-                trace += "click-menu"
-                if (menuAppearsOnClick) visible += Images.TurnLimitRetreat
+                if (firstArg<Region>() == wipeMatch.region) {
+                    trace += "wipe-withdraw"
+                    inWipe = true
+                } else {
+                    trace += "click-menu"
+                    if (menuAppearsOnClick) visible += Images.TurnLimitRetreat
+                }
             }
             every { with(api) { any<Location>().click(any()) } } answers {
                 when (firstArg<Location>()) {
                     retreatClick -> { trace += "retreat"; if (dialogAppearsOnClick) visible += Images.TurnLimitRetreatConfirm }
+                    wipeCloseClick -> {
+                        trace += "wipe-close"
+                        inWipe = false
+                        wipeVisible = wipeStaysVisible
+                        if (!wipeStaysVisible) visible += Images.Menu
+                    }
                     okClick -> {
                         trace += "ok"
+                        if (inWipe) return@answers
                         if (ignoredOkTaps > 0) ignoredOkTaps-- else {
                             visible.clear()
                             if (closeAppearsOnClick) visible += Images.Close
@@ -109,7 +148,7 @@ class TurnLimitRetreatTest {
                     else -> error("Unexpected click")
                 }
             }
-            for (duration in listOf(0.5.seconds, 5.seconds)) {
+            for (duration in listOf(0.5.seconds, 1.seconds, 5.seconds)) {
                 every { with(api) { duration.wait(any()) } } answers { trace += "wait:$duration" }
             }
         }
@@ -358,5 +397,153 @@ class TurnLimitRetreatTest {
         val f = Fixture(stopAfterStreak = false)
         repeat(5) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
         assertEquals(5, f.retreat.streak)
+    }
+
+    // retreat and restart: party wipe
+
+    private val wipeTrace = listOf("wipe-withdraw", "wait:500ms", "ok", "wait:1s", "wipe-close")
+
+    private fun wipeEntry(f: Fixture, state: BattleState, battle: Battle): AutoBattle {
+        every { f.api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
+        every { battle.isIdle() } returns false
+        every { f.api.prefs.selectedServerConfigPref.shouldLimitRuns } returns false
+        return AutoBattle(
+            mockk(relaxed = true), f.api, state, battle, mockk(relaxed = true), f.withdraw,
+            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), f.retreat
+        )
+    }
+
+    @Test
+    fun `off stops a party wipe with WithdrawDisabled and taps nothing`() {
+        val f = Fixture(enabled = false)
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.withdraw.withdraw() }
+        assertEquals(AutoBattle.ExitReason.WithdrawDisabled, e.reason)
+        assertTrue(f.trace.isEmpty())
+        assertFalse(f.retreat.shouldRetreat(9))
+    }
+
+    @Test
+    fun `zero turns withdraws on a wipe with the old tap sequence and never retreats on a turn`() {
+        val f = Fixture(turns = 0)
+        assertTrue(f.withdraw.withdraw())
+        assertEquals(wipeTrace, f.trace)
+        assertEquals(1, f.retreat.count)
+        assertEquals(1, f.retreat.wipeCount)
+        assertEquals(0, f.retreat.turnLimitCount)
+        assertEquals(1, f.retreat.streak)
+        for (turn in 1..20) assertFalse(f.retreat.shouldRetreat(turn))
+        assertFalse(f.retreat.pending)
+    }
+
+    @Test
+    fun `a wipe through the main loop abandons the run and counts it as a retreat not a run`() {
+        val f = Fixture(turns = 6)
+        val state = BattleState()
+        val battle = mockk<Battle>(relaxed = true)
+        every { battle.abandonRun() } throws ScriptAbortException()
+        val exit = assertFailsWith<AutoBattle.ExitException> { wipeEntry(f, state, battle).script() }
+        assertEquals(AutoBattle.ExitReason.Abort, exit.reason)
+        assertEquals(1, exit.state.wipeWithdrawCount)
+        assertEquals(0, exit.state.turnLimitRetreatCount)
+        assertEquals(0, exit.state.timesRan)
+        assertEquals(0, state.runs)
+        verify(exactly = 1) { battle.abandonRun() }
+        verify(exactly = 0) { battle.resetState() }
+    }
+
+    @Test
+    fun `with six turns a wipe is a wipe withdraw and turn six is a turn limit retreat`() {
+        val f = Fixture(turns = 6)
+        assertFalse(f.retreat.shouldRetreat(4))
+        f.withdraw.withdraw()
+        assertTrue(f.retreat.shouldRetreat(6))
+        f.retreat.execute()
+        assertEquals(2, f.retreat.count)
+        assertEquals(1, f.retreat.wipeCount)
+        assertEquals(1, f.retreat.turnLimitCount)
+    }
+
+    @Test
+    fun `wipe then retreat then wipe stops on the third with the checkbox on`() {
+        val f = Fixture(turns = 6, stopAfterStreak = true)
+        f.withdraw.withdraw(); f.retreat.checkStreak()
+        f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak()
+        f.retreat.onQuestListSeen(); f.withdraw.withdraw()
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.checkStreak() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak, e.reason)
+        assertEquals(2, f.retreat.wipeCount)
+        assertEquals(1, f.retreat.turnLimitCount)
+    }
+
+    @Test
+    fun `three wipes in a row through the main loop end the script with the streak reason`() {
+        val f = Fixture(stopAfterStreak = true)
+        val exit = assertFailsWith<AutoBattle.ExitException> {
+            wipeEntry(f, BattleState(), mockk<Battle>(relaxed = true)).script()
+        }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak, exit.reason)
+        assertEquals(3, exit.state.wipeWithdrawCount)
+        assertEquals(0, exit.state.timesRan)
+    }
+
+    @Test
+    fun `a wipe does not reset the streak, a cleared run does`() {
+        val f = Fixture(stopAfterStreak = true)
+        f.withdraw.withdraw(); f.withdraw.withdraw()
+        assertEquals(2, f.retreat.streak)
+        // Resetting after a wipe goes through abandonRun, which leaves the streak alone.
+        val state = BattleState()
+        val battle = battle(f, state, CommandStartGate(f.config))
+        state.nextStage()
+        battle.abandonRun()
+        battle.resetState()
+        assertEquals(2, f.retreat.streak)
+        f.retreat.onRunCleared()
+        assertEquals(0, f.retreat.streak)
+    }
+
+    @Test
+    fun `other servers treat a stored turn count as zero, load no retreat image and still withdraw on a wipe`() {
+        for (server in GameServers.values.filter { it !is GameServer.Kr && it !is GameServer.Jp }) {
+            val f = Fixture(server = server, turns = 6)
+            assertEquals(0, f.retreat.limitTurns, "$server")
+            for (turn in 1..20) assertFalse(f.retreat.shouldRetreat(turn))
+            assertTrue(f.withdraw.withdraw(), "$server")
+            assertEquals(wipeTrace, f.trace, "$server")
+            assertFalse(Images.TurnLimitRetreat in f.patterns.keys, "$server")
+            assertFalse(Images.TurnLimitRetreatConfirm in f.patterns.keys, "$server")
+            assertEquals(1, f.retreat.wipeCount)
+        }
+        assertEquals(6, Fixture(server = GameServer.Kr, turns = 6).retreat.limitTurns)
+    }
+
+    @Test
+    fun `weekly route withdraws on a wipe with the switch on, then the route quest ends`() {
+        val f = Fixture().also { it.wipeStaysVisible = false }
+        val battle = mockk<Battle>(relaxed = true)
+        val exit = assertFailsWith<AutoBattle.ExitException> { wipeEntry(f, BattleState(), battle).runSelectedQuest() }
+        assertEquals(AutoBattle.ExitReason.StopAfterThisRun, exit.reason)
+        assertEquals(wipeTrace, f.trace.take(wipeTrace.size))
+        assertEquals(1, exit.state.wipeWithdrawCount)
+    }
+
+    @Test
+    fun `weekly route stops on a wipe when the switch is off`() {
+        val f = Fixture(enabled = false)
+        val battle = mockk<Battle>(relaxed = true)
+        val exit = assertFailsWith<AutoBattle.ExitException> { wipeEntry(f, BattleState(), battle).runSelectedQuest() }
+        assertEquals(AutoBattle.ExitReason.WithdrawDisabled, exit.reason)
+        assertTrue(f.trace.isEmpty())
+    }
+
+    @Test
+    fun `exit state keeps the wipe and turn limit counts apart`() {
+        val f = Fixture(turns = 6)
+        f.withdraw.withdraw(); f.withdraw.withdraw()
+        f.retreat.execute()
+        assertEquals(3, f.retreat.count)
+        assertEquals(2, f.retreat.wipeCount)
+        assertEquals(1, f.retreat.turnLimitCount)
     }
 }

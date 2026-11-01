@@ -193,7 +193,6 @@ LƯU Ý: Bạn có thể phải sử dụng 'Hiển thị bộ nhớ trong' tron
     <string name="p_choose_folder_title">"Chọn thư mục"</string>
     <string name="p_debug_mode">"Chế độ gỡ lỗi"</string>
     <string name="p_debug_mode_summary">"Đánh dấu các khu vực được đánh dấu"</string>
-    <string name="p_enable_withdraw">"Bật \"Đầu hàng\""</string>
     <string name="p_fine_tune">"Tinh chỉnh"</string>
     <string name="p_fine_tune_click_delay">"Khoảng thời gian nhấp chuột nhiều lần"</string>
     <string name="p_fine_tune_click_duration">"Thời lượng nhấp chuột"</string>
@@ -381,7 +380,6 @@ Master"</string>
     <string name="times_ran">"Đã chạy %d lần"</string>
     <string name="times_ran_out_of">"Đã chạy %1$d trong số %2$d lần"</string>
     <string name="times_rolled">"Đã quay %d lần"</string>
-    <string name="times_withdrew">"Đã đầu hàng %d lần"</string>
     <string name="troubleshoot">"Xử lý sự cố"</string>
     <string name="turns_count">"Lượt: %d"</string>
 

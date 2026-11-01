@@ -210,7 +210,6 @@
     <string name="p_choose_folder_title">"选择文件夹"</string>
     <string name="p_debug_mode">"Debug模式"</string>
     <string name="p_debug_mode_summary">"将框出对比图像的区域"</string>
-    <string name="p_enable_withdraw">"启用撤退"</string>
     <string name="p_fine_tune">"微调"</string>
     <string name="p_fine_tune_click_delay">"双击间隔（ms）"</string>
     <string name="p_fine_tune_click_duration">"点击时间（ms）"</string>
@@ -452,7 +451,6 @@
     <string name="times_ran">"已执行 %d 次"</string>
     <string name="times_ran_out_of">"已执行 %1$d / %2$d 次"</string>
     <string name="times_rolled">"已抽取 %d 次"</string>
-    <string name="times_withdrew">"已撤退 %d 次"</string>
     <string name="troubleshoot">"FGA有问题请先点这（GitHub链接）"</string>
     <string name="turns_count">"回合 %d"</string>
 

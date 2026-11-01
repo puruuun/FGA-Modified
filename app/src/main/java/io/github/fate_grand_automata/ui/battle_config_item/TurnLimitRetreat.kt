@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.ui.battle_config_item
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +8,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +23,10 @@ import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
 import io.github.fate_grand_automata.ui.prefs.remember
 
-/** Per battle config: retreat from the quest when the battle reaches turn N (KR and JP only). */
+/**
+ * Per battle config: retreat and restart. Always withdraws on a party wipe; with N >= 1 it also
+ * retreats when the battle reaches turn N (KR and JP only).
+ */
 @Composable
 fun TurnLimitRetreat(
     modifier: Modifier = Modifier,
@@ -45,22 +46,7 @@ fun TurnLimitRetreat(
         var currentTurns by remember(turns) { mutableStateOf(turns) }
         var currentStop by remember(stopAfterStreak) { mutableStateOf(stopAfterStreak) }
 
-        Row {
-            Box(modifier = Modifier.weight(1f).alignByBaseline()) {
-                title(stringResource(R.string.p_battle_config_turn_limit_retreat))
-            }
-
-            TextButton(
-                onClick = {
-                    currentEnabled = config.turnLimitRetreatEnabled.defaultValue
-                    currentTurns = config.turnLimitRetreatTurns.defaultValue
-                    currentStop = config.turnLimitRetreatStopAfterStreak.defaultValue
-                },
-                modifier = Modifier.padding(16.dp, 5.dp).alignByBaseline()
-            ) {
-                Text(stringResource(id = R.string.reset).uppercase())
-            }
-        }
+        title(stringResource(R.string.p_battle_config_turn_limit_retreat))
 
         message(
             text = stringResource(
@@ -77,9 +63,8 @@ fun TurnLimitRetreat(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(
-                    checked = currentEnabled && supported,
-                    onCheckedChange = { currentEnabled = it },
-                    enabled = supported
+                    checked = currentEnabled,
+                    onCheckedChange = { currentEnabled = it }
                 )
                 Text(
                     stringResource(R.string.config_state_on).uppercase(),
@@ -88,9 +73,9 @@ fun TurnLimitRetreat(
             }
 
             Stepper(
-                value = currentTurns,
+                value = if (supported) currentTurns else 0,
                 onValueChange = { currentTurns = it },
-                valueRange = 1..99,
+                valueRange = 0..99,
                 enabled = supported && currentEnabled
             )
 
@@ -98,7 +83,7 @@ fun TurnLimitRetreat(
                 Checkbox(
                     checked = currentStop,
                     onCheckedChange = { currentStop = it },
-                    enabled = supported && currentEnabled
+                    enabled = currentEnabled
                 )
                 Text(stringResource(R.string.p_battle_config_turn_limit_retreat_streak))
             }
@@ -106,7 +91,8 @@ fun TurnLimitRetreat(
             buttons(
                 onSubmit = {
                     enabled = currentEnabled
-                    turns = currentTurns
+                    // Outside KR and JP only the party wipe withdraw exists.
+                    turns = if (supported) currentTurns else 0
                     stopAfterStreak = currentStop
                 },
                 okLabel = stringResource(R.string.save),
@@ -120,8 +106,11 @@ fun TurnLimitRetreat(
         modifier = modifier
     ) {
         ConfigSummaryValue(
-            if (enabled && supported) stringResource(R.string.turn_limit_retreat_turns_value, turns)
-            else stringResource(R.string.config_state_off)
+            when {
+                !enabled -> stringResource(R.string.config_state_off)
+                !supported || turns <= 0 -> stringResource(R.string.turn_limit_retreat_wipe_only)
+                else -> stringResource(R.string.turn_limit_retreat_turns_value, turns)
+            }
         )
     }
 }

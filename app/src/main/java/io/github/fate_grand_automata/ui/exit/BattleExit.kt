@@ -213,21 +213,16 @@ private fun LazyListScope.battleExitContent(
         item { BondSummaryContent(bond) }
     }
 
-    if (state.turnLimitRetreatCount > 0) {
+    val retreatTotal = state.wipeWithdrawCount + state.turnLimitRetreatCount
+    if (retreatTotal > 0) {
         item {
             Text(
-                stringResource(R.string.turn_limit_retreat_count, state.turnLimitRetreatCount),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .padding(16.dp, 5.dp)
-            )
-        }
-    }
-
-    if (state.withdrawCount > 0) {
-        item {
-            Text(
-                stringResource(R.string.times_withdrew, state.withdrawCount),
+                stringResource(
+                    R.string.retreat_count,
+                    retreatTotal,
+                    state.wipeWithdrawCount,
+                    state.turnLimitRetreatCount
+                ),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
                     .padding(16.dp, 5.dp)
@@ -443,7 +438,7 @@ fun PreviewBattleExitContent() {
 //                        MaterialEnum.AmnestyBell to 1,
 //                        MaterialEnum.AuroraSteel to 10
 //                    ),
-                    withdrawCount = 1,
+                    wipeWithdrawCount = 1,
                     totalTime = 1880.seconds,
                     averageTimePerRun = 75.seconds,
                     minTurnsPerRun = 3,

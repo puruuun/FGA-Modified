@@ -71,8 +71,6 @@ class PreferencesImpl @Inject constructor(
 
     override val storySkip by prefs.storySkip
 
-    override val withdrawEnabled by prefs.withdrawEnabled
-
     override val stopOnCEGet by prefs.stopOnCEGet
 
     override val stopOnFirstClearRewards by prefs.stopOnFirstClearRewards

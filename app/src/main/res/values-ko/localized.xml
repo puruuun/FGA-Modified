@@ -256,7 +256,6 @@
     <string name="p_debug_mode_summary">"대조되고 있는 부분 표시하기"</string>
     <string name="p_support_reader_diagnostics">"서포트 판독 진단 저장"</string>
     <string name="p_support_reader_diagnostics_summary">"확인한 서포트마다 점수 이미지와 판독 근거를 저장합니다. 기본값은 꺼짐이며, FGA 저장 폴더의 diagnostics 폴더에 저장됩니다."</string>
-    <string name="p_enable_withdraw">"퇴각 활성화"</string>
     <string name="p_fine_tune">"미세 조정"</string>
     <string name="p_fine_tune_click_delay">"반복 터치 사이 딜레이 (ms)"</string>
     <string name="p_fine_tune_click_duration">"터치 지속 시간 (ms)"</string>
@@ -538,7 +537,6 @@
     <string name="times_ran">"%d번 반복함"</string>
     <string name="times_ran_out_of">"%2$d번 중 %1$d번 반복함"</string>
     <string name="times_rolled">"%d번 돌림"</string>
-    <string name="times_withdrew">"%d번 철수함"</string>
     <string name="troubleshoot">"문제 해결"</string>
     <string name="turns_count">"턴: %d"</string>
 
@@ -880,13 +878,14 @@
     <string name="game_area_calibration_scales">두 버튼의 배율이 서로 다릅니다. 화면 배치를 유지하고 메인 화면에서 다시 시도하세요.</string>
     <string name="game_area_calibration_bounds">화면 안에서 지원되는 비율의 게임 영역을 확정하지 못했습니다. 화면 배치를 확인하고 다시 시도하세요.</string>
     <string name="game_area_calibration_check">계산한 영역을 적용한 뒤 MENU를 확인하지 못했습니다. 저장하지 않았습니다. 메인 화면에서 다시 시도하세요.</string>
-    <string name="p_battle_config_turn_limit_retreat">"턴 제한 퇴각"</string>
-    <string name="p_battle_config_turn_limit_retreat_label">"퇴각"</string>
-    <string name="p_battle_config_turn_limit_retreat_message">"전투가 이 턴에 도달하면 그 턴을 진행하지 않고 퀘스트에서 퇴각한 뒤 퀘스트를 다시 시작합니다. 커맨드 시작 조건으로 대기한 턴은 세지 않습니다. 퇴각은 AP를 소모하며 주회로 세지 않습니다. 한국 서버와 일본 서버에서만 사용할 수 있습니다."</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">"턴 제한 퇴각은 한국 서버와 일본 서버에서만 사용할 수 있습니다."</string>
+    <string name="p_battle_config_turn_limit_retreat">"퇴각 후 재시작"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"퇴각 후 재시작"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"전투가 이 턴에 도달하면 그 턴을 진행하지 않고 퀘스트에서 퇴각한 뒤 퀘스트를 다시 시작합니다. 커맨드 시작 조건으로 대기한 턴은 세지 않습니다. 0턴이면 파티가 전멸했을 때만 퇴각합니다."</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">"이 서버에서는 0턴(전멸 시 퇴각)만 사용할 수 있습니다. 턴 제한은 한국 서버와 일본 서버에서 사용할 수 있습니다."</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"3회 연속 퇴각 시 정지"</string>
     <string name="turn_limit_retreat_turns_value">"%d턴 도달 시 퇴각"</string>
-    <string name="turn_limit_retreat_count">"턴 제한 퇴각 %d회"</string>
+    <string name="turn_limit_retreat_wipe_only">"전멸 시 퇴각"</string>
+    <string name="retreat_count">"퇴각 %1$d회 (전멸 %2$d회, 턴 제한 %3$d회)"</string>
     <string name="turn_limit_retreat_failed">"턴 제한 퇴각에 실패했습니다. 다른 조작을 하기 전에 중단했습니다."</string>
-    <string name="turn_limit_retreat_streak_stop">"턴 제한 퇴각이 3회 연속 발생해 정지했습니다."</string>
+    <string name="turn_limit_retreat_streak_stop">"퇴각이 3회 연속 발생해 정지했습니다."</string>
 </resources>

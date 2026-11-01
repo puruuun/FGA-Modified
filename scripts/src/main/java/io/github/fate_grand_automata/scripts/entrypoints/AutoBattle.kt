@@ -152,6 +152,16 @@ class AutoBattle @Inject constructor(
         turnLimitRetreat.checkStreak()
     }
 
+    /** A party wipe: withdraw, then reset the run like a turn-limit retreat (no run is counted). */
+    private fun wipeWithdraw() {
+        if (!withdraw.withdraw()) return
+        isInBattle = false
+        storySkipPossible = true
+        isContinuing = false
+        battle.abandonRun()
+        turnLimitRetreat.checkStreak()
+    }
+
     private fun runLoop(selectedQuest: Boolean = false): Nothing {
         try {
             if (selectedQuest) { battle.resetState(); afterSelectingQuest() }
@@ -202,7 +212,7 @@ class AutoBattle @Inject constructor(
         val refillLimit: Int,
         val ceDropCount: Int,
         val materials: Map<MaterialEnum, Int>,
-        val withdrawCount: Int,
+        val wipeWithdrawCount: Int = 0,
         val turnLimitRetreatCount: Int = 0,
         val totalTime: Duration,
         val averageTimePerRun: Duration,
@@ -220,8 +230,8 @@ class AutoBattle @Inject constructor(
             refillLimit = prefs.selectedServerConfigPref.currentAppleCount,
             ceDropCount = ceDropsTracker.count,
             materials = matTracker.farmed,
-            withdrawCount = withdraw.count,
-            turnLimitRetreatCount = turnLimitRetreat.count,
+            wipeWithdrawCount = turnLimitRetreat.wipeCount,
+            turnLimitRetreatCount = turnLimitRetreat.turnLimitCount,
             totalTime = state.totalBattleTime,
             averageTimePerRun = state.averageTimePerRun,
             minTurnsPerRun = state.minTurnsPerRun,
@@ -254,7 +264,7 @@ class AutoBattle @Inject constructor(
             { isRepeatScreen() } to { repeatQuest() },
             { isInOrdealCallOutOfPodsScreen() } to { closeBottomCentreDialog() },
             { isInInterludeEndScreen() } to { locations.interludeCloseClick.click() },
-            { withdraw.needsToWithdraw() } to { withdraw.withdraw() },
+            { withdraw.needsToWithdraw() } to { wipeWithdraw() },
             { needsToStorySkip() } to { skipStory() },
             { isFriendRequestScreen() } to { skipFriendRequestScreen() },
             { isBond10CEReward() } to { bond10CEReward() },

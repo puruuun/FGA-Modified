@@ -172,7 +172,6 @@ Skills"</string>
     <string name="p_auto_choose_target">"Auto choose target"</string>
     <string name="p_story_skip">"Story Skip"</string>
     <string name="p_story_skip_summary">"Skips the story automatically. This feature is very unstable and might cause FGA to break, use it at your own risk."</string>
-    <string name="p_enable_withdraw">"Enable Withdraw"</string>
     <string name="p_stop_on_ce_get">"Stop on CE GET"</string>
     <string name="p_stop_on_first_clear_rewards">"Stop on first-clear rewards"</string>
     <string name="p_stop_on_ce_get_summary">"First-time quest completion rewards and Bond CEs (Experimental)"</string>
@@ -346,7 +345,6 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="unknown_card_type">"Card type could not be detected (Buster, Quick, Arts)"</string>
     <string name="unknown_servant_card">"Card belongs to an unknown Servant"</string>
     <string name="support_list_updated_in">"Support list will be updated in %s"</string>
-    <string name="times_withdrew">"Withdrew %d times"</string>
     <string name="avg_time_per_run">"Average time per run: %s"</string>
     <string name="turns_count">"Turns: %d"</string>
     <string name="turns_stats">"Turns: %1$d (min), %2$.02f (avg), %3$d (max)"</string>
@@ -960,13 +958,14 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="game_area_calibration_scales">The two buttons have different scales. Keep the display unchanged and try again on the main screen.</string>
     <string name="game_area_calibration_bounds">Could not determine a game picture inside the display at a supported aspect ratio. Check the screen layout and try again.</string>
     <string name="game_area_calibration_check">MENU was not found after applying the proposed crop. Nothing was saved. Try again on the main screen.</string>
-    <string name="p_battle_config_turn_limit_retreat">"Retreat at Turn Limit"</string>
-    <string name="p_battle_config_turn_limit_retreat_label">"Retreat"</string>
-    <string name="p_battle_config_turn_limit_retreat_message">When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. A retreat uses AP and is not counted as a run. Available on the KR and JP servers only.</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">Retreat at turn limit is available on the KR and JP servers only.</string>
+    <string name="p_battle_config_turn_limit_retreat">"Retreat and Restart"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"Retreat and Restart"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. With 0 turns, it only retreats when the party is wiped out. Retreats use AP and are not counted as runs."</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">"Only 0 turns (retreat when the party is wiped out) is available on this server. Turn limits work on the KR and JP servers."</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"Stop after 3 retreats in a row"</string>
     <string name="turn_limit_retreat_turns_value">"Turn %d"</string>
-    <string name="turn_limit_retreat_count">"Retreated at turn limit %d times"</string>
+    <string name="turn_limit_retreat_wipe_only">"Retreat on wipe"</string>
+    <string name="retreat_count">"Retreated %1$d times (wipe %2$d, turn limit %3$d)"</string>
     <string name="turn_limit_retreat_failed">"Could not retreat from the quest at the turn limit. Stopped before touching anything else."</string>
-    <string name="turn_limit_retreat_streak_stop">"Retreated 3 times in a row at the turn limit."</string>
+    <string name="turn_limit_retreat_streak_stop">"Retreated 3 times in a row."</string>
 </resources>
