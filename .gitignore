@@ -12,5 +12,9 @@ build
 custom-game-area/image.jpg
 /crash/
 
+# Release signing: private keys and their config never enter the repo (the public lineage does)
+*.jks
+signing.properties
+
 # Codex agent local copies of repo skills
 .agents/

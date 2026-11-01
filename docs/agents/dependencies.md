@@ -42,8 +42,9 @@
   with worse invalidation.
 - `release` builds need `app/fgautomata.keystore` (GPG-decrypted in CI) and `KEYSTORE_PASS`.
   The fork does not publish to the Play Store. Upstream's `fastlane/`, `Gemfile` and
-  `Gemfile.lock` were removed (owner, 2026-10-30). Stable and beta APKs come from `stable.yml`
-  and `beta.yml`, or from local `:app:assembleCi` / `:app:assembleBeta`.
+  `Gemfile.lock` were removed (owner, 2026-10-30). Stable and beta APKs are built and
+  signed locally with `:app:assembleCi` / `:app:assembleBeta` (the `stable.yml` and `beta.yml`
+  workflows were removed with the release key rotation, #128).
 
 ## Bump order
 
