@@ -18,6 +18,7 @@ import io.github.fate_grand_automata.prefs.core.SpamConfigCore
 import io.github.fate_grand_automata.prefs.core.ShuffleConfigCore
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.NpSpamConfig
@@ -209,6 +210,35 @@ class ExecutionProfileCoreTest {
         assertThat(primary.useServantPriority.get()).isEqualTo(true)
         assertThat(secondary.skillCommand.get()).isEqualTo("")
         assertThat(secondary.useServantPriority.get()).isEqualTo(false)
+    }
+
+    @Test
+    fun `per entry style and servant priority are empty for old configs and travel with the export`() {
+        val prefs = MemoryPrefs()
+        prefs.data["card_priority_style"] = "Servant"
+        prefs.data["use_servant_priority"] = true
+        val old = ExecutionProfileCore(PrefMaker(prefs))
+        assertThat(old.cardPriorityStyles.get()).isEqualTo(emptyList())
+        assertThat(old.useServantPriorities.get()).isEqualTo(emptyList())
+        assertThat(old.cardPriorityStyle.get()).isEqualTo(CardPriorityStyle.Servant)
+
+        val secondary = ExecutionProfileCore(PrefMaker(prefs), "secondary_")
+        old.cardPriorityStyles.set(listOf(CardPriorityStyle.Affinity, CardPriorityStyle.Servant))
+        old.useServantPriorities.set(listOf(true, false))
+        secondary.useServantPriorities.set(listOf(false))
+        assertThat(prefs.data["card_priority_styles"]).isEqualTo("Affinity,Servant")
+        assertThat(prefs.data["use_servant_priorities"]).isEqualTo("true,false")
+        assertThat(prefs.data["secondary_use_servant_priorities"]).isEqualTo("false")
+        assertThat(secondary.cardPriorityStyles.get()).isEqualTo(emptyList())
+
+        val restored = MemoryPrefs()
+        val editor = restored.edit()
+        editor.import(BattleConfigFile.decode(BattleConfigFile.encode(prefs.all)))
+        editor.apply()
+        val back = ExecutionProfileCore(PrefMaker(restored))
+        assertThat(back.cardPriorityStyles.get()).isEqualTo(listOf(CardPriorityStyle.Affinity, CardPriorityStyle.Servant))
+        assertThat(back.useServantPriorities.get()).isEqualTo(listOf(true, false))
+        assertThat(back.cardPriorityStyle.get()).isEqualTo(CardPriorityStyle.Servant)
     }
 
     @Test

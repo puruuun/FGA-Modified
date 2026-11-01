@@ -55,6 +55,8 @@ class CardWaitingTest {
         every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
         every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
         every { config.useServantPriority } returns false
+        every { config.useServantPriorities } returns emptyList()
+        every { config.cardPriorityStyles } returns emptyList()
         every { config.spam } returns listOf(
             ServantSpamConfig(np = NpSpamConfig(waves = setOf(1), spam = SpamEnum.Spam))
         )

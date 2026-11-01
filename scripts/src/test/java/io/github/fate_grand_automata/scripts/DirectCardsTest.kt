@@ -50,6 +50,8 @@ class DirectCardsTest {
             every { config.secondaryStartEnabled } returns true
             every { config.secondaryExecution } returns secondary
             every { config.useServantPriority } returns useServantPriority
+            every { config.useServantPriorities } returns emptyList()
+            every { config.cardPriorityStyles } returns emptyList()
             every { config.servantPriority } returns ServantPriorityPerWave.of(servantPriority)
             every { config.cardPriority } returns CardPriorityPerWave.of(cardPriority)
             every { config.braveChains } returns listOf(BraveChainEnum.Avoid)

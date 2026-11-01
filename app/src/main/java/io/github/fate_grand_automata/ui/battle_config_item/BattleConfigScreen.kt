@@ -46,11 +46,14 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.prefs.core.ExecutionProfileCore
+import io.github.fate_grand_automata.scripts.enums.CardAffinityEnum
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardScore
+import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.VerticalDivider
@@ -318,15 +321,11 @@ private fun BattleConfigContent(
                             if (cardCountMode) {
                                 ProfilePriorityPreference(config.execution, 0, navigate)
                             } else {
-                                val cardPriority by vm.cardPriority.collectAsState(null)
-                                val singleSplit by config.execution.cardPrioritySplit.remember()
-                                cardPriority?.let {
-                                    Preference(
-                                        title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
-                                        summary = { CardPrioritySummary(it, singleSplit) },
-                                        onClick = { navigate(BattleConfigDestination.CardPriority()) }
-                                    )
-                                }
+                                Preference(
+                                    title = { Text(stringResource(R.string.p_battle_config_card_priority)) },
+                                    summary = { CardPrioritySummary(config.execution) },
+                                    onClick = { navigate(BattleConfigDestination.CardPriority()) }
+                                )
                             }
                             if (showSecond) {
                                 HorizontalDivider()
@@ -368,20 +367,9 @@ private fun ProfilePriorityPreference(
     index: Int,
     navigate: (BattleConfigDestination) -> Unit
 ) {
-    val priority by profile.cardPriority.remember()
-    val servantPriority by profile.useServantPriority.remember()
-    val split by profile.cardPrioritySplit.remember()
     Preference(
         title = { Text(stringResource(R.string.command_start_edit_priority, index + 1)) },
-        summary = {
-            Column {
-                CardPrioritySummary(priority, split)
-                Text(
-                    stringResource(R.string.p_battle_config_use_servant_priority) + ": " +
-                        stringResource(if (servantPriority) R.string.config_state_on else R.string.config_state_off)
-                )
-            }
-        },
+        summary = { CardPrioritySummary(profile) },
         onClick = { navigate(BattleConfigDestination.CardPriority(index)) }
     )
 }
@@ -391,13 +379,35 @@ private val CardScore.color: Color
         return colorResource(getColorRes())
     }
 
+/**
+ * One row per wave or turn entry. Each row shows the list that matches the entry's own style,
+ * and a marker when the entry has servant priority on. It observes the prefs, so it updates when
+ * the card priority screen is left.
+ */
 @Composable
-private fun CardPrioritySummary(cardPriority: CardPriorityPerWave, split: CardPrioritySplit) {
+private fun CardPrioritySummary(profile: ExecutionProfileCore) {
+    val cardPriority by profile.cardPriority.remember()
+    val servantCards by profile.servantCardPriority.remember()
+    val split by profile.cardPrioritySplit.remember()
+    val legacyStyle by profile.cardPriorityStyle.remember()
+    val styles by profile.cardPriorityStyles.remember()
+    val legacyServantPriority by profile.useServantPriority.remember()
+    val servantPriorities by profile.useServantPriorities.remember()
+
+    val effectiveStyles = PerEntrySettings.withLegacy(styles, legacyStyle)
+    val effectiveFlags = PerEntrySettings.withLegacy(servantPriorities, legacyServantPriority)
+
     Column(
         modifier = Modifier
             .padding(vertical = 5.dp)
     ) {
-        cardPriority.forEachIndexed { wave, priorities ->
+        cardPriority.forEachIndexed { wave, affinityPriorities ->
+            val servantStyle = PerEntrySettings.at(effectiveStyles, wave, CardPriorityStyle.Affinity) ==
+                CardPriorityStyle.Servant
+            val servantPriorityOn = !servantStyle && PerEntrySettings.at(effectiveFlags, wave, false)
+            val priorities: List<Pair<String, CardScore>> =
+                if (servantStyle) servantCards.atWave(wave).map { it.toString() to CardScore(it.type, CardAffinityEnum.Normal) }
+                else affinityPriorities.map { it.toString() to it }
             Row(
                 modifier = Modifier
                     .padding(vertical = 2.dp),
@@ -443,7 +453,7 @@ private fun CardPrioritySummary(cardPriority: CardPriorityPerWave, split: CardPr
                                     fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
                                     fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                                     letterSpacing = MaterialTheme.typography.bodyMedium.letterSpacing,
-                                    color = it.color,
+                                    color = it.second.color,
                                     shadow = Shadow(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         offset = Offset(1f, 1f),
@@ -451,7 +461,7 @@ private fun CardPrioritySummary(cardPriority: CardPriorityPerWave, split: CardPr
                                     )
                                 )
                             ) {
-                                append(it.toString())
+                                append(it.first)
                             }
                         }
                     }
@@ -459,6 +469,14 @@ private fun CardPrioritySummary(cardPriority: CardPriorityPerWave, split: CardPr
                         text = priorityString,
                         modifier = Modifier.padding(horizontal = 5.dp),
                         textAlign = TextAlign.Justify
+                    )
+                }
+
+                if (servantPriorityOn) {
+                    Text(
+                        stringResource(R.string.card_priority_summary_servant_priority),
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }

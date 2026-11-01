@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.scripts.modules
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
-import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
@@ -52,19 +51,11 @@ class Card @Inject constructor(
         val index = priorityIndex()
         val cardsOrderedByPriority = execution.active.priority.sort(cards, index)
 
-        fun <T> List<T>.inCurrentWave(default: T) =
-            if (isNotEmpty())
-                this[index.coerceIn(indices)]
-            else default
-
-        val braveChainsPerWave = execution.active.braveChains
-        val rearrangeCardsPerWave = execution.active.rearrangeCards
-
         return braveChains.pick(
             cards = cardsOrderedByPriority,
             npUsage = npUsage,
-            braveChains = braveChainsPerWave.inCurrentWave(BraveChainEnum.None),
-            rearrange = rearrangeCardsPerWave.inCurrentWave(false)
+            braveChains = execution.active.braveChainAt(index),
+            rearrange = execution.active.rearrangeAt(index)
         ).map { it.card }
     }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,20 +25,16 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
-import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.util.stringRes
-import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
 import kotlinx.coroutines.launch
 
 @Composable
 fun CardPriorityView(
     items: SnapshotStateList<CardPriorityListItem>,
-    useServantPriority: Pref<Boolean>,
     cardPrioritySplit: Pref<CardPrioritySplit>,
-    cardPriorityStyle: Pref<CardPriorityStyle>,
     profileIndex: Int = 0
 ) {
     val pagerState = rememberPagerState(pageCount = {items.size},)
@@ -60,20 +57,7 @@ fun CardPriorityView(
                 entries = CardPrioritySplit.entries.associateWith { stringResource(it.stringRes) }
             )
 
-            val style by cardPriorityStyle.remember()
-            cardPriorityStyle.DropdownPreference(
-                title = stringResource(R.string.card_priority_style),
-                entries = CardPriorityStyle.entries.associateWith { stringResource(it.stringRes) }
-            )
-
-            val servantStyle = style == CardPriorityStyle.Servant
-            val servantPriority by useServantPriority.remember()
-            useServantPriority.SwitchPreference(
-                enabled = !servantStyle,
-                title = stringResource(R.string.p_battle_config_use_servant_priority),
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-            )
+            Spacer(Modifier.padding(bottom = 16.dp))
 
             CardPriorityWaveSelector(
                 items = items,
@@ -102,10 +86,7 @@ fun CardPriorityView(
                         Text(stringResource(R.string.card_priority_low))
                     }
 
-                    items.getOrNull(it)?.Render(
-                        useServantPriority = servantPriority,
-                        style = style
-                    )
+                    items.getOrNull(it)?.Render()
                 }
             }
         }

@@ -9,6 +9,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -33,10 +34,9 @@ import io.github.fate_grand_automata.ui.prefs.listDialog
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun CardPriorityListItem.Render(
-    useServantPriority: Boolean,
-    style: CardPriorityStyle = CardPriorityStyle.Affinity
-) {
+fun CardPriorityListItem.Render() {
+    var style by style
+    var useServantPriority by useServantPriority
     val servantStyle = style == CardPriorityStyle.Servant
 
     Column(
@@ -60,51 +60,83 @@ fun CardPriorityListItem.Render(
 
         Card(
             modifier = Modifier
-                .padding(16.dp)
-                .alpha(if (servantStyle) 0.38f else 1f),
+                .padding(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            val styleDialog = listDialog(
+                selected = style,
+                onSelectedChange = { style = it },
+                entries = CardPriorityStyle.entries.associateWith { stringResource(it.stringRes) },
+                title = stringResource(R.string.card_priority_style)
+            )
+
+            ListItem(
+                modifier = Modifier.clickable { styleDialog.show() },
+                headlineContent = { Text(stringResource(R.string.card_priority_style)) },
+                supportingContent = { Text(stringResource(style.stringRes)) },
+                colors = FGAListItemColors()
+            )
+
+            // Servant style ignores the rest of this card for this entry only.
+            Column(
+                modifier = Modifier.alpha(if (servantStyle) 0.38f else 1f)
             ) {
-                var braveChains by braveChains
-
-                val braveChainDialog = listDialog(
-                    selected = braveChains,
-                    onSelectedChange = { braveChains = it },
-                    entries = BraveChainEnum.entries
-                        .associateWith { stringResource(it.stringRes) },
-                    title = stringResource(R.string.p_brave_chains)
-                )
-
                 ListItem(
                     modifier = Modifier
-                        .weight(1f)
-                        .clickable(enabled = !servantStyle) { braveChainDialog.show() },
-                    headlineContent = { Text(stringResource(R.string.p_brave_chains)) },
-                    supportingContent = { Text(stringResource(braveChains.stringRes)) },
-                    colors = FGAListItemColors()
-                )
-
-                var rearrange by rearrangeCards
-
-                ListItem(
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .clickable(enabled = !servantStyle) { rearrange = !rearrange },
-                    headlineContent = { Text(stringResource(R.string.p_rearrange_cards)) },
+                        .clickable(enabled = !servantStyle) { useServantPriority = !useServantPriority },
+                    headlineContent = { Text(stringResource(R.string.p_battle_config_use_servant_priority)) },
                     trailingContent = {
-                        Checkbox(
-                            checked = rearrange,
-                            onCheckedChange = { rearrange = it },
+                        Switch(
+                            checked = useServantPriority,
+                            onCheckedChange = { useServantPriority = it },
                             enabled = !servantStyle
                         )
                     },
                     colors = FGAListItemColors()
                 )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    var braveChains by braveChains
+
+                    val braveChainDialog = listDialog(
+                        selected = braveChains,
+                        onSelectedChange = { braveChains = it },
+                        entries = BraveChainEnum.entries
+                            .associateWith { stringResource(it.stringRes) },
+                        title = stringResource(R.string.p_brave_chains)
+                    )
+
+                    ListItem(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(enabled = !servantStyle) { braveChainDialog.show() },
+                        headlineContent = { Text(stringResource(R.string.p_brave_chains)) },
+                        supportingContent = { Text(stringResource(braveChains.stringRes)) },
+                        colors = FGAListItemColors()
+                    )
+
+                    var rearrange by rearrangeCards
+
+                    ListItem(
+                        modifier = Modifier
+                            .weight(1.1f)
+                            .clickable(enabled = !servantStyle) { rearrange = !rearrange },
+                        headlineContent = { Text(stringResource(R.string.p_rearrange_cards)) },
+                        trailingContent = {
+                            Checkbox(
+                                checked = rearrange,
+                                onCheckedChange = { rearrange = it },
+                                enabled = !servantStyle
+                            )
+                        },
+                        colors = FGAListItemColors()
+                    )
+                }
             }
         }
 

@@ -222,6 +222,8 @@ class ServantCardPriorityTest {
         every { config.cardPriorityStyle } returns profile.cardPriorityStyle
         every { config.servantCardPriority } returns profile.servantCardPriority
         every { config.useServantPriority } returns profile.useServantPriority
+        every { config.useServantPriorities } returns profile.useServantPriorities
+        every { config.cardPriorityStyles } returns profile.cardPriorityStyles
         every { config.servantPriority } returns profile.servantPriority
         every { config.braveChains } returns profile.braveChains
         every { config.rearrangeCards } returns profile.rearrangeCards
@@ -232,8 +234,8 @@ class ServantCardPriorityTest {
     fun `servant style ignores the stored brave chains rearrange and servant priority`() {
         val active = BattleExecution(configOf(profile)).active
 
-        assertThat(active.braveChains).isEmpty()
-        assertThat(active.rearrangeCards).isEmpty()
+        assertThat(active.braveChainAt(0)).isEqualTo(BraveChainEnum.None)
+        assertThat(active.rearrangeAt(0)).isEqualTo(false)
         assertThat(active.priority.sort(hand, 0).map { it.card }).containsExactly(A, E, C, D, B)
     }
 
@@ -249,8 +251,8 @@ class ServantCardPriorityTest {
         }
         val active = BattleExecution(configOf(affinity)).active
 
-        assertThat(active.braveChains).isEqualTo(affinity.braveChains)
-        assertThat(active.rearrangeCards).isEqualTo(affinity.rearrangeCards)
+        assertThat(active.braveChainAt(0)).isEqualTo(affinity.braveChains[0])
+        assertThat(active.rearrangeAt(0)).isEqualTo(affinity.rearrangeCards[0])
         // Servant priority 3, 2, 1: the third servant's card first.
         assertThat(active.priority.sort(hand, 0).first().card).isEqualTo(D)
     }

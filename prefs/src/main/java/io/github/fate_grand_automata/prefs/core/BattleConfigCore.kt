@@ -40,8 +40,10 @@ class BattleConfigCore(
     val cardPriority get() = execution.cardPriority
     val cardPrioritySplit get() = execution.cardPrioritySplit
     val cardPriorityStyle get() = execution.cardPriorityStyle
+    val cardPriorityStyles get() = execution.cardPriorityStyles
     val servantCardPriority get() = execution.servantCardPriority
     val useServantPriority get() = execution.useServantPriority
+    val useServantPriorities get() = execution.useServantPriorities
     val servantPriority get() = execution.servantPriority
     val rearrangeCards get() = execution.rearrangeCards
     val braveChains get() = execution.braveChains

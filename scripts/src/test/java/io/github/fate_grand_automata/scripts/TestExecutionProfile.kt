@@ -13,8 +13,10 @@ class TestExecutionProfile(
     override var cardPriority: CardPriorityPerWave = CardPriorityPerWave.default,
     override val cardPrioritySplit: CardPrioritySplit = CardPrioritySplit.Wave,
     override val cardPriorityStyle: CardPriorityStyle = CardPriorityStyle.Affinity,
+    override val cardPriorityStyles: List<CardPriorityStyle> = emptyList(),
     override val servantCardPriority: ServantCardPriorityPerWave = ServantCardPriorityPerWave.default,
     override val useServantPriority: Boolean = false,
+    override val useServantPriorities: List<Boolean> = emptyList(),
     override val servantPriority: ServantPriorityPerWave = ServantPriorityPerWave.default,
     override val braveChains: List<BraveChainEnum> = emptyList(),
     override val rearrangeCards: List<Boolean> = emptyList()

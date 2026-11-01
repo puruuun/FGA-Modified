@@ -5,19 +5,39 @@ import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardScore
 import io.github.fate_grand_automata.scripts.models.ParsedCard
+import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.ServantCardKey
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
-import io.github.lib_automata.dagger.ScriptScope
-import javax.inject.Inject
 
-@ScriptScope
-class FaceCardPriority @Inject constructor(
+class FaceCardPriority(
     private val cardPriority: CardPriorityPerWave,
-    private val servantPriority: ServantPriorityPerWave?,
-    private val style: CardPriorityStyle = CardPriorityStyle.Affinity,
+    private val servantPriority: ServantPriorityPerWave,
+    /** One style per wave or turn entry; the last entry repeats. */
+    private val styles: List<CardPriorityStyle>,
+    /** One switch per entry; ignored for an entry whose style is Servant. */
+    private val useServantPriorities: List<Boolean>,
     private val servantCardPriority: ServantCardPriorityPerWave = ServantCardPriorityPerWave.default
 ) {
+    /** Single style and optional servant priority for every entry. */
+    constructor(
+        cardPriority: CardPriorityPerWave,
+        servantPriority: ServantPriorityPerWave?,
+        style: CardPriorityStyle = CardPriorityStyle.Affinity,
+        servantCardPriority: ServantCardPriorityPerWave = ServantCardPriorityPerWave.default
+    ) : this(
+        cardPriority,
+        servantPriority ?: ServantPriorityPerWave.default,
+        listOf(style),
+        listOf(servantPriority != null),
+        servantCardPriority
+    )
+
+    fun styleAt(entry: Int) = PerEntrySettings.at(styles, entry, CardPriorityStyle.Affinity)
+
+    fun useServantPriorityAt(entry: Int) =
+        styleAt(entry) != CardPriorityStyle.Servant && PerEntrySettings.at(useServantPriorities, entry, false)
+
 
     private fun applyCardPriority(
         cards: List<ParsedCard>,
@@ -81,8 +101,7 @@ class FaceCardPriority @Inject constructor(
         cards: List<ParsedCard>,
         stage: Int
     ): List<ParsedCard> =
-        if (style == CardPriorityStyle.Servant) applyServantCardPriority(cards, stage)
-        else servantPriority
-            ?.let { applyServantPriority(cards, it, stage) }
-            ?: applyCardPriority(cards, stage)
+        if (styleAt(stage) == CardPriorityStyle.Servant) applyServantCardPriority(cards, stage)
+        else if (useServantPriorityAt(stage)) applyServantPriority(cards, servantPriority, stage)
+        else applyCardPriority(cards, stage)
 }

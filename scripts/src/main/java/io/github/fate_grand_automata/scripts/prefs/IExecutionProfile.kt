@@ -13,10 +13,14 @@ interface IExecutionProfile {
     var cardPriority: CardPriorityPerWave
     /** Whether the card priority entries follow waves (default) or the turns of the run. */
     val cardPrioritySplit: CardPrioritySplit
-    /** Servant style ranks cards by field position and type; it ignores servant priority, brave chains and rearrange. */
+    /** Legacy single style. A Servant entry ranks cards by field position and type and ignores servant priority, brave chains and rearrange. */
     val cardPriorityStyle: CardPriorityStyle
+    /** Style per entry; empty means every entry uses [cardPriorityStyle]. The last entry repeats. */
+    val cardPriorityStyles: List<CardPriorityStyle>
     val servantCardPriority: ServantCardPriorityPerWave
     val useServantPriority: Boolean
+    /** Servant priority switch per entry; empty means every entry uses [useServantPriority]. */
+    val useServantPriorities: List<Boolean>
     val servantPriority: ServantPriorityPerWave
     val rearrangeCards: List<Boolean>
     val braveChains: List<BraveChainEnum>

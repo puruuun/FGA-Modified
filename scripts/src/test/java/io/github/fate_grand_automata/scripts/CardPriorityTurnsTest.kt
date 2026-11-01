@@ -57,6 +57,8 @@ class CardPriorityTurnsTest {
             every { config.rearrangeCards } returns rearrange
             every { config.braveChains } returns braveChains
             every { config.useServantPriority } returns false
+            every { config.useServantPriorities } returns emptyList()
+            every { config.cardPriorityStyles } returns emptyList()
             every { config.spam } returns emptyList<ServantSpamConfig>()
             val execution = BattleExecution(config)
             card = Card(mockk(relaxed = true), tracker, state, caster, mockk<CardParser>(), ApplyBraveChains(), execution)

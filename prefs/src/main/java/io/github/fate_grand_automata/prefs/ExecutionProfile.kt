@@ -8,8 +8,10 @@ internal class ExecutionProfile(core: ExecutionProfileCore) : IExecutionProfile 
     override var cardPriority by core.cardPriority
     override val cardPrioritySplit by core.cardPrioritySplit
     override val cardPriorityStyle by core.cardPriorityStyle
+    override val cardPriorityStyles by core.cardPriorityStyles
     override val servantCardPriority by core.servantCardPriority
     override val useServantPriority by core.useServantPriority
+    override val useServantPriorities by core.useServantPriorities
     override val servantPriority by core.servantPriority
     override val rearrangeCards by core.rearrangeCards
     override val braveChains by core.braveChains
