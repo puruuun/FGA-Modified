@@ -309,7 +309,6 @@ private fun BattleConfigContent(
 
                                 TurnLimitRetreat(
                                     config = config,
-                                    supported = vm.turnLimitRetreatSupported,
                                     modifier = Modifier.weight(1f)
                                 )
                             }

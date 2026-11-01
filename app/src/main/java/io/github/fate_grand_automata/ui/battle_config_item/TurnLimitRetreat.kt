@@ -30,8 +30,7 @@ import io.github.fate_grand_automata.ui.prefs.remember
 @Composable
 fun TurnLimitRetreat(
     modifier: Modifier = Modifier,
-    config: BattleConfigCore,
-    supported: Boolean
+    config: BattleConfigCore
 ) {
     var enabled by config.turnLimitRetreatEnabled.remember()
     var turns by config.turnLimitRetreatTurns.remember()
@@ -49,10 +48,7 @@ fun TurnLimitRetreat(
         title(stringResource(R.string.p_battle_config_turn_limit_retreat))
 
         message(
-            text = stringResource(
-                if (supported) R.string.p_battle_config_turn_limit_retreat_message
-                else R.string.p_battle_config_turn_limit_retreat_unsupported
-            )
+            text = stringResource(R.string.p_battle_config_turn_limit_retreat_message)
         )
 
         Column(
@@ -73,10 +69,10 @@ fun TurnLimitRetreat(
             }
 
             Stepper(
-                value = if (supported) currentTurns else 0,
+                value = currentTurns,
                 onValueChange = { currentTurns = it },
                 valueRange = 0..99,
-                enabled = supported && currentEnabled
+                enabled = currentEnabled
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -91,8 +87,7 @@ fun TurnLimitRetreat(
             buttons(
                 onSubmit = {
                     enabled = currentEnabled
-                    // Outside KR and JP only the party wipe withdraw exists.
-                    turns = if (supported) currentTurns else 0
+                    turns = currentTurns
                     stopAfterStreak = currentStop
                 },
                 okLabel = stringResource(R.string.save),
@@ -108,7 +103,7 @@ fun TurnLimitRetreat(
         ConfigSummaryValue(
             when {
                 !enabled -> stringResource(R.string.config_state_off)
-                !supported || turns <= 0 -> stringResource(R.string.turn_limit_retreat_wipe_only)
+                turns <= 0 -> stringResource(R.string.turn_limit_retreat_wipe_only)
                 else -> stringResource(R.string.turn_limit_retreat_turns_value, turns)
             }
         )

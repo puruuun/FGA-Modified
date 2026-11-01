@@ -961,7 +961,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_battle_config_turn_limit_retreat">"Retreat and Restart"</string>
     <string name="p_battle_config_turn_limit_retreat_label">"Retreat and Restart"</string>
     <string name="p_battle_config_turn_limit_retreat_message">"When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. With 0 turns, it only retreats when the party is wiped out. Retreats use AP and are not counted as runs."</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">"Only 0 turns (retreat when the party is wiped out) is available on this server. Turn limits work on the KR and JP servers."</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"Stop after 3 retreats in a row"</string>
     <string name="turn_limit_retreat_turns_value">"Turn %d"</string>
     <string name="turn_limit_retreat_wipe_only">"Retreat on wipe"</string>

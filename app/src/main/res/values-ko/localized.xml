@@ -881,7 +881,6 @@
     <string name="p_battle_config_turn_limit_retreat">"퇴각 후 재시작"</string>
     <string name="p_battle_config_turn_limit_retreat_label">"퇴각 후 재시작"</string>
     <string name="p_battle_config_turn_limit_retreat_message">"전투가 이 턴에 도달하면 그 턴을 진행하지 않고 퀘스트에서 퇴각한 뒤 퀘스트를 다시 시작합니다. 커맨드 시작 조건으로 대기한 턴은 세지 않습니다. 0턴이면 파티가 전멸했을 때만 퇴각합니다."</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">"이 서버에서는 0턴(전멸 시 퇴각)만 사용할 수 있습니다. 턴 제한은 한국 서버와 일본 서버에서 사용할 수 있습니다."</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"3회 연속 퇴각 시 정지"</string>
     <string name="turn_limit_retreat_turns_value">"%d턴 도달 시 퇴각"</string>
     <string name="turn_limit_retreat_wipe_only">"전멸 시 퇴각"</string>

@@ -644,7 +644,6 @@
     <string name="p_battle_config_turn_limit_retreat">"撤退して再開"</string>
     <string name="p_battle_config_turn_limit_retreat_label">"撤退して再開"</string>
     <string name="p_battle_config_turn_limit_retreat_message">"戦闘がこのターンに達したら、そのターンを進めずにクエストから撤退し、再度開始します。コマンド開始のカード枚数条件で待機したターンは数えません。0ターンの場合は、パーティーが全滅したときだけ撤退します。"</string>
-    <string name="p_battle_config_turn_limit_retreat_unsupported">"このサーバーでは0ターン(全滅時に撤退)のみ使用できます。ターン制限は韓国サーバーと日本サーバーで使用できます。"</string>
     <string name="p_battle_config_turn_limit_retreat_streak">"3回連続で撤退したら停止"</string>
     <string name="turn_limit_retreat_turns_value">"%dターンで撤退"</string>
     <string name="turn_limit_retreat_wipe_only">"全滅時に撤退"</string>
