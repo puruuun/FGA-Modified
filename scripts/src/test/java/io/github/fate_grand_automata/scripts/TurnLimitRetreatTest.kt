@@ -31,6 +31,7 @@ class TurnLimitRetreatTest {
         enabled: Boolean = true,
         turns: Int = 4,
         stopAfterStreak: Boolean = false,
+        streakCount: Int = 3,
         mode: CommandStartMode = CommandStartMode.Basic
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
@@ -85,6 +86,7 @@ class TurnLimitRetreatTest {
             every { config.turnLimitRetreatEnabled } returns enabled
             every { config.turnLimitRetreatTurns } returns turns
             every { config.turnLimitRetreatStopAfterStreak } returns stopAfterStreak
+            every { config.turnLimitRetreatStreakCount } returns streakCount
             every { config.commandStartMode } returns mode
             every { api.prefs.gameServer } returns server
             every { api.locations.battle.master.battleMenuSearchRegion } returns searchRegion
@@ -357,7 +359,7 @@ class TurnLimitRetreatTest {
         val state = BattleState()
         val battle = mockk<Battle>(relaxed = true)
         val exit = assertFailsWith<AutoBattle.ExitException> { entry(f, state, battle, questListBetween = true).script() }
-        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak, exit.reason)
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(3), exit.reason)
         assertEquals(3, exit.state.turnLimitRetreatCount)
         assertEquals(0, exit.state.timesRan)
         assertEquals(0, state.runs)
@@ -397,6 +399,48 @@ class TurnLimitRetreatTest {
         val f = Fixture(stopAfterStreak = false)
         repeat(5) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
         assertEquals(5, f.retreat.streak)
+    }
+
+    @Test
+    fun `count one stops on the first retreat`() {
+        val f = Fixture(stopAfterStreak = true, streakCount = 1)
+        f.retreat.execute()
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.checkStreak() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(1), e.reason)
+    }
+
+    @Test
+    fun `count five lets four retreats continue and stops on the fifth`() {
+        val f = Fixture(stopAfterStreak = true, streakCount = 5)
+        repeat(4) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
+        f.retreat.onQuestListSeen()
+        f.retreat.execute()
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.checkStreak() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(5), e.reason)
+    }
+
+    @Test
+    fun `checkbox off never stops however small the count is`() {
+        val f = Fixture(stopAfterStreak = false, streakCount = 1)
+        repeat(30) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
+        assertEquals(30, f.retreat.streak)
+    }
+
+    @Test
+    fun `a stored count below one is treated as one`() {
+        val f = Fixture(stopAfterStreak = true, streakCount = 0)
+        f.retreat.execute()
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.checkStreak() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(1), e.reason)
+    }
+
+    @Test
+    fun `a cleared run resets the streak toward a larger count`() {
+        val f = Fixture(stopAfterStreak = true, streakCount = 4)
+        repeat(3) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
+        f.retreat.onRunCleared()
+        repeat(3) { f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak() }
+        assertEquals(3, f.retreat.streak)
     }
 
     // retreat and restart: party wipe
@@ -471,7 +515,7 @@ class TurnLimitRetreatTest {
         f.retreat.onQuestListSeen(); f.retreat.execute(); f.retreat.checkStreak()
         f.retreat.onQuestListSeen(); f.withdraw.withdraw()
         val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.checkStreak() }
-        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak, e.reason)
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(3), e.reason)
         assertEquals(2, f.retreat.wipeCount)
         assertEquals(1, f.retreat.turnLimitCount)
     }
@@ -482,7 +526,7 @@ class TurnLimitRetreatTest {
         val exit = assertFailsWith<AutoBattle.ExitException> {
             wipeEntry(f, BattleState(), mockk<Battle>(relaxed = true)).script()
         }
-        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak, exit.reason)
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatStreak(3), exit.reason)
         assertEquals(3, exit.state.wipeWithdrawCount)
         assertEquals(0, exit.state.timesRan)
     }

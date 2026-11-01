@@ -57,6 +57,9 @@ interface IBattleConfig : IExecutionProfile {
     val turnLimitRetreatTurns: Int
     val turnLimitRetreatStopAfterStreak: Boolean
 
+    /** Consecutive retreats that stop the script when [turnLimitRetreatStopAfterStreak] is on; 1-99, default 3. */
+    val turnLimitRetreatStreakCount: Int
+
     fun export(): Map<String, *>
 
     fun import(map: Map<String, *>)

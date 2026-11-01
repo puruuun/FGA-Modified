@@ -75,6 +75,8 @@ internal class BattleConfig(
 
     override val turnLimitRetreatStopAfterStreak by prefs.turnLimitRetreatStopAfterStreak
 
+    override val turnLimitRetreatStreakCount by prefs.turnLimitRetreatStreakCount
+
     override var spam by prefs.spam
 
     override fun export(): Map<String, *> = prefs.export()

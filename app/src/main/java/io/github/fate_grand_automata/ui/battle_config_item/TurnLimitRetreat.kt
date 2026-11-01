@@ -35,6 +35,7 @@ fun TurnLimitRetreat(
     var enabled by config.turnLimitRetreatEnabled.remember()
     var turns by config.turnLimitRetreatTurns.remember()
     var stopAfterStreak by config.turnLimitRetreatStopAfterStreak.remember()
+    var streakCount by config.turnLimitRetreatStreakCount.remember()
 
     val dialog = FgaDialog()
 
@@ -44,6 +45,7 @@ fun TurnLimitRetreat(
         var currentEnabled by remember(enabled) { mutableStateOf(enabled) }
         var currentTurns by remember(turns) { mutableStateOf(turns) }
         var currentStop by remember(stopAfterStreak) { mutableStateOf(stopAfterStreak) }
+        var currentStreak by remember(streakCount) { mutableStateOf(streakCount.coerceIn(1, 99)) }
 
         title(stringResource(R.string.p_battle_config_turn_limit_retreat))
 
@@ -81,14 +83,22 @@ fun TurnLimitRetreat(
                     onCheckedChange = { currentStop = it },
                     enabled = currentEnabled
                 )
-                Text(stringResource(R.string.p_battle_config_turn_limit_retreat_streak))
+                Text(stringResource(R.string.p_battle_config_turn_limit_retreat_streak, currentStreak))
             }
+
+            Stepper(
+                value = currentStreak,
+                onValueChange = { currentStreak = it },
+                valueRange = 1..99,
+                enabled = currentEnabled && currentStop
+            )
 
             buttons(
                 onSubmit = {
                     enabled = currentEnabled
                     turns = currentTurns
                     stopAfterStreak = currentStop
+                    streakCount = currentStreak
                 },
                 okLabel = stringResource(R.string.save),
             )

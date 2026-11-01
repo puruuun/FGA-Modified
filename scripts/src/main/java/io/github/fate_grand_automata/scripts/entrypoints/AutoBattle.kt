@@ -101,7 +101,7 @@ class AutoBattle @Inject constructor(
         data object CommandStartDuplicateTargets : ExitReason()
         data object CommandStartTargetsUnavailable : ExitReason()
         data object TurnLimitRetreatFailed : ExitReason()
-        data object TurnLimitRetreatStreak : ExitReason()
+        data class TurnLimitRetreatStreak(val count: Int) : ExitReason()
     }
 
     internal class BattleExitException(val reason: ExitReason) : Exception(reason.cause)

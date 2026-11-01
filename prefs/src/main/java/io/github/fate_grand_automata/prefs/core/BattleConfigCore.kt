@@ -132,4 +132,12 @@ class BattleConfigCore(
     val turnLimitRetreatTurns = maker.stringAsInt("turn_limit_retreat_turns", 0)
 
     val turnLimitRetreatStopAfterStreak = maker.bool("turn_limit_retreat_stop_after_streak")
+
+    /** Retreats in a row that stop the script when [turnLimitRetreatStopAfterStreak] is on (1-99). */
+    val turnLimitRetreatStreakCount = maker.int(STREAK_COUNT_KEY, DEFAULT_STREAK_COUNT)
+
+    companion object {
+        const val STREAK_COUNT_KEY = "turn_limit_retreat_streak_count"
+        const val DEFAULT_STREAK_COUNT = 3
+    }
 }

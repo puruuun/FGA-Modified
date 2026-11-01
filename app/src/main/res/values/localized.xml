@@ -962,10 +962,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_battle_config_turn_limit_retreat">"Retreat and Restart"</string>
     <string name="p_battle_config_turn_limit_retreat_label">"Retreat and Restart"</string>
     <string name="p_battle_config_turn_limit_retreat_message">"When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. With 0 turns, it only retreats when the party is wiped out. Retreats use AP and are not counted as runs."</string>
-    <string name="p_battle_config_turn_limit_retreat_streak">"Stop after 3 retreats in a row"</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"Stop after %d retreats in a row"</string>
     <string name="turn_limit_retreat_turns_value">"Turn %d"</string>
     <string name="turn_limit_retreat_wipe_only">"Retreat on wipe"</string>
     <string name="retreat_count">"Retreated %1$d times (wipe %2$d, turn limit %3$d)"</string>
     <string name="turn_limit_retreat_failed">"Could not retreat from the quest at the turn limit. Stopped before touching anything else."</string>
-    <string name="turn_limit_retreat_streak_stop">"Retreated 3 times in a row."</string>
+    <string name="turn_limit_retreat_streak_stop">"Retreated %d times in a row."</string>
 </resources>

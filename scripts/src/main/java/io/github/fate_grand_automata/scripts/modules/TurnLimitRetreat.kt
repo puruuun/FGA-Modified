@@ -22,7 +22,6 @@ class TurnLimitRetreat @Inject constructor(
     private val config: IBattleConfig
 ) : IFgoAutomataApi by api {
     companion object {
-        const val STREAK_LIMIT = 3
         const val MAX_ATTEMPTS_PER_RUN = 2
     }
 
@@ -90,10 +89,12 @@ class TurnLimitRetreat @Inject constructor(
         ++streak
     }
 
-    /** Stops after [STREAK_LIMIT] retreats in a row when the user asked for it. Call after the retreat finished. */
+    /** Stops after the configured number of retreats in a row when the user asked for it. Call after the retreat finished. */
     fun checkStreak() {
-        if (config.turnLimitRetreatStopAfterStreak && streak >= STREAK_LIMIT) {
-            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.TurnLimitRetreatStreak)
+        if (!config.turnLimitRetreatStopAfterStreak) return
+        val limit = config.turnLimitRetreatStreakCount.coerceAtLeast(1)
+        if (streak >= limit) {
+            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.TurnLimitRetreatStreak(limit))
         }
     }
 
