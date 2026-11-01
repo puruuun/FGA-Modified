@@ -29,6 +29,9 @@ class BattleConfigCore(
     fun export(): Map<String, *> = sharedPrefs.all
 
     val name = maker.string("autoskill_name", "--")
+
+    /** Folder the config is filed under in the config list and launcher. "" means no folder. */
+    val folder = maker.string("battle_config_folder", "")
     val execution = ExecutionProfileCore(maker)
     val secondaryExecution = ExecutionProfileCore(maker, "secondary_")
     fun executionProfile(index: Int): ExecutionProfileCore = when (index) {
