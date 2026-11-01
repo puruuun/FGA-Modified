@@ -208,8 +208,18 @@ abstract class SignRotatedApk : DefaultTask() {
             )
             return
         }
-        val guide = "docs/agents/releases-and-versioning.md (Release signing)"
         if (!apkFile.isFile) throw GradleException("APK to sign is missing: ${apkFile.path}")
+        try {
+            signRotated(apkFile)
+        } catch (e: Exception) {
+            // Never leave the debug-signed APK at the release path, where it could be shipped by mistake.
+            apkFile.delete()
+            throw e
+        }
+    }
+
+    private fun signRotated(apkFile: File) {
+        val guide = "docs/agents/releases-and-versioning.md (Release signing)"
 
         val propsFile = File(
             propertiesPathOverride.orNull ?: "${userHome.get()}/.fga-signing/signing.properties",
