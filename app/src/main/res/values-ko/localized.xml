@@ -780,6 +780,7 @@
     <string name="skill_level_step_confirm">결정·취소</string>
     <string name="skill_level_step_skip">스킵·복귀</string>
     <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_deselected">모든 스킬이 10레벨에 도달하여 선택이 해제되었습니다.</string>
     <string name="skill_level_stop_error">예상 밖의 오류입니다. 강화가 진행됐는지 확인하세요.</string>
     <string name="weekly_route_title">주간 미션 클리어</string>
     <string name="weekly_route_loading">이번 주 미션을 내려받는 중…</string>

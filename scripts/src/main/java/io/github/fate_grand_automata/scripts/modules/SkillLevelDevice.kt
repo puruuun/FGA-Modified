@@ -55,21 +55,38 @@ class SkillLevelDevice(
     /**
      * Skip taps on the title area every 0.5 s. The screen counts as back when the skill title and the re-select
      * button show and the dialog is gone, after the animation was seen to leave (or a few taps without seeing it).
+     * In skill mode, the label without the re-select button and without the dialog on two polls in a row (under the
+     * same condition) means the game deselected the servant because all three skills reached 10.
      */
-    override fun skipToScreen(): Boolean {
+    override fun skipToScreen(): SkipResult {
         var left = false
+        var deselectedPolls = 0
         for (tap in 1..SkillLevelTiming.SKIP_POLLS) {
             loc.skipClick.click()
             SkillLevelTiming.SKIP_INTERVAL.wait()
-            val back = useSameSnapIn { screens.onScreen(mode) && !screens.dialogVisible() }
-            if (!back) left = true
-            else if (left || tap >= SkillLevelTiming.SKIP_MIN_POLLS) {
-                addedTuning.skill.delay(SkillLevelTiming.AFTER_SKIP).wait()
-                return true
+            val frame = useSameSnapIn {
+                val label = screens.onLabel(mode)
+                val selected = screens.servantSelected()
+                val dialog = screens.dialogVisible()
+                when {
+                    label && selected && !dialog -> SkipFrame.Back
+                    mode == SkillLevelMode.Skill && label && !selected && !dialog -> SkipFrame.Deselected
+                    else -> SkipFrame.Other
+                }
             }
+            val counts = left || tap >= SkillLevelTiming.SKIP_MIN_POLLS
+            if (frame != SkipFrame.Back) left = true
+            if (frame == SkipFrame.Back && counts) {
+                addedTuning.skill.delay(SkillLevelTiming.AFTER_SKIP).wait()
+                return SkipResult.Back
+            }
+            deselectedPolls = if (frame == SkipFrame.Deselected && counts) deselectedPolls + 1 else 0
+            if (deselectedPolls >= SkillLevelTiming.DESELECT_POLLS) return SkipResult.Deselected
         }
-        return false
+        return SkipResult.Timeout
     }
+
+    private enum class SkipFrame { Back, Deselected, Other }
 
     private fun poll(polls: Int, signal: () -> Boolean): Boolean {
         repeat(polls) {

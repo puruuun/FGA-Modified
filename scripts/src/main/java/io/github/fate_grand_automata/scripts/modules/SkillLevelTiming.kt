@@ -21,6 +21,8 @@ object SkillLevelTiming {
     const val SKIP_POLLS = 40 // 20 s cap
     /** After this many polls the skill screen counts as back even if the animation was never seen. */
     const val SKIP_MIN_POLLS = 3
+    /** Consecutive polls that must show the deselected screen. */
+    const val DESELECT_POLLS = 2
     /** Final settle before the next slot icon is tapped. */
     val AFTER_SKIP = 0.5.seconds
 }

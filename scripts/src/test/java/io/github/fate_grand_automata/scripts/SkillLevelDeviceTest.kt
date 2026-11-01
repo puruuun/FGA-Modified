@@ -104,4 +104,36 @@ class SkillLevelDeviceTest {
             SkillLevelScript.ExitReason.Unexpected(Exception(),emptyList()) to "Unexpected")
         names.forEach { (reason,name) -> assertEquals(name,reason.logName) }
     }
+
+    /** One skip poll per character: B = back screen, D = label only (deselected), O = something else (animation). */
+    private fun skip(frames: String, mode: SkillLevelMode = SkillLevelMode.Skill): Pair<SkipResult, Int> {
+        val run = Run()
+        val device = SkillLevelDevice(run.api, mode, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
+        var poll = 0
+        fun frame() = frames.getOrElse(poll - 1) { 'O' }
+        every { run.screens.onLabel(any()) } answers { frame() != 'O' }
+        every { run.screens.servantSelected() } answers { frame() == 'B' }
+        every { run.screens.dialogVisible() } returns false
+        every { with(run.api) { any<Duration>().wait(any()) } } answers { poll++ }
+        return device.skipToScreen() to poll
+    }
+    @Test fun `one deselected frame followed by the back screen is back`() {
+        assertEquals(SkipResult.Back, skip("OODB").first)
+    }
+    @Test fun `two consecutive deselected frames end the skip as deselected without waiting further`() {
+        val (result, polls) = skip("OODD")
+        assertEquals(SkipResult.Deselected, result)
+        assertEquals(4, polls)
+    }
+    @Test fun `a different frame between two deselected frames resets the count`() {
+        assertEquals(SkipResult.Back, skip("OODODB").first)
+        assertEquals(SkipResult.Timeout, skip("OODOD" + "O".repeat(40)).first)
+    }
+    @Test fun `deselected frames before the animation was seen to leave or the minimum polls do not count`() {
+        assertEquals(SkipResult.Back, skip("DDB").first)
+        assertEquals(SkipResult.Deselected, skip("DDDD").first)
+    }
+    @Test fun `append mode never reports a deselection`() {
+        assertEquals(SkipResult.Timeout, skip("D".repeat(60), SkillLevelMode.Append).first)
+    }
 }

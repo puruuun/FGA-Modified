@@ -20,6 +20,7 @@ fun skillLevelSummary(context: Context, results: List<SlotResult>): String = res
         SlotStop.NoIncrease -> R.string.skill_level_stop_no_increase
         SlotStop.UnexpectedDialog -> R.string.skill_level_stop_dialog
         SlotStop.Stuck -> R.string.skill_level_stop_stuck
+        SlotStop.Deselected -> R.string.skill_level_stop_deselected
         SlotStop.Aborted -> R.string.skill_level_aborted
         SlotStop.Error -> R.string.skill_level_stop_error
     })

@@ -52,6 +52,8 @@ enum class SlotStop {
     UnexpectedDialog,
     /** The game did not return to the skill screen. */
     Stuck,
+    /** All three skills reached 10 and the game deselected the servant. */
+    Deselected,
     Aborted,
     Error
 }
@@ -93,9 +95,14 @@ interface SkillLevelPanel {
     fun confirm()
     /** Taps cancel and waits for the dialog to close. Returns false when it stayed open. */
     fun cancel(): Boolean
-    /** Taps through the animation and the result until the skill screen is back. Returns false after 20 s. */
-    fun skipToScreen(): Boolean
+    /**
+     * Taps through the animation and the result until the skill screen is back ([SkipResult.Back]), the game deselected
+     * the servant ([SkipResult.Deselected], skill mode only), or 20 s passed ([SkipResult.Timeout]).
+     */
+    fun skipToScreen(): SkipResult
 }
+
+enum class SkipResult { Back, Deselected, Timeout }
 
 /**
  * D-11 / D-14. Safety, in the order the checks run for every slot:
@@ -133,7 +140,7 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             }
             done += result
             summary(result)
-            if (result.stop == SlotStop.Stuck) break
+            if (result.stop == SlotStop.Stuck || result.stop == SlotStop.Deselected) break
         }
         return results
     }
@@ -230,8 +237,13 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             remember()
             activeStep = SkillLevelStep.Skip
             val back = panel.skipToScreen()
-            line("return=$back")
-            if (!back) return finish(SlotStop.Stuck)
+            line("return=" + when (back) {
+                SkipResult.Back -> "true"
+                SkipResult.Timeout -> "false"
+                SkipResult.Deselected -> "deselected"
+            })
+            if (back == SkipResult.Timeout) return finish(SlotStop.Stuck)
+            if (back == SkipResult.Deselected) return finish(SlotStop.Deselected)
         }
         return finish(SlotStop.CannotEnhance)
     }

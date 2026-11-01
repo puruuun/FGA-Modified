@@ -839,6 +839,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="skill_level_step_confirm">Confirm / cancel</string>
     <string name="skill_level_step_skip">Skip / return</string>
     <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_deselected">all skills reached level 10 and the game deselected the servant.</string>
     <string name="skill_level_stop_error">Unexpected error. Check whether an enhancement happened.</string>
     <string name="weekly_route_title">Weekly mission clear</string>
     <string name="weekly_route_loading">Loading this week\'s missions…</string>

@@ -650,4 +650,5 @@
     <string name="retreat_count">"%1$d 回撤退しました(全滅 %2$d 回、ターン制限 %3$d 回)"</string>
     <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
     <string name="turn_limit_retreat_streak_stop">"3回連続して撤退したため停止しました。"</string>
+    <string name="skill_level_stop_deselected">"すべてのスキルがLv.10に達したため、選択が解除されました。"</string>
 </resources>

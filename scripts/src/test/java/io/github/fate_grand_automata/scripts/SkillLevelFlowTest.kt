@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
 import io.github.fate_grand_automata.scripts.modules.SkillLevelPanel
 import io.github.fate_grand_automata.scripts.modules.SkillLevelReading
 import io.github.fate_grand_automata.scripts.modules.SlotResult
+import io.github.fate_grand_automata.scripts.modules.SkipResult
 import io.github.fate_grand_automata.scripts.modules.SlotStop
 import io.github.lib_automata.OcrText
 import kotlin.test.Test
@@ -26,6 +27,8 @@ private class FakePanel(
     private val dialogOpens: Boolean = true,
     private val enhanceTitle: Boolean = true,
     private val skipReturns: Boolean = true,
+    /** The game deselects the servant once every skill is 10. */
+    private val skipDeselectsAtTen: Boolean = false,
     private val cancelCloses: Boolean = true,
     private val panelRead: (trueLevel: Int) -> Int? = { null },
     private val read: (trueLevel: Int) -> SkillLevelReading = { SkillLevelReading(it, it + 1) }
@@ -40,7 +43,8 @@ private class FakePanel(
     val peak = levels.toMutableList()
 
     override fun isLocked(slot: Int) = slot in iconLockVisible
-    override fun select(slot: Int) { selected = slot }
+    val selectedSlots = mutableListOf<Int>()
+    override fun select(slot: Int) { selected = slot; selectedSlots += slot }
     override fun unlockButtonVisible() = selected in unlockLabel || selected in locked
     override fun maxButtonVisible() = maxLabel
     override fun readPanelLevel(slot: Int): Int? {
@@ -70,7 +74,11 @@ private class FakePanel(
         if (cancelCloses) dialogOpen = false
         return !dialogOpen
     }
-    override fun skipToScreen() = skipReturns
+    override fun skipToScreen() = when {
+        !skipReturns -> SkipResult.Timeout
+        skipDeselectsAtTen && levels.all { it == 10 } -> SkipResult.Deselected
+        else -> SkipResult.Back
+    }
 }
 
 class SkillLevelFlowTest {
@@ -548,7 +556,7 @@ class SkillLevelFlowTest {
                 override fun awaitDialog(): Boolean { fail(SkillLevelStep.Dialog);return base.awaitDialog() }
                 override fun readLevels(): SkillLevelReading { fail(SkillLevelStep.Ocr);return base.readLevels() }
                 override fun confirm() { fail(SkillLevelStep.Confirm);base.confirm() }
-                override fun skipToScreen(): Boolean { fail(SkillLevelStep.Skip);return base.skipToScreen() }
+                override fun skipToScreen(): SkipResult { fail(SkillLevelStep.Skip);return base.skipToScreen() }
             }
             val logs = mutableListOf<String>()
             val flow = SkillLevelFlow(panel, logs::add)
@@ -563,7 +571,7 @@ class SkillLevelFlowTest {
     @Test fun `manual stop during skip retains the enhanced slot and writes its summary`() {
         val base = FakePanel(mutableListOf(3))
         val panel = object : SkillLevelPanel by base {
-            override fun skipToScreen(): Boolean = throw io.github.lib_automata.ScriptAbortException()
+            override fun skipToScreen(): SkipResult = throw io.github.lib_automata.ScriptAbortException()
         }
         val logs = mutableListOf<String>()
         val flow = SkillLevelFlow(panel, logs::add)
@@ -582,4 +590,33 @@ class SkillLevelFlowTest {
         assertEquals(SkillLevelStep.Skip,skip.step)
     }
 
+    @Test fun `all three skills reaching ten deselects the servant and ends the run on the last slot`() {
+        val panel = FakePanel(mutableListOf(9, 9, 9), skipDeselectsAtTen = true)
+        val logs = mutableListOf<String>()
+        val results = SkillLevelFlow(panel, logs::add).runAll(listOf(10, 10, 10))
+        assertEquals(listOf(SlotStop.Reached, SlotStop.Reached, SlotStop.Deselected), results.map { it.stop })
+        assertEquals(SlotResult(2, 10, 9, 10, SlotStop.Deselected, SkillLevelStep.Skip), results[2])
+        assertEquals(3, panel.confirms)
+        assertTrue(logs.any { it.endsWith("return=deselected") })
+    }
+
+    @Test fun `a deselection on the first slot stops before the remaining slots are selected`() {
+        val panel = FakePanel(mutableListOf(9, 10, 10), skipDeselectsAtTen = true)
+        val results = run(panel, 10, 10, 10)
+        assertEquals(listOf(SlotResult(0, 10, 9, 10, SlotStop.Deselected, SkillLevelStep.Skip)), results)
+        assertEquals(listOf(0), panel.selectedSlots)
+        assertEquals(1, panel.confirms)
+    }
+
+    @Test fun `back and timeout results keep their old meaning next to the deselected one`() {
+        val back = FakePanel(mutableListOf(3, 3), skipDeselectsAtTen = true)
+        val backLogs = mutableListOf<String>()
+        assertEquals(listOf(SlotStop.Reached, SlotStop.Reached), SkillLevelFlow(back, backLogs::add).runAll(listOf(4, 4)).map { it.stop })
+        assertTrue(backLogs.any { it.endsWith("return=true") })
+        val timeout = FakePanel(mutableListOf(3, 3), skipReturns = false, skipDeselectsAtTen = true)
+        val timeoutLogs = mutableListOf<String>()
+        assertEquals(listOf(SlotStop.Stuck), SkillLevelFlow(timeout, timeoutLogs::add).runAll(listOf(4, 4)).map { it.stop })
+        assertTrue(timeoutLogs.any { it.endsWith("return=false") })
+        assertEquals(listOf(0), timeout.selectedSlots)
+    }
 }
