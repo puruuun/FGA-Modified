@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.BattleConfigFile
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.skill_maker.SkillMakerModel
 import kotlinx.coroutines.flow.combine
@@ -27,6 +28,10 @@ class BattleConfigScreenViewModel @AssistedInject constructor(
 ) : ViewModel() {
     val battleConfig = prefs.forBattleConfig(id)
     val battleConfigCore = prefsCore.forBattleConfig(id)
+
+    /** The turn limit retreat templates exist for the KR and JP servers only. */
+    val turnLimitRetreatSupported
+        get() = prefs.gameServer.let { it is GameServer.Kr || it is GameServer.Jp }
 
     @AssistedFactory
     interface Factory {

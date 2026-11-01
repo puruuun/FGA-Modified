@@ -643,4 +643,13 @@
     <string name="fp_sell_not_servant">サーヴァント枠の警告ではないため（概念礼装・コマンドコード等）、販売せずに停止しました。</string>
     <string name="fp_sell_screen_unknown">販売画面を確認できなかったため、販売せずに停止しました。</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
+    <string name="p_battle_config_turn_limit_retreat">"ターン制限で撤退"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"撤退"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"このターンに達したら、そのターンを進めずにクエストから撤退し、再度開始します。コマンド開始のカード枚数条件で待機したターンは数えません。撤退はAPを消費し、周回数に数えません。韓国サーバーと日本サーバーのみ対応しています。"</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">"ターン制限での撤退は韓国サーバーと日本サーバーのみ対応しています。"</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"3回連続で撤退したら停止"</string>
+    <string name="turn_limit_retreat_turns_value">"%dターンで撤退"</string>
+    <string name="turn_limit_retreat_count">"ターン制限で %d 回撤退しました"</string>
+    <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
+    <string name="turn_limit_retreat_streak_stop">"ターン制限で3回連続して撤退したため停止しました。"</string>
 </resources>

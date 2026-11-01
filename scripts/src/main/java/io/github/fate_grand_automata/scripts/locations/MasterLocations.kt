@@ -20,10 +20,12 @@ class MasterLocations @Inject constructor(
 ) : IScriptAreaTransforms by scriptAreaTransforms {
     // Master Skills and Stage counter are right-aligned differently,
     // so we use locations relative to a matched location
+    /** Where the Battle Menu button is searched for. */
+    val battleMenuSearchRegion: Region get() = Region(-400, 360, 400, 80).xFromRight()
+
     private val masterOffsetNewUI: Location by lazy {
         automataApi.run {
-            Region(-400, 360, 400, 80)
-                .xFromRight()
+            battleMenuSearchRegion
                 .find(images[Images.BattleMenu])
                 ?.region
                 ?.center

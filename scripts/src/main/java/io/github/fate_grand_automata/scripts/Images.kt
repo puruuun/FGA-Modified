@@ -116,6 +116,10 @@ enum class Images(val path: String) {
     SupportRefresh("support_refresh.png"),
     ServantCheckSupport("servant_check_support.png"),
     BattleMenu("battle_menu.png"),
+    /** Battle Menu "retreat" button; Kr and Jp copies only (no En fallback), see TurnLimitRetreat. */
+    TurnLimitRetreat("retreat_button.png"),
+    /** Confirm button of the retreat dialog (確認/決定); Kr and Jp copies only. */
+    TurnLimitRetreatConfirm("retreat_confirm.png"),
     EmptyEnhance("empty_enhance.png"),
     CEEnhanceExecute("ce_enhance_execute.png"),
     CEEnhanceReselect("ce_enhance_reselect.png"),

@@ -28,7 +28,8 @@ class Battle @Inject constructor(
     private val stageTracker: StageTracker,
     private val autoChooseTarget: AutoChooseTarget,
     private val commandStart: CommandStartGate,
-    private val execution: BattleExecution
+    private val execution: BattleExecution,
+    private val turnLimitRetreat: TurnLimitRetreat
 ) : IFgoAutomataApi by api {
     private val hand by lazy { CommandHand(api, card) }
     init {
@@ -52,6 +53,7 @@ class Battle @Inject constructor(
             servantTracker.nextRun()
 
             prefs.updateCompletedRuns(state.runs)
+            turnLimitRetreat.onRunCleared()
         }
 
         if (prefs.stopAfterThisRun) {
@@ -64,6 +66,17 @@ class Battle @Inject constructor(
         }
     }
 
+    /**
+     * Resets the per-run state after a turn-limit retreat without counting a run:
+     * no `nextRun()`, so runs, the run limit and the turn and time statistics stay untouched.
+     */
+    fun abandonRun() {
+        state.abandonRun()
+        commandStart.nextRun()
+        execution.nextRun()
+        servantTracker.nextRun()
+    }
+
     fun isIdle() = images[Images.BattleScreen] in locations.battle.screenCheckRegion
 
     fun clickAttack(): List<ParsedCard> = hand.open()
@@ -72,6 +85,9 @@ class Battle @Inject constructor(
         prefs.waitBeforeTurn.wait()
 
         onTurnStarted()
+
+        // Retreat without acting; AutoBattle runs the sequence once this returns.
+        if (turnLimitRetreat.shouldRetreat(state.runTotalTurns - commandStart.waitingTurns)) return
 
         if (battleConfig.addRaidTurnDelay){
             battleConfig.raidTurnDelaySeconds.seconds.wait()

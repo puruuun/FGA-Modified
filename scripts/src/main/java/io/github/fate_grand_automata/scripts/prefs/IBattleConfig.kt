@@ -52,6 +52,11 @@ interface IBattleConfig : IExecutionProfile {
     val addRaidTurnDelay: Boolean
     val raidTurnDelaySeconds : Int
 
+    /** Retreat from the quest once the effective turn reaches [turnLimitRetreatTurns] (KR and JP only). */
+    val turnLimitRetreatEnabled: Boolean
+    val turnLimitRetreatTurns: Int
+    val turnLimitRetreatStopAfterStreak: Boolean
+
     fun export(): Map<String, *>
 
     fun import(map: Map<String, *>)

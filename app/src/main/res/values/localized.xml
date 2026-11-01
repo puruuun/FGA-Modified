@@ -960,4 +960,13 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="game_area_calibration_scales">The two buttons have different scales. Keep the display unchanged and try again on the main screen.</string>
     <string name="game_area_calibration_bounds">Could not determine a game picture inside the display at a supported aspect ratio. Check the screen layout and try again.</string>
     <string name="game_area_calibration_check">MENU was not found after applying the proposed crop. Nothing was saved. Try again on the main screen.</string>
+    <string name="p_battle_config_turn_limit_retreat">"Retreat at Turn Limit"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"Retreat"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. A retreat uses AP and is not counted as a run. Available on the KR and JP servers only.</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">Retreat at turn limit is available on the KR and JP servers only.</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"Stop after 3 retreats in a row"</string>
+    <string name="turn_limit_retreat_turns_value">"Turn %d"</string>
+    <string name="turn_limit_retreat_count">"Retreated at turn limit %d times"</string>
+    <string name="turn_limit_retreat_failed">"Could not retreat from the quest at the turn limit. Stopped before touching anything else."</string>
+    <string name="turn_limit_retreat_streak_stop">"Retreated 3 times in a row at the turn limit."</string>
 </resources>

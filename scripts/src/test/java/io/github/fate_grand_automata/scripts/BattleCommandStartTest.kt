@@ -207,7 +207,7 @@ class BattleCommandStartTest {
             every { autoSkill.execute(any(), any()) } returns NPUsage.none
             execution = BattleExecution(config)
             gate = CommandStartGate(config)
-            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate, execution)
+            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate, execution, mockk(relaxed = true))
         }
     }
 

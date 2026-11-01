@@ -304,6 +304,14 @@ private fun BattleConfigContent(
                                 VerticalDivider()
 
                                 RaidDelay(config = config, modifier = Modifier.weight(1f))
+
+                                VerticalDivider()
+
+                                TurnLimitRetreat(
+                                    config = config,
+                                    supported = vm.turnLimitRetreatSupported,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
                             HorizontalDivider()

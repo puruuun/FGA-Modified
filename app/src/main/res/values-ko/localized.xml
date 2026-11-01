@@ -880,4 +880,13 @@
     <string name="game_area_calibration_scales">두 버튼의 배율이 서로 다릅니다. 화면 배치를 유지하고 메인 화면에서 다시 시도하세요.</string>
     <string name="game_area_calibration_bounds">화면 안에서 지원되는 비율의 게임 영역을 확정하지 못했습니다. 화면 배치를 확인하고 다시 시도하세요.</string>
     <string name="game_area_calibration_check">계산한 영역을 적용한 뒤 MENU를 확인하지 못했습니다. 저장하지 않았습니다. 메인 화면에서 다시 시도하세요.</string>
+    <string name="p_battle_config_turn_limit_retreat">"턴 제한 퇴각"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"퇴각"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"전투가 이 턴에 도달하면 그 턴을 진행하지 않고 퀘스트에서 퇴각한 뒤 퀘스트를 다시 시작합니다. 커맨드 시작 카드 수 조건으로 대기한 턴은 세지 않습니다. 퇴각은 AP를 소모하며 주회로 세지 않습니다. 한국 서버와 일본 서버에서만 사용할 수 있습니다."</string>
+    <string name="p_battle_config_turn_limit_retreat_unsupported">"턴 제한 퇴각은 한국 서버와 일본 서버에서만 사용할 수 있습니다."</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"3회 연속 퇴각 시 정지"</string>
+    <string name="turn_limit_retreat_turns_value">"%d턴 도달 시 퇴각"</string>
+    <string name="turn_limit_retreat_count">"턴 제한 퇴각 %d회"</string>
+    <string name="turn_limit_retreat_failed">"턴 제한 퇴각에 실패했습니다. 다른 조작을 하기 전에 중단했습니다."</string>
+    <string name="turn_limit_retreat_streak_stop">"턴 제한 퇴각이 3회 연속 발생해 정지했습니다."</string>
 </resources>

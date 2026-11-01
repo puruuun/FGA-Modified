@@ -126,4 +126,10 @@ class BattleConfigCore(
     val addRaidTurnDelay = maker.bool("add_raid_delay")
 
     val raidTurnDelaySeconds = maker.stringAsInt("raid_delay_seconds", 3)
+
+    val turnLimitRetreatEnabled = maker.bool("turn_limit_retreat_enabled")
+
+    val turnLimitRetreatTurns = maker.stringAsInt("turn_limit_retreat_turns", 4)
+
+    val turnLimitRetreatStopAfterStreak = maker.bool("turn_limit_retreat_stop_after_streak")
 }

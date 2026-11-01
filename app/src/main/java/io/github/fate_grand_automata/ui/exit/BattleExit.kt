@@ -91,6 +91,8 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.CommandStartDuplicateTargets -> stringResource(R.string.command_start_duplicate_targets)
     AutoBattle.ExitReason.CommandStartTargetsUnavailable -> stringResource(R.string.command_start_targets_unavailable)
     AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
+    AutoBattle.ExitReason.TurnLimitRetreatFailed -> stringResource(R.string.turn_limit_retreat_failed)
+    AutoBattle.ExitReason.TurnLimitRetreatStreak -> stringResource(R.string.turn_limit_retreat_streak_stop)
     AutoBattle.ExitReason.ShuffleUntilFaceCheckDisabled -> stringResource(R.string.hakuno_shuffle_face_check_disabled)
     AutoBattle.ExitReason.ShuffleUntilReturnFailed -> stringResource(R.string.hakuno_shuffle_return_failed)
     is AutoBattle.ExitReason.ShuffleUntilUnmet -> stringResource(R.string.hakuno_shuffle_unmet, presses,
@@ -209,6 +211,17 @@ private fun LazyListScope.battleExitContent(
 
     state.bond?.let { bond ->
         item { BondSummaryContent(bond) }
+    }
+
+    if (state.turnLimitRetreatCount > 0) {
+        item {
+            Text(
+                stringResource(R.string.turn_limit_retreat_count, state.turnLimitRetreatCount),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .padding(16.dp, 5.dp)
+            )
+        }
     }
 
     if (state.withdrawCount > 0) {

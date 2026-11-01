@@ -69,6 +69,12 @@ internal class BattleConfig(
 
     override val raidTurnDelaySeconds by prefs.raidTurnDelaySeconds
 
+    override val turnLimitRetreatEnabled by prefs.turnLimitRetreatEnabled
+
+    override val turnLimitRetreatTurns by prefs.turnLimitRetreatTurns
+
+    override val turnLimitRetreatStopAfterStreak by prefs.turnLimitRetreatStopAfterStreak
+
     override var spam by prefs.spam
 
     override fun export(): Map<String, *> = prefs.export()
