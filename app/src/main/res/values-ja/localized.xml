@@ -652,4 +652,11 @@
     <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
     <string name="turn_limit_retreat_streak_stop">"%d回連続して撤退したため停止しました。"</string>
     <string name="skill_level_stop_deselected">"すべてのスキルがLv.10に達したため、選択が解除されました。"</string>
+    <string name="battle_config_folder_move">"フォルダへ移動"</string>
+    <string name="battle_config_folder_new">"新しいフォルダ…"</string>
+    <string name="battle_config_folder_remove">"フォルダから外す"</string>
+    <string name="battle_config_folder_name">"フォルダ名"</string>
+    <string name="battle_config_folder_selected_count">"%d件選択"</string>
+    <string name="battle_config_folder_error_blank">"フォルダ名を入力してください"</string>
+    <string name="battle_config_folder_error_too_long">"30文字まで入力できます"</string>
 </resources>
