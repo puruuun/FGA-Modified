@@ -4,7 +4,6 @@ import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
-import io.github.fate_grand_automata.scripts.models.DirectCardSequence
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
@@ -75,13 +74,14 @@ class Card @Inject constructor(
         allowNpSpam: Boolean = true
     ) {
         npUsage.directCards?.let { sequence ->
-            val picked = sequence.resolve(cards) { remaining ->
+            val resolution = sequence.resolveDetailed(cards) { remaining ->
                 execution.active.priority.sort(remaining, priorityIndex())
             }
+            val picked = resolution?.cards
             if (picked == null || sequence.nps.any { it.toFieldSlot() !in servantTracker.deployed }) {
                 throw AutoBattle.BattleExitException(AutoBattle.ExitReason.DirectCardsUnavailable(sequence.toString()))
             }
-            if (sequence.fallback && picked != DirectCardSequence.parse(sequence.code).resolve(cards)) {
+            if (resolution.usedPriority) {
                 messages.log(ScriptLog.DirectCardsFallback(sequence.toString(), picked))
             }
             // Resolve all three before the first tap. Do not rearrange or append NP Spam.

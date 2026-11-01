@@ -33,8 +33,19 @@ internal fun directCardLabel(choice: Char): String = when (choice) {
     'b' -> stringResource(R.string.skill_maker_buster)
     'a' -> stringResource(R.string.skill_maker_arts)
     'q' -> stringResource(R.string.skill_maker_quick)
+    'p' -> stringResource(R.string.skill_maker_direct_cards_unselected)
     else -> stringResource(R.string.skill_maker_direct_np, choice.digitToInt() - 3)
 }
+
+/** The priority fallback is forced on and locked while any slot is Unselected. */
+internal fun directCardsFallbackLocked(sequence: String) = 'p' in sequence
+
+/** Picking Unselected turns the fallback on; picking anything else keeps the current value. */
+internal fun directCardsFallbackAfterChoice(fallback: Boolean, choice: Char) = fallback || choice == 'p'
+
+/** The command string the dialog saves; Unselected slots always carry the `?` flag. */
+internal fun directCardsCommand(sequence: String, fallback: Boolean) =
+    (if (fallback || directCardsFallbackLocked(sequence)) "?" else "") + sequence
 
 @Composable
 internal fun DirectCardsSummary(sequence: String) {
@@ -53,9 +64,12 @@ internal fun DirectCardsDialog(
     val initial = DirectCardSequence.parse(initialSequence)
     var sequence by rememberSaveable { mutableStateOf(initial.code) }
     var fallback by rememberSaveable { mutableStateOf(initial.fallback) }
-    fun commandSequence() = (if (fallback) "?" else "") + sequence
+    fun commandSequence() = directCardsCommand(sequence, fallback)
     var enabled by rememberSaveable { mutableStateOf(initiallyEnabled) }
-    val valid = runCatching { DirectCardSequence.parse(sequence) }.isSuccess
+    // Any Unselected slot forces the priority fallback on and locks it.
+    val hasUnselected = directCardsFallbackLocked(sequence)
+    val effectiveFallback = fallback || hasUnselected
+    val valid = runCatching { DirectCardSequence.parse(commandSequence()) }.isSuccess
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -70,7 +84,11 @@ internal fun DirectCardsDialog(
                     Switch(checked = enabled, onCheckedChange = { enabled = it })
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = fallback, onCheckedChange = { fallback = it }, enabled = enabled)
+                    Checkbox(
+                        checked = effectiveFallback,
+                        onCheckedChange = { fallback = it },
+                        enabled = enabled && !hasUnselected
+                    )
                     Text(stringResource(R.string.skill_maker_direct_cards_fallback))
                 }
                 repeat(3) { index ->
@@ -84,13 +102,14 @@ internal fun DirectCardsDialog(
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(directCardLabel(sequence[index])) }
                             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                "baq456".forEach { choice ->
+                                "baq456p".forEach { choice ->
                                     val duplicateNp = choice in "456" && sequence.withIndex().any { it.index != index && it.value == choice }
                                     DropdownMenuItem(
                                         text = { Text(directCardLabel(choice)) },
                                         enabled = !duplicateNp,
                                         onClick = {
                                             sequence = sequence.replaceRange(index, index + 1, choice.toString())
+                                            fallback = directCardsFallbackAfterChoice(fallback, choice)
                                             expanded = false
                                         }
                                     )
