@@ -121,11 +121,27 @@ class TurnLimitRetreat @Inject constructor(
     private fun acceptAndClose() {
         locations.withdrawAcceptClick.click()
         0.5.seconds.wait()
-        // On timeout (e.g. a connection error dialog) hand over to the main loop, which handles it.
-        if (locations.ordealCallOutOfPodsRegion.exists(images[Images.Close], 15.seconds)) {
-            locations.ordealCallOutOfPodsClick.click()
-            // The quest list takes a while to load.
-            5.seconds.wait()
+        if (closeAppears()) return closeWindow()
+
+        // A connection error dialog: the main loop retries it. The retreat still counts.
+        if (locations.retryRegion.exists(images[Images.Retry])) return
+
+        // The OK tap did not register and the dialog is still up: tap it once more.
+        if (locations.turnLimitRetreatOkRegion.exists(images[Images.TurnLimitRetreatConfirm])) {
+            locations.withdrawAcceptClick.click()
+            0.5.seconds.wait()
+            if (closeAppears()) return closeWindow()
         }
+
+        // Still in the battle: never reset the run state.
+        fail()
+    }
+
+    private fun closeAppears() = locations.ordealCallOutOfPodsRegion.exists(images[Images.Close], 15.seconds)
+
+    private fun closeWindow() {
+        locations.ordealCallOutOfPodsClick.click()
+        // The quest list takes a while to load.
+        5.seconds.wait()
     }
 }

@@ -41,6 +41,8 @@ class TurnLimitRetreatTest {
         var menuAppearsOnClick = true
         var dialogAppearsOnClick = true
         var closeAppearsOnClick = true
+        var retryOnOk = false
+        var ignoredOkTaps = 0
 
         val menuMatch = Match(Region(10, 10, 50, 50), 0.99)
         val retreatClick = Location(1, 1)
@@ -52,6 +54,7 @@ class TurnLimitRetreatTest {
         val okRegion = Region(300, 0, 10, 10)
         val closeRegion = Region(400, 0, 10, 10)
         val searchRegion = Region(500, 0, 10, 10)
+        val retryRegion = Region(600, 0, 10, 10)
 
         val retreat = TurnLimitRetreat(api, config)
 
@@ -65,6 +68,7 @@ class TurnLimitRetreatTest {
             every { api.locations.turnLimitRetreatRegion } returns retreatRegion
             every { api.locations.turnLimitRetreatOkRegion } returns okRegion
             every { api.locations.ordealCallOutOfPodsRegion } returns closeRegion
+            every { api.locations.retryRegion } returns retryRegion
             every { api.locations.turnLimitRetreatClick } returns retreatClick
             every { api.locations.withdrawAcceptClick } returns okClick
             every { api.locations.battleMenuCloseClick } returns menuXClick
@@ -81,6 +85,7 @@ class TurnLimitRetreatTest {
                     Images.TurnLimitRetreat -> region == retreatRegion && Images.TurnLimitRetreat in visible
                     Images.TurnLimitRetreatConfirm -> region == okRegion && Images.TurnLimitRetreatConfirm in visible
                     Images.Close -> region == closeRegion && Images.Close in visible
+                    Images.Retry -> region == retryRegion && Images.Retry in visible
                     else -> false
                 }
             }
@@ -91,7 +96,14 @@ class TurnLimitRetreatTest {
             every { with(api) { any<Location>().click(any()) } } answers {
                 when (firstArg<Location>()) {
                     retreatClick -> { trace += "retreat"; if (dialogAppearsOnClick) visible += Images.TurnLimitRetreatConfirm }
-                    okClick -> { trace += "ok"; visible.clear(); if (closeAppearsOnClick) visible += Images.Close }
+                    okClick -> {
+                        trace += "ok"
+                        if (ignoredOkTaps > 0) ignoredOkTaps-- else {
+                            visible.clear()
+                            if (closeAppearsOnClick) visible += Images.Close
+                            if (retryOnOk) visible += Images.Retry
+                        }
+                    }
                     menuXClick -> { trace += "menu-x"; visible.clear() }
                     closeClick -> { trace += "close"; visible.clear() }
                     else -> error("Unexpected click")
@@ -213,11 +225,44 @@ class TurnLimitRetreatTest {
     }
 
     @Test
-    fun `missing close returns to the loop without throwing`() {
-        val f = Fixture().also { it.closeAppearsOnClick = false }
+    fun `missing close with the connection retry dialog returns to the loop and counts`() {
+        val f = Fixture().also { it.closeAppearsOnClick = false; it.retryOnOk = true }
         f.retreat.execute()
         assertFalse("close" in f.trace)
+        assertEquals(1, f.trace.count { it == "ok" })
         assertEquals(1, f.retreat.count)
+    }
+
+    @Test
+    fun `missing close while the confirmation still shows taps ok once more and then succeeds`() {
+        val f = Fixture().also { it.ignoredOkTaps = 1 }
+        f.retreat.execute()
+        assertEquals(
+            listOf("click-menu", "wait:500ms", "retreat", "wait:500ms", "ok", "wait:500ms", "ok", "wait:500ms", "close", "wait:5s"),
+            f.trace
+        )
+        assertEquals(1, f.retreat.count)
+        assertEquals(1, f.retreat.streak)
+    }
+
+    @Test
+    fun `missing close with nothing else on screen fails before counting`() {
+        val f = Fixture().also { it.closeAppearsOnClick = false }
+        val e = assertFailsWith<AutoBattle.BattleExitException> { f.retreat.execute() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatFailed, e.reason)
+        assertEquals(1, f.trace.count { it == "ok" })
+        assertEquals(0, f.retreat.count)
+        assertEquals(0, f.retreat.streak)
+    }
+
+    @Test
+    fun `failed close wait never resets the run state`() {
+        val f = Fixture().also { it.closeAppearsOnClick = false }
+        val battle = mockk<Battle>(relaxed = true)
+        val exit = assertFailsWith<AutoBattle.ExitException> { entry(f, BattleState(), battle).script() }
+        assertEquals(AutoBattle.ExitReason.TurnLimitRetreatFailed, exit.reason)
+        assertEquals(0, exit.state.turnLimitRetreatCount)
+        verify(exactly = 0) { battle.abandonRun() }
     }
 
     @Test
