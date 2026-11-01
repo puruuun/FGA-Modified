@@ -148,7 +148,7 @@ class TurnLimitRetreatTest {
                     else -> error("Unexpected click")
                 }
             }
-            for (duration in listOf(0.5.seconds, 1.seconds, 5.seconds)) {
+            for (duration in listOf(0.5.seconds, 1.seconds, 6.seconds)) {
                 every { with(api) { duration.wait(any()) } } answers { trace += "wait:$duration" }
             }
         }
@@ -237,7 +237,7 @@ class TurnLimitRetreatTest {
         val f = Fixture()
         f.retreat.execute()
         assertEquals(
-            listOf("click-menu", "wait:500ms", "retreat", "wait:500ms", "ok", "wait:500ms", "close", "wait:5s"),
+            listOf("click-menu", "wait:500ms", "retreat", "wait:500ms", "ok", "wait:1s", "close", "wait:6s"),
             f.trace
         )
         assertEquals(1, f.retreat.count)
@@ -277,7 +277,7 @@ class TurnLimitRetreatTest {
         val f = Fixture().also { it.ignoredOkTaps = 1 }
         f.retreat.execute()
         assertEquals(
-            listOf("click-menu", "wait:500ms", "retreat", "wait:500ms", "ok", "wait:500ms", "ok", "wait:500ms", "close", "wait:5s"),
+            listOf("click-menu", "wait:500ms", "retreat", "wait:500ms", "ok", "wait:1s", "ok", "wait:1s", "close", "wait:6s"),
             f.trace
         )
         assertEquals(1, f.retreat.count)

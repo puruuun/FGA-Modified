@@ -140,7 +140,7 @@ class TurnLimitRetreat @Inject constructor(
 
     private fun acceptAndClose() {
         locations.withdrawAcceptClick.click()
-        0.5.seconds.wait()
+        1.seconds.wait()
         if (closeAppears()) return closeWindow()
 
         // A connection error dialog: the main loop retries it. The retreat still counts.
@@ -149,7 +149,7 @@ class TurnLimitRetreat @Inject constructor(
         // The OK tap did not register and the dialog is still up: tap it once more.
         if (locations.turnLimitRetreatOkRegion.exists(images[Images.TurnLimitRetreatConfirm])) {
             locations.withdrawAcceptClick.click()
-            0.5.seconds.wait()
+            1.seconds.wait()
             if (closeAppears()) return closeWindow()
         }
 
@@ -162,6 +162,6 @@ class TurnLimitRetreat @Inject constructor(
     private fun closeWindow() {
         locations.ordealCallOutOfPodsClick.click()
         // The quest list takes a while to load.
-        5.seconds.wait()
+        6.seconds.wait()
     }
 }
