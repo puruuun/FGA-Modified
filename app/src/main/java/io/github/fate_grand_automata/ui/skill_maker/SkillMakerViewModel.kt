@@ -158,20 +158,28 @@ class SkillMakerViewModel @AssistedInject constructor(
 
     private val _enemyTarget = mutableStateOf(state.enemyTarget)
 
-    val enemyTarget: State<Int?> = _enemyTarget
+    /** The code of the current enemy target (`1`..`9`, `R`, `10`..`12`), or null for none. */
+    val enemyTarget: State<String?> = _enemyTarget
 
-    fun setEnemyTarget(target: Int?) {
-        _enemyTarget.value = target
-
-        if (target == null) {
+    fun setEnemyTarget(target: String?) {
+        // Picking the current target again adds nothing
+        if (target != null && target == _enemyTarget.value) {
             return
         }
 
-        val targetCmd = SkillMakerEntry.Action(
-            AutoSkillAction.TargetEnemy(
-                EnemyTarget.list[target - 1]
-            )
-        )
+        val enemy = target?.let { EnemyTarget.fromCode(it) }
+
+        if (target != null && enemy == null) {
+            return
+        }
+
+        _enemyTarget.value = target
+
+        if (enemy == null) {
+            return
+        }
+
+        val targetCmd = SkillMakerEntry.Action(AutoSkillAction.TargetEnemy(enemy))
 
         val l = last
 
@@ -311,14 +319,7 @@ class SkillMakerViewModel @AssistedInject constructor(
             return
         }
 
-        val target = when (previousTarget.enemy.autoSkillCode) {
-            '1' -> 1
-            '2' -> 2
-            '3' -> 3
-            else -> return
-        }
-
-        _enemyTarget.value = target
+        _enemyTarget.value = previousTarget.enemy.autoSkillCode
     }
 
     private fun deleteStageOrTurn() {

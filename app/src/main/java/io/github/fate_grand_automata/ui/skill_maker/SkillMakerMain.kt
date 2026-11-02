@@ -23,10 +23,13 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -327,31 +330,28 @@ fun SkillHistory(vm: SkillMakerViewModel) {
 
 @Composable
 fun EnemyTarget(
-    selected: Int?,
-    onSelectedChange: (Int) -> Unit
+    selected: String?,
+    onSelectedChange: (String) -> Unit
 ) {
-    Row {
-        (1..3).map {
-            val isSelected = selected == it
-            val onClick = { onSelectedChange(it) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
 
-            Row(
-                modifier = Modifier
-                    .padding(end = 10.dp)
-                    .clickable(onClick = onClick),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = isSelected,
-                    onClick = onClick
-                )
+    OutlinedButton(onClick = { showDialog = true }) {
+        Text(
+            stringResource(
+                R.string.skill_maker_main_enemy_button,
+                selected?.let { "t$it" } ?: stringResource(R.string.skill_maker_main_enemy_none)
+            )
+        )
+    }
 
-                Text(
-                    stringResource(R.string.skill_maker_main_enemy, it),
-                    modifier = Modifier
-                        .padding(start = 5.dp)
-                )
-            }
-        }
+    if (showDialog) {
+        EnemyTargetDialog(
+            selected = selected,
+            onSelect = {
+                showDialog = false
+                onSelectedChange(it)
+            },
+            onDismiss = { showDialog = false }
+        )
     }
 }
