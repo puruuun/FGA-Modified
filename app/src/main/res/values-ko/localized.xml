@@ -474,8 +474,8 @@
     <string name="skill_maker_main_enemy">"적 %d"</string>
     <string name="skill_maker_enemy_dialog_title">"적 타겟 선택"</string>
     <string name="skill_maker_enemy_target_button">"타겟 설정"</string>
-    <string name="skill_maker_enemy_layout_normal">"3마리"</string>
-    <string name="skill_maker_enemy_layout_six">"6마리"</string>
+    <string name="skill_maker_enemy_layout_normal">"3타겟"</string>
+    <string name="skill_maker_enemy_layout_six">"6타겟"</string>
     <string name="skill_maker_enemy_layout_raid">"레이드"</string>
     <string name="skill_maker_main_master_skills">"마스터
 스킬"</string>

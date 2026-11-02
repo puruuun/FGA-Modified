@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -80,7 +80,7 @@ internal fun SkillMakerEnemyTarget(
                 .fillMaxWidth()
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,11 +117,13 @@ internal fun SkillMakerEnemyTarget(
                     .padding(bottom = 4.dp)
                     .align(Alignment.TopCenter)
             ) {
-                options.forEachIndexed { index, (value, label) ->
+                options.forEach { (value, label) ->
                     SegmentedButton(
                         selected = layout == value,
                         onClick = { layout = value },
-                        shape = SegmentedButtonDefaults.itemShape(index, options.size)
+                        // Square segments without the check mark
+                        shape = RectangleShape,
+                        icon = {}
                     ) {
                         Text(stringResource(label))
                     }
