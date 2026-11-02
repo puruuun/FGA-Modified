@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
@@ -19,12 +20,14 @@ import io.github.fate_grand_automata.scripts.modules.BattleExecution
 import io.github.fate_grand_automata.scripts.modules.CardParser
 import io.github.fate_grand_automata.scripts.modules.Caster
 import io.github.fate_grand_automata.scripts.modules.FaceCardPriority
+import io.github.fate_grand_automata.scripts.modules.FaceCardReasonKind
 import io.github.fate_grand_automata.scripts.modules.ServantTracker
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -55,6 +58,8 @@ class CardWaitingTest {
         every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
         every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
         every { config.useServantPriority } returns false
+        every { config.useServantPriorities } returns emptyList()
+        every { config.cardPriorityStyles } returns emptyList()
         every { config.spam } returns listOf(
             ServantSpamConfig(np = NpSpamConfig(waves = setOf(1), spam = SpamEnum.Spam))
         )
@@ -72,14 +77,17 @@ class CardWaitingTest {
     }
 
     @Test
-    fun `card count mode overrides face checks without writing the global setting`() {
+    fun `servant tracker face check follows the policy`() {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
-        every { api.prefs.skipServantFaceCardCheck } returns true
-        val config = mockk<IBattleConfig>()
-        every { config.commandStartMode } returns CommandStartMode.CardCount
+        val config = FaceCardCheckPolicyTest.config(commandStartMode = CommandStartMode.CardCount)
         assertTrue(ServantTracker(api, config).faceCardCheckEnabled)
-        every { config.commandStartMode } returns CommandStartMode.Basic
-        assertFalse(ServantTracker(api, config).faceCardCheckEnabled)
-        assertTrue(api.prefs.skipServantFaceCardCheck)
+        val plain = FaceCardCheckPolicyTest.config()
+        assertFalse(ServantTracker(api, plain).faceCardCheckEnabled)
+        val chains = FaceCardCheckPolicyTest.config(
+            primary = FaceCardCheckPolicyTest.profile(braveChains = listOf(BraveChainEnum.None, BraveChainEnum.Avoid))
+        )
+        val tracker = ServantTracker(api, chains)
+        assertTrue(tracker.faceCardCheckEnabled)
+        assertEquals(FaceCardReasonKind.BraveChains, tracker.faceCardCheck.reason?.kind)
     }
 }

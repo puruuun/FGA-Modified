@@ -82,13 +82,36 @@ fun BattleConfigListScreen(
     }
 
     val configs by vm.battleConfigItems.collectAsState(emptyList())
+    val expandedFolders by vm.expandedFolders.collectAsState()
+    val folderRevision by vm.folderRevision.collectAsState()
+
+    var showMoveDialog by remember { mutableStateOf(false) }
+    if (showMoveDialog && selectionMode) {
+        val existingFolders = remember(configs, folderRevision) {
+            ConfigFolders.group(configs.map { FolderItem(it.id, it.name.get(), it.folder.get()) })
+                .filterIsInstance<ConfigEntry.Folder>()
+                .map { it.displayName }
+        }
+        MoveToFolderDialog(
+            existingFolders = existingFolders,
+            onDismiss = { showMoveDialog = false },
+            onApply = {
+                showMoveDialog = false
+                vm.moveSelectedToFolder(it)
+            }
+        )
+    }
 
     BattleConfigListContent(
         configs = configs,
         selectionMode = selectionMode,
         selectedConfigs = selectedConfigs,
+        expandedFolders = expandedFolders,
+        folderRevision = folderRevision,
         action = {
             when (it) {
+                BattleConfigListAction.MoveToFolder -> showMoveDialog = true
+                is BattleConfigListAction.ToggleFolder -> vm.toggleFolder(it.key)
                 BattleConfigListAction.AddNew -> {
                     navigate(vm.newConfig().id)
                 }
@@ -116,6 +139,8 @@ private sealed class BattleConfigListAction {
     object Import : BattleConfigListAction()
     object Delete : BattleConfigListAction()
     object AddNew : BattleConfigListAction()
+    object MoveToFolder : BattleConfigListAction()
+    class ToggleFolder(val key: String) : BattleConfigListAction()
     class ToggleSelected(val id: String) : BattleConfigListAction()
     class StartSelection(val id: String) : BattleConfigListAction()
     class Edit(val id: String) : BattleConfigListAction()
@@ -127,6 +152,8 @@ private fun BattleConfigListContent(
     configs: List<BattleConfigCore>,
     selectionMode: Boolean,
     selectedConfigs: Set<String>,
+    expandedFolders: Set<String>,
+    folderRevision: Int,
     action: (BattleConfigListAction) -> Unit
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -154,12 +181,19 @@ private fun BattleConfigListContent(
 
                     Crossfade(selectionMode) {
                         if (it) {
-                            HeadingButton(
-                                text = stringResource(R.string.battle_config_list_delete),
-                                onClick = { action(BattleConfigListAction.Delete) },
-                                isDanger = true,
-                                icon = icon(Icons.Default.Delete)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                HeadingButton(
+                                    text = stringResource(R.string.battle_config_folder_move),
+                                    onClick = { action(BattleConfigListAction.MoveToFolder) },
+                                    modifier = Modifier.padding(end = 5.dp)
+                                )
+                                HeadingButton(
+                                    text = stringResource(R.string.battle_config_list_delete),
+                                    onClick = { action(BattleConfigListAction.Delete) },
+                                    isDanger = true,
+                                    icon = icon(Icons.Default.Delete)
+                                )
+                            }
                         } else {
                             HeadingButton(
                                 text = stringResource(R.string.battle_config_list_import),
@@ -181,6 +215,8 @@ private fun BattleConfigListContent(
                         selectionMode = selectionMode,
                         action = action,
                         selectedConfigs = selectedConfigs,
+                        expandedFolders = expandedFolders,
+                        folderRevision = folderRevision,
                         modifier = Modifier
                             .weight(1f)
                     )
@@ -210,7 +246,9 @@ private fun BattleConfigListContent(
                                 configs = filteredConfigs,
                                 selectionMode = selectionMode,
                                 action = action,
-                                selectedConfigs = selectedConfigs
+                                selectedConfigs = selectedConfigs,
+                                expandedFolders = expandedFolders,
+                                folderRevision = folderRevision
                             )
                         },
                         modifier = Modifier
@@ -262,8 +300,18 @@ private fun ConfigList(
     selectionMode: Boolean,
     action: (BattleConfigListAction) -> Unit,
     selectedConfigs: Set<String>,
+    expandedFolders: Set<String>,
+    folderRevision: Int,
     modifier: Modifier = Modifier
 ) {
+    val configsByServer = remember(configs, folderRevision) {
+        configs.groupBy { it.server.get().asGameServer() }.map { (server, list) ->
+            val byId = list.associateBy { it.id }
+            val entries = ConfigFolders.group(list.map { FolderItem(it.id, it.name.get(), it.folder.get()) })
+            Triple(server, entries, byId)
+        }
+    }
+
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(top = 16.dp)
@@ -276,8 +324,7 @@ private fun ConfigList(
                 )
             }
         } else {
-            val configsByServer = configs.groupBy { it.server.get().asGameServer() }
-            configsByServer.forEach { entry ->
+            configsByServer.forEach { (server, entries, byId) ->
                 if (configsByServer.size > 1) {
                     stickyHeader {
                         Column(
@@ -287,7 +334,7 @@ private fun ConfigList(
                                 .padding(10.dp, 5.dp),
                         ) {
                             Text(
-                                text = stringResource(entry.key?.simpleStringRes ?: R.string.p_not_set),
+                                text = stringResource(server?.simpleStringRes ?: R.string.p_not_set),
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.titleLarge,
                                 textAlign = TextAlign.Left,
@@ -297,27 +344,55 @@ private fun ConfigList(
                     }
                 }
 
-                items(
-                    entry.value,
-                    key = { it.id }
-                ) {
+                @Composable
+                fun configItem(core: BattleConfigCore, indent: Boolean) {
                     BattleConfigListItem(
-                        it,
+                        core,
                         onClick = {
                             if (selectionMode) {
-                                action(BattleConfigListAction.ToggleSelected(it.id))
+                                action(BattleConfigListAction.ToggleSelected(core.id))
                             } else {
-                                action(BattleConfigListAction.Edit(it.id))
+                                action(BattleConfigListAction.Edit(core.id))
                             }
                         },
                         onLongClick = {
                             if (!selectionMode) {
-                                action(BattleConfigListAction.StartSelection(it.id))
+                                action(BattleConfigListAction.StartSelection(core.id))
                             }
                         },
                         isSelectionMode = selectionMode,
-                        isSelected = selectionMode && it.id in selectedConfigs
+                        isSelected = selectionMode && core.id in selectedConfigs,
+                        modifier = if (indent) Modifier.padding(start = 24.dp) else Modifier
                     )
+                }
+
+                entries.forEach { entry ->
+                    when (entry) {
+                        is ConfigEntry.Folder -> {
+                            val expanded = entry.key in expandedFolders
+                            item(key = "folder:${server?.toString()}:${entry.key}") {
+                                val selectedCount = if (selectionMode && !expanded)
+                                    entry.items.count { it.id in selectedConfigs }
+                                else 0
+                                FolderRow(
+                                    name = entry.displayName,
+                                    count = entry.items.size,
+                                    expanded = expanded,
+                                    selectedCount = selectedCount,
+                                    onClick = { action(BattleConfigListAction.ToggleFolder(entry.key)) }
+                                )
+                            }
+                            if (expanded) {
+                                items(entry.items, key = { it.id }) { item ->
+                                    byId[item.id]?.let { configItem(it, indent = true) }
+                                }
+                            }
+                        }
+
+                        is ConfigEntry.Unfiled -> item(key = entry.item.id) {
+                            byId[entry.item.id]?.let { configItem(it, indent = false) }
+                        }
+                    }
                 }
 
                 item {
@@ -372,7 +447,8 @@ private fun BattleConfigListItem(
     isSelectionMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val name by it.name.remember()
     val materialsSet by it.materials.remember()
@@ -384,7 +460,7 @@ private fun BattleConfigListItem(
     Card(
         shape = RoundedCornerShape(25),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 5.dp else 1.dp),
-        modifier = Modifier
+        modifier = modifier
             .padding(5.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,

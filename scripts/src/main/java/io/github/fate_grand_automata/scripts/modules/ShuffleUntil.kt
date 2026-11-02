@@ -37,9 +37,6 @@ class ShuffleUntil @Inject constructor(
     }
 
     fun execute(action: AutoSkillAction.ShuffleUntil) {
-        if (!servantTracker.faceCardCheckEnabled) {
-            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.ShuffleUntilFaceCheckDisabled)
-        }
         state.hakunoShuffledThisTurn = true
         var presses = 0
         var finalCounts = action.conditions.map { 0 }

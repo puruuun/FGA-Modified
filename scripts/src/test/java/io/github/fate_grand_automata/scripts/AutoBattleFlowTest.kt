@@ -69,10 +69,10 @@ class AutoBattleFlowTest {
             battle = Battle(api, mockk(relaxed = true), state, mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
             entry = AutoBattle(mockk(relaxed = true), api, state, battle, support,
                 mockk(relaxed = true), QuestLaunch(api, party, items), mockk(relaxed = true),
-                mockk(relaxed = true), refill, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+                mockk(relaxed = true), refill, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
         }
 
         fun run() = assertFailsWith<AutoBattle.ExitException> { entry.script() }.also {

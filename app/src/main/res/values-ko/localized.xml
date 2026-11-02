@@ -15,7 +15,6 @@
     <string name="hakuno_shuffle_remove">삭제</string>
     <string name="hakuno_shuffle_add">조건 추가</string>
     <string name="hakuno_shuffle_stop">조건을 만족하지 못하면 전투 정지</string>
-    <string name="hakuno_shuffle_face_check_disabled">하쿠노 셔플에는 일반 카드 확인이 필요합니다.</string>
     <string name="hakuno_shuffle_return_failed">하쿠노 셔플 후 전투 화면으로 돌아오지 못했습니다.</string>
     <string name="hakuno_shuffle_unmet">하쿠노 셔플 %1$d회 후 조건 미충족: %2$s</string>
     <string name="hakuno_shuffle_np_shortage">NP 부족</string>
@@ -76,7 +75,16 @@
     <string name="card_priority_style">"방식"</string>
     <string name="card_priority_style_affinity">"상성"</string>
     <string name="card_priority_style_servant">"서번트"</string>
-    <string name="card_priority_servant_style_note">"서번트 방식은 이 순서대로 카드를 고릅니다. 서번트 우선순위, 브레이브 체인, 카드 재배열은 무시됩니다."</string>
+    <string name="card_priority_servant_style_note">"서번트 방식은 이 순서대로 카드를 고릅니다. 이 항목에서는 서번트 우선순위, 브레이브 체인, 카드 재배열이 무시됩니다."</string>
+    <string name="face_card_check_auto_on">"서번트 카드 확인: 자동 — 켜짐 (%1$s)"</string>
+    <string name="face_card_check_auto_off">"서번트 카드 확인: 자동 — 생략"</string>
+    <string name="face_card_reason_servant_style">"서번트 방식 %1$s"</string>
+    <string name="face_card_reason_servant_priority">"서번트 우선순위 %1$s"</string>
+    <string name="face_card_reason_brave_chains">"브레이브 체인 %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"보구 맞춤 셔플"</string>
+    <string name="face_card_reason_hakuno_shuffle">"하쿠노 셔플"</string>
+    <string name="face_card_reason_card_count">"카드 수 시작"</string>
+    <string name="card_priority_summary_servant_priority">"서번트 우선"</string>
     <string name="card_priority_split_wave">"웨이브"</string>
     <string name="card_priority_split_turn">"턴"</string>
     <string name="ce_dropped">"개념예장 드롭됨!"</string>
@@ -256,7 +264,6 @@
     <string name="p_debug_mode_summary">"대조되고 있는 부분 표시하기"</string>
     <string name="p_support_reader_diagnostics">"서포트 판독 진단 저장"</string>
     <string name="p_support_reader_diagnostics_summary">"확인한 서포트마다 점수 이미지와 판독 근거를 저장합니다. 기본값은 꺼짐이며, FGA 저장 폴더의 diagnostics 폴더에 저장됩니다."</string>
-    <string name="p_enable_withdraw">"퇴각 활성화"</string>
     <string name="p_fine_tune">"미세 조정"</string>
     <string name="p_fine_tune_click_delay">"반복 터치 사이 딜레이 (ms)"</string>
     <string name="p_fine_tune_click_duration">"터치 지속 시간 (ms)"</string>
@@ -319,7 +326,8 @@
     <string name="skill_maker_direct_cards">일반 카드 직접 지정</string>
     <string name="skill_maker_direct_cards_button">일반 카드\n직접 지정</string>
     <string name="skill_maker_direct_cards_use">이 턴의 공격 순서 직접 지정</string>
-    <string name="skill_maker_direct_cards_fallback">카드 부족 시 우선순위로 대체</string>
+    <string name="skill_maker_direct_cards_fallback">카드 부족 및 미선택 카드 우선순위로 대체</string>
+    <string name="skill_maker_direct_cards_unselected">미선택</string>
     <string name="skill_maker_direct_cards_fallback_summary">부족 시 대체</string>
     <string name="skill_maker_direct_cards_slot">%1$d번째 공격</string>
     <string name="skill_maker_direct_np">서번트 %1$d 보구</string>
@@ -360,8 +368,6 @@
     <string name="p_shuffle_cards_when_no_np_matching">"보구와 맞는 카드 없음"</string>
     <string name="p_shuffle_cards_when_first_turn_start_condition">첫 턴 커맨드 시작 조건 불만족</string>
     <string name="p_shuffle_cards_when_none">"없음"</string>
-    <string name="p_skip_servant_face_checks">"서번트 카드 아이콘 확인 생략"</string>
-    <string name="p_skip_servant_face_checks_summary">"활성화시 브레이브 체인, 서번트 우선순위, 보구에 맞는 카드 셔플 등의 기능을 사용할 수 없습니다."</string>
     <string name="p_spam_danger">"위협적인 적에게"</string>
     <string name="p_spam_none">"사용 안 함"</string>
     <string name="p_spam_spam">"스팸 모드"</string>
@@ -388,8 +394,8 @@
     <string name="p_support_mode_manual">"수동"</string>
     <string name="p_support_mode_preferred">"선호"</string>
     <string name="p_thresholded_stage_counter">"스테이지 카운터 감지에 유사도 계산 사용"</string>
-    <string name="p_treat_support_like_own_servant">"서포트를 자신의 서번트처럼 취급합니다"</string>
-    <string name="p_treat_support_like_own_servant_summary">"페이스 카드에서 서포트 아이콘을 찾는 대신 일반적인 페이스 카드 검사를 수행합니다. 이렇게 하면 슈퍼 버프 서포트 서번트에 대한 문제가 해결되지만 파티에 같은 서번트가 2명 있는 경우 카드 우선순위 기능이 깨집니다."</string>
+    <string name="p_treat_support_like_own_servant">"서포트 아이콘 확인 생략"</string>
+    <string name="p_treat_support_like_own_servant_summary">"카드에서 서포트 아이콘을 찾지 않고, 서포트 카드도 얼굴 이미지로 구분합니다. 버프가 많아 서포트 아이콘이 가려질 때 켜세요. 파티에 같은 서번트가 2명 있으면 카드 배정이 틀어집니다. 서번트 카드 확인이 필요한 설정에서만 적용됩니다."</string>
     <string name="p_wait_ap_regen_text">"AP 회복 기다리기"</string>
     <string name="p_welcome">"FGA에 오신걸 환영합니다!"</string>
     <string name="p_welcome_description">"FGA 사용에 필요한 설정법을 안내드리겠습니다."</string>
@@ -466,6 +472,11 @@
     <string name="skill_maker_main_clear">"초기화"</string>
     <string name="skill_maker_main_delete_selected">"선택 삭제"</string>
     <string name="skill_maker_main_enemy">"적 %d"</string>
+    <string name="skill_maker_enemy_dialog_title">"적 타겟 선택"</string>
+    <string name="skill_maker_enemy_target_button">"타겟 설정"</string>
+    <string name="skill_maker_enemy_layout_normal">"3타겟"</string>
+    <string name="skill_maker_enemy_layout_six">"6타겟"</string>
+    <string name="skill_maker_enemy_layout_raid">"레이드"</string>
     <string name="skill_maker_main_master_skills">"마스터
 스킬"</string>
     <string name="skill_maker_main_servant">"서번트 %d"</string>
@@ -538,7 +549,6 @@
     <string name="times_ran">"%d번 반복함"</string>
     <string name="times_ran_out_of">"%2$d번 중 %1$d번 반복함"</string>
     <string name="times_rolled">"%d번 돌림"</string>
-    <string name="times_withdrew">"%d번 철수함"</string>
     <string name="troubleshoot">"문제 해결"</string>
     <string name="turns_count">"턴: %d"</string>
 
@@ -782,6 +792,7 @@
     <string name="skill_level_step_confirm">결정·취소</string>
     <string name="skill_level_step_skip">스킵·복귀</string>
     <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_deselected">모든 스킬이 10레벨에 도달하여 선택이 해제되었습니다.</string>
     <string name="skill_level_stop_error">예상 밖의 오류입니다. 강화가 진행됐는지 확인하세요.</string>
     <string name="weekly_route_title">주간 미션 클리어</string>
     <string name="weekly_route_loading">이번 주 미션을 내려받는 중…</string>
@@ -880,4 +891,20 @@
     <string name="game_area_calibration_scales">두 버튼의 배율이 서로 다릅니다. 화면 배치를 유지하고 메인 화면에서 다시 시도하세요.</string>
     <string name="game_area_calibration_bounds">화면 안에서 지원되는 비율의 게임 영역을 확정하지 못했습니다. 화면 배치를 확인하고 다시 시도하세요.</string>
     <string name="game_area_calibration_check">계산한 영역을 적용한 뒤 MENU를 확인하지 못했습니다. 저장하지 않았습니다. 메인 화면에서 다시 시도하세요.</string>
+    <string name="p_battle_config_turn_limit_retreat">"퇴각 후 재시작"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"퇴각 후 재시작"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"전투가 이 턴에 도달하면 그 턴을 진행하지 않고 퀘스트에서 퇴각한 뒤 퀘스트를 다시 시작합니다. 커맨드 시작 조건으로 대기한 턴은 세지 않습니다. 0턴이면 파티가 전멸했을 때만 퇴각합니다."</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"%d회 연속 퇴각 시 정지"</string>
+    <string name="turn_limit_retreat_turns_value">"%d턴 도달 시 퇴각"</string>
+    <string name="turn_limit_retreat_wipe_only">"전멸 시 퇴각"</string>
+    <string name="retreat_count">"퇴각 %1$d회 (전멸 %2$d회, 턴 제한 %3$d회)"</string>
+    <string name="turn_limit_retreat_failed">"턴 제한 퇴각에 실패했습니다. 다른 조작을 하기 전에 중단했습니다."</string>
+    <string name="turn_limit_retreat_streak_stop">"퇴각이 %d회 연속 발생해 정지했습니다."</string>
+    <string name="battle_config_folder_move">"폴더로 이동"</string>
+    <string name="battle_config_folder_new">"새 폴더…"</string>
+    <string name="battle_config_folder_remove">"폴더에서 빼기"</string>
+    <string name="battle_config_folder_name">"폴더 이름"</string>
+    <string name="battle_config_folder_selected_count">"%d개 선택"</string>
+    <string name="battle_config_folder_error_blank">"폴더 이름을 입력하세요"</string>
+    <string name="battle_config_folder_error_too_long">"30자까지 입력할 수 있습니다"</string>
 </resources>

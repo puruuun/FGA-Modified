@@ -74,4 +74,33 @@ class SkillMakerDirectCardsTest {
         assertThat(action.directCards?.fallback).isEqualTo(true)
         assertThat(action.copy().toCommandString()).isEqualTo("&?b4a")
     }
+
+    @Test
+    fun `picking Unselected forces and locks the fallback and reverting unlocks it keeping the value`() {
+        assertThat(directCardsFallbackAfterChoice(false, 'p')).isEqualTo(true)
+        assertThat(directCardsFallbackLocked("bpa")).isEqualTo(true)
+        assertThat(directCardsCommand("bpa", false)).isEqualTo("?bpa")
+        // Reverting the last Unselected slot unlocks the checkbox and keeps its (now on) value.
+        assertThat(directCardsFallbackLocked("baa")).isEqualTo(false)
+        assertThat(directCardsFallbackAfterChoice(true, 'a')).isEqualTo(true)
+        assertThat(directCardsFallbackAfterChoice(false, 'a')).isEqualTo(false)
+        assertThat(directCardsCommand("baq", false)).isEqualTo("baq")
+        assertThat(directCardsCommand("baq", true)).isEqualTo("?baq")
+        // Opening an existing command shows it on and locked.
+        val opened = DirectCardSequence.parse("?bp4")
+        assertThat(opened.fallback).isEqualTo(true)
+        assertThat(directCardsFallbackLocked(opened.code)).isEqualTo(true)
+    }
+
+    @Test
+    fun `unselected attacks roundtrip through the editor model and an unapplied dialog changes nothing`() {
+        val source = "a1b2&?bp4,&?ppp,&bba"
+        val model = SkillMakerModel(source)
+        assertThat(model.toString()).isEqualTo(source)
+        assertThat(SkillMakerModel(model.toString()).toString()).isEqualTo(source)
+        // Dismiss never calls onApply: the dialog only builds a command string, the model stays as it was.
+        val staged = AutoSkillAction.Atk.direct(DirectCardSequence.parse(directCardsCommand("pa4", false)))
+        assertThat(staged.toCommandString()).isEqualTo("&?pa4")
+        assertThat(model.toString()).isEqualTo(source)
+    }
 }

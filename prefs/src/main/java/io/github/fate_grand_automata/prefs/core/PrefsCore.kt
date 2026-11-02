@@ -35,7 +35,10 @@ class PrefsCore @Inject constructor(
     val battleConfigList = maker.stringSet("autoskill_list")
 
     val storySkip = maker.bool("story_skip")
-    val withdrawEnabled = maker.bool("withdraw_enabled")
+
+    /** Retired global switch; only read once by [RetreatMergeMigration]. */
+    val legacyWithdrawEnabled = maker.bool("withdraw_enabled")
+    val retreatMergeMigrated = maker.bool("retreat_merge_migrated")
 
     val stopOnCEGet = maker.bool("stop_on_ce_get")
     val stopOnFirstClearRewards = maker.bool("stop_on_first_clear_rewards")
@@ -94,7 +97,6 @@ class PrefsCore @Inject constructor(
 
 
     val stopAfterThisRun = maker.bool("stop_after_this_run")
-    val skipServantFaceCardCheck = maker.bool("skip_servant_face_card_check")
     val treatSupportLikeOwnServant = maker.bool("treat_support_like_own_servant")
 
     val playBtnLocation = maker.serialized(
@@ -163,4 +165,14 @@ class PrefsCore @Inject constructor(
 
     val servantEnhancement = ServantEnhancementPrefsCore(maker)
 
+    init {
+        RetreatMergeMigration.run(
+            done = retreatMergeMigrated,
+            legacyWithdrawEnabled = legacyWithdrawEnabled,
+            targets = battleConfigList.get().map {
+                val config = forBattleConfig(it)
+                RetreatMergeMigration.Target(config.turnLimitRetreatEnabled, config.turnLimitRetreatTurns)
+            }
+        )
+    }
 }

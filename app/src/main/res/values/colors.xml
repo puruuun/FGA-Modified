@@ -4,6 +4,7 @@
     <color name="colorAccent">#3498db</color>
 
     <color name="colorEnemyTarget">#2e7d32</color>
+    <color name="colorEnemyTargetButton">#E65100</color>
     <color name="colorMasterSkill">#006064</color>
     <color name="colorCommandSpell">#a03243</color>
     <color name="colorStageChange">#616161</color>

@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
+import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.SpamConfigPerTeamSlot
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IExecutionProfile
@@ -18,17 +19,29 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
     class Profile(source: IExecutionProfile) {
         val skillCommand = AutoSkillCommand.parse(source.skillCommand)
         val prioritySplit = source.cardPrioritySplit
-        val style = source.cardPriorityStyle
-        private val servantStyle = style == CardPriorityStyle.Servant
-        // The servant style ignores the servant priority toggle, brave chains and rearrange.
+        // An empty per-entry list means the profile predates per-entry settings: use the old single values.
+        private val styles = PerEntrySettings.withLegacy(source.cardPriorityStyles, source.cardPriorityStyle)
+        private val servantPriorityFlags =
+            PerEntrySettings.withLegacy(source.useServantPriorities, source.useServantPriority)
         val priority = FaceCardPriority(
             source.cardPriority,
-            source.servantPriority.takeIf { source.useServantPriority && !servantStyle },
-            style,
+            source.servantPriority,
+            styles,
+            servantPriorityFlags,
             source.servantCardPriority
         )
-        val braveChains: List<BraveChainEnum> = if (servantStyle) emptyList() else source.braveChains.toList()
-        val rearrangeCards = if (servantStyle) emptyList() else source.rearrangeCards.toList()
+        private val braveChains: List<BraveChainEnum> = source.braveChains.toList()
+        private val rearrangeCards = source.rearrangeCards.toList()
+
+        fun styleAt(entry: Int) = priority.styleAt(entry)
+
+        /** The servant style ignores brave chains and rearrange for that entry only. */
+        fun braveChainAt(entry: Int) =
+            if (styleAt(entry) == CardPriorityStyle.Servant) BraveChainEnum.None
+            else PerEntrySettings.at(braveChains, entry, BraveChainEnum.None)
+
+        fun rearrangeAt(entry: Int) =
+            styleAt(entry) != CardPriorityStyle.Servant && PerEntrySettings.at(rearrangeCards, entry, false)
 
         /** The index of the card priority, brave chain and rearrange entries to use. */
         fun priorityIndex(stage: Int, totalTurn: Int) =

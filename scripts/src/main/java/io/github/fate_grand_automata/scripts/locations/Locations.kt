@@ -63,6 +63,12 @@ class Locations @Inject constructor(
     val withdrawAcceptClick = Location(485, 720).xFromCenter()
     val withdrawCloseClick = Location(-10, 1140).xFromCenter()
 
+    // Turn limit retreat (KR/JP): measured on 16:9 and wide, centre anchored on both.
+    val turnLimitRetreatRegion = Region(380, 430, 340, 130).xFromCenter()
+    val turnLimitRetreatClick = Location(547, 496).xFromCenter()
+    val turnLimitRetreatOkRegion = Region(285, 640, 400, 160).xFromCenter()
+    val battleMenuCloseClick = Location(1073, 220).xFromCenter()
+
     fun locate(refillResource: RefillResourceEnum): List<Location> {
         //scroll bar click location
         val scrollBarLoc = when (refillResource) {

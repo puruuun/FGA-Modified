@@ -74,6 +74,18 @@ class BattleConfigFileTest {
     }
 
     @Test
+    fun `the folder survives a round trip`() {
+        assertThat(roundTrip(mapOf("battle_config_folder" to "Lancer"))["battle_config_folder"])
+            .isEqualTo("Lancer")
+    }
+
+    @Test
+    fun `a file without a folder decodes without one`() {
+        val decoded = roundTrip(mapOf("autoskill_name" to "Old"))
+        assertThat(decoded.containsKey("battle_config_folder")).isEqualTo(false)
+    }
+
+    @Test
     fun `a file that is not a JSON object is rejected`() {
         assertFailsWith<SerializationException> {
             BattleConfigFile.decode("not a battle config")

@@ -10,6 +10,8 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
+import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.CardPriority
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
@@ -34,6 +36,9 @@ class CardPriorityViewModel @AssistedInject constructor(
 
         val rearrangeCards = battleConfig.rearrangeCards.get()
         val braveChains = battleConfig.braveChains.get()
+        // Empty per-entry prefs mean a config saved before per-entry settings: use the old single values.
+        val styles = PerEntrySettings.withLegacy(battleConfig.cardPriorityStyles.get(), battleConfig.cardPriorityStyle.get())
+        val servantFlags = PerEntrySettings.withLegacy(battleConfig.useServantPriorities.get(), battleConfig.useServantPriority.get())
 
         cardPriority
             .take(CARD_PRIORITY_MAX_ENTRIES)
@@ -45,15 +50,15 @@ class CardPriorityViewModel @AssistedInject constructor(
                     servantPriority.atWave(it.index).toMutableStateList(),
                     servantCards.atWave(it.index).toMutableStateList(),
                     mutableStateOf(rearrangeCards.getOrElse(it.index) { false }),
-                    mutableStateOf(braveChains.getOrElse(it.index) { BraveChainEnum.None })
+                    mutableStateOf(braveChains.getOrElse(it.index) { BraveChainEnum.None }),
+                    mutableStateOf(PerEntrySettings.at(styles, it.index, CardPriorityStyle.Affinity)),
+                    mutableStateOf(PerEntrySettings.at(servantFlags, it.index, false))
                 )
             }
             .toMutableStateList()
     }
 
-    val useServantPriority = battleConfig.useServantPriority
     val cardPrioritySplit = battleConfig.cardPrioritySplit
-    val cardPriorityStyle = battleConfig.cardPriorityStyle
 
     fun save() {
         battleConfig.cardPriority.set(
@@ -76,5 +81,8 @@ class CardPriorityViewModel @AssistedInject constructor(
 
         battleConfig.rearrangeCards.set(cardPriorityItems.map { it.rearrangeCards.value })
         battleConfig.braveChains.set(cardPriorityItems.map { it.braveChains.value })
+        // The old single prefs stay as they are; they only supply values for configs without these lists.
+        battleConfig.cardPriorityStyles.set(cardPriorityItems.map { it.style.value })
+        battleConfig.useServantPriorities.set(cardPriorityItems.map { it.useServantPriority.value })
     }
 }

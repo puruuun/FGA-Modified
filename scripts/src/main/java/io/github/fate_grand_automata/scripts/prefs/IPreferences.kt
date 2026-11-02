@@ -13,7 +13,6 @@ interface IPreferences {
     var selectedServerConfigPref: IPerServerConfigPrefs
     var selectedBattleConfig: IBattleConfig
     val storySkip: Boolean
-    val withdrawEnabled: Boolean
     val stopOnCEGet: Boolean
     val stopOnFirstClearRewards: Boolean
     val boostItemSelectionMode: Int
@@ -33,7 +32,6 @@ interface IPreferences {
     var maxGoldEmberStackSize: Int
     var maxGoldEmberTotalCount: Int
     var stopAfterThisRun: Boolean
-    val skipServantFaceCardCheck: Boolean
     val treatSupportLikeOwnServant: Boolean
 
     var shouldLimitFP: Boolean

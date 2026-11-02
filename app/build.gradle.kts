@@ -1,3 +1,5 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 import javax.inject.Inject
 
@@ -8,6 +10,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
 }
 
 /*
@@ -155,6 +158,148 @@ androidComponents {
     }
 }
 
+/*
+ * Release signing (issue #128). AGP debug-signs the ci and beta APKs; the finalizer task below
+ * re-signs them in place with APK Signature Scheme v3 key rotation: the public debug key stays the
+ * original signer and the owner's private key is the rotated one. See
+ * docs/agents/releases-and-versioning.md ("Release signing").
+ *
+ * The key is only looked up when the task runs, so unit tests and other builds never need it.
+ * Passwords reach apksigner through environment variables of the child process only.
+ */
+abstract class SignRotatedApk : DefaultTask() {
+    @get:Internal
+    abstract val apk: RegularFileProperty
+
+    /** Debug signing only: leaves the AGP output alone and logs that it is for testing. */
+    @get:Input
+    abstract val debugOnly: Property<Boolean>
+
+    @get:Internal
+    abstract val debugKeystore: RegularFileProperty
+
+    @get:Internal
+    abstract val lineage: RegularFileProperty
+
+    @get:Input
+    @get:Optional
+    abstract val propertiesPathOverride: Property<String>
+
+    @get:Input
+    abstract val userHome: Property<String>
+
+    @get:Input
+    abstract val buildToolsVersion: Property<String>
+
+    @get:Internal
+    abstract val sdkDirectory: DirectoryProperty
+
+    init {
+        // The task rewrites AGP's output in place, so it must run every time it is requested.
+        outputs.upToDateWhen { false }
+    }
+
+    @TaskAction
+    fun sign() {
+        val apkFile = apk.get().asFile
+        if (debugOnly.get()) {
+            logger.lifecycle(
+                "NOTE: ${apkFile.name} is signed with the public debug key only (CI or -PfgaDebugSigning=true). " +
+                    "For testing; it cannot update a release-signed install.",
+            )
+            return
+        }
+        if (!apkFile.isFile) throw GradleException("APK to sign is missing: ${apkFile.path}")
+        try {
+            signRotated(apkFile)
+        } catch (e: Exception) {
+            // Never leave the debug-signed APK at the release path, where it could be shipped by mistake.
+            apkFile.delete()
+            throw e
+        }
+    }
+
+    private fun signRotated(apkFile: File) {
+        val guide = "docs/agents/releases-and-versioning.md (Release signing)"
+
+        val propsFile = File(
+            propertiesPathOverride.orNull ?: "${userHome.get()}/.fga-signing/signing.properties",
+        )
+        if (!propsFile.isFile) {
+            throw GradleException(
+                "Release signing properties file not found: ${propsFile.path}. " +
+                    "Create it or set FGA_SIGNING_PROPERTIES, or pass -PfgaDebugSigning=true for a test build. See $guide.",
+            )
+        }
+        val props = Properties().apply { propsFile.inputStream().use { load(it) } }
+        fun prop(key: String) = props.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw GradleException("Key '$key' is missing in ${propsFile.path}. See $guide.")
+        val storeFile = File(prop("storeFile"))
+        if (!storeFile.isFile) {
+            throw GradleException("Release keystore not found: ${storeFile.path} (storeFile in ${propsFile.path}). See $guide.")
+        }
+        val lineageFile = lineage.get().asFile
+        if (!lineageFile.isFile) {
+            throw GradleException("Key rotation lineage not found: ${lineageFile.path}. See app/signing/README.md and $guide.")
+        }
+        val debugStore = debugKeystore.get().asFile
+        val jar = File(sdkDirectory.get().asFile, "build-tools/${buildToolsVersion.get()}/lib/apksigner.jar")
+        if (!jar.isFile) throw GradleException("apksigner.jar not found: ${jar.path}. Install Android build-tools ${buildToolsVersion.get()}.")
+
+        val signed = File(apkFile.parentFile, apkFile.name + ".rotated")
+        val javaExe = File(System.getProperty("java.home"), "bin/java").path
+        val command = listOf(
+            javaExe, "-jar", jar.path, "sign",
+            "--lineage", lineageFile.path,
+            "--rotation-min-sdk-version", "28",
+            "--v2-signing-enabled", "true",
+            "--v3-signing-enabled", "true",
+            "--in", apkFile.path,
+            "--out", signed.path,
+            "--ks", debugStore.path, "--ks-key-alias", "fgadebug",
+            "--ks-pass", "env:FGA_OLD_STORE_PASS", "--key-pass", "env:FGA_OLD_KEY_PASS",
+            "--next-signer",
+            "--ks", storeFile.path, "--ks-key-alias", prop("keyAlias"),
+            "--ks-pass", "env:FGA_NEW_STORE_PASS", "--key-pass", "env:FGA_NEW_KEY_PASS",
+        )
+        val builder = ProcessBuilder(command).redirectErrorStream(true)
+        builder.environment().apply {
+            put("FGA_OLD_STORE_PASS", "123abc")
+            put("FGA_OLD_KEY_PASS", "123abc")
+            put("FGA_NEW_STORE_PASS", prop("storePassword"))
+            put("FGA_NEW_KEY_PASS", prop("keyPassword"))
+        }
+        val process = builder.start()
+        val output = process.inputStream.bufferedReader().readText()
+        if (process.waitFor() != 0) {
+            signed.delete()
+            throw GradleException("apksigner failed for ${apkFile.name}:\n$output")
+        }
+        Files.move(signed.toPath(), apkFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        logger.lifecycle("Signed ${apkFile.name} with the rotated release key (lineage ${lineageFile.name}).")
+    }
+}
+
+val debugSigningOnly: Provider<Boolean> = providers.environmentVariable("CI").map { it == "true" }
+    .orElse(false)
+    .zip(providers.gradleProperty("fgaDebugSigning").map { it == "true" }.orElse(false)) { a, b -> a || b }
+
+listOf("ci", "beta").forEach { buildType ->
+    val signTask = tasks.register<SignRotatedApk>("sign${buildType.replaceFirstChar { it.uppercase() }}Rotated") {
+        description = "Re-signs the $buildType APK with the rotated release key (or logs debug-only signing)."
+        apk.set(layout.buildDirectory.file("outputs/apk/$buildType/app-$buildType.apk"))
+        debugOnly.set(debugSigningOnly)
+        debugKeystore.set(layout.projectDirectory.file("fgadebug.keystore"))
+        lineage.set(layout.projectDirectory.file("signing/fga-lineage.bin"))
+        propertiesPathOverride.set(providers.environmentVariable("FGA_SIGNING_PROPERTIES"))
+        userHome.set(providers.systemProperty("user.home"))
+        buildToolsVersion.set(provider { android.buildToolsVersion })
+        sdkDirectory.set(androidComponents.sdkComponents.sdkDirectory)
+    }
+    tasks.matching { it.name == "assemble${buildType.replaceFirstChar { c -> c.uppercase() }}" }
+        .configureEach { finalizedBy(signTask) }
+}
+
 android {
     compileSdk = 37
 
@@ -241,6 +386,13 @@ android {
     // run tests in CI builds instad of debug
     testBuildType = if (providers.gradleProperty("fgaDeviceTests").orNull == "true") "deviceTest" else "ci"
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and manifest to render the real screens.
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         jniLibs {
             // Project-local jniLibs are merged ahead of any dependency's, so ours wins.
@@ -326,10 +478,22 @@ dependencies {
     }
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.willowtreeapps.assertk)
+
+    // Screenshot tests (Roborazzi on Robolectric). Test-only; they run on JUnit 4 through the vintage engine.
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+
+    // Robolectric's SDK 36 environment reaches into JDK internals.
+    jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
 
     val supportAssets = layout.projectDirectory.dir("src/main/assets/Support")
 
@@ -351,4 +515,17 @@ tasks.withType<Test>().configureEach {
      * up to date.
      */
     inputs.dir(supportAssets).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+/*
+ * Screenshot tests render the real screens under Robolectric, which costs seconds per image, and
+ * their images are for the owner's review, not a CI gate. The Roborazzi record task drives
+ * `testCiUnitTest` itself, so the tests are filtered out of that task unless a Roborazzi task was
+ * asked for: `:app:testCiUnitTest` (Main CI) skips them, `:app:recordRoborazziCi` runs them.
+ */
+val screenshotRunRequested = gradle.startParameter.taskNames.any { it.contains("Roborazzi", ignoreCase = true) }
+if (!screenshotRunRequested) {
+    tasks.withType<Test>().configureEach {
+        filter.excludeTestsMatching("*ScreenshotTest")
+    }
 }

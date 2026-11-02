@@ -6294,6 +6294,90 @@
       "daily": false,
       "accepted": true,
       "acceptedIndex": 1
+    },
+    {
+      "name": "JP-issue130-16x9-name-image",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta8/21-q93020303-a0.webp",
+      "view": "spotPanel",
+      "targetName": "千手千眼",
+      "targetSpot": "庵",
+      "targetAp": 21,
+      "questId": 93020303,
+      "freeQuests": 1,
+      "forceNullName": true,
+      "spotNames": [
+        "庵"
+      ],
+      "expected": {
+        "found": true,
+        "match": true,
+        "by": "name-image"
+      }
+    },
+    {
+      "name": "JP-issue130-21x9-name-image",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/beta9-shimousa.webp",
+      "view": "spotPanel",
+      "targetName": "千手千眼",
+      "targetSpot": "庵",
+      "targetAp": 21,
+      "questId": 93020303,
+      "freeQuests": 1,
+      "forceNullName": true,
+      "spotNames": [
+        "庵"
+      ],
+      "expected": {
+        "found": true,
+        "match": true,
+        "by": "name-image"
+      }
+    },
+    {
+      "name": "JP-issue130-19.5x9-name-image",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/issue130/10-q93020303-a0.webp",
+      "view": "spotPanel",
+      "targetName": "千手千眼",
+      "targetSpot": "庵",
+      "targetAp": 21,
+      "questId": 93020303,
+      "freeQuests": 1,
+      "forceNullName": true,
+      "spotNames": [
+        "庵"
+      ],
+      "expected": {
+        "found": true,
+        "match": true,
+        "by": "name-image"
+      }
+    },
+    {
+      "name": "JP-issue130-sibling-spot-not-name-image",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/probe-beta8/16-q93000709-a0.webp",
+      "view": "spotPanel",
+      "targetName": "千手千眼",
+      "targetSpot": "庵",
+      "targetAp": 21,
+      "questId": 93020303,
+      "freeQuests": 1,
+      "forceNullName": true,
+      "spotNames": [
+        "庵"
+      ],
+      "expected": {
+        "found": true,
+        "match": false,
+        "by": "mismatch"
+      }
     }
   ],
   "imports": {

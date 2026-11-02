@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -18,7 +19,8 @@ fun TargetButton(
     onClick: () -> Unit,
     color: Color,
     enabled: Boolean = true,
-    text: String
+    text: String,
+    width: Dp = 120.dp
 ) {
     Button(
         onClick = onClick,
@@ -28,7 +30,7 @@ fun TargetButton(
         ),
         modifier = Modifier
             .height(75.dp)
-            .width(120.dp),
+            .width(width),
         enabled = enabled
     ) {
         Text(

@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.util.portraits
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,11 +17,14 @@ import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
+import timber.log.Timber
 
 interface SupportCatalogSource {
     suspend fun catalog(kind: SupportCatalogKind, region: String): List<SupportCatalogRecord>
     suspend fun detail(kind: SupportCatalogKind, region: String, id: Int): String?
     suspend fun servantNames(region: String): Map<Int, Set<String>>
+    /** Bundled Korean names for servants that are not released on KR yet, keyed by internal servant ID. */
+    suspend fun koreanNames(): Map<Int, Set<String>>
 }
 
 /** Pure coordinator, also exercised with deterministic regional fixtures in unit tests. */
@@ -55,13 +59,23 @@ class SupportImageLookup(private val source: SupportCatalogSource) {
         }
         includeNames("JP")
         includeNames(nameRegion)
+        // The bundled dictionary only covers servants that have no KR record yet.
+        val dictionary = if (nameSearch) source.koreanNames() else emptyMap()
+        val krIds: Set<Int>? = if (dictionary.isEmpty()) emptySet() else try {
+            catalog("KR").map { it.id }.toSet()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null // KR catalog unavailable: apply the dictionary to every entry rather than failing.
+        }
         for (region in SupportImageCatalog.lookupRegions) {
             val records = catalog(region)
             includeNames(region)
             val names = SupportServantNames.merge(nameTables.values)
             val entries = SupportImageCatalog.merge(kind, records, localized, jp)
             val results = SupportImageCatalog.search(entries.map {
-                it.copy(aliases = it.aliases + names[it.id].orEmpty(),
+                val unreleased = if (krIds == null || it.id !in krIds) dictionary[it.id].orEmpty() else emptySet()
+                it.copy(aliases = it.aliases + names[it.id].orEmpty() + unreleased,
                     sourceRegion = if (it.id in jpIds) null else region)
             }, query)
             if (results.isNotEmpty()) return results
@@ -84,6 +98,24 @@ class SupportImageLookup(private val source: SupportCatalogSource) {
 @Singleton
 class AtlasSupportRepository @Inject constructor(@param:ApplicationContext context: Context) : SupportCatalogSource {
     private val cache = File(context.cacheDir, "support-catalogs")
+    private val assets = context.assets
+    @Volatile private var koreanNamesCache: Map<Int, Set<String>>? = null
+
+    override suspend fun koreanNames(): Map<Int, Set<String>> {
+        koreanNamesCache?.let { return it }
+        return withContext(Dispatchers.IO) {
+            val names = try {
+                SupportKoreanNames.parse(assets.open(SupportKoreanNames.ASSET).use { it.readBytes().toString(Charsets.UTF_8) })
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Bundled Korean servant names unavailable")
+                emptyMap()
+            }
+            koreanNamesCache = names
+            names
+        }
+    }
 
     override suspend fun servantNames(region: String): Map<Int, Set<String>> = withContext(Dispatchers.IO) {
         require(region in SupportImageCatalog.regions)

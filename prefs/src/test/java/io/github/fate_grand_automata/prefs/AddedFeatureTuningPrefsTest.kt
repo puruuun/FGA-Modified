@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.prefs
 
 import android.content.SharedPreferences
 import io.github.fate_grand_automata.prefs.core.AddedFeatureTuningPrefsCore
+import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.scripts.prefs.FeatureTuning
 import kotlin.test.*
@@ -34,6 +35,13 @@ class AddedFeatureTuningPrefsTest {
             assertEquals(FeatureTuning(), section)
         assertEquals(100.milliseconds, snapshot.questTapSettle)
         assertEquals(300.milliseconds, snapshot.questPollInterval)
+    }
+
+    @Test fun `retreat streak count defaults to three when the key is absent`() {
+        val pref = PrefMaker(MemoryPrefs()).int(BattleConfigCore.STREAK_COUNT_KEY, BattleConfigCore.DEFAULT_STREAK_COUNT)
+        assertEquals(3, pref.get())
+        pref.set(7)
+        assertEquals(7, pref.get())
     }
 
     @Test fun `invalid imported item intervals stay within the approved ranges`() {

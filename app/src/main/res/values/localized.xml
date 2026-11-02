@@ -16,7 +16,6 @@
     <string name="hakuno_shuffle_remove">Remove</string>
     <string name="hakuno_shuffle_add">Add condition</string>
     <string name="hakuno_shuffle_stop">Stop the battle if the condition is not met</string>
-    <string name="hakuno_shuffle_face_check_disabled">Hakuno Shuffle requires face-card checking.</string>
     <string name="hakuno_shuffle_return_failed">Could not return to the battle screen after Hakuno Shuffle.</string>
     <string name="hakuno_shuffle_unmet">Hakuno Shuffle unmet after %1$d presses: %2$s</string>
     <string name="hakuno_shuffle_np_shortage">NP shortage</string>
@@ -56,7 +55,8 @@ NP"</string>
     <string name="skill_maker_direct_cards">Direct cards</string>
     <string name="skill_maker_direct_cards_button">Direct\ncards</string>
     <string name="skill_maker_direct_cards_use">Fix the attack order for this turn</string>
-    <string name="skill_maker_direct_cards_fallback">Use priority when cards are missing</string>
+    <string name="skill_maker_direct_cards_fallback">Fill missing and unselected cards by priority</string>
+    <string name="skill_maker_direct_cards_unselected">Unselected</string>
     <string name="skill_maker_direct_cards_fallback_summary">priority fallback</string>
     <string name="skill_maker_direct_cards_slot">Attack %1$d</string>
     <string name="skill_maker_direct_np">Servant %1$d NP</string>
@@ -66,6 +66,11 @@ NP"</string>
     <string name="skill_maker_atk_next_turn">"Next Turn
 in same wave"</string>
     <string name="skill_maker_main_enemy">"Enemy %d"</string>
+    <string name="skill_maker_enemy_dialog_title">"Choose Enemy Target"</string>
+    <string name="skill_maker_enemy_target_button">"Set target"</string>
+    <string name="skill_maker_enemy_layout_normal">"3 enemies"</string>
+    <string name="skill_maker_enemy_layout_six">"6 enemies"</string>
+    <string name="skill_maker_enemy_layout_raid">"Raid"</string>
     <string name="skill_maker_main_wave">"Wave: %d"</string>
     <string name="skill_maker_main_turn">"Turn: %d"</string>
     <string name="skill_maker_main_master_skills">"Master
@@ -101,7 +106,16 @@ Skills"</string>
     <string name="card_priority_style">"Style"</string>
     <string name="card_priority_style_affinity">"Affinity"</string>
     <string name="card_priority_style_servant">"Servant"</string>
-    <string name="card_priority_servant_style_note">"Servant style picks cards in this order. Servant priority, brave chains and rearrange cards are ignored."</string>
+    <string name="card_priority_servant_style_note">"A Servant entry picks cards in this order. For this entry, servant priority, brave chains and rearrange cards are ignored."</string>
+    <string name="face_card_check_auto_on">"Servant face-card check: auto — on (%1$s)"</string>
+    <string name="face_card_check_auto_off">"Servant face-card check: auto — skipped"</string>
+    <string name="face_card_reason_servant_style">"servant style %1$s"</string>
+    <string name="face_card_reason_servant_priority">"servant priority %1$s"</string>
+    <string name="face_card_reason_brave_chains">"brave chains %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"NP-matching shuffle"</string>
+    <string name="face_card_reason_hakuno_shuffle">"Hakuno shuffle"</string>
+    <string name="face_card_reason_card_count">"card-count start"</string>
+    <string name="card_priority_summary_servant_priority">"Servant priority"</string>
     <string name="card_priority_split_wave">"Wave"</string>
     <string name="card_priority_split_turn">"Turn"</string>
     <string name="card_priority_hint_move_item">"Hold and drag to reorder"</string>
@@ -172,7 +186,6 @@ Skills"</string>
     <string name="p_auto_choose_target">"Auto choose target"</string>
     <string name="p_story_skip">"Story Skip"</string>
     <string name="p_story_skip_summary">"Skips the story automatically. This feature is very unstable and might cause FGA to break, use it at your own risk."</string>
-    <string name="p_enable_withdraw">"Enable Withdraw"</string>
     <string name="p_stop_on_ce_get">"Stop on CE GET"</string>
     <string name="p_stop_on_first_clear_rewards">"Stop on first-clear rewards"</string>
     <string name="p_stop_on_ce_get_summary">"First-time quest completion rewards and Bond CEs (Experimental)"</string>
@@ -184,8 +197,6 @@ Skills"</string>
     <string name="p_boost_item">"Boost Item"</string>
     <string name="p_brave_chains">"Brave Chains"</string>
     <string name="p_rearrange_cards">"Rearrange Cards"</string>
-    <string name="p_skip_servant_face_checks">"Skip servant face-card checks"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave chains, servant priority, NP-matching card shuffle, etc. won't work"</string>
     <string name="p_wait_ap_regen_text">"Wait for AP Regeneration"</string>
     <string name="wait_ap_regen_toast_message">"Waiting for AP regeneration. Rechecking in %d minute(s)."</string>
     <string name="p_storage">"Storage"</string>
@@ -346,7 +357,6 @@ Please turn on accessibility for this app from System settings. If it is already
     <string name="unknown_card_type">"Card type could not be detected (Buster, Quick, Arts)"</string>
     <string name="unknown_servant_card">"Card belongs to an unknown Servant"</string>
     <string name="support_list_updated_in">"Support list will be updated in %s"</string>
-    <string name="times_withdrew">"Withdrew %d times"</string>
     <string name="avg_time_per_run">"Average time per run: %s"</string>
     <string name="turns_count">"Turns: %d"</string>
     <string name="turns_stats">"Turns: %1$d (min), %2$.02f (avg), %3$d (max)"</string>
@@ -841,6 +851,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="skill_level_step_confirm">Confirm / cancel</string>
     <string name="skill_level_step_skip">Skip / return</string>
     <string name="skill_level_step_message">%1$s: %2$s</string>
+    <string name="skill_level_stop_deselected">all skills reached level 10 and the game deselected the servant.</string>
     <string name="skill_level_stop_error">Unexpected error. Check whether an enhancement happened.</string>
     <string name="weekly_route_title">Weekly mission clear</string>
     <string name="weekly_route_loading">Loading this week\'s missions…</string>
@@ -960,4 +971,20 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="game_area_calibration_scales">The two buttons have different scales. Keep the display unchanged and try again on the main screen.</string>
     <string name="game_area_calibration_bounds">Could not determine a game picture inside the display at a supported aspect ratio. Check the screen layout and try again.</string>
     <string name="game_area_calibration_check">MENU was not found after applying the proposed crop. Nothing was saved. Try again on the main screen.</string>
+    <string name="p_battle_config_turn_limit_retreat">"Retreat and Restart"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"Retreat and Restart"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"When the battle reaches this turn, retreat from the quest without playing the turn and start it again. Turns spent waiting for the command start card count do not count. With 0 turns, it only retreats when the party is wiped out. Retreats use AP and are not counted as runs."</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"Stop after %d retreats in a row"</string>
+    <string name="turn_limit_retreat_turns_value">"Turn %d"</string>
+    <string name="turn_limit_retreat_wipe_only">"Retreat on wipe"</string>
+    <string name="retreat_count">"Retreated %1$d times (wipe %2$d, turn limit %3$d)"</string>
+    <string name="turn_limit_retreat_failed">"Could not retreat from the quest at the turn limit. Stopped before touching anything else."</string>
+    <string name="turn_limit_retreat_streak_stop">"Retreated %d times in a row."</string>
+    <string name="battle_config_folder_move">"Move to folder"</string>
+    <string name="battle_config_folder_new">"New folder…"</string>
+    <string name="battle_config_folder_remove">"Remove from folder"</string>
+    <string name="battle_config_folder_name">"Folder name"</string>
+    <string name="battle_config_folder_selected_count">"%d selected"</string>
+    <string name="battle_config_folder_error_blank">"Enter a folder name"</string>
+    <string name="battle_config_folder_error_too_long">"Up to 30 characters"</string>
 </resources>

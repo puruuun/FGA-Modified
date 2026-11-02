@@ -49,6 +49,8 @@ class BattleExecutionTest {
         every { config.cardPriority } answers { first.cardPriority }
         every { config.servantPriority } returns first.servantPriority
         every { config.useServantPriority } returns first.useServantPriority
+        every { config.useServantPriorities } returns first.useServantPriorities
+        every { config.cardPriorityStyles } returns first.cardPriorityStyles
         every { config.cardPrioritySplit } returns first.cardPrioritySplit
         every { config.cardPriorityStyle } returns first.cardPriorityStyle
         every { config.servantCardPriority } returns first.servantCardPriority
@@ -105,12 +107,12 @@ class BattleExecutionTest {
             rearrangeCards = listOf(true)
         )
         val execution = BattleExecution(config(second = second, shuffle = ShuffleCardsEnum.NoNPMatching, shuffleWave = 2))
-        assertThat(execution.active.braveChains).isEqualTo(emptyList())
+        assertThat(execution.active.braveChainAt(0)).isEqualTo(BraveChainEnum.None)
         assertThat(execution.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
         assertThat(execution.shuffleCardsWave).isEqualTo(2)
         execution.select(1)
-        assertThat(execution.active.braveChains).isEqualTo(listOf(BraveChainEnum.WithNP))
-        assertThat(execution.active.rearrangeCards).isEqualTo(listOf(true))
+        assertThat(execution.active.braveChainAt(0)).isEqualTo(BraveChainEnum.WithNP)
+        assertThat(execution.active.rearrangeAt(0)).isEqualTo(true)
         assertThat(execution.shuffleCards).isEqualTo(ShuffleCardsEnum.NoNPMatching)
         assertThat(execution.shuffleCardsWave).isEqualTo(2)
     }

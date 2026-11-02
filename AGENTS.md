@@ -24,6 +24,11 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Documentation-only changes** — design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files — are pushed directly to `main` without a PR (owner decision, 2026-10-23). Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
 - The local checkout can be shared with another agent at the same time. Never stash, reset, rebase or check out over changes you did not make, stage only your own paths, and check `git show --stat HEAD` before pushing.
 - The planner (Claude) reviews each code PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
+- What the planner's PR review checks (owner decision, 2026-11-01). A green CI and the implementer's report are not enough; check the diff against these points before merging:
+  - **Matches the spec:** every requirement in the issue and in the approved walkthrough is implemented, and nothing outside the agent prompt rides along.
+  - **Tests mean something:** the tests check the actual requirements, including the failure and guard cases, and are not written just to pass.
+  - **Every screen shape:** coordinate and template changes hold at 16:9 and 21:9, per [`docs/agents/coordinates.md`](docs/agents/coordinates.md).
+  - **Recorded:** write what was checked, and anything sent back to the implementer, in a PR comment or in the version's validation record under `docs/qa/`.
 - After merging and confirming `Main CI` on `main`, delete the PR branch on GitHub (`git push origin --delete <branch>`) and locally (owner decision, 2026-10-26). The fast-forward merge does not trigger GitHub's automatic branch deletion. Delete only a branch whose commits are all in `main` (`git merge-base --is-ancestor origin/<branch> origin/main`). The remote branch list should show only `main` and work that is still in progress, for example a feature kept open on purpose to be merged later.
 - Write PR titles and descriptions in English (owner request, 2026-10-23).
 - The backlog lives in GitHub issues on `puruuun/FGA-Modified` (owner decision, 2026-10-26). When the owner reports a bug or an idea, file it as an issue in English with the `bug` or `enhancement` label.
@@ -49,9 +54,9 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ## Agent team
 
-- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex) implements, tests and opens the PR.
-- If the implementing agent hits its usage limit, it stops and leaves the work as it is. No other agent takes over; the work resumes in the same session once the owner says the limit is refilled.
-- Another implementer (for example Sonnet) is used only when the owner says so for the work at hand. That permission does not carry over to later work; never switch on your own.
+- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex, or the Sonnet fallback below) implements, tests and opens the PR.
+- Implementer order (owner decision, 2026-10-30): **Codex first; Sonnet 5.5 at medium effort is the fallback.** When Codex is unavailable (usage limit or not reachable), the planner hands the work to Sonnet 5.5 (medium), which continues from where Codex stopped on the same branch. No other model is used.
+- The fallback follows the same rules as Codex: same branch and PR flow, same commit identity, no device work unless the planner assigns it. The planner tells the owner when a task moved to Sonnet and why, and switches back to Codex for new work once its limit is refilled.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test

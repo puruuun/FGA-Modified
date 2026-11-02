@@ -31,7 +31,14 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
                 if (only != null && index != only) continue
                 var panel = reader.readAnchored(prefs.gameServer, anchor, names, spot, spotQuests)
                 if (case.optBoolean("forceNullName")) panel = panel.copy(nameText = null)
-                val found = QuestPanelMatch.matchBy(panel, case.getString("targetName"), case.getString("targetSpot"), case.getInt("freeQuests"))
+                var found = QuestPanelMatch.matchBy(panel, case.getString("targetName"), case.getString("targetSpot"), case.getInt("freeQuests"))
+                if (found == null && case.has("questId")) {
+                    // D-42 (#130): the name-band template, only for a case that names its quest id.
+                    val questId = case.getInt("questId")
+                    val score = reader.nameImageScore(prefs.gameServer, anchor, questId)
+                    found = QuestNameTemplates.matchBy(panel, score, QuestNameTemplates.entry(prefs.gameServer, questId), case.optInt("targetAp", 21))
+                    actual.put("nameImageScore", score ?: -1.0)
+                }
                 if (found != null && by == null) by = found
                 panels.put(JSONObject().put("name", panel.nameText ?: "unread").put("spot", panel.spotText ?: "unread")
                     .put("cells", panel.nameCells ?: -1).put("by", found ?: "mismatch")

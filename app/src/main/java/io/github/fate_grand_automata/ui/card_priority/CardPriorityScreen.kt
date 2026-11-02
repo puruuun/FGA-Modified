@@ -10,9 +10,7 @@ fun CardPriorityScreen(
 ) {
     CardPriorityView(
         items = vm.cardPriorityItems,
-        useServantPriority = vm.useServantPriority,
         cardPrioritySplit = vm.cardPrioritySplit,
-        cardPriorityStyle = vm.cardPriorityStyle,
         profileIndex = vm.profileIndex
     )
 

@@ -194,6 +194,15 @@
     <string name="p_battle_config_support_require_both_normal_and_reward_match">"通常礼装＆報酬アップ(絆/FP/QP/EXP)礼装の両方に一致"</string>
     <string name="p_battle_config_support_selection_mode">"選択モード"</string>
     <string name="p_battle_config_use_servant_priority">"サーヴァントの優先順位を設定する"</string>
+    <string name="face_card_check_auto_on">"サーヴァントカード確認: 自動 — オン (%1$s)"</string>
+    <string name="face_card_check_auto_off">"サーヴァントカード確認: 自動 — スキップ"</string>
+    <string name="face_card_reason_servant_style">"サーヴァントスタイル %1$s"</string>
+    <string name="face_card_reason_servant_priority">"サーヴァント優先 %1$s"</string>
+    <string name="face_card_reason_brave_chains">"ブレイブチェイン %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"NP一致シャッフル"</string>
+    <string name="face_card_reason_hakuno_shuffle">"ハクノシャッフル"</string>
+    <string name="face_card_reason_card_count">"カード枚数開始"</string>
+    <string name="card_priority_summary_servant_priority">"サーヴァント優先"</string>
     <string name="p_boost_item">"ブーストアイテム"</string>
     <string name="p_boost_item_disabled">"使用確認OFF"</string>
     <string name="p_boost_item_skip">"使用しない"</string>
@@ -216,7 +225,6 @@
     <string name="p_debug_mode_summary">"一致した箇所をハイライトします"</string>
     <string name="p_support_reader_diagnostics">"サポート判定の診断を保存"</string>
     <string name="p_support_reader_diagnostics_summary">"確認したサポートごとに、得点欄の画像と判定の根拠を保存します。初期値はオフです。保存先はFGAの保存フォルダ内のdiagnosticsフォルダです。"</string>
-    <string name="p_enable_withdraw">"全滅時に撤退"</string>
     <string name="p_fine_tune">"微調整"</string>
     <string name="p_fine_tune_click_delay">"マルチクリック間隔"</string>
     <string name="p_fine_tune_click_duration">"クリックの継続時間"</string>
@@ -297,8 +305,6 @@
     <string name="p_shuffle_cards_when_no_effective">"WEAKカードがない場合"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"宝具使用サーヴァントのカードがない場合"</string>
     <string name="p_shuffle_cards_when_none">"使用しない"</string>
-    <string name="p_skip_servant_face_checks">"サーヴァント画像チェックをスキップ"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave chains、サーヴァント優先度、NP一致 カードシャッフルなどが機能しません"</string>
     <string name="p_spam_danger">"DANGER"</string>
     <string name="p_spam_none">"なし"</string>
     <string name="p_spam_spam">"リピート設定"</string>
@@ -408,6 +414,11 @@
     <string name="skill_maker_main_clear">"全削除"</string>
     <string name="skill_maker_main_delete_selected">"選択の削除"</string>
     <string name="skill_maker_main_enemy">"敵 %d"</string>
+    <string name="skill_maker_enemy_dialog_title">"敵ターゲット選択"</string>
+    <string name="skill_maker_enemy_target_button">"ターゲット設定"</string>
+    <string name="skill_maker_enemy_layout_normal">"3体"</string>
+    <string name="skill_maker_enemy_layout_six">"6体"</string>
+    <string name="skill_maker_enemy_layout_raid">"レイド"</string>
     <string name="skill_maker_main_master_skills">"マスター
 スキル"</string>
     <string name="skill_maker_main_servant">"サーヴァント %d"</string>
@@ -480,7 +491,6 @@
     <string name="times_ran">"%d 回実行"</string>
     <string name="times_ran_out_of">"%2$d 回中 %1$d 回実行"</string>
     <string name="times_rolled">"%d 回召喚しました"</string>
-    <string name="times_withdrew">"%d 回撤退しました"</string>
     <string name="troubleshoot">"Troubleshooting"</string>
     <string name="turns_count">"ターン数: %d"</string>
 
@@ -643,4 +653,21 @@
     <string name="fp_sell_not_servant">サーヴァント枠の警告ではないため（概念礼装・コマンドコード等）、販売せずに停止しました。</string>
     <string name="fp_sell_screen_unknown">販売画面を確認できなかったため、販売せずに停止しました。</string>
     <string name="fp_sell_summary">Selected %1$d cells\nLock state unknown: %2$d cells</string>
+    <string name="p_battle_config_turn_limit_retreat">"撤退して再開"</string>
+    <string name="p_battle_config_turn_limit_retreat_label">"撤退して再開"</string>
+    <string name="p_battle_config_turn_limit_retreat_message">"戦闘がこのターンに達したら、そのターンを進めずにクエストから撤退し、再度開始します。コマンド開始のカード枚数条件で待機したターンは数えません。0ターンの場合は、パーティーが全滅したときだけ撤退します。"</string>
+    <string name="p_battle_config_turn_limit_retreat_streak">"%d回連続で撤退したら停止"</string>
+    <string name="turn_limit_retreat_turns_value">"%dターンで撤退"</string>
+    <string name="turn_limit_retreat_wipe_only">"全滅時に撤退"</string>
+    <string name="retreat_count">"%1$d 回撤退しました(全滅 %2$d 回、ターン制限 %3$d 回)"</string>
+    <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
+    <string name="turn_limit_retreat_streak_stop">"%d回連続して撤退したため停止しました。"</string>
+    <string name="skill_level_stop_deselected">"すべてのスキルがLv.10に達したため、選択が解除されました。"</string>
+    <string name="battle_config_folder_move">"フォルダへ移動"</string>
+    <string name="battle_config_folder_new">"新しいフォルダ…"</string>
+    <string name="battle_config_folder_remove">"フォルダから外す"</string>
+    <string name="battle_config_folder_name">"フォルダ名"</string>
+    <string name="battle_config_folder_selected_count">"%d件選択"</string>
+    <string name="battle_config_folder_error_blank">"フォルダ名を入力してください"</string>
+    <string name="battle_config_folder_error_too_long">"30文字まで入力できます"</string>
 </resources>

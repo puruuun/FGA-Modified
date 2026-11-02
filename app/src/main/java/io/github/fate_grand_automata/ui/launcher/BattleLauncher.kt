@@ -44,7 +44,12 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import io.github.fate_grand_automata.ui.Stepper
+import io.github.fate_grand_automata.ui.battle_config_list.ConfigEntry
+import io.github.fate_grand_automata.ui.battle_config_list.ConfigFolders
+import io.github.fate_grand_automata.ui.battle_config_list.FolderItem
 import io.github.fate_grand_automata.ui.scrollbar
 import io.github.fate_grand_automata.util.stringRes
 
@@ -73,7 +78,38 @@ fun battleLauncher(
     // a locked SharedPreferences access for every item scrolled into view. Snapshot them once.
     val configNames = remember(configs) { configs.map { it.name } }
 
-    var selectedConfigIndex by remember { mutableIntStateOf(configs.indexOf(prefs.selectedBattleConfig)) }
+    val configFolders = remember(configs) { configs.map { prefsCore.forBattleConfig(it.id).folder.get() } }
+    val folderEntries = remember(configs) {
+        ConfigFolders.group(configs.indices.map { FolderItem(configs[it].id, configNames[it], configFolders[it]) })
+    }
+
+    var selectedConfigId by remember {
+        mutableStateOf(prefs.selectedBattleConfig.id.takeIf { id -> configs.any { it.id == id } })
+    }
+    // Every folder starts collapsed except the one that holds the selected config.
+    var expandedFolders by remember {
+        mutableStateOf(
+            folderEntries.filterIsInstance<ConfigEntry.Folder>()
+                .filter { folder -> folder.items.any { it.id == selectedConfigId } }
+                .map { it.key }
+                .toSet()
+        )
+    }
+    val visibleRows = remember(folderEntries, expandedFolders) {
+        buildList {
+            folderEntries.forEach { entry ->
+                when (entry) {
+                    is ConfigEntry.Folder -> {
+                        add(LauncherRow.FolderHeader(entry))
+                        if (entry.key in expandedFolders) {
+                            entry.items.forEach { add(LauncherRow.Config(it, indent = true)) }
+                        }
+                    }
+                    is ConfigEntry.Unfiled -> add(LauncherRow.Config(entry.item, indent = false))
+                }
+            }
+        }
+    }
 
     val perServerConfigPref by remember {
         mutableStateOf(
@@ -133,7 +169,7 @@ fun battleLauncher(
 
     data class BondDraft(val track: Boolean, val stop: Boolean, val ignored: Set<Int>)
     val bondDrafts = remember { androidx.compose.runtime.mutableStateMapOf<String, BondDraft>() }
-    val selected = configs.getOrNull(selectedConfigIndex)
+    val selected = configs.firstOrNull { it.id == selectedConfigId }
     val bondCore = remember(selected?.id) { selected?.let { prefsCore.forBattleConfig(it.id).bond } }
     val bond = selected?.let { config -> bondDrafts[config.id] ?: bondCore!!.let {
         BondDraft(it.track.get(), it.stopOnMax.get(), it.ignoredCharacters.get())
@@ -163,8 +199,8 @@ fun battleLauncher(
             }
             perServerConfigPref.updateResources(refillResources)
 
-            if (selectedConfigIndex > -1) {
-                prefs.selectedBattleConfig = configs[selectedConfigIndex]
+            configs.firstOrNull { it.id == selectedConfigId }?.let {
+                prefs.selectedBattleConfig = it
             }
 
             prefs.resetCompletedRuns()
@@ -185,8 +221,9 @@ fun battleLauncher(
             // Scrolling the selected config into view
             val configListState = rememberLazyListState()
             LaunchedEffect(true) {
-                if (selectedConfigIndex != -1) {
-                    configListState.scrollToItem(selectedConfigIndex)
+                val index = visibleRows.indexOfFirst { it is LauncherRow.Config && it.item.id == selectedConfigId }
+                if (index != -1) {
+                    configListState.scrollToItem(index)
                 }
             }
 
@@ -201,12 +238,31 @@ fun battleLauncher(
                     ),
                 state = configListState
             ) {
-                itemsIndexed(configs, key = { _, item -> item.id }) { index, _ ->
-                    BattleConfigItem(
-                        name = configNames[index],
-                        isSelected = selectedConfigIndex == index,
-                        onSelected = { selectedConfigIndex = index }
-                    )
+                items(visibleRows, key = { it.key }) { row ->
+                    when (row) {
+                        is LauncherRow.FolderHeader -> {
+                            val expanded = row.folder.key in expandedFolders
+                            val heldName = if (!expanded) {
+                                row.folder.items.firstOrNull { it.id == selectedConfigId }?.name
+                            } else null
+                            LauncherFolderRow(
+                                name = row.folder.displayName,
+                                expanded = expanded,
+                                selectedName = heldName,
+                                onClick = {
+                                    expandedFolders = if (expanded) expandedFolders - row.folder.key
+                                    else expandedFolders + row.folder.key
+                                }
+                            )
+                        }
+
+                        is LauncherRow.Config -> BattleConfigItem(
+                            name = row.item.name,
+                            isSelected = selectedConfigId == row.item.id,
+                            onSelected = { selectedConfigId = row.item.id },
+                            modifier = if (row.indent) Modifier.padding(start = 16.dp) else Modifier
+                        )
+                    }
                 }
             }
         } else {
@@ -446,7 +502,7 @@ fun battleLauncher(
     }
 
     return ScriptLauncherResponseBuilder(
-        canBuild = { selectedConfigIndex != -1 },
+        canBuild = { selectedConfigId != null },
         build = {
             selected?.let { prefs.selectedBattleConfig = it }
             bond?.let { draft ->
@@ -459,6 +515,42 @@ fun battleLauncher(
             ScriptLauncherResponse.Battle
         }
     )
+}
+
+private sealed class LauncherRow(val key: String) {
+    class FolderHeader(val folder: ConfigEntry.Folder) : LauncherRow("folder:${folder.key}")
+    class Config(val item: FolderItem, val indent: Boolean) : LauncherRow(item.id)
+}
+
+@Composable
+private fun LauncherFolderRow(
+    name: String,
+    expanded: Boolean,
+    selectedName: String?,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(3.dp)
+            .clickable(onClick = onClick)
+            .padding(8.dp, 3.dp)
+            .fillMaxWidth()
+    ) {
+        androidx.compose.material3.Icon(
+            if (expanded) androidx.compose.material.icons.Icons.Default.KeyboardArrowDown
+            else androidx.compose.material.icons.Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            modifier = Modifier.padding(end = 6.dp)
+        )
+        Text(
+            if (selectedName != null) "$name · $selectedName" else name,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (selectedName != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
+    }
 }
 
 @Composable
@@ -519,9 +611,10 @@ fun BattleConfigItem(
     name: String,
     isSelected: Boolean,
     onSelected: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .padding(3.dp)
             .background(
                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,

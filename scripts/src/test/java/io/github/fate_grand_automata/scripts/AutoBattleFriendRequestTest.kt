@@ -75,7 +75,7 @@ class AutoBattleFriendRequestTest {
                 mockk(relaxed = true), api, BattleState(), mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
                 mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)
+                mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)
             )
         }
 

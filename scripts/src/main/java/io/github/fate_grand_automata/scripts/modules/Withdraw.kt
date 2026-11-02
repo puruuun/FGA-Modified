@@ -9,11 +9,9 @@ import kotlin.time.Duration.Companion.seconds
 
 @ScriptScope
 class Withdraw @Inject constructor(
-    api: IFgoAutomataApi
+    api: IFgoAutomataApi,
+    private val turnLimitRetreat: TurnLimitRetreat
 ) : IFgoAutomataApi by api {
-    var count = 0
-        private set
-
     /**
      * Checks if the window for withdrawing from the battle exists.
      */
@@ -21,17 +19,20 @@ class Withdraw @Inject constructor(
         images[Images.Withdraw] in locations.withdrawRegion
 
     /**
-     * Handles withdrawing from battle. Depending on whether withdraw is enabled, the script either
-     * withdraws automatically or stops completely.
+     * Handles withdrawing from battle after a party wipe. The selected battle config's
+     * "retreat and restart" switch decides whether the script withdraws or stops completely.
+     *
+     * @return true when the withdraw was done and counted as a retreat; the caller must then reset the run
+     * without counting it.
      */
-    fun withdraw() {
-        if (!prefs.withdrawEnabled) {
+    fun withdraw(): Boolean {
+        if (!turnLimitRetreat.isEnabled) {
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.WithdrawDisabled)
         }
 
         // Withdraw Region can vary depending on if you have Command Spells/Quartz
         val withdrawRegion = locations.withdrawRegion.find(images[Images.Withdraw])
-            ?: return
+            ?: return false
 
         withdrawRegion.region.click()
 
@@ -45,6 +46,7 @@ class Withdraw @Inject constructor(
         // Click the "Close" button after accepting the withdrawal
         locations.withdrawCloseClick.click()
 
-        ++count
+        turnLimitRetreat.recordWipeWithdraw()
+        return true
     }
 }

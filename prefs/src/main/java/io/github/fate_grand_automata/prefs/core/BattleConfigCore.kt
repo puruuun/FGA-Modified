@@ -29,6 +29,9 @@ class BattleConfigCore(
     fun export(): Map<String, *> = sharedPrefs.all
 
     val name = maker.string("autoskill_name", "--")
+
+    /** Folder the config is filed under in the config list and launcher. "" means no folder. */
+    val folder = maker.string("battle_config_folder", "")
     val execution = ExecutionProfileCore(maker)
     val secondaryExecution = ExecutionProfileCore(maker, "secondary_")
     fun executionProfile(index: Int): ExecutionProfileCore = when (index) {
@@ -40,8 +43,10 @@ class BattleConfigCore(
     val cardPriority get() = execution.cardPriority
     val cardPrioritySplit get() = execution.cardPrioritySplit
     val cardPriorityStyle get() = execution.cardPriorityStyle
+    val cardPriorityStyles get() = execution.cardPriorityStyles
     val servantCardPriority get() = execution.servantCardPriority
     val useServantPriority get() = execution.useServantPriority
+    val useServantPriorities get() = execution.useServantPriorities
     val servantPriority get() = execution.servantPriority
     val rearrangeCards get() = execution.rearrangeCards
     val braveChains get() = execution.braveChains
@@ -126,4 +131,18 @@ class BattleConfigCore(
     val addRaidTurnDelay = maker.bool("add_raid_delay")
 
     val raidTurnDelaySeconds = maker.stringAsInt("raid_delay_seconds", 3)
+
+    val turnLimitRetreatEnabled = maker.bool("turn_limit_retreat_enabled")
+
+    val turnLimitRetreatTurns = maker.stringAsInt("turn_limit_retreat_turns", 0)
+
+    val turnLimitRetreatStopAfterStreak = maker.bool("turn_limit_retreat_stop_after_streak")
+
+    /** Retreats in a row that stop the script when [turnLimitRetreatStopAfterStreak] is on (1-99). */
+    val turnLimitRetreatStreakCount = maker.int(STREAK_COUNT_KEY, DEFAULT_STREAK_COUNT)
+
+    companion object {
+        const val STREAK_COUNT_KEY = "turn_limit_retreat_streak_count"
+        const val DEFAULT_STREAK_COUNT = 3
+    }
 }

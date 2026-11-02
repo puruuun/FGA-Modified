@@ -53,6 +53,12 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 
 설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 
+## 후원
+
+FGA(mod)가 도움이 되었다면 [Ko-fi](https://ko-fi.com/puruuun)에서 후원해 주세요.
+
+<a href="https://ko-fi.com/puruuun"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
+
 ## 원본 및 라이선스
 
 [원본 저장소](https://github.com/Fate-Grand-Automata/FGA) · [원본 사용 안내](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT 라이선스](LICENSE)

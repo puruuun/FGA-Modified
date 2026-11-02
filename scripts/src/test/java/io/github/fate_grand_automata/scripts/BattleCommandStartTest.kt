@@ -190,6 +190,8 @@ class BattleCommandStartTest {
             every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
             every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
             every { config.useServantPriority } returns false
+            every { config.useServantPriorities } returns emptyList()
+            every { config.cardPriorityStyles } returns emptyList()
             every { config.braveChains } returns emptyList()
             every { config.rearrangeCards } returns emptyList()
             every { config.spam } returns emptyList()
@@ -207,7 +209,7 @@ class BattleCommandStartTest {
             every { autoSkill.execute(any(), any()) } returns NPUsage.none
             execution = BattleExecution(config)
             gate = CommandStartGate(config)
-            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate, execution)
+            battle = Battle(api, tracker, state, config, autoSkill, caster, card, spam, shuffle, stage, target, gate, execution, mockk(relaxed = true))
         }
     }
 

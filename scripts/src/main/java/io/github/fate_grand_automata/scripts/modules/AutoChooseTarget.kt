@@ -13,7 +13,7 @@ class AutoChooseTarget @Inject constructor(
     api: IFgoAutomataApi,
     private val state: BattleState
 ) : IFgoAutomataApi by api {
-    private fun isPriorityTarget(enemy: EnemyTarget): Boolean {
+    private fun isPriorityTarget(enemy: EnemyTarget.Normal): Boolean {
         val region = locations.battle.dangerRegion(enemy)
 
         val isDanger = images[Images.TargetDanger] in region
@@ -22,7 +22,7 @@ class AutoChooseTarget @Inject constructor(
         return isDanger || isServant
     }
 
-    private fun chooseTarget(enemy: EnemyTarget) {
+    private fun chooseTarget(enemy: EnemyTarget.Normal) {
         locations.battle.locate(enemy).click()
 
         0.5.seconds.wait()

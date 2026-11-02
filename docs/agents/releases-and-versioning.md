@@ -71,3 +71,40 @@ When promoting to stable `X.Y.Z`:
 4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` (no
    `.sha256` file; GitHub shows each asset's SHA-256), verify with `apksigner` / `aapt2`, install onto BlueStacks,
    record `docs/releases/<version>-validation.md`, and publish the GitHub Release `v<version>`.
+
+## Release signing
+
+Stable (`assembleCi`) and beta (`assembleBeta`) APKs are signed locally with the owner's private key
+through APK Signature Scheme v3 key rotation (issue #128). There are no release workflows; GitHub
+Actions never sees the key.
+
+- **Key and config (paths only):** the keystore and `signing.properties` live outside the repo, in
+  `%USERPROFILE%\.fga-signing\`. Agents never read that folder. `FGA_SIGNING_PROPERTIES` points at
+  another properties file if needed. Keys: `storeFile`, `storePassword`, `keyAlias`, `keyPassword`.
+  `*.jks` and `signing.properties` are ignored by the repo and must never be committed.
+- **Lineage:** `app/signing/fga-lineage.bin` (public certificates only, committed) links the public
+  debug key `fgadebug` to the owner key; see `app/signing/README.md`. The APK is signed with
+  `--rotation-min-sdk-version 28`, so v3 carries the rotated key from Android 9 on.
+- **Build:** `./gradlew :app:assembleBeta` / `:app:assembleCi` build the APK (debug-signed by AGP),
+  then the finalizer task `signBetaRotated` / `signCiRotated` re-signs it in place at
+  `app/build/outputs/apk/<type>/app-<type>.apk`. A missing properties file, keystore or lineage
+  fails the build with the missing path; it never falls back to the debug key silently.
+- **Debug-only signing:** `CI=true` (GitHub Actions) or `-PfgaDebugSigning=true` leaves the APK
+  signed with `fgadebug` only and logs a note. `debug` and `deviceTest` (device QA) always use
+  `fgadebug`. Unit tests and other tasks need no key.
+- **Verify:**
+  ```bash
+  apksigner verify -v --print-certs --print-certs-pem app/build/outputs/apk/beta/app-beta.apk
+  apksigner verify -v --max-sdk-version 27 --print-certs app/build/outputs/apk/beta/app-beta.apk
+  apksigner lineage --in app/build/outputs/apk/beta/app-beta.apk --print-certs
+  ```
+  Expected: v2 and v3 verified, v1 not (minSdk 24); the v3 signer is the new key; the v2 signer
+  (shown with `--max-sdk-version 27`) is `fgadebug`; the lineage lists two certificates. Also run
+  `zipalign -c -P 16 -v 4`.
+- **Debug-signed artifacts:** PR Build and `Main CI` APKs are debug-signed, so they do not install
+  over a rotated app. Install them separately or uninstall first.
+- **Protection:** Android 7-8 do not read v3 and keep accepting the old (public) key, so they get no
+  protection. Android 9+ trust the rotated key after the update and reject the debug key.
+- **Key loss:** no further updates are possible; users must uninstall and reinstall a newly keyed
+  app (settings are lost).
+- **Key leak:** rotate again at once to a new key, extending the lineage, and publish an update.

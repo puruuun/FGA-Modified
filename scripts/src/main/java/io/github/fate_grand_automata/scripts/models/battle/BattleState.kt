@@ -85,6 +85,14 @@ class BattleState @Inject constructor() {
     }
     fun nextStage() = runState.nextStage()
 
+    /** Drops the current run without counting it: no run, turn or time statistics. */
+    fun abandonRun() {
+        runState.stageState.stageCountSnapshot?.close()
+        runState = RunState()
+        hakunoShuffledThisTurn = false
+        commandPosition = null
+    }
+
     fun nextRun(): Int {
         hakunoShuffledThisTurn = false
         commandPosition = null

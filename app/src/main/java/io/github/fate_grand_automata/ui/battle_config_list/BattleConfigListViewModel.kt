@@ -27,9 +27,34 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BattleConfigListViewModel @Inject constructor(
-    prefsCore: PrefsCore,
+    private val prefsCore: PrefsCore,
     val prefs: IPreferences
 ) : ViewModel() {
+    /** Normalised names of the expanded folders. Kept only for the lifetime of the screen. */
+    private val _expandedFolders = MutableStateFlow(emptySet<String>())
+    val expandedFolders: StateFlow<Set<String>> = _expandedFolders
+
+    /** Bumped when a folder changes, since folder values are not part of the config list flow. */
+    private val _folderRevision = MutableStateFlow(0)
+    val folderRevision: StateFlow<Int> = _folderRevision
+
+    fun toggleFolder(key: String) {
+        _expandedFolders.value = _expandedFolders.value.toggle(key)
+    }
+
+    /** Files every selected config under [folder] ("" removes them from their folder). */
+    fun moveSelectedToFolder(folder: String) {
+        selectedConfigs.value.forEach {
+            prefsCore.forBattleConfig(it).folder.set(folder)
+        }
+        val key = ConfigFolders.key(folder)
+        if (key.isNotEmpty()) {
+            _expandedFolders.value = _expandedFolders.value + key
+        }
+        _folderRevision.value++
+        endSelection()
+    }
+
     val battleConfigItems = prefsCore
         .battleConfigList
         .asFlow()

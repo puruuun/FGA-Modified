@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.ui.card_priority
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.CardScore
 import io.github.fate_grand_automata.scripts.models.ServantCardKey
 import io.github.fate_grand_automata.scripts.models.TeamSlot
@@ -12,5 +13,9 @@ data class CardPriorityListItem(
     val servantPriority: SnapshotStateList<TeamSlot>,
     val servantCards: SnapshotStateList<ServantCardKey>,
     var rearrangeCards: MutableState<Boolean>,
-    var braveChains: MutableState<BraveChainEnum>
+    var braveChains: MutableState<BraveChainEnum>,
+    /** Card ranking style of this entry only. */
+    val style: MutableState<CardPriorityStyle>,
+    /** Servant priority switch of this entry only. */
+    val useServantPriority: MutableState<Boolean>
 )

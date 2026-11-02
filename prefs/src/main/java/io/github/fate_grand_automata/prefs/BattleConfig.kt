@@ -33,12 +33,14 @@ internal class BattleConfig(
     override var cardPriority by prefs.cardPriority
     override val cardPrioritySplit by prefs.cardPrioritySplit
     override val cardPriorityStyle by prefs.cardPriorityStyle
+    override val cardPriorityStyles by prefs.cardPriorityStyles
     override val servantCardPriority by prefs.servantCardPriority
     override val rearrangeCards by prefs.rearrangeCards
     override val braveChains by prefs.braveChains
 
     override val servantPriority by prefs.servantPriority
     override val useServantPriority by prefs.useServantPriority
+    override val useServantPriorities by prefs.useServantPriorities
 
     override val party by prefs.party
     override val materials by prefs.materials
@@ -68,6 +70,14 @@ internal class BattleConfig(
     override val addRaidTurnDelay by prefs.addRaidTurnDelay
 
     override val raidTurnDelaySeconds by prefs.raidTurnDelaySeconds
+
+    override val turnLimitRetreatEnabled by prefs.turnLimitRetreatEnabled
+
+    override val turnLimitRetreatTurns by prefs.turnLimitRetreatTurns
+
+    override val turnLimitRetreatStopAfterStreak by prefs.turnLimitRetreatStopAfterStreak
+
+    override val turnLimitRetreatStreakCount by prefs.turnLimitRetreatStreakCount
 
     override var spam by prefs.spam
 

@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
 import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
 
 class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
@@ -26,6 +27,17 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
     val cardPrioritySplit = maker.enum(prefix + "card_priority_split", CardPrioritySplit.Wave)
 
     val cardPriorityStyle = maker.enum(prefix + "card_priority_style", CardPriorityStyle.Affinity)
+
+    /** One style per entry, e.g. `Affinity,Servant`. Empty: every entry uses [cardPriorityStyle]. */
+    val cardPriorityStyles = maker.serialized(
+        prefix + "card_priority_styles",
+        serializer = object : Serializer<List<CardPriorityStyle>> {
+            override fun deserialize(serialized: String) = PerEntrySettings.parseStyles(serialized)
+
+            override fun serialize(value: List<CardPriorityStyle>) = PerEntrySettings.serializeStyles(value)
+        },
+        default = emptyList()
+    )
 
     val servantCardPriority = maker.serialized(
         prefix + "card_priority_servant_list",
@@ -86,6 +98,18 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
     )
 
     val useServantPriority = maker.bool(prefix + "use_servant_priority")
+
+    /** One switch per entry, e.g. `true,false`. Empty: every entry uses [useServantPriority]. */
+    val useServantPriorities = maker.serialized(
+        prefix + "use_servant_priorities",
+        serializer = object : Serializer<List<Boolean>> {
+            override fun deserialize(serialized: String) = PerEntrySettings.parseFlags(serialized)
+
+            override fun serialize(value: List<Boolean>) = PerEntrySettings.serializeFlags(value)
+        },
+        default = emptyList()
+    )
+
     val servantPriority = maker.serialized(
         prefix + "servant_priority",
         serializer = object : Serializer<ServantPriorityPerWave> {

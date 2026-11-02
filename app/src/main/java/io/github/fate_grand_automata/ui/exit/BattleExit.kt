@@ -91,7 +91,8 @@ private fun AutoBattle.ExitReason.text(): String = when (this) {
     AutoBattle.ExitReason.CommandStartDuplicateTargets -> stringResource(R.string.command_start_duplicate_targets)
     AutoBattle.ExitReason.CommandStartTargetsUnavailable -> stringResource(R.string.command_start_targets_unavailable)
     AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
-    AutoBattle.ExitReason.ShuffleUntilFaceCheckDisabled -> stringResource(R.string.hakuno_shuffle_face_check_disabled)
+    AutoBattle.ExitReason.TurnLimitRetreatFailed -> stringResource(R.string.turn_limit_retreat_failed)
+    is AutoBattle.ExitReason.TurnLimitRetreatStreak -> stringResource(R.string.turn_limit_retreat_streak_stop, count)
     AutoBattle.ExitReason.ShuffleUntilReturnFailed -> stringResource(R.string.hakuno_shuffle_return_failed)
     is AutoBattle.ExitReason.ShuffleUntilUnmet -> stringResource(R.string.hakuno_shuffle_unmet, presses,
         stringResource(when (reason) {
@@ -211,10 +212,16 @@ private fun LazyListScope.battleExitContent(
         item { BondSummaryContent(bond) }
     }
 
-    if (state.withdrawCount > 0) {
+    val retreatTotal = state.wipeWithdrawCount + state.turnLimitRetreatCount
+    if (retreatTotal > 0) {
         item {
             Text(
-                stringResource(R.string.times_withdrew, state.withdrawCount),
+                stringResource(
+                    R.string.retreat_count,
+                    retreatTotal,
+                    state.wipeWithdrawCount,
+                    state.turnLimitRetreatCount
+                ),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
                     .padding(16.dp, 5.dp)
@@ -430,7 +437,7 @@ fun PreviewBattleExitContent() {
 //                        MaterialEnum.AmnestyBell to 1,
 //                        MaterialEnum.AuroraSteel to 10
 //                    ),
-                    withdrawCount = 1,
+                    wipeWithdrawCount = 1,
                     totalTime = 1880.seconds,
                     averageTimePerRun = 75.seconds,
                     minTurnsPerRun = 3,

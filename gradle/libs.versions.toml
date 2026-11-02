@@ -43,6 +43,10 @@ compose_bom_version = "2026.08.00"
 
 coil_version = "3.6.3"
 junit_bom_version = "6.1.3"
+# Test-only: JVM screenshot tests of the Compose screens (app unit tests, never packaged)
+junit4_version = "4.13.2"
+robolectric_version = "4.17"
+roborazzi_version = "1.77.0"
 
 
 [libraries]
@@ -98,12 +102,19 @@ opencv-aligned-libcxx = { group = "org.opencv", name = "opencv", version.ref = "
 tesseract4android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tesseract4android_version" }
 
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit_bom_version" }
+# Robolectric runs on JUnit 4, so the JUnit Platform needs the vintage engine to find it
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine" }
+junit4 = { group = "junit", name = "junit", version.ref = "junit4_version" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric_version" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi_version" }
+roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi_version" }
 
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber_version" }
 
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose_bom_version" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material3-window-size = { group = "androidx.compose.material3", name = "material3-window-size-class" }
@@ -128,3 +139,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin_version" }
 
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt_version" }
+
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi_version" }

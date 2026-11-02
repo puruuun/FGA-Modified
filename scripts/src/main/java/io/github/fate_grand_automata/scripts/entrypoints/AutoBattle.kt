@@ -22,6 +22,7 @@ import io.github.fate_grand_automata.scripts.modules.QuestLaunch
 import io.github.fate_grand_automata.scripts.modules.Refill
 import io.github.fate_grand_automata.scripts.modules.ScreenshotDrops
 import io.github.fate_grand_automata.scripts.modules.Support
+import io.github.fate_grand_automata.scripts.modules.TurnLimitRetreat
 import io.github.fate_grand_automata.scripts.modules.Withdraw
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.lib_automata.EntryPoint
@@ -65,7 +66,8 @@ class AutoBattle @Inject constructor(
     private val refill: Refill,
     private val matTracker: MaterialsTracker,
     private val ceDropsTracker: CEDropsTracker,
-    private val bonds: BondTracker
+    private val bonds: BondTracker,
+    private val turnLimitRetreat: TurnLimitRetreat
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     sealed class ExitReason(val cause: Exception? = null) {
         data object Abort : ExitReason()
@@ -93,11 +95,12 @@ class AutoBattle @Inject constructor(
         class CommandStartTargetUnavailable(val servant: Int) : ExitReason()
         class CommandStartWaitLimit(val turns: Int) : ExitReason()
         data object CommandStartReturnFailed : ExitReason()
-        data object ShuffleUntilFaceCheckDisabled : ExitReason()
         data object ShuffleUntilReturnFailed : ExitReason()
         data class ShuffleUntilUnmet(val reason: io.github.fate_grand_automata.scripts.modules.ShuffleEndReason, val presses: Int) : ExitReason()
         data object CommandStartDuplicateTargets : ExitReason()
         data object CommandStartTargetsUnavailable : ExitReason()
+        data object TurnLimitRetreatFailed : ExitReason()
+        data class TurnLimitRetreatStreak(val count: Int) : ExitReason()
     }
 
     internal class BattleExitException(val reason: ExitReason) : Exception(reason.cause)
@@ -122,10 +125,40 @@ class AutoBattle @Inject constructor(
     /** Weekly route already tapped a validated panel. Reuse AP handling and battle, but never choose a map quest blindly. */
     fun runSelectedQuest(): Nothing {
         routeQuest = true
+        // The weekly mission route never retreats.
+        turnLimitRetreat.disabled = true
         isContinuing = false
         isInBattle = false
         storySkipPossible = true
-        return try { runLoop(selectedQuest = true) } finally { routeQuest = false }
+        return try {
+            runLoop(selectedQuest = true)
+        } finally {
+            routeQuest = false
+            turnLimitRetreat.disabled = false
+        }
+    }
+
+    /**
+     * Runs after [Battle.performBattle] asked for a turn-limit retreat. Cleared `isInBattle` first so the
+     * death-animation and between-waves checks never tap the result window or the quest list.
+     */
+    private fun retreatFromQuest() {
+        isInBattle = false
+        storySkipPossible = true
+        isContinuing = false
+        turnLimitRetreat.execute()
+        battle.abandonRun()
+        turnLimitRetreat.checkStreak()
+    }
+
+    /** A party wipe: withdraw, then reset the run like a turn-limit retreat (no run is counted). */
+    private fun wipeWithdraw() {
+        if (!withdraw.withdraw()) return
+        isInBattle = false
+        storySkipPossible = true
+        isContinuing = false
+        battle.abandonRun()
+        turnLimitRetreat.checkStreak()
     }
 
     private fun runLoop(selectedQuest: Boolean = false): Nothing {
@@ -178,7 +211,8 @@ class AutoBattle @Inject constructor(
         val refillLimit: Int,
         val ceDropCount: Int,
         val materials: Map<MaterialEnum, Int>,
-        val withdrawCount: Int,
+        val wipeWithdrawCount: Int = 0,
+        val turnLimitRetreatCount: Int = 0,
         val totalTime: Duration,
         val averageTimePerRun: Duration,
         val minTurnsPerRun: Int,
@@ -195,7 +229,8 @@ class AutoBattle @Inject constructor(
             refillLimit = prefs.selectedServerConfigPref.currentAppleCount,
             ceDropCount = ceDropsTracker.count,
             materials = matTracker.farmed,
-            withdrawCount = withdraw.count,
+            wipeWithdrawCount = turnLimitRetreat.wipeCount,
+            turnLimitRetreatCount = turnLimitRetreat.turnLimitCount,
             totalTime = state.totalBattleTime,
             averageTimePerRun = state.averageTimePerRun,
             minTurnsPerRun = state.minTurnsPerRun,
@@ -215,6 +250,7 @@ class AutoBattle @Inject constructor(
                 isInBattle = true
                 bonds.beginBattle()
                 battle.performBattle()
+                if (turnLimitRetreat.pending) retreatFromQuest()
             },
             { isInMenu() } to { menu() },
             { isStartingNp() } to { skipNp() },
@@ -227,7 +263,7 @@ class AutoBattle @Inject constructor(
             { isRepeatScreen() } to { repeatQuest() },
             { isInOrdealCallOutOfPodsScreen() } to { closeBottomCentreDialog() },
             { isInInterludeEndScreen() } to { locations.interludeCloseClick.click() },
-            { withdraw.needsToWithdraw() } to { withdraw.withdraw() },
+            { withdraw.needsToWithdraw() } to { wipeWithdraw() },
             { needsToStorySkip() } to { skipStory() },
             { isFriendRequestScreen() } to { skipFriendRequestScreen() },
             { isBond10CEReward() } to { bond10CEReward() },
@@ -265,6 +301,7 @@ class AutoBattle @Inject constructor(
         if (routeQuest) throw BattleExitException(ExitReason.StopAfterThisRun)
         // In case the repeat loop breaks and we end up in menu (like withdrawing from quests)
         isContinuing = false
+        turnLimitRetreat.onQuestListSeen()
 
         battle.resetState()
 
