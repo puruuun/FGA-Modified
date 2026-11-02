@@ -78,8 +78,8 @@
     <string name="card_priority_servant_style_note">"서번트 방식은 이 순서대로 카드를 고릅니다. 이 항목에서는 서번트 우선순위, 브레이브 체인, 카드 재배열이 무시됩니다."</string>
     <string name="face_card_check_auto_on">"서번트 카드 확인: 자동 — 켜짐 (%1$s)"</string>
     <string name="face_card_check_auto_off">"서번트 카드 확인: 자동 — 생략"</string>
-    <string name="face_card_reason_servant_style">"서번트 스타일 %1$s"</string>
-    <string name="face_card_reason_servant_priority">"서번트 우선 %1$s"</string>
+    <string name="face_card_reason_servant_style">"서번트 방식 %1$s"</string>
+    <string name="face_card_reason_servant_priority">"서번트 우선순위 %1$s"</string>
     <string name="face_card_reason_brave_chains">"브레이브 체인 %1$s"</string>
     <string name="face_card_reason_np_matching_shuffle">"보구 맞춤 셔플"</string>
     <string name="face_card_reason_hakuno_shuffle">"하쿠노 셔플"</string>
