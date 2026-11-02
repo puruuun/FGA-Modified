@@ -9,7 +9,7 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 ## Download and updates
 
 - [Latest APK](https://github.com/puruuun/FGA-Modified/releases/latest)
-- [Release notes for 1.7.0 (Korean)](wiki/releases/1.7.0-KR.md)
+- [Release notes for 1.7.1 (Korean)](wiki/releases/1.7.1-KR.md)
 - [Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D)
 - [Details](wiki/scripts/Modified-Features.md#installation)
 
@@ -26,7 +26,10 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-KR.md) | Runs the chosen missions on the lowest-AP route, Treasure Vault Beginner included, and repeats it. |
 | [CE auto-enhance](wiki/scripts/CE-Auto-Enhance-KR.md) | Turns on auto-select with the recommended filter and repeats enhancement. |
 | [Hakuno Shuffle](wiki/scripts/Hakuno-Shuffle-KR.md) | Repeats an NP-cost first skill until the card condition is met. |
-| [Card priority extensions](wiki/scripts/Card-Priority-KR.md) | Up to 10 entries, wave or turn steps, and a Servant style. |
+| [Card priority extensions](wiki/scripts/Card-Priority-KR.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. |
+| [Battle config folders](wiki/scripts/Battle-Config-Folders-KR.md) | Groups battle configs into folders you can fold in the list and the launcher. |
+| [Turn-limit retreat](wiki/scripts/Turn-Limit-Retreat-KR.md) | Retreats and restarts on a wipe or at turn N, and stops after a set number of retreats in a row. |
+| [Enemy layout targets](wiki/scripts/Enemy-Layout-Targets-KR.md) | Targets enemies in six-enemy and raid layouts with `t4`–`t9`, `tR` and `tA`–`tF`. |
 | [Game area](wiki/scripts/Game-Area-Preview-KR.md) | Previews the split-screen game area while adjusting it, with auto-fit from a screenshot. |
 | [Added-features fine tune](wiki/scripts/Added-Features-Fine-Tune-KR.md) | Adjusts waits and match similarity of the fork's features per area. |
 | [Friend request after quest](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support. |
