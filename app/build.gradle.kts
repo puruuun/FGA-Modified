@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
 }
 
 /*
@@ -385,6 +386,13 @@ android {
     // run tests in CI builds instad of debug
     testBuildType = if (providers.gradleProperty("fgaDeviceTests").orNull == "true") "deviceTest" else "ci"
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and manifest to render the real screens.
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         jniLibs {
             // Project-local jniLibs are merged ahead of any dependency's, so ours wins.
@@ -470,10 +478,22 @@ dependencies {
     }
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.willowtreeapps.assertk)
+
+    // Screenshot tests (Roborazzi on Robolectric). Test-only; they run on JUnit 4 through the vintage engine.
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+
+    // Robolectric's SDK 36 environment reaches into JDK internals.
+    jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
 
     val supportAssets = layout.projectDirectory.dir("src/main/assets/Support")
 
@@ -495,4 +515,17 @@ tasks.withType<Test>().configureEach {
      * up to date.
      */
     inputs.dir(supportAssets).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+/*
+ * Screenshot tests render the real screens under Robolectric, which costs seconds per image, and
+ * their images are for the owner's review, not a CI gate. The Roborazzi record task drives
+ * `testCiUnitTest` itself, so the tests are filtered out of that task unless a Roborazzi task was
+ * asked for: `:app:testCiUnitTest` (Main CI) skips them, `:app:recordRoborazziCi` runs them.
+ */
+val screenshotRunRequested = gradle.startParameter.taskNames.any { it.contains("Roborazzi", ignoreCase = true) }
+if (!screenshotRunRequested) {
+    tasks.withType<Test>().configureEach {
+        filter.excludeTestsMatching("*ScreenshotTest")
+    }
 }

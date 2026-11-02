@@ -18,3 +18,7 @@ signing.properties
 
 # Codex agent local copies of repo skills
 .agents/
+
+# Roborazzi screenshots are local review images, never committed
+/app/build/outputs/roborazzi/
+/app/screenshots/
