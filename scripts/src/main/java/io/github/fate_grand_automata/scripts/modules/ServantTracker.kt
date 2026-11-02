@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
-import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.models.CommandCard
@@ -25,9 +24,9 @@ class ServantTracker @Inject constructor(
     private val _deployed = mutableMapOf<FieldSlot, TeamSlot>()
     val deployed: Map<FieldSlot, TeamSlot> = _deployed
 
-    // A local override for this battle config, without changing the global preference.
-    private val forceFaceCardCheck = battleConfig.commandStartMode == CommandStartMode.CardCount
-    val faceCardCheckEnabled get() = !prefs.skipServantFaceCardCheck || forceFaceCardCheck
+    // Decided once per run from the battle config; the battle config screen shows the same decision.
+    val faceCardCheck: FaceCardCheckDecision = FaceCardCheckPolicy.decide(battleConfig)
+    val faceCardCheckEnabled get() = faceCardCheck.enabled
 
     fun nextRun() {
         servantQueue.clear()
@@ -47,6 +46,7 @@ class ServantTracker @Inject constructor(
 
     init {
         nextRun()
+        messages.log(ScriptLog.FaceCardCheck(faceCardCheck.toLogText()))
     }
 
     data class TeamSlotData(

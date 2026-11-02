@@ -194,6 +194,14 @@
     <string name="p_battle_config_support_require_both_normal_and_reward_match">"通常礼装＆報酬アップ(絆/FP/QP/EXP)礼装の両方に一致"</string>
     <string name="p_battle_config_support_selection_mode">"選択モード"</string>
     <string name="p_battle_config_use_servant_priority">"サーヴァントの優先順位を設定する"</string>
+    <string name="face_card_check_auto_on">"サーヴァントカード確認: 自動 — オン (%1$s)"</string>
+    <string name="face_card_check_auto_off">"サーヴァントカード確認: 自動 — スキップ"</string>
+    <string name="face_card_reason_servant_style">"サーヴァントスタイル %1$s"</string>
+    <string name="face_card_reason_servant_priority">"サーヴァント優先 %1$s"</string>
+    <string name="face_card_reason_brave_chains">"ブレイブチェイン %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"NP一致シャッフル"</string>
+    <string name="face_card_reason_hakuno_shuffle">"ハクノシャッフル"</string>
+    <string name="face_card_reason_card_count">"カード枚数開始"</string>
     <string name="card_priority_summary_servant_priority">"サーヴァント優先"</string>
     <string name="p_boost_item">"ブーストアイテム"</string>
     <string name="p_boost_item_disabled">"使用確認OFF"</string>
@@ -297,8 +305,6 @@
     <string name="p_shuffle_cards_when_no_effective">"WEAKカードがない場合"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"宝具使用サーヴァントのカードがない場合"</string>
     <string name="p_shuffle_cards_when_none">"使用しない"</string>
-    <string name="p_skip_servant_face_checks">"サーヴァント画像チェックをスキップ"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave chains、サーヴァント優先度、NP一致 カードシャッフルなどが機能しません"</string>
     <string name="p_spam_danger">"DANGER"</string>
     <string name="p_spam_none">"なし"</string>
     <string name="p_spam_spam">"リピート設定"</string>

@@ -95,7 +95,6 @@ class AutoBattle @Inject constructor(
         class CommandStartTargetUnavailable(val servant: Int) : ExitReason()
         class CommandStartWaitLimit(val turns: Int) : ExitReason()
         data object CommandStartReturnFailed : ExitReason()
-        data object ShuffleUntilFaceCheckDisabled : ExitReason()
         data object ShuffleUntilReturnFailed : ExitReason()
         data class ShuffleUntilUnmet(val reason: io.github.fate_grand_automata.scripts.modules.ShuffleEndReason, val presses: Int) : ExitReason()
         data object CommandStartDuplicateTargets : ExitReason()

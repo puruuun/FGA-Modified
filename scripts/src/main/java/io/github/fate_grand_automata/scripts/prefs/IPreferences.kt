@@ -32,7 +32,6 @@ interface IPreferences {
     var maxGoldEmberStackSize: Int
     var maxGoldEmberTotalCount: Int
     var stopAfterThisRun: Boolean
-    val skipServantFaceCardCheck: Boolean
     val treatSupportLikeOwnServant: Boolean
 
     var shouldLimitFP: Boolean

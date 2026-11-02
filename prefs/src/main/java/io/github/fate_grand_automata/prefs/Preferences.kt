@@ -112,7 +112,6 @@ class PreferencesImpl @Inject constructor(
 
     override var stopAfterThisRun by prefs.stopAfterThisRun
 
-    override var skipServantFaceCardCheck by prefs.skipServantFaceCardCheck
 
     override var treatSupportLikeOwnServant by prefs.treatSupportLikeOwnServant
 
