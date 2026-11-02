@@ -48,8 +48,12 @@ class EnemyLayoutTargetsTest {
             "t1" to EnemyTarget.A, "t2" to EnemyTarget.B, "t3" to EnemyTarget.C,
             "t4" to EnemyTarget.SixTopLeft, "t5" to EnemyTarget.SixTopMiddle, "t6" to EnemyTarget.SixTopRight,
             "t7" to EnemyTarget.SixBottomLeft, "t8" to EnemyTarget.SixBottomMiddle, "t9" to EnemyTarget.SixBottomRight,
-            "tR" to EnemyTarget.RaidBoss, "t10" to EnemyTarget.RaidLeft,
-            "t11" to EnemyTarget.RaidMiddle, "t12" to EnemyTarget.RaidRight
+            "tR" to EnemyTarget.RaidBoss, "tA" to EnemyTarget.RaidLeft,
+            "tB" to EnemyTarget.RaidMiddle, "tC" to EnemyTarget.RaidRight,
+            "tD" to EnemyTarget.RaidLowerLeft, "tE" to EnemyTarget.RaidLowerMiddle,
+            "tF" to EnemyTarget.RaidLowerRight,
+            // Beta-only two digit aliases
+            "t10" to EnemyTarget.RaidLeft, "t11" to EnemyTarget.RaidMiddle, "t12" to EnemyTarget.RaidRight
         )
         for ((code, target) in expected) {
             val actions = parse(code)
@@ -58,12 +62,16 @@ class EnemyLayoutTargetsTest {
         }
     }
 
-    @Test fun `two digit codes are greedy and sit next to other commands`() {
-        val a = parse("t12a")
+    @Test fun `raid codes sit next to other commands`() {
+        val a = parse("tCa")
         assertEquals(EnemyTarget.RaidRight, enemy(a[0]))
+
+        val a2 = parse("t12a")
+        assertEquals(EnemyTarget.RaidRight, enemy(a2[0]))
+        assertIs<AutoSkillAction.ServantSkill>(a2[1])
         assertEquals(Skill.Servant.A1, assertIs<AutoSkillAction.ServantSkill>(a[1]).skill)
 
-        val b = parse("t10b4")
+        val b = parse("tAb4")
         assertEquals(EnemyTarget.RaidLeft, enemy(b[0]))
         assertEquals(Skill.Servant.A2, assertIs<AutoSkillAction.ServantSkill>(b[1]).skill)
         assertIs<AutoSkillAction.Atk>(b[2])
@@ -85,8 +93,21 @@ class EnemyLayoutTargetsTest {
         assertTrue(CommandCard.NP.A in atk.nps)
     }
 
+    @Test fun `t13 and t15 keep their old meaning`() {
+        // t1 followed by the next action; '3' is not an action, so t13 is still a parse error.
+        val error = assertFailsWith<AutoBattle.BattleExitException> { parse("t13") }
+        assertIs<AutoBattle.ExitReason.SkillCommandParseError>(error.reason)
+        val actions = parse("t15")
+        assertEquals(2, actions.size)
+        assertEquals(EnemyTarget.A, enemy(actions[0]))
+    }
+
+    @Test fun `autoSkillCode of raid targets is a letter`() {
+        assertEquals(listOf("R", "A", "B", "C", "D", "E", "F"), EnemyTarget.raidList.map { it.autoSkillCode })
+    }
+
     @Test fun `unknown enemy codes fail to parse`() {
-        for (code in listOf("t0", "tX", "t")) {
+        for (code in listOf("t0", "tX", "tG", "t")) {
             val error = assertFailsWith<AutoBattle.BattleExitException>(code) { parse(code) }
             assertIs<AutoBattle.ExitReason.SkillCommandParseError>(error.reason)
         }
@@ -95,9 +116,9 @@ class EnemyLayoutTargetsTest {
     @Test fun `the normal list is still exactly the three normal targets`() {
         assertEquals(listOf<EnemyTarget>(EnemyTarget.A, EnemyTarget.B, EnemyTarget.C), EnemyTarget.list)
         assertEquals(6, EnemyTarget.sixList.size)
-        assertEquals(4, EnemyTarget.raidList.size)
-        assertEquals(13, EnemyTarget.all.size)
-        assertEquals(13, EnemyTarget.all.map { it.autoSkillCode }.toSet().size)
+        assertEquals(7, EnemyTarget.raidList.size)
+        assertEquals(16, EnemyTarget.all.size)
+        assertEquals(16, EnemyTarget.all.map { it.autoSkillCode }.toSet().size)
     }
 
     @Test fun `new targets are located at 16 9 and shifted 155 on wide screens`() {
@@ -108,10 +129,13 @@ class EnemyLayoutTargetsTest {
             EnemyTarget.SixBottomLeft to Location(260, 276),
             EnemyTarget.SixBottomMiddle to Location(660, 276),
             EnemyTarget.SixBottomRight to Location(1060, 276),
-            EnemyTarget.RaidBoss to Location(780, 96),
-            EnemyTarget.RaidLeft to Location(200, 297),
-            EnemyTarget.RaidMiddle to Location(757, 297),
-            EnemyTarget.RaidRight to Location(1313, 297)
+            EnemyTarget.RaidBoss to Location(780, 80),
+            EnemyTarget.RaidLeft to Location(300, 288),
+            EnemyTarget.RaidMiddle to Location(800, 288),
+            EnemyTarget.RaidRight to Location(1250, 288),
+            EnemyTarget.RaidLowerLeft to Location(460, 433),
+            EnemyTarget.RaidLowerMiddle to Location(860, 433),
+            EnemyTarget.RaidLowerRight to Location(1260, 433)
         )
         for ((target, location) in expected) {
             assertEquals(location, sixteenNine.locate(target), target.autoSkillCode)

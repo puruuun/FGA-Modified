@@ -2,7 +2,7 @@ package io.github.fate_grand_automata.scripts.models
 
 /**
  * An enemy slot a skill command can tap, written as `t` followed by [autoSkillCode].
- * The code is a string because the raid layout has two-digit codes (`t10`..`t12`).
+ * The raid layout uses letter codes (`tR`, `tA`..`tF`).
  */
 sealed class EnemyTarget(val autoSkillCode: String) {
     /** The three slots of the normal layout. Auto target selection only knows these. */
@@ -20,11 +20,14 @@ sealed class EnemyTarget(val autoSkillCode: String) {
     object SixBottomMiddle : EnemyTarget("8")
     object SixBottomRight : EnemyTarget("9")
 
-    // Raid layout: one boss on top, up to three enemies below it.
+    // Raid layout: one boss on top, then up to two rows of three enemies below it.
     object RaidBoss : EnemyTarget("R")
-    object RaidLeft : EnemyTarget("10")
-    object RaidMiddle : EnemyTarget("11")
-    object RaidRight : EnemyTarget("12")
+    object RaidLeft : EnemyTarget("A")
+    object RaidMiddle : EnemyTarget("B")
+    object RaidRight : EnemyTarget("C")
+    object RaidLowerLeft : EnemyTarget("D")
+    object RaidLowerMiddle : EnemyTarget("E")
+    object RaidLowerRight : EnemyTarget("F")
 
     companion object {
         /** Exactly the normal three, because AutoChooseTarget iterates this list. */
@@ -34,7 +37,7 @@ sealed class EnemyTarget(val autoSkillCode: String) {
             listOf(SixTopLeft, SixTopMiddle, SixTopRight, SixBottomLeft, SixBottomMiddle, SixBottomRight)
         }
 
-        val raidList: List<EnemyTarget> by lazy { listOf(RaidBoss, RaidLeft, RaidMiddle, RaidRight) }
+        val raidList: List<EnemyTarget> by lazy { listOf(RaidBoss, RaidLeft, RaidMiddle, RaidRight, RaidLowerLeft, RaidLowerMiddle, RaidLowerRight) }
 
         val all: List<EnemyTarget> by lazy { list + sixList + raidList }
 

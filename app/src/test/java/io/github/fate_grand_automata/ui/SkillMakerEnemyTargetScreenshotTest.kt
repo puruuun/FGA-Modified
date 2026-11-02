@@ -56,7 +56,7 @@ class SkillMakerEnemyTargetScreenshotTest(
     fun enemyTargetSix() = screen("enemy_target_six", selected = "5")
 
     @Test
-    fun enemyTargetRaid() = screen("enemy_target_raid", selected = "R")
+    fun enemyTargetRaid() = screen("enemy_target_raid", selected = "E")
 
     @Test
     fun mainTopRow() = composeRule.shoot(

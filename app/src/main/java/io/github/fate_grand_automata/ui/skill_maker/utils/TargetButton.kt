@@ -20,7 +20,8 @@ fun TargetButton(
     color: Color,
     enabled: Boolean = true,
     text: String,
-    width: Dp = 120.dp
+    width: Dp = 120.dp,
+    height: Dp = 75.dp
 ) {
     Button(
         onClick = onClick,
@@ -29,7 +30,7 @@ fun TargetButton(
             contentColor = Color.White
         ),
         modifier = Modifier
-            .height(75.dp)
+            .height(height)
             .width(width),
         enabled = enabled
     ) {
