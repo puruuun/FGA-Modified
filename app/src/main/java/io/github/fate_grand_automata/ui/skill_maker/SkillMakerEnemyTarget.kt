@@ -50,10 +50,9 @@ internal fun SkillMakerEnemyTarget(
 
     @Composable
     fun Target(target: EnemyTarget, width: Dp = 120.dp, height: Dp = 75.dp) {
-        val isSelected = target.autoSkillCode == selected
         TargetButton(
             onClick = { onSelect(target.autoSkillCode) },
-            color = colorResource(if (isSelected) R.color.colorAccent else R.color.colorEnemyTarget),
+            color = colorResource(R.color.colorEnemyTarget),
             text = "t${target.autoSkillCode}",
             width = width,
             height = height
