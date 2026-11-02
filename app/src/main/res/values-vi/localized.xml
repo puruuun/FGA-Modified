@@ -263,8 +263,6 @@ Sao chép hoặc đổi tên nó nếu bạn muốn giữ nó."</string>
     <string name="p_shuffle_cards_when_no_effective">"Không có thẻ hiệu quả"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"Không có thẻ phù hợp với NP"</string>
     <string name="p_shuffle_cards_when_none">"Không có"</string>
-    <string name="p_skip_servant_face_checks">"Bỏ qua việc kiểm tra thẻ Servant"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave chains, ưu tiên servants, xáo trộn thẻ NP phù hợp, v.v. sẽ không hoạt động"</string>
     <string name="p_spam_danger">"Nguy hiểm"</string>
     <string name="p_spam_none">"Không có"</string>
     <string name="p_spam_spam">"Spam"</string>

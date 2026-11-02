@@ -283,8 +283,6 @@
     <string name="p_shuffle_cards_when_no_effective">"无有效（effective）指令牌"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"无施放宝具从者的指令牌"</string>
     <string name="p_shuffle_cards_when_none">"不洗牌"</string>
-    <string name="p_skip_servant_face_checks">"跳过从者头像检查"</string>
-    <string name="p_skip_servant_face_checks_summary">"红Chain、从者优先级、无施放宝具从者的指令牌时洗牌等功能将不会起效"</string>
     <string name="p_spam_danger">"危险敌人时施放"</string>
     <string name="p_spam_none">"无"</string>
     <string name="p_spam_spam">"能放就放"</string>

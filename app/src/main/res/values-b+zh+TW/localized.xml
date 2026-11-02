@@ -265,8 +265,6 @@
     <string name="p_shuffle_cards_when_no_effective">"無有效（effective）指令牌"</string>
     <string name="p_shuffle_cards_when_no_np_matching">"無施放寶具從者的指令牌"</string>
     <string name="p_shuffle_cards_when_none">"不洗牌"</string>
-    <string name="p_skip_servant_face_checks">"跳過從者檢查"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave Chain、偏好從者、在無施放寶具從者的指令牌時洗牌等功能將不會生效"</string>
     <string name="p_spam_danger">"Danger 敵人時施放"</string>
     <string name="p_spam_none">"無"</string>
     <string name="p_spam_spam">"能放就放"</string>
