@@ -52,13 +52,33 @@ class BattleScreenLocations @Inject constructor(
         Skill.Servant.C3 -> 1770
     }.let { x -> Location(x + if (isWide) 108 else 0, if (isWide) 1117 else 1158) }
 
-    fun locate(enemy: EnemyTarget) = when (enemy) {
-        EnemyTarget.A -> 90
-        EnemyTarget.B -> 570
-        EnemyTarget.C -> 1050
-    }.let { x -> Location(x + if (isWide) 183 else 0, 80) }
+    fun locate(enemy: EnemyTarget): Location = when (enemy) {
+        EnemyTarget.A -> normalEnemy(90)
+        EnemyTarget.B -> normalEnemy(570)
+        EnemyTarget.C -> normalEnemy(1050)
 
-    fun dangerRegion(enemy: EnemyTarget) = when (enemy) {
+        // Six-enemy layout: HP bars of the top (y 80) and bottom (y 276) rows.
+        EnemyTarget.SixTopLeft -> layoutEnemy(460, 80)
+        EnemyTarget.SixTopMiddle -> layoutEnemy(860, 80)
+        EnemyTarget.SixTopRight -> layoutEnemy(1260, 80)
+        EnemyTarget.SixBottomLeft -> layoutEnemy(260, 276)
+        EnemyTarget.SixBottomMiddle -> layoutEnemy(660, 276)
+        EnemyTarget.SixBottomRight -> layoutEnemy(1060, 276)
+
+        // Raid layout: the boss HP bar, then the three enemies below it.
+        EnemyTarget.RaidBoss -> layoutEnemy(780, 96)
+        EnemyTarget.RaidLeft -> layoutEnemy(200, 297)
+        // Provisional estimate: there is no capture of a raid with a middle enemy yet.
+        EnemyTarget.RaidMiddle -> layoutEnemy(757, 297)
+        EnemyTarget.RaidRight -> layoutEnemy(1313, 297)
+    }
+
+    private fun normalEnemy(x: Int) = Location(x + if (isWide) 183 else 0, 80)
+
+    // Measured on 21:9 captures: every six-enemy and raid widget sits 155 to the right of its 16:9 position.
+    private fun layoutEnemy(x: Int, y: Int) = Location(x + if (isWide) 155 else 0, y)
+
+    fun dangerRegion(enemy: EnemyTarget.Normal) = when (enemy) {
         EnemyTarget.A -> Region(0, 0, 485, 220)
         EnemyTarget.B -> Region(485, 0, 482, 220)
         EnemyTarget.C -> Region(967, 0, 476, 220)

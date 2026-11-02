@@ -5,7 +5,7 @@ sealed class SpecialCommand(
 ){
     /**
      * The "t" character that represents the enemy target.
-     * This followed by a number that represents the enemy target.
+     * This followed by the enemy target code: 1-9 or R, or the two-digit 10, 11 or 12 (greedy).
      * @see io.github.fate_grand_automata.scripts.models.EnemyTarget
      */
     data object EnemyTarget : SpecialCommand('t')

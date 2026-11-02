@@ -124,6 +124,15 @@ class AutoSkillCommand private constructor(
             return targets
         }
 
+        /** `1` followed by `0`, `1` or `2` is a two-digit raid code (greedy); otherwise one character. */
+        private fun readEnemyTargetCode(queue: Queue<Char>): String {
+            val first = queue.remove()
+            if (first == '1' && queue.peek() in listOf('0', '1', '2')) {
+                return "$first${queue.remove()}"
+            }
+            return first.toString()
+        }
+
         private fun parseAction(queue: Queue<Char>): AutoSkillAction {
             try {
                 return when (val c = queue.remove()) {
@@ -160,8 +169,9 @@ class AutoSkillCommand private constructor(
                     }
 
                     SpecialCommand.EnemyTarget.autoSkillCode -> {
-                        val code = queue.remove()
-                        val target = EnemyTarget.list.first { it.autoSkillCode == code }
+                        val code = readEnemyTargetCode(queue)
+                        val target = EnemyTarget.fromCode(code)
+                            ?: throw Exception("Unknown enemy target: t$code")
                         AutoSkillAction.TargetEnemy(target)
                     }
 
