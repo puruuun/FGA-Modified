@@ -19,7 +19,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Renders the Skill Maker enemy target screen in each layout, and the main screen's top row with
- * the new button, on a 16:9 phone, a 21:9 phone and a 16:10 tablet, light and dark. Recorded by
+ * the new button, on a 16:9 phone, a 21:9 phone and a 16:10 tablet, light and dark, in English and Korean. Recorded by
  * `:app:recordRoborazziCi` into `build/outputs/roborazzi/skill_maker`, never part of the CI run.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -28,7 +28,8 @@ import org.robolectric.annotation.GraphicsMode
 class SkillMakerEnemyTargetScreenshotTest(
     private val widthDp: Int,
     private val heightDp: Int,
-    private val dark: Boolean
+    private val dark: Boolean,
+    private val locale: String?
 ) {
     private val composeRule = createComposeRule()
 
@@ -40,7 +41,8 @@ class SkillMakerEnemyTargetScreenshotTest(
         name = name,
         widthDp = widthDp,
         heightDp = heightDp,
-        dark = dark
+        dark = dark,
+        locale = locale
     ) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
             SkillMakerEnemyTarget(selected = selected, onSelect = {})
@@ -62,7 +64,8 @@ class SkillMakerEnemyTargetScreenshotTest(
         name = "main_top_row",
         widthDp = widthDp,
         heightDp = TopRowHeightDp,
-        dark = dark
+        dark = dark,
+        locale = locale
     ) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.padding(vertical = 16.dp)) {
@@ -83,12 +86,14 @@ class SkillMakerEnemyTargetScreenshotTest(
         private const val TopRowHeightDp = 96
 
         @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1} dark={2}")
-        fun sizes(): List<Array<Any>> = listOf(
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1} dark={2} locale={3}")
+        fun sizes(): List<Array<Any?>> = listOf(
             // 16:9 phone, 21:9 phone, 16:10 tablet (landscape)
             640 to 360,
             840 to 360,
             1280 to 800
-        ).flatMap { (w, h) -> listOf(false, true).map { dark -> arrayOf<Any>(w, h, dark) } }
+        ).flatMap { (w, h) ->
+            listOf(false, true).flatMap { dark -> listOf(null, "ko").map { locale -> arrayOf<Any?>(w, h, dark, locale) } }
+        }
     }
 }

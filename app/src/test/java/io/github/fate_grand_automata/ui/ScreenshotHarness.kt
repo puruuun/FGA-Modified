@@ -14,8 +14,9 @@ internal const val ScreenshotDir = "build/outputs/roborazzi"
 
 /**
  * Sizes the Robolectric window to [widthDp] x [heightDp], renders [content] in the app theme and
- * writes `<folder>/<name>_<W>x<H>dp[_dark].png` under [ScreenshotDir]. Call it once per test method (a compose rule hosts one
- * content). The density is hdpi, so the images are 1.5 pixels per dp.
+ * writes `<folder>/<name>_<W>x<H>dp[_<locale>][_dark].png` under [ScreenshotDir]. Call it once per test method (a compose
+ * rule hosts one content). The density is hdpi, so the images are 1.5 pixels per dp. [locale] (for example `ko`) picks the
+ * app language; null keeps the default (English) strings.
  */
 internal fun ComposeContentTestRule.shoot(
     folder: String,
@@ -23,9 +24,10 @@ internal fun ComposeContentTestRule.shoot(
     widthDp: Int,
     heightDp: Int,
     dark: Boolean = false,
+    locale: String? = null,
     content: @Composable () -> Unit
 ) {
-    RuntimeEnvironment.setQualifiers("w${widthDp}dp-h${heightDp}dp-hdpi")
+    RuntimeEnvironment.setQualifiers("${locale?.let { "$it-" } ?: ""}w${widthDp}dp-h${heightDp}dp-hdpi")
 
     setContent {
         FGATheme(darkTheme = dark) {
@@ -34,7 +36,7 @@ internal fun ComposeContentTestRule.shoot(
     }
     waitForIdle()
 
-    onRoot().captureRoboImage("$ScreenshotDir/$folder/${name}_${widthDp}x${heightDp}dp${if (dark) "_dark" else ""}.png")
+    onRoot().captureRoboImage("$ScreenshotDir/$folder/${name}_${widthDp}x${heightDp}dp${locale?.let { "_$it" } ?: ""}${if (dark) "_dark" else ""}.png")
 }
 
 /**
