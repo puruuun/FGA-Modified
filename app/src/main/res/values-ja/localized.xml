@@ -414,9 +414,8 @@
     <string name="skill_maker_main_clear">"全削除"</string>
     <string name="skill_maker_main_delete_selected">"選択の削除"</string>
     <string name="skill_maker_main_enemy">"敵 %d"</string>
-    <string name="skill_maker_main_enemy_button">"敵: %s"</string>
-    <string name="skill_maker_main_enemy_none">"なし"</string>
-    <string name="skill_maker_enemy_dialog_title">"敵ターゲット"</string>
+    <string name="skill_maker_enemy_dialog_title">"敵ターゲット選択"</string>
+    <string name="skill_maker_enemy_target_button">"ターゲット設定"</string>
     <string name="skill_maker_enemy_layout_normal">"3体"</string>
     <string name="skill_maker_enemy_layout_six">"6体"</string>
     <string name="skill_maker_enemy_layout_raid">"レイド"</string>

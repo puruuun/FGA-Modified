@@ -7,6 +7,7 @@ sealed class SkillMakerNav {
     data object Main : SkillMakerNav()
     data object MasterSkills : SkillMakerNav()
     data object Atk : SkillMakerNav()
+    data object EnemyTarget : SkillMakerNav()
     data object OrderChange : SkillMakerNav()
     data class SkillTarget(val skill: Skill) : SkillMakerNav()
     data object CommandSpellUnavailable : SkillMakerNav()

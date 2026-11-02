@@ -472,9 +472,8 @@
     <string name="skill_maker_main_clear">"초기화"</string>
     <string name="skill_maker_main_delete_selected">"선택 삭제"</string>
     <string name="skill_maker_main_enemy">"적 %d"</string>
-    <string name="skill_maker_main_enemy_button">"적: %s"</string>
-    <string name="skill_maker_main_enemy_none">"없음"</string>
-    <string name="skill_maker_enemy_dialog_title">"적 타겟"</string>
+    <string name="skill_maker_enemy_dialog_title">"적 타겟 선택"</string>
+    <string name="skill_maker_enemy_target_button">"타겟 설정"</string>
     <string name="skill_maker_enemy_layout_normal">"3마리"</string>
     <string name="skill_maker_enemy_layout_six">"6마리"</string>
     <string name="skill_maker_enemy_layout_raid">"레이드"</string>

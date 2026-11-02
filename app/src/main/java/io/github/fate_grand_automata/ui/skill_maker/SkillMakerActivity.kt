@@ -94,6 +94,18 @@ fun SkillMakerUI(
         animationSpec = tween(durationMillis = 120)
     ) { nav ->
         when (nav) {
+            SkillMakerNav.EnemyTarget -> {
+                val enemyTarget by vm.enemyTarget
+
+                SkillMakerEnemyTarget(
+                    selected = enemyTarget,
+                    onSelect = {
+                        vm.setEnemyTarget(it)
+                        navigate(SkillMakerNav.Main)
+                    }
+                )
+            }
+
             SkillMakerNav.Atk -> {
                 SkillMakerAtk(
                     wave = wave,
@@ -113,6 +125,7 @@ fun SkillMakerUI(
             SkillMakerNav.Main -> {
                 SkillMakerMain(
                     vm = vm,
+                    onEnemyTarget = { navigate(SkillMakerNav.EnemyTarget) },
                     onCommandSpell = { vm.initCommandSpell() },
                     onMasterSkills = { navigate(SkillMakerNav.MasterSkills) },
                     onAtk = { navigate(SkillMakerNav.Atk) },

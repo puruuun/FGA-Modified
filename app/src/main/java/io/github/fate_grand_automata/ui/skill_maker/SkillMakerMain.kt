@@ -23,13 +23,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +46,7 @@ private val ATTACK_BUTTON_SIZE = 104.dp
 @Composable
 fun SkillMakerMain(
     vm: SkillMakerViewModel,
+    onEnemyTarget: () -> Unit,
     onCommandSpell: () -> Unit,
     onMasterSkills: () -> Unit,
     onAtk: () -> Unit,
@@ -64,61 +61,18 @@ fun SkillMakerMain(
             .fillMaxSize()
     ) {
         Text(stringResource(R.string.command_start_profile_caption, vm.profileIndex + 1))
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-        ) {
-            val enemyTarget by vm.enemyTarget
+        val commandSpellRemaining by vm.commandSpellRemaining
+        val wave by vm.wave
+        val turn by vm.turn
 
-            EnemyTarget(
-                selected = enemyTarget,
-                onSelectedChange = { vm.setEnemyTarget(it) }
-            )
-
-            // FGO groups the Command Spell and Master Skill buttons by the battle/turn counter.
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val commandSpellRemaining by vm.commandSpellRemaining
-
-                Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.colorCommandSpell)),
-                    onClick = onCommandSpell
-                ) {
-                    Text(
-                        stringResource(R.string.skill_maker_command_spell_button, commandSpellRemaining),
-                        textAlign = TextAlign.Center,
-                        color = Color.White
-                    )
-                }
-
-                Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.colorMasterSkill)),
-                    onClick = onMasterSkills
-                ) {
-                    Text(
-                        stringResource(R.string.skill_maker_main_master_skills),
-                        textAlign = TextAlign.Center,
-                        color = Color.White
-                    )
-                }
-            }
-
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val wave by vm.wave
-                Text(stringResource(R.string.skill_maker_main_wave, wave))
-
-                val turn by vm.turn
-                Text(stringResource(R.string.skill_maker_main_turn, turn))
-            }
-        }
+        SkillMakerTopRow(
+            commandSpellRemaining = commandSpellRemaining,
+            wave = wave,
+            turn = turn,
+            onEnemyTarget = onEnemyTarget,
+            onCommandSpell = onCommandSpell,
+            onMasterSkills = onMasterSkills
+        )
 
         SkillHistory(vm)
 
@@ -328,30 +282,68 @@ fun SkillHistory(vm: SkillMakerViewModel) {
     }
 }
 
+/** Enemy target, Command Spell and Master Skill buttons next to the wave/turn counter. */
 @Composable
-fun EnemyTarget(
-    selected: String?,
-    onSelectedChange: (String) -> Unit
+internal fun SkillMakerTopRow(
+    commandSpellRemaining: Int,
+    wave: Int,
+    turn: Int,
+    onEnemyTarget: () -> Unit,
+    onCommandSpell: () -> Unit,
+    onMasterSkills: () -> Unit
 ) {
-    var showDialog by rememberSaveable { mutableStateOf(false) }
-
-    OutlinedButton(onClick = { showDialog = true }) {
-        Text(
-            stringResource(
-                R.string.skill_maker_main_enemy_button,
-                selected?.let { "t$it" } ?: stringResource(R.string.skill_maker_main_enemy_none)
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+    ) {
+        Button(
+            colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.colorEnemyTargetButton)),
+            onClick = onEnemyTarget
+        ) {
+            Text(
+                stringResource(R.string.skill_maker_enemy_target_button),
+                textAlign = TextAlign.Center,
+                color = Color.White
             )
-        )
-    }
+        }
 
-    if (showDialog) {
-        EnemyTargetDialog(
-            selected = selected,
-            onSelect = {
-                showDialog = false
-                onSelectedChange(it)
-            },
-            onDismiss = { showDialog = false }
-        )
+        // FGO groups the Command Spell and Master Skill buttons by the battle/turn counter.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.colorCommandSpell)),
+                onClick = onCommandSpell
+            ) {
+                Text(
+                    stringResource(R.string.skill_maker_command_spell_button, commandSpellRemaining),
+                    textAlign = TextAlign.Center,
+                    color = Color.White
+                )
+            }
+
+            Button(
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.colorMasterSkill)),
+                onClick = onMasterSkills
+            ) {
+                Text(
+                    stringResource(R.string.skill_maker_main_master_skills),
+                    textAlign = TextAlign.Center,
+                    color = Color.White
+                )
+            }
+        }
+
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(R.string.skill_maker_main_wave, wave))
+            Text(stringResource(R.string.skill_maker_main_turn, turn))
+        }
     }
 }

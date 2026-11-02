@@ -66,9 +66,8 @@ NP"</string>
     <string name="skill_maker_atk_next_turn">"Next Turn
 in same wave"</string>
     <string name="skill_maker_main_enemy">"Enemy %d"</string>
-    <string name="skill_maker_main_enemy_button">"Enemy: %s"</string>
-    <string name="skill_maker_main_enemy_none">"none"</string>
-    <string name="skill_maker_enemy_dialog_title">"Enemy target"</string>
+    <string name="skill_maker_enemy_dialog_title">"Choose Enemy Target"</string>
+    <string name="skill_maker_enemy_target_button">"Set target"</string>
     <string name="skill_maker_enemy_layout_normal">"3 enemies"</string>
     <string name="skill_maker_enemy_layout_six">"6 enemies"</string>
     <string name="skill_maker_enemy_layout_raid">"Raid"</string>
