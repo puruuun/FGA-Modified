@@ -65,12 +65,19 @@ class BattleScreenLocations @Inject constructor(
         EnemyTarget.SixBottomMiddle -> layoutEnemy(660, 276)
         EnemyTarget.SixBottomRight -> layoutEnemy(1060, 276)
 
-        // Raid layout: the boss HP bar, then the three enemies below it.
-        EnemyTarget.RaidBoss -> layoutEnemy(780, 96)
-        EnemyTarget.RaidLeft -> layoutEnemy(200, 297)
-        // Provisional estimate: there is no capture of a raid with a middle enemy yet.
-        EnemyTarget.RaidMiddle -> layoutEnemy(757, 297)
-        EnemyTarget.RaidRight -> layoutEnemy(1313, 297)
+        // Raid layout: the boss HP bar, then up to two rows of three enemies below it.
+        EnemyTarget.RaidBoss -> layoutEnemy(780, 80)
+
+        // These points sit where both raid shapes overlap (Grand Marie: HP bars at the screen edges;
+        // six-below raid: the grid under the boss).
+        EnemyTarget.RaidLeft -> layoutEnemy(300, 288)
+        EnemyTarget.RaidMiddle -> layoutEnemy(800, 288)
+        EnemyTarget.RaidRight -> layoutEnemy(1250, 288)
+
+        // Second row of the six-below raid: only the right slot was measured; left and middle follow the same columns.
+        EnemyTarget.RaidLowerLeft -> layoutEnemy(460, 433)
+        EnemyTarget.RaidLowerMiddle -> layoutEnemy(860, 433)
+        EnemyTarget.RaidLowerRight -> layoutEnemy(1260, 433)
     }
 
     private fun normalEnemy(x: Int) = Location(x + if (isWide) 183 else 0, 80)

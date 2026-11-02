@@ -124,11 +124,18 @@ class AutoSkillCommand private constructor(
             return targets
         }
 
-        /** `1` followed by `0`, `1` or `2` is a two-digit raid code (greedy); otherwise one character. */
+        /**
+         * One character after `t`. The beta-only codes `t10`, `t11`, `t12` are still read greedily
+         * and mean `tA`, `tB`, `tC`; `t13`..`t15` keep reading as `t1` plus the next action.
+         */
         private fun readEnemyTargetCode(queue: Queue<Char>): String {
             val first = queue.remove()
             if (first == '1' && queue.peek() in listOf('0', '1', '2')) {
-                return "$first${queue.remove()}"
+                return when (queue.remove()) {
+                    '0' -> "A"
+                    '1' -> "B"
+                    else -> "C"
+                }
             }
             return first.toString()
         }

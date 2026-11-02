@@ -8,10 +8,16 @@ import kotlin.test.Test
 class SkillMakerEnemyTargetTest {
     @Test
     fun `every enemy target survives opening and saving the command history`() {
-        val source = "t1a,t4b,t9c,tRa,t10b,t11c,t12a4,t3b"
+        val source = "t1a,t4b,t9c,tRa,tAb,tBc,tCa4,tDb,tEc,tFa,t3b"
         val model = SkillMakerModel(source)
         assertThat(model.toString()).isEqualTo(source)
         assertThat(SkillMakerModel(model.toString()).toString()).isEqualTo(source)
+    }
+
+    @Test
+    fun `beta two digit codes are saved back as letters`() {
+        val model = SkillMakerModel("t10a,t11b,t12c")
+        assertThat(model.toString()).isEqualTo("tAa,tBb,tCc")
     }
 
     @Test

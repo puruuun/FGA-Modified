@@ -37,6 +37,9 @@ internal fun enemyLayoutOf(code: String?): EnemyLayout = when {
     else -> EnemyLayout.Normal
 }
 
+// Three rows have to fit a 640x360 dp landscape screen, so the raid buttons are lower.
+private val RaidButtonHeight = 48.dp
+
 /** Picking a target is a screen of its own, like the servant target screen. */
 @Composable
 internal fun SkillMakerEnemyTarget(
@@ -46,24 +49,25 @@ internal fun SkillMakerEnemyTarget(
     var layout by rememberSaveable { mutableStateOf(enemyLayoutOf(selected)) }
 
     @Composable
-    fun Target(target: EnemyTarget, width: Dp = 120.dp) {
+    fun Target(target: EnemyTarget, width: Dp = 120.dp, height: Dp = 75.dp) {
         val isSelected = target.autoSkillCode == selected
         TargetButton(
             onClick = { onSelect(target.autoSkillCode) },
             color = colorResource(if (isSelected) R.color.colorAccent else R.color.colorEnemyTarget),
             text = "t${target.autoSkillCode}",
-            width = width
+            width = width,
+            height = height
         )
     }
 
     @Composable
-    fun TargetRow(targets: List<EnemyTarget>) {
+    fun TargetRow(targets: List<EnemyTarget>, height: Dp = 75.dp) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            targets.forEach { Target(it) }
+            targets.forEach { Target(it, height = height) }
         }
     }
 
@@ -94,8 +98,9 @@ internal fun SkillMakerEnemyTarget(
                         TargetRow(EnemyTarget.sixList.drop(3))
                     }
                     EnemyLayout.Raid -> {
-                        Target(EnemyTarget.RaidBoss, width = 376.dp)
-                        TargetRow(EnemyTarget.raidList.drop(1))
+                        Target(EnemyTarget.RaidBoss, width = 376.dp, height = RaidButtonHeight)
+                        TargetRow(EnemyTarget.raidList.subList(1, 4), RaidButtonHeight)
+                        TargetRow(EnemyTarget.raidList.drop(4), RaidButtonHeight)
                     }
                 }
             }
