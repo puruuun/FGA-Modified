@@ -46,6 +46,12 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 
 The detailed guides are written in Korean. See the [full guide](wiki/scripts/Modified-Features-KR.md) for setup and behavior.
 
+## Support
+
+If FGA(mod) helps you, you can leave a tip on [Ko-fi](https://ko-fi.com/puruuun).
+
+<a href="https://ko-fi.com/puruuun"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
+
 ## Upstream and license
 
 [Upstream repository](https://github.com/Fate-Grand-Automata/FGA) · [Original documentation](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT license](LICENSE)
