@@ -187,15 +187,6 @@ class ShuffleUntilTest {
         }
     }
 
-    @Test fun `disabled face check exits before reading or pressing`() {
-        val f = Fixture()
-        every { f.tracker.faceCardCheckEnabled } returns false
-        assertEquals(AutoBattle.ExitReason.ShuffleUntilFaceCheckDisabled,
-            assertFailsWith<AutoBattle.BattleExitException> { f.run() }.reason)
-        verify(exactly = 0) { f.handReader.open() }
-        assertFalse(f.state.hakunoShuffledThisTurn)
-    }
-
     @Test fun `counts follow current field occupants including support and ignore stunned cards and empty slots`() {
         val cards = hand(3).mapIndexed { i, card -> card.copy(servant = TeamSlot.F, isStunned = i == 0) }
         assertEquals(listOf(0, 4, 0), ShuffleUntil.counts(cards, mapOf(FieldSlot.B to TeamSlot.F)))

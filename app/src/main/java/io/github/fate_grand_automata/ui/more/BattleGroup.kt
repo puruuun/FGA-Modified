@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.ui.more
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.NoAccounts
 import androidx.compose.material.icons.filled.OfflineBolt
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.runtime.Composable
@@ -93,14 +92,6 @@ fun LazyListScope.battleGroup(
             title = stringResource(R.string.p_boost_item),
             icon = icon(Icons.Default.OfflineBolt),
             entries = (-1..3).associateWith { it.boostItemString() }
-        )
-    }
-
-    item {
-        prefs.skipServantFaceCardCheck.SwitchPreference(
-            title = stringResource(R.string.p_skip_servant_face_checks),
-            summary = stringResource(R.string.p_skip_servant_face_checks_summary),
-            icon = icon(Icons.Default.NoAccounts)
         )
     }
 

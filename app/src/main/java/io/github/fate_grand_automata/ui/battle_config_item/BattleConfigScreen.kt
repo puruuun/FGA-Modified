@@ -54,6 +54,9 @@ import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardScore
 import io.github.fate_grand_automata.scripts.models.PerEntrySettings
+import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy
+import io.github.fate_grand_automata.scripts.modules.FaceCardReason
+import io.github.fate_grand_automata.scripts.modules.FaceCardReasonKind
 import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.VerticalDivider
@@ -331,6 +334,8 @@ private fun BattleConfigContent(
                                 HorizontalDivider()
                                 ProfilePriorityPreference(config.secondaryExecution, 1, navigate)
                             }
+                            HorizontalDivider()
+                            FaceCardCheckLine(config)
                         }
                     }
                 }
@@ -372,6 +377,69 @@ private fun ProfilePriorityPreference(
         summary = { CardPrioritySummary(profile) },
         onClick = { navigate(BattleConfigDestination.CardPriority(index)) }
     )
+}
+
+@Composable
+private fun profileInput(profile: ExecutionProfileCore): FaceCardCheckPolicy.ProfileInput {
+    val skillCommand by profile.skillCommand.remember()
+    val cardPriority by profile.cardPriority.remember()
+    val split by profile.cardPrioritySplit.remember()
+    val legacyStyle by profile.cardPriorityStyle.remember()
+    val styles by profile.cardPriorityStyles.remember()
+    val legacyServantPriority by profile.useServantPriority.remember()
+    val servantPriorities by profile.useServantPriorities.remember()
+    val braveChains by profile.braveChains.remember()
+    return FaceCardCheckPolicy.ProfileInput(
+        skillCommand = skillCommand,
+        entryCount = cardPriority.size,
+        prioritySplit = split,
+        legacyStyle = legacyStyle,
+        styles = styles,
+        legacyServantPriority = legacyServantPriority,
+        servantPriorities = servantPriorities,
+        braveChains = braveChains
+    )
+}
+
+/**
+ * Read-only result of the automatic servant face-card check. It uses the same policy as the battle
+ * and observes the prefs, so it updates when the settings change.
+ */
+@Composable
+private fun FaceCardCheckLine(config: BattleConfigCore) {
+    val startMode by config.commandStartMode.remember()
+    val secondEnabled by config.secondaryStartEnabled.remember()
+    val shuffle by config.shuffleCards.remember()
+    val primary = profileInput(config.execution)
+    val secondary = profileInput(config.secondaryExecution)
+
+    val decision = FaceCardCheckPolicy.decide(
+        FaceCardCheckPolicy.Input(startMode, secondEnabled, shuffle, primary, secondary)
+    )
+    val text = decision.reason?.takeIf { decision.enabled }?.let {
+        stringResource(R.string.face_card_check_auto_on, faceCardReasonText(it))
+    } ?: stringResource(R.string.face_card_check_auto_off)
+
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+    )
+}
+
+@Composable
+private fun faceCardReasonText(reason: FaceCardReason): String {
+    val entry = reason.entry?.let {
+        (if (reason.turnSplit) "T" else "W") + "${it + 1}" + if (reason.profile == 1) " (2)" else ""
+    } ?: ""
+    return when (reason.kind) {
+        FaceCardReasonKind.ServantStyle -> stringResource(R.string.face_card_reason_servant_style, entry)
+        FaceCardReasonKind.ServantPriority -> stringResource(R.string.face_card_reason_servant_priority, entry)
+        FaceCardReasonKind.BraveChains -> stringResource(R.string.face_card_reason_brave_chains, entry)
+        FaceCardReasonKind.NpMatchingShuffle -> stringResource(R.string.face_card_reason_np_matching_shuffle)
+        FaceCardReasonKind.HakunoShuffle -> stringResource(R.string.face_card_reason_hakuno_shuffle)
+        FaceCardReasonKind.CardCountStart -> stringResource(R.string.face_card_reason_card_count)
+    }
 }
 
 private val CardScore.color: Color

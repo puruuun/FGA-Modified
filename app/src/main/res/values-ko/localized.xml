@@ -15,7 +15,6 @@
     <string name="hakuno_shuffle_remove">삭제</string>
     <string name="hakuno_shuffle_add">조건 추가</string>
     <string name="hakuno_shuffle_stop">조건을 만족하지 못하면 전투 정지</string>
-    <string name="hakuno_shuffle_face_check_disabled">하쿠노 셔플에는 일반 카드 확인이 필요합니다.</string>
     <string name="hakuno_shuffle_return_failed">하쿠노 셔플 후 전투 화면으로 돌아오지 못했습니다.</string>
     <string name="hakuno_shuffle_unmet">하쿠노 셔플 %1$d회 후 조건 미충족: %2$s</string>
     <string name="hakuno_shuffle_np_shortage">NP 부족</string>
@@ -77,6 +76,14 @@
     <string name="card_priority_style_affinity">"상성"</string>
     <string name="card_priority_style_servant">"서번트"</string>
     <string name="card_priority_servant_style_note">"서번트 방식은 이 순서대로 카드를 고릅니다. 이 항목에서는 서번트 우선순위, 브레이브 체인, 카드 재배열이 무시됩니다."</string>
+    <string name="face_card_check_auto_on">"서번트 카드 확인: 자동 — 켜짐 (%1$s)"</string>
+    <string name="face_card_check_auto_off">"서번트 카드 확인: 자동 — 생략"</string>
+    <string name="face_card_reason_servant_style">"서번트 방식 %1$s"</string>
+    <string name="face_card_reason_servant_priority">"서번트 우선순위 %1$s"</string>
+    <string name="face_card_reason_brave_chains">"브레이브 체인 %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"보구 맞춤 셔플"</string>
+    <string name="face_card_reason_hakuno_shuffle">"하쿠노 셔플"</string>
+    <string name="face_card_reason_card_count">"카드 수 시작"</string>
     <string name="card_priority_summary_servant_priority">"서번트 우선"</string>
     <string name="card_priority_split_wave">"웨이브"</string>
     <string name="card_priority_split_turn">"턴"</string>
@@ -361,8 +368,6 @@
     <string name="p_shuffle_cards_when_no_np_matching">"보구와 맞는 카드 없음"</string>
     <string name="p_shuffle_cards_when_first_turn_start_condition">첫 턴 커맨드 시작 조건 불만족</string>
     <string name="p_shuffle_cards_when_none">"없음"</string>
-    <string name="p_skip_servant_face_checks">"서번트 카드 아이콘 확인 생략"</string>
-    <string name="p_skip_servant_face_checks_summary">"활성화시 브레이브 체인, 서번트 우선순위, 보구에 맞는 카드 셔플 등의 기능을 사용할 수 없습니다."</string>
     <string name="p_spam_danger">"위협적인 적에게"</string>
     <string name="p_spam_none">"사용 안 함"</string>
     <string name="p_spam_spam">"스팸 모드"</string>
@@ -389,8 +394,8 @@
     <string name="p_support_mode_manual">"수동"</string>
     <string name="p_support_mode_preferred">"선호"</string>
     <string name="p_thresholded_stage_counter">"스테이지 카운터 감지에 유사도 계산 사용"</string>
-    <string name="p_treat_support_like_own_servant">"서포트를 자신의 서번트처럼 취급합니다"</string>
-    <string name="p_treat_support_like_own_servant_summary">"페이스 카드에서 서포트 아이콘을 찾는 대신 일반적인 페이스 카드 검사를 수행합니다. 이렇게 하면 슈퍼 버프 서포트 서번트에 대한 문제가 해결되지만 파티에 같은 서번트가 2명 있는 경우 카드 우선순위 기능이 깨집니다."</string>
+    <string name="p_treat_support_like_own_servant">"서포트 아이콘 확인 생략"</string>
+    <string name="p_treat_support_like_own_servant_summary">"카드에서 서포트 아이콘을 찾지 않고, 서포트 카드도 얼굴 이미지로 구분합니다. 버프가 많아 서포트 아이콘이 가려질 때 켜세요. 파티에 같은 서번트가 2명 있으면 카드 배정이 틀어집니다. 서번트 카드 확인이 필요한 설정에서만 적용됩니다."</string>
     <string name="p_wait_ap_regen_text">"AP 회복 기다리기"</string>
     <string name="p_welcome">"FGA에 오신걸 환영합니다!"</string>
     <string name="p_welcome_description">"FGA 사용에 필요한 설정법을 안내드리겠습니다."</string>

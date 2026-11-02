@@ -16,7 +16,6 @@
     <string name="hakuno_shuffle_remove">Remove</string>
     <string name="hakuno_shuffle_add">Add condition</string>
     <string name="hakuno_shuffle_stop">Stop the battle if the condition is not met</string>
-    <string name="hakuno_shuffle_face_check_disabled">Hakuno Shuffle requires face-card checking.</string>
     <string name="hakuno_shuffle_return_failed">Could not return to the battle screen after Hakuno Shuffle.</string>
     <string name="hakuno_shuffle_unmet">Hakuno Shuffle unmet after %1$d presses: %2$s</string>
     <string name="hakuno_shuffle_np_shortage">NP shortage</string>
@@ -109,6 +108,14 @@ Skills"</string>
     <string name="card_priority_style_affinity">"Affinity"</string>
     <string name="card_priority_style_servant">"Servant"</string>
     <string name="card_priority_servant_style_note">"A Servant entry picks cards in this order. For this entry, servant priority, brave chains and rearrange cards are ignored."</string>
+    <string name="face_card_check_auto_on">"Servant face-card check: auto — on (%1$s)"</string>
+    <string name="face_card_check_auto_off">"Servant face-card check: auto — skipped"</string>
+    <string name="face_card_reason_servant_style">"servant style %1$s"</string>
+    <string name="face_card_reason_servant_priority">"servant priority %1$s"</string>
+    <string name="face_card_reason_brave_chains">"brave chains %1$s"</string>
+    <string name="face_card_reason_np_matching_shuffle">"NP-matching shuffle"</string>
+    <string name="face_card_reason_hakuno_shuffle">"Hakuno shuffle"</string>
+    <string name="face_card_reason_card_count">"card-count start"</string>
     <string name="card_priority_summary_servant_priority">"Servant priority"</string>
     <string name="card_priority_split_wave">"Wave"</string>
     <string name="card_priority_split_turn">"Turn"</string>
@@ -191,8 +198,6 @@ Skills"</string>
     <string name="p_boost_item">"Boost Item"</string>
     <string name="p_brave_chains">"Brave Chains"</string>
     <string name="p_rearrange_cards">"Rearrange Cards"</string>
-    <string name="p_skip_servant_face_checks">"Skip servant face-card checks"</string>
-    <string name="p_skip_servant_face_checks_summary">"Brave chains, servant priority, NP-matching card shuffle, etc. won't work"</string>
     <string name="p_wait_ap_regen_text">"Wait for AP Regeneration"</string>
     <string name="wait_ap_regen_toast_message">"Waiting for AP regeneration. Rechecking in %d minute(s)."</string>
     <string name="p_storage">"Storage"</string>
