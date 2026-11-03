@@ -47,7 +47,9 @@ import io.github.fate_grand_automata.util.stringRes
 @Composable
 fun BattleConfigListScreen(
     vm: BattleConfigListViewModel = viewModel(),
-    navigate: (String) -> Unit
+    openConfigId: String? = null,
+    navigate: (String) -> Unit,
+    onDeleted: (Set<String>) -> Unit = {}
 ) {
     val selectionMode by vm.selectionMode.collectAsState()
     val selectedConfigs by vm.selectedConfigs.collectAsState()
@@ -77,7 +79,7 @@ fun BattleConfigListScreen(
         message(stringResource(R.string.battle_config_list_delete_confirm_message, selectedConfigs.size))
 
         buttons(
-            onSubmit = { vm.deleteSelected() }
+            onSubmit = { onDeleted(vm.deleteSelected()) }
         )
     }
 
@@ -108,6 +110,7 @@ fun BattleConfigListScreen(
         selectedConfigs = selectedConfigs,
         expandedFolders = expandedFolders,
         folderRevision = folderRevision,
+        openConfigId = openConfigId,
         action = {
             when (it) {
                 BattleConfigListAction.MoveToFolder -> showMoveDialog = true
@@ -154,9 +157,12 @@ internal fun BattleConfigListContent(
     selectedConfigs: Set<String>,
     expandedFolders: Set<String>,
     folderRevision: Int,
-    action: (BattleConfigListAction) -> Unit
+    action: (BattleConfigListAction) -> Unit,
+    openConfigId: String? = null
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // in the list pane of the list-detail layout the list is a column, so it keeps the portrait button
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE &&
+            !LocalInListPane.current
 
     Box {
         CappedWidth {
@@ -218,6 +224,7 @@ internal fun BattleConfigListContent(
                             selectedConfigs = selectedConfigs,
                             expandedFolders = expandedFolders,
                             folderRevision = folderRevision,
+                            openConfigId = openConfigId,
                             modifier = Modifier
                                 .weight(1f)
                         )
@@ -249,7 +256,8 @@ internal fun BattleConfigListContent(
                                     action = action,
                                     selectedConfigs = selectedConfigs,
                                     expandedFolders = expandedFolders,
-                                    folderRevision = folderRevision
+                                    folderRevision = folderRevision,
+                                    openConfigId = openConfigId
                                 )
                             },
                             modifier = Modifier
@@ -304,6 +312,7 @@ private fun ConfigList(
     selectedConfigs: Set<String>,
     expandedFolders: Set<String>,
     folderRevision: Int,
+    openConfigId: String?,
     modifier: Modifier = Modifier
 ) {
     val configsByServer = remember(configs, folderRevision) {
@@ -364,6 +373,7 @@ private fun ConfigList(
                         },
                         isSelectionMode = selectionMode,
                         isSelected = selectionMode && core.id in selectedConfigs,
+                        isOpen = !selectionMode && core.id == openConfigId,
                         modifier = if (indent) Modifier.padding(start = 24.dp) else Modifier
                     )
                 }
@@ -448,6 +458,7 @@ private fun BattleConfigListItem(
     it: BattleConfigCore,
     isSelectionMode: Boolean,
     isSelected: Boolean,
+    isOpen: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -465,8 +476,8 @@ private fun BattleConfigListItem(
         modifier = modifier
             .padding(5.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = if (isOpen) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = if (isOpen) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
         Row(

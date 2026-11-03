@@ -189,11 +189,16 @@ class BattleConfigListViewModel @Inject constructor(
         }
     }
 
-    fun deleteSelected() {
-        selectedConfigs.value.forEach {
+    /** Deletes the selected configs and returns their ids. */
+    fun deleteSelected(): Set<String> {
+        val deleted = selectedConfigs.value
+
+        deleted.forEach {
             prefs.removeBattleConfig(it)
         }
 
         endSelection()
+
+        return deleted
     }
 }

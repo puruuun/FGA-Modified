@@ -7,19 +7,21 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.FgaScreen
-import io.github.fate_grand_automata.ui.LocalAdaptiveLayout
 import io.github.fate_grand_automata.ui.LocalNavigateBack
-import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigDestination
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigScreen
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigScreenViewModel
@@ -65,14 +67,37 @@ fun FgaApp(
 
     FgaScreen {
         AppUpdateDialog(vm)
-        val adaptiveLayout by vm.prefsCore.adaptiveLayoutEnabled.remember()
+        val density = LocalDensity.current
+        val windowSize = LocalWindowInfo.current.containerSize
+        val windowWidth = with(density) { windowSize.width.toDp() }
+        val windowHeight = with(density) { windowSize.height.toDp() }
+
+        // The list highlights the open config only while it shares the window with it, so a
+        // phone, where the list is covered when a config is open, never shows a highlight
+        val wide = windowTier(windowWidth, windowHeight) == WindowTier.Wide
+        val openConfigId = if (wide) selectedConfigId(backStack) else null
+
+        val listDetail = remember(windowWidth, windowHeight, backStack) {
+            ListDetailSceneStrategy(
+                width = windowWidth,
+                height = windowHeight,
+                backStack = backStack,
+                leaveList = {
+                    val listIndex = backStack.indexOfLast { it is Route.BattleConfigList }
+                    if (listIndex >= 0) {
+                        backStack.replaceWith(backStack.subList(0, listIndex).toList())
+                    }
+                }
+            )
+        }
+
         CompositionLocalProvider(
-            LocalNavigateBack provides navigateBack,
-            LocalAdaptiveLayout provides adaptiveLayout
+            LocalNavigateBack provides navigateBack
         ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },
+                sceneStrategies = listOf(listDetail, SinglePaneSceneStrategy()),
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator()
@@ -141,7 +166,9 @@ fun FgaApp(
                     entry<Route.BattleConfigList> {
                         BattleConfigListScreen(
                             vm = hiltViewModel(),
-                            navigate = { backStack.add(Route.BattleConfigItem(it)) }
+                            openConfigId = openConfigId,
+                            navigate = { backStack.replaceWith(openFromList(backStack.toList(), it)) },
+                            onDeleted = { backStack.replaceWith(afterDelete(backStack.toList(), it)) }
                         )
                     }
                     entry<Route.MoreOptions> {
@@ -183,13 +210,7 @@ fun FgaApp(
                                     is BattleConfigDestination.Other -> {
                                         // replaces the current battle config screen with another one,
                                         // discarding any of its child screens (Card Priority, etc.)
-                                        val listIndex =
-                                            backStack.indexOfLast { it is Route.BattleConfigList }
-                                        check(listIndex >= 0) {
-                                            "Route.BattleConfigList not found below $it on the back stack"
-                                        }
-                                        backStack.subList(listIndex + 1, backStack.size).clear()
-                                        backStack.add(Route.BattleConfigItem(it.id))
+                                        backStack.replaceWith(openFromList(backStack.toList(), it.id))
                                     }
 
                                     BattleConfigDestination.PreferredSupport ->

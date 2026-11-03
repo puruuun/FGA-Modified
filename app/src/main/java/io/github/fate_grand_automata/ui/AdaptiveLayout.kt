@@ -16,11 +16,12 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
 /**
- * Whether the wide-screen layout is on (the "Wide-screen layout" switch). Provided once at the app
- * root; [CappedWidth] and [AdaptiveColumns] are the only readers. Off means every screen keeps
- * the full width and a single column.
+ * Whether [CappedWidth] and [AdaptiveColumns] adapt to the window. The layout always adapts, so
+ * the default is `true` and the app never sets this. It exists only so tests can render the
+ * legacy full-width single-column path with `false` and check that a Compact window looks the
+ * same either way.
  */
-val LocalAdaptiveLayout = compositionLocalOf { false }
+val LocalAdaptiveLayout = compositionLocalOf { true }
 
 /** Widest a single-column screen gets before the content is centred instead of stretched. */
 val ContentMaxWidth = 840.dp
