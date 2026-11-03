@@ -36,7 +36,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [카드 우선순위 확장](wiki/scripts/Card-Priority-KR.md) | 최대 10개 항목, 웨이브·턴 구분, 서번트 방식을 지원하고, 방식과 서번트 우선순위를 항목마다 정합니다. |
 | [오토 스킬 폴더](wiki/scripts/Battle-Config-Folders-KR.md) | 배틀 설정을 폴더로 묶어 목록과 런처에서 접고 폅니다. |
 | [턴 제한 퇴각](wiki/scripts/Turn-Limit-Retreat-KR.md) | 전멸하거나 N턴에 도달하면 퇴각하고 다시 시작하며, 연속 퇴각 횟수에서 멈춥니다. |
-| [적 배치별 타겟](wiki/scripts/Enemy-Layout-Targets-KR.md) | 6타겟·레이드 배치의 적을 `t4`~`t9`, `tR`, `tA`~`tF`로 지정합니다. |
+| [적 배치별 타겟](wiki/scripts/Enemy-Layout-Targets-KR.md) | 6타겟·레이드 배치의 적을 지정합니다. |
 | [게임 영역](wiki/scripts/Game-Area-Preview-KR.md) | 분할 화면의 게임 영역을 미리 보며 맞추고, 스크린샷으로 자동 맞춤합니다. |
 | [추가 기능 미세 조정](wiki/scripts/Added-Features-Fine-Tune-KR.md) | 수정판 기능의 대기 시간과 인식 유사도를 구역별로 조정합니다. |
 | [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. |

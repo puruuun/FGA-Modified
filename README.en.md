@@ -29,7 +29,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Card priority extensions](wiki/scripts/Card-Priority-KR.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. |
 | [Battle config folders](wiki/scripts/Battle-Config-Folders-KR.md) | Groups battle configs into folders you can fold in the list and the launcher. |
 | [Turn-limit retreat](wiki/scripts/Turn-Limit-Retreat-KR.md) | Retreats and restarts on a wipe or at turn N, and stops after a set number of retreats in a row. |
-| [Enemy layout targets](wiki/scripts/Enemy-Layout-Targets-KR.md) | Targets enemies in six-enemy and raid layouts with `t4`–`t9`, `tR` and `tA`–`tF`. |
+| [Enemy layout targets](wiki/scripts/Enemy-Layout-Targets-KR.md) | Targets enemies in six-enemy and raid layouts. |
 | [Game area](wiki/scripts/Game-Area-Preview-KR.md) | Previews the split-screen game area while adjusting it, with auto-fit from a screenshot. |
 | [Added-features fine tune](wiki/scripts/Added-Features-Fine-Tune-KR.md) | Adjusts waits and match similarity of the fork's features per area. |
 | [Friend request after quest](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support. |
