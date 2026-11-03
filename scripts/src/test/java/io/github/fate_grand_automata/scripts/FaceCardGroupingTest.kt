@@ -103,4 +103,11 @@ class FaceCardGroupingTest {
         assertThat(result[other]!!).isEqualTo(setOf(cards[0]))
         assertThat(result[own]!!).isEqualTo(cards.toSet() - cards[0])
     }
+
+    @Test
+    fun `best score reads only the first match of an endless sequence`() {
+        val endless = sequenceOf(1.0) + generateSequence { 0.0 }
+        assertThat(FaceCardGrouping.bestScore(endless)).isEqualTo(1.0)
+        assertThat(FaceCardGrouping.bestScore(emptySequence())).isEqualTo(0.0)
+    }
 }

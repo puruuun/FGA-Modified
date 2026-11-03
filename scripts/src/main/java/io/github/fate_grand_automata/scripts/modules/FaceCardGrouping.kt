@@ -17,6 +17,13 @@ object FaceCardGrouping {
     const val SUPPORT_TAG_SIMILARITY = 0.7
 
     /**
+     * The best score of a `findMatches` sequence, which yields the best match first.
+     * Only the first element is read: the matcher flood-fills each match with 0.0, so a sequence
+     * searched with a similarity of 0.0 never ends.
+     */
+    fun bestScore(scores: Sequence<Double>) = scores.firstOrNull() ?: 0.0
+
+    /**
      * The support face may be used as a candidate only if it does not look like any owned servant's face
      * (otherwise a duplicate servant would steal the owner's cards).
      *

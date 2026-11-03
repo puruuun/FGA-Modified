@@ -120,7 +120,7 @@ class ServantTracker @Inject constructor(
     private var lastLoggedSupportFaceDecision: Boolean? = null
 
     private fun matchScore(a: Pattern, b: Pattern) =
-        a.findMatches(b, 0.0).maxOfOrNull { it.score } ?: 0.0
+        FaceCardGrouping.bestScore(a.findMatches(b, 0.0).map { it.score })
 
     /**
      * Compares the support face with every owned servant face; the support face is unusable if any is the same face.
