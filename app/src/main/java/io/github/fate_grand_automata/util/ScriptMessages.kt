@@ -147,6 +147,15 @@ class ScriptMessages @Inject constructor(
                 Timber.d("Servant: ${item.servant} in Slot: ${item.slot}")
             }
 
+            is ScriptLog.SupportFaceDecision -> {
+                val score = item.bestOwnedScore?.let { "%.2f".format(it) } ?: "n/a"
+                if (item.usable) {
+                    Timber.i("Support face of ${item.support} differs from every owned servant (best $score): used for cards without the SUPPORT tag")
+                } else {
+                    Timber.i("Support face of ${item.support} matches owned ${item.sameFaceServant} ($score): SUPPORT tag only")
+                }
+            }
+
             is ScriptLog.CardsBelongToServant -> {
                 val supportText = if (item.isSupport) "Support " else ""
                 Timber.d("${item.cards} belong to ${supportText}${item.servant}")

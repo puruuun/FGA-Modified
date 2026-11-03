@@ -332,8 +332,6 @@
     <string name="p_thresholded_stage_counter">"ウェーブカウンターのしきい値を検出"</string>
 
     <!-- Fuzzy -->
-    <string name="p_treat_support_like_own_servant">"サポートを自分のサーヴァントのように扱う"</string>
-    <string name="p_treat_support_like_own_servant_summary">"サポートアイコンではなく、通常のフェイスカードチェックを行います。これにより、複数バフされたサポートサーヴァントの問題は解決しますが、パーティ内に同じサーヴァントが2体いる場合、カードの優先順位が崩れる可能性があります。"</string>
     <string name="p_wait_ap_regen_text">"AP回復を待つ"</string>
     <string name="p_welcome">"FGAへようこそ!"</string>
     <string name="p_welcome_description">"この画面では、最も重要なセットアップ手順を説明します。"</string>

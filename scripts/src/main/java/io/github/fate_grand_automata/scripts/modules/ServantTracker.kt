@@ -99,9 +99,56 @@ class ServantTracker @Inject constructor(
 
         if (supportSlot == null && isSupport) {
             supportSlot = teamSlot
-        } else if (!isSupport) {
+        }
+
+        if (isSupport) {
+            if (teamSlot == supportSlot) {
+                // A different support may have entered this slot: replace the stored face
+                faceCardImages.remove(teamSlot)?.forEach { it.close() }
+                supportFaceUsable = false
+                lastLoggedSupportFaceDecision = null
+                initFaceCard(teamSlot, slot)
+            }
+        } else {
             // Don't useSameSnapIn here, since we open a dialog
             initFaceCard(teamSlot, slot)
+        }
+    }
+
+    // Whether the support's own face may be a candidate when assigning cards without the SUPPORT tag.
+    private var supportFaceUsable = false
+    private var lastLoggedSupportFaceDecision: Boolean? = null
+
+    private fun matchScore(a: Pattern, b: Pattern) =
+        a.findMatches(b, 0.0).maxOfOrNull { it.score } ?: 0.0
+
+    /**
+     * Compares the support face with every owned servant face; the support face is unusable if any is the same face.
+     */
+    private fun refreshSupportFaceDecision() {
+        val support = supportSlot ?: return
+        val supportImages = faceCardImages[support] ?: return
+        if (supportImages.isEmpty()) return
+
+        val ownedScores = faceCardImages
+            .filterKeys { it != support }
+            .flatMap { (owner, images) ->
+                images.map { owned -> owner to supportImages.maxOf { matchScore(it, owned) } }
+            }
+
+        supportFaceUsable = FaceCardGrouping.supportFaceUsable(ownedScores.map { it.second })
+
+        if (lastLoggedSupportFaceDecision != supportFaceUsable) {
+            lastLoggedSupportFaceDecision = supportFaceUsable
+            val best = ownedScores.maxByOrNull { it.second }
+            messages.log(
+                ScriptLog.SupportFaceDecision(
+                    support = support,
+                    usable = supportFaceUsable,
+                    sameFaceServant = best?.first,
+                    bestOwnedScore = best?.second
+                )
+            )
         }
     }
 
@@ -124,6 +171,8 @@ class ServantTracker @Inject constructor(
             .add(image)
 
         250.milliseconds.wait()
+
+        refreshSupportFaceDecision()
     }
 
     private fun check(slot: FieldSlot) {
@@ -201,39 +250,31 @@ class ServantTracker @Inject constructor(
             return emptyMap()
         }
 
-        val cardsRemaining = CommandCard.Face.list.toMutableSet()
-        val result = mutableMapOf<TeamSlot, Set<CommandCard.Face>>()
+        val cards = CommandCard.Face.list
+        val onFieldSupport = supportSlot?.takeIf { it in deployed.values }
 
-        supportSlot?.let { supportSlot ->
-            if (supportSlot in deployed.values) {
-                val matched = cardsRemaining.filter { card ->
-                    images[Images.Support] in locations.attack.supportCheckRegion(card)
-                }.toSet()
+        val supportTagged = if (onFieldSupport != null) {
+            cards.filter { card ->
+                locations.attack.supportCheckRegion(card)
+                    .exists(images[Images.Support], similarity = FaceCardGrouping.SUPPORT_TAG_SIMILARITY)
+            }.toSet()
+        } else emptySet()
 
-                cardsRemaining -= matched
-                result[supportSlot] = matched
-            }
+        val ownedOnField = faceCardImages.keys
+            .filter { it != supportSlot && it in deployed.values }
+
+        val result = FaceCardGrouping.group(
+            cards = cards,
+            supportSlot = onFieldSupport,
+            supportTagged = supportTagged,
+            ownedOnField = ownedOnField,
+            supportFaceUsable = supportFaceUsable && onFieldSupport != null && onFieldSupport in faceCardImages
+        ) { card, servant ->
+            faceCardImages[servant]?.maxOfOrNull { image ->
+                locations.attack.servantMatchRegion(card)
+                    .find(image, FaceCardGrouping.MIN_FACE_SCORE)?.score ?: 0.0
+            } ?: 0.0
         }
-
-        val ownedServants = faceCardImages
-            .filterKeys { it != supportSlot && it in deployed.values }
-        cardsRemaining
-            .groupBy { card ->
-                // find the best matching Servant which isn't the support
-                ownedServants
-                    .mapValues { (_, images) ->
-                        images.maxOf { image ->
-                            locations.attack.servantMatchRegion(card)
-                                .find(image, 0.5)?.score ?: 0.0
-                        }
-                    }
-                    .filterValues { it > 0.0 }
-                    .maxByOrNull { it.value }
-                    ?.key
-            }
-            .filterKeys { it != null }
-            .entries
-            .associateTo(result) { (key, value) -> key!! to value.toSet() }
 
         result.forEach { (servant, cards) ->
             messages.log(
@@ -266,8 +307,8 @@ class ServantTracker @Inject constructor(
     }
 
     /**
-     * Checks if the given [slot] is a Support Servant. Will always return `false` if "Treat Support like own Servant" is enabled.
+     * Checks if the given [slot] is a Support Servant.
      */
-    private fun isSupport(slot: FieldSlot) = !prefs.treatSupportLikeOwnServant &&
-            images[Images.ServantCheckSupport] in locations.battle.servantChangeSupportCheckRegion(slot)
+    private fun isSupport(slot: FieldSlot) =
+        images[Images.ServantCheckSupport] in locations.battle.servantChangeSupportCheckRegion(slot)
 }

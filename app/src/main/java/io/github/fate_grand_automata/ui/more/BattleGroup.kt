@@ -94,14 +94,6 @@ fun LazyListScope.battleGroup(
             entries = (-1..3).associateWith { it.boostItemString() }
         )
     }
-
-    item {
-        prefs.treatSupportLikeOwnServant.SwitchPreference(
-            title = stringResource(R.string.p_treat_support_like_own_servant),
-            summary = stringResource(R.string.p_treat_support_like_own_servant_summary),
-            icon = icon(R.drawable.ic_biceps)
-        )
-    }
 }
 
 @Composable

@@ -97,7 +97,6 @@ class PrefsCore @Inject constructor(
 
 
     val stopAfterThisRun = maker.bool("stop_after_this_run")
-    val treatSupportLikeOwnServant = maker.bool("treat_support_like_own_servant")
 
     val playBtnLocation = maker.serialized(
         "play_btn_location",

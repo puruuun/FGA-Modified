@@ -294,4 +294,26 @@ class PerEntryCardPriorityTest {
         assertThat(PerEntrySettings.serializeFlags(flags)).isEqualTo("true,false")
         assertThat(PerEntrySettings.parseFlags("true,false")).isEqualTo(flags)
     }
+
+    @Test
+    fun `different servant orders per wave use the entry of the wave`() {
+        val base = profile(flags = listOf(true, true))
+        val differing = TestExecutionProfile(
+            cardPriority = base.cardPriority,
+            cardPrioritySplit = CardPrioritySplit.Wave,
+            cardPriorityStyle = Affinity,
+            cardPriorityStyles = listOf(Affinity, Affinity),
+            servantCardPriority = base.servantCardPriority,
+            useServantPriorities = listOf(true, true),
+            servantPriority = ServantPriorityPerWave.of("1,2,3,4,5,6\n2,1,3,4,5,6")
+        )
+        val c = clicker(differing)
+
+        // Wave 1: servant 1 first (1B, 1A), then servant 2 (2B).
+        assertThat(c.click(hand, 0)).containsExactly(A, C, E)
+        // Wave 2: servant 2 first (2B, 2A), then servant 1 (1B).
+        assertThat(c.click(hand, 1)).containsExactly(E, B, A)
+        // Later waves repeat the last entry.
+        assertThat(c.click(hand, 2)).containsExactly(E, B, A)
+    }
 }

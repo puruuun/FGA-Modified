@@ -308,8 +308,6 @@
     <string name="p_support_mode_manual">"手动选择"</string>
     <string name="p_support_mode_preferred">"偏好从者"</string>
     <string name="p_thresholded_stage_counter">"使用二值化图像检测战斗场次"</string>
-    <string name="p_treat_support_like_own_servant">"助战从者视为自有从者"</string>
-    <string name="p_treat_support_like_own_servant_summary">"从者头像检查时将不再匹配助战图标。该功能可解决助战从者带有过多buff时引发的识别问题。但当队伍中有两名相同从者时，该功能可能会破坏指令卡优先级的设定。"</string>
     <string name="p_wait_ap_regen_text">"等待体力回复"</string>
     <string name="p_welcome">"欢迎使用FGA！"</string>
     <string name="p_welcome_description">"该页面将会引导您完成最重要的设置步骤"</string>

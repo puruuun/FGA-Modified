@@ -72,6 +72,14 @@ sealed class ScriptLog {
         val slot: FieldSlot
     ) : ScriptLog()
 
+    /** Whether the support face is used to assign cards whose SUPPORT tag was not found. */
+    class SupportFaceDecision(
+        val support: TeamSlot,
+        val usable: Boolean,
+        val sameFaceServant: TeamSlot?,
+        val bestOwnedScore: Double?
+    ) : ScriptLog()
+
     class CardsBelongToServant(
         val cards: Iterable<CommandCard.Face>,
         val servant: TeamSlot,

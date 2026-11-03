@@ -113,8 +113,6 @@ class PreferencesImpl @Inject constructor(
     override var stopAfterThisRun by prefs.stopAfterThisRun
 
 
-    override var treatSupportLikeOwnServant by prefs.treatSupportLikeOwnServant
-
     override var shouldLimitFP by prefs.shouldLimitFP
     override var limitFP by prefs.limitFP
     override var fpAutoSell by prefs.fpAutoSell
