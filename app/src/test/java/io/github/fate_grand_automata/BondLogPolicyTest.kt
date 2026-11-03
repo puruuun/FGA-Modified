@@ -12,6 +12,13 @@ class BondLogPolicyTest {
             assertTrue(isFgaLoggable(SUPPORT_CE_TAG, Log.INFO, debug, beta = true))
         }
     }
+    @Test fun `face card grouping evidence is emitted only in beta at INFO or higher`() {
+        for (debug in listOf(false, true)) {
+            assertFalse(isFgaLoggable(FACE_CARDS_TAG, Log.INFO, debug, beta = false))
+            assertFalse(isFgaLoggable(FACE_CARDS_TAG, Log.DEBUG, debug, beta = true))
+            assertTrue(isFgaLoggable(FACE_CARDS_TAG, Log.INFO, debug, beta = true))
+        }
+    }
     @Test fun `bond evidence is emitted only in beta at INFO or higher`() {
         for (debug in listOf(false, true)) {
             assertFalse(isFgaLoggable(BOND_TAG, Log.INFO, debug, beta = false))

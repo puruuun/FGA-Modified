@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.scripts
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.CardColourCounts
 import io.github.fate_grand_automata.scripts.models.FieldSlot
+import io.github.fate_grand_automata.scripts.models.ParsedCard
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import kotlin.time.Duration
 
@@ -77,7 +78,37 @@ sealed class ScriptLog {
         val support: TeamSlot,
         val usable: Boolean,
         val sameFaceServant: TeamSlot?,
-        val bestOwnedScore: Double?
+        val bestOwnedScore: Double?,
+        val ownedScores: List<Pair<TeamSlot, Double>> = emptyList()
+    ) : ScriptLog()
+
+    /** One command card as read for the servant grouping: tag score, face scores and the result. */
+    class FaceCardReading(
+        val card: CommandCard.Face,
+        val tagScore: Double?,
+        val faceScores: Map<TeamSlot, Double>,
+        val servant: TeamSlot?
+    )
+
+    /** Why these command cards were picked this turn: the priority entry, the read cards, the sort and the pick. */
+    class CardDecision(
+        val stage: Int,
+        val turn: Int,
+        val commandStage: Int,
+        val commandTurn: Int,
+        val profile: Int,
+        val entry: Int,
+        val style: String,
+        val servantPriority: Boolean,
+        val cards: List<ParsedCard>,
+        val sorted: List<CommandCard.Face>,
+        val picked: List<CommandCard>,
+        val direct: String?
+    ) : ScriptLog()
+
+    class FaceCardReadings(
+        val readings: List<FaceCardReading>,
+        val support: TeamSlot?
     ) : ScriptLog()
 
     class CardsBelongToServant(

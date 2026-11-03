@@ -27,6 +27,9 @@ const val WEEKLY_ROUTE_TAG = "WeeklyRoute"
 const val SKILL_LEVEL_TAG = "SkillLevel"
 
 const val BOND_TAG = "Bond"
+
+/** Beta-only logcat tag of the command card to servant grouping: `adb logcat -s FaceCards`. */
+const val FACE_CARDS_TAG = "FaceCards"
 const val SUPPORT_CE_TAG = "FGA.SupportCe"
 
 @ServiceScoped
@@ -149,11 +152,36 @@ class ScriptMessages @Inject constructor(
 
             is ScriptLog.SupportFaceDecision -> {
                 val score = item.bestOwnedScore?.let { "%.2f".format(it) } ?: "n/a"
+                val all = item.ownedScores.joinToString { (servant, s) -> "$servant=%.2f".format(s) }
                 if (item.usable) {
-                    Timber.i("Support face of ${item.support} differs from every owned servant (best $score): used for cards without the SUPPORT tag")
+                    Timber.tag(FACE_CARDS_TAG).i("Support face of ${item.support} differs from every owned servant (best $score; $all): used for cards without the SUPPORT tag")
                 } else {
-                    Timber.i("Support face of ${item.support} matches owned ${item.sameFaceServant} ($score): SUPPORT tag only")
+                    Timber.tag(FACE_CARDS_TAG).i("Support face of ${item.support} matches owned ${item.sameFaceServant} ($score; $all): SUPPORT tag only")
                 }
+            }
+
+            is ScriptLog.CardDecision -> {
+                val read = item.cards.joinToString(" ") { c ->
+                    val affinity = if (c.affinity.name == "Normal") "" else "/${c.affinity}"
+                    val stun = if (c.isStunned) "/stun" else ""
+                    "${c.card}=${c.servant}:${c.type}$affinity$stun"
+                }
+                val mode = item.style + if (item.servantPriority) "+servantPriority" else ""
+                val direct = item.direct?.let { " direct=$it" } ?: ""
+                Timber.tag(FACE_CARDS_TAG).i(
+                    "wave ${item.stage + 1} turn ${item.turn} (command ${item.commandStage + 1}/${item.commandTurn}) " +
+                        "profile ${item.profile + 1} entry ${item.entry + 1} $mode | cards $read | sorted ${item.sorted.joinToString(",")} | picked ${item.picked.joinToString(",")}$direct"
+                )
+            }
+
+            is ScriptLog.FaceCardReadings -> {
+                fun fmt(s: Double?) = s?.let { "%.2f".format(it) } ?: "<0.30"
+                val lines = item.readings.joinToString(" | ") { r ->
+                    val tag = if (item.support != null) " tag=${fmt(r.tagScore)}" else ""
+                    val faces = r.faceScores.entries.joinToString(",") { (servant, s) -> "$servant=${fmt(s.takeIf { it > 0.0 })}" }
+                    "${r.card}:$tag face[$faces] -> ${r.servant ?: "none"}"
+                }
+                Timber.tag(FACE_CARDS_TAG).i("support=${item.support ?: "none"} $lines")
             }
 
             is ScriptLog.CardsBelongToServant -> {

@@ -146,7 +146,8 @@ class ServantTracker @Inject constructor(
                     support = support,
                     usable = supportFaceUsable,
                     sameFaceServant = best?.first,
-                    bestOwnedScore = best?.second
+                    bestOwnedScore = best?.second,
+                    ownedScores = ownedScores
                 )
             )
         }
@@ -253,15 +254,22 @@ class ServantTracker @Inject constructor(
         val cards = CommandCard.Face.list
         val onFieldSupport = supportSlot?.takeIf { it in deployed.values }
 
-        val supportTagged = if (onFieldSupport != null) {
-            cards.filter { card ->
+        // Scores down to LOG_SCORE_FLOOR are read so the beta log shows near misses
+        val tagScores = if (onFieldSupport != null) {
+            cards.associateWith { card ->
                 locations.attack.supportCheckRegion(card)
-                    .exists(images[Images.Support], similarity = FaceCardGrouping.SUPPORT_TAG_SIMILARITY)
-            }.toSet()
-        } else emptySet()
+                    .find(images[Images.Support], FaceCardGrouping.LOG_SCORE_FLOOR)?.score
+            }
+        } else emptyMap()
+
+        val supportTagged = tagScores
+            .filterValues { it != null && it >= FaceCardGrouping.SUPPORT_TAG_SIMILARITY }
+            .keys
 
         val ownedOnField = faceCardImages.keys
             .filter { it != supportSlot && it in deployed.values }
+
+        val faceScores = mutableMapOf<CommandCard.Face, MutableMap<TeamSlot, Double>>()
 
         val result = FaceCardGrouping.group(
             cards = cards,
@@ -270,11 +278,25 @@ class ServantTracker @Inject constructor(
             ownedOnField = ownedOnField,
             supportFaceUsable = supportFaceUsable && onFieldSupport != null && onFieldSupport in faceCardImages
         ) { card, servant ->
-            faceCardImages[servant]?.maxOfOrNull { image ->
+            (faceCardImages[servant]?.maxOfOrNull { image ->
                 locations.attack.servantMatchRegion(card)
-                    .find(image, FaceCardGrouping.MIN_FACE_SCORE)?.score ?: 0.0
-            } ?: 0.0
+                    .find(image, FaceCardGrouping.LOG_SCORE_FLOOR)?.score ?: 0.0
+            } ?: 0.0).also { faceScores.getOrPut(card) { mutableMapOf() }[servant] = it }
         }
+
+        messages.log(
+            ScriptLog.FaceCardReadings(
+                cards.map { card ->
+                    ScriptLog.FaceCardReading(
+                        card = card,
+                        tagScore = tagScores[card],
+                        faceScores = faceScores[card].orEmpty(),
+                        servant = result.entries.firstOrNull { card in it.value }?.key
+                    )
+                },
+                support = onFieldSupport
+            )
+        )
 
         result.forEach { (servant, cards) ->
             messages.log(

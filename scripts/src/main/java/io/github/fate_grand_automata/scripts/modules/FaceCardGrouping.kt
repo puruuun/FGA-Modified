@@ -16,6 +16,9 @@ object FaceCardGrouping {
     /** Similarity for the SUPPORT tag on a command card. */
     const val SUPPORT_TAG_SIMILARITY = 0.7
 
+    /** Lowest score read for the log; decisions still use the thresholds above. */
+    const val LOG_SCORE_FLOOR = 0.3
+
     /**
      * The best score of a `findMatches` sequence, which yields the best match first.
      * Only the first element is read: the matcher flood-fills each match with 0.0, so a sequence

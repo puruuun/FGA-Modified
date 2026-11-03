@@ -57,6 +57,32 @@ class Card @Inject constructor(
             braveChains = execution.active.braveChainAt(index),
             rearrange = execution.active.rearrangeAt(index)
         ).map { it.card }
+            .also { logDecision(cards, index, cardsOrderedByPriority.map { it.card }, it.take(3), direct = null) }
+    }
+
+    private fun logDecision(
+        cards: List<ParsedCard>,
+        index: Int,
+        sorted: List<CommandCard.Face>,
+        picked: List<CommandCard>,
+        direct: String?
+    ) {
+        messages.log(
+            ScriptLog.CardDecision(
+                stage = state.stage,
+                turn = state.turn,
+                commandStage = state.commandStage,
+                commandTurn = state.commandTurn,
+                profile = execution.selectedIndex ?: 0,
+                entry = index,
+                style = execution.active.priority.styleAt(index).name,
+                servantPriority = execution.active.priority.useServantPriorityAt(index),
+                cards = cards,
+                sorted = sorted,
+                picked = picked,
+                direct = direct
+            )
+        )
     }
 
     fun clickCommandCards(
