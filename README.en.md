@@ -9,7 +9,7 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 ## Download and updates
 
 - [Latest APK](https://github.com/puruuun/FGA-Modified/releases/latest)
-- [Release notes for 1.7.1 (Korean)](wiki/releases/1.7.1-KR.md)
+- [Release notes for 1.7.2 (Korean)](wiki/releases/1.7.2-KR.md)
 - [Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D)
 - [Details](wiki/scripts/Modified-Features.md#installation)
 
