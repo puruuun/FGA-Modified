@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.weekly.*
+import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.remember
 import java.io.File
@@ -35,41 +36,43 @@ fun WeeklyRouteSettingsScreen(prefs: PrefsCore) {
         reading = false
     }
     fun setEnabled(key: String, value: Boolean) { disabled = if (value) disabled - key else disabled + key }
-    Column(Modifier.fillMaxSize()) {
-        Heading(stringResource(R.string.weekly_route_settings))
-        Row {
-            for (region in listOf("JP", "KR")) {
-                TextButton(onClick = { server = region }) {
-                    RadioButton(selected = server == region, onClick = { server = region })
-                    Text(region)
+    CappedWidth {
+        Column(Modifier.fillMaxSize()) {
+            Heading(stringResource(R.string.weekly_route_settings))
+            Row {
+                for (region in listOf("JP", "KR")) {
+                    TextButton(onClick = { server = region }) {
+                        RadioButton(selected = server == region, onClick = { server = region })
+                        Text(region)
+                    }
                 }
             }
-        }
-        if (reading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        if (!reading && data == null) Text(stringResource(R.string.weekly_route_settings_no_data), Modifier.padding(16.dp))
-        val chapters = data?.quests.orEmpty().filter { it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(16.dp)) {
-            chapters.forEach { (war, quests) ->
-                val chapterKey = WeeklyCandidateSettings.chapterKey(server, war)
-                val enabled = chapterKey !in disabled
-                item(key = "war:$war") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = enabled, onCheckedChange = { setEnabled(chapterKey, it) })
-                        TextButton(onClick = { expanded[war] = expanded[war] != true }, modifier = Modifier.weight(1f)) {
-                            Text("${if (expanded[war] == true) "−" else "+"} ${quests.first().chapter.replace('\n', ' ')}",
-                                style = MaterialTheme.typography.bodyMedium)
+            if (reading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (!reading && data == null) Text(stringResource(R.string.weekly_route_settings_no_data), Modifier.padding(16.dp))
+            val chapters = data?.quests.orEmpty().filter { it.warId !in WeeklyRouteSolver.EXCLUDED_WARS }.sortedWith(WeeklyRouteSolver.order).groupBy { it.warId }
+            LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(16.dp)) {
+                chapters.forEach { (war, quests) ->
+                    val chapterKey = WeeklyCandidateSettings.chapterKey(server, war)
+                    val enabled = chapterKey !in disabled
+                    item(key = "war:$war") {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = enabled, onCheckedChange = { setEnabled(chapterKey, it) })
+                            TextButton(onClick = { expanded[war] = expanded[war] != true }, modifier = Modifier.weight(1f)) {
+                                Text("${if (expanded[war] == true) "−" else "+"} ${quests.first().chapter.replace('\n', ' ')}",
+                                    style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                    if (expanded[war] == true) items(quests, key = { "quest:${it.id}" }) { quest ->
+                        val key = WeeklyCandidateSettings.questKey(server, quest.id)
+                        Row(Modifier.padding(start = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = key !in disabled, enabled = enabled, onCheckedChange = { setEnabled(key, it) })
+                            Text("${quest.spot} / ${quest.name} · AP ${quest.ap}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
-                if (expanded[war] == true) items(quests, key = { "quest:${it.id}" }) { quest ->
-                    val key = WeeklyCandidateSettings.questKey(server, quest.id)
-                    Row(Modifier.padding(start = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = key !in disabled, enabled = enabled, onCheckedChange = { setEnabled(key, it) })
-                        Text("${quest.spot} / ${quest.name} · AP ${quest.ap}", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+                item { Text(stringResource(R.string.weekly_route_unsupported_chapter), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            item { Text(stringResource(R.string.weekly_route_unsupported_chapter), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }

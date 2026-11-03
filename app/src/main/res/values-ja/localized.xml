@@ -669,4 +669,6 @@
     <string name="battle_config_folder_selected_count">"%d件選択"</string>
     <string name="battle_config_folder_error_blank">"フォルダ名を入力してください"</string>
     <string name="battle_config_folder_error_too_long">"30文字まで入力できます"</string>
+    <string name="p_adaptive_layout_enabled">ワイド画面レイアウト</string>
+    <string name="p_adaptive_layout_enabled_summary">タブレットや横画面で設定画面の幅を制限し、戦闘設定を2列で表示します。</string>
 </resources>

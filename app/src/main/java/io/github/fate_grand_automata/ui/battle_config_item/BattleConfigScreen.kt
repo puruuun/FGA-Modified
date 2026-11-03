@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -57,6 +59,7 @@ import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy
 import io.github.fate_grand_automata.scripts.modules.FaceCardReason
 import io.github.fate_grand_automata.scripts.modules.FaceCardReasonKind
+import io.github.fate_grand_automata.ui.AdaptiveColumns
 import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.VerticalDivider
@@ -78,9 +81,11 @@ fun BattleConfigScreen(
         vm.export(context, uri)
     }
 
+    val maxSkillText by vm.maxSkillText.collectAsState("")
+
     BattleConfigContent(
         config = vm.battleConfigCore,
-        vm = vm,
+        maxSkillText = maxSkillText,
         onExport = { battleConfigExport.launch("${vm.battleConfig.name}.fga") },
         onCopy = {
             val id = vm.createCopyAndReturnId(context)
@@ -104,9 +109,9 @@ sealed class BattleConfigDestination {
 }
 
 @Composable
-private fun BattleConfigContent(
+internal fun BattleConfigContent(
     config: BattleConfigCore,
-    vm: BattleConfigScreenViewModel,
+    maxSkillText: String,
     onExport: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
@@ -117,10 +122,7 @@ private fun BattleConfigContent(
     val cardCountMode = startMode == CommandStartMode.CardCount
     val showSecond = cardCountMode && secondEnabled
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    AdaptiveColumns { twoColumns ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -196,10 +198,64 @@ private fun BattleConfigContent(
                 }
             )
 
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
-                item {
+            Box(modifier = Modifier.weight(1f)) {
+                if (twoColumns) {
+                    // Two independent column groups; the staggered grid lays them side by side.
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        item {
+                            Column {
+                                NameCard(config)
+                                CommandsCard(config, cardCountMode, showSecond, navigate)
+                                SummaryCard(config, cardCountMode, showSecond, navigate)
+                            }
+                        }
+
+                        item {
+                            // The first card of the left column carries 16 dp of top padding of its own.
+                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                                SupportGroup(
+                                    config = config.support,
+                                    goToPreferred = { navigate(BattleConfigDestination.PreferredSupport) },
+                                    maxSkillText = maxSkillText
+                                )
+                                CommandStartGroup(config)
+                                ShuffleCardsGroup(config)
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        item { NameCard(config) }
+
+                        item { CommandsCard(config, cardCountMode, showSecond, navigate) }
+
+                        item { SummaryCard(config, cardCountMode, showSecond, navigate) }
+
+                        item {
+                            SupportGroup(
+                                config = config.support,
+                                goToPreferred = { navigate(BattleConfigDestination.PreferredSupport) },
+                                maxSkillText = maxSkillText
+                            )
+                        }
+
+                        item { CommandStartGroup(config) }
+
+                        item { ShuffleCardsGroup(config) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NameCard(config: BattleConfigCore) {
                     Card(
                         modifier = Modifier
                             .padding(16.dp),
@@ -225,9 +281,15 @@ private fun BattleConfigContent(
                             )
                         }
                     }
-                }
+}
 
-                item {
+@Composable
+private fun CommandsCard(
+    config: BattleConfigCore,
+    cardCountMode: Boolean,
+    showSecond: Boolean,
+    navigate: (BattleConfigDestination) -> Unit
+) {
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -256,9 +318,15 @@ private fun BattleConfigContent(
                             }
                         }
                     }
-                }
+}
 
-                item {
+@Composable
+private fun SummaryCard(
+    config: BattleConfigCore,
+    cardCountMode: Boolean,
+    showSecond: Boolean,
+    navigate: (BattleConfigDestination) -> Unit
+) {
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -338,32 +406,6 @@ private fun BattleConfigContent(
                             FaceCardCheckLine(config)
                         }
                     }
-                }
-
-                item {
-                    val maxSkillText by vm.maxSkillText.collectAsState("")
-
-                    SupportGroup(
-                        config = config.support,
-                        goToPreferred = { navigate(BattleConfigDestination.PreferredSupport) },
-                        maxSkillText = maxSkillText
-                    )
-                }
-
-                item {
-                    CommandStartGroup(config)
-                }
-
-                item {
-
-                }
-
-                item {
-                    ShuffleCardsGroup(config)
-                }
-            }
-        }
-    }
 }
 
 @Composable

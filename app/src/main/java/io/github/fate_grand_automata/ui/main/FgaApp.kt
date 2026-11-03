@@ -7,6 +7,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -16,7 +17,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.FgaScreen
+import io.github.fate_grand_automata.ui.LocalAdaptiveLayout
 import io.github.fate_grand_automata.ui.LocalNavigateBack
+import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigDestination
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigScreen
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigScreenViewModel
@@ -62,7 +65,11 @@ fun FgaApp(
 
     FgaScreen {
         AppUpdateDialog(vm)
-        CompositionLocalProvider(LocalNavigateBack provides navigateBack) {
+        val adaptiveLayout by vm.prefsCore.adaptiveLayoutEnabled.remember()
+        CompositionLocalProvider(
+            LocalNavigateBack provides navigateBack,
+            LocalAdaptiveLayout provides adaptiveLayout
+        ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },

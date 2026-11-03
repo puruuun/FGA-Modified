@@ -59,6 +59,7 @@ class PrefsCore @Inject constructor(
     val hideSQInAPResources = maker.bool("hide_sq_in_ap_resources", true)
     val weeklyRouteFeatureEnabled = maker.bool("weekly_route_feature_enabled", true)
     val bondTrackingFeatureEnabled = maker.bool("bond_tracking_feature_enabled", true)
+    val adaptiveLayoutEnabled = maker.bool("adaptive_layout_enabled", false)
     val questItemControl = QuestItemControlPrefsCore(maker)
     val weeklyRoute = WeeklyRoutePrefsCore(maker)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)

@@ -48,6 +48,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
+import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.HeadingButton
 import io.github.fate_grand_automata.ui.OnResume
@@ -225,62 +226,64 @@ private fun MainScreenContent(
     languagePref: LanguagePref
 ) {
     Box {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            item {
-                Heading(stringResource(R.string.app_name)) {
-                    HeadingButton(
-                        text = "Build: ${BuildConfig.VERSION_NAME}",
-                        onClick = { navigate(MainScreenDestinations.Releases) }
-                    )
-                }
-
-            }
-
-            item {
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Column {
-                        Preference(
-                            title = stringResource(R.string.p_battle_config),
-                            summary = stringResource(R.string.p_battle_config_summary),
-                            icon = icon(R.drawable.ic_formation),
-                            onClick = { navigate(MainScreenDestinations.BattleConfigs) }
-                        )
-
-                        HorizontalDivider()
-
-                        languagePref.ListPreference(
-                            title = stringResource(R.string.p_app_language),
-                            icon = icon(Icons.Default.Language),
-                            entries = LanguagePref.availableLanguages()
-                        )
-
-                        HorizontalDivider()
-
-                        Preference(
-                            title = stringResource(R.string.p_more_options),
-                            icon = icon(R.drawable.ic_dots_horizontal),
-                            onClick = { navigate(MainScreenDestinations.MoreOptions) }
+        CappedWidth {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                item {
+                    Heading(stringResource(R.string.app_name)) {
+                        HeadingButton(
+                            text = "Build: ${BuildConfig.VERSION_NAME}",
+                            onClick = { navigate(MainScreenDestinations.Releases) }
                         )
                     }
-                }
-            }
 
-            item {
-                AccessibilityServiceBlock(
-                    serviceStarted = accessibilityServiceStarted,
-                    toggleService = toggleAccessibilityService,
-                    overlayServiceStarted = overlayServiceStarted
-                )
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Column {
+                            Preference(
+                                title = stringResource(R.string.p_battle_config),
+                                summary = stringResource(R.string.p_battle_config_summary),
+                                icon = icon(R.drawable.ic_formation),
+                                onClick = { navigate(MainScreenDestinations.BattleConfigs) }
+                            )
+
+                            HorizontalDivider()
+
+                            languagePref.ListPreference(
+                                title = stringResource(R.string.p_app_language),
+                                icon = icon(Icons.Default.Language),
+                                entries = LanguagePref.availableLanguages()
+                            )
+
+                            HorizontalDivider()
+
+                            Preference(
+                                title = stringResource(R.string.p_more_options),
+                                icon = icon(R.drawable.ic_dots_horizontal),
+                                onClick = { navigate(MainScreenDestinations.MoreOptions) }
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    AccessibilityServiceBlock(
+                        serviceStarted = accessibilityServiceStarted,
+                        toggleService = toggleAccessibilityService,
+                        overlayServiceStarted = overlayServiceStarted
+                    )
+                }
             }
         }
 
