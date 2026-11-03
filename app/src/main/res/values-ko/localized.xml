@@ -654,6 +654,7 @@
     <string name="bond_max_observed">MAX 확인</string>
     <string name="bond_totals_note">기본값과 보너스를 합산합니다. 판독하지 못했거나 가려진 획득량은 합계에서 제외합니다.</string>
     <string name="bond_unmapped_popups">위치·레벨 미확정 레벨업이 있던 퀘스트: %1$d회. 해당 창은 건너뛰고 다음 퀘스트의 일반 MAX 표시로 재확인합니다.</string>
+    <string name="bond_levelup_missed">인연 레벨업 창에 의한 누락 %1$d회</string>
     <string name="bond_no_results">아직 기록한 인연 결과가 없습니다.</string>
     <string name="p_additional_features">추가기능</string>
     <string name="p_check_for_updates">업데이트 확인</string>

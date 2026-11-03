@@ -191,7 +191,8 @@ class BondTrackingTest {
         for (level in listOf(7, 9, 10, 11, 12, 16)) {
             val ledger = BondLedger(); ledger.levelUp(0, level, 2)
             assertEquals(if (level >= 10) setOf(3) else emptySet(), ledger.maxPositions(0))
-            assertTrue(ledger.summary().slots.all { it.missedRuns == 1 && it.readRuns == 0 })
+            assertTrue(ledger.summary().slots.all { it.missedRuns == 0 && it.readRuns == 0 })
+            assertEquals(1, ledger.summary().levelUpMissedRuns)
         }
     }
 
@@ -205,14 +206,49 @@ class BondTrackingTest {
         ledger.normal(1, listOf(gain, gain, BondValue.Max, gain, gain))
         assertEquals(setOf(3), ledger.maxPositions(1))
         val slot = ledger.summary().slots.single { it.position == 3 }
-        assertEquals(0L, slot.total); assertEquals(1, slot.readRuns); assertEquals(1, slot.missedRuns)
+        assertEquals(0L, slot.total); assertEquals(1, slot.readRuns); assertEquals(0, slot.missedRuns)
+        assertEquals(1, ledger.summary().levelUpMissedRuns)
+    }
+
+    @Test fun `level up run with unmapped or unknown level reports no ordinary misses`() {
+        for ((reached, index) in listOf<Pair<Int?, Int?>>(null to null, null to 2, 12 to null)) {
+            val ledger = BondLedger(); ledger.levelUp(0, reached, index)
+            assertTrue(ledger.summary().slots.all { it.missedRuns == 0 && it.readRuns == 0 })
+            assertEquals(1, ledger.summary().levelUpMissedRuns)
+        }
+    }
+
+    @Test fun `a normal frame read before the popup stays read and is not a level up miss`() {
+        val ledger = BondLedger()
+        ledger.normal(0, List(5) { gain })
+        ledger.levelUp(0, 7, 2)
+        val summary = ledger.summary()
+        assertTrue(summary.slots.all { it.readRuns == 1 && it.missedRuns == 0 && it.total == 7408L })
+        assertEquals(0, summary.levelUpMissedRuns)
+    }
+
+    @Test fun `ocr misses and level up runs stay separate and add up to the runs`() {
+        val ledger = BondLedger()
+        ledger.normal(0, listOf(gain, BondValue.Unknown, gain, gain, gain)) // OCR miss in column 2
+        ledger.levelUp(1, 10, 2)
+        ledger.levelUp(2, null, null)
+        ledger.normal(3, List(5) { gain })
+        ledger.normal(4, listOf(gain, gain, gain, gain, BondValue.Unknown)) // OCR miss in column 5
+        ledger.levelUp(4, 8, 0) // level up after a partial normal read
+        val summary = ledger.summary()
+        assertEquals(listOf(0, 1, 0, 0, 0), summary.slots.map { it.missedRuns }) // run 4 is a level-up run
+        assertEquals(listOf(3, 2, 3, 3, 2), summary.slots.map { it.readRuns })
+        assertEquals(3, summary.levelUpMissedRuns)
+        val levelUpNullCells = listOf(2, 2, 2, 2, 3) // runs 1 and 2 hide every cell, run 4 hides column 5
+        summary.slots.forEachIndexed { i, s -> assertEquals(5, s.readRuns + s.missedRuns + levelUpNullCells[i]) }
     }
 
     @Test fun `an unmapped new cap cannot turn its obscured gain into a measured zero`() {
         val ledger = BondLedger()
         ledger.normal(0, List(5) { BondValue.Max })
         ledger.levelUp(0, 10, null)
-        assertTrue(ledger.summary().slots.all { it.readRuns == 0 && it.missedRuns == 1 })
+        assertTrue(ledger.summary().slots.all { it.readRuns == 0 && it.missedRuns == 0 })
+        assertEquals(1, ledger.summary().levelUpMissedRuns)
     }
 
     @Test fun `partial OCR does not shift columns or count unknown as real zero`() {
@@ -293,7 +329,8 @@ class BondTrackingTest {
         for (frame in listOf(BondFrame.LevelUp(7, 2), BondFrame.LevelUp(9, 2), BondFrame.LevelUp(null, 2))) {
             val f = Fixture(); f.start(); every { f.reader.read() } returns frame
             f.tracker.process(); assertEquals(0, f.state.runs)
-            assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 1 })
+            assertTrue(f.tracker.summary()!!.slots.all { it.missedRuns == 0 && it.readRuns == 0 })
+            assertEquals(1, f.tracker.summary()!!.levelUpMissedRuns)
         }
     }
 

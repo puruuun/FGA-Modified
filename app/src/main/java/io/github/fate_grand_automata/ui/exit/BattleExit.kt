@@ -245,6 +245,8 @@ private fun BondSummaryContent(summary: BondSummary) {
         Text(stringResource(R.string.bond_totals_note), style = MaterialTheme.typography.bodySmall)
         if (summary.unmappedLevelUpRuns > 0) Text(stringResource(R.string.bond_unmapped_popups, summary.unmappedLevelUpRuns),
             style = MaterialTheme.typography.bodySmall)
+        if (summary.levelUpMissedRuns > 0) Text(stringResource(R.string.bond_levelup_missed, summary.levelUpMissedRuns),
+            style = MaterialTheme.typography.bodySmall)
     }
 }
 

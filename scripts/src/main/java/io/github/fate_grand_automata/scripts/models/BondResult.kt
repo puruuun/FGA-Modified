@@ -16,4 +16,4 @@ sealed interface BondFrame {
 }
 
 data class BondSlotSummary(val position: Int, val total: Long, val readRuns: Int, val missedRuns: Int, val maxObserved: Boolean)
-data class BondSummary(val slots: List<BondSlotSummary>, val unmappedLevelUpRuns: Int)
+data class BondSummary(val slots: List<BondSlotSummary>, val unmappedLevelUpRuns: Int, val levelUpMissedRuns: Int = 0)

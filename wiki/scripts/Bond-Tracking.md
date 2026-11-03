@@ -15,7 +15,7 @@ After detecting the bond result, wait **1.2 seconds before capturing the first r
 
 Level-up popups skip obscured background gains/MAX. Only the reached level to the right of the arrow is read. A confirmed result-column LEVEL UP marker and reached level of at least 10 apply the watched MAX rule. Levels below 10 continue. Unknown level/column defers to normal MAX next quest, which can allow one extra quest. Gems and NEXT are not read.
 
-At exit, tracking displays five character totals with read/missing counts. Enabled controls advance results one screen at a time. MAX-only mode skips gain OCR and the tracking summary; both off retain the legacy result flow.
+At exit, tracking displays five character totals with read/missing counts. Quests whose gains were hidden by a level-up popup are not counted in each character's missing count; they appear on a separate line, "Missing due to bond level-up popups: n quests", shown only when there are any. Hidden gains are not recovered, and values read before the popup still count as read. Enabled controls advance results one screen at a time. MAX-only mode skips gain OCR and the tracking summary; both off retain the legacy result flow.
 
 ## Validation
 

@@ -714,6 +714,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="bond_max_observed">MAX confirmed</string>
     <string name="bond_totals_note">Base and bonus are added. Totals exclude unreadable/obscured gains; missing values are not counted as real zero.</string>
     <string name="bond_unmapped_popups">Unmapped/unreadable level-up quests: %1$d. Those popups were skipped; normal MAX is checked next quest.</string>
+    <string name="bond_levelup_missed">Missing due to bond level-up popups: %1$d quests</string>
     <string name="bond_no_results">No bond results have been recorded yet.</string>
     <string name="p_additional_features">Additional features</string>
     <string name="p_bond_ignore_characters">Ignore MAX for checked characters</string>

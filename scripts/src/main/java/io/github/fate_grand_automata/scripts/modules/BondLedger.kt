@@ -8,6 +8,7 @@ class BondLedger {
     private val quests = linkedMapOf<Int, MutableMap<Int, Cell>>()
     private val unmapped = mutableSetOf<Int>()
     private val maxLevelUps = mutableSetOf<Int>()
+    private val levelUpRuns = mutableSetOf<Int>()
 
     fun ensure(run: Int) {
         quests.getOrPut(run) { (1..5).associateWith { Cell() }.toMutableMap() }
@@ -30,6 +31,7 @@ class BondLedger {
 
     fun levelUp(run: Int, reached: Int?, index: Int?, atLeastTen: Boolean? = reached?.let { it >= 10 }) {
         ensure(run)
+        levelUpRuns += run
         if (atLeastTen == true) maxLevelUps += run
         val position = index?.takeIf { it in 0..4 }?.plus(1)
         if (position == null || reached == null) {
@@ -53,9 +55,10 @@ class BondLedger {
     fun summary(): BondSummary {
         val positions = quests.values.flatMap { it.keys }.distinct().sorted()
         return BondSummary(positions.map { position ->
-            val cells = quests.values.mapNotNull { it[position] }
-            BondSlotSummary(position, cells.sumOf { it.gain ?: 0 }, cells.count { it.gain != null },
-                cells.count { it.gain == null }, cells.any { it.max })
-        }, unmapped.size)
+            val cells = quests.mapNotNull { (run, byPosition) -> byPosition[position]?.let { run to it } }
+            // Gains hidden by a level-up popup are reported separately, not as ordinary misses.
+            BondSlotSummary(position, cells.sumOf { it.second.gain ?: 0 }, cells.count { it.second.gain != null },
+                cells.count { (run, cell) -> cell.gain == null && run !in levelUpRuns }, cells.any { it.second.max })
+        }, unmapped.size, levelUpRuns.count { run -> quests[run].orEmpty().values.any { it.gain == null } })
     }
 }

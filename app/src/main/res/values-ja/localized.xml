@@ -562,6 +562,7 @@
     <string name="bond_max_observed">MAX確認済み</string>
     <string name="bond_totals_note">確認できた獲得量のみの合計です。未取得は0獲得を意味しません。</string>
     <string name="bond_unmapped_popups">位置または到達レベルが不明のため、レベルアップ %1$d 回の判定を見送りました。</string>
+    <string name="bond_levelup_missed">絆レベルアップ画面による未集計 %1$d回</string>
     <string name="bond_no_results">まだリザルトを取得していません。</string>
     <string name="p_check_for_updates">アップデートを確認</string>
     <string name="p_check_for_updates_summary">アプリ起動時にFGA-ModifiedのGitHub正式リリースを確認し、新しいバージョンがあれば案内します。</string>
