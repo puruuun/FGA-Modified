@@ -909,8 +909,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="weekly_probe_status_not_run">not run</string>
     <string name="weekly_route_unsupported_chapter">Mictlan and Ordeal Calls — unsupported</string>
     <string name="p_bond_tracking_feature_enabled">Enable bond tracking</string>
-    <string name="p_adaptive_layout_enabled">Wide-screen layout</string>
-    <string name="p_adaptive_layout_enabled_summary">On tablets and landscape screens, caps the width of settings screens and shows battle configs in two columns.</string>
     <string name="chaldea_support_include">Also import support settings</string>
     <string name="chaldea_support_preview">Support import preview</string>
     <string name="chaldea_support_saved">Saved folder</string>

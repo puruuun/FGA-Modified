@@ -11,57 +11,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
 /**
- * Whether the wide-screen layout is on (the "Wide-screen layout" switch). Provided once at the app
- * root; [CappedWidth] and [AdaptiveColumns] are the only readers. Off means every screen keeps
- * the full width and a single column.
+ * Whether [AdaptiveColumns] may use two columns. Defaults to `true` and the app never sets it:
+ * the two-column battle config is always on. It exists only so tests can render the legacy
+ * single-column path and compare it with the default.
  */
-val LocalAdaptiveLayout = compositionLocalOf { false }
+val LocalAdaptiveLayout = compositionLocalOf { true }
+
+/** Widest a two-column screen gets before the content is centred instead of stretched. */
+private val TwoColumnMaxWidth = 1280.dp
 
 /** Widest a single-column screen gets before the content is centred instead of stretched. */
-val ContentMaxWidth = 840.dp
-
-/** Widest a two-column screen gets. */
-val TwoColumnMaxWidth = 1280.dp
-
-/**
- * Centres [content] horizontally and limits it to [maxWidth]. Windows narrower than that, phones
- * included, get the full width, so they look the same as without this wrapper.
- */
-@Composable
-fun CappedWidth(
-    modifier: Modifier = Modifier,
-    maxWidth: Dp = ContentMaxWidth,
-    content: @Composable BoxScope.() -> Unit
-) {
-    if (!LocalAdaptiveLayout.current) {
-        Box(modifier = modifier.fillMaxSize(), content = content)
-        return
-    }
-
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = maxWidth)
-                .fillMaxSize(),
-            content = content
-        )
-    }
-}
+private val OneColumnMaxWidth = 840.dp
 
 /**
  * Lays a screen out in one column when the space it has is Compact (below 600 dp) and in two
- * columns from Medium up. [content] gets `true` for two columns. The width is capped at
- * [TwoColumnMaxWidth] then, and at [ContentMaxWidth] in one column. The size class comes from
- * the space the screen is given, which is the window for a full-screen destination, so rotation
- * and window resizing just recompose and keep state held in `remember`/`rememberSaveable`.
+ * columns from Medium up. [content] gets `true` for two columns. The content is centred and capped
+ * at 1280 dp in two columns and at 840 dp in one column (Compact windows are narrower than that, so
+ * phones keep the full width). The size class comes from the space the screen is given, which is
+ * the window for a full-screen destination, so rotation and window resizing just recompose and
+ * keep state held in `remember`/`rememberSaveable`.
  */
 @Composable
 fun AdaptiveColumns(
@@ -73,8 +45,18 @@ fun AdaptiveColumns(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val sizeClass = WindowSizeClass.calculateFromSize(DpSize(maxWidth, maxHeight))
         val twoColumns = enabled && sizeClass.widthSizeClass != WindowWidthSizeClass.Compact
-        CappedWidth(maxWidth = if (twoColumns) TwoColumnMaxWidth else ContentMaxWidth) {
-            content(twoColumns)
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = if (twoColumns) TwoColumnMaxWidth else OneColumnMaxWidth)
+                    .fillMaxSize()
+            ) {
+                content(twoColumns)
+            }
         }
     }
 }

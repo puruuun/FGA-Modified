@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import io.github.fate_grand_automata.prefs.core.PrefsCore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -22,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.Tabbed
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
@@ -75,18 +72,8 @@ fun MoreOptionsScreen(
         )
     }
 
-    val storageSummary by vm.storageSummary
-    val extractSummary by vm.extractSummary
-    val context = LocalContext.current
-
     MoreOptionsContent(
-        prefs = vm.prefsCore,
-        storageSummary = storageSummary,
-        extractSummary = extractSummary,
-        extractSupportImages = { vm.performSupportImageExtraction(context) },
-        additionalFeatures = {
-            additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview, vm::openOriginalImport, vm::openPortraitImport)
-        },
+        vm = vm,
         goToFineTune = navigateToFineTune,
         goToAddedFeatureTuning = navigateToAddedFeatureTuning,
         goToLicense = navigateToLicense,
@@ -96,81 +83,79 @@ fun MoreOptionsScreen(
 }
 
 @Composable
-internal fun MoreOptionsContent(
-    prefs: PrefsCore,
-    storageSummary: String?,
-    extractSummary: String,
-    extractSupportImages: () -> Unit,
-    additionalFeatures: LazyListScope.() -> Unit,
+private fun MoreOptionsContent(
+    vm: MoreOptionsViewModel,
     goToFineTune: () -> Unit,
     goToAddedFeatureTuning: () -> Unit,
     goToLicense: () -> Unit,
     goToWeeklySettings: () -> Unit,
     pickDirectory: () -> Unit
 ) {
-    CappedWidth {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Heading(stringResource(R.string.p_more_options))
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Heading(stringResource(R.string.p_more_options))
 
-            Tabbed(
-                items = MoreSettingsGroup.entries.toList(),
-                heading = { Text(stringResource(it.stringRes)) },
-                content = {
-                    Card(
-                        modifier = Modifier
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+        Tabbed(
+            items = MoreSettingsGroup.entries.toList(),
+            heading = { Text(stringResource(it.stringRes)) },
+            content = {
+                Card(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    LazyColumn(
+                        contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
-                        LazyColumn(
-                            contentPadding = PaddingValues(bottom = 16.dp)
-                        ) {
-                            when (it) {
-                                MoreSettingsGroup.Battle -> {
-                                    battleGroup(prefs)
-                                }
+                        when (it) {
+                            MoreSettingsGroup.Battle -> {
+                                battleGroup(vm.prefsCore)
+                            }
 
-                                MoreSettingsGroup.Storage -> {
-                                    item {
-                                        StorageGroup(
-                                            directoryName = storageSummary ?: "",
-                                            onPickDirectory = pickDirectory,
-                                            extractSupportImages = extractSupportImages,
-                                            extractSummary = extractSummary
-                                        )
-                                    }
-                                }
+                            MoreSettingsGroup.Storage -> {
+                                item {
+                                    val summary by vm.storageSummary
+                                    val extractSummary by vm.extractSummary
+                                    val context = LocalContext.current
 
-                                MoreSettingsGroup.AdditionalFeatures -> {
-                                    additionalFeatures()
-                                    item {
-                                        io.github.fate_grand_automata.ui.prefs.Preference(
-                                            title = stringResource(R.string.weekly_route_settings),
-                                            onClick = goToWeeklySettings
-                                        )
-                                    }
-                                }
-
-                                MoreSettingsGroup.Advanced -> {
-                                    advancedGroup(
-                                        prefs,
-                                        goToFineTune = goToFineTune,
-                                        goToAddedFeatureTuning = goToAddedFeatureTuning,
-                                        goToLicense = goToLicense
+                                    StorageGroup(
+                                        directoryName = summary ?: "",
+                                        onPickDirectory = pickDirectory,
+                                        extractSupportImages = { vm.performSupportImageExtraction(context) },
+                                        extractSummary = extractSummary
                                     )
                                 }
                             }
+
+                            MoreSettingsGroup.AdditionalFeatures -> {
+                                additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview, vm::openOriginalImport, vm::openPortraitImport)
+                                item {
+                                    io.github.fate_grand_automata.ui.prefs.Preference(
+                                        title = stringResource(R.string.weekly_route_settings),
+                                        onClick = goToWeeklySettings
+                                    )
+                                }
+                            }
+
+                            MoreSettingsGroup.Advanced -> {
+                                advancedGroup(
+                                    vm.prefsCore,
+                                    goToFineTune = goToFineTune,
+                                    goToAddedFeatureTuning = goToAddedFeatureTuning,
+                                    goToLicense = goToLicense
+                                )
+                            }
                         }
                     }
-                },
-                modifier = Modifier
-                    .weight(1f)
-            )
-        }
+                }
+            },
+            modifier = Modifier
+                .weight(1f)
+        )
     }
 }
 

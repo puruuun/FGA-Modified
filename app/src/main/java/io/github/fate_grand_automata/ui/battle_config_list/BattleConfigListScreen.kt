@@ -134,7 +134,7 @@ fun BattleConfigListScreen(
     )
 }
 
-internal sealed class BattleConfigListAction {
+private sealed class BattleConfigListAction {
     object Export : BattleConfigListAction()
     object Import : BattleConfigListAction()
     object Delete : BattleConfigListAction()
@@ -148,7 +148,7 @@ internal sealed class BattleConfigListAction {
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
-internal fun BattleConfigListContent(
+private fun BattleConfigListContent(
     configs: List<BattleConfigCore>,
     selectionMode: Boolean,
     selectedConfigs: Set<String>,
@@ -159,103 +159,101 @@ internal fun BattleConfigListContent(
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Box {
-        CappedWidth {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
+                Heading(
+                    stringResource(R.string.p_battle_config)
                 ) {
-                    Heading(
-                        stringResource(R.string.p_battle_config)
-                    ) {
-                        HeadingButton(
-                            text = stringResource(
-                                if (selectionMode)
-                                    R.string.battle_config_item_export
-                                else R.string.battle_config_list_export_all
-                            ),
-                            onClick = { action(BattleConfigListAction.Export) }
-                        )
+                    HeadingButton(
+                        text = stringResource(
+                            if (selectionMode)
+                                R.string.battle_config_item_export
+                            else R.string.battle_config_list_export_all
+                        ),
+                        onClick = { action(BattleConfigListAction.Export) }
+                    )
 
-                        Crossfade(selectionMode) {
-                            if (it) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    HeadingButton(
-                                        text = stringResource(R.string.battle_config_folder_move),
-                                        onClick = { action(BattleConfigListAction.MoveToFolder) },
-                                        modifier = Modifier.padding(end = 5.dp)
-                                    )
-                                    HeadingButton(
-                                        text = stringResource(R.string.battle_config_list_delete),
-                                        onClick = { action(BattleConfigListAction.Delete) },
-                                        isDanger = true,
-                                        icon = icon(Icons.Default.Delete)
-                                    )
-                                }
-                            } else {
+                    Crossfade(selectionMode) {
+                        if (it) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 HeadingButton(
-                                    text = stringResource(R.string.battle_config_list_import),
-                                    onClick = { action(BattleConfigListAction.Import) }
+                                    text = stringResource(R.string.battle_config_folder_move),
+                                    onClick = { action(BattleConfigListAction.MoveToFolder) },
+                                    modifier = Modifier.padding(end = 5.dp)
+                                )
+                                HeadingButton(
+                                    text = stringResource(R.string.battle_config_list_delete),
+                                    onClick = { action(BattleConfigListAction.Delete) },
+                                    isDanger = true,
+                                    icon = icon(Icons.Default.Delete)
                                 )
                             }
+                        } else {
+                            HeadingButton(
+                                text = stringResource(R.string.battle_config_list_import),
+                                onClick = { action(BattleConfigListAction.Import) }
+                            )
                         }
                     }
+                }
 
-                    val servers by derivedStateOf {
-                        configs
-                            .mapNotNull { it.server.get().asGameServer() }
-                            .distinct()
-                    }
+                val servers by derivedStateOf {
+                    configs
+                        .mapNotNull { it.server.get().asGameServer() }
+                        .distinct()
+                }
 
-                    if (servers.isEmpty()) {
-                        ConfigList(
-                            configs = configs,
-                            selectionMode = selectionMode,
-                            action = action,
-                            selectedConfigs = selectedConfigs,
-                            expandedFolders = expandedFolders,
-                            folderRevision = folderRevision,
-                            modifier = Modifier
-                                .weight(1f)
-                        )
-                    } else {
-                        Tabbed(
-                            items = listOf<BattleConfigCore.Server>(BattleConfigCore.Server.NotSet) + servers.map { BattleConfigCore.Server.Set(it) },
-                            heading = {
-                                Text(
-                                    when (it) {
-                                        BattleConfigCore.Server.NotSet -> "ALL"
-                                        is BattleConfigCore.Server.Set -> stringResource(it.server.stringRes)
-                                    }
-                                )
-                            },
-                            content = { current ->
-                                val filteredConfigs by derivedStateOf {
-                                    configs
-                                        .filter {
-                                            val server = it.server.get().asGameServer()
-
-                                            current is BattleConfigCore.Server.NotSet
-                                                    || server == current.asGameServer()
-                                        }
+                if (servers.isEmpty()) {
+                    ConfigList(
+                        configs = configs,
+                        selectionMode = selectionMode,
+                        action = action,
+                        selectedConfigs = selectedConfigs,
+                        expandedFolders = expandedFolders,
+                        folderRevision = folderRevision,
+                        modifier = Modifier
+                            .weight(1f)
+                    )
+                } else {
+                    Tabbed(
+                        items = listOf<BattleConfigCore.Server>(BattleConfigCore.Server.NotSet) + servers.map { BattleConfigCore.Server.Set(it) },
+                        heading = {
+                            Text(
+                                when (it) {
+                                    BattleConfigCore.Server.NotSet -> "ALL"
+                                    is BattleConfigCore.Server.Set -> stringResource(it.server.stringRes)
                                 }
+                            )
+                        },
+                        content = { current ->
+                            val filteredConfigs by derivedStateOf {
+                                configs
+                                    .filter {
+                                        val server = it.server.get().asGameServer()
 
-                                ConfigList(
-                                    configs = filteredConfigs,
-                                    selectionMode = selectionMode,
-                                    action = action,
-                                    selectedConfigs = selectedConfigs,
-                                    expandedFolders = expandedFolders,
-                                    folderRevision = folderRevision
-                                )
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                        )
-                    }
+                                        current is BattleConfigCore.Server.NotSet
+                                                || server == current.asGameServer()
+                                    }
+                            }
+
+                            ConfigList(
+                                configs = filteredConfigs,
+                                selectionMode = selectionMode,
+                                action = action,
+                                selectedConfigs = selectedConfigs,
+                                expandedFolders = expandedFolders,
+                                folderRevision = folderRevision
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                    )
                 }
             }
         }

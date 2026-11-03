@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.ui.res.stringResource
@@ -62,13 +61,6 @@ fun LazyListScope.additionalFeaturesGroup(
         prefs.bondTrackingFeatureEnabled.SwitchPreference(
             title = stringResource(R.string.p_bond_tracking_feature_enabled),
             icon = icon(R.drawable.ic_gift)
-        )
-    }
-    item {
-        prefs.adaptiveLayoutEnabled.SwitchPreference(
-            title = stringResource(R.string.p_adaptive_layout_enabled),
-            summary = stringResource(R.string.p_adaptive_layout_enabled_summary),
-            icon = icon(Icons.Default.AspectRatio)
         )
     }
     item {

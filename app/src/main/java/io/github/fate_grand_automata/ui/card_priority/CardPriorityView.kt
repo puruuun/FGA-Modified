@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
-import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
 import io.github.fate_grand_automata.util.stringRes
@@ -41,55 +40,53 @@ fun CardPriorityView(
     val pagerState = rememberPagerState(pageCount = {items.size},)
     val scope = rememberCoroutineScope()
 
-    CappedWidth {
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
-            Column(
+            Heading(stringResource(R.string.card_priority) + " · " + stringResource(R.string.command_start_profile_caption, profileIndex + 1))
+
+            val split by cardPrioritySplit.remember()
+            cardPrioritySplit.DropdownPreference(
+                title = stringResource(R.string.card_priority_split_by),
+                entries = CardPrioritySplit.entries.associateWith { stringResource(it.stringRes) }
+            )
+
+            Spacer(Modifier.padding(bottom = 16.dp))
+
+            CardPriorityWaveSelector(
+                items = items,
+                selectedWave = pagerState.currentPage,
+                split = split,
+                onSelectedWaveChange = { scope.launch { pagerState.animateScrollToPage(it) } },
+            )
+
+            HorizontalDivider()
+
+            HorizontalPager(
+                state = pagerState,
+                verticalAlignment = Alignment.Top,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
             ) {
-                Heading(stringResource(R.string.card_priority) + " · " + stringResource(R.string.command_start_profile_caption, profileIndex + 1))
-
-                val split by cardPrioritySplit.remember()
-                cardPrioritySplit.DropdownPreference(
-                    title = stringResource(R.string.card_priority_split_by),
-                    entries = CardPrioritySplit.entries.associateWith { stringResource(it.stringRes) }
-                )
-
-                Spacer(Modifier.padding(bottom = 16.dp))
-
-                CardPriorityWaveSelector(
-                    items = items,
-                    selectedWave = pagerState.currentPage,
-                    split = split,
-                    onSelectedWaveChange = { scope.launch { pagerState.animateScrollToPage(it) } },
-                )
-
-                HorizontalDivider()
-
-                HorizontalPager(
-                    state = pagerState,
-                    verticalAlignment = Alignment.Top,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Column {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp, 5.dp)
-                                .padding(top = 11.dp)
-                        ) {
-                            Text(stringResource(R.string.card_priority_high))
-                            Text(stringResource(R.string.card_priority_low))
-                        }
-
-                        items.getOrNull(it)?.Render()
+                Column {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp, 5.dp)
+                            .padding(top = 11.dp)
+                    ) {
+                        Text(stringResource(R.string.card_priority_high))
+                        Text(stringResource(R.string.card_priority_low))
                     }
+
+                    items.getOrNull(it)?.Render()
                 }
             }
         }

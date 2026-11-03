@@ -35,7 +35,6 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.SpamEnum
 import io.github.fate_grand_automata.scripts.models.SkillSpamTarget
 import io.github.fate_grand_automata.ui.FGAListItemColors
-import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.HeadingButton
 import io.github.fate_grand_automata.ui.prefs.MultiSelectChip
@@ -57,89 +56,87 @@ fun SpamScreen(
     val pagerState = rememberPagerState(pageCount = {vm.spamStates.size})
     val scope = rememberCoroutineScope()
 
-    CappedWidth {
-        LazyColumn {
-            item {
-                Heading(stringResource(R.string.p_spam_spam))
-            }
+    LazyColumn {
+        item {
+            Heading(stringResource(R.string.p_spam_spam))
+        }
 
-            item {
-                vm.battleConfigCore.autoChooseTarget.SwitchPreference(
-                    title = stringResource(R.string.p_auto_choose_target),
-                    summary = stringResource(R.string.p_spam_summary)
-                )
+        item {
+            vm.battleConfigCore.autoChooseTarget.SwitchPreference(
+                title = stringResource(R.string.p_auto_choose_target),
+                summary = stringResource(R.string.p_spam_summary)
+            )
 
-                HorizontalDivider()
-            }
+            HorizontalDivider()
+        }
 
-            item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp, 5.dp)
-                ) {
-                    Text(
-                        stringResource(R.string.spam_servant),
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
-
-                    (1..vm.spamStates.size).map {
-                        val isSelected = pagerState.currentPage == it - 1
-
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent,
-                                    shape = MaterialTheme.shapes.medium
-                                )
-                                .clickable { scope.launch { pagerState.animateScrollToPage(it - 1) } }
-                                .padding(14.dp, 5.dp)
-                        ) {
-                            Text(
-                                it.toString(),
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                HorizontalDivider()
-            }
-
-            item {
-                HorizontalPager(
-                    state = pagerState,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    SpamView(
-                        selectedConfig = vm.spamStates[it]
-                    )
-                }
-            }
-
-            item {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-
+        item {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp, 5.dp)
+            ) {
                 Text(
-                    stringResource(R.string.spam_presets),
-                    modifier = Modifier
-                        .padding(16.dp, 5.dp)
+                    stringResource(R.string.spam_servant),
+                    modifier = Modifier.padding(end = 16.dp)
                 )
-            }
 
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(10.dp, 5.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(vm.presets) { preset ->
-                        HeadingButton(
-                            text = stringResource(preset.nameRes),
-                            onClick = { preset.action(vm.spamStates) }
+                (1..vm.spamStates.size).map {
+                    val isSelected = pagerState.currentPage == it - 1
+
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                            .clickable { scope.launch { pagerState.animateScrollToPage(it - 1) } }
+                            .padding(14.dp, 5.dp)
+                    ) {
+                        Text(
+                            it.toString(),
+                            color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+
+            HorizontalDivider()
+        }
+
+        item {
+            HorizontalPager(
+                state = pagerState,
+                verticalAlignment = Alignment.Top,
+            ) {
+                SpamView(
+                    selectedConfig = vm.spamStates[it]
+                )
+            }
+        }
+
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+
+            Text(
+                stringResource(R.string.spam_presets),
+                modifier = Modifier
+                    .padding(16.dp, 5.dp)
+            )
+        }
+
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(10.dp, 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(vm.presets) { preset ->
+                    HeadingButton(
+                        text = stringResource(preset.nameRes),
+                        onClick = { preset.action(vm.spamStates) }
+                    )
                 }
             }
         }

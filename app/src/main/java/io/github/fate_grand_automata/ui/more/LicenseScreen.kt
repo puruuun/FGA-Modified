@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 
 /** Name of the repository LICENSE as bundled into the APK assets by the `copyLicenseAsset` task. */
@@ -31,26 +30,24 @@ fun LicenseScreen() {
         }
     }
 
-    CappedWidth {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Heading(stringResource(R.string.p_license))
+    Column(modifier = Modifier.fillMaxSize()) {
+        Heading(stringResource(R.string.p_license))
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.license_header),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = licenseText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.license_header),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = licenseText,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }
