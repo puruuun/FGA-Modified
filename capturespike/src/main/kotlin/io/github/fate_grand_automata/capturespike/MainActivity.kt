@@ -39,6 +39,13 @@ class MainActivity : Activity() {
         logView = TextView(this).apply { textSize = 11f; typeface = android.graphics.Typeface.MONOSPACE }
         scroll = ScrollView(this).apply { addView(logView) }
         root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        // targetSdk 35+ draws edge to edge, so the action bar covered the first buttons; drop it and pad by the system bars
+        actionBar?.hide()
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout())
+            v.setPadding(24 + bars.left, 24 + bars.top, 24 + bars.right, 24 + bars.bottom)
+            insets
+        }
         setContentView(root)
         requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
     }
