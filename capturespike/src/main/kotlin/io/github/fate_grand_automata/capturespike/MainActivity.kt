@@ -53,7 +53,23 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         SpikeLog.listeners += refresh
+        logUserCas()
         refresh()
+    }
+
+    /** Lists the user-installed CAs the platform trust store reports, to check the install without root. */
+    private fun logUserCas() = thread {
+        runCatching {
+            val ks = java.security.KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+            val users = ks.aliases().toList().filter { it.startsWith("user:") }
+            SpikeLog.log("user CAs installed: ${users.size}")
+            users.forEach { alias ->
+                val cert = ks.getCertificate(alias) as java.security.cert.X509Certificate
+                val sha = java.security.MessageDigest.getInstance("SHA-256").digest(cert.encoded)
+                    .joinToString("") { "%02x".format(it) }
+                SpikeLog.log("  $alias ${cert.subjectX500Principal.name} sha256=${sha.take(16)}…")
+            }
+        }.onFailure { SpikeLog.log("user CA listing failed: $it") }
     }
 
     override fun onStop() {
