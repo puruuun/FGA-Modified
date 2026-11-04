@@ -9,7 +9,7 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 ## Download and updates
 
 - [Latest APK](https://github.com/puruuun/FGA-Modified/releases/latest)
-- [Release notes for 1.7.2 (Korean)](wiki/releases/1.7.2-KR.md)
+- [Release notes for 1.7.3 (Korean)](wiki/releases/1.7.3-KR.md)
 - [Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D)
 - [Details](wiki/scripts/Modified-Features.md#installation)
 
@@ -36,7 +36,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Grand support CE](wiki/scripts/Support-Grand-CE-KR.md) | Checks the normal and reward slot CEs and the bond CE effect of Grand supports. |
 | [Servant number images](wiki/scripts/Servant-Number-Portraits-KR.md) | Creates and saves support images by Servant number. |
 | [Import original FGA data](wiki/scripts/Original-FGA-Import.md) | Imports scripts and support images from the original FGA. |
-| [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts a Chaldea share link into script commands. |
+| [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts a Chaldea share link into script commands, splitting waves and turns by the quest's wave count. |
 | [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when the per-colour condition rows (AND/OR) are met. |
 | [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Shuffles and rechecks when first-turn conditions are not met. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
@@ -46,6 +46,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Fixed attack order](wiki/scripts/Direct-Cards-KR.md) | Sets the order of cards and NPs for a turn. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-KR.md) | Sets ON/OFF before the quest starts. |
 | [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-KR.md) | Adds up bond gains and stops at MAX. |
+| [Battle log](wiki/scripts/Battle-Log-KR.md) | Keeps the results of the last 200 finished runs, viewed from Main → Log. |
 
 The detailed guides are written in Korean. See the [full guide](wiki/scripts/Modified-Features-KR.md) for setup and behavior.
 
