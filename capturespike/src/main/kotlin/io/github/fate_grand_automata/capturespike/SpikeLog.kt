@@ -14,11 +14,17 @@ object SpikeLog {
     private val lines = ArrayDeque<String>()
     val listeners = CopyOnWriteArrayList<() -> Unit>()
 
+    /** Also appended here, because the tablet's 256 KiB logcat buffer rolls over within minutes. */
+    @Volatile
+    var file: java.io.File? = null
+
     fun log(msg: String) {
         Log.i(TAG, msg)
         synchronized(lines) {
             lines.addLast("${fmt.format(LocalTime.now())} $msg")
             while (lines.size > MAX) lines.removeFirst()
+            file?.let { f -> runCatching { f.appendText("${java.time.LocalDateTime.now()} $msg
+") } }
         }
         listeners.forEach { it() }
     }

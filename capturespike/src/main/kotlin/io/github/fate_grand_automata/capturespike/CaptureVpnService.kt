@@ -18,6 +18,7 @@ class CaptureVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
+        SpikeLog.file = java.io.File(filesDir, "spike.log")
         SpikeLog.log("service onCreate")
     }
 

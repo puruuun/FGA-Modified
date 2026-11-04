@@ -26,6 +26,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SpikeLog.file = java.io.File(filesDir, "spike.log")
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 24, 24, 24) }
         fun button(text: String, action: () -> Unit) = Button(this).apply {
             this.text = text
