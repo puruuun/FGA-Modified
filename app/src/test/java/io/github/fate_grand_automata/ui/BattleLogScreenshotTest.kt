@@ -33,4 +33,13 @@ class BattleLogScreenshotTest {
     fun detail360() = composeRule.shoot("battle-log", "detail", 360, 1000, locale = "ko") {
         BattleLogDetail(battleLogFixture(extras = true).copy(configName = "이벤트 주회", reasonText = "8회 주회 완료"), {})
     }
+
+    @Test
+    fun twoPane1600() = composeRule.shoot("battle-log", "two-pane", 1600, 1000, locale = "ko") {
+        LogScreenContent(listOf(
+            battleLogFixture("one", extras = true).copy(configName = "이벤트 주회", reasonText = "8회 주회 완료"),
+            battleLogFixture("two").copy(configName = "요일 퀘스트", reasonText = "사용자가 중지함", endedAt = 1_793_746_800_000),
+            battleLogFixture("three").copy(configName = "프리퀘스트", reasonText = "8번 반복함", endedAt = 1_793_740_000_000)
+        ), {}, {})
+    }
 }
