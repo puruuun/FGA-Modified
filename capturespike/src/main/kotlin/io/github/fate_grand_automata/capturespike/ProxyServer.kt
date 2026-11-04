@@ -24,9 +24,10 @@ import javax.net.ssl.SSLSocketFactory
 
 /** Local CONNECT proxy on 127.0.0.1. Intercepts only [CertStore.GAME_HOST]; read-only. */
 class ProxyServer(private val ctx: Context, private val sslContext: SSLContext?) {
-    private val pool = ThreadPoolExecutor(
-        0, 64, 30, TimeUnit.SECONDS, LinkedBlockingQueue(256), ThreadPoolExecutor.CallerRunsPolicy(),
-    )
+    // A ThreadPoolExecutor with core size 0 and a queue runs a single worker until the queue fills,
+    // and the accept loop held that worker, so accepted connections were never handled (tablet, 2026-11-04).
+    // Connections get their own threads, and the accept loop runs on a dedicated thread.
+    private val pool = Executors.newCachedThreadPool()
     private val stats: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private var server: ServerSocket? = null
     private val live = java.util.Collections.synchronizedSet(mutableSetOf<Socket>())
@@ -53,7 +54,7 @@ class ProxyServer(private val ctx: Context, private val sslContext: SSLContext?)
         }
         server = s
         running = true
-        pool.execute { acceptLoop(s) }
+        Thread({ acceptLoop(s) }, "spike-accept").apply { isDaemon = true }.start()
         stats.scheduleAtFixedRate({
             SpikeLog.log("stats: game exchanges=${exchanges.get()} saved=${saved.get()} passed=${passed.get()} tlsFailures=${tlsFailures.get()}")
         }, 30, 30, TimeUnit.SECONDS)
