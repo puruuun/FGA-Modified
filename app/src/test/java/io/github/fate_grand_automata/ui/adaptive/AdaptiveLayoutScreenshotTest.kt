@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Renders the battle config screen at 360/600/840/1280 dp in English and Korean, plus the dark
+ * Renders the battle config screen at 360/600/840/1280/1600 dp in English and Korean, plus the dark
  * theme in English. Real prefs classes over Robolectric's in-memory SharedPreferences stand in for
  * user data. Images land in `build/outputs/roborazzi/adaptive/`, named
  * `battle_config_<W>x<H>dp[_ko][_dark].png`. Recorded by `:app:recordRoborazziCi`, never part of
@@ -82,5 +82,39 @@ class AdaptiveLayoutScreenshotTest(
             ScreenshotWidths.flatMap { width ->
                 listOf<String?>(null, "ko").map { locale -> arrayOf<Any?>(width, locale) }
             }
+    }
+}
+
+/** Records all ten newly capped screens at 1600 dp, in English and Korean, for planner review. */
+@RunWith(ParameterizedRobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [36])
+class CappedScreensScreenshotTest(private val screen: CappedScreen, private val locale: String?) {
+    private val composeRule = createComposeRule()
+
+    @get:Rule
+    val rules = screenshotRules(composeRule)
+
+    @Test
+    fun cappedScreen() {
+        val fixture = CappedScreenFixture(ApplicationProvider.getApplicationContext())
+        composeRule.shoot(
+            folder = "adaptive/width-cap",
+            name = screen.name,
+            widthDp = 1600,
+            heightDp = 1000,
+            locale = locale,
+            beforeCapture = { composeRule.awaitCappedScreen(screen) }
+        ) {
+            fixture.Render(screen)
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0} locale={1}")
+        fun params(): List<Array<Any?>> = CappedScreen.entries.flatMap { screen ->
+            listOf<String?>(null, "ko").map { locale -> arrayOf<Any?>(screen, locale) }
+        }
     }
 }

@@ -8,11 +8,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.assertLeftPositionInRootIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.ui.FGATheme
+import io.github.fate_grand_automata.ui.CappedContentTag
 import io.github.fate_grand_automata.ui.LocalAdaptiveLayout
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigContent
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -90,5 +95,15 @@ class BattleConfigCompactIdentityTest {
         val (legacy, default) = renderBoth(1280, 800)
 
         assertFalse("1280 dp render must use two columns", legacy.identicalTo(default))
+    }
+
+    @Test
+    fun widerWindowKeepsTwoColumnsCentredAt1280Dp() {
+        val (legacy, default) = renderBoth(1600, 800)
+
+        assertFalse("1600 dp render must differ from the uncapped single column", legacy.identicalTo(default))
+        composeRule.onNodeWithTag(CappedContentTag)
+            .assertWidthIsEqualTo(1280.dp)
+            .assertLeftPositionInRootIsEqualTo(160.dp)
     }
 }

@@ -31,6 +31,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
+import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.icon
@@ -69,7 +70,7 @@ fun PreferredSupportScreen(
 }
 
 @Composable
-private fun PreferredSupport(
+internal fun PreferredSupport(
     config: SupportPrefsCore,
     vm: SupportViewModel
 ) {
@@ -90,203 +91,205 @@ private fun PreferredSupport(
         vm.ces.mapValues { (_, displayName) -> getLocalizedCEName(context, displayName) }
     }
 
-    LazyColumn {
-        item {
-            Heading(stringResource(R.string.p_support_mode_preferred))
-        }
+    CappedWidth {
+        LazyColumn {
+            item {
+                Heading(stringResource(R.string.p_support_mode_preferred))
+            }
 
-        item {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Column(
+            item {
+                Card(
                     modifier = Modifier
-                        .padding(bottom = 16.dp)
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 ) {
-                    PreferenceGroupHeader(
-                        title = stringResource(R.string.p_battle_config_support_pref_servants)
-                    )
-
-                    config.preferredServants.SupportSelectPreference(
-                        title = stringResource(R.string.p_battle_config_support_pref_servants),
-                        entries = servantEntries
-                    )
-
-                    // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
-                    config.preferredNoblePhantasms.SupportSelectPreference(
-                        title = stringResource(R.string.p_battle_config_support_pref_nps),
-                        entries = vm.noblePhantasms
-                    )
-                    Text(
-                        text = stringResource(R.string.p_battle_config_support_pref_nps_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-
-                    if (prefServants.isNotEmpty()) {
-                        config.maxAscended.SwitchPreference(
-                            title = stringResource(R.string.p_battle_config_support_max_ascended)
+                    Column(
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                    ) {
+                        PreferenceGroupHeader(
+                            title = stringResource(R.string.p_battle_config_support_pref_servants)
                         )
 
-                        config.grandServant.SwitchPreference(
-                            title = stringResource(R.string.p_battle_config_support_grand_servant)
+                        config.preferredServants.SupportSelectPreference(
+                            title = stringResource(R.string.p_battle_config_support_pref_servants),
+                            entries = servantEntries
                         )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                stringResource(R.string.p_max_skills),
-                                modifier = Modifier.weight(1f)
+                        // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
+                        config.preferredNoblePhantasms.SupportSelectPreference(
+                            title = stringResource(R.string.p_battle_config_support_pref_nps),
+                            entries = vm.noblePhantasms
+                        )
+                        Text(
+                            text = stringResource(R.string.p_battle_config_support_pref_nps_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        if (prefServants.isNotEmpty()) {
+                            config.maxAscended.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_max_ascended)
                             )
 
-                            MaxSkills(
-                                skills = listOf(
-                                    config.skill1Max,
-                                    config.skill2Max,
-                                    config.skill3Max
+                            config.grandServant.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_grand_servant)
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    stringResource(R.string.p_max_skills),
+                                    modifier = Modifier.weight(1f)
                                 )
+
+                                MaxSkills(
+                                    skills = listOf(
+                                        config.skill1Max,
+                                        config.skill2Max,
+                                        config.skill3Max
+                                    )
+                                )
+                            }
+                        }
+                        config.npLevelCheck.SwitchPreference(
+                            title = stringResource(R.string.p_np_level_check)
+                        )
+                        val npEnabled by config.npLevelCheck.remember()
+                        AnimatedVisibility(npEnabled) {
+                            config.minimumNpLevel.ListPreference(
+                                title = stringResource(R.string.p_np_min_level),
+                                entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
                             )
                         }
-                    }
-                    config.npLevelCheck.SwitchPreference(
-                        title = stringResource(R.string.p_np_level_check)
-                    )
-                    val npEnabled by config.npLevelCheck.remember()
-                    AnimatedVisibility(npEnabled) {
-                        config.minimumNpLevel.ListPreference(
-                            title = stringResource(R.string.p_np_min_level),
-                            entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
+                        config.score62Check.SwitchPreference(
+                            title = stringResource(R.string.p_score_62_check)
                         )
-                    }
-                    config.score62Check.SwitchPreference(
-                        title = stringResource(R.string.p_score_62_check)
-                    )
-                    config.grandScore16Check.SwitchPreference(
-                        title = stringResource(R.string.p_grand_score_16_check)
-                    )
-                    if (prefServants.isNotEmpty()) {
-                        config.appendSkillCheck.SwitchPreference(
-                            title = stringResource(R.string.p_append_skill_check)
+                        config.grandScore16Check.SwitchPreference(
+                            title = stringResource(R.string.p_grand_score_16_check)
                         )
-                        val appendEnabled by config.appendSkillCheck.remember()
-                        AnimatedVisibility(appendEnabled) {
-                            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                Row(modifier = Modifier.padding(top = 8.dp)) {
-                                    MaxSkills(config.appendSkillsMax, compact = true)
+                        if (prefServants.isNotEmpty()) {
+                            config.appendSkillCheck.SwitchPreference(
+                                title = stringResource(R.string.p_append_skill_check)
+                            )
+                            val appendEnabled by config.appendSkillCheck.remember()
+                            AnimatedVisibility(appendEnabled) {
+                                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                    Row(modifier = Modifier.padding(top = 8.dp)) {
+                                        MaxSkills(config.appendSkillsMax, compact = true)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
-        item {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Column(
+            item {
+                Card(
                     modifier = Modifier
-                        .padding(bottom = 16.dp)
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 ) {
-                    PreferenceGroupHeader(
-                        title = stringResource(R.string.p_battle_config_support_pref_ces)
-                    )
-
-                    config.preferredCEs.SupportSelectPreference(
-                        title = stringResource(R.string.p_battle_config_support_pref_ces),
-                        entries = ceEntries
-                    )
-
-                    if (prefCEs.isNotEmpty()) {
-                        config.mlb.SwitchPreference(
-                            title = stringResource(R.string.p_battle_config_support_mlb)
+                    Column(
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                    ) {
+                        PreferenceGroupHeader(
+                            title = stringResource(R.string.p_battle_config_support_pref_ces)
                         )
 
-                        config.bondCEEffect.ListPreference(
-                            title = stringResource(R.string.p_battle_config_support_bond_ce_effect_preference),
-                            entries = BondCEEffectEnum.entries
-                                .associateWith { stringResource(it.stringRes) }
+                        config.preferredCEs.SupportSelectPreference(
+                            title = stringResource(R.string.p_battle_config_support_pref_ces),
+                            entries = ceEntries
                         )
 
-                        config.requireBothNormalAndRewardMatch.SwitchPreference(
-                            title = stringResource(R.string.p_battle_config_support_require_both_normal_and_reward_match)
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Column {
-                    PreferenceGroupHeader(
-                        title = stringResource(R.string.p_support_mode_friend)
-                    )
-
-                    val friendsOnly by config.friendsOnly.remember()
-                    val autoFriendRequest by config.autoFriendRequest.remember()
-
-                    LaunchedEffect(config, friendsOnly, autoFriendRequest) {
-                        if (friendsOnly && autoFriendRequest) config.autoFriendRequest.set(false)
-                    }
-
-                    config.friendsOnly.SwitchPreference(
-                        title = stringResource(R.string.p_battle_config_support_friends_only)
-                    )
-
-                    config.autoFriendRequest.SwitchPreference(
-                        title = stringResource(R.string.p_battle_config_support_auto_friend_request),
-                        enabled = !friendsOnly
-                    )
-
-                    AnimatedVisibility (friendsOnly) {
-                        if (vm.friends.isNotEmpty()) {
-                            config.friendNames.SupportSelectPreference(
-                                title = stringResource(R.string.p_battle_config_support_friend_names),
-                                entries = vm.friends
+                        if (prefCEs.isNotEmpty()) {
+                            config.mlb.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_mlb)
                             )
-                        } else {
-                            Preference(
-                                icon = icon(R.drawable.ic_info),
-                                title = stringResource(R.string.p_battle_config_support_friend_names),
-                                summary = stringResource(R.string.p_battle_config_support_friend_name_hint)
+
+                            config.bondCEEffect.ListPreference(
+                                title = stringResource(R.string.p_battle_config_support_bond_ce_effect_preference),
+                                entries = BondCEEffectEnum.entries
+                                    .associateWith { stringResource(it.stringRes) }
+                            )
+
+                            config.requireBothNormalAndRewardMatch.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_require_both_normal_and_reward_match)
                             )
                         }
                     }
                 }
             }
-        }
 
-        item {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                PreferredSupportHelp()
+            item {
+                Card(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Column {
+                        PreferenceGroupHeader(
+                            title = stringResource(R.string.p_support_mode_friend)
+                        )
+
+                        val friendsOnly by config.friendsOnly.remember()
+                        val autoFriendRequest by config.autoFriendRequest.remember()
+
+                        LaunchedEffect(config, friendsOnly, autoFriendRequest) {
+                            if (friendsOnly && autoFriendRequest) config.autoFriendRequest.set(false)
+                        }
+
+                        config.friendsOnly.SwitchPreference(
+                            title = stringResource(R.string.p_battle_config_support_friends_only)
+                        )
+
+                        config.autoFriendRequest.SwitchPreference(
+                            title = stringResource(R.string.p_battle_config_support_auto_friend_request),
+                            enabled = !friendsOnly
+                        )
+
+                        AnimatedVisibility (friendsOnly) {
+                            if (vm.friends.isNotEmpty()) {
+                                config.friendNames.SupportSelectPreference(
+                                    title = stringResource(R.string.p_battle_config_support_friend_names),
+                                    entries = vm.friends
+                                )
+                            } else {
+                                Preference(
+                                    icon = icon(R.drawable.ic_info),
+                                    title = stringResource(R.string.p_battle_config_support_friend_names),
+                                    summary = stringResource(R.string.p_battle_config_support_friend_name_hint)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    PreferredSupportHelp()
+                }
             }
         }
     }

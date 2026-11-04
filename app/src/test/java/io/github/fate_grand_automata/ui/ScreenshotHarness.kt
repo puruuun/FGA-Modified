@@ -1,13 +1,15 @@
 package io.github.fate_grand_automata.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.robolectric.RuntimeEnvironment
 
-/** The widths the owner reviews: a phone, the Medium threshold, a tablet and a wide window. */
-internal val ScreenshotWidths = listOf(360, 600, 840, 1280)
+/** A phone, the Medium threshold, a tablet, the cap boundary and a wider control window. */
+internal val ScreenshotWidths = listOf(360, 600, 840, 1280, 1600)
 
 /** Folder, under the module's build directory, where the recorded images land. */
 internal const val ScreenshotDir = "build/outputs/roborazzi"
@@ -25,6 +27,7 @@ internal fun ComposeContentTestRule.shoot(
     heightDp: Int,
     dark: Boolean = false,
     locale: String? = null,
+    beforeCapture: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
     RuntimeEnvironment.setQualifiers("${locale?.let { "$it-" } ?: ""}w${widthDp}dp-h${heightDp}dp-hdpi")
@@ -35,6 +38,7 @@ internal fun ComposeContentTestRule.shoot(
         }
     }
     waitForIdle()
+    beforeCapture()
 
     onRoot().captureRoboImage("$ScreenshotDir/$folder/${name}_${widthDp}x${heightDp}dp${locale?.let { "_$it" } ?: ""}${if (dark) "_dark" else ""}.png")
 }
@@ -55,3 +59,7 @@ internal class ComposeHostActivityRule : org.junit.rules.TestWatcher() {
 /** Registers the host activity first, then creates the compose rule. */
 internal fun screenshotRules(composeRule: ComposeContentTestRule): org.junit.rules.RuleChain =
     org.junit.rules.RuleChain.outerRule(ComposeHostActivityRule()).around(composeRule)
+
+/** Shared bitmap capture for pixel identity checks; copy because the next frame reuses buffers. */
+internal fun ComposeContentTestRule.captureBitmap(): android.graphics.Bitmap =
+    onRoot().captureToImage().asAndroidBitmap().copy(android.graphics.Bitmap.Config.ARGB_8888, false)
