@@ -87,7 +87,7 @@ class LogEntryTest {
     }
 
     @Test
-    fun logsShowsPlaceholder() {
+    fun logsShowsEmptyState() {
         val fixture = CappedScreenFixture(context)
         var wentBack = false
         composeRule.setContent {
@@ -98,7 +98,7 @@ class LogEntryTest {
             }
         }
         composeRule.onNodeWithText(context.getString(R.string.p_logs)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.logs_coming_soon)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_empty)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(context.getString(R.string.navigate_back))
             .assertIsDisplayed().performClick()
         assertTrue(wentBack)

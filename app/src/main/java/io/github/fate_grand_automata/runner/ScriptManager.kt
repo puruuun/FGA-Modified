@@ -9,6 +9,10 @@ import dagger.hilt.EntryPoints
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.battlelog.BattleLogEntry
+import io.github.fate_grand_automata.battlelog.BattleLogRepository
+import io.github.fate_grand_automata.battlelog.BattleLogSource
+import io.github.fate_grand_automata.battlelog.shouldRecordBattleLog
 import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.di.script.ScriptComponent
 import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
@@ -39,6 +43,7 @@ import io.github.fate_grand_automata.ui.support_img_namer.showSupportImageNamer
 import io.github.fate_grand_automata.util.FakedComposeView
 import io.github.fate_grand_automata.util.ImageLoader
 import io.github.fate_grand_automata.util.KnownException
+import io.github.fate_grand_automata.util.displayText
 import io.github.fate_grand_automata.util.ScriptMessages
 import io.github.fate_grand_automata.util.ScriptState
 import io.github.fate_grand_automata.util.StorageProvider
@@ -81,7 +86,8 @@ class ScriptManager @Inject constructor(
     @param:ServiceCoroutineScope private val scope: CoroutineScope,
     private val launcherResponseHandler: ScriptLauncherResponseHandler,
     private val weeklyRoute: WeeklyRouteFlow,
-    private val gameAreaPreview: GameAreaPreviewManager
+    private val gameAreaPreview: GameAreaPreviewManager,
+    private val battleLog: BattleLogRepository
 ) {
     var scriptState: ScriptState = ScriptState.Stopped
         private set
@@ -140,6 +146,22 @@ class ScriptManager @Inject constructor(
         io.github.fate_grand_automata.scripts.weekly.ProbeStatus.Mismatch -> R.string.weekly_probe_status_mismatch
         io.github.fate_grand_automata.scripts.weekly.ProbeStatus.ChapterNotFound -> R.string.weekly_probe_status_chapter
         io.github.fate_grand_automata.scripts.weekly.ProbeStatus.NotRun -> R.string.weekly_probe_status_not_run
+    }
+
+    private fun recordBattleExit(exception: AutoBattle.ExitException, source: BattleLogSource) {
+        if (!shouldRecordBattleLog(source, exception.reason, exception.state.timesRan)) return
+        try {
+            // Capture before another run or a settings edit can change the selected config.
+            val entry = BattleLogEntry.snapshot(
+                exception = exception,
+                configName = preferences.selectedBattleConfig.name,
+                reasonText = exception.reason.displayText(context),
+                refillEnabled = preferences.selectedServerConfigPref.resources.isNotEmpty()
+            )
+            scope.launch { battleLog.add(entry) }
+        } catch (e: Exception) {
+            Timber.w(e, "Could not record battle exit")
+        }
     }
 
     private suspend fun showBattleExit(
@@ -285,6 +307,7 @@ class ScriptManager @Inject constructor(
             }
 
             is AutoBattle.ExitException -> {
+                recordBattleExit(e, BattleLogSource.BattleExit)
                 preferences.hidePlayButton = false
 
                 if (e.reason !is AutoBattle.ExitReason.Abort) {
@@ -347,6 +370,9 @@ class ScriptManager @Inject constructor(
             }
 
             is AutoWeeklyRoute.ExitException -> {
+                (e.reason as? AutoWeeklyRoute.ExitReason.Finished)?.stop?.let {
+                    recordBattleExit(it, BattleLogSource.WeeklyRouteFinished)
+                }
                 val msg = when (val reason = e.reason) {
                     AutoWeeklyRoute.ExitReason.NoRoute -> context.getString(R.string.weekly_route_stop_no_route)
                     AutoWeeklyRoute.ExitReason.NotOnMainScreen -> context.getString(R.string.weekly_route_stop_not_main)
@@ -374,7 +400,9 @@ class ScriptManager @Inject constructor(
                 }
                 messages.notify(msg)
                 messageBox.show(scriptExitedString,msg)
-                (e.reason as? AutoWeeklyRoute.ExitReason.Finished)?.stop?.let { showBattleExit(context,it) }
+                (e.reason as? AutoWeeklyRoute.ExitReason.Finished)?.stop?.let {
+                    showBattleExit(context, it)
+                }
             }
 
             is ScriptAbortException -> {

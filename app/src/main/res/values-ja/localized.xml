@@ -159,7 +159,6 @@
     <string name="p_advanced">"その他"</string>
     <string name="p_app_language">"アプリ言語"</string>
     <string name="p_logs">ログ</string>
-    <string name="logs_coming_soon">今後追加予定の機能です。</string>
     <string name="p_auto_choose_target">"ターゲットの自動選択"</string>
     <string name="p_auto_start_service">"自動でサービス開始"</string>
     <string name="p_battery_optimization">"バッテリー使用の最適化"</string>
@@ -678,4 +677,11 @@
     <string name="battle_config_folder_selected_count">"%d件選択"</string>
     <string name="battle_config_folder_error_blank">"フォルダ名を入力してください"</string>
     <string name="battle_config_folder_error_too_long">"30文字まで入力できます"</string>
+    <string name="battle_log_empty">戦闘記録はまだありません。</string>
+    <string name="battle_log_detail">戦闘記録</string>
+    <string name="battle_log_average_turns">平均ターン数: %1$.2f</string>
+    <string name="battle_log_delete">記録を削除</string>
+    <string name="battle_log_delete_all">すべて削除</string>
+    <string name="battle_log_confirm_delete">この戦闘記録を削除しますか？</string>
+    <string name="battle_log_confirm_clear">すべての戦闘記録を削除しますか？</string>
 </resources>
