@@ -10,6 +10,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <queries>
+        <!-- The gains tracker only routes the KR game app. -->
+        <package android:name="com.netmarble.fgok" />
+    </queries>
+
     <application
         android:name=".util.AutomataApplication"
         android:allowBackup="true"
@@ -35,6 +40,18 @@
             android:name=".ui.skill_maker.SkillMakerActivity"
             android:label="Skill Maker"
             android:screenOrientation="sensorLandscape" />
+
+        <service
+            android:name=".capture.CaptureVpnService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Gains tracker: routes only the Fate/Grand Order app through a local read-only proxy on this device so the account summary can be shown. Nothing leaves the device."/>
+        </service>
 
         <service
             android:name=".runner.ScriptRunnerService"

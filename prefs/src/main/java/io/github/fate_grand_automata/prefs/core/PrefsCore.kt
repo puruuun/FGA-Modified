@@ -61,6 +61,10 @@ class PrefsCore @Inject constructor(
     val bondTrackingFeatureEnabled = maker.bool("bond_tracking_feature_enabled", true)
     val questItemControl = QuestItemControlPrefsCore(maker)
     val weeklyRoute = WeeklyRoutePrefsCore(maker)
+
+    /** Gains tracker (KR), the in-app capture base. Off until the user opts in. */
+    val captureTrackerEnabled = maker.bool("capture_tracker_enabled", false)
+    val captureStopWithScript = maker.bool("capture_stop_with_script", true)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")

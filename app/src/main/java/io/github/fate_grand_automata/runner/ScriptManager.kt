@@ -175,6 +175,7 @@ class ScriptManager @Inject constructor(
     private fun onScriptExit(e: Exception) = scope.launch {
         withContext(Dispatchers.Main) { gameAreaPreview.endScript() }
         uiStateHolder.uiState = ScriptRunnerUIState.Idle
+        io.github.fate_grand_automata.capture.CaptureAutoStart.onScriptEnd(prefsCore)
         uiStateHolder.isPlayButtonEnabled = false
         imageLoader.clearSupportCache()
         releaseOcrService()
@@ -579,6 +580,7 @@ class ScriptManager @Inject constructor(
                 launcherResponseHandler.handle(effectiveResp)
 
                 if (effectiveResp !is ScriptLauncherResponse.Cancel) {
+                    io.github.fate_grand_automata.capture.CaptureAutoStart.onScriptStart(context, prefsCore, preferences.gameServer)
                     delay(500.milliseconds)
                     runEntryPoint(
                         screenshotService = screenshotService,

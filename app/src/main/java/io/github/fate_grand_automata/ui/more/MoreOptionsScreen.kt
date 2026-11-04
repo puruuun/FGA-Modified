@@ -33,7 +33,8 @@ fun MoreOptionsScreen(
     navigateToFineTune: () -> Unit,
     navigateToAddedFeatureTuning: () -> Unit,
     navigateToLicense: () -> Unit,
-    navigateToWeeklySettings: () -> Unit = {}
+    navigateToWeeklySettings: () -> Unit = {},
+    navigateToGainsTracker: () -> Unit = {}
 ) {
     GameAreaPreviewEffect(vm.prefsCore, vm.gameAreaPreview)
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
@@ -91,6 +92,7 @@ fun MoreOptionsScreen(
         goToAddedFeatureTuning = navigateToAddedFeatureTuning,
         goToLicense = navigateToLicense,
         goToWeeklySettings = navigateToWeeklySettings,
+        goToGainsTracker = navigateToGainsTracker,
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
 }
@@ -106,6 +108,7 @@ internal fun MoreOptionsContent(
     goToAddedFeatureTuning: () -> Unit,
     goToLicense: () -> Unit,
     goToWeeklySettings: () -> Unit,
+    goToGainsTracker: () -> Unit = {},
     pickDirectory: () -> Unit
 ) {
     CappedWidth {
@@ -151,6 +154,14 @@ internal fun MoreOptionsContent(
                                         io.github.fate_grand_automata.ui.prefs.Preference(
                                             title = stringResource(R.string.weekly_route_settings),
                                             onClick = goToWeeklySettings
+                                        )
+                                    }
+                                    // The VPN proxy hand-off needs Android 10 (API 29).
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) item {
+                                        io.github.fate_grand_automata.ui.prefs.Preference(
+                                            title = stringResource(R.string.capture_title),
+                                            summary = stringResource(R.string.capture_entry_summary),
+                                            onClick = goToGainsTracker
                                         )
                                     }
                                 }
