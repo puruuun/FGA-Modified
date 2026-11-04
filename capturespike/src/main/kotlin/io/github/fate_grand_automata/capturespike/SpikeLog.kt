@@ -23,8 +23,7 @@ object SpikeLog {
         synchronized(lines) {
             lines.addLast("${fmt.format(LocalTime.now())} $msg")
             while (lines.size > MAX) lines.removeFirst()
-            file?.let { f -> runCatching { f.appendText("${java.time.LocalDateTime.now()} $msg
-") } }
+            file?.let { f -> runCatching { f.appendText("${java.time.LocalDateTime.now()} $msg\n") } }
         }
         listeners.forEach { it() }
     }
