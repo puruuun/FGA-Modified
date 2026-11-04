@@ -34,6 +34,8 @@ class GameNamesTest {
         assertEquals("증거", names.item(6510))
         assertEquals("서번트", names.servant(10))
         assertEquals("예장", names.equip(9))
+        // Other drop types can share an object ID with an item, but must not borrow its name.
+        assertEquals("Item #6510", names.drop(99, 6510))
         assertEquals(setOf("nice_item", "basic_servant", "basic_equip").map {
             "https://api.atlasacademy.io/export/KR/$it.json"
         }.toSet(), urls.toSet())
