@@ -15,6 +15,7 @@ import io.github.fate_grand_automata.battlelog.BattleLogSource
 import io.github.fate_grand_automata.battlelog.shouldRecordBattleLog
 import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.capture.CaptureAutoStart
+import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.di.script.ScriptComponent
 import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.script.ScriptEntryPoint
@@ -150,14 +151,18 @@ class ScriptManager @Inject constructor(
     }
 
     private fun recordBattleExit(exception: AutoBattle.ExitException, source: BattleLogSource) {
-        if (!shouldRecordBattleLog(source, exception.reason, exception.state.timesRan)) return
+        if (!shouldRecordBattleLog(source, exception.reason, exception.state.timesRan)) {
+            CaptureTracker.discardRun()
+            return
+        }
         try {
             // Capture before another run or a settings edit can change the selected config.
             val entry = BattleLogEntry.snapshot(
                 exception = exception,
                 configName = preferences.selectedBattleConfig.name,
                 reasonText = exception.reason.displayText(context),
-                refillEnabled = preferences.selectedServerConfigPref.resources.isNotEmpty()
+                refillEnabled = preferences.selectedServerConfigPref.resources.isNotEmpty(),
+                gains = CaptureTracker.finishRun()
             )
             scope.launch { battleLog.add(entry) }
         } catch (e: Exception) {
@@ -199,6 +204,10 @@ class ScriptManager @Inject constructor(
         withContext(Dispatchers.Main) { gameAreaPreview.endScript() }
         uiStateHolder.uiState = ScriptRunnerUIState.Idle
         CaptureAutoStart.onScriptEnd(prefsCore)
+        if (e !is AutoBattle.ExitException &&
+            (e !is AutoWeeklyRoute.ExitException || e.reason !is AutoWeeklyRoute.ExitReason.Finished)) {
+            CaptureTracker.discardRun()
+        }
         uiStateHolder.isPlayButtonEnabled = false
         imageLoader.clearSupportCache()
         releaseOcrService()
@@ -374,7 +383,7 @@ class ScriptManager @Inject constructor(
             is AutoWeeklyRoute.ExitException -> {
                 (e.reason as? AutoWeeklyRoute.ExitReason.Finished)?.stop?.let {
                     recordBattleExit(it, BattleLogSource.WeeklyRouteFinished)
-                }
+                } ?: CaptureTracker.discardRun()
                 val msg = when (val reason = e.reason) {
                     AutoWeeklyRoute.ExitReason.NoRoute -> context.getString(R.string.weekly_route_stop_no_route)
                     AutoWeeklyRoute.ExitReason.NotOnMainScreen -> context.getString(R.string.weekly_route_stop_not_main)

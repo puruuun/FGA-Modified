@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.fate_grand_automata.util.grouped
 import java.text.DateFormat
 import java.util.Date
 import javax.inject.Inject
@@ -312,25 +313,25 @@ private fun SummaryCard(summary: AccountSummary?) {
             val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
             fun time(seconds: Long) = format.format(Date(seconds * 1000))
             Text(
-                "${summary.masterName}  Lv.${summary.level}",
+                "${summary.masterName}  Lv.${summary.level.grouped()}",
                 style = MaterialTheme.typography.titleMedium,
             )
             val ap = buildString {
-                append("${summary.ap} / ${summary.apMax}")
-                if (summary.carryOverActPoint != 0L) append(" (+${summary.carryOverActPoint})")
+                append("${summary.ap.grouped()} / ${summary.apMax.grouped()}")
+                if (summary.carryOverActPoint != 0L) append(" (+${summary.carryOverActPoint.grouped()})")
             }
             Line(R.string.capture_ap, ap)
-            Line(R.string.capture_quartz, "${summary.stone} (${summary.freeStone} + ${summary.chargeStone})")
-            Line(R.string.capture_fragments, summary.fragments.toString())
-            Line(R.string.capture_apples_gold, summary.goldenApples.toString())
-            Line(R.string.capture_apples_silver, summary.silverApples.toString())
-            Line(R.string.capture_apples_bronze, summary.bronzeApples.toString())
-            Line(R.string.capture_apples_copper, summary.copperApples.toString())
-            Line(R.string.capture_sapling, summary.bronzeSaplings.toString())
-            Line(R.string.capture_tickets, summary.tickets.toString())
-            Line(R.string.capture_mana_prism, summary.manaPrisms.toString())
-            Line(R.string.capture_rare_prism, summary.rarePrisms.toString())
-            Line(R.string.capture_qp, summary.qp.toString())
+            Line(R.string.capture_quartz, "${summary.stone.grouped()} (${summary.freeStone.grouped()} + ${summary.chargeStone.grouped()})")
+            Line(R.string.capture_fragments, summary.fragments.grouped())
+            Line(R.string.capture_apples_gold, summary.goldenApples.grouped())
+            Line(R.string.capture_apples_silver, summary.silverApples.grouped())
+            Line(R.string.capture_apples_bronze, summary.bronzeApples.grouped())
+            Line(R.string.capture_apples_copper, summary.copperApples.grouped())
+            Line(R.string.capture_sapling, summary.bronzeSaplings.grouped())
+            Line(R.string.capture_tickets, summary.tickets.grouped())
+            Line(R.string.capture_mana_prism, summary.manaPrisms.grouped())
+            Line(R.string.capture_rare_prism, summary.rarePrisms.grouped())
+            Line(R.string.capture_qp, summary.qp.grouped())
             Text(
                 stringResource(R.string.capture_snapshot_time, time(summary.snapshotTime)),
                 style = MaterialTheme.typography.bodySmall,

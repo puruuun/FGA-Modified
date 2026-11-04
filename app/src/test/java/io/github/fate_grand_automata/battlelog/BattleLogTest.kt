@@ -16,6 +16,35 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class BattleLogTest {
+    @Test
+    fun snapshotComputesMissingBattlesFromTheRecordedRunCount() {
+        val original = battleLogFixture()
+        val gains = io.github.fate_grand_automata.scripts.capture.RunGains.start(null)
+            .add(io.github.fate_grand_automata.scripts.capture.BattleGains(100)).finish(null)
+        val entry = BattleLogEntry.snapshot(
+            AutoBattle.ExitException(AutoBattle.ExitReason.LimitRuns(8), original.exitState()),
+            original.configName, original.reasonText, true, gains = gains,
+        )
+        assertEquals(7, entry.gains!!.missingBattles)
+    }
+
+    @Test
+    fun oldJsonWithoutGainsStillLoads() {
+        val json = Json.encodeToString(battleLogFixture())
+        assertFalse(json.contains("gains"))
+        assertNull(Json.decodeFromString<BattleLogEntry>(json).gains)
+    }
+
+    @Test
+    fun gainsRoundTripIncludesPositiveMissingBattleCount() {
+        val gains = io.github.fate_grand_automata.scripts.capture.RunGains.start(null)
+            .add(io.github.fate_grand_automata.scripts.capture.BattleGains(100, qp = 1000)).finish(null).withRunCount(8)
+        val entry = battleLogFixture().copy(gains = gains)
+        val restored = Json.decodeFromString<BattleLogEntry>(Json.encodeToString(entry))
+        assertEquals(gains, restored.gains)
+        assertEquals(7, restored.gains!!.missingBattles)
+    }
+
     @TempDir
     lateinit var directory: File
 

@@ -1055,4 +1055,17 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="battle_log_delete_all">Delete all</string>
     <string name="battle_log_confirm_delete">Delete this battle record?</string>
     <string name="battle_log_confirm_clear">Delete all battle records?</string>
+    <string name="capture_gains_title">Gains (tracker)</string>
+    <string name="capture_gains_tracked">Tracked</string>
+    <string name="capture_gains_battles">Battles captured: %1$s</string>
+    <string name="capture_gains_missing">%1$s battles were not captured. Gains may be incomplete.</string>
+    <string name="capture_gains_exp">Master EXP</string>
+    <string name="capture_gains_items">Items</string>
+    <string name="capture_gains_bond">Bond</string>
+    <string name="capture_gains_fruit">Fruit used</string>
+    <string name="capture_gains_unknown">Unknown</string>
+    <string name="capture_gains_holdings">Holdings at end: %1$s</string>
+    <string name="capture_gains_breakdown">Show battles</string>
+    <string name="capture_gains_collapse">Hide battles</string>
+    <string name="capture_gains_battle">Battle %1$s · Quest %2$s</string>
 </resources>

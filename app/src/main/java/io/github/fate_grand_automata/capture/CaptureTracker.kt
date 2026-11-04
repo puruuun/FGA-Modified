@@ -42,6 +42,7 @@ object CaptureTracker {
     private var pendingSave: ScheduledFuture<*>? = null
     private var dir: File? = null
     private val lock = Any()
+    private val runSession = CaptureRunSession()
 
     fun init(context: Context) {
         synchronized(lock) {
@@ -60,7 +61,10 @@ object CaptureTracker {
         _state.value?.let { AccountSummary.from(it, now) }
 
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
-        _running.value = running
+        synchronized(lock) {
+            runSession.setRunning(running, _state.value)
+            _running.value = running
+        }
         if (running) {
             _stopReason.value = null
             _tlsFailures.value = 0
@@ -85,11 +89,20 @@ object CaptureTracker {
         val changed = synchronized(lock) {
             val previous = _state.value
             val next = AccountState.reduce(previous, target, body, System.currentTimeMillis() / 1000)
+            runSession.collect(target, body, previous, next)
             if (next !== previous) _state.value = next
             next !== previous
         }
         if (changed) scheduleSave()
     }
+
+    fun startRun() = synchronized(lock) { runSession.start(_running.value, _state.value) }
+
+    fun endRunCollection() = synchronized(lock) { runSession.stopCollection(_state.value) }
+
+    fun finishRun() = synchronized(lock) { runSession.finish(_state.value) }
+
+    fun discardRun() = synchronized(lock) { runSession.discard() }
 
     fun delete() {
         synchronized(lock) {

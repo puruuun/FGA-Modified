@@ -16,7 +16,10 @@ object CaptureAutoStart {
     /** Called just before a script runs. Never blocks or fails the script. */
     fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer) {
         startedByScript = false
+        CaptureTracker.discardRun()
         if (!CaptureController.isSupported || server != GameServer.Kr) return
+        CaptureTracker.init(context)
+        CaptureTracker.startRun()
         if (!prefs.captureTrackerEnabled.get() || CaptureTracker.running.value) return
         runCatching {
             if (CaptureController.consentIntent(context) != null) {
@@ -31,6 +34,7 @@ object CaptureAutoStart {
     }
 
     fun onScriptEnd(prefs: PrefsCore) {
+        CaptureTracker.endRunCollection()
         if (!startedByScript) return
         startedByScript = false
         if (prefs.captureStopWithScript.get()) CaptureController.stop(CaptureStopReason.Script)

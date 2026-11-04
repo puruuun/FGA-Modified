@@ -738,4 +738,17 @@
     <string name="battle_log_delete_all">すべて削除</string>
     <string name="battle_log_confirm_delete">この戦闘記録を削除しますか？</string>
     <string name="battle_log_confirm_clear">すべての戦闘記録を削除しますか？</string>
+    <string name="capture_gains_title">獲得量（トラッカー）</string>
+    <string name="capture_gains_tracked">追跡済み</string>
+    <string name="capture_gains_battles">記録したバトル：%1$s回</string>
+    <string name="capture_gains_missing">%1$s回のバトルを記録できませんでした。獲得量が一部欠けている可能性があります。</string>
+    <string name="capture_gains_exp">マスターEXP</string>
+    <string name="capture_gains_items">アイテム</string>
+    <string name="capture_gains_bond">絆</string>
+    <string name="capture_gains_fruit">使用した果実</string>
+    <string name="capture_gains_unknown">不明</string>
+    <string name="capture_gains_holdings">終了時の所持数：%1$s</string>
+    <string name="capture_gains_breakdown">バトルごとの内訳を表示</string>
+    <string name="capture_gains_collapse">バトルごとの内訳を閉じる</string>
+    <string name="capture_gains_battle">バトル%1$s · クエスト%2$s</string>
 </resources>

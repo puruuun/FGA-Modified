@@ -34,6 +34,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,10 +43,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
+import io.github.fate_grand_automata.capture.GameNames
+import io.github.fate_grand_automata.capture.GameNameMap
+import java.io.File
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.exit.battleSummaryContent
@@ -54,14 +60,22 @@ import java.util.Date
 @Composable
 fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     val entries by viewModel.entries.collectAsState()
-    LogScreenContent(entries, viewModel::delete, viewModel::clear)
+    val context = LocalContext.current
+    val cache = remember { GameNames(File(context.filesDir, "capture/names")) }
+    var names by remember { mutableStateOf(GameNameMap()) }
+    LaunchedEffect(entries) {
+        val gains = entries.mapNotNull { it.gains }
+        if (gains.isNotEmpty()) names = cache.resolve(gains)
+    }
+    LogScreenContent(entries, viewModel::delete, viewModel::clear, names)
 }
 
 @Composable
 fun LogScreenContent(
     entries: List<BattleLogEntry>,
     onDelete: (String) -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    names: GameNameMap = GameNameMap(),
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -85,7 +99,7 @@ fun LogScreenContent(
                             Text(stringResource(R.string.battle_log_empty), Modifier.padding(16.dp))
                         } else {
                             LazyColumn(Modifier.fillMaxSize()) {
-                                battleLogDetailItems(selected)
+                                battleLogDetailItems(selected, names)
                             }
                         }
                     }
@@ -95,7 +109,7 @@ fun LogScreenContent(
             val selected = sorted.find { it.id == selectedId }
             BackHandler(enabled = selected != null) { selectedId = null }
             if (selected != null) {
-                BattleLogDetail(selected, onBack = { selectedId = null })
+                BattleLogDetail(selected, onBack = { selectedId = null }, names = names)
             } else {
                 CappedWidth {
                     Column(Modifier.fillMaxSize()) {
@@ -206,6 +220,11 @@ private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Uni
                         )
                     }
                 }
+                if (entry.gains != null) Text(
+                    stringResource(R.string.capture_gains_tracked),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, stringResource(R.string.battle_log_delete))
@@ -214,7 +233,7 @@ private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Uni
     }
 }
 
-private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry) {
+private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: GameNameMap) {
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(entry.configName, style = MaterialTheme.typography.titleMedium)
@@ -227,10 +246,11 @@ private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry) {
         refillEnabled = entry.refillEnabled,
         ceLimitReached = entry.reasonKey == "limit_ces"
     )
+    entry.gains?.let { gainsContent(it, names) }
 }
 
 @Composable
-fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit) {
+fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit, names: GameNameMap = GameNameMap()) {
     CappedWidth {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Heading(
@@ -242,7 +262,7 @@ fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit) {
                 }
             )
             LazyColumn(Modifier.weight(1f)) {
-                battleLogDetailItems(entry)
+                battleLogDetailItems(entry, names)
             }
         }
     }

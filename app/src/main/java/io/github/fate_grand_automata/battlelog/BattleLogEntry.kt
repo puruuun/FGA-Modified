@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import io.github.fate_grand_automata.scripts.models.BondSlotSummary
 import io.github.fate_grand_automata.scripts.models.BondSummary
 import kotlinx.serialization.Serializable
+import io.github.fate_grand_automata.scripts.capture.RunGains
 import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -30,7 +31,8 @@ data class BattleLogEntry(
     val maxTurnsPerRun: Int,
     val materials: Map<String, Int>? = null,
     val bond: BattleLogBond? = null,
-    val refillEnabled: Boolean = false
+    val refillEnabled: Boolean = false,
+    val gains: RunGains? = null
 ) {
     fun exitState() = AutoBattle.ExitState(
         timesRan = timesRan, runLimit = runLimit,
@@ -53,7 +55,8 @@ data class BattleLogEntry(
             reasonText: String,
             refillEnabled: Boolean,
             endedAt: Long = System.currentTimeMillis(),
-            id: String = UUID.randomUUID().toString()
+            id: String = UUID.randomUUID().toString(),
+            gains: RunGains? = null
         ): BattleLogEntry = with(exception.state) {
             BattleLogEntry(
                 id = id, endedAt = endedAt, configName = configName,
@@ -72,7 +75,8 @@ data class BattleLogEntry(
                         BattleLogBondSlot(it.position, it.total, it.readRuns, it.missedRuns, it.maxObserved)
                     }, summary.unmappedLevelUpRuns, summary.levelUpMissedRuns)
                 },
-                refillEnabled = refillEnabled
+                refillEnabled = refillEnabled,
+                gains = gains?.withRunCount(timesRan)
             )
         }
     }
