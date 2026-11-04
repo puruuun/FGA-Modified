@@ -24,6 +24,8 @@ class ChaldeaConversion(
 ) {
     val boundaryCount get() = turns.size - 1
 
+    fun needsUserChoice(): Boolean = ambiguous && boundaryCount > 0
+
     fun build(wave: List<Boolean> = List(boundaryCount) { true }): String = buildString {
         turns.forEachIndexed { index, turn ->
             if (index > 0) append(if (wave.getOrElse(index - 1) { true }) ",#," else ",")
