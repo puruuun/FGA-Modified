@@ -78,10 +78,16 @@ class AccountStateTest {
 
     @Test fun newLoginResetsTables() {
         val s = start()
-        val r = AccountState.reduce(s, "/login/top", login("""{"userItem":[{"itemId":1,"num":1}]}"""), 200)!!
+        val r = AccountState.reduce(s, "/login/top", login("""{"userGame":[{"userId":"7"}],"userItem":[{"itemId":1,"num":1}]}"""), 200)!!
         assertEquals(mapOf("1" to "1"), items(r))
         assertEquals(200, r.snapshotTime)
-        assertNull(r.tables["userGame"])
+        assertNotNull(r.tables["userGame"])
+    }
+
+    @Test fun loginWithoutUserGameNeverReplacesAnExistingSnapshot() {
+        val s = start()
+        assertSame(s, AccountState.reduce(s, "/login/top", login("""{"userItem":[]}"""), 200))
+        assertNull(AccountState.reduce(null, "/login/top", login("""{}"""), 200))
     }
 
     @Test fun rowKeyRules() {

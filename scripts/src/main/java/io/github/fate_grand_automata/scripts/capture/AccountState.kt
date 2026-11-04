@@ -29,7 +29,8 @@ data class AccountState(
                     row["resCode"]?.jsonPrimitive?.contentOrNull == "00"
             } == true
             val replaced = cache["replaced"] as? JsonObject
-            if (login && replaced == null) return previous
+            // A login without its own userGame is not a new account snapshot.
+            if (login && (replaced?.get("userGame") as? JsonArray)?.any { it is JsonObject } != true) return previous
             val base = if (login) AccountState(emptyMap(), response, snapshotTime = now, lastUpdateTime = now)
                 else previous ?: return null
             val tables = base.tables.toMutableMap()

@@ -49,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.rememberCaptureLogEntries
 import io.github.fate_grand_automata.ui.ChaldeaExportAction
 import io.github.fate_grand_automata.ui.rememberChaldeaExport
 import io.github.fate_grand_automata.capture.GameNames
@@ -75,7 +76,7 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
         val gains = entries.mapNotNull { it.gains }
         if (gains.isNotEmpty()) names = cache.resolve(gains)
     }
-    LogScreenContent(entries, viewModel::delete, viewModel::clear, names, export, accountState?.lastUpdateTime)
+    LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names, export, accountState?.lastUpdateTime)
 }
 
 @Composable
@@ -238,6 +239,7 @@ private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Uni
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
+                entry.accountName?.let { Text(it, style = MaterialTheme.typography.labelMedium) }
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, stringResource(R.string.battle_log_delete))
@@ -250,6 +252,7 @@ private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: Gam
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(entry.configName, style = MaterialTheme.typography.titleMedium)
+            entry.accountName?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             Text(localDateTime(entry.endedAt), style = MaterialTheme.typography.bodySmall)
         }
     }

@@ -23,7 +23,7 @@ import java.util.Date
 
 /** One export flow shared by the tracker and log screens. */
 @Composable
-fun rememberChaldeaExport(): () -> Unit {
+fun rememberChaldeaExport(userId: String? = null): () -> Unit {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -41,7 +41,7 @@ fun rememberChaldeaExport(): () -> Unit {
             busy = true
             scope.launch {
                 try {
-                    when (val result = ChaldeaExportStore.export(context)) {
+                    when (val result = ChaldeaExportStore.export(context, userId)) {
                         ChaldeaExportStore.Result.NoSnapshot -> message = context.getString(R.string.capture_no_snapshot)
                         ChaldeaExportStore.Result.Failed -> message = context.getString(R.string.capture_chaldea_failed)
                         is ChaldeaExportStore.Result.Written -> {

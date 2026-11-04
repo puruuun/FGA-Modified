@@ -1019,6 +1019,12 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_stop_error">"Could not start. Check the certificate and the VPN permission."</string>
     <string name="capture_tls_warning">"The game refused the certificate %d times. Install it as a CA certificate, not a Wi-Fi certificate."</string>
     <string name="capture_account_header">"Account"</string>
+    <string name="capture_account_current">"Last played"</string>
+    <string name="capture_account_rename">"Rename"</string>
+    <string name="capture_account_name">"Account name"</string>
+    <string name="capture_account_name_hint">"Leave blank to use the master name."</string>
+    <string name="capture_account_delete">"Delete"</string>
+    <string name="capture_account_delete_message">"Delete %1$s and its Chaldea files?"</string>
     <string name="capture_no_snapshot">"Start the game while log collection is on"</string>
     <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"Saint Quartz"</string>
@@ -1035,7 +1041,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_snapshot_time">"Snapshot: %s"</string>
     <string name="capture_last_update">"Last update: %s"</string>
     <string name="capture_delete">"Delete log collection data"</string>
-    <string name="capture_delete_message">"Deletes the saved account summary and the Chaldea files FGA created in Download/FGA/."</string>
+    <string name="capture_delete_message">"Deletes all saved accounts and the Chaldea files FGA created in Download/FGA/."</string>
     <string name="capture_notification_channel">"Log collection"</string>
     <string name="capture_notification_title">"Log collection is on"</string>
     <string name="capture_notification_text">"Only the KR game is routed through a local read-only proxy."</string>

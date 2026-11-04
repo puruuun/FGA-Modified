@@ -32,7 +32,9 @@ data class BattleLogEntry(
     val materials: Map<String, Int>? = null,
     val bond: BattleLogBond? = null,
     val refillEnabled: Boolean = false,
-    val gains: RunGains? = null
+    val gains: RunGains? = null,
+    val accountId: String? = null,
+    val accountName: String? = null,
 ) {
     fun exitState() = AutoBattle.ExitState(
         timesRan = timesRan, runLimit = runLimit,

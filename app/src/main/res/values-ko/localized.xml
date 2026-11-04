@@ -940,6 +940,12 @@
     <string name="capture_stop_error">"시작하지 못했습니다. 인증서와 VPN 권한을 확인해 주세요."</string>
     <string name="capture_tls_warning">"게임이 인증서를 %d번 거부했습니다. Wi-Fi 인증서가 아니라 CA 인증서로 설치해 주세요."</string>
     <string name="capture_account_header">"계정"</string>
+    <string name="capture_account_current">"최근 플레이"</string>
+    <string name="capture_account_rename">"이름 변경"</string>
+    <string name="capture_account_name">"계정 이름"</string>
+    <string name="capture_account_name_hint">"비워 두면 마스터 이름으로 표시합니다."</string>
+    <string name="capture_account_delete">"삭제"</string>
+    <string name="capture_account_delete_message">"%1$s 계정과 해당 Chaldea 파일을 삭제할까요?"</string>
     <string name="capture_no_snapshot">"로그 수집을 켠 상태에서 게임을 시작해 주세요"</string>
     <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"성정석"</string>
@@ -956,7 +962,7 @@
     <string name="capture_snapshot_time">"스냅샷: %s"</string>
     <string name="capture_last_update">"마지막 갱신: %s"</string>
     <string name="capture_delete">"로그 수집 데이터 삭제"</string>
-    <string name="capture_delete_message">"저장된 계정 요약과 FGA가 Download/FGA/에 만든 Chaldea 파일을 삭제합니다."</string>
+    <string name="capture_delete_message">"저장된 모든 계정과 FGA가 Download/FGA/에 만든 Chaldea 파일을 삭제합니다."</string>
     <string name="capture_notification_channel">"로그 수집"</string>
     <string name="capture_notification_title">"로그 수집 실행 중"</string>
     <string name="capture_notification_text">"KR 게임만 이 기기의 읽기 전용 프록시를 거칩니다."</string>

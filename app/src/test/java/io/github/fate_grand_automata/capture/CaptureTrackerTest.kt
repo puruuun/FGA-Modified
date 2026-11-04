@@ -14,12 +14,12 @@ class CaptureTrackerTest {
 
     private fun feed(path: String, body: String) = CaptureTracker.onGameResponse(path, body.toByteArray(), null)
 
-    private fun login() = feed("/login/top", """{"response":[{"nid":"login","resCode":"00","success":{}}],
-        "cache":{"replaced":{"userGame":[{"userId":1,"exp":100}],
+    private fun login(id: Int = 1) = feed("/login/top", """{"response":[{"nid":"login","resCode":"00","success":{}}],
+        "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Master $id","exp":100}],
         "userItem":[{"itemId":100,"num":5}],"userSvtCollection":[{"svtId":10,"friendship":200}]}}}""")
 
-    private fun battle() = feed("/battle/result", """{"response":[{"success":{"phaseClearQp":1000}}],
-        "cache":{"updated":{"userGame":[{"userId":1,"exp":250}],
+    private fun battle(id: Int = 1) = feed("/battle/result", """{"response":[{"success":{"phaseClearQp":1000}}],
+        "cache":{"updated":{"userGame":[{"userId":$id,"exp":250}],
         "userSvtCollection":[{"svtId":10,"friendship":500}]}}}""")
 
     @Test fun parsesAgainstStateBeforeReductionAndSavesLatestHoldings() {
@@ -67,5 +67,63 @@ class CaptureTrackerTest {
         assertTrue(CaptureTracker.running.value)
         battle()
         assertEquals(1, assertNotNull(CaptureTracker.finishRun()).capturedBattles)
+    }
+
+    @Test fun runStaysOnOpeningAccountAndFinishesWithItsHoldingsAfterSwitch() {
+        login(7001)
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun()
+        battle(7001)
+        feed("/item/use", """{"cache":{"updated":{"userItem":[{"userId":7001,"itemId":100,"num":3}]}}}""")
+        login(7002)
+        battle(7002)
+        assertEquals("7002", CaptureTracker.currentId.value)
+        val gains = assertNotNull(CaptureTracker.finishRun())
+        assertEquals(1, gains.capturedBattles)
+        assertEquals(2, gains.fruitUsed[100])
+        assertEquals(1000, gains.qp)
+    }
+
+    @Test fun accountlessRunBindsToFirstRoutedResponseAndRejectsOtherAccount() {
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun()
+        battle(7001) // No snapshot: gains can still be captured.
+        battle(7002)
+        val entry = CaptureTracker.finishRun(io.github.fate_grand_automata.battlelog.battleLogFixture())
+        assertEquals("7001", entry.accountId)
+        assertEquals("#7001", entry.accountName)
+        assertEquals(1, entry.gains!!.capturedBattles)
+    }
+
+    @Test fun conflictResponseDoesNotChangeStateOrCollectBattle() {
+        login(7001)
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun()
+        val before = CaptureTracker.state.value
+        feed("/battle/result", """{"response":[{"success":{"phaseClearQp":9000}}],"cache":{"updated":{
+            "userItem":[{"userId":7001,"itemId":100,"num":1}],"userGame":[{"userId":7002,"exp":999}]}}}""")
+        assertSame(before, CaptureTracker.state.value)
+        assertEquals("7001", CaptureTracker.currentId.value)
+        assertEquals(0, assertNotNull(CaptureTracker.finishRun()).capturedBattles)
+    }
+
+    @Test fun battleLogStoresDisplayNameAtFinishOnlyWhenGainsExist() {
+        val original = io.github.fate_grand_automata.battlelog.battleLogFixture()
+        login(7001)
+        CaptureTracker.startRun()
+        val untracked = CaptureTracker.finishRun(original)
+        assertNull(untracked.accountId)
+        assertNull(untracked.accountName)
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun()
+        battle(7001)
+        CaptureTracker.rename("7001", "Farming")
+        val entry = CaptureTracker.finishRun(original)
+        assertEquals("7001", entry.accountId)
+        assertEquals("Farming", entry.accountName)
+        assertEquals(original.timesRan - 1, entry.gains!!.missingBattles)
+        CaptureTracker.rename("7001", "Later")
+        assertEquals("Farming", entry.accountName)
+        assertEquals("Later", CaptureTracker.summary()!!.masterName)
     }
 }

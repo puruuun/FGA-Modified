@@ -702,6 +702,12 @@
     <string name="capture_stop_error">"開始できませんでした。証明書とVPN権限を確認してください。"</string>
     <string name="capture_tls_warning">"ゲームが証明書を %d 回拒否しました。Wi-Fi証明書ではなくCA証明書としてインストールしてください。"</string>
     <string name="capture_account_header">"アカウント"</string>
+    <string name="capture_account_current">"最終プレイ"</string>
+    <string name="capture_account_rename">"名前を変更"</string>
+    <string name="capture_account_name">"アカウント名"</string>
+    <string name="capture_account_name_hint">"空欄にするとマスター名を表示します。"</string>
+    <string name="capture_account_delete">"削除"</string>
+    <string name="capture_account_delete_message">"%1$sのアカウントとChaldeaファイルを削除しますか？"</string>
     <string name="capture_no_snapshot">"ログ収集をオンにしてゲームを起動してください"</string>
     <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"聖晶石"</string>
@@ -718,7 +724,7 @@
     <string name="capture_snapshot_time">"スナップショット: %s"</string>
     <string name="capture_last_update">"最終更新: %s"</string>
     <string name="capture_delete">"ログ収集のデータを削除"</string>
-    <string name="capture_delete_message">"保存したアカウント概要と、FGAがDownload/FGA/に作成したChaldeaファイルを削除します。"</string>
+    <string name="capture_delete_message">"保存したすべてのアカウントと、FGAがDownload/FGA/に作成したChaldeaファイルを削除します。"</string>
     <string name="capture_notification_channel">"ログ収集"</string>
     <string name="capture_notification_title">"ログ収集実行中"</string>
     <string name="capture_notification_text">"KR版ゲームだけが端末内の読み取り専用プロキシを通ります。"</string>

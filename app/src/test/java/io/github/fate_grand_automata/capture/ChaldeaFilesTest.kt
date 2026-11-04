@@ -5,18 +5,18 @@ import java.util.Locale
 import kotlin.test.*
 
 class ChaldeaFilesTest {
-    private val old = "chaldea-kr-20261104-0901.json"
-    private val latest = "chaldea-kr-20261104-0902.json"
+    private val old = "chaldea-kr-7001-20261104-0901.json"
+    private val latest = "chaldea-kr-7001-20261104-0902.json"
 
     @Test fun filenameHasZeroPaddedLocalMinute() {
-        assertEquals(old, ChaldeaFiles.name(LocalDateTime.of(2026, 11, 4, 9, 1, 59)))
+        assertEquals(old, ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1, 59)))
     }
 
     @Test fun filenameDoesNotDependOnDefaultLocale() {
         val before = Locale.getDefault()
         try {
             Locale.setDefault(Locale.forLanguageTag("ar"))
-            assertEquals(old, ChaldeaFiles.name(LocalDateTime.of(2026, 11, 4, 9, 1)))
+            assertEquals(old, ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1)))
         } finally { Locale.setDefault(before) }
     }
 
@@ -41,5 +41,22 @@ class ChaldeaFilesTest {
 
     @Test fun minuteCollisionIsRetainedByNameForStoreToResolveById() {
         assertEquals(listOf(old), ChaldeaFiles.toDelete(listOf(latest, old, latest), latest))
+    }
+
+    @Test fun keepsNewestForEachAccountAndCleansEveryLegacyFile() {
+        val otherOld = "chaldea-kr-7002-20261104-0801.json"
+        val otherNew = "chaldea-kr-7002-20261104-0802.json"
+        val legacy = listOf("chaldea-kr-20261104-0901.json", "chaldea-kr-20261104-0902.json")
+        val names = listOf(old, latest, otherNew, otherOld) + legacy
+        assertEquals(listOf(old, otherOld) + legacy, ChaldeaFiles.toDelete(names, latest))
+        assertEquals(listOf(old, otherOld) + legacy, ChaldeaFiles.toDelete(names))
+        assertEquals("7001", ChaldeaFiles.accountId(latest))
+        assertNull(ChaldeaFiles.accountId(legacy.first()))
+    }
+
+    @Test fun exportingAnotherAccountPreservesTheFreshFileOfTheFirstAccount() {
+        val other = "chaldea-kr-7002-20261104-0801.json"
+        assertEquals(listOf(old), ChaldeaFiles.toDelete(listOf(old, latest, other), other))
+        assertTrue(ChaldeaFiles.toDelete(listOf(old, other), other).isEmpty())
     }
 }

@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import android.content.Context
+import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.BodyDecoder
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import timber.log.Timber
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -19,50 +19,59 @@ import java.util.concurrent.TimeUnit
 /** Why the capture VPN is not running; shown on the settings screen. */
 enum class CaptureStopReason { User, Service, Revoked, Error, Unsupported }
 
-/**
- * Process-wide holder of the captured account state. The VPN service, the proxy threads and the UI
- * live in one process, so a plain object is enough. Nothing here ever leaves the device.
- */
+/** Process-wide holder. Proxy responses, disk writes and account deletion share one lock. */
 object CaptureTracker {
     private const val SAVE_DELAY_SECONDS = 2L
-
     private val _state = MutableStateFlow<AccountState?>(null)
     val state: StateFlow<AccountState?> = _state.asStateFlow()
-
+    private val _accounts = MutableStateFlow<List<CaptureAccount>>(emptyList())
+    val accounts: StateFlow<List<CaptureAccount>> = _accounts.asStateFlow()
+    private val _currentId = MutableStateFlow<String?>(null)
+    val currentId: StateFlow<String?> = _currentId.asStateFlow()
     private val _running = MutableStateFlow(false)
     val running: StateFlow<Boolean> = _running.asStateFlow()
-
     private val _tlsFailures = MutableStateFlow(0)
     val tlsFailures: StateFlow<Int> = _tlsFailures.asStateFlow()
-
     private val _stopReason = MutableStateFlow<CaptureStopReason?>(null)
     val stopReason: StateFlow<CaptureStopReason?> = _stopReason.asStateFlow()
 
     private val io = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "capture-save").apply { isDaemon = true } }
-    private var pendingSave: ScheduledFuture<*>? = null
-    private var dir: File? = null
+    private val pendingSaves = mutableMapOf<String, ScheduledFuture<*>>()
+    private var initialized = false
     private val lock = Any()
+    private val stored = CaptureAccounts { Timber.w("Capture: %s", it) }
     private val runSession = CaptureRunSession()
 
-    fun init(context: Context) {
-        synchronized(lock) {
-            if (dir != null) return
-            dir = CertStore.directory(context)
-            val file = File(dir, STATE_FILE)
-            if (file.isFile) {
-                _state.value = runCatching { AccountState.fromJson(file.readText()) }
-                    .onFailure { Timber.w("Capture: saved account state is unreadable") }
-                    .getOrNull()
-            }
-        }
+    fun init(context: Context) = synchronized(lock) {
+        if (initialized) return@synchronized
+        stored.load(CertStore.directory(context))
+        initialized = true
+        publish()
     }
 
-    fun summary(now: Long = System.currentTimeMillis() / 1000): AccountSummary? =
-        _state.value?.let { AccountSummary.from(it, now) }
+    fun summary(now: Long = System.currentTimeMillis() / 1000): AccountSummary? = synchronized(lock) {
+        stored.state?.let { AccountSummary.from(it, now).copy(masterName = stored.displayName(stored.currentId!!)!!) }
+    }
+
+    fun accountSummaries(now: Long): List<CaptureAccount> = synchronized(lock) { stored.accounts(now) }
+
+    /** Capture id and immutable state together, so a switch cannot rename another account's export. */
+    fun snapshot(userId: String? = null): Pair<String, AccountState>? = synchronized(lock) {
+        val id = userId ?: stored.currentId ?: return@synchronized null
+        stored.states[id]?.let { id to it }
+    }
+
+    private fun runState() = stored.states[runSession.accountId]
+
+    private fun publish() {
+        _state.value = stored.state
+        _currentId.value = stored.currentId
+        _accounts.value = stored.accounts(System.currentTimeMillis() / 1000)
+    }
 
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
         synchronized(lock) {
-            runSession.setRunning(running, _state.value)
+            runSession.setRunning(running, runState())
             _running.value = running
         }
         if (running) {
@@ -74,69 +83,74 @@ object CaptureTracker {
         }
     }
 
-    fun addTlsFailure() {
-        _tlsFailures.value += 1
-    }
+    fun addTlsFailure() { _tlsFailures.value += 1 }
 
-    /** Feeds one decoded game API response; account paths never get here. */
+    /** Feeds one decoded game API response; account/token paths never get here. */
     fun onGameResponse(target: String, payload: ByteArray, contentEncoding: String?) {
         if (CaptureNames.isAccountPath(target)) return
         val body = try {
             Json.parseToJsonElement(String(BodyDecoder.decode(payload, contentEncoding), Charsets.UTF_8)) as? JsonObject
-        } catch (_: Exception) {
-            null
-        } ?: return
-        val changed = synchronized(lock) {
-            val previous = _state.value
-            val next = AccountState.reduce(previous, target, body, System.currentTimeMillis() / 1000)
-            runSession.collect(target, body, previous, next)
-            if (next !== previous) _state.value = next
-            next !== previous
+        } catch (_: Exception) { null } ?: return
+        synchronized(lock) {
+            val previousCurrent = stored.currentId
+            val response = stored.apply(target, body, System.currentTimeMillis() / 1000) ?: return
+            runSession.collect(target, body, response.previous, response.next, response.id)
+            publish()
+            if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
         }
-        if (changed) scheduleSave()
     }
 
-    fun startRun() = synchronized(lock) { runSession.start(_running.value, _state.value) }
+    fun startRun() = synchronized(lock) { runSession.start(_running.value, stored.state, stored.currentId) }
+    fun endRunCollection() = synchronized(lock) { runSession.stopCollection(runState()) }
+    fun finishRun() = synchronized(lock) { runSession.finish(runState()) }
 
-    fun endRunCollection() = synchronized(lock) { runSession.stopCollection(_state.value) }
-
-    fun finishRun() = synchronized(lock) { runSession.finish(_state.value) }
+    /** Small battle-log hook: freeze the display name at the same instant as the run gains. */
+    fun finishRun(entry: BattleLogEntry): BattleLogEntry = synchronized(lock) {
+        val id = runSession.accountId
+        val name = id?.let { stored.displayName(it) ?: "#$it" }
+        val gains = runSession.finish(runState())
+        entry.copy(
+            gains = gains?.withRunCount(entry.timesRan),
+            accountId = id.takeIf { gains != null }, accountName = name.takeIf { gains != null },
+        )
+    }
 
     fun discardRun() = synchronized(lock) { runSession.discard() }
 
-    fun delete() {
-        synchronized(lock) {
-            pendingSave?.cancel(false)
-            _state.value = null
-            dir?.let { File(it, STATE_FILE).delete() }
-        }
+    fun delete() = synchronized(lock) {
+        pendingSaves.values.forEach { it.cancel(false) }
+        pendingSaves.clear()
+        stored.clear()
+        publish()
     }
 
-    private fun scheduleSave() {
-        synchronized(lock) {
-            pendingSave?.cancel(false)
-            pendingSave = io.schedule({ save() }, SAVE_DELAY_SECONDS, TimeUnit.SECONDS)
-        }
+    fun rename(userId: String, name: String) = synchronized(lock) {
+        stored.rename(userId, name)
+        publish()
+        scheduleSave(userId)
     }
 
-    private fun flush() {
-        val pending = synchronized(lock) { pendingSave?.also { it.cancel(false) } } ?: return
-        pending.let { io.execute { save() } }
+    fun delete(userId: String) = synchronized(lock) {
+        pendingSaves.remove(userId)?.cancel(false)
+        stored.delete(userId)
+        publish()
     }
 
-    private fun save() {
-        val (target, state) = synchronized(lock) { dir to _state.value }
-        if (target == null || state == null) return
-        runCatching {
-            target.mkdirs()
-            val tmp = File(target, "$STATE_FILE.tmp")
-            tmp.writeText(state.toJson())
-            if (!tmp.renameTo(File(target, STATE_FILE))) {
-                File(target, STATE_FILE).delete()
-                check(tmp.renameTo(File(target, STATE_FILE)))
-            }
-        }.onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
+    private fun scheduleSave(userId: String) {
+        pendingSaves.remove(userId)?.cancel(false)
+        pendingSaves[userId] = io.schedule({ save(userId) }, SAVE_DELAY_SECONDS, TimeUnit.SECONDS)
     }
 
-    private const val STATE_FILE = "account-state.json"
+    private fun flush() = synchronized(lock) {
+        pendingSaves.values.forEach { it.cancel(false) }
+        pendingSaves.clear()
+        io.execute { save() }
+    }
+
+    private fun save(userId: String? = null) = synchronized(lock) {
+        if (userId != null) pendingSaves.remove(userId)
+        runCatching { stored.save(userId) }
+            .onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
+        Unit
+    }
 }

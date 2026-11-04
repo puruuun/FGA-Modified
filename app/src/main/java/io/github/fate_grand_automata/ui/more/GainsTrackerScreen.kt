@@ -1,7 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.app.Application
-import android.os.Build
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -11,13 +10,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -28,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -40,6 +35,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.ChaldeaExportStore
+import io.github.fate_grand_automata.capture.CaptureAccount
+import io.github.fate_grand_automata.capture.captureAccountCards
 import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
@@ -48,15 +45,11 @@ import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureEnableAction
 import io.github.fate_grand_automata.capture.rememberCaptureAgreement
 import io.github.fate_grand_automata.prefs.core.PrefsCore
-import io.github.fate_grand_automata.scripts.capture.AccountSummary
-import io.github.fate_grand_automata.ui.ChaldeaExportAction
-import io.github.fate_grand_automata.ui.rememberChaldeaExport
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.remember
-import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,9 +58,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.github.fate_grand_automata.util.grouped
-import java.text.DateFormat
-import java.util.Date
 import javax.inject.Inject
 
 data class GainsTrackerUiState(
@@ -78,7 +68,8 @@ data class GainsTrackerUiState(
     val running: Boolean = false,
     val tlsFailures: Int = 0,
     val stopReason: CaptureStopReason? = null,
-    val summary: AccountSummary? = null,
+    val accounts: List<CaptureAccount> = emptyList(),
+    val currentId: String? = null,
 )
 
 @HiltViewModel
@@ -100,9 +91,10 @@ class GainsTrackerViewModel @Inject constructor(
         prefsCore.captureStopWithService.asFlow(),
         cert,
         combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
-        combine(CaptureTracker.state, clock) { _, now -> now },
+        combine(CaptureTracker.accounts, clock) { _, now -> now },
     ) { enabled, stopWithService, (exists, installed), (running, failures, reason), now ->
-        GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason, CaptureTracker.summary(now))
+        GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason,
+            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -129,13 +121,22 @@ class GainsTrackerViewModel @Inject constructor(
             }
         }
     }
+
+    fun renameAccount(id: String, name: String) = CaptureTracker.rename(id, name)
+
+    fun deleteAccount(id: String) {
+        viewModelScope.launch {
+            if (!ChaldeaExportStore.deleteAccount(context, id)) {
+                Toast.makeText(context, R.string.capture_chaldea_delete_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
 
 @Composable
 fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
-    val export = rememberChaldeaExport()
     var enabled by vm.prefsCore.captureTrackerEnabled.remember()
     val agreement = rememberCaptureAgreement(vm.prefsCore)
     var stopWithService by vm.prefsCore.captureStopWithService.remember()
@@ -183,7 +184,8 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         },
         onStop = vm::stop,
         onDelete = vm::deleteData,
-        onExport = export,
+        onRenameAccount = vm::renameAccount,
+        onDeleteAccount = vm::deleteAccount,
     )
 }
 
@@ -197,8 +199,9 @@ fun GainsTrackerContent(
     onStart: () -> Unit,
     onStop: () -> Unit,
     onDelete: () -> Unit,
-    onExport: () -> Unit = {},
     onReviewConsent: () -> Unit = {},
+    onRenameAccount: (String, String) -> Unit = { _, _ -> },
+    onDeleteAccount: (String) -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -315,13 +318,7 @@ fun GainsTrackerContent(
                     }
                 }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_account_header)) }
-                item { SummaryCard(state.summary) }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) item {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ChaldeaExportAction(state.summary?.lastUpdateTime, onExport)
-                        Text(stringResource(R.string.capture_chaldea_freshness), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+                captureAccountCards(state.accounts, state.currentId, onRenameAccount, onDeleteAccount)
                 item {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                         OutlinedButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.capture_delete)) }
@@ -329,61 +326,5 @@ fun GainsTrackerContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SummaryCard(summary: AccountSummary?) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (summary == null) {
-                Text(stringResource(R.string.capture_no_snapshot))
-                return@Column
-            }
-            val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
-            fun time(seconds: Long) = format.format(Date(seconds * 1000))
-            Text(
-                "${summary.masterName}  Lv.${summary.level.grouped()}",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            val ap = buildString {
-                append("${summary.ap.grouped()} / ${summary.apMax.grouped()}")
-                if (summary.carryOverActPoint != 0L) append(" (+${summary.carryOverActPoint.grouped()})")
-            }
-            Line(R.string.capture_ap, ap)
-            Line(R.string.capture_quartz, "${summary.stone.grouped()} (${summary.freeStone.grouped()} + ${summary.chargeStone.grouped()})")
-            Line(R.string.capture_fragments, summary.fragments.grouped())
-            Line(R.string.capture_apples_gold, summary.goldenApples.grouped())
-            Line(R.string.capture_apples_silver, summary.silverApples.grouped())
-            Line(R.string.capture_apples_bronze, summary.bronzeApples.grouped())
-            Line(R.string.capture_apples_copper, summary.copperApples.grouped())
-            Line(R.string.capture_sapling, summary.bronzeSaplings.grouped())
-            Line(R.string.capture_tickets, summary.tickets.grouped())
-            Line(R.string.capture_mana_prism, summary.manaPrisms.grouped())
-            Line(R.string.capture_rare_prism, summary.rarePrisms.grouped())
-            Line(R.string.capture_qp, summary.qp.grouped())
-            Text(
-                stringResource(R.string.capture_snapshot_time, time(summary.snapshotTime)),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-                stringResource(R.string.capture_last_update, time(summary.lastUpdateTime)),
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-}
-
-@Composable
-private fun Line(label: Int, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }

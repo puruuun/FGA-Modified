@@ -27,14 +27,14 @@ object ChaldeaExportStore {
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    suspend fun export(context: Context): Result = withContext(Dispatchers.IO) {
+    suspend fun export(context: Context, userId: String? = null): Result = withContext(Dispatchers.IO) {
         lock.withLock {
             val resolver = context.contentResolver
             var created: Uri? = null
             try {
                 CaptureTracker.init(context)
-                val state = CaptureTracker.state.value ?: return@withLock Result.NoSnapshot
-                val name = ChaldeaFiles.name(LocalDateTime.now())
+                val (id, state) = CaptureTracker.snapshot(userId) ?: return@withLock Result.NoSnapshot
+                val name = ChaldeaFiles.name(id, LocalDateTime.now())
                 val body = ChaldeaExport.body(state)
                 val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
                     put(MediaStore.Downloads.DISPLAY_NAME, name)
@@ -47,7 +47,7 @@ object ChaldeaExportStore {
                 // Delete previous entries only after the new body was fully written. Restore the
                 // requested name before publishing, since a same-minute insert may get a suffix.
                 val old = ownedExports(context).filter { ContentUris.parseId(it.uri) != ContentUris.parseId(uri) }
-                val obsoleteNames = ChaldeaFiles.toDelete(old.map { it.name }, name).toSet()
+                val obsoleteNames = ChaldeaFiles.toDelete(old.map { it.name } + name, name).toSet()
                 old.filter { it.name in obsoleteNames || it.name == name }.forEach {
                     check(resolver.delete(it.uri, null, null) == 1)
                 }
@@ -72,6 +72,19 @@ object ChaldeaExportStore {
                 CaptureTracker.delete()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     ownedExports(context).forEach { check(context.contentResolver.delete(it.uri, null, null) == 1) }
+                }
+            }.isSuccess
+        }
+    }
+
+    suspend fun deleteAccount(context: Context, userId: String): Boolean = withContext(Dispatchers.IO) {
+        lock.withLock {
+            runCatching {
+                CaptureTracker.delete(userId)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ownedExports(context).filter { ChaldeaFiles.accountId(it.name) == userId }.forEach {
+                        check(context.contentResolver.delete(it.uri, null, null) == 1)
+                    }
                 }
             }.isSuccess
         }

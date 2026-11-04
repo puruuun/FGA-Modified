@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
+import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import org.junit.Rule
@@ -49,7 +50,8 @@ class GainsTrackerScreenshotTest {
     fun withSnapshot() = shoot(
         "Snapshot",
         GainsTrackerUiState(
-            enabled = true, certExists = true, certInstalled = true, running = true, summary = summary,
+            enabled = true, certExists = true, certInstalled = true, running = true,
+            accounts = listOf(CaptureAccount("7001", "Master", summary, summary.lastUpdateTime)), currentId = "7001",
         ),
     )
 }

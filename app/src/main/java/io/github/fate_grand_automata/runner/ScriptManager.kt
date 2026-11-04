@@ -157,13 +157,12 @@ class ScriptManager @Inject constructor(
         }
         try {
             // Capture before another run or a settings edit can change the selected config.
-            val entry = BattleLogEntry.snapshot(
+            val entry = CaptureTracker.finishRun(BattleLogEntry.snapshot(
                 exception = exception,
                 configName = preferences.selectedBattleConfig.name,
                 reasonText = exception.reason.displayText(context),
                 refillEnabled = preferences.selectedServerConfigPref.resources.isNotEmpty(),
-                gains = CaptureTracker.finishRun()
-            )
+            ))
             scope.launch { battleLog.add(entry) }
         } catch (e: Exception) {
             Timber.w(e, "Could not record battle exit")

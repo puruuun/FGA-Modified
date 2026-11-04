@@ -57,7 +57,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
     val context = LocalContext.current
     val enabled by prefs.captureTrackerEnabled.remember()
     val running by CaptureTracker.running.collectAsStateWithLifecycle()
-    val snapshot by CaptureTracker.state.collectAsStateWithLifecycle()
+    val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val agreement = rememberCaptureAgreement(prefs)
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
@@ -107,7 +107,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
         CaptureMainState(
             showButton = captureButtonVisible(enabled, Build.VERSION.SDK_INT, gameInstalled),
             running = running,
-            summary = if (enabled) snapshot?.let { AccountSummary.from(it, now) } else null,
+            summary = if (enabled && accounts.isNotEmpty()) CaptureTracker.summary(now) else null,
             now = now,
         ),
         toggle,
