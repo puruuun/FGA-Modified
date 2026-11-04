@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.ui.main
 
 import android.Manifest.permission.POST_NOTIFICATIONS
+import android.app.Activity
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -8,6 +9,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.launch
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +49,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
+import io.github.fate_grand_automata.capture.CaptureServiceLifecycle
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.ui.CappedWidth
@@ -68,6 +72,7 @@ fun MainScreen(
     val permissionState = rememberPermissionState(permission = POST_NOTIFICATIONS)
 
     var toggling by rememberSaveable { mutableStateOf(false) }
+    var startTrackerWithService by rememberSaveable { mutableStateOf(false) }
 
     val accessibilityDisabledDialog = FgaDialog()
     accessibilityDisabledDialog.build {
@@ -100,6 +105,7 @@ fun MainScreen(
     val context = LocalContext.current
 
     val startMediaProjection = rememberLauncherForActivityResult(StartMediaProjection()) {
+        if (it == null) startTrackerWithService = false
         vm.onStartMediaProjectionResult(context, it)
     }
 
@@ -123,7 +129,8 @@ fun MainScreen(
             requestNotifications = requestNotifications,
             showOverlayDisabled = { overlayDisabledDialog.show() },
             showAccessibilityDisabled = { accessibilityDisabledDialog.show() },
-            startMediaProjection = { startMediaProjection.launch() }
+            startMediaProjection = { startMediaProjection.launch() },
+            onStartingService = { startTrackerWithService = true }
         )
     }
 
@@ -142,6 +149,17 @@ fun MainScreen(
     }
 
     val overlayServiceStarted by ScriptRunnerService.serviceStarted
+    val trackerConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK && ScriptRunnerService.serviceStarted.value) {
+            CaptureServiceLifecycle.onStart(context, vm.prefsCore, requestConsent = {})
+        }
+    }
+    LaunchedEffect(overlayServiceStarted, startTrackerWithService) {
+        if (overlayServiceStarted && startTrackerWithService) {
+            startTrackerWithService = false
+            CaptureServiceLifecycle.onStart(context, vm.prefsCore) { trackerConsent.launch(it) }
+        }
+    }
     val accessibilityServiceStarted by TapperService.serviceStarted
 
     MainScreenContent(
@@ -172,7 +190,8 @@ private fun toggleOverlayService(
     requestNotifications: () -> Unit,
     showOverlayDisabled: () -> Unit,
     showAccessibilityDisabled: () -> Unit,
-    startMediaProjection: () -> Unit
+    startMediaProjection: () -> Unit,
+    onStartingService: () -> Unit
 ) {
     if (!Settings.canDrawOverlays(context)) {
         showOverlayDisabled()
@@ -193,6 +212,7 @@ private fun toggleOverlayService(
     if (ScriptRunnerService.serviceStarted.value) {
         ScriptRunnerService.stopService(context)
     } else {
+        onStartingService()
         if (vm.prefs.wantsMediaProjectionToken) {
             if (ScriptRunnerService.mediaProjectionToken == null) {
                 startMediaProjection()

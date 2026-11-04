@@ -9,6 +9,8 @@ import android.os.IBinder
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
+import io.github.fate_grand_automata.capture.CaptureServiceLifecycle
+import io.github.fate_grand_automata.prefs.core.PrefsCore
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -52,7 +54,11 @@ class ScriptRunnerService: Service() {
     @Inject
     lateinit var controller: ScriptRunnerServiceController
 
+    @Inject
+    lateinit var prefsCore: PrefsCore
+
     override fun onDestroy() {
+        CaptureServiceLifecycle.onStop(this, prefsCore)
         controller.onDestroy()
         instance = null
         super.onDestroy()
@@ -71,8 +77,7 @@ class ScriptRunnerService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
-        controller.onCreate()
+        if (controller.onCreate()) instance = this
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

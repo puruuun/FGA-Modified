@@ -938,12 +938,9 @@
     <string name="capture_vpn_start">"시작"</string>
     <string name="capture_vpn_stop">"중지"</string>
     <string name="capture_stop_user">"직접 중지했습니다."</string>
-    <string name="capture_stop_script">"스크립트 종료와 함께 중지했습니다."</string>
     <string name="capture_stop_revoked">"다른 VPN이 대신하거나 권한이 취소되어 중지됐습니다."</string>
     <string name="capture_stop_error">"시작하지 못했습니다. 인증서와 VPN 권한을 확인해 주세요."</string>
     <string name="capture_tls_warning">"게임이 인증서를 %d번 거부했습니다. Wi-Fi 인증서가 아니라 CA 인증서로 설치해 주세요."</string>
-    <string name="capture_stop_with_script">"스크립트가 끝나면 추적기 중지"</string>
-    <string name="capture_stop_with_script_summary">"스크립트가 시작한 VPN만 중지합니다."</string>
     <string name="capture_account_header">"계정"</string>
     <string name="capture_no_snapshot">"추적기를 켠 상태에서 게임을 시작해 주세요"</string>
     <string name="capture_ap">"AP"</string>
@@ -961,7 +958,7 @@
     <string name="capture_snapshot_time">"스냅샷: %s"</string>
     <string name="capture_last_update">"마지막 갱신: %s"</string>
     <string name="capture_delete">"추적 데이터 삭제"</string>
-    <string name="capture_delete_message">"이 기기에 저장된 계정 요약을 삭제합니다."</string>
+    <string name="capture_delete_message">"저장된 계정 요약과 FGA가 Download/FGA/에 만든 Chaldea 파일을 삭제합니다."</string>
     <string name="capture_notification_channel">"획득량 추적기"</string>
     <string name="capture_notification_title">"획득량 추적기 실행 중"</string>
     <string name="capture_notification_text">"KR 게임만 이 기기의 읽기 전용 프록시를 거칩니다."</string>
@@ -989,4 +986,15 @@
     <string name="capture_gains_breakdown">전투별 내역 펼치기</string>
     <string name="capture_gains_collapse">전투별 내역 접기</string>
     <string name="capture_gains_battle">%1$s번째 전투 · 퀘스트 %2$s</string>
+    <string name="capture_stop_service">"서비스 종료와 함께 중지했습니다."</string>
+    <string name="capture_stop_with_service">"서비스가 멈추면 추적기 중지"</string>
+    <string name="capture_stop_with_service_summary">"알림에서 중지하는 경우를 포함해 FGA 서비스가 멈추면 추적기를 중지합니다."</string>
+    <string name="capture_service_no_certificate">"획득량 추적기: 먼저 인증서를 만들어 주세요. FGA 서비스는 추적기 없이 실행됩니다."</string>
+    <string name="capture_service_failed">"획득량 추적기를 시작하지 못했습니다. FGA 서비스는 추적기 없이 실행됩니다."</string>
+    <string name="capture_chaldea_create">"Chaldea 파일 만들기"</string>
+    <string name="capture_chaldea_guide">"Download/FGA/%1$s에 저장했습니다. Chaldea → 가져오기 → HTTPS 스니핑 → 파일에서 → %1$s 파일을 선택하세요."</string>
+    <string name="capture_chaldea_not_installed">"Chaldea가 설치되지 않았거나 열 수 없습니다. 파일은 Download/FGA/%1$s에 저장했습니다."</string>
+    <string name="capture_chaldea_failed">"Chaldea 파일 저장 또는 이전 파일 정리에 실패했습니다. 다시 시도해 주세요."</string>
+    <string name="capture_chaldea_delete_failed">"내보낸 Chaldea 파일을 삭제하지 못했습니다. 다시 시도해 주세요."</string>
+    <string name="capture_chaldea_freshness">"파일에는 추적기가 실행 중일 때 받은 내용만 반영됩니다. 추적기 없이 플레이했다면 추적기를 켜고 게임을 다시 시작해 스냅샷을 갱신하세요."</string>
 </resources>

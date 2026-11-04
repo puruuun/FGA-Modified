@@ -63,7 +63,7 @@ class ScriptRunnerServiceController @Inject constructor(
         screenOffReceiver.unregister(service)
     }
 
-    fun onCreate() {
+    fun onCreate(): Boolean {
         Timber.i("Script runner service created")
 
         scope.launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
@@ -81,7 +81,7 @@ class ScriptRunnerServiceController @Inject constructor(
             // 5s if we stay up without one. Go away quietly instead.
             Timber.e("Stopping the service because it couldn't be promoted to the foreground")
             service.stopSelf()
-            return
+            return false
         }
 
         screenOffReceiver.register(service) {
@@ -109,6 +109,7 @@ class ScriptRunnerServiceController @Inject constructor(
 
             screenshotServiceHolder.prepareScreenshotService()
         }
+        return true
     }
 
     fun onScreenConfigChanged() {

@@ -1017,12 +1017,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_vpn_start">"Start"</string>
     <string name="capture_vpn_stop">"Stop"</string>
     <string name="capture_stop_user">"Stopped by you."</string>
-    <string name="capture_stop_script">"Stopped when the script ended."</string>
     <string name="capture_stop_revoked">"Stopped because another VPN took over or the permission was removed."</string>
     <string name="capture_stop_error">"Could not start. Check the certificate and the VPN permission."</string>
     <string name="capture_tls_warning">"The game refused the certificate %d times. Install it as a CA certificate, not a Wi-Fi certificate."</string>
-    <string name="capture_stop_with_script">"Stop the tracker when the script ends"</string>
-    <string name="capture_stop_with_script_summary">"Only stops a VPN that the script started."</string>
     <string name="capture_account_header">"Account"</string>
     <string name="capture_no_snapshot">"Start the game while the tracker is on"</string>
     <string name="capture_ap">"AP"</string>
@@ -1040,7 +1037,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_snapshot_time">"Snapshot: %s"</string>
     <string name="capture_last_update">"Last update: %s"</string>
     <string name="capture_delete">"Delete tracker data"</string>
-    <string name="capture_delete_message">"Deletes the saved account summary from this device."</string>
+    <string name="capture_delete_message">"Deletes the saved account summary and the Chaldea files FGA created in Download/FGA/."</string>
     <string name="capture_notification_channel">"Gains tracker"</string>
     <string name="capture_notification_title">"Gains tracker is on"</string>
     <string name="capture_notification_text">"Only the KR game is routed through a local read-only proxy."</string>
@@ -1068,4 +1065,15 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_gains_breakdown">Show battles</string>
     <string name="capture_gains_collapse">Hide battles</string>
     <string name="capture_gains_battle">Battle %1$s · Quest %2$s</string>
+    <string name="capture_stop_service">"Stopped when the service stopped."</string>
+    <string name="capture_stop_with_service">"Stop the tracker when the service stops"</string>
+    <string name="capture_stop_with_service_summary">"Stops the tracker when the FGA service stops, including from its notification."</string>
+    <string name="capture_service_no_certificate">"Gains tracker: create the certificate first. The FGA service is running without the tracker."</string>
+    <string name="capture_service_failed">"Gains tracker could not start. The FGA service is running without the tracker."</string>
+    <string name="capture_chaldea_create">"Create Chaldea file"</string>
+    <string name="capture_chaldea_guide">"Saved to Download/FGA/%1$s. In Chaldea: Import → HTTPS sniffing → From file → pick %1$s."</string>
+    <string name="capture_chaldea_not_installed">"Chaldea is not installed or could not be opened. The file is saved: Download/FGA/%1$s."</string>
+    <string name="capture_chaldea_failed">"Could not save the Chaldea file or remove earlier exports. Please try again."</string>
+    <string name="capture_chaldea_delete_failed">"Could not delete the exported Chaldea files. Please try again."</string>
+    <string name="capture_chaldea_freshness">"The file reflects only what was received while the tracker ran. After playing without it, restart the game with the tracker on to refresh the snapshot."</string>
 </resources>

@@ -203,7 +203,7 @@ class ScriptManager @Inject constructor(
     private fun onScriptExit(e: Exception) = scope.launch {
         withContext(Dispatchers.Main) { gameAreaPreview.endScript() }
         uiStateHolder.uiState = ScriptRunnerUIState.Idle
-        CaptureAutoStart.onScriptEnd(prefsCore)
+        CaptureAutoStart.onScriptEnd()
         if (e !is AutoBattle.ExitException &&
             (e !is AutoWeeklyRoute.ExitException || e.reason !is AutoWeeklyRoute.ExitReason.Finished)) {
             CaptureTracker.discardRun()

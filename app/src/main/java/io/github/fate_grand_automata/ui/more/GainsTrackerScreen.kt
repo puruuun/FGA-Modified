@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.app.Application
+import android.os.Build
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -38,12 +39,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.capture.ChaldeaExportStore
 import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CertStore
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
+import io.github.fate_grand_automata.ui.ChaldeaExportAction
+import io.github.fate_grand_automata.ui.rememberChaldeaExport
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.Preference
@@ -65,7 +69,7 @@ import javax.inject.Inject
 
 data class GainsTrackerUiState(
     val enabled: Boolean = false,
-    val stopWithScript: Boolean = true,
+    val stopWithService: Boolean = true,
     val certExists: Boolean = false,
     val certInstalled: Boolean = false,
     val running: Boolean = false,
@@ -90,12 +94,12 @@ class GainsTrackerViewModel @Inject constructor(
 
     val state: StateFlow<GainsTrackerUiState> = combine(
         prefsCore.captureTrackerEnabled.asFlow(),
-        prefsCore.captureStopWithScript.asFlow(),
+        prefsCore.captureStopWithService.asFlow(),
         cert,
         combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
         combine(CaptureTracker.state, clock) { _, now -> now },
-    ) { enabled, stopWithScript, (exists, installed), (running, failures, reason), now ->
-        GainsTrackerUiState(enabled, stopWithScript, exists, installed, running, failures, reason, CaptureTracker.summary(now))
+    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), now ->
+        GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason, CaptureTracker.summary(now))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -115,15 +119,22 @@ class GainsTrackerViewModel @Inject constructor(
 
     fun stop() = CaptureController.stop()
 
-    fun deleteData() = CaptureTracker.delete()
+    fun deleteData() {
+        viewModelScope.launch {
+            if (!ChaldeaExportStore.deleteTrackerData(context)) {
+                Toast.makeText(context, R.string.capture_chaldea_delete_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
 
 @Composable
 fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
+    val export = rememberChaldeaExport()
     var enabled by vm.prefsCore.captureTrackerEnabled.remember()
-    var stopWithScript by vm.prefsCore.captureStopWithScript.remember()
+    var stopWithService by vm.prefsCore.captureStopWithService.remember()
     val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == android.app.Activity.RESULT_OK) CaptureController.start(context)
     }
@@ -139,7 +150,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     GainsTrackerContent(
         state = state,
         onEnabled = { enabled = it; if (!it) vm.stop() },
-        onStopWithScript = { stopWithScript = it },
+        onStopWithService = { stopWithService = it },
         onCreateCertificate = {
             val ok = vm.createCertificate()
             Toast.makeText(
@@ -158,6 +169,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         },
         onStop = vm::stop,
         onDelete = vm::deleteData,
+        onExport = export,
     )
 }
 
@@ -165,12 +177,13 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
 fun GainsTrackerContent(
     state: GainsTrackerUiState,
     onEnabled: (Boolean) -> Unit,
-    onStopWithScript: (Boolean) -> Unit,
+    onStopWithService: (Boolean) -> Unit,
     onCreateCertificate: () -> Unit,
     onOpenSecuritySettings: () -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit,
     onDelete: () -> Unit,
+    onExport: () -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -254,7 +267,7 @@ fun GainsTrackerContent(
                                 stringResource(
                                     when (it) {
                                         CaptureStopReason.User -> R.string.capture_stop_user
-                                        CaptureStopReason.Script -> R.string.capture_stop_script
+                                        CaptureStopReason.Service -> R.string.capture_stop_service
                                         CaptureStopReason.Revoked -> R.string.capture_stop_revoked
                                         CaptureStopReason.Error -> R.string.capture_stop_error
                                         CaptureStopReason.Unsupported -> R.string.capture_stop_error
@@ -277,15 +290,21 @@ fun GainsTrackerContent(
                 }
                 item {
                     Preference(
-                        title = stringResource(R.string.capture_stop_with_script),
-                        summary = stringResource(R.string.capture_stop_with_script_summary),
-                        onClick = { onStopWithScript(!state.stopWithScript) },
+                        title = stringResource(R.string.capture_stop_with_service),
+                        summary = stringResource(R.string.capture_stop_with_service_summary),
+                        onClick = { onStopWithService(!state.stopWithService) },
                     ) {
-                        androidx.compose.material3.Switch(checked = state.stopWithScript, onCheckedChange = onStopWithScript)
+                        androidx.compose.material3.Switch(checked = state.stopWithService, onCheckedChange = onStopWithService)
                     }
                 }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_account_header)) }
                 item { SummaryCard(state.summary) }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) item {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ChaldeaExportAction(state.summary?.lastUpdateTime, onExport)
+                        Text(stringResource(R.string.capture_chaldea_freshness), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 item {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                         OutlinedButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.capture_delete)) }

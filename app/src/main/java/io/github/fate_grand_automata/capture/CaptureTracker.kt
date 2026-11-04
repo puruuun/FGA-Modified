@@ -17,7 +17,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /** Why the capture VPN is not running; shown on the settings screen. */
-enum class CaptureStopReason { User, Script, Revoked, Error, Unsupported }
+enum class CaptureStopReason { User, Service, Revoked, Error, Unsupported }
 
 /**
  * Process-wide holder of the captured account state. The VPN service, the proxy threads and the UI

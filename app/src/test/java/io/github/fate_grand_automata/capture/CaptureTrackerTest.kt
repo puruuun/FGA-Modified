@@ -57,4 +57,15 @@ class CaptureTrackerTest {
         CaptureTracker.discardRun()
         assertNull(CaptureTracker.finishRun())
     }
+
+    @Test fun scriptEndClosesRunCollectionButKeepsVpnRunning() {
+        login()
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun()
+        battle()
+        CaptureAutoStart.onScriptEnd()
+        assertTrue(CaptureTracker.running.value)
+        battle()
+        assertEquals(1, assertNotNull(CaptureTracker.finishRun()).capturedBattles)
+    }
 }

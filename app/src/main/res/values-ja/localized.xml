@@ -700,12 +700,9 @@
     <string name="capture_vpn_start">"開始"</string>
     <string name="capture_vpn_stop">"停止"</string>
     <string name="capture_stop_user">"手動で停止しました。"</string>
-    <string name="capture_stop_script">"スクリプトの終了と共に停止しました。"</string>
     <string name="capture_stop_revoked">"他のVPNに切り替わったか、権限が取り消されたため停止しました。"</string>
     <string name="capture_stop_error">"開始できませんでした。証明書とVPN権限を確認してください。"</string>
     <string name="capture_tls_warning">"ゲームが証明書を %d 回拒否しました。Wi-Fi証明書ではなくCA証明書としてインストールしてください。"</string>
-    <string name="capture_stop_with_script">"スクリプト終了時にトラッカーを停止"</string>
-    <string name="capture_stop_with_script_summary">"スクリプトが開始したVPNだけを停止します。"</string>
     <string name="capture_account_header">"アカウント"</string>
     <string name="capture_no_snapshot">"トラッカーをオンにしてゲームを起動してください"</string>
     <string name="capture_ap">"AP"</string>
@@ -723,7 +720,7 @@
     <string name="capture_snapshot_time">"スナップショット: %s"</string>
     <string name="capture_last_update">"最終更新: %s"</string>
     <string name="capture_delete">"トラッカーのデータを削除"</string>
-    <string name="capture_delete_message">"この端末に保存されたアカウント概要を削除します。"</string>
+    <string name="capture_delete_message">"保存したアカウント概要と、FGAがDownload/FGA/に作成したChaldeaファイルを削除します。"</string>
     <string name="capture_notification_channel">"獲得量トラッカー"</string>
     <string name="capture_notification_title">"獲得量トラッカー実行中"</string>
     <string name="capture_notification_text">"KR版ゲームだけが端末内の読み取り専用プロキシを通ります。"</string>
@@ -751,4 +748,15 @@
     <string name="capture_gains_breakdown">バトルごとの内訳を表示</string>
     <string name="capture_gains_collapse">バトルごとの内訳を閉じる</string>
     <string name="capture_gains_battle">バトル%1$s · クエスト%2$s</string>
+    <string name="capture_stop_service">"サービスの停止と共に停止しました。"</string>
+    <string name="capture_stop_with_service">"サービス停止時にトラッカーを停止"</string>
+    <string name="capture_stop_with_service_summary">"通知からの停止も含め、FGAサービスが停止するとトラッカーを停止します。"</string>
+    <string name="capture_service_no_certificate">"獲得量トラッカー: 先に証明書を作成してください。FGAサービスはトラッカーなしで実行します。"</string>
+    <string name="capture_service_failed">"獲得量トラッカーを開始できませんでした。FGAサービスはトラッカーなしで実行します。"</string>
+    <string name="capture_chaldea_create">"Chaldeaファイルを作成"</string>
+    <string name="capture_chaldea_guide">"Download/FGA/%1$sに保存しました。Chaldea → インポート → HTTPSスニッフィング → ファイルから → %1$sを選択してください。"</string>
+    <string name="capture_chaldea_not_installed">"Chaldeaが未インストールか、開けませんでした。ファイルはDownload/FGA/%1$sに保存しました。"</string>
+    <string name="capture_chaldea_failed">"Chaldeaファイルの保存または以前のファイルの削除に失敗しました。もう一度お試しください。"</string>
+    <string name="capture_chaldea_delete_failed">"書き出したChaldeaファイルを削除できませんでした。もう一度お試しください。"</string>
+    <string name="capture_chaldea_freshness">"ファイルにはトラッカーの実行中に受信した内容だけが反映されます。停止中にプレイした場合は、トラッカーを有効にしてゲームを再起動し、スナップショットを更新してください。"</string>
 </resources>

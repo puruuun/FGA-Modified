@@ -48,6 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
+import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.ui.ChaldeaExportAction
+import io.github.fate_grand_automata.ui.rememberChaldeaExport
 import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.capture.GameNameMap
 import java.io.File
@@ -61,13 +64,18 @@ import java.util.Date
 fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     val entries by viewModel.entries.collectAsState()
     val context = LocalContext.current
+    val export = rememberChaldeaExport()
+    val accountState by CaptureTracker.state.collectAsState()
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) }
+    }
     val cache = remember { GameNames(File(context.filesDir, "capture/names")) }
     var names by remember { mutableStateOf(GameNameMap()) }
     LaunchedEffect(entries) {
         val gains = entries.mapNotNull { it.gains }
         if (gains.isNotEmpty()) names = cache.resolve(gains)
     }
-    LogScreenContent(entries, viewModel::delete, viewModel::clear, names)
+    LogScreenContent(entries, viewModel::delete, viewModel::clear, names, export, accountState?.lastUpdateTime)
 }
 
 @Composable
@@ -76,6 +84,8 @@ fun LogScreenContent(
     onDelete: (String) -> Unit,
     onClear: () -> Unit,
     names: GameNameMap = GameNameMap(),
+    onExport: () -> Unit = {},
+    lastUpdateTime: Long? = null,
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -92,7 +102,7 @@ fun LogScreenContent(
             CappedWidth {
                 Row(Modifier.fillMaxSize()) {
                     Column(Modifier.weight(0.4f).fillMaxHeight()) {
-                        LogList(sorted, selected?.id, { selectedId = it }, { deleteId = it }, { confirmClear = true }, showEmptyText = false)
+                        LogList(sorted, selected?.id, { selectedId = it }, { deleteId = it }, { confirmClear = true }, showEmptyText = false, onExport = onExport, lastUpdateTime = lastUpdateTime)
                     }
                     Column(Modifier.weight(0.6f).fillMaxHeight()) {
                         if (selected == null) {
@@ -113,7 +123,7 @@ fun LogScreenContent(
             } else {
                 CappedWidth {
                     Column(Modifier.fillMaxSize()) {
-                        LogList(sorted, null, { selectedId = it }, { deleteId = it }, { confirmClear = true })
+                        LogList(sorted, null, { selectedId = it }, { deleteId = it }, { confirmClear = true }, onExport = onExport, lastUpdateTime = lastUpdateTime)
                     }
                 }
             }
@@ -150,7 +160,9 @@ private fun ColumnScope.LogList(
     onSelect: (String) -> Unit,
     onDelete: (String) -> Unit,
     onClear: () -> Unit,
-    showEmptyText: Boolean = true
+    showEmptyText: Boolean = true,
+    onExport: () -> Unit,
+    lastUpdateTime: Long?,
 ) {
     Heading(
         stringResource(R.string.p_logs),
@@ -160,6 +172,7 @@ private fun ColumnScope.LogList(
             }
         }
     )
+    Column(Modifier.padding(horizontal = 16.dp)) { ChaldeaExportAction(lastUpdateTime, onExport) }
     if (sorted.isEmpty()) {
         if (showEmptyText) {
             Text(stringResource(R.string.battle_log_empty), Modifier.padding(16.dp))
