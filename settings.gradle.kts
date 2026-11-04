@@ -49,5 +49,6 @@ include(":prefs")
 include(":scripts")
 include(":libautomata")
 include(":app")
+include(":capturespike")
 
 rootProject.name="Fate Grand Automata"
