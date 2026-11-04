@@ -25,6 +25,7 @@ import io.github.fate_grand_automata.ui.card_priority.CardPriorityScreen
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityViewModel
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
 import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningScreen
+import io.github.fate_grand_automata.ui.log.LogScreen
 import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsScreen
 import io.github.fate_grand_automata.ui.onboarding.OnboardingScreen
@@ -104,6 +105,10 @@ fun FgaApp(
                                         backStack.add(Route.MoreOptions)
                                     }
 
+                                    MainScreenDestinations.Logs -> {
+                                        backStack.add(Route.Logs)
+                                    }
+
                                     MainScreenDestinations.OverlaySettings -> {
                                         val intent = Intent(
                                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -151,6 +156,9 @@ fun FgaApp(
                     }
                     entry<Route.License> {
                         LicenseScreen()
+                    }
+                    entry<Route.Logs> {
+                        LogScreen()
                     }
                     entry<Route.FineTune> {
                         FineTuneScreen(

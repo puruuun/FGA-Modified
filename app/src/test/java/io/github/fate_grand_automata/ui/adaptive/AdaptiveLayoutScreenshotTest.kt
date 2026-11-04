@@ -85,7 +85,7 @@ class AdaptiveLayoutScreenshotTest(
     }
 }
 
-/** Records all ten newly capped screens at 1600 dp, in English and Korean, for planner review. */
+/** Records the capped screens at 1600 dp, in English and Korean, for planner review. */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])

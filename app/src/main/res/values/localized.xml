@@ -559,6 +559,8 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
 
     <string name="p_choose_app_language">"Choose App Language"</string>
     <string name="p_app_language">"App Language"</string>
+    <string name="p_logs">Log</string>
+    <string name="logs_coming_soon">This feature is coming in a later version.</string>
 
     <string name="p_screenshot_bond">"Screenshot Bond"</string>
     <string name="p_screenshot_bond_summary">"Experimental screenshot of bond level up regardless of level to 'bond' folder\nNote: Auto-click on another results screen might cause occasional missed screenshots, potentially skipping the bond level-up."</string>

@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,6 +16,8 @@ import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.root.SuperUser
 import io.github.fate_grand_automata.ui.icon
+import io.github.fate_grand_automata.ui.prefs.LanguagePref
+import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
@@ -24,6 +28,14 @@ fun LazyListScope.advancedGroup(
     goToFineTune: () -> Unit,
     goToLicense: () -> Unit
 ) {
+    item {
+        LanguagePref().ListPreference(
+            title = stringResource(R.string.p_app_language),
+            icon = icon(Icons.Default.Language),
+            entries = LanguagePref.availableLanguages()
+        )
+    }
+
     item {
         Preference(
             title = stringResource(R.string.added_tuning_title),

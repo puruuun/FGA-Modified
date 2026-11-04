@@ -24,20 +24,20 @@ import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningScreen
 import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningViewModel
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneSettingsViewModel
+import io.github.fate_grand_automata.ui.log.LogScreen
 import io.github.fate_grand_automata.ui.main.MainScreenContent
 import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsContent
 import io.github.fate_grand_automata.ui.more.WeeklyRouteSettingsScreen
 import io.github.fate_grand_automata.ui.pref_support.PreferredSupport
 import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
-import io.github.fate_grand_automata.ui.prefs.LanguagePref
 import io.github.fate_grand_automata.ui.spam.SpamScreen
 import io.github.fate_grand_automata.ui.spam.SpamScreenViewModel
 import io.github.fate_grand_automata.util.StorageProvider
 
 enum class CappedScreen {
     BattleConfigList, CardPriority, MoreOptions, WeeklyRouteSettings, License,
-    FineTune, AddedFeatureTuning, PreferredSupport, Spam, Main
+    FineTune, AddedFeatureTuning, PreferredSupport, Spam, Main, Logs
 }
 
 /** Waits for the weekly screen's local cache read, so neither identity checks nor shots race it. */
@@ -76,7 +76,6 @@ internal class CappedScreenFixture(context: Context) {
     private val addedFeatureTuning = AddedFeatureTuningViewModel(prefs)
     private val support = SupportViewModel(StorageProvider(prefs, context))
     private val spam = SpamScreenViewModel(PreferencesImpl(prefs, CompletedRunsHolder()), prefs, config.id)
-    private val language = LanguagePref()
 
     @Composable
     fun Render(screen: CappedScreen) {
@@ -99,8 +98,9 @@ internal class CappedScreenFixture(context: Context) {
             CappedScreen.Spam -> SpamScreen(spam)
             CappedScreen.Main -> MainScreenContent(
                 navigate = {}, overlayServiceStarted = false, toggleOverlayService = {},
-                accessibilityServiceStarted = false, toggleAccessibilityService = {}, languagePref = language
+                accessibilityServiceStarted = false, toggleAccessibilityService = {}
             )
+            CappedScreen.Logs -> LogScreen()
         }
     }
 }

@@ -158,6 +158,8 @@
     <string name="overlay_notification_text">"オーバーレイサービスの開始"</string>
     <string name="p_advanced">"その他"</string>
     <string name="p_app_language">"アプリ言語"</string>
+    <string name="p_logs">ログ</string>
+    <string name="logs_coming_soon">今後追加予定の機能です。</string>
     <string name="p_auto_choose_target">"ターゲットの自動選択"</string>
     <string name="p_auto_start_service">"自動でサービス開始"</string>
     <string name="p_battery_optimization">"バッテリー使用の最適化"</string>

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -55,8 +55,6 @@ import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.StartMediaProjection
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
 import io.github.fate_grand_automata.ui.icon
-import io.github.fate_grand_automata.ui.prefs.LanguagePref
-import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
 
@@ -163,8 +161,7 @@ fun MainScreen(
             } else {
                 navigate(MainScreenDestinations.AccessibilitySettings)
             }
-        },
-        languagePref = LanguagePref()
+        }
     )
 }
 
@@ -211,6 +208,7 @@ private fun toggleOverlayService(
 sealed class MainScreenDestinations {
     object Releases : MainScreenDestinations()
     object BattleConfigs : MainScreenDestinations()
+    object Logs : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
     object OverlaySettings : MainScreenDestinations()
@@ -222,8 +220,7 @@ internal fun MainScreenContent(
     overlayServiceStarted: Boolean,
     toggleOverlayService: () -> Unit,
     accessibilityServiceStarted: Boolean,
-    toggleAccessibilityService: () -> Unit,
-    languagePref: LanguagePref
+    toggleAccessibilityService: () -> Unit
 ) {
     Box {
         CappedWidth {
@@ -260,10 +257,10 @@ internal fun MainScreenContent(
 
                             HorizontalDivider()
 
-                            languagePref.ListPreference(
-                                title = stringResource(R.string.p_app_language),
-                                icon = icon(Icons.Default.Language),
-                                entries = LanguagePref.availableLanguages()
+                            Preference(
+                                title = stringResource(R.string.p_logs),
+                                icon = icon(Icons.Default.History),
+                                onClick = { navigate(MainScreenDestinations.Logs) }
                             )
 
                             HorizontalDivider()

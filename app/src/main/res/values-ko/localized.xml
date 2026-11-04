@@ -205,6 +205,8 @@
     <string name="overlay_notification_text">"오버레이 서비스 실행중"</string>
     <string name="p_advanced">"고급"</string>
     <string name="p_app_language">"언어 선택"</string>
+    <string name="p_logs">로그</string>
+    <string name="logs_coming_soon">추후 추가될 기능입니다.</string>
     <string name="p_auto_choose_target">"대상 자동 선택"</string>
     <string name="p_auto_start_service">"서비스 자동시작"</string>
     <string name="p_battery_optimization">"배터리 최적화"</string>
