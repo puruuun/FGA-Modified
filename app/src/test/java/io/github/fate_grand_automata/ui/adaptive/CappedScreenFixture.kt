@@ -24,7 +24,7 @@ import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningScreen
 import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningViewModel
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
 import io.github.fate_grand_automata.ui.fine_tune.FineTuneSettingsViewModel
-import io.github.fate_grand_automata.ui.log.LogScreen
+import io.github.fate_grand_automata.ui.log.LogScreenContent
 import io.github.fate_grand_automata.ui.main.MainScreenContent
 import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsContent
@@ -100,7 +100,7 @@ internal class CappedScreenFixture(context: Context) {
                 navigate = {}, overlayServiceStarted = false, toggleOverlayService = {},
                 accessibilityServiceStarted = false, toggleAccessibilityService = {}
             )
-            CappedScreen.Logs -> LogScreen()
+            CappedScreen.Logs -> LogScreenContent(emptyList(), onDelete = {}, onClear = {})
         }
     }
 }

@@ -189,6 +189,11 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                     job = scope.launch {
                         try {
                             suspend fun finish(command: String) {
+                                try {
+                                    AutoSkillCommand.parse(command)
+                                } catch (_: Exception) {
+                                    throw ChaldeaImportException(ChaldeaImportError.UNSUPPORTED)
+                                }
                                 if (includeSupport) {
                                     val plan = supportModel.supportImport.prepare(ChaldeaShare.decode(submittedUrl),
                                         context.resources.configuration.locales[0]?.toLanguageTag() ?: Locale.getDefault().toLanguageTag())
@@ -208,22 +213,17 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                             } else if (submittedConversion != null) {
                                 // The command that is applied is the one built from the chosen boundaries.
                                 val command = submittedConversion.build(submittedChoices)
-                                try {
-                                    AutoSkillCommand.parse(command)
-                                } catch (_: Exception) {
-                                    throw ChaldeaImportException(ChaldeaImportError.UNSUPPORTED)
-                                }
                                 finish(command)
                             } else {
                                 val result = withContext(Dispatchers.Default) {
                                     converter.convertWithBoundaries(submittedUrl, ignoreEnemyTargeting = submittedIgnoreTargeting)
                                 }
                                 ensureActive()
-                                if (result.boundaryCount > 0) {
+                                if (result.needsUserChoice()) {
                                     waveChoices.clear()
                                     waveChoices.addAll(result.preset)
                                     conversion = result
-                                } else finish(result.build())
+                                } else finish(result.build(result.preset))
                             }
                         } catch (e: CancellationException) {
                             throw e

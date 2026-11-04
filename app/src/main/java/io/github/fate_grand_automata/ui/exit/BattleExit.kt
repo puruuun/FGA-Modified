@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import io.github.fate_grand_automata.ui.battle_config_item.Material
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.KnownException
+import io.github.fate_grand_automata.util.displayText
 import io.github.fate_grand_automata.util.stringRes
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -56,53 +58,6 @@ private val Duration.stringify: String
         }
 
 @Composable
-private fun AutoBattle.ExitReason.text(): String = when (this) {
-    AutoBattle.ExitReason.Abort -> stringResource(R.string.stopped_by_user)
-    is AutoBattle.ExitReason.Unexpected -> {
-        cause.let {
-            if (it is KnownException) stringResource(it.reason.resId, *it.reason.args)
-            else "${stringResource(R.string.unexpected_error)}: ${cause?.message}"
-        }
-    }
-
-    AutoBattle.ExitReason.CEGet -> stringResource(R.string.ce_get)
-    is AutoBattle.ExitReason.LimitCEs -> stringResource(R.string.ces_dropped, count)
-    is AutoBattle.ExitReason.LimitMaterials -> stringResource(R.string.mats_farmed, count)
-    AutoBattle.ExitReason.WithdrawDisabled -> stringResource(R.string.withdraw_disabled)
-    AutoBattle.ExitReason.APRanOut -> stringResource(R.string.script_msg_ap_ran_out)
-    AutoBattle.ExitReason.InventoryFull -> stringResource(R.string.inventory_full)
-    is AutoBattle.ExitReason.LimitRuns -> stringResource(R.string.times_ran, count)
-    AutoBattle.ExitReason.SupportSelectionManual -> stringResource(R.string.support_selection_manual)
-    AutoBattle.ExitReason.SupportSelectionPreferredNotSet -> stringResource(R.string.support_selection_preferred_not_set)
-    AutoBattle.ExitReason.SupportSkillDisplayFailed -> stringResource(R.string.support_skill_display_failed)
-    AutoBattle.ExitReason.QuestItemSettingFailed -> stringResource(R.string.quest_item_setting_failed)
-    is AutoBattle.ExitReason.BondMax -> if (positions.isEmpty()) stringResource(R.string.bond_max_popup_stop)
-        else stringResource(R.string.bond_max_stop, positions.joinToString(", "))
-    is AutoBattle.ExitReason.DirectCardsUnavailable -> stringResource(R.string.direct_cards_unavailable, sequence)
-    is AutoBattle.ExitReason.SkillCommandParseError -> "AutoSkill Parse error:\n\n${cause?.message}"
-    is AutoBattle.ExitReason.CardPriorityParseError -> msg
-    AutoBattle.ExitReason.FirstClearRewards -> stringResource(R.string.first_clear_rewards)
-    AutoBattle.ExitReason.Paused -> stringResource(R.string.script_paused)
-    AutoBattle.ExitReason.StopAfterThisRun -> stringResource(R.string.stop_after_this_run)
-    AutoBattle.ExitReason.OutOfCommandSpells -> stringResource(id = R.string.p_stop_on_out_of_command_spell)
-    AutoBattle.ExitReason.CommandStartRecognitionFailed -> stringResource(R.string.command_start_recognition_failed)
-    is AutoBattle.ExitReason.CommandStartTargetUnavailable -> stringResource(R.string.command_start_target_unavailable, servant)
-    is AutoBattle.ExitReason.CommandStartWaitLimit -> stringResource(R.string.command_start_wait_limit, turns)
-    AutoBattle.ExitReason.CommandStartDuplicateTargets -> stringResource(R.string.command_start_duplicate_targets)
-    AutoBattle.ExitReason.CommandStartTargetsUnavailable -> stringResource(R.string.command_start_targets_unavailable)
-    AutoBattle.ExitReason.CommandStartReturnFailed -> stringResource(R.string.command_start_return_failed)
-    AutoBattle.ExitReason.TurnLimitRetreatFailed -> stringResource(R.string.turn_limit_retreat_failed)
-    is AutoBattle.ExitReason.TurnLimitRetreatStreak -> stringResource(R.string.turn_limit_retreat_streak_stop, count)
-    AutoBattle.ExitReason.ShuffleUntilReturnFailed -> stringResource(R.string.hakuno_shuffle_return_failed)
-    is AutoBattle.ExitReason.ShuffleUntilUnmet -> stringResource(R.string.hakuno_shuffle_unmet, presses,
-        stringResource(when (reason) {
-            io.github.fate_grand_automata.scripts.modules.ShuffleEndReason.NPShortage -> R.string.hakuno_shuffle_np_shortage
-            io.github.fate_grand_automata.scripts.modules.ShuffleEndReason.MaxReached -> R.string.hakuno_shuffle_max_reached
-            else -> R.string.hakuno_shuffle_read_failed
-        }))
-}
-
-@Composable
 private fun Refill(
     limit: Int,
     timesRefilled: Int
@@ -115,14 +70,15 @@ private fun Refill(
     }
 }
 
-private fun LazyListScope.battleExitContent(
-    reason: AutoBattle.ExitReason,
+fun LazyListScope.battleSummaryContent(
+    reasonText: @Composable () -> String,
     state: AutoBattle.ExitState,
-    refillEnabled: Boolean
+    refillEnabled: Boolean,
+    ceLimitReached: Boolean
 ) {
     item {
         Text(
-            reason.text(),
+            reasonText(),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -155,7 +111,7 @@ private fun LazyListScope.battleExitContent(
         }
     }
 
-    if (reason !is AutoBattle.ExitReason.LimitCEs && state.ceDropCount > 0) {
+    if (!ceLimitReached && state.ceDropCount > 0) {
         item {
             Text(
                 stringResource(R.string.ces_dropped, state.ceDropCount),
@@ -242,7 +198,6 @@ private fun BondSummaryContent(summary: BondSummary) {
                 if (slot.maxObserved) " · " + stringResource(R.string.bond_max_observed) else "",
                 style = MaterialTheme.typography.bodySmall)
         }
-        Text(stringResource(R.string.bond_totals_note), style = MaterialTheme.typography.bodySmall)
         if (summary.unmappedLevelUpRuns > 0) Text(stringResource(R.string.bond_unmapped_popups, summary.unmappedLevelUpRuns),
             style = MaterialTheme.typography.bodySmall)
         if (summary.levelUpMissedRuns > 0) Text(stringResource(R.string.bond_levelup_missed, summary.levelUpMissedRuns),
@@ -356,10 +311,11 @@ fun BattleExit(
                 modifier = Modifier
                     .weight(1f)
             ) {
-                battleExitContent(
-                    reason = exception.reason,
+                battleSummaryContent(
+                    reasonText = { exception.reason.displayText(LocalContext.current) },
                     state = exception.state,
-                    refillEnabled = prefs.selectedServerConfigPref.resources.isNotEmpty()
+                    refillEnabled = prefs.selectedServerConfigPref.resources.isNotEmpty(),
+                    ceLimitReached = exception.reason is AutoBattle.ExitReason.LimitCEs
                 )
             }
 
@@ -424,8 +380,8 @@ fun BattleExit(
 fun PreviewBattleExitContent() {
     FGATheme {
         LazyColumn {
-            battleExitContent(
-                reason = AutoBattle.ExitReason.CEGet,
+            battleSummaryContent(
+                reasonText = { AutoBattle.ExitReason.CEGet.displayText(LocalContext.current) },
                 state = AutoBattle.ExitState(
                     timesRan = 5,
                     runLimit = 8,
@@ -446,7 +402,8 @@ fun PreviewBattleExitContent() {
                     maxTurnsPerRun = 4,
                     averageTurnsPerRun = 3.45678
                 ),
-                refillEnabled = true
+                refillEnabled = true,
+                ceLimitReached = false
             )
         }
     }
