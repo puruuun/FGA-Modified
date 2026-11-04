@@ -101,6 +101,10 @@ fun FgaApp(
                                         backStack.add(Route.BattleConfigList)
                                     }
 
+                                    MainScreenDestinations.GainsTracker -> {
+                                        backStack.add(Route.GainsTracker)
+                                    }
+
                                     MainScreenDestinations.MoreOptions -> {
                                         backStack.add(Route.MoreOptions)
                                     }

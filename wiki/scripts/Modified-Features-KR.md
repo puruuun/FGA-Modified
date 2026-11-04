@@ -153,7 +153,7 @@ JP·KR에서 게임의 추천 선택 필터를 사용해 자동 세트를 켜고
 
 ### FP 소환 자동 판매 · 스킬 자동 강화 · 주간 미션 · 서번트 번호 이미지
 
-[획득량 추적기 (KR)](Gains-Tracker-KR.md) · [FP 소환 자동 판매](FP-Auto-Sell-KR.md) · [스킬·어펜드 스킬 자동 강화](Auto-Skill-Level-KR.md) · [주간 미션 클리어](Weekly-Mission-Route-KR.md) · [서번트 번호 이미지 생성](Servant-Number-Portraits-KR.md)
+[로그 수집](Gains-Tracker-KR.md) · [FP 소환 자동 판매](FP-Auto-Sell-KR.md) · [스킬·어펜드 스킬 자동 강화](Auto-Skill-Level-KR.md) · [주간 미션 클리어](Weekly-Mission-Route-KR.md) · [서번트 번호 이미지 생성](Servant-Number-Portraits-KR.md)
 
 ### 업데이트 확인
 

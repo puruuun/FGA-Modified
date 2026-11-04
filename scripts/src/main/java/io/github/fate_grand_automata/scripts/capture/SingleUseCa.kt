@@ -30,7 +30,7 @@ class IssuedCerts(
  * Hand-rolled DER (JDK only), so there is no BouncyCastle clash with Android's own copy.
  */
 object SingleUseCa {
-    const val CA_ORG = "FGA-Modified gains tracker"
+    const val CA_ORG = "FGA-Modified log collection"
 
     fun issue(host: String, now: Instant = Instant.now(), random: SecureRandom = SecureRandom()): IssuedCerts {
         val gen = KeyPairGenerator.getInstance("RSA").apply { initialize(2048, random) }

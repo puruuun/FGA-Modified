@@ -16,7 +16,8 @@ object CaptureAutoStart {
         if (!CaptureController.isSupported || server != GameServer.Kr) return
         CaptureTracker.init(context)
         CaptureTracker.startRun()
-        if (!prefs.captureTrackerEnabled.get() || CaptureTracker.running.value) return
+        if (!prefs.captureTrackerEnabled.get() || !CaptureConsent.agreed(prefs.captureConsentVersion.get()) ||
+            CaptureTracker.running.value) return
         runCatching {
             if (CaptureController.consentIntent(context) != null) {
                 toast(context, R.string.capture_auto_no_consent)

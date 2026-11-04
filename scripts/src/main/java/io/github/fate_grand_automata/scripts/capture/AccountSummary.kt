@@ -10,6 +10,7 @@ data class AccountSummary(
     val copperApples: Long, val bronzeSaplings: Long, val tickets: Long,
     val manaPrisms: Long, val rarePrisms: Long, val qp: Long,
     val snapshotTime: Long, val lastUpdateTime: Long,
+    val actRecoverAt: Long = 0,
 ) {
     companion object {
         fun from(state: AccountState, now: Long): AccountSummary {
@@ -26,7 +27,7 @@ data class AccountSummary(
                 (game["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(), n("lv"), ap, max,
                 n("carryOverActPoint"), n("stone"), n("freeStone"), n("chargeStone"),
                 item(16), item(100), item(101), item(104), item(102), item(103), item(4001),
-                n("mana"), n("rarePri"), n("qp"), state.snapshotTime, state.lastUpdateTime,
+                n("mana"), n("rarePri"), n("qp"), state.snapshotTime, state.lastUpdateTime, recover,
             )
         }
     }

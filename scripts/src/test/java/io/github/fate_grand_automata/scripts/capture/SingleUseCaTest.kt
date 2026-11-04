@@ -45,7 +45,7 @@ class SingleUseCaTest {
         assertNull(ca.getExtensionValue("2.5.29.30"))
         val dn = ca.subjectX500Principal.name
         assertTrue(dn.contains("CN=FGA single-use capture CA 2026-11-04"), dn)
-        assertTrue(dn.contains("O=FGA-Modified gains tracker"), dn)
+        assertTrue(dn.contains("O=FGA-Modified log collection"), dn)
         assertTrue(ca.criticalExtensionOIDs.containsAll(listOf("2.5.29.19", "2.5.29.15")))
     }
 

@@ -44,6 +44,9 @@ import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CertStore
+import io.github.fate_grand_automata.capture.CaptureConsent
+import io.github.fate_grand_automata.capture.CaptureEnableAction
+import io.github.fate_grand_automata.capture.rememberCaptureAgreement
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.ui.ChaldeaExportAction
@@ -134,9 +137,11 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val export = rememberChaldeaExport()
     var enabled by vm.prefsCore.captureTrackerEnabled.remember()
+    val agreement = rememberCaptureAgreement(vm.prefsCore)
     var stopWithService by vm.prefsCore.captureStopWithService.remember()
     val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == android.app.Activity.RESULT_OK) CaptureController.start(context)
+        if (it.resultCode == android.app.Activity.RESULT_OK && enabled &&
+            CaptureConsent.agreed(vm.prefsCore.captureConsentVersion.get())) CaptureController.start(context)
     }
     // The certificate may have been installed while the settings app was in front.
     LaunchedEffect(Unit) { vm.refreshCertificate() }
@@ -149,7 +154,14 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
 
     GainsTrackerContent(
         state = state,
-        onEnabled = { enabled = it; if (!it) vm.stop() },
+        onEnabled = {
+            when (CaptureConsent.enableAction(it, vm.prefsCore.captureConsentVersion.get())) {
+                CaptureEnableAction.Disable -> { enabled = false; vm.stop() }
+                CaptureEnableAction.Enable -> enabled = true
+                CaptureEnableAction.RequestConsent -> agreement(false) { enabled = true }
+            }
+        },
+        onReviewConsent = { agreement(true) {} },
         onStopWithService = { stopWithService = it },
         onCreateCertificate = {
             val ok = vm.createCertificate()
@@ -164,8 +176,10 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
             runCatching { context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         },
         onStart = {
-            val intent = CaptureController.consentIntent(context)
-            if (intent == null) CaptureController.start(context) else consent.launch(intent)
+            agreement(false) {
+                val intent = CaptureController.consentIntent(context)
+                if (intent == null) CaptureController.start(context) else consent.launch(intent)
+            }
         },
         onStop = vm::stop,
         onDelete = vm::deleteData,
@@ -184,6 +198,7 @@ fun GainsTrackerContent(
     onStop: () -> Unit,
     onDelete: () -> Unit,
     onExport: () -> Unit = {},
+    onReviewConsent: () -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -228,11 +243,13 @@ fun GainsTrackerContent(
                 item {
                     Preference(
                         title = stringResource(R.string.capture_enable),
-                        summary = stringResource(R.string.capture_enable_summary),
                         onClick = { onEnabled(!state.enabled) },
                     ) {
                         androidx.compose.material3.Switch(checked = state.enabled, onCheckedChange = onEnabled)
                     }
+                }
+                item {
+                    Preference(title = stringResource(R.string.capture_consent_review), onClick = onReviewConsent)
                 }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_cert_header)) }
                 item {

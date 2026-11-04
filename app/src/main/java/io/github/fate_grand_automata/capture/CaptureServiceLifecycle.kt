@@ -11,7 +11,8 @@ object CaptureServiceLifecycle {
     fun shouldStop(stopWithService: Boolean): Boolean = stopWithService
 
     fun onStart(context: Context, prefs: PrefsCore, requestConsent: (Intent) -> Unit) {
-        if (!CaptureController.isSupported || !prefs.captureTrackerEnabled.get() || CaptureTracker.running.value) return
+        if (!CaptureController.isSupported || !prefs.captureTrackerEnabled.get() ||
+            !CaptureConsent.agreed(prefs.captureConsentVersion.get()) || CaptureTracker.running.value) return
         runCatching {
             context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
         }.getOrNull() ?: return

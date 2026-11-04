@@ -48,7 +48,7 @@ internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap) {
             Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
             gains.bond.entries.sortedByDescending { it.value }.forEach { (id, value) -> GainLine(names.servant(id), value) }
             Text(stringResource(R.string.capture_gains_fruit), style = MaterialTheme.typography.titleSmall)
-            RunGains.FRUIT_IDS.forEach { id ->
+            io.github.fate_grand_automata.capture.captureFruitOrder.forEach { id ->
                 GainLine(stringResource(when (id) {
                     100L -> R.string.capture_apples_gold
                     101L -> R.string.capture_apples_silver

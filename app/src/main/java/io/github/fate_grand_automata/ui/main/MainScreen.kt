@@ -11,7 +11,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.launch
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +34,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -49,6 +47,10 @@ import com.google.accompanist.permissions.rememberPermissionState
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
+import io.github.fate_grand_automata.capture.CaptureMainState
+import io.github.fate_grand_automata.capture.CaptureProfileCard
+import io.github.fate_grand_automata.capture.CaptureServiceButtons
+import io.github.fate_grand_automata.capture.rememberCaptureMain
 import io.github.fate_grand_automata.capture.CaptureServiceLifecycle
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
@@ -148,6 +150,7 @@ fun MainScreen(
         }
     }
 
+    val capture = rememberCaptureMain(vm.prefsCore) { navigate(MainScreenDestinations.GainsTracker) }
     val overlayServiceStarted by ScriptRunnerService.serviceStarted
     val trackerConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK && ScriptRunnerService.serviceStarted.value) {
@@ -157,7 +160,11 @@ fun MainScreen(
     LaunchedEffect(overlayServiceStarted, startTrackerWithService) {
         if (overlayServiceStarted && startTrackerWithService) {
             startTrackerWithService = false
-            CaptureServiceLifecycle.onStart(context, vm.prefsCore) { trackerConsent.launch(it) }
+            if (capture.state.showButton) capture.withAgreement(false) {
+                if (ScriptRunnerService.serviceStarted.value) {
+                    CaptureServiceLifecycle.onStart(context, vm.prefsCore) { trackerConsent.launch(it) }
+                }
+            }
         }
     }
     val accessibilityServiceStarted by TapperService.serviceStarted
@@ -170,6 +177,8 @@ fun MainScreen(
                 }
             } else navigate(it)
         },
+        capture = capture.state,
+        toggleCapture = capture.toggle,
         overlayServiceStarted = overlayServiceStarted,
         toggleOverlayService = { toggleOverlayService() },
         accessibilityServiceStarted = accessibilityServiceStarted,
@@ -230,6 +239,7 @@ sealed class MainScreenDestinations {
     object BattleConfigs : MainScreenDestinations()
     object Logs : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
+    object GainsTracker : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
     object OverlaySettings : MainScreenDestinations()
 }
@@ -240,10 +250,12 @@ internal fun MainScreenContent(
     overlayServiceStarted: Boolean,
     toggleOverlayService: () -> Unit,
     accessibilityServiceStarted: Boolean,
-    toggleAccessibilityService: () -> Unit
+    toggleAccessibilityService: () -> Unit,
+    capture: CaptureMainState = CaptureMainState(),
+    toggleCapture: () -> Unit = {},
 ) {
-    Box {
-        CappedWidth {
+    Column(Modifier.fillMaxSize()) {
+        CappedWidth(modifier = Modifier.weight(1f)) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -256,6 +268,12 @@ internal fun MainScreenContent(
                         )
                     }
 
+                }
+
+                capture.summary?.let { summary ->
+                    item {
+                        CaptureProfileCard(summary, capture.now) { navigate(MainScreenDestinations.GainsTracker) }
+                    }
                 }
 
                 item {
@@ -304,12 +322,12 @@ internal fun MainScreenContent(
             }
         }
 
-        OverlayServiceToggleButton(
-            serviceStarted = overlayServiceStarted,
-            toggleService = toggleOverlayService,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-        )
+        CaptureServiceButtons(capture, toggleCapture) {
+            OverlayServiceToggleButton(
+                serviceStarted = overlayServiceStarted,
+                toggleService = toggleOverlayService,
+            )
+        }
     }
 }
 
@@ -347,7 +365,6 @@ private fun OverlayServiceToggleButton(
         },
         containerColor = backgroundColor,
         modifier = modifier
-            .padding(16.dp)
     )
 }
 

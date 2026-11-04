@@ -160,7 +160,6 @@ internal fun MoreOptionsContent(
                                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) item {
                                         io.github.fate_grand_automata.ui.prefs.Preference(
                                             title = stringResource(R.string.capture_title),
-                                            summary = stringResource(R.string.capture_entry_summary),
                                             onClick = goToGainsTracker
                                         )
                                     }

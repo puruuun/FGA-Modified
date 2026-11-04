@@ -64,6 +64,7 @@ class PrefsCore @Inject constructor(
 
     /** Gains tracker (KR), the in-app capture base. Off until the user opts in. */
     val captureTrackerEnabled = maker.bool("capture_tracker_enabled", false)
+    val captureConsentVersion = maker.int("capture_consent_version", 0)
     val captureStopWithService = maker.bool("capture_stop_with_service", true)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 
