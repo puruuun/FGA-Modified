@@ -14,28 +14,32 @@ import kotlin.coroutines.coroutineContext
 /** JP data matches the reference converter, independently of the FGA game-server setting. */
 class AtlasChaldeaMetadata(
     private val cacheDir: File,
-    private val download: suspend (String, Int) -> String = { kind, id -> downloadAtlas(kind, id) }
+    private val downloadQuest: suspend (Int, Int) -> String = { id, phase -> downloadAtlas("quest/$id/$phase") },
+    private val download: suspend (String, Int) -> String = { kind, id -> downloadAtlas("$kind/$id") }
 ) : ChaldeaMetadata {
-    override suspend fun servant(id: Int) = load("svt", id)
-    override suspend fun mysticCode(id: Int) = load("MC", id)
+    override suspend fun servant(id: Int) = load("svt", id, "skills") { download("svt", id) }
+    override suspend fun mysticCode(id: Int) = load("MC", id, "skills") { download("MC", id) }
+    override suspend fun quest(id: Int, phase: Int) = load("quest", id, "stages", phase) { downloadQuest(id, phase) }
 
-    private suspend fun load(kind: String, id: Int): JsonObject = withContext(Dispatchers.IO) {
-        if (id <= 0) fail(ChaldeaImportError.DATA)
+    private suspend fun load(
+        kind: String, id: Int, required: String, phase: Int? = null, fetch: suspend () -> String
+    ): JsonObject = withContext(Dispatchers.IO) {
+        if (id <= 0 || (phase != null && phase <= 0)) fail(ChaldeaImportError.DATA)
         coroutineContext.ensureActive()
-        val file = File(cacheDir, "JP-$kind-$id.json")
+        val file = File(cacheDir, "JP-$kind-$id" + (phase?.let { "-$it" } ?: "") + ".json")
         // Cache errors never prevent a fresh request. Failed downloads never replace good data.
         val cached = runCatching {
             file.inputStream().use { input ->
-                parse(input.readLimited(ChaldeaShare.MAX_JSON_BYTES).toString(Charsets.UTF_8), id)
+                parse(input.readLimited(ChaldeaShare.MAX_JSON_BYTES).toString(Charsets.UTF_8), id, required)
             }
         }.getOrNull()
         if (cached != null && System.currentTimeMillis() - file.lastModified() in 0..86_400_000L) {
             return@withContext cached
         }
         try {
-            val text = download(kind, id)
+            val text = fetch()
             coroutineContext.ensureActive()
-            val data = parse(text, id)
+            val data = parse(text, id, required)
             runCatching {
                 cacheDir.mkdirs()
                 val temp = File.createTempFile("atlas-", ".tmp", cacheDir)
@@ -55,17 +59,17 @@ class AtlasChaldeaMetadata(
         }
     }
 
-    private fun parse(text: String, id: Int): JsonObject {
+    private fun parse(text: String, id: Int, required: String): JsonObject {
         val data = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
-        if (data == null || data.int("id") != id || data.array("skills") == null) {
+        if (data == null || data.int("id") != id || data.array(required) == null) {
             fail(ChaldeaImportError.METADATA, "$id")
         }
         return data
     }
 
     companion object {
-        private fun downloadAtlas(kind: String, id: Int): String {
-            val connection = URL("https://api.atlasacademy.io/nice/JP/$kind/$id").openConnection() as HttpURLConnection
+        private fun downloadAtlas(path: String): String {
+            val connection = URL("https://api.atlasacademy.io/nice/JP/$path").openConnection() as HttpURLConnection
             try {
                 connection.connectTimeout = 7_000
                 connection.readTimeout = 10_000

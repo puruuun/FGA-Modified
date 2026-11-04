@@ -11,12 +11,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
+import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
 import io.github.fate_grand_automata.util.chaldea.*
 import io.github.fate_grand_automata.util.stringRes
 import java.io.File
@@ -57,6 +60,8 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
     var includeSupport by rememberSaveable { mutableStateOf(false) }
     var preview by remember { mutableStateOf<ChaldeaSupportPlan?>(null) }
     var preparedCommand by remember { mutableStateOf("") }
+    var conversion by remember { mutableStateOf<ChaldeaConversion?>(null) }
+    val waveChoices = remember { mutableStateListOf<Boolean>() }
     var confirming by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<ChaldeaImportError?>(null) }
@@ -96,6 +101,28 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                         Text(stringResource(R.string.chaldea_support_no_ce))
                     }
                     plan.warnings.forEach { Text(stringResource(it.messageRes)) }
+                } else if (conversion != null) {
+                    val current = conversion!!
+                    Text(stringResource(R.string.chaldea_boundary_intro))
+                    current.questWaves?.takeIf { it > 0 }?.let {
+                        Text(stringResource(R.string.chaldea_boundary_quest_waves, it))
+                    }
+                    if (current.ambiguous) {
+                        Text(stringResource(R.string.chaldea_boundary_ambiguous), color = MaterialTheme.colorScheme.error)
+                    }
+                    waveChoices.forEachIndexed { index, wave ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(stringResource(R.string.chaldea_boundary_after_attack, index + 1), modifier = Modifier.weight(1f))
+                            FilterChip(selected = wave, enabled = !busy, onClick = { waveChoices[index] = true },
+                                label = { Text(stringResource(R.string.chaldea_boundary_wave)) })
+                            FilterChip(selected = !wave, enabled = !busy, onClick = { waveChoices[index] = false },
+                                label = { Text(stringResource(R.string.chaldea_boundary_turn)) })
+                        }
+                    }
                 } else {
                     OutlinedTextField(
                         value = url,
@@ -129,6 +156,7 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                         Checkbox(checked = includeSupport, onCheckedChange = null, enabled = !busy)
                         Text(stringResource(R.string.chaldea_support_include), modifier = Modifier.weight(1f))
                     }
+                    Text(stringResource(R.string.chaldea_import_wave_notice), style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(R.string.chaldea_import_replace_warning), style = MaterialTheme.typography.bodySmall)
                 }
                 if (busy) Text(stringResource(R.string.chaldea_import_loading))
@@ -155,9 +183,20 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                     val submittedUrl = url
                     val submittedIgnoreTargeting = ignoreEnemyTargeting
                     val submittedPlan = preview
+                    val submittedConversion = conversion
+                    val submittedChoices = waveChoices.toList()
                     confirming = submittedPlan != null
                     job = scope.launch {
                         try {
+                            suspend fun finish(command: String) {
+                                if (includeSupport) {
+                                    val plan = supportModel.supportImport.prepare(ChaldeaShare.decode(submittedUrl),
+                                        context.resources.configuration.locales[0]?.toLanguageTag() ?: Locale.getDefault().toLanguageTag())
+                                    ensureActive()
+                                    preparedCommand = command
+                                    preview = plan
+                                } else onImported(command)
+                            }
                             if (submittedPlan != null) {
                                 val result = supportModel.supportImport.confirm(submittedPlan)
                                 ensureActive()
@@ -166,18 +205,25 @@ fun ChaldeaImportDialog(supportPrefs: SupportPrefsCore, onDismiss: () -> Unit, o
                                 if (result.warnings.isNotEmpty()) Toast.makeText(context,
                                     result.warnings.joinToString("\n") { context.getString(it.messageRes) }, Toast.LENGTH_LONG).show()
                                 onImported(preparedCommand)
+                            } else if (submittedConversion != null) {
+                                // The command that is applied is the one built from the chosen boundaries.
+                                val command = submittedConversion.build(submittedChoices)
+                                try {
+                                    AutoSkillCommand.parse(command)
+                                } catch (_: Exception) {
+                                    throw ChaldeaImportException(ChaldeaImportError.UNSUPPORTED)
+                                }
+                                finish(command)
                             } else {
-                                val command = withContext(Dispatchers.Default) {
-                                    converter.convert(submittedUrl, ignoreEnemyTargeting = submittedIgnoreTargeting)
+                                val result = withContext(Dispatchers.Default) {
+                                    converter.convertWithBoundaries(submittedUrl, ignoreEnemyTargeting = submittedIgnoreTargeting)
                                 }
                                 ensureActive()
-                                if (includeSupport) {
-                                    val plan = supportModel.supportImport.prepare(ChaldeaShare.decode(submittedUrl),
-                                        context.resources.configuration.locales[0]?.toLanguageTag() ?: Locale.getDefault().toLanguageTag())
-                                    ensureActive()
-                                    preparedCommand = command
-                                    preview = plan
-                                } else onImported(command)
+                                if (result.boundaryCount > 0) {
+                                    waveChoices.clear()
+                                    waveChoices.addAll(result.preset)
+                                    conversion = result
+                                } else finish(result.build())
                             }
                         } catch (e: CancellationException) {
                             throw e

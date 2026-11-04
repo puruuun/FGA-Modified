@@ -92,4 +92,7 @@ internal fun InputStream.readLimited(limit: Int): ByteArray {
 interface ChaldeaMetadata {
     suspend fun servant(id: Int): JsonObject
     suspend fun mysticCode(id: Int): JsonObject
+
+    /** Quest data (`stages`) for the wave count. Null when a source cannot provide it. */
+    suspend fun quest(id: Int, phase: Int): JsonObject? = null
 }

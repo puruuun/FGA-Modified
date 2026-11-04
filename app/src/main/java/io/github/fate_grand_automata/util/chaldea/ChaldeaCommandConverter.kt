@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.util.chaldea
 
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonArray
@@ -9,15 +10,48 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 
 /**
+ * A converted record split at attack boundaries. Chaldea records no wave information, so each
+ * boundary (after turn i, 0-based) is joined as a wave change or as a same-wave turn at the end.
+ */
+class ChaldeaConversion(
+    val turns: List<String>,
+    /** Waves of the quest, or null when the quest data could not be used. */
+    val questWaves: Int?,
+    /** Preset per boundary: true = wave change (`,#,`), false = next turn of the same wave (`,`). */
+    val preset: List<Boolean>,
+    /** True when the preset is a guess the user should check. */
+    val ambiguous: Boolean
+) {
+    val boundaryCount get() = turns.size - 1
+
+    fun build(wave: List<Boolean> = List(boundaryCount) { true }): String = buildString {
+        turns.forEachIndexed { index, turn ->
+            if (index > 0) append(if (wave.getOrElse(index - 1) { true }) ",#," else ",")
+            append(turn)
+        }
+    }
+}
+
+/**
  * Chaldea action records -> FGA commands, following Unic31/fgo-converter's default rules.
  * Reference: 1c95510bea01c49313f4b17ebcd9e196b385542f, src/routes/converter/+page.svelte.
  * Party stats, damage results, CE artwork, rewards and simulator options aren't imported.
  */
 class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
+    /** Every boundary is a wave change, as the reference converter does. */
     suspend fun convert(link: String, ignoreEnemyTargeting: Boolean = false): String =
         convert(ChaldeaShare.decode(link), ignoreEnemyTargeting)
 
-    internal suspend fun convert(data: JsonObject, ignoreEnemyTargeting: Boolean = false): String = coroutineScope {
+    internal suspend fun convert(data: JsonObject, ignoreEnemyTargeting: Boolean = false): String =
+        convertTurns(data, ignoreEnemyTargeting, lookUpQuest = false).build()
+
+    /** Converts with boundary presets from the quest's wave count. A failed quest load never fails the import. */
+    suspend fun convertWithBoundaries(link: String, ignoreEnemyTargeting: Boolean = false): ChaldeaConversion =
+        convertTurns(ChaldeaShare.decode(link), ignoreEnemyTargeting, lookUpQuest = true)
+
+    private suspend fun convertTurns(
+        data: JsonObject, ignoreEnemyTargeting: Boolean, lookUpQuest: Boolean
+    ): ChaldeaConversion = coroutineScope {
         val team = data.obj("team") ?: fail(ChaldeaImportError.DATA)
         val formation = (team.array("onFieldSvts") ?: fail(ChaldeaImportError.DATA)) +
             (team.array("backupSvts") ?: fail(ChaldeaImportError.DATA))
@@ -33,14 +67,37 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
             val id = share.int("svtId") ?: return@map null
             Member(share, servants.getValue(id).await())
         }
-        val command = Conversion(data, members, mc?.await(), ignoreEnemyTargeting).run()
+        val run = Conversion(data, members, mc?.await(), ignoreEnemyTargeting)
+        val turns = run.run()
+        val command = turns.joinToString(",#,")
         if (command.isBlank()) fail(ChaldeaImportError.NO_ACTIONS)
         try {
             AutoSkillCommand.parse(command)
         } catch (_: Exception) {
             fail(ChaldeaImportError.UNSUPPORTED)
         }
-        command
+        val boundaries = turns.size - 1
+        val waves = if (lookUpQuest && boundaries > 0) questWaves(data) else null
+        val allTurns = waves == 1
+        ChaldeaConversion(
+            turns = turns,
+            questWaves = waves,
+            preset = List(boundaries) { !allTurns },
+            ambiguous = waves == null || waves < 1 || (waves > 1 && run.attackCount > waves)
+        )
+    }
+
+    private suspend fun questWaves(data: JsonObject): Int? {
+        val quest = data.obj("quest") ?: return null
+        val id = quest.int("id")?.takeIf { it > 0 } ?: return null
+        val phase = quest.int("phase")?.takeIf { it > 0 } ?: return null
+        return try {
+            metadata.quest(id, phase)?.array("stages")?.size
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private class Member(share: JsonObject, metadata: JsonObject) {
@@ -77,8 +134,10 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
         val delayed = mutableListOf<Pair<Int, Boolean>>()
         var enemy: Int? = null
         val result = StringBuilder()
+        val turns = mutableListOf<String>()
+        var attackCount = 0
 
-        fun run(): String {
+        fun run(): List<String> {
             val actions = data.array("actions") ?: fail(ChaldeaImportError.DATA)
             for (element in actions) {
                 val action = element.objectOrFail()
@@ -89,7 +148,9 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
                     else -> fail(ChaldeaImportError.UNSUPPORTED)
                 }
             }
-            return result.toString().removeSuffix(",#,")
+            // Text after the last attack (skills) starts a further piece; none means no trailing boundary.
+            if (result.isNotEmpty()) turns.add(result.toString())
+            return turns
         }
 
         fun replace(index: Int, retreat: Boolean) {
@@ -216,7 +277,10 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
                 }
             }
             if (beforeNp in 1..2) result.append('n').append(beforeNp)
-            result.append(nps).append(",#,")
+            result.append(nps)
+            turns.add(result.toString())
+            result.clear()
+            attackCount++
             front.forEachIndexed { index, member ->
                 member?.deathTimer?.let { timer ->
                     member.deathTimer = timer - 1

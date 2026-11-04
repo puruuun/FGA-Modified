@@ -55,3 +55,39 @@ class AtlasChaldeaMetadataTest {
         Unit
     }
 }
+
+class AtlasChaldeaQuestTest {
+    @TempDir lateinit var cache: File
+    private val quest = """{"id":94150847,"phase":1,"stages":[{"wave":1}]}"""
+    private val unused: suspend (String, Int) -> String = { _, _ -> error("unused") }
+
+    @Test fun `quest data is downloaded once per day and cached by id and phase`() = runBlocking {
+        val requests = mutableListOf<Pair<Int, Int>>()
+        val provider = AtlasChaldeaMetadata(cache, { id, phase -> requests.add(id to phase); quest }, unused)
+        repeat(2) { assertEquals(1, provider.quest(94150847, 1).array("stages")!!.size) }
+        assertEquals(listOf(94150847 to 1), requests)
+        assertEquals(true, File(cache, "JP-quest-94150847-1.json").exists())
+        provider.quest(94150847, 2)
+        assertEquals(2, requests.size)
+    }
+
+    @Test fun `failed quest refresh keeps and uses the old snapshot`() = runBlocking {
+        File(cache, "JP-quest-94150847-1.json").apply { writeText(quest); setLastModified(1) }
+        val provider = AtlasChaldeaMetadata(cache, { _, _ -> throw IOException("offline") }, unused)
+        assertEquals(1, provider.quest(94150847, 1).array("stages")!!.size)
+        assertEquals(quest, File(cache, "JP-quest-94150847-1.json").readText())
+    }
+
+    @Test fun `unexpected quest data is rejected and never cached`() = runBlocking {
+        val wrongId = AtlasChaldeaMetadata(cache, { _, _ -> quest.replace("94150847", "1") }, unused)
+        assertEquals(ChaldeaImportError.METADATA, assertFailsWith<ChaldeaImportException> { wrongId.quest(94150847, 1) }.error)
+        val noStages = AtlasChaldeaMetadata(cache, { _, _ -> """{"id":94150847}""" }, unused)
+        assertEquals(ChaldeaImportError.METADATA, assertFailsWith<ChaldeaImportException> { noStages.quest(94150847, 1) }.error)
+        assertEquals(emptyList(), cache.listFiles()!!.toList())
+    }
+
+    @Test fun `quest failure without a snapshot is reported as a network error`() = runBlocking {
+        val provider = AtlasChaldeaMetadata(cache, { _, _ -> throw IOException("offline") }, unused)
+        assertEquals(ChaldeaImportError.NETWORK, assertFailsWith<ChaldeaImportException> { provider.quest(94150847, 1) }.error)
+    }
+}

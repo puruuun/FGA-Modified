@@ -730,6 +730,13 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_import_apply">Convert and apply</string>
     <string name="chaldea_import_loading">Converting command…</string>
     <string name="chaldea_import_ignore_enemy_targeting">Ignore enemy targeting information</string>
+    <string name="chaldea_import_wave_notice">Chaldea links do not record wave changes. Check the turn list before applying.</string>
+    <string name="chaldea_boundary_intro">Choose how each attack ends: a wave change or the next turn of the same wave.</string>
+    <string name="chaldea_boundary_quest_waves">Quest waves: %1$d</string>
+    <string name="chaldea_boundary_ambiguous">FGA could not tell which attacks change waves. Mark them yourself before applying.</string>
+    <string name="chaldea_boundary_after_attack">After attack %1$d</string>
+    <string name="chaldea_boundary_wave">Wave</string>
+    <string name="chaldea_boundary_turn">Turn</string>
     <string name="chaldea_import_error_data">The link may be damaged or include special enemy targeting information that cannot be converted to commands. Check the link, or enable Ignore enemy targeting information and try again.</string>
     <string name="chaldea_import_error_actions">This link contains no usable commands. Share a battle with recorded skill and attack actions.</string>
     <string name="chaldea_import_error_network">Could not load game data. Check your connection and try again. The existing command has been kept.</string>
