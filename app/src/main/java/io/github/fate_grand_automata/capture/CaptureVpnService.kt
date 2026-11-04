@@ -160,7 +160,12 @@ class CaptureVpnService : VpnService() {
             .addAction(Notification.Action.Builder(null, getString(R.string.capture_notification_stop), stop).build())
             .setOngoing(true)
             .build()
-        startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        // The specialUse type is unknown before Android 14; passing it earlier can throw.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, n)
+        }
     }
 
     fun stopAll(reason: CaptureStopReason) {

@@ -80,6 +80,7 @@ class GainsTrackerViewModel @Inject constructor(
 ) : ViewModel() {
     private val context = app.applicationContext
     private val cert = MutableStateFlow(false to false)
+    private val clock = MutableStateFlow(System.currentTimeMillis() / 1000)
 
     init {
         CaptureTracker.init(context)
@@ -91,9 +92,9 @@ class GainsTrackerViewModel @Inject constructor(
         prefsCore.captureStopWithScript.asFlow(),
         cert,
         combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
-        CaptureTracker.state,
-    ) { enabled, stopWithScript, (exists, installed), (running, failures, reason), _ ->
-        GainsTrackerUiState(enabled, stopWithScript, exists, installed, running, failures, reason, CaptureTracker.summary())
+        combine(CaptureTracker.state, clock) { _, now -> now },
+    ) { enabled, stopWithScript, (exists, installed), (running, failures, reason), now ->
+        GainsTrackerUiState(enabled, stopWithScript, exists, installed, running, failures, reason, CaptureTracker.summary(now))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -107,6 +108,9 @@ class GainsTrackerViewModel @Inject constructor(
         refreshCertificate()
         return ok
     }
+
+    /** Moves the summary clock so AP keeps recovering on screen while no response arrives. */
+    fun tick() { clock.value = System.currentTimeMillis() / 1000 }
 
     fun stop() = CaptureController.stop()
 
@@ -124,6 +128,12 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     }
     // The certificate may have been installed while the settings app was in front.
     LaunchedEffect(Unit) { vm.refreshCertificate() }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(60_000)
+            vm.tick()
+        }
+    }
 
     GainsTrackerContent(
         state = state,

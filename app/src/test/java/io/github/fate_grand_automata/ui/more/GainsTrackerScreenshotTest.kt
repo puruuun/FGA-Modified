@@ -30,7 +30,7 @@ class GainsTrackerScreenshotTest {
     )
 
     private fun shoot(name: String, state: GainsTrackerUiState) = composeRule.shoot(
-        folder = "gains-tracker", name = name, widthDp = 360, heightDp = 800,
+        folder = "gains-tracker", name = name, widthDp = 360, heightDp = 1200,
         beforeCapture = { composeRule.waitForIdle() },
     ) {
         GainsTrackerContent(
