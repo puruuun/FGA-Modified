@@ -713,7 +713,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="bond_slot_total">Character %1$d: %2$s points</string>
     <string name="bond_slot_reads">Read: %1$d quests · Missing: %2$d quests</string>
     <string name="bond_max_observed">MAX confirmed</string>
-    <string name="bond_unmapped_popups">Unmapped level-up quests: %1$d</string>
     <string name="battle_log_card_runs">%1$d runs · avg %2$.1f turns</string>
     <string name="bond_levelup_missed">Missing due to bond level-up popups: %1$d quests</string>
     <string name="bond_no_results">No bond results have been recorded yet.</string>

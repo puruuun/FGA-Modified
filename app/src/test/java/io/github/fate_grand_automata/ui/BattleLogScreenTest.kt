@@ -51,6 +51,19 @@ class BattleLogScreenTest {
     }
 
     @Test
+    fun detailShowsLevelUpMissesWithoutUnmappedLevelUpLine() {
+        val entry = battleLogFixture(extras = true)
+        assertEquals(1, entry.bond!!.unmappedLevelUpRuns)
+        assertEquals(2, entry.bond.levelUpMissedRuns)
+        composeRule.setContent { FGATheme(darkTheme = false) {
+            BattleLogDetail(entry, {})
+        } }
+        composeRule.onNodeWithText(context.getString(R.string.bond_levelup_missed, 2))
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Unmapped level-up quests:", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun detailOmitsDisabledMaterialsAndBond() {
         composeRule.setContent { FGATheme(darkTheme = false) {
             BattleLogDetail(battleLogFixture(), {})
