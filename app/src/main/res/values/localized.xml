@@ -560,7 +560,6 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="p_choose_app_language">"Choose App Language"</string>
     <string name="p_app_language">"App Language"</string>
     <string name="p_logs">Log</string>
-    <string name="logs_coming_soon">This feature is coming in a later version.</string>
 
     <string name="p_screenshot_bond">"Screenshot Bond"</string>
     <string name="p_screenshot_bond_summary">"Experimental screenshot of bond level up regardless of level to 'bond' folder\nNote: Auto-click on another results screen might cause occasional missed screenshots, potentially skipping the bond level-up."</string>
@@ -995,4 +994,11 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="battle_config_folder_selected_count">"%d selected"</string>
     <string name="battle_config_folder_error_blank">"Enter a folder name"</string>
     <string name="battle_config_folder_error_too_long">"Up to 30 characters"</string>
+    <string name="battle_log_empty">No battle records yet.</string>
+    <string name="battle_log_detail">Battle record</string>
+    <string name="battle_log_average_turns">Average turns: %1$.2f</string>
+    <string name="battle_log_delete">Delete record</string>
+    <string name="battle_log_delete_all">Delete all</string>
+    <string name="battle_log_confirm_delete">Delete this battle record?</string>
+    <string name="battle_log_confirm_clear">Delete all battle records?</string>
 </resources>
