@@ -69,9 +69,11 @@ class CaptureVpnService : VpnService() {
             drain = Thread {
                 val input = FileInputStream(fd.fileDescriptor)
                 val buf = ByteArray(32 * 1024)
+                val drops = DropLog(this)
                 try {
                     while (true) {
-                        if (input.read(buf) <= 0) Thread.sleep(50)
+                        val n = input.read(buf)
+                        if (n <= 0) Thread.sleep(50) else runCatching { drops.packet(buf, n) }
                     }
                 } catch (_: Exception) {
                 }

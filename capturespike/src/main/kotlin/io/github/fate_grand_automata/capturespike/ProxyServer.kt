@@ -28,6 +28,7 @@ class ProxyServer(private val ctx: Context, private val sslContext: SSLContext?)
     // and the accept loop held that worker, so accepted connections were never handled (tablet, 2026-11-04).
     // Connections get their own threads, and the accept loop runs on a dedicated thread.
     private val pool = Executors.newCachedThreadPool()
+    private val dropLog = DropLog(ctx)
     private val stats: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private var server: ServerSocket? = null
     private val live = java.util.Collections.synchronizedSet(mutableSetOf<Socket>())
@@ -96,6 +97,9 @@ class ProxyServer(private val ctx: Context, private val sslContext: SSLContext?)
             }
             val hostPort = head.target
             val host = hostPort.substringBeforeLast(':')
+            if (host.equals("localhost", ignoreCase = true) || host.startsWith("127.")) {
+                runCatching { dropLog.proxyClient(hostPort, client) }
+            }
             val port = hostPort.substringAfterLast(':', "443").toIntOrNull() ?: 443
             if (host.equals(CertStore.GAME_HOST, ignoreCase = true) && sslContext != null) {
                 interceptGame(client, host, port)
