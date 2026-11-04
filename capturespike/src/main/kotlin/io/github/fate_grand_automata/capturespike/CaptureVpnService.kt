@@ -37,7 +37,14 @@ class CaptureVpnService : VpnService() {
 
             val builder = Builder()
                 .addAddress("10.255.77.1", 32)
-                .addRoute("10.255.77.0", 30)
+                // 2026-11-04 tablet check: with only a narrow route the VPN was not the apps' default
+                // network, so they kept the Wi-Fi proxy (PAC) and their direct sockets died in the VPN.
+                // A default route makes the VPN their default network, which is what carries
+                // setHttpProxy to them; packets that still arrive on the tun are dropped.
+                .addRoute("0.0.0.0", 0)
+                .addAddress("fd00:77::1", 128)
+                .addRoute("::", 0)
+                .addDnsServer("10.255.77.2")
                 .setSession("FGA capture spike")
                 .setBlocking(false)
                 .setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))
