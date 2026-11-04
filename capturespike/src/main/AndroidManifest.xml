@@ -8,6 +8,7 @@
 
     <queries>
         <package android:name="com.netmarble.fgok" />
+        <package android:name="com.android.chrome" />
     </queries>
 
     <application

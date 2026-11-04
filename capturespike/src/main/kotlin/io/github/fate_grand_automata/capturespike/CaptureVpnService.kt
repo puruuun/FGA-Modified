@@ -43,6 +43,10 @@ class CaptureVpnService : VpnService() {
                 .setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))
             try {
                 builder.addAllowedApplication(GAME_PACKAGE)
+                // Control app for the 2026-11-04 tablet check: Chrome is known to follow the system
+                // proxy, so its connections tell whether the VPN proxy reaches apps at all
+                builder.addAllowedApplication(CONTROL_PACKAGE)
+                SpikeLog.log("VPN apps: $GAME_PACKAGE, $CONTROL_PACKAGE")
             } catch (e: Exception) {
                 SpikeLog.log("addAllowedApplication($GAME_PACKAGE) failed: $e")
                 stopAll()
@@ -114,5 +118,6 @@ class CaptureVpnService : VpnService() {
     companion object {
         const val ACTION_STOP = "io.github.fate_grand_automata.capturespike.STOP"
         const val GAME_PACKAGE = "com.netmarble.fgok"
+        const val CONTROL_PACKAGE = "com.android.chrome"
     }
 }
