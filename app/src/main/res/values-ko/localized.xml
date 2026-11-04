@@ -930,7 +930,7 @@
     <string name="capture_cert_failed">"인증서를 만들지 못했습니다"</string>
     <string name="capture_guide_button">"설치 방법"</string>
     <string name="capture_guide_title">"인증서 설치"</string>
-    <string name="capture_guide_body">"1. 인증서를 만듭니다. Download/fga-capture-ca.cer로 저장됩니다.\n2. 보안 설정 → 암호화 및 사용자 인증 정보 → 인증서 설치를 엽니다.\n3. Wi-Fi 인증서가 아니라 CA 인증서를 선택하고 fga-capture-ca.cer를 고릅니다.\n4. 이 화면으로 돌아와 VPN을 시작합니다."</string>
+    <string name="capture_guide_body">"1. 인증서를 만듭니다. Download/fga-capture-ca.cer로 저장됩니다.\n2. 보안 설정 → 암호화 및 사용자 인증 정보 → 인증서 설치를 엽니다. 메뉴를 찾기 어려우면 설정 검색창에서 \"CA 인증서\"를 검색하세요.\n3. CA 인증서를 선택하고 fga-capture-ca.cer를 고릅니다.\n4. 이 화면으로 돌아와 VPN을 시작하거나, 메인 화면에서 서비스를 시작합니다."</string>
     <string name="capture_open_security">"보안 설정 열기"</string>
     <string name="capture_vpn_header">"VPN"</string>
     <string name="capture_vpn_running">"VPN 실행 중"</string>

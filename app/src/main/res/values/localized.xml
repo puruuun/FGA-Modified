@@ -1009,7 +1009,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_cert_failed">"Could not create the certificate"</string>
     <string name="capture_guide_button">"How to install"</string>
     <string name="capture_guide_title">"Install the certificate"</string>
-    <string name="capture_guide_body">"1. Create the certificate. It is saved as Download/fga-capture-ca.cer.\n2. Open Security settings, then Encryption &amp; credentials, then Install a certificate.\n3. Choose CA certificate (not Wi-Fi certificate) and pick fga-capture-ca.cer.\n4. Come back here and start the VPN."</string>
+    <string name="capture_guide_body">"1. Create the certificate. It is saved as Download/fga-capture-ca.cer.\n2. Open Security settings, then Encryption &amp; credentials, then Install a certificate. If you cannot find the menu, search for \"CA certificate\" in the Settings search.\n3. Choose CA certificate and pick fga-capture-ca.cer.\n4. Come back here and start the VPN, or start the FGA service from the main screen."</string>
     <string name="capture_open_security">"Open security settings"</string>
     <string name="capture_vpn_header">"VPN"</string>
     <string name="capture_vpn_running">"VPN is running"</string>

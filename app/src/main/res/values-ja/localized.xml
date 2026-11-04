@@ -692,7 +692,7 @@
     <string name="capture_cert_failed">"証明書を作成できませんでした"</string>
     <string name="capture_guide_button">"インストール方法"</string>
     <string name="capture_guide_title">"証明書のインストール"</string>
-    <string name="capture_guide_body">"1. 証明書を作成します。Download/fga-capture-ca.cer に保存されます。\n2. セキュリティ設定 → 暗号化と認証情報 → 証明書のインストールを開きます。\n3. Wi-Fi証明書ではなくCA証明書を選び、fga-capture-ca.cer を選びます。\n4. この画面に戻ってVPNを開始します。"</string>
+    <string name="capture_guide_body">"1. 証明書を作成します。Download/fga-capture-ca.cer に保存されます。\n2. セキュリティ設定 → 暗号化と認証情報 → 証明書のインストールを開きます。メニューが見つからない場合は、設定の検索で「CA 証明書」を検索してください。\n3. CA証明書を選び、fga-capture-ca.cer を選びます。\n4. この画面に戻ってVPNを開始するか、メイン画面でサービスを開始します。"</string>
     <string name="capture_open_security">"セキュリティ設定を開く"</string>
     <string name="capture_vpn_header">"VPN"</string>
     <string name="capture_vpn_running">"VPN 実行中"</string>
