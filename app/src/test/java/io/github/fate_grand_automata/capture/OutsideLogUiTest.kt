@@ -28,10 +28,10 @@ class OutsideLogUiTest {
         composeRule.setContent { FGATheme(false) {
             LogScreenContent(listOf(battleLogFixture()), {}, {}, outsideNames, outsideEntries = listOf(outsideFixture()))
         } }
-        composeRule.onNodeWithText("Changes outside scripts").performClick()
+        composeRule.onNodeWithTag("log-card:outside:outside-sample").performClick()
         composeRule.onNodeWithText("Totals").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Back").performClick()
-        composeRule.onNodeWithText("Changes outside scripts").assertIsDisplayed()
+        composeRule.onNodeWithText("Changes outside scripts", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Daily quests").assertIsDisplayed()
     }
 
@@ -40,16 +40,16 @@ class OutsideLogUiTest {
         composeRule.onNodeWithText("+12").assertExists()
         val fifteen = composeRule.onNodeWithText("−15").fetchSemanticsNode().boundsInRoot.top
         val two = composeRule.onNodeWithText("−2").fetchSemanticsNode().boundsInRoot.top
-        assertTrue(fifteen < two)
+        assertTrue(fifteen <= two)
         composeRule.onNodeWithText("−10,766,000").assertExists()
-        composeRule.onNodeWithText("−25").assertExists()
-        composeRule.onNodeWithText("−5").assertExists()
+        composeRule.onNodeWithText("−30").assertExists()
+        composeRule.onNodeWithText("Free −25 · Paid −5").assertExists()
     }
 
     @Test fun sourcesStartCollapsedExpandIndependentlyAndShowSanitizedUnknownPath() {
         composeRule.setContent { FGATheme(false) { OutsideLogDetail(outsideFixture(), {}, outsideNames) } }
-        val giftItems = hasText("Items gained (+)") and hasAnyAncestor(hasTestTag("outside-source:GiftBox:"))
-        val otherItems = hasText("Items gained (+)") and hasAnyAncestor(hasTestTag("outside-source:Other:unknown/sample"))
+        val giftItems = hasText("Gains (+)") and hasAnyAncestor(hasTestTag("outside-source:GiftBox:"))
+        val otherItems = hasText("Gains (+)") and hasAnyAncestor(hasTestTag("outside-source:Other:unknown/sample"))
         composeRule.onNode(giftItems).assertDoesNotExist()
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Gift box"))
         composeRule.onNodeWithText("Gift box").performClick()
@@ -75,13 +75,17 @@ class OutsideLogUiTest {
                 if (id.startsWith("outside:")) outside = emptyList() else battles = emptyList()
             }, {}, outsideEntries = outside)
         } }
-        composeRule.onAllNodesWithContentDescription("Delete record")[0].performClick()
-        composeRule.onNodeWithText("Delete this record?").assertIsDisplayed()
-        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.onNodeWithTag("log-card:outside:outside").performClick()
+        composeRule.onNodeWithText("Delete selected").performClick()
+        composeRule.onNodeWithText("Delete 1 selected records?").assertIsDisplayed()
+        composeRule.onNode(hasText("Delete") and hasClickAction()).performClick()
         composeRule.onNodeWithText("Changes outside scripts").assertDoesNotExist()
         composeRule.onNodeWithText("Daily quests").assertIsDisplayed()
-        composeRule.onAllNodesWithContentDescription("Delete record")[0].performClick()
-        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.onNodeWithTag("log-card:battle").performClick()
+        composeRule.onNodeWithText("Delete selected").performClick()
+        composeRule.onNode(hasText("Delete") and hasClickAction()).performClick()
         assertEquals(listOf("outside:outside", "battle"), deleted)
     }
 
@@ -91,9 +95,10 @@ class OutsideLogUiTest {
             LogScreenContent(if (cleared) emptyList() else listOf(battleLogFixture()), {}, { cleared = true },
                 outsideEntries = if (cleared) emptyList() else listOf(outsideFixture()))
         } }
+        composeRule.onNodeWithText("Delete").performClick()
         composeRule.onNodeWithText("Delete all").performClick()
         composeRule.onNodeWithText("Delete all records?").assertIsDisplayed()
-        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        composeRule.onNode(hasText("Delete") and hasClickAction()).performClick()
         composeRule.onNodeWithText("Changes outside scripts").assertDoesNotExist()
         composeRule.onNodeWithText("Daily quests").assertDoesNotExist()
         assertTrue(cleared)

@@ -77,4 +77,19 @@ class GameNamesTest {
     @Test fun malformedRowsAreSkipped() {
         assertEquals(mapOf(5L to "Five"), GameNames.parseNames("""[null,{}, {"id":5,"name":"Five"},{"id":6,"name":""}]"""))
     }
+
+    @Test fun iconsAreKeptAlongsideNamesAndReloadedWithoutNetwork() = runBlocking {
+        val url = "https://static.atlasacademy.io/KR/Items/100.png"
+        val names = GameNames(directory, { """[{"id":100,"name":"Fruit","icon":"$url"}]""" }) { 1000 }.resolve(emptyList())
+        assertEquals(mapOf(100L to url), names.itemIcons)
+        assertEquals(names, GameNames(directory, { error("offline") }) { 1001 }.resolve(emptyList()))
+    }
+
+    @Test fun iconParserRejectsNonPublicAndMalformedUrls() {
+        assertEquals(mapOf(1L to "https://static.atlasacademy.io/KR/Items/5.png"), GameNames.parseIcons("""[
+            {"id":1,"icon":"https://static.atlasacademy.io/KR/Items/5.png"},
+            {"id":2,"icon":"http://static.atlasacademy.io/x"}, {"id":3,"icon":"https://private.test/x"},
+            {"id":4,"icon":"file:///private"}, {"id":5,"icon":null}, null]
+        """))
+    }
 }

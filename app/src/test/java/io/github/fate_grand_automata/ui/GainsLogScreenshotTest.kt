@@ -36,7 +36,7 @@ class GainsLogScreenshotTest {
             LogScreenContent(listOf(
                 battleLogFixture("tracked").copy(configName = "이벤트 주회", reasonText = "8회 주회 완료", gains = gainsFixture()),
                 battleLogFixture("old").copy(configName = "이전 기록", reasonText = "8회 주회 완료", endedAt = 1_793_746_800_000),
-            ), {}, {}, gainsNamesFixture, onExport = {}, lastUpdateTime = 1_762_003_600)
+            ), {}, {}, gainsNamesFixture)
         }
     }
 }

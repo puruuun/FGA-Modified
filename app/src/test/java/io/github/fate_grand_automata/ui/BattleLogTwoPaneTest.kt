@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.battleLogFixture
@@ -39,7 +40,8 @@ class BattleLogTwoPaneTest {
     @Test
     fun wideShowsListAndNewestDetailTogether() {
         composeRule.setContent { FGATheme(darkTheme = false) { LogScreenContent(listOf(old, recent), {}, {}) } }
-        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete_all)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete_all)).assertDoesNotExist()
         composeRule.onAllNodesWithText(old.configName)[0].assertIsDisplayed()
         // The newest entry has the bond section; it is the one selected by default.
         composeRule.onNodeWithText(bondTotals).assertIsDisplayed()
@@ -62,22 +64,24 @@ class BattleLogTwoPaneTest {
             LogScreenContent(entries, onDelete = { id -> entries = entries.filterNot { it.id == id } }, onClear = {})
         } }
         composeRule.onAllNodesWithText(old.configName)[0].performClick()
-        composeRule.onAllNodesWithContentDescription(context.getString(R.string.battle_log_delete))[1].performClick()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).performClick()
+        composeRule.onNodeWithTag("log-card:old").performClick()
+        composeRule.onNodeWithText(context.getString(R.string.capture_log_delete_selected)).performClick()
         composeRule.onNode(hasText(context.getString(R.string.battle_log_delete)) and hasClickAction()).performClick()
         composeRule.onNodeWithText(bondTotals).assertIsDisplayed()
         composeRule.onAllNodesWithText(old.configName).assertCountEquals(0)
 
-        composeRule.onAllNodesWithContentDescription(context.getString(R.string.battle_log_delete))[0].performClick()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).performClick()
+        composeRule.onNodeWithTag("log-card:new").performClick()
+        composeRule.onNodeWithText(context.getString(R.string.capture_log_delete_selected)).performClick()
         composeRule.onNode(hasText(context.getString(R.string.battle_log_delete)) and hasClickAction()).performClick()
         composeRule.onNodeWithText(context.getString(R.string.battle_log_empty)).assertIsDisplayed()
     }
 
     @Test
-    fun reasonIsHiddenWhenItOnlyRepeatsTheRunCount() {
+    fun reasonIsIncludedInTheSecondLine() {
         val repeated = battleLogFixture("rep").copy(reasonText = context.getString(R.string.times_ran, 8))
         composeRule.setContent { FGATheme(darkTheme = false) { LogScreenContent(listOf(repeated), {}, {}) } }
-        // Once in the card and once in the detail summary, never twice in the card.
-        val before = composeRule.onAllNodesWithText(repeated.reasonText).fetchSemanticsNodes().size
-        org.junit.Assert.assertTrue(before <= 1)
+        composeRule.onNode(hasText(repeated.reasonText, substring = true) and androidx.compose.ui.test.hasTestTag("log-card:rep")).assertExists()
     }
 }

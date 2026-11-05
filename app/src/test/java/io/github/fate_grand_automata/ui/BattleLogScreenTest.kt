@@ -11,6 +11,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.battleLogFixture
@@ -71,18 +74,21 @@ class BattleLogScreenTest {
                 onDelete = { id -> deletes++; entries = entries.filterNot { it.id == id } },
                 onClear = { clears++; entries = emptyList() })
         } }
-        composeRule.onNodeWithContentDescription(context.getString(R.string.battle_log_delete)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).performClick()
+        composeRule.onNodeWithTag("log-card:sample").performClick()
+        composeRule.onNodeWithText(context.getString(R.string.capture_log_delete_selected)).performClick()
         assertEquals(0, deletes)
-        composeRule.onNodeWithText(context.getString(android.R.string.cancel)).performClick()
+        composeRule.onAllNodesWithText(context.getString(android.R.string.cancel)).onLast().performClick()
         assertEquals(0, deletes)
-        composeRule.onNodeWithContentDescription(context.getString(R.string.battle_log_delete)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.capture_log_delete_selected)).performClick()
         composeRule.onNode(hasText(context.getString(R.string.battle_log_delete)) and hasClickAction()).performClick()
         assertEquals(1, deletes)
         composeRule.onNodeWithText(context.getString(R.string.battle_log_empty)).assertIsDisplayed()
         composeRule.runOnIdle { entries = listOf(battleLogFixture()) }
+        composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.battle_log_delete_all)).performClick()
         assertEquals(0, clears)
-        composeRule.onNodeWithText(context.getString(android.R.string.cancel)).performClick()
+        composeRule.onAllNodesWithText(context.getString(android.R.string.cancel)).onLast().performClick()
         assertEquals(0, clears)
         composeRule.onNodeWithText(context.getString(R.string.battle_log_delete_all)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.battle_log_delete)).performClick()

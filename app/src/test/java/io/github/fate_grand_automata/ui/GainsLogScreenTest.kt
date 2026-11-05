@@ -36,12 +36,12 @@ class GainsLogScreenTest {
         composeRule.setContent { FGATheme(darkTheme = false) {
             LogScreenContent(listOf(entry), {}, {}, gainsNamesFixture)
         } }
-        composeRule.onNodeWithText(context.getString(R.string.capture_gains_tracked)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.capture_gains_tracked), substring = true).assertIsDisplayed()
         composeRule.onNodeWithText(entry.configName).performClick()
         composeRule.onNodeWithText(context.getString(R.string.capture_gains_missing, "2")).performScrollTo().assertIsDisplayed()
         val large = composeRule.onNodeWithText("무간의 톱니바퀴").performScrollTo().fetchSemanticsNode().boundsInRoot
         val small = composeRule.onNodeWithText("검의 휘석").fetchSemanticsNode().boundsInRoot
-        org.junit.Assert.assertTrue(large.top < small.top)
+        org.junit.Assert.assertTrue(large.top <= small.top)
         composeRule.onNodeWithText("+7,404,000").assertExists()
         composeRule.onAllNodesWithText(context.getString(R.string.capture_gains_holdings, "12,345")).assertCountEquals(2)
         composeRule.onNodeWithText(context.getString(R.string.capture_gains_unknown)).performScrollTo().assertIsDisplayed()

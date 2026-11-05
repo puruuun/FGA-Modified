@@ -7,6 +7,8 @@ import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.UUID
 
@@ -26,6 +28,21 @@ internal class CaptureOutsideSession(
     )
 
     private val periods = mutableMapOf<String, Pending>()
+    private val _openEntries = MutableStateFlow<List<OutsideLogEntry>>(emptyList())
+    val openEntries = _openEntries.asStateFlow()
+
+    fun publish() {
+        _openEntries.value = periods.values.filterNot { it.period.isEmpty }.map { pending ->
+            val period = pending.period
+            OutsideLogEntry(pending.id, period.accountId, accounts.displayName(period.accountId) ?: "#${period.accountId}",
+                period.startedAt * 1000, period.endedAt * 1000, period)
+        }
+    }
+
+    /** A log id is distinct from an account id; do not let an old dialog delete a newer period. */
+    fun deleteEntry(entryId: String) {
+        periods.entries.find { it.value.id == entryId }?.key?.let(::delete)
+    }
     private var directory: File? = null
     private var running = false
     private var scriptActive = false
@@ -44,6 +61,7 @@ internal class CaptureOutsideSession(
             }
         }
         // Loading is not a closing point: a process restart resumes the same period.
+        publish()
     }
 
     fun setRunning(value: Boolean) {
@@ -80,6 +98,7 @@ internal class CaptureOutsideSession(
             baselineTime = response.next.lastUpdateTime,
         )
         periods[response.id] = next
+        publish()
         persist(response.id)
     }
 
@@ -96,6 +115,7 @@ internal class CaptureOutsideSession(
     fun delete(id: String) {
         file(id)?.let { check(!it.exists() || it.delete()) }
         periods.remove(id)
+        publish()
     }
     fun clear() { periods.keys.toList().forEach(::delete) }
 

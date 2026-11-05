@@ -47,6 +47,18 @@ object CaptureTracker {
     private val runSession = CaptureRunSession()
     private val outside = CaptureOutsideSession(stored, OutsideLogRepository::add,
         warn = { Timber.w("Capture: unreadable outside period") })
+    val openOutsideEntries = outside.openEntries
+
+    /** Serialize live and stored deletion with response handling and period closure. */
+    fun deleteOutsideEntry(id: String) = synchronized(lock) {
+        outsideWork { outside.deleteEntry(id) }
+        OutsideLogRepository.delete(id)
+    }
+
+    fun clearOutsideEntries() = synchronized(lock) {
+        outsideWork { outside.clear() }
+        OutsideLogRepository.clear()
+    }
 
     private inline fun outsideWork(block: () -> Unit) {
         runCatching(block).onFailure { Timber.w("Capture: outside log storage failed: %s", it.javaClass.simpleName) }
@@ -160,6 +172,7 @@ object CaptureTracker {
 
     fun rename(userId: String, name: String) = synchronized(lock) {
         stored.rename(userId, name)
+        outside.publish()
         publish()
         scheduleSave(userId)
     }

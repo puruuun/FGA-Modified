@@ -34,6 +34,40 @@ class CaptureOutsideHooksTest {
         OutsideLogRepository.clear()
     }
 
+    @Test fun liveFlowAppearsUpdatesAndClosesWithSameIdThroughTracker() {
+        CaptureTracker.setRunning(true)
+        fruit(10)
+        assertTrue(CaptureTracker.openOutsideEntries.value.isEmpty())
+        fruit(9)
+        val first = CaptureTracker.openOutsideEntries.value.single()
+        assertEquals(-1L, first.period.total.items[100])
+        fruit(7)
+        val updated = CaptureTracker.openOutsideEntries.value.single()
+        assertEquals(first.id, updated.id)
+        assertEquals(-3L, updated.period.total.items[100])
+        assertTrue(updated.endedAt >= first.endedAt)
+        CaptureTracker.setRunning(false)
+        assertTrue(CaptureTracker.openOutsideEntries.value.isEmpty())
+        assertEquals(first.id, OutsideLogRepository.entries.value.single().id)
+    }
+
+    @Test fun deletingLiveRecordDropsPeriodAndNextChangeStartsFresh() {
+        CaptureTracker.setRunning(true)
+        fruit(9)
+        val id = CaptureTracker.openOutsideEntries.value.single().id
+        CaptureTracker.deleteOutsideEntry(id)
+        assertTrue(CaptureTracker.openOutsideEntries.value.isEmpty())
+        fruit(8)
+        val next = CaptureTracker.openOutsideEntries.value.single()
+        assertNotEquals(id, next.id)
+        assertEquals(-1L, next.period.total.items[100])
+        CaptureTracker.deleteOutsideEntry(id) // A stale dialog cannot delete the new period.
+        assertEquals(next.id, CaptureTracker.openOutsideEntries.value.single().id)
+        CaptureTracker.clearOutsideEntries()
+        CaptureTracker.setRunning(false)
+        assertTrue(OutsideLogRepository.entries.value.isEmpty())
+    }
+
     @Test fun allCollectionStopReasonsCloseThroughActualResponseHook() {
         CaptureStopReason.entries.forEachIndexed { i, reason ->
             CaptureTracker.setRunning(true)

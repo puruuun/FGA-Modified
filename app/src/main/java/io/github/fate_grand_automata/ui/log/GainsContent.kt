@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
-import io.github.fate_grand_automata.scripts.capture.GainedItem
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.util.grouped
 import java.text.DateFormat
@@ -35,27 +33,10 @@ internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap) {
                 stringResource(R.string.capture_gains_missing, gains.missingBattles.toLong().grouped()),
                 color = MaterialTheme.colorScheme.error,
             )
-            GainLine(stringResource(R.string.capture_qp), gains.qp)
+            ResourceGroups(battleResources(gains), names)
             GainLine(stringResource(R.string.capture_gains_exp), gains.masterExp)
-            Text(stringResource(R.string.capture_gains_items), style = MaterialTheme.typography.titleSmall)
-        }
-    }
-    items(gains.items.sortedByDescending { it.gained }) { item ->
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { DropLine(item, names, showHoldings = true) }
-    }
-    item {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
+            if (gains.bond.isNotEmpty()) Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
             gains.bond.entries.sortedByDescending { it.value }.forEach { (id, value) -> GainLine(names.servant(id), value) }
-            Text(stringResource(R.string.capture_gains_fruit), style = MaterialTheme.typography.titleSmall)
-            io.github.fate_grand_automata.capture.captureFruitOrder.forEach { id ->
-                GainLine(stringResource(when (id) {
-                    100L -> R.string.capture_apples_gold
-                    101L -> R.string.capture_apples_silver
-                    104L -> R.string.capture_apples_bronze
-                    else -> R.string.capture_apples_copper
-                }), gains.fruitUsed[id], prefix = "")
-            }
             BattleBreakdown(gains, names)
         }
     }
@@ -70,17 +51,6 @@ private fun GainLine(name: String, count: Long?, prefix: String = "+") {
 }
 
 @Composable
-private fun DropLine(item: GainedItem, names: GameNameMap, showHoldings: Boolean) {
-    GainLine(names.drop(item.type, item.objectId), item.gained)
-    val holdings = item.holdings
-    if (showHoldings && holdings != null) Text(
-        stringResource(R.string.capture_gains_holdings, holdings.grouped()),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-@Composable
 private fun BattleBreakdown(gains: RunGains, names: GameNameMap) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) {
@@ -92,8 +62,7 @@ private fun BattleBreakdown(gains: RunGains, names: GameNameMap) {
                 battle.questId?.toString() ?: stringResource(R.string.capture_gains_unknown)),
                 style = MaterialTheme.typography.titleSmall)
             Text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(Date(battle.time * 1000)))
-            battle.items.sortedByDescending { it.gained }.forEach { DropLine(it, names, showHoldings = false) }
-            GainLine(stringResource(R.string.capture_qp), battle.qp)
+            ResourceGroups(battleResources(RunGains(items = battle.items, qp = battle.qp)), names)
             GainLine(stringResource(R.string.capture_gains_exp), battle.masterExp)
             battle.bond.forEach { (id, value) -> GainLine(names.servant(id), value) }
         }

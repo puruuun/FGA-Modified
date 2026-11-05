@@ -25,11 +25,11 @@ class OutsideLogWideUiTest {
             LogScreenContent(listOf(battleLogFixture()), {}, {}, outsideNames, outsideEntries = listOf(outsideFixture()))
         } }
         composeRule.onNodeWithText("Totals").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Changes outside scripts").assertCountEquals(2)
+        composeRule.onAllNodesWithText("Changes outside scripts", substring = true).assertCountEquals(2)
         composeRule.onNodeWithText("Daily quests").performClick()
         composeRule.onNodeWithText("Totals").assertDoesNotExist()
         composeRule.onAllNodesWithText("Daily quests").assertCountEquals(2)
-        composeRule.onNodeWithText("Changes outside scripts").performClick()
+        composeRule.onNodeWithTag("log-card:outside:outside-sample").performClick()
         composeRule.onNodeWithText("Totals").assertIsDisplayed()
     }
 }

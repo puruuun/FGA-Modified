@@ -33,13 +33,23 @@ class CaptureOutsideSessionTest {
 
     @Test fun firstNonemptyDeltaOpensAndMultipleResponsesBecomeOneEntry() {
         feed()
+        val live = session.openEntries.value.single()
+        assertEquals(-2, live.period.total.items[100])
+        assertEquals(10_000, live.endedAt)
         assertTrue(pending.isFile)
         assertTrue(logs.entries.isEmpty())
         time = 20
         feed(num = 7)
+        val updated = session.openEntries.value.single()
+        assertEquals(live.id, updated.id)
+        assertEquals(-3, updated.period.total.items[100])
+        assertEquals(-3, updated.period.sources.single().delta.items[100])
+        assertEquals(20_000, updated.endedAt)
         time = 30
         session.setRunning(false)
         val entry = logs.entries.single()
+        assertEquals(live.id, entry.id)
+        assertTrue(session.openEntries.value.isEmpty())
         assertEquals(-3, entry.period.total.items[100])
         assertEquals(3, entry.period.fruitUsed[100])
         assertEquals(10_000, entry.startedAt)
@@ -128,6 +138,7 @@ class CaptureOutsideSessionTest {
 
     @Test fun emptyPeriodWritesNothingAtEveryClosingPoint() {
         feed(num = 10)
+        assertTrue(session.openEntries.value.isEmpty())
         session.scriptStart()
         session.scriptEnd()
         session.serviceStop()

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.battlelog.BattleLogRepository
 import io.github.fate_grand_automata.capture.OutsideLogRepository
+import io.github.fate_grand_automata.capture.CaptureTracker
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -21,15 +22,16 @@ class LogViewModel @Inject constructor(
 ) : ViewModel() {
     val entries = repository.entries.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val outsideEntries = OutsideLogRepository.entries
+    val openOutsideEntries = CaptureTracker.openOutsideEntries
 
     init { viewModelScope.launch(Dispatchers.IO) { OutsideLogRepository.init(context.filesDir) } }
 
     fun delete(id: String) { viewModelScope.launch {
-        if (id.startsWith("outside:")) withContext(Dispatchers.IO) { OutsideLogRepository.delete(id.removePrefix("outside:")) }
+        if (id.startsWith("outside:")) withContext(Dispatchers.IO) { CaptureTracker.deleteOutsideEntry(id.removePrefix("outside:")) }
         else repository.delete(id)
     } }
     fun clear() { viewModelScope.launch {
         repository.clear()
-        withContext(Dispatchers.IO) { OutsideLogRepository.clear() }
+        withContext(Dispatchers.IO) { CaptureTracker.clearOutsideEntries() }
     } }
 }
