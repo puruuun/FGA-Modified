@@ -137,7 +137,6 @@ Skills"</string>
     <string name="support_img_namer_file_rename_failed">"Failed to rename to: '%s'"</string>
     <string name="p_refill">"Refill"</string>
     <string name="p_battle_config">"Battle Configs"</string>
-    <string name="p_battle_config_summary">"Manage configs for Battle script"</string>
     <string name="p_more_options">"More options"</string>
     <string name="p_limit">"Limit"</string>
     <string name="p_runs">"Runs"</string>
@@ -1116,4 +1115,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_source_other">Other</string>
     <string name="capture_log_confirm_delete">Delete this record?</string>
     <string name="capture_log_confirm_clear">Delete all records?</string>
+    <string name="p_tools">Tools</string>
+    <string name="tools_chaldea_export">Export Chaldea file</string>
+    <string name="tools_choose_account">Choose an account</string>
+    <string name="accessibility_status_enabled">Accessibility service: Enabled</string>
+    <string name="accessibility_status_disabled">Accessibility service: Disabled</string>
 </resources>

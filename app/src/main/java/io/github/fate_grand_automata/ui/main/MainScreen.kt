@@ -8,25 +8,27 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.launch
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,8 +37,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,10 +52,10 @@ import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.capture.CaptureMainState
-import io.github.fate_grand_automata.capture.CaptureProfileCard
+import io.github.fate_grand_automata.capture.CaptureProfileRow
 import io.github.fate_grand_automata.capture.CaptureServiceButtons
-import io.github.fate_grand_automata.capture.rememberCaptureMain
 import io.github.fate_grand_automata.capture.CaptureServiceLifecycle
+import io.github.fate_grand_automata.capture.rememberCaptureMain
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.ui.CappedWidth
@@ -238,6 +242,7 @@ sealed class MainScreenDestinations {
     object Releases : MainScreenDestinations()
     object BattleConfigs : MainScreenDestinations()
     object Logs : MainScreenDestinations()
+    object Tools : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object GainsTracker : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
@@ -261,18 +266,16 @@ internal fun MainScreenContent(
                     .fillMaxSize()
             ) {
                 item {
-                    Heading(stringResource(R.string.app_name)) {
-                        HeadingButton(
-                            text = "Build: ${BuildConfig.VERSION_NAME}",
-                            onClick = { navigate(MainScreenDestinations.Releases) }
-                        )
-                    }
-
+                    Heading(stringResource(R.string.app_name))
+                    MainBuildStatusRow(
+                        accessibilityServiceStarted, overlayServiceStarted,
+                        { navigate(MainScreenDestinations.Releases) }, toggleAccessibilityService,
+                    )
                 }
 
-                capture.summary?.let { summary ->
+                if (capture.profiles.isNotEmpty()) {
                     item {
-                        CaptureProfileCard(summary, capture.now) { navigate(MainScreenDestinations.GainsTracker) }
+                        CaptureProfileRow(capture.profiles, capture.now) { navigate(MainScreenDestinations.GainsTracker) }
                     }
                 }
 
@@ -288,7 +291,6 @@ internal fun MainScreenContent(
                         Column {
                             Preference(
                                 title = stringResource(R.string.p_battle_config),
-                                summary = stringResource(R.string.p_battle_config_summary),
                                 icon = icon(R.drawable.ic_formation),
                                 onClick = { navigate(MainScreenDestinations.BattleConfigs) }
                             )
@@ -304,20 +306,20 @@ internal fun MainScreenContent(
                             HorizontalDivider()
 
                             Preference(
+                                title = stringResource(R.string.p_tools),
+                                icon = icon(Icons.Default.Build),
+                                onClick = { navigate(MainScreenDestinations.Tools) }
+                            )
+
+                            HorizontalDivider()
+
+                            Preference(
                                 title = stringResource(R.string.p_more_options),
                                 icon = icon(R.drawable.ic_dots_horizontal),
                                 onClick = { navigate(MainScreenDestinations.MoreOptions) }
                             )
                         }
                     }
-                }
-
-                item {
-                    AccessibilityServiceBlock(
-                        serviceStarted = accessibilityServiceStarted,
-                        toggleService = toggleAccessibilityService,
-                        overlayServiceStarted = overlayServiceStarted
-                    )
                 }
             }
         }
@@ -368,46 +370,46 @@ private fun OverlayServiceToggleButton(
     )
 }
 
+/** Measure both controls at their natural width; wrap the status without losing its end alignment. */
 @Composable
-private fun AccessibilityServiceBlock(
+internal fun MainBuildStatusRow(
     serviceStarted: Boolean,
+    overlayServiceStarted: Boolean,
+    openBuild: () -> Unit,
     toggleService: () -> Unit,
-    overlayServiceStarted: Boolean
 ) {
-    Card(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp, 5.dp)
-        ) {
-            Row {
-                Text(stringResource(R.string.accessibility_service))
-
-                Text(
-                    stringResource(if (serviceStarted) R.string.accessibility_enabled else R.string.accessibility_disabled),
-                    modifier = Modifier
-                        .padding(start = 5.dp),
-                    color = colorResource(if (serviceStarted) R.color.colorQuickResist else R.color.colorBusterResist),
-                    style = MaterialTheme.typography.titleMedium
-                )
+    Layout(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        content = {
+            Box(Modifier.testTag("buildBadge")) {
+                HeadingButton(text = "Build: ${BuildConfig.VERSION_NAME}", onClick = openBuild)
             }
-
-            TextButton(
+            Surface(
                 onClick = toggleService,
-                // Don't allow (at least from the UI) turning OFF accessibility service when overlay service is running
-                enabled = !serviceStarted || !overlayServiceStarted
+                // Preserve the old guard against disabling accessibility during an overlay run.
+                enabled = !serviceStarted || !overlayServiceStarted,
+                shape = CircleShape,
+                color = if (serviceStarted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.errorContainer,
+                contentColor = if (serviceStarted) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.testTag("accessibilityStatus"),
             ) {
                 Text(
-                    stringResource(if (serviceStarted) R.string.accessibility_disable else R.string.accessibility_enable_in_settings)
+                    stringResource(if (serviceStarted) R.string.accessibility_status_enabled else R.string.accessibility_status_disabled),
+                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelMedium,
                 )
             }
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val badge = measurables[0].measure(loose)
+        val status = measurables[1].measure(loose)
+        val gap = 8.dp.roundToPx()
+        val fits = badge.width + gap + status.width <= constraints.maxWidth
+        val height = if (fits) maxOf(badge.height, status.height) else badge.height + gap + status.height
+        layout(constraints.maxWidth, height) {
+            badge.placeRelative(0, if (fits) (height - badge.height) / 2 else 0)
+            status.placeRelative(constraints.maxWidth - status.width, if (fits) (height - status.height) / 2 else badge.height + gap)
         }
     }
 }

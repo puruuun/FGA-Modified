@@ -8,10 +8,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -34,15 +43,14 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.ui.OnResume
-import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.grouped
-import kotlinx.coroutines.delay
 import java.util.Date
+import kotlinx.coroutines.delay
 
 data class CaptureMainState(
     val showButton: Boolean = false,
     val running: Boolean = false,
-    val summary: AccountSummary? = null,
+    val profiles: List<CaptureAccount> = emptyList(),
     val now: Long = System.currentTimeMillis() / 1000,
 )
 
@@ -55,17 +63,20 @@ class CaptureMainActions(
 @Composable
 fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMainActions {
     val context = LocalContext.current
-    val enabled by prefs.captureTrackerEnabled.remember()
+    val enabled by prefs.captureTrackerEnabled.asFlow().collectAsStateWithLifecycle(
+        initialValue = prefs.captureTrackerEnabled.get(),
+    )
     val running by CaptureTracker.running.collectAsStateWithLifecycle()
     val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val agreement = rememberCaptureAgreement(prefs)
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
-    var gameInstalled by remember { mutableStateOf(false) }
+    fun isGameInstalled() = runCatching {
+        context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
+    }.isSuccess
+    var gameInstalled by remember(context) { mutableStateOf(isGameInstalled()) }
     OnResume {
-        gameInstalled = runCatching {
-            context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
-        }.isSuccess
+        gameInstalled = isGameInstalled()
     }
     LaunchedEffect(lifecycle) {
         CaptureTracker.init(context)
@@ -107,7 +118,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
         CaptureMainState(
             showButton = captureButtonVisible(enabled, Build.VERSION.SDK_INT, gameInstalled),
             running = running,
-            summary = if (enabled && accounts.isNotEmpty()) CaptureTracker.summary(now) else null,
+            profiles = if (enabled && accounts.isNotEmpty()) CaptureTracker.accountSummaries(now) else emptyList(),
             now = now,
         ),
         toggle,
@@ -129,6 +140,8 @@ fun CaptureMainButton(running: Boolean, onClick: () -> Unit) {
         containerColor = if (collecting) captureStopBackground else captureStartBackground,
         contentColor = if (collecting) captureStopForeground else captureStartForeground,
     ) {
+        Icon(Icons.Default.VpnKey, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
         Text(stringResource(if (collecting) R.string.capture_main_stop else R.string.capture_main_start))
     }
 }
@@ -151,12 +164,28 @@ fun CaptureServiceButtons(
 }
 
 @Composable
+fun CaptureProfileRow(profiles: List<CaptureAccount>, now: Long, onClick: () -> Unit) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(profiles, key = { it.id }) { account ->
+            CaptureProfileCard(account.summary.copy(masterName = account.displayName), now, onClick)
+        }
+    }
+}
+
+@Composable
 fun CaptureProfileCard(summary: AccountSummary, now: Long, onClick: () -> Unit) {
     val context = LocalContext.current
     val fullAt = fullApAt(summary, now)
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Card(onClick = onClick, modifier = Modifier.width(264.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("${summary.masterName}  Lv.${summary.level.grouped()}", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(summary.masterName, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium)
+                Text("KR", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+            }
             Text("AP ${summary.ap.grouped()} / ${summary.apMax.grouped()}")
             Text(
                 if (fullAt == null) stringResource(R.string.capture_ap_full)

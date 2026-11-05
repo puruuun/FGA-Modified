@@ -226,7 +226,6 @@
     <string name="p_battle_config_raid_delay">"레이드 턴 지연"</string>
     <string name="p_battle_config_raid_delay_message">"레이드를 위해 추가적인 턴 지연이 추가됩니다."</string>
     <string name="p_battle_config_server">"서버"</string>
-    <string name="p_battle_config_summary">"오토 스킬 설정관리"</string>
     <string name="p_battle_config_support">"서포트"</string>
     <string name="p_battle_config_support_also_check_all">"전체 서포트슬롯도 확인"</string>
     <string name="p_battle_config_support_bond_ce_effect_preference">"인연예장 효과 선호"</string>
@@ -1037,4 +1036,9 @@
     <string name="capture_source_other">기타</string>
     <string name="capture_log_confirm_delete">이 기록을 삭제할까요?</string>
     <string name="capture_log_confirm_clear">모든 기록을 삭제할까요?</string>
+    <string name="p_tools">도구</string>
+    <string name="tools_chaldea_export">Chaldea 파일 내보내기</string>
+    <string name="tools_choose_account">계정 선택</string>
+    <string name="accessibility_status_enabled">접근성 서비스: 활성화됨</string>
+    <string name="accessibility_status_disabled">접근성 서비스: 비활성화됨</string>
 </resources>

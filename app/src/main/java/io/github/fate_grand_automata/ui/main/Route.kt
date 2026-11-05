@@ -36,6 +36,9 @@ sealed interface Route : NavKey {
     data object Logs : Route
 
     @Serializable
+    data object Tools : Route
+
+    @Serializable
     data object WeeklyRouteSettings : Route
 
     @Serializable

@@ -2,12 +2,19 @@ package io.github.fate_grand_automata.ui.main
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -23,8 +30,8 @@ import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigScreenVie
 import io.github.fate_grand_automata.ui.battle_config_list.BattleConfigListScreen
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityScreen
 import io.github.fate_grand_automata.ui.card_priority.CardPriorityViewModel
-import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
 import io.github.fate_grand_automata.ui.fine_tune.AddedFeatureTuningScreen
+import io.github.fate_grand_automata.ui.fine_tune.FineTuneScreen
 import io.github.fate_grand_automata.ui.log.LogScreen
 import io.github.fate_grand_automata.ui.more.LicenseScreen
 import io.github.fate_grand_automata.ui.more.MoreOptionsScreen
@@ -36,13 +43,13 @@ import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
 import io.github.fate_grand_automata.ui.skill_maker.SkillMakerActivity
 import io.github.fate_grand_automata.ui.spam.SpamScreen
 import io.github.fate_grand_automata.ui.spam.SpamScreenViewModel
-import androidx.core.net.toUri
 
 @Composable
 fun FgaApp(
     vm: MainScreenViewModel,
     supportVm: SupportViewModel
 ) {
+    val motionDistance = with(LocalDensity.current) { 30.dp.roundToPx() }
     val context = LocalContext.current
     val backStack = rememberNavBackStack(
         if (vm.prefs.isOnboardingRequired()) {
@@ -71,21 +78,9 @@ fun FgaApp(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator()
                 ),
-                transitionSpec = {
-                    // slide in from right
-                    slideInHorizontally(initialOffsetX = { it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popTransitionSpec = {
-                    // slide out to right
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
-                },
-                predictivePopTransitionSpec = {
-                    // slide out to right
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
-                },
+                transitionSpec = { sharedAxisX(motionDistance) },
+                popTransitionSpec = { sharedAxisX(-motionDistance) },
+                predictivePopTransitionSpec = { sharedAxisX(-motionDistance) },
                 entryProvider = entryProvider {
                     entry<Route.Home> {
                         MainScreen(
@@ -107,6 +102,10 @@ fun FgaApp(
 
                                     MainScreenDestinations.MoreOptions -> {
                                         backStack.add(Route.MoreOptions)
+                                    }
+
+                                    MainScreenDestinations.Tools -> {
+                                        backStack.add(Route.Tools)
                                     }
 
                                     MainScreenDestinations.Logs -> {
@@ -164,6 +163,9 @@ fun FgaApp(
                     }
                     entry<Route.License> {
                         LicenseScreen()
+                    }
+                    entry<Route.Tools> {
+                        io.github.fate_grand_automata.ui.more.ToolsScreen(vm = hiltViewModel())
                     }
                     entry<Route.Logs> {
                         LogScreen()
@@ -244,4 +246,13 @@ fun FgaApp(
             )
         }
     }
+}
+
+/** Material emphasized-decelerate: short X movement with matching opacity in both directions. */
+private fun sharedAxisX(distance: Int): androidx.compose.animation.ContentTransform {
+    val easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+    return (slideInHorizontally(tween(250, easing = easing)) { distance } +
+        fadeIn(tween(250, easing = easing))) togetherWith
+        (slideOutHorizontally(tween(250, easing = easing)) { -distance } +
+            fadeOut(tween(250, easing = easing)))
 }

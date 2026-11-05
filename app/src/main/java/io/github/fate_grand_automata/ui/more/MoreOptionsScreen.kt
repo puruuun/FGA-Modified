@@ -10,8 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.ui.CappedWidth
@@ -40,42 +39,6 @@ fun MoreOptionsScreen(
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.pickedDirectory(it)
     }
-    val originalImport by vm.originalImport.collectAsStateWithLifecycle()
-    val portraitImport by vm.portraitImport.collectAsStateWithLifecycle()
-    val portraitContext = LocalContext.current
-    if (portraitImport.open) {
-        val destinationName by vm.storageSummary
-        ServantPortraitImportDialog(
-            state = portraitImport,
-            destinationName = destinationName,
-            onNumber = vm::changePortraitNumber,
-            onKind = vm::changePortraitKind,
-            onSelect = vm::selectPortrait,
-            onSearch = { vm.searchPortraits(portraitContext.resources.configuration.locales[0].toLanguageTag()) },
-            onStart = vm::importPortraits,
-            onPickDirectory = { pickDirectory.launch(Uri.EMPTY) },
-            onDismiss = vm::closePortraitImport
-        )
-    }
-    val importScripts = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
-        vm.selectImportFolder(scripts = true, uri = it)
-    }
-    val importImages = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
-        vm.selectImportFolder(scripts = false, uri = it)
-    }
-    if (originalImport.open) {
-        OriginalFgaImportDialog(
-            state = originalImport,
-            destinationName = vm.storageProvider.rootDirName,
-            onDismiss = vm::closeOriginalImport,
-            onSelection = vm::selectImportMode,
-            onPickScripts = { importScripts.launch(originalImport.scripts ?: Uri.EMPTY) },
-            onPickImages = { importImages.launch(originalImport.images ?: Uri.EMPTY) },
-            onOverwrite = vm::overwriteImportedImages,
-            onImport = vm::importOriginalData
-        )
-    }
-
     val storageSummary by vm.storageSummary
     val extractSummary by vm.extractSummary
     val context = LocalContext.current
@@ -86,7 +49,7 @@ fun MoreOptionsScreen(
         extractSummary = extractSummary,
         extractSupportImages = { vm.performSupportImageExtraction(context) },
         additionalFeatures = {
-            additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview, vm::openOriginalImport, vm::openPortraitImport)
+            additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview)
         },
         goToFineTune = navigateToFineTune,
         goToAddedFeatureTuning = navigateToAddedFeatureTuning,

@@ -17,13 +17,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.ChaldeaExportStore
-import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.launch
 
 /** One export flow shared by the tracker and log screens. */
 @Composable
 fun rememberChaldeaExport(userId: String? = null): () -> Unit {
+    val export = rememberChaldeaAccountExport()
+    return { export(userId) }
+}
+
+/** Allows a picker to supply a stable account id at the moment export is requested. */
+@Composable
+fun rememberChaldeaAccountExport(): (String?) -> Unit {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -36,7 +43,7 @@ fun rememberChaldeaExport(userId: String? = null): () -> Unit {
             confirmButton = { TextButton(onClick = { message = null }) { Text(stringResource(android.R.string.ok)) } },
         )
     }
-    return {
+    return { userId ->
         if (!busy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             busy = true
             scope.launch {

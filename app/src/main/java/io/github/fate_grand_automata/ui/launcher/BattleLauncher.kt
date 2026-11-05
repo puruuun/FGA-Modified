@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -44,8 +46,6 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.battle_config_list.ConfigEntry
 import io.github.fate_grand_automata.ui.battle_config_list.ConfigFolders
@@ -73,6 +73,7 @@ fun battleLauncher(
     prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore,
     showLimits: Boolean = true
 ): ScriptLauncherResponseBuilder {
+    val captureRunningAtOpen = remember { io.github.fate_grand_automata.capture.CaptureTracker.running.value }
     val configs = remember { eligibleBattleConfigs(prefs) }
     // Each config's name lives in its own SharedPreferences file, so reading it per row would mean
     // a locked SharedPreferences access for every item scrolled into view. Snapshot them once.
@@ -394,7 +395,9 @@ fun battleLauncher(
                 if (prefs.bondTrackingFeatureEnabled && bond != null) {
                     Text(stringResource(R.string.p_bond), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
-                    QuestItemCheckbox(bond.track, true, stringResource(R.string.p_bond_track)) { changeBond(bond.copy(track = it)) }
+                    if (!captureRunningAtOpen) {
+                        QuestItemCheckbox(bond.track, true, stringResource(R.string.p_bond_track)) { changeBond(bond.copy(track = it)) }
+                    }
                     QuestItemCheckbox(bond.stop, true, stringResource(R.string.p_bond_stop)) { changeBond(bond.copy(stop = it)) }
                     if (bond.stop) {
                         Text(stringResource(R.string.p_bond_ignore_characters), style = MaterialTheme.typography.bodySmall)

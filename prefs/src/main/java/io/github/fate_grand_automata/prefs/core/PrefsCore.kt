@@ -1,12 +1,12 @@
 package io.github.fate_grand_automata.prefs.core
 
 import android.content.Context
-import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import com.fredporciuncula.flow.preferences.Serializer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
+import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import io.github.lib_automata.Location
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,7 +65,7 @@ class PrefsCore @Inject constructor(
     /** Gains tracker (KR), the in-app capture base. Off until the user opts in. */
     val captureTrackerEnabled = maker.bool("capture_tracker_enabled", false)
     val captureConsentVersion = maker.int("capture_consent_version", 0)
-    val captureStopWithService = maker.bool("capture_stop_with_service", true)
+    val captureStopWithService = maker.bool("capture_stop_with_service", false)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")

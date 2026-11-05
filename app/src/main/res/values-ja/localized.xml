@@ -176,7 +176,6 @@
     <string name="p_battle_config_notes">"メモ"</string>
     <string name="p_battle_config_party">"パーティー"</string>
     <string name="p_battle_config_server">"ゲームサーバー"</string>
-    <string name="p_battle_config_summary">"バトルの設定を管理する"</string>
     <string name="p_battle_config_support">"サポート"</string>
     <string name="p_battle_config_support_also_check_all">"Allもチェックする"</string>
     <string name="p_battle_config_support_bond_ce_effect_preference">"選択する絆礼装の効果"</string>
@@ -799,4 +798,9 @@
     <string name="capture_source_other">その他</string>
     <string name="capture_log_confirm_delete">この記録を削除しますか？</string>
     <string name="capture_log_confirm_clear">すべての記録を削除しますか？</string>
+    <string name="p_tools">ツール</string>
+    <string name="tools_chaldea_export">Chaldeaファイルをエクスポート</string>
+    <string name="tools_choose_account">アカウントを選択</string>
+    <string name="accessibility_status_enabled">ユーザー補助サービス: 有効</string>
+    <string name="accessibility_status_disabled">ユーザー補助サービス: 無効</string>
 </resources>
