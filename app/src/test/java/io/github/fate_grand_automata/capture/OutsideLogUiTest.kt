@@ -1,0 +1,110 @@
+package io.github.fate_grand_automata.capture
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import io.github.fate_grand_automata.battlelog.battleLogFixture
+import io.github.fate_grand_automata.ui.FGATheme
+import io.github.fate_grand_automata.ui.log.LogScreenContent
+import io.github.fate_grand_automata.ui.screenshotRules
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.junit.Assert.*
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [32], qualifiers = "en-w360dp-h800dp-hdpi")
+class OutsideLogUiTest {
+    private val composeRule = createComposeRule()
+    @get:Rule val rules = screenshotRules(composeRule)
+
+    @Test fun mixedListOpensOutsideDetailAndBackReturnsToBothCards() {
+        composeRule.setContent { FGATheme(false) {
+            LogScreenContent(listOf(battleLogFixture()), {}, {}, outsideNames, outsideEntries = listOf(outsideFixture()))
+        } }
+        composeRule.onNodeWithText("Changes outside scripts").performClick()
+        composeRule.onNodeWithText("Totals").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.onNodeWithText("Changes outside scripts").assertIsDisplayed()
+        composeRule.onNodeWithText("Daily quests").assertIsDisplayed()
+    }
+
+    @Test fun itemListsUseSignedGroupedCountsAndLargestUsageFirst() {
+        composeRule.setContent { FGATheme(false) { OutsideLogDetail(outsideFixture(), {}, outsideNames) } }
+        composeRule.onNodeWithText("+12").assertExists()
+        val fifteen = composeRule.onNodeWithText("−15").fetchSemanticsNode().boundsInRoot.top
+        val two = composeRule.onNodeWithText("−2").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(fifteen < two)
+        composeRule.onNodeWithText("−10,766,000").assertExists()
+        composeRule.onNodeWithText("−25").assertExists()
+        composeRule.onNodeWithText("−5").assertExists()
+    }
+
+    @Test fun sourcesStartCollapsedExpandIndependentlyAndShowSanitizedUnknownPath() {
+        composeRule.setContent { FGATheme(false) { OutsideLogDetail(outsideFixture(), {}, outsideNames) } }
+        val giftItems = hasText("Items gained (+)") and hasAnyAncestor(hasTestTag("outside-source:GiftBox:"))
+        val otherItems = hasText("Items gained (+)") and hasAnyAncestor(hasTestTag("outside-source:Other:unknown/sample"))
+        composeRule.onNode(giftItems).assertDoesNotExist()
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Gift box"))
+        composeRule.onNodeWithText("Gift box").performClick()
+        composeRule.onNode(giftItems).assertExists()
+        composeRule.onNodeWithText("+1,234,000").assertExists()
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Other · unknown/sample"))
+        composeRule.onNodeWithText("Other · unknown/sample").assertIsDisplayed().performClick()
+        composeRule.onNode(otherItems).assertExists()
+        composeRule.onNodeWithText("Other · unknown/sample").performClick()
+        composeRule.onNode(otherItems).assertDoesNotExist()
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Gift box"))
+        composeRule.onNode(giftItems).assertExists()
+        composeRule.onAllNodes(hasText("discard", substring = true)).assertCountEquals(0)
+    }
+
+    @Test fun deletingOutsideAndBattleRoutesTheCorrectIds() {
+        var battles by mutableStateOf(listOf(battleLogFixture("battle")))
+        var outside by mutableStateOf(listOf(outsideFixture("outside")))
+        val deleted = mutableListOf<String>()
+        composeRule.setContent { FGATheme(false) {
+            LogScreenContent(battles, { id ->
+                deleted += id
+                if (id.startsWith("outside:")) outside = emptyList() else battles = emptyList()
+            }, {}, outsideEntries = outside)
+        } }
+        composeRule.onAllNodesWithContentDescription("Delete record")[0].performClick()
+        composeRule.onNodeWithText("Delete this record?").assertIsDisplayed()
+        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Changes outside scripts").assertDoesNotExist()
+        composeRule.onNodeWithText("Daily quests").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Delete record")[0].performClick()
+        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        assertEquals(listOf("outside:outside", "battle"), deleted)
+    }
+
+    @Test fun clearAllRemovesBothKindsAfterConfirmation() {
+        var cleared by mutableStateOf(false)
+        composeRule.setContent { FGATheme(false) {
+            LogScreenContent(if (cleared) emptyList() else listOf(battleLogFixture()), {}, { cleared = true },
+                outsideEntries = if (cleared) emptyList() else listOf(outsideFixture()))
+        } }
+        composeRule.onNodeWithText("Delete all").performClick()
+        composeRule.onNodeWithText("Delete all records?").assertIsDisplayed()
+        composeRule.onNode(hasText("Delete record") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Changes outside scripts").assertDoesNotExist()
+        composeRule.onNodeWithText("Daily quests").assertDoesNotExist()
+        assertTrue(cleared)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-w360dp-h800dp-hdpi")
+    fun periodUsesTheAppLanguageForAmPm() {
+        composeRule.setContent { FGATheme(false) {
+            LogScreenContent(emptyList(), {}, {}, outsideEntries = listOf(outsideFixture()))
+        } }
+        composeRule.onNode(hasText("오전", substring = true) or hasText("오후", substring = true)).assertIsDisplayed()
+    }
+}

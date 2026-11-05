@@ -1096,4 +1096,24 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_start_failed">"Could not start log collection."</string>
     <string name="capture_ap_full">"Full"</string>
     <string name="capture_ap_full_at">"Full at %1$s"</string>
+    <string name="capture_outside_title">Changes outside scripts</string>
+    <string name="capture_outside_summary">Items +%1$s types / −%2$s types · Saint Quartz %3$s</string>
+    <string name="capture_outside_totals">Totals</string>
+    <string name="capture_outside_sources">By source</string>
+    <string name="capture_outside_gained">Items gained (+)</string>
+    <string name="capture_outside_used">Items used (−)</string>
+    <string name="capture_outside_none">None</string>
+    <string name="capture_outside_stone_free">Saint Quartz (free)</string>
+    <string name="capture_outside_stone_paid">Saint Quartz (paid)</string>
+    <string name="capture_source_gift_box">Gift box</string>
+    <string name="capture_source_shop">Shop</string>
+    <string name="capture_source_summon">Summon</string>
+    <string name="capture_source_lottery">Lottery</string>
+    <string name="capture_source_enhancement">Enhancement</string>
+    <string name="capture_source_ap_recovery">AP recovery</string>
+    <string name="capture_source_manual_quest">Quests played by hand</string>
+    <string name="capture_source_missions">Missions</string>
+    <string name="capture_source_other">Other</string>
+    <string name="capture_log_confirm_delete">Delete this record?</string>
+    <string name="capture_log_confirm_clear">Delete all records?</string>
 </resources>

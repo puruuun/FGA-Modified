@@ -13,8 +13,9 @@ object CaptureAutoStart {
     /** Called just before a script runs. Never blocks or fails the script. */
     fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer) {
         CaptureTracker.discardRun()
-        if (!CaptureController.isSupported || server != GameServer.Kr) return
         CaptureTracker.init(context)
+        CaptureTracker.outsideScriptStart()
+        if (!CaptureController.isSupported || server != GameServer.Kr) return
         CaptureTracker.startRun()
         if (!prefs.captureTrackerEnabled.get() || !CaptureConsent.agreed(prefs.captureConsentVersion.get()) ||
             CaptureTracker.running.value) return

@@ -27,6 +27,7 @@ object CaptureServiceLifecycle {
     }
 
     fun onStop(context: Context, prefs: PrefsCore) {
+        CaptureTracker.serviceStop()
         if (CaptureController.isSupported && shouldStop(prefs.captureStopWithService.get())) {
             CaptureController.stop(CaptureStopReason.Service)
             // Also cancel a queued start whose service instance has not been created yet.

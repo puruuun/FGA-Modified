@@ -35,11 +35,11 @@ class GameNames(
     private val mutex = Mutex()
     private var loaded: GameNameMap? = null
 
-    suspend fun resolve(runs: List<RunGains>): GameNameMap = withContext(Dispatchers.IO) {
+    suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
             val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"))
             val drops = runs.flatMap { it.items }
-            val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS)
+            val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
             val servants = refresh("basic_servant", cached.servants,
                 drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys })
             val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })

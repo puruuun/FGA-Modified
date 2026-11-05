@@ -86,6 +86,16 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
         dirty += id
     }
 
+    /** Recover the resource baseline atomically checkpointed with an open outside period. */
+    fun restoreResourceBaseline(id: String, tables: Map<String, JsonArray>, time: Long) {
+        val state = states[id] ?: return
+        if (state.lastUpdateTime > time) return
+        val resources = setOf("userGame", "tblUserGame", "userItem")
+        states[id] = state.copy(tables = state.tables.filterKeys { it !in resources } + tables.filterKeys { it in resources },
+            lastUpdateTime = time)
+        dirty += id
+    }
+
     fun delete(id: String) {
         if (id !in states) return
         // Only ids validated on routing/load can enter states; never resolve an arbitrary UI path.

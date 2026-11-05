@@ -41,10 +41,20 @@ object CaptureTracker {
     private val lock = Any()
     private val stored = CaptureAccounts { Timber.w("Capture: %s", it) }
     private val runSession = CaptureRunSession()
+    private val outside = CaptureOutsideSession(stored, OutsideLogRepository::add,
+        warn = { Timber.w("Capture: unreadable outside period") })
+
+    private inline fun outsideWork(block: () -> Unit) {
+        runCatching(block).onFailure { Timber.w("Capture: outside log storage failed: %s", it.javaClass.simpleName) }
+    }
 
     fun init(context: Context) = synchronized(lock) {
         if (initialized) return@synchronized
         stored.load(CertStore.directory(context))
+        outsideWork {
+            OutsideLogRepository.init(context.filesDir)
+            outside.load(CertStore.directory(context))
+        }
         initialized = true
         publish()
     }
@@ -72,6 +82,7 @@ object CaptureTracker {
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
         synchronized(lock) {
             runSession.setRunning(running, runState())
+            outsideWork { outside.setRunning(running) }
             _running.value = running
         }
         if (running) {
@@ -95,17 +106,30 @@ object CaptureTracker {
             val previousCurrent = stored.currentId
             val response = stored.apply(target, body, System.currentTimeMillis() / 1000) ?: return
             runSession.collect(target, body, response.previous, response.next, response.id)
+            outsideWork { outside.collect(target, response) }
             publish()
             if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
         }
     }
 
-    fun startRun() = synchronized(lock) { runSession.start(_running.value, stored.state, stored.currentId) }
-    fun endRunCollection() = synchronized(lock) { runSession.stopCollection(runState()) }
-    fun finishRun() = synchronized(lock) { runSession.finish(runState()) }
+    fun outsideScriptStart() = synchronized(lock) { outsideWork { outside.scriptStart() } }
+    fun serviceStop() = synchronized(lock) { outsideWork { outside.serviceStop() } }
+    fun startRun() = synchronized(lock) {
+        outsideWork { outside.scriptStart() }
+        runSession.start(_running.value, stored.state, stored.currentId)
+    }
+    fun endRunCollection() = synchronized(lock) {
+        outside.scriptEnd()
+        runSession.stopCollection(runState())
+    }
+    fun finishRun() = synchronized(lock) {
+        outside.scriptEnd()
+        runSession.finish(runState())
+    }
 
     /** Small battle-log hook: freeze the display name at the same instant as the run gains. */
     fun finishRun(entry: BattleLogEntry): BattleLogEntry = synchronized(lock) {
+        outside.scriptEnd()
         val id = runSession.accountId
         val name = id?.let { stored.displayName(it) ?: "#$it" }
         val gains = runSession.finish(runState())
@@ -115,11 +139,12 @@ object CaptureTracker {
         )
     }
 
-    fun discardRun() = synchronized(lock) { runSession.discard() }
+    fun discardRun() = synchronized(lock) { outside.scriptEnd(); runSession.discard() }
 
     fun delete() = synchronized(lock) {
         pendingSaves.values.forEach { it.cancel(false) }
         pendingSaves.clear()
+        outside.clear()
         stored.clear()
         publish()
     }
@@ -132,6 +157,7 @@ object CaptureTracker {
 
     fun delete(userId: String) = synchronized(lock) {
         pendingSaves.remove(userId)?.cancel(false)
+        outside.delete(userId)
         stored.delete(userId)
         publish()
     }

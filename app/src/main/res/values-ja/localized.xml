@@ -779,4 +779,24 @@
     <string name="capture_start_failed">"ログ収集を開始できませんでした。"</string>
     <string name="capture_ap_full">"全回復"</string>
     <string name="capture_ap_full_at">"%1$sにAP全回復"</string>
+    <string name="capture_outside_title">スクリプト外の変化</string>
+    <string name="capture_outside_summary">アイテム +%1$s種 / −%2$s種 · 聖晶石 %3$s</string>
+    <string name="capture_outside_totals">合計</string>
+    <string name="capture_outside_sources">入手・使用先別</string>
+    <string name="capture_outside_gained">獲得したアイテム (+)</string>
+    <string name="capture_outside_used">使用したアイテム (−)</string>
+    <string name="capture_outside_none">なし</string>
+    <string name="capture_outside_stone_free">聖晶石 (無償)</string>
+    <string name="capture_outside_stone_paid">聖晶石 (有償)</string>
+    <string name="capture_source_gift_box">プレゼントボックス</string>
+    <string name="capture_source_shop">ショップ</string>
+    <string name="capture_source_summon">召喚</string>
+    <string name="capture_source_lottery">ボックスガチャ</string>
+    <string name="capture_source_enhancement">強化</string>
+    <string name="capture_source_ap_recovery">AP回復</string>
+    <string name="capture_source_manual_quest">手動クエスト</string>
+    <string name="capture_source_missions">ミッション</string>
+    <string name="capture_source_other">その他</string>
+    <string name="capture_log_confirm_delete">この記録を削除しますか？</string>
+    <string name="capture_log_confirm_clear">すべての記録を削除しますか？</string>
 </resources>

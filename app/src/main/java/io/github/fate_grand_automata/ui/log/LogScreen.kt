@@ -54,6 +54,12 @@ import io.github.fate_grand_automata.ui.ChaldeaExportAction
 import io.github.fate_grand_automata.ui.rememberChaldeaExport
 import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.capture.GameNameMap
+import io.github.fate_grand_automata.capture.CaptureLogItem
+import io.github.fate_grand_automata.capture.OutsideLogEntry
+import io.github.fate_grand_automata.capture.OutsideLogCard
+import io.github.fate_grand_automata.capture.OutsideLogDetail
+import io.github.fate_grand_automata.capture.outsideLogDetailItems
+import io.github.fate_grand_automata.capture.mixedCaptureLogs
 import java.io.File
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
@@ -64,6 +70,7 @@ import java.util.Date
 @Composable
 fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     val entries by viewModel.entries.collectAsState()
+    val outsideEntries by viewModel.outsideEntries.collectAsState()
     val context = LocalContext.current
     val export = rememberChaldeaExport()
     val accountState by CaptureTracker.state.collectAsState()
@@ -72,11 +79,12 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     }
     val cache = remember { GameNames(File(context.filesDir, "capture/names")) }
     var names by remember { mutableStateOf(GameNameMap()) }
-    LaunchedEffect(entries) {
+    LaunchedEffect(entries, outsideEntries) {
         val gains = entries.mapNotNull { it.gains }
-        if (gains.isNotEmpty()) names = cache.resolve(gains)
+        val itemIds = outsideEntries.flatMap { it.period.sources.flatMap { source -> source.delta.items.keys } }
+        if (gains.isNotEmpty() || itemIds.isNotEmpty()) names = cache.resolve(gains, itemIds)
     }
-    LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names, export, accountState?.lastUpdateTime)
+    LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names, export, accountState?.lastUpdateTime, outsideEntries)
 }
 
 @Composable
@@ -87,11 +95,12 @@ fun LogScreenContent(
     names: GameNameMap = GameNameMap(),
     onExport: () -> Unit = {},
     lastUpdateTime: Long? = null,
+    outsideEntries: List<OutsideLogEntry> = emptyList(),
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmClear by rememberSaveable { mutableStateOf(false) }
-    val sorted = entries.sortedByDescending { it.endedAt }
+    val sorted = mixedCaptureLogs(entries, outsideEntries)
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val sizeClass = WindowSizeClass.calculateFromSize(DpSize(maxWidth, maxHeight))
@@ -110,7 +119,7 @@ fun LogScreenContent(
                             Text(stringResource(R.string.battle_log_empty), Modifier.padding(16.dp))
                         } else {
                             LazyColumn(Modifier.fillMaxSize()) {
-                                battleLogDetailItems(selected, names)
+                                captureLogDetailItems(selected, names)
                             }
                         }
                     }
@@ -120,7 +129,8 @@ fun LogScreenContent(
             val selected = sorted.find { it.id == selectedId }
             BackHandler(enabled = selected != null) { selectedId = null }
             if (selected != null) {
-                BattleLogDetail(selected, onBack = { selectedId = null }, names = names)
+                selected.battle?.let { BattleLogDetail(it, onBack = { selectedId = null }, names = names) }
+                selected.outside?.let { OutsideLogDetail(it, onBack = { selectedId = null }, names = names) }
             } else {
                 CappedWidth {
                     Column(Modifier.fillMaxSize()) {
@@ -136,7 +146,7 @@ fun LogScreenContent(
             onDismissRequest = { deleteId = null; confirmClear = false },
             title = { Text(stringResource(if (confirmClear) R.string.battle_log_delete_all else R.string.battle_log_delete)) },
             text = {
-                Text(stringResource(if (confirmClear) R.string.battle_log_confirm_clear else R.string.battle_log_confirm_delete))
+                Text(stringResource(if (confirmClear) R.string.capture_log_confirm_clear else R.string.capture_log_confirm_delete))
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -156,7 +166,7 @@ fun LogScreenContent(
 
 @Composable
 private fun ColumnScope.LogList(
-    sorted: List<BattleLogEntry>,
+    sorted: List<CaptureLogItem>,
     selectedId: String?,
     onSelect: (String) -> Unit,
     onDelete: (String) -> Unit,
@@ -184,11 +194,17 @@ private fun ColumnScope.LogList(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(sorted, key = { it.id }) { entry ->
-                LogCard(entry, entry.id == selectedId, { onSelect(entry.id) }, { onDelete(entry.id) })
+                entry.battle?.let { LogCard(it, entry.id == selectedId, { onSelect(entry.id) }, { onDelete(entry.id) }) }
+                entry.outside?.let { OutsideLogCard(it, entry.id == selectedId, { onSelect(entry.id) }, { onDelete(entry.id) }) }
             }
             item { Spacer(Modifier.padding(bottom = 4.dp)) }
         }
     }
+}
+
+private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap) {
+    entry.battle?.let { battleLogDetailItems(it, names) }
+    entry.outside?.let { outsideLogDetailItems(it, names) }
 }
 
 @Composable

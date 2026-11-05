@@ -1017,4 +1017,24 @@
     <string name="capture_start_failed">"로그 수집을 시작하지 못했습니다."</string>
     <string name="capture_ap_full">"가득 참"</string>
     <string name="capture_ap_full_at">"%1$s에 AP 가득 참"</string>
+    <string name="capture_outside_title">스크립트 밖 변화</string>
+    <string name="capture_outside_summary">아이템 +%1$s종 / −%2$s종 · 성정석 %3$s</string>
+    <string name="capture_outside_totals">전체 변화</string>
+    <string name="capture_outside_sources">출처별 변화</string>
+    <string name="capture_outside_gained">획득한 아이템 (+)</string>
+    <string name="capture_outside_used">사용한 아이템 (−)</string>
+    <string name="capture_outside_none">없음</string>
+    <string name="capture_outside_stone_free">성정석 (무료)</string>
+    <string name="capture_outside_stone_paid">성정석 (유료)</string>
+    <string name="capture_source_gift_box">선물함</string>
+    <string name="capture_source_shop">상점</string>
+    <string name="capture_source_summon">소환</string>
+    <string name="capture_source_lottery">룰렛</string>
+    <string name="capture_source_enhancement">강화</string>
+    <string name="capture_source_ap_recovery">AP 회복</string>
+    <string name="capture_source_manual_quest">수동 퀘스트</string>
+    <string name="capture_source_missions">미션</string>
+    <string name="capture_source_other">기타</string>
+    <string name="capture_log_confirm_delete">이 기록을 삭제할까요?</string>
+    <string name="capture_log_confirm_clear">모든 기록을 삭제할까요?</string>
 </resources>
