@@ -15,6 +15,8 @@ internal class CaptureRunSession {
     var accountId: String? = null
         private set
 
+    fun collectingFor(id: String) = scriptActive && running && accountId == id
+
     fun start(vpnRunning: Boolean, state: AccountState?, currentId: String? = null) {
         discard()
         scriptActive = true

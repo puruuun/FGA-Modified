@@ -59,6 +59,7 @@ class ScriptMessages @Inject constructor(
 
     override fun log(item: ScriptLog) =
         when (item) {
+            is ScriptLog.CaptureMode -> Timber.i("capture-mode enabled=%s", item.enabled)
             is ScriptLog.FaceCardCheck -> Timber.i(item.message)
             is ScriptLog.ShuffleUntil -> Timber.tag("HakunoShuffle").i(item.message)
             is ScriptLog.SupportCe -> {

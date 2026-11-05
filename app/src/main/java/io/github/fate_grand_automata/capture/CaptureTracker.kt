@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.BodyDecoder
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
+import io.github.fate_grand_automata.scripts.capture.CapturedBattle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,9 @@ enum class CaptureStopReason { User, Service, Revoked, Error, Unsupported }
 
 /** Process-wide holder. Proxy responses, disk writes and account deletion share one lock. */
 object CaptureTracker {
+    @Volatile var starting = false
+        internal set
+    internal val battleInbox = CaptureBattleInbox()
     private const val SAVE_DELAY_SECONDS = 2L
     private val _state = MutableStateFlow<AccountState?>(null)
     val state: StateFlow<AccountState?> = _state.asStateFlow()
@@ -80,6 +84,7 @@ object CaptureTracker {
     }
 
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
+        starting = false
         synchronized(lock) {
             runSession.setRunning(running, runState())
             outsideWork { outside.setRunning(running) }
@@ -106,6 +111,9 @@ object CaptureTracker {
             val previousCurrent = stored.currentId
             val response = stored.apply(target, body, System.currentTimeMillis() / 1000) ?: return
             runSession.collect(target, body, response.previous, response.next, response.id)
+            if (CaptureNames.path(target) == "battle/result" && runSession.collectingFor(response.id)) {
+                battleInbox.add(CapturedBattle.parse(body, response.previous))
+            }
             outsideWork { outside.collect(target, response) }
             publish()
             if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
@@ -115,6 +123,7 @@ object CaptureTracker {
     fun outsideScriptStart() = synchronized(lock) { outsideWork { outside.scriptStart() } }
     fun serviceStop() = synchronized(lock) { outsideWork { outside.serviceStop() } }
     fun startRun() = synchronized(lock) {
+        battleInbox.clear()
         outsideWork { outside.scriptStart() }
         runSession.start(_running.value, stored.state, stored.currentId)
     }

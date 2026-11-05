@@ -25,9 +25,10 @@ object CaptureAutoStart {
             } else if (!CertStore.exists(context)) {
                 toast(context, R.string.capture_auto_no_certificate)
             } else {
+                CaptureTracker.starting = true
                 CaptureController.start(context)
             }
-        }.onFailure { toast(context, R.string.capture_auto_failed) }
+        }.onFailure { CaptureTracker.starting = false; toast(context, R.string.capture_auto_failed) }
     }
 
     fun onScriptEnd() {

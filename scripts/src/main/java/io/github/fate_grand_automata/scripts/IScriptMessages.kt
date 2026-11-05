@@ -28,6 +28,7 @@ sealed class ScriptNotify {
 }
 
 sealed class ScriptLog {
+    class CaptureMode(val enabled: Boolean) : ScriptLog()
     class ShuffleUntil(val message: String) : ScriptLog()
     /** One line at the start of a run: whether servant face cards are read, and why. */
     class FaceCardCheck(val message: String) : ScriptLog()

@@ -13,6 +13,7 @@ import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.Battle
 import io.github.fate_grand_automata.scripts.modules.BondTracker
+import io.github.fate_grand_automata.scripts.modules.CaptureBattleTracker
 import io.github.fate_grand_automata.scripts.models.BondFrame
 import io.github.fate_grand_automata.scripts.models.BondSummary
 import io.github.fate_grand_automata.scripts.modules.CEDropsTracker
@@ -67,7 +68,8 @@ class AutoBattle @Inject constructor(
     private val matTracker: MaterialsTracker,
     private val ceDropsTracker: CEDropsTracker,
     private val bonds: BondTracker,
-    private val turnLimitRetreat: TurnLimitRetreat
+    private val turnLimitRetreat: TurnLimitRetreat,
+    private val capture: CaptureBattleTracker? = null,
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     sealed class ExitReason(val cause: Exception? = null) {
         data object Abort : ExitReason()
@@ -163,7 +165,8 @@ class AutoBattle @Inject constructor(
 
     private fun runLoop(selectedQuest: Boolean = false): Nothing {
         try {
-            if (selectedQuest) { battle.resetState(); afterSelectingQuest() }
+            capture?.start()
+            if (selectedQuest) { battle.resetState(); capture?.beginBattle(); afterSelectingQuest() }
             loop()
         } catch (e: BattleExitException) {
             throw ExitException(e.reason, makeExitState())
@@ -305,6 +308,8 @@ class AutoBattle @Inject constructor(
 
         battle.resetState()
 
+        capture?.beginBattle()
+
         showRefillsAndRunsMessage()
 
         // Click uppermost quest
@@ -337,6 +342,7 @@ class AutoBattle @Inject constructor(
     private fun isInBondScreen() = images[Images.Bond] in locations.resultBondRegion
 
     private fun handleBondScreen(){
+        capture?.checkBond()
         canScreenshotBondCE = true
 
         if (prefs.screenshotBond){
@@ -403,6 +409,7 @@ class AutoBattle @Inject constructor(
      * Clicks through the reward screens.
      */
     private fun result() {
+        capture?.checkBond()
         bonds.finishResult()
         isInBattle = false
         locations.resultClick.click(
@@ -415,6 +422,7 @@ class AutoBattle @Inject constructor(
         images[Images.MatRewards] in locations.resultMatRewardsRegion
 
     private fun dropScreen() {
+        capture?.checkBond()
         bonds.finishResult()
         canScreenshotBondCE = false
 
@@ -457,6 +465,8 @@ class AutoBattle @Inject constructor(
 
         // Pressing Continue option after completing a quest, resetting the state as would occur in "Menu" function
         battle.resetState()
+
+        capture?.beginBattle()
 
         val continueButtonRegion = findRepeatButton()?.region
             ?: return

@@ -24,6 +24,9 @@ import io.github.lib_automata.dagger.ScriptScope
 @Module
 @InstallIn(ScriptComponent::class)
 abstract class ScriptsModule {
+    @ScriptScope
+    @Binds
+    abstract fun bindCaptureFeed(feed: io.github.fate_grand_automata.capture.CaptureBattleFeed): io.github.fate_grand_automata.scripts.capture.ICaptureFeed
     companion object {
         @ScriptScope
         @Provides

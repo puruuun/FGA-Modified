@@ -18,11 +18,12 @@ class BondTracker @Inject constructor(
     private val reader: BondReader,
     private val state: BattleState,
     private val config: IBattleConfig,
-    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default,
+    private val capture: CaptureBattleTracker? = null,
 ) : IFgoAutomataApi by api {
     private val ledger = BondLedger()
     private var battleRun: Int? = null
-    val enabled get() = prefs.bondTrackingFeatureEnabled && (config.trackBond || config.stopOnBondMax) &&
+    val enabled get() = capture?.enabled != true && prefs.bondTrackingFeatureEnabled && (config.trackBond || config.stopOnBondMax) &&
         (prefs.gameServer is GameServer.Kr || prefs.gameServer is GameServer.Jp)
 
     fun isScreen() = enabled && reader.isScreen()
@@ -31,6 +32,7 @@ class BondTracker @Inject constructor(
     fun beginBattle() { if (enabled) battleRun = state.runs }
 
     fun finishResult() {
+        capture?.checkBond()
         if (enabled && battleRun == state.runs) ledger.ensure(state.runs)
     }
 
