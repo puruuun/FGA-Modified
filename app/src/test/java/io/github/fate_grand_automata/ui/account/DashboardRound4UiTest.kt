@@ -70,6 +70,8 @@ class DashboardRound4UiTest {
         val battle=io.github.fate_grand_automata.battlelog.battleLogFixture("latest").copy(configName="Recent quest",reasonText="8 runs")
         content { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{route=Route.Logs},battle=battle,
             outside=outsideFixture(),initialSection=6) }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-section:0").fetchSemanticsNodes().isNotEmpty() }
+        compose.onAllNodes(hasScrollToIndexAction())[0].performScrollToIndex(2)
         compose.onNodeWithText("Recent quest",substring=true).assertExists()
         compose.onNodeWithText("8 runs").assertExists()
         compose.onNodeWithTag("dashboard-logs").performClick()
@@ -94,7 +96,7 @@ class DashboardRound4UiTest {
         compose.onNodeWithTag("dashboard-servant-list").performScrollToIndex(19)
         compose.onNodeWithText("샘플 서번트 20").assertExists()
         compose.onNodeWithText("샘플 서번트 21").assertDoesNotExist()
-        compose.onNodeWithText("Show all (35)").performClick()
+        compose.onNodeWithText("Show all (35)").performScrollTo().performClick()
         compose.onNodeWithTag("dashboard-servant-list").performScrollToIndex(34)
         compose.onNodeWithText("샘플 서번트 35").assertExists()
     }

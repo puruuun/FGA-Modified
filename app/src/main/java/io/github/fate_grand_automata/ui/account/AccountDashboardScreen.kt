@@ -134,7 +134,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     }
     SuggestionChip(onClick = {}, label = { Text("KR") })
     labels.forEach { (key, label) -> data.profile[key]?.let { value ->
-        Field(label, if (key == "createdAt") value.toLongOrNull()?.let(::date) ?: value else value)
+        Field(label, if (key == "createdAt") value.toLongOrNull()?.let(::date) ?: value else value.toLongOrNull()?.grouped() ?: value)
     } }
     data.profile["friendCode"]?.let { code ->
         val clipboard = LocalClipboard.current
@@ -209,7 +209,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
     LaunchedEffect(servants, query, sort, className) { selected = withContext(Dispatchers.Default) { servants.selectServants(query, sort, className) } }
     val shown = if (expanded) selected else selected.take(20)
-    LazyColumn(Modifier.fillMaxWidth().height(400.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(shown, key = { it.id }) { servant ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AtlasIcon("servants", servant.id, servant.atlas?.icon)

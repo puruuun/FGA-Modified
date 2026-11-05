@@ -39,6 +39,15 @@ class DashboardNamesTest {
         assertEquals(first,second)
         directory.listFiles()!!.filter { it.extension=="json" }.forEach { assertFalse(it.readText().contains("not retained")) }
     }
+    @Test fun freshServantCacheWithUnknownIdsDoesNotDownloadButAnOldOneDoes() = runBlocking {
+        GameNames(directory, { body }) { 1001 }.dashboard()
+        val state = dashboardState("userSvtCollection" to """[{"svtId":999,"status":2}]""", "userSvt" to """[{"svtId":998}]""",
+            "userEquip" to """[{"equipId":997}]""")
+        GameNames(directory, { error("network forbidden") }) { 3_000_000 }.dashboard(listOf(state))
+        val urls = mutableListOf<String>()
+        GameNames(directory, { urls += it; body }) { 1001 + 7 * 86_400_000L }.dashboard(listOf(state))
+        listOf("basic_servant", "basic_equip", "basic_mystic_code").forEach { list -> assertTrue(urls.any { it.endsWith("/$list.json") }, list) }
+    }
     @Test fun failuresHaveIndependentPersistentDailyBackoff() = runBlocking {
         val calls = mutableListOf<String>()
         val download: (String)->String = { calls += it; error("offline") }

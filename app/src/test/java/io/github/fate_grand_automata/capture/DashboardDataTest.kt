@@ -9,7 +9,8 @@ internal fun dashboardState(vararg tables: Pair<String, String>) = AccountState(
 
 internal fun dashboardNames() = GameNameMap(
     servantData = mapOf(10L to AtlasBasic(10, "Alpha", "normal", "saber", 5, 2),
-        11L to AtlasBasic(11, "Beta", "heroine", "shielder", 3, 1), 12L to AtlasBasic(12, "EXP", "svtMaterial")),
+        11L to AtlasBasic(11, "Beta", "heroine", "shielder", 3, 1), 12L to AtlasBasic(12, "EXP", "svtMaterial"),
+        13L to AtlasBasic(13, "Gamma", "normal", "archer", 4, 3), 14L to AtlasBasic(14, "Delta", "normal", "lancer", 4, 4)),
     equipData = mapOf(20L to AtlasBasic(20, "CE", "servantEquip")))
 
 class DashboardDataTest {
@@ -63,19 +64,29 @@ class DashboardDataTest {
     }
     @Test fun ownedFilterIncludesExactlyStatusTwoAndSkipsMalformedIds() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[
-            {"svtId":10,"status":2},{"svtId":11,"status":1},{"svtId":12,"status":3},{"svtId":13},{"status":2}]
+            {"svtId":10,"status":2},{"svtId":11,"status":1},{"svtId":12,"status":2},{"svtId":13},{"status":2},{"svtId":20,"status":2},{"svtId":999,"status":2}]
         """), dashboardNames())
         assertEquals(listOf(10L), data.servants!!.map { it.id })
+    }
+    @Test fun collectionKeepsOnlyNormalAndHeroineServants() {
+        val data = dashboardData(dashboardState("userSvtCollection" to """[
+            {"svtId":10,"status":2},{"svtId":11,"status":2},{"svtId":20,"status":2},{"svtId":12,"status":2},{"svtId":999,"status":2}]
+        """), dashboardNames())
+        assertEquals(listOf(10L, 11L), data.servants!!.map { it.id })
+    }
+    @Test fun servantSectionIsHiddenWithoutServantMetadata() {
+        val data = dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2}]"""), GameNameMap())
+        assertNull(data.servants)
     }
     @Test fun bondCountsSortAndPointsTieBreak() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[
             {"svtId":10,"status":2,"friendshipRank":10,"friendship":300},
             {"svtId":11,"status":2,"friendshipRank":15,"friendship":100},
-            {"svtId":12,"status":2,"friendshipRank":10,"friendship":400},
-            {"svtId":13,"status":2,"friendshipRank":9}]
+            {"svtId":13,"status":2,"friendshipRank":10,"friendship":400},
+            {"svtId":14,"status":2,"friendshipRank":9}]
         """), dashboardNames())
         assertEquals(3, data.bondTen); assertEquals(1, data.bondFifteen)
-        assertEquals(listOf(11L, 12L, 10L, 13L), data.servants!!.selectServants("", ServantSort.Bond, null).map { it.id })
+        assertEquals(listOf(11L, 13L, 10L, 14L), data.servants!!.selectServants("", ServantSort.Bond, null).map { it.id })
     }
     @Test fun rarityCollectionSearchAndClassFilter() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2},{"svtId":11,"status":2}]"""), dashboardNames()).servants!!
@@ -87,11 +98,11 @@ class DashboardDataTest {
     @Test fun preservesHighestCollectionStatsAndMissingStatsStayNull() {
         val servants = dashboardData(dashboardState("userSvtCollection" to """[
             {"svtId":10,"status":2,"treasureDeviceLv1":5,"skillLv1":10,"skillLv2":9,"skillLv3":8,"maxLv":120},
-            {"svtId":999,"status":2}]
+            {"svtId":11,"status":2}]
         """), dashboardNames()).servants!!
         assertEquals(5, servants.first().np); assertEquals(listOf(10L,9L,8L), servants.first().skills)
         assertEquals(120, servants.first().maxLevel)
-        assertEquals("#999", servants.last().name); assertNull(servants.last().bond)
+        assertEquals("Beta", servants.last().name); assertNull(servants.last().bond)
         assertTrue(servants.last().skills.all { it == null })
     }
     @Test fun itemGroupsIncludeUnknownInOther() {

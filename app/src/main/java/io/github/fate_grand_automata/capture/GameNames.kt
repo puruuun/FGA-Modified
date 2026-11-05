@@ -77,7 +77,9 @@ class GameNames(
             fun metadata(list: String): Map<Long, AtlasBasic> {
                 val file = File(directory, "${list}_details.json")
                 val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
-                if (cached.isNotEmpty() && required[list].orEmpty().all { it in cached }) return cached
+                // Servant, CE and mystic code lists never contain every id in the account (EXP cards, unreleased rows), so they refresh by age only.
+                val current = if (list == "nice_item") required[list].orEmpty().all { it in cached } else !isStale(list)
+                if (cached.isNotEmpty() && current) return cached
                 return runCatching {
                     if (!canAttempt("${list}_details")) return cached
                     val body = download("https://api.atlasacademy.io/export/KR/$list.json")
@@ -103,6 +105,12 @@ class GameNames(
     private fun saveMetadata(list: String, rows: List<AtlasBasic>) {
         writeCaptureFile(File(directory, "${list}_details.json"), Json.encodeToString(rows))
         File(directory, "${list}_details.attempt").writeText(now().toString())
+        File(directory, "${list}_details.fetched").writeText(now().toString())
+    }
+
+    private fun isStale(list: String): Boolean {
+        val fetched = runCatching { File(directory, "${list}_details.fetched").readText().toLong() }.getOrNull() ?: return true
+        return now() - fetched >= METADATA_MAX_AGE_MS
     }
 
     private fun read(list: String): Map<Long, String> = runCatching {
@@ -147,6 +155,7 @@ class GameNames(
 
     companion object {
         private const val DAY_MS = 86_400_000L
+        private const val METADATA_MAX_AGE_MS = 7 * DAY_MS
 
         internal fun parseBasic(body: String): List<AtlasBasic> =
             (Json.parseToJsonElement(body) as? JsonArray).orEmpty().mapNotNull { element ->

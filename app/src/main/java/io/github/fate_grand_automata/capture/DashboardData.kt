@@ -92,8 +92,10 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
         kinds?.getOrDefault(StoredKind.Servant, 0), kinds?.getOrDefault(StoredKind.Equip, 0), kinds?.getOrDefault(StoredKind.Other, 0),
         game?.number("svtKeep"), game?.number("svtEquipKeep"), rows("userCommandCode")?.size, rows("userSvtStorage")?.size)
         .takeIf { svts != null || it.commandCodes != null || it.secondStorage != null }
-    val servants = rows("userSvtCollection")?.filter { it.number("status") == 2L }?.mapNotNull { row ->
+    // The collection also holds CEs and other rows; without servant metadata they cannot be told apart, so the section is hidden.
+    val servants = rows("userSvtCollection")?.takeIf { names.servantData.isNotEmpty() }?.filter { it.number("status") == 2L }?.mapNotNull { row ->
         val id = row.number("svtId") ?: return@mapNotNull null
+        if (names.servantData[id]?.type !in setOf("normal", "heroine")) return@mapNotNull null
         DashboardServant(id, names.servantData[id], row.number("friendshipRank"), row.number("friendship"),
             row.number("treasureDeviceLv1"), (1..3).map { row.number("skillLv$it") }, row.number("maxLv"))
     }
