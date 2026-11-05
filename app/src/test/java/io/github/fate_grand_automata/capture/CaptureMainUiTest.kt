@@ -122,7 +122,7 @@ class CaptureMainUiTest {
         val first = compose.onNodeWithText("마스터 1").fetchSemanticsNode().boundsInRoot
         assertEquals(264 * 1.5f, first.width, 1f)
         compose.onNodeWithText("마스터 1").performClick()
-        assertEquals(MainScreenDestinations.GainsTracker, destination)
+        assertEquals(MainScreenDestinations.AccountDashboard("sample-1"), destination)
         compose.onNodeWithText("Lv.", substring = true).assertDoesNotExist()
         if (count == 3) {
             compose.onNode(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.HorizontalScrollAxisRange)).performScrollToIndex(2)

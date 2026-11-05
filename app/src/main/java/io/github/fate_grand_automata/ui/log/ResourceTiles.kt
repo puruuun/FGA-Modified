@@ -67,11 +67,11 @@ internal fun resourceName(type: Int, id: Long, names: GameNameMap): String = if 
 }
 
 /** Coil only decodes local files. The permanent store owns downloading and retry policy. */
-private object LogIconLoader {
+internal object LogIconLoader {
     private var loader: ImageLoader? = null
     private val stores = mutableMapOf<File, IconFileStore>()
-    @Synchronized fun files(context: android.content.Context): IconFileStore {
-        val directory = File(context.filesDir, "capture/icons")
+    @Synchronized fun files(context: android.content.Context, kind: String = ""): IconFileStore {
+        val directory = File(context.filesDir, "capture/icons${if (kind.isEmpty()) "" else "/$kind"}")
         return stores.getOrPut(directory) { IconFileStore(directory) }
     }
     @Synchronized fun get(context: android.content.Context): ImageLoader = loader ?: ImageLoader.Builder(context.applicationContext)
@@ -114,24 +114,29 @@ internal fun ResourceGroups(resources: List<LogResource>, names: GameNameMap) {
 }
 
 @Composable
-internal fun ResourceTile(resource: LogResource, names: GameNameMap) {
+internal fun ResourceTile(resource: LogResource, names: GameNameMap, signed: Boolean = true) {
     val name = resourceName(resource.type, resource.id, names)
     var available by remember(resource.type, resource.id) { mutableStateOf(false) }
-    val count = resource.count?.let(::signedOutsideCount) ?: stringResource(R.string.capture_gains_unknown)
-    val split = resource.split?.let { (free, paid) -> stringResource(R.string.capture_stone_split, signedOutsideCount(free), signedOutsideCount(paid)) }
+    val format: (Long) -> String = { if (signed) signedOutsideCount(it) else it.grouped() }
+    val count = resource.count?.let(format) ?: stringResource(R.string.capture_gains_unknown)
+    val split = resource.split?.let { (free, paid) -> stringResource(R.string.capture_stone_split, format(free), format(paid)) }
     val holdings = resource.holdings?.let { stringResource(R.string.capture_gains_holdings, it.grouped()) }
     Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.widthIn(max = 160.dp).testTag("resource:${resource.type}:${resource.id}")
             .semantics(mergeDescendants = true) { contentDescription = listOfNotNull(name, count, split, holdings).joinToString(", ") }) {
-        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                ResourceIcon(resource.type, resource.id, names) { available = it }
-                if (resource.type != 2 || resource.id !in currencyIds || !available) Text(name, style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).widthIn(max = 100.dp))
-                Text(count, style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
+        Row(Modifier.height(48.dp).padding(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            ResourceIcon(resource.type, resource.id, names) { available = it }
+            Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.Center) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    if (resource.type != 2 || resource.id !in currencyIds || !available) Text(name, style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).widthIn(max = 100.dp))
+                    Text(count, style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
+                }
+                listOfNotNull(split, holdings).takeIf { it.isNotEmpty() }?.let {
+                    Text(it.joinToString(" · "), style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false,
+                        overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("resource-secondary"))
+                }
             }
-            split?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
-            holdings?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
         }
     }
 }

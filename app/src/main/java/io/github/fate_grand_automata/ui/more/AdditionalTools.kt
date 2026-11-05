@@ -4,9 +4,6 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,27 +12,23 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.capture.CaptureTracker
-import io.github.fate_grand_automata.ui.CappedWidth
-import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.rememberChaldeaAccountExport
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
 
 @Composable
-fun ToolsScreen(vm: MoreOptionsViewModel = viewModel()) {
+fun AdditionalTools(vm: MoreOptionsViewModel = viewModel()) {
     val context = LocalContext.current
     val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
-    LaunchedEffect(context) { CaptureTracker.init(context) }
+    LaunchedEffect(context) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) } }
     val export = rememberChaldeaAccountExport()
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) { vm.pickedDirectory(it) }
     val originalImport by vm.originalImport.collectAsStateWithLifecycle()
@@ -74,11 +67,11 @@ fun ToolsScreen(vm: MoreOptionsViewModel = viewModel()) {
         )
     }
 
-    ToolsContent(accounts, vm::openPortraitImport, vm::openOriginalImport, export)
+    AdditionalToolsContent(accounts, vm::openPortraitImport, vm::openOriginalImport, export)
 }
 
 @Composable
-internal fun ToolsContent(
+internal fun AdditionalToolsContent(
     accounts: List<CaptureAccount>,
     importPortraits: () -> Unit,
     importOriginalData: () -> Unit,
@@ -86,48 +79,13 @@ internal fun ToolsContent(
 ) {
     var choosingAccount by rememberSaveable { mutableStateOf(false) }
     val canExport = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && accounts.isNotEmpty()
-    CappedWidth {
-        Column(Modifier.fillMaxSize()) {
-            Heading(stringResource(R.string.p_tools))
-            Card(
-                modifier = Modifier.padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            ) {
-                LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                    item {
-                        Preference(
-                            title = stringResource(R.string.portrait_import_title),
-                            summary = stringResource(R.string.portrait_import_summary),
-                            icon = icon(Icons.Default.Image), onClick = importPortraits,
-                        )
-                    }
-                    item { HorizontalDivider() }
-                    item {
-                        Preference(
-                            title = stringResource(R.string.original_import_title),
-                            summary = stringResource(R.string.original_import_summary),
-                            icon = icon(R.drawable.ic_folder_edit), onClick = importOriginalData,
-                        )
-                    }
-                    if (canExport) {
-                        item { HorizontalDivider() }
-                        item {
-                            Preference(
-                                title = stringResource(R.string.tools_chaldea_export),
-                                icon = icon(Icons.Default.FileUpload),
-                                onClick = {
-                                    if (accounts.size == 1) exportAccount(accounts.single().id)
-                                    else choosingAccount = true
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
+    Column {
+        Preference(title = stringResource(R.string.portrait_import_title), summary = stringResource(R.string.portrait_import_summary),
+            icon = icon(Icons.Default.Image), onClick = importPortraits)
+        Preference(title = stringResource(R.string.original_import_title), summary = stringResource(R.string.original_import_summary),
+            icon = icon(R.drawable.ic_folder_edit), onClick = importOriginalData)
+        if (canExport) Preference(title = stringResource(R.string.tools_chaldea_export), icon = icon(Icons.Default.FileUpload),
+            onClick = { if (accounts.size == 1) exportAccount(accounts.single().id) else choosingAccount = true })
     }
     if (choosingAccount && canExport) {
         AlertDialog(

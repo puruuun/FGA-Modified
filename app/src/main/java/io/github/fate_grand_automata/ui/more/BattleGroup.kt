@@ -94,6 +94,24 @@ fun LazyListScope.battleGroup(
             entries = (-1..3).associateWith { it.boostItemString() }
         )
     }
+    item {
+        prefs.weeklyRouteFeatureEnabled.SwitchPreference(
+            title = stringResource(R.string.p_weekly_route_feature_enabled),
+            icon = icon(R.drawable.ic_gift)
+        )
+    }
+    item {
+        prefs.bondTrackingFeatureEnabled.SwitchPreference(
+            title = stringResource(R.string.p_bond_tracking_feature_enabled),
+            icon = icon(R.drawable.ic_gift)
+        )
+    }
+    item {
+        prefs.questItemControl.enabled.SwitchPreference(
+            title = stringResource(R.string.p_enable_quest_item_control),
+            icon = icon(R.drawable.ic_gift)
+        )
+    }
 }
 
 @Composable

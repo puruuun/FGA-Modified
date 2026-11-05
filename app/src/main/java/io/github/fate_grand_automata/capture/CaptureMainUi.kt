@@ -164,14 +164,14 @@ fun CaptureServiceButtons(
 }
 
 @Composable
-fun CaptureProfileRow(profiles: List<CaptureAccount>, now: Long, onClick: () -> Unit) {
+fun CaptureProfileRow(profiles: List<CaptureAccount>, now: Long, onClick: (String) -> Unit) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(profiles, key = { it.id }) { account ->
-            CaptureProfileCard(account.summary.copy(masterName = account.displayName), now, onClick)
+            CaptureProfileCard(account.summary.copy(masterName = account.displayName), now) { onClick(account.id) }
         }
     }
 }

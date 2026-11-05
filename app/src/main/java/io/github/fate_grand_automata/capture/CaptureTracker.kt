@@ -29,6 +29,9 @@ object CaptureTracker {
     private const val SAVE_DELAY_SECONDS = 2L
     private val _state = MutableStateFlow<AccountState?>(null)
     val state: StateFlow<AccountState?> = _state.asStateFlow()
+    private val _accountStates = MutableStateFlow<Map<String, AccountState>>(emptyMap())
+    /** Immutable per-account versions for read-only dashboards, including non-current accounts. */
+    val accountStates = _accountStates.asStateFlow()
     private val _accounts = MutableStateFlow<List<CaptureAccount>>(emptyList())
     val accounts: StateFlow<List<CaptureAccount>> = _accounts.asStateFlow()
     private val _currentId = MutableStateFlow<String?>(null)
@@ -93,6 +96,7 @@ object CaptureTracker {
     private fun runState() = stored.states[runSession.accountId]
 
     private fun publish() {
+        _accountStates.value = stored.states.toMap()
         _state.value = stored.state
         _currentId.value = stored.currentId
         _accounts.value = stored.accounts(System.currentTimeMillis() / 1000)

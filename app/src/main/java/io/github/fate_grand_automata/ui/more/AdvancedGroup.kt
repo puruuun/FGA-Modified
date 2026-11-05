@@ -3,6 +3,8 @@ package io.github.fate_grand_automata.ui.more
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import io.github.fate_grand_automata.BuildConfig
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
@@ -26,8 +28,29 @@ fun LazyListScope.advancedGroup(
     prefs: PrefsCore,
     goToAddedFeatureTuning: () -> Unit,
     goToFineTune: () -> Unit,
-    goToLicense: () -> Unit
+    goToLicense: () -> Unit,
+    goToWeeklySettings: () -> Unit = {},
 ) {
+    item {
+        prefs.checkForUpdates.SwitchPreference(
+            title = stringResource(R.string.p_check_for_updates),
+            summary = stringResource(R.string.p_check_for_updates_summary),
+            icon = icon(Icons.Default.SystemUpdate)
+        )
+    }
+    if (BuildConfig.BUILD_TYPE == "beta") {
+        item {
+            prefs.supportReaderDiagnostics.SwitchPreference(
+                title = stringResource(R.string.p_support_reader_diagnostics),
+                summary = stringResource(R.string.p_support_reader_diagnostics_summary),
+                icon = icon(R.drawable.ic_bug)
+            )
+        }
+    }
+
+    item {
+        Preference(title = stringResource(R.string.weekly_route_settings), onClick = goToWeeklySettings)
+    }
     item {
         LanguagePref().ListPreference(
             title = stringResource(R.string.p_app_language),

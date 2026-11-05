@@ -13,7 +13,7 @@ import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncher
 import io.github.fate_grand_automata.ui.LocalNavigateBack
 import io.github.fate_grand_automata.ui.main.MainBuildStatusRow
-import io.github.fate_grand_automata.ui.more.ToolsContent
+import io.github.fate_grand_automata.ui.more.AdditionalToolsContent
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import org.junit.Assert.assertEquals
@@ -60,7 +60,7 @@ class CaptureToolsScreenshotTest(private val screen: String, private val dark: B
                     when {
                         screen.startsWith("Header") -> MainBuildStatusRow(enabled, false, {}, {})
                         screen == "Tools" -> CompositionLocalProvider(LocalNavigateBack provides {}) {
-                            ToolsContent(mainProfiles(3), {}, {}, {})
+                            AdditionalToolsContent(mainProfiles(3), {}, {}, {})
                         }
                         else -> ScriptLauncher(ScriptModeEnum.Battle, {}, fixture!!.prefs, fixture.core)
                     }

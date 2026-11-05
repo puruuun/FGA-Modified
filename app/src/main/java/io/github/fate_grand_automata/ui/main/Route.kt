@@ -36,7 +36,7 @@ sealed interface Route : NavKey {
     data object Logs : Route
 
     @Serializable
-    data object Tools : Route
+    data class AccountDashboard(val userId: String) : Route
 
     @Serializable
     data object WeeklyRouteSettings : Route

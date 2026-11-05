@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,6 +57,7 @@ fun MoreOptionsScreen(
         goToLicense = navigateToLicense,
         goToWeeklySettings = navigateToWeeklySettings,
         goToGainsTracker = navigateToGainsTracker,
+        additionalTools = { AdditionalTools(vm) },
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
 }
@@ -72,7 +74,8 @@ internal fun MoreOptionsContent(
     goToLicense: () -> Unit,
     goToWeeklySettings: () -> Unit,
     goToGainsTracker: () -> Unit = {},
-    pickDirectory: () -> Unit
+    pickDirectory: () -> Unit,
+    additionalTools: @Composable () -> Unit = {},
 ) {
     CappedWidth {
         Column(
@@ -93,6 +96,7 @@ internal fun MoreOptionsContent(
                         )
                     ) {
                         LazyColumn(
+                            modifier = Modifier.testTag("more-tab:$it"),
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             when (it) {
@@ -113,12 +117,6 @@ internal fun MoreOptionsContent(
 
                                 MoreSettingsGroup.AdditionalFeatures -> {
                                     additionalFeatures()
-                                    item {
-                                        io.github.fate_grand_automata.ui.prefs.Preference(
-                                            title = stringResource(R.string.weekly_route_settings),
-                                            onClick = goToWeeklySettings
-                                        )
-                                    }
                                     // The VPN proxy hand-off needs Android 10 (API 29).
                                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) item {
                                         io.github.fate_grand_automata.ui.prefs.Preference(
@@ -126,6 +124,7 @@ internal fun MoreOptionsContent(
                                             onClick = goToGainsTracker
                                         )
                                     }
+                                    item { additionalTools() }
                                 }
 
                                 MoreSettingsGroup.Advanced -> {
@@ -133,7 +132,8 @@ internal fun MoreOptionsContent(
                                         prefs,
                                         goToFineTune = goToFineTune,
                                         goToAddedFeatureTuning = goToAddedFeatureTuning,
-                                        goToLicense = goToLicense
+                                        goToLicense = goToLicense,
+                                        goToWeeklySettings = goToWeeklySettings,
                                     )
                                 }
                             }

@@ -104,8 +104,8 @@ fun FgaApp(
                                         backStack.add(Route.MoreOptions)
                                     }
 
-                                    MainScreenDestinations.Tools -> {
-                                        backStack.add(Route.Tools)
+                                    is MainScreenDestinations.AccountDashboard -> {
+                                        backStack.add(Route.AccountDashboard(it.userId))
                                     }
 
                                     MainScreenDestinations.Logs -> {
@@ -164,8 +164,12 @@ fun FgaApp(
                     entry<Route.License> {
                         LicenseScreen()
                     }
-                    entry<Route.Tools> {
-                        io.github.fate_grand_automata.ui.more.ToolsScreen(vm = hiltViewModel())
+                    entry<Route.AccountDashboard> { key ->
+                        io.github.fate_grand_automata.ui.account.AccountDashboardScreen(
+                            userId = key.userId,
+                            openSettings = { backStack.add(Route.GainsTracker) },
+                            openLogs = { backStack.add(Route.Logs) },
+                        )
                     }
                     entry<Route.Logs> {
                         LogScreen()

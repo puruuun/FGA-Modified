@@ -1,11 +1,13 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.RunGains
+import io.github.fate_grand_automata.scripts.capture.AccountState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import kotlinx.serialization.encodeToString
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -15,6 +17,10 @@ data class GameNameMap(
     val servants: Map<Long, String> = emptyMap(),
     val equips: Map<Long, String> = emptyMap(),
     val itemIcons: Map<Long, String> = emptyMap(),
+    val servantData: Map<Long, AtlasBasic> = emptyMap(),
+    val equipData: Map<Long, AtlasBasic> = emptyMap(),
+    val mysticData: Map<Long, AtlasBasic> = emptyMap(),
+    val itemData: Map<Long, AtlasBasic> = emptyMap(),
 ) {
     fun item(id: Long) = items[id] ?: "Item #$id"
     fun servant(id: Long) = servants[id] ?: "Servant #$id"
@@ -48,6 +54,7 @@ class GameNames(
                     val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
                     check(parseNames(body).isNotEmpty())
                     saveIcons(body)
+                    saveMetadata("nice_item", parseBasic(body))
                 }
             }
             val servants = refresh("basic_servant", cached.servants,
@@ -55,6 +62,47 @@ class GameNames(
             val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })
             GameNameMap(items, servants, equips, read("item_icons")).also { loaded = it }
         }
+    }
+
+    /** Metadata has an independent migration budget when a legacy name-only cache exists. */
+    suspend fun dashboard(states: Collection<AccountState> = emptyList()): GameNameMap {
+        val names = resolve(emptyList())
+        return withContext(Dispatchers.IO) { mutex.withLock {
+            refresh("basic_mystic_code", read("basic_mystic_code"), emptyList())
+            fun ids(table: String, field: String) = states.flatMap { it.tables[table].orEmpty() }
+                .mapNotNull { (it as? JsonObject)?.number(field) }.toSet()
+            val required = mutableMapOf("nice_item" to ids("userItem", "itemId"),
+                "basic_servant" to ids("userSvtCollection", "svtId"),
+                "basic_equip" to emptySet(), "basic_mystic_code" to ids("userEquip", "equipId"))
+            fun metadata(list: String): Map<Long, AtlasBasic> {
+                val file = File(directory, "${list}_details.json")
+                val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
+                if (cached.isNotEmpty() && required[list].orEmpty().all { it in cached }) return cached
+                return runCatching {
+                    if (!canAttempt("${list}_details")) return cached
+                    val body = download("https://api.atlasacademy.io/export/KR/$list.json")
+                    val parsed = parseBasic(body)
+                    check(parsed.isNotEmpty())
+                    saveMetadata(list, parsed)
+                    parsed.associateBy { it.id }
+                }.getOrDefault(cached)
+            }
+            val items = metadata("nice_item")
+            val servants = metadata("basic_servant")
+            required["basic_equip"] = ids("userSvt", "svtId") - servants.keys
+            val equips = metadata("basic_equip")
+            val mystics = metadata("basic_mystic_code")
+            names.copy(items = names.items + items.mapValues { it.value.name ?: "#${it.key}" },
+                servants = names.servants + servants.mapValues { it.value.name ?: "#${it.key}" },
+                equips = names.equips + equips.mapValues { it.value.name ?: "#${it.key}" },
+                itemIcons = names.itemIcons + items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap(),
+                servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
+        } }
+    }
+
+    private fun saveMetadata(list: String, rows: List<AtlasBasic>) {
+        writeCaptureFile(File(directory, "${list}_details.json"), Json.encodeToString(rows))
+        File(directory, "${list}_details.attempt").writeText(now().toString())
     }
 
     private fun read(list: String): Map<Long, String> = runCatching {
@@ -79,6 +127,7 @@ class GameNames(
         if (cache.isNotEmpty() && ids.all { it in cache }) return cache
         return runCatching {
             if (!canAttempt(list)) return cache
+            File(directory, "${list}_details.attempt").writeText(now().toString())
             // A names fetch also satisfies the icon attempt, even if that fetch fails.
             if (list == "nice_item") {
                 File(directory, "item_icons.attempt").writeText(now().toString())
@@ -87,6 +136,7 @@ class GameNames(
             val names = parseNames(body)
             check(names.isNotEmpty())
             if (list == "nice_item") saveIcons(body)
+            saveMetadata(list, parseBasic(body))
             val target = File(directory, "$list.json")
             val tmp = File(directory, "$list.tmp")
             tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
@@ -97,6 +147,15 @@ class GameNames(
 
     companion object {
         private const val DAY_MS = 86_400_000L
+
+        internal fun parseBasic(body: String): List<AtlasBasic> =
+            (Json.parseToJsonElement(body) as? JsonArray).orEmpty().mapNotNull { element ->
+                val row = element as? JsonObject ?: return@mapNotNull null
+                val id = row.number("id") ?: return@mapNotNull null
+                val image = row.text("face") ?: row.text("icon") ?: (row["item"] as? JsonObject)?.let { it.text("male") ?: it.text("female") }
+                AtlasBasic(id, row.text("name"), row.text("type"), row.text("className"), row.number("rarity"), row.number("collectionNo"),
+                    image?.takeIf(IconFileStore::isPublicIcon))
+            }
 
         internal fun parseNames(body: String): Map<Long, String> =
             (Json.parseToJsonElement(body) as? JsonArray).orEmpty().mapNotNull { element ->

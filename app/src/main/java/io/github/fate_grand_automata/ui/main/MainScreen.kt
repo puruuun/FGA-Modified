@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -242,7 +241,7 @@ sealed class MainScreenDestinations {
     object Releases : MainScreenDestinations()
     object BattleConfigs : MainScreenDestinations()
     object Logs : MainScreenDestinations()
-    object Tools : MainScreenDestinations()
+    data class AccountDashboard(val userId: String) : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object GainsTracker : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
@@ -275,7 +274,7 @@ internal fun MainScreenContent(
 
                 if (capture.profiles.isNotEmpty()) {
                     item {
-                        CaptureProfileRow(capture.profiles, capture.now) { navigate(MainScreenDestinations.GainsTracker) }
+                        CaptureProfileRow(capture.profiles, capture.now) { navigate(MainScreenDestinations.AccountDashboard(it)) }
                     }
                 }
 
@@ -301,14 +300,6 @@ internal fun MainScreenContent(
                                 title = stringResource(R.string.p_logs),
                                 icon = icon(Icons.Default.History),
                                 onClick = { navigate(MainScreenDestinations.Logs) }
-                            )
-
-                            HorizontalDivider()
-
-                            Preference(
-                                title = stringResource(R.string.p_tools),
-                                icon = icon(Icons.Default.Build),
-                                onClick = { navigate(MainScreenDestinations.Tools) }
                             )
 
                             HorizontalDivider()
