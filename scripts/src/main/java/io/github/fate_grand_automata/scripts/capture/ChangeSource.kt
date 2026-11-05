@@ -16,7 +16,7 @@ data class ChangeSource(val group: Group, val path: String? = null) {
                 path.startsWith("shop/") && path != "shop/Verify" -> Group.Shop
                 path.startsWith("gacha/") -> Group.Summon
                 path.startsWith("boxGacha/") -> Group.Lottery
-                path.startsWith("card/") || path.startsWith("svt/") -> Group.Enhancement
+                path.startsWith("card/") || path.startsWith("svt") -> Group.Enhancement
                 path == "item/recover" -> Group.ApRecovery
                 path.startsWith("battle/") -> Group.ManualQuest
                 path.startsWith("eventMission/") || path.startsWith("mission/") -> Group.Missions

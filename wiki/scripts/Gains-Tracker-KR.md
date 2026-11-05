@@ -114,7 +114,7 @@ VPN이 실행 중인 동안 스크립트의 전투 결과를 모읍니다. 직�
 - **사용한 과일**: 황금색·백은색·청동색·적동색 과일이 각 응답에서 줄어든 수를 합칩니다. 나중에 과일을 받더라도 앞서 사용한 수는 지워지지 않습니다.
 - **출처별 변화**: 선물함, 상점, 소환, 룰렛, 강화, AP 회복, 수동 퀘스트, 미션별로 묶습니다. 기본은 접혀 있으며 누르면 같은 형식의 자원 변화를 볼 수 있습니다. 분류되지 않은 응답은 **기타**와 쿼리를 제외한 경로를 표시합니다.
 
-출처는 API 경로로 추정합니다. KR 응답에서 확인된 경로는 `present/receive`(선물함)와 `battle/result`(수동 퀘스트)입니다. 나머지 접두사(`shop/`에서 `shop/Verify` 제외, `gacha/`, `boxGacha/`, `card/`, `svt/`, `item/recover`, `eventMission/`, `mission/`)는 추정 분류이며 게임 업데이트나 실제 응답에 따라 달라질 수 있습니다. `shop/Verify`와 모르는 경로는 기타로 남습니다.
+출처는 API 경로로 추정합니다. KR 응답에서 확인된 경로는 `present/receive`(선물함)와 `battle/result`(수동 퀘스트)입니다. 나머지 접두사(`shop/`에서 `shop/Verify` 제외, `gacha/`, `boxGacha/`, `card/`, `svt` 계열, `item/recover`, `eventMission/`, `mission/`)는 추정 분류이며 게임 업데이트나 실제 응답에 따라 달라질 수 있습니다. 강화의 `svt` 계열에는 `svt/`뿐 아니라 `svtCombine/`, `svtSkill/`처럼 접두사를 공유하는 경로도 포함합니다. `shop/Verify`와 모르는 경로는 기타로 남습니다.
 
 열린 기간은 앱 내부 `capture/accounts/<userId>/outside-period.json`에 저장되며 프로세스가 종료되어도 다음 초기화 때 이어집니다. 확정된 기록은 별도의 `outside-log.json`에 최신 200건을 보관합니다. 전투 로그와 함께 종료 시각 순으로 표시되며 **삭제**와 **전체 삭제**를 모두 사용할 수 있습니다. 넓은 화면에서는 목록과 상세가 나란히 표시됩니다.
 
