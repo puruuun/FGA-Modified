@@ -66,6 +66,7 @@ class PrefsCore @Inject constructor(
     val captureTrackerEnabled = maker.bool("capture_tracker_enabled", false)
     val captureConsentVersion = maker.int("capture_consent_version", 0)
     val captureStopWithService = maker.bool("capture_stop_with_service", false)
+    val logRetention = LogRetentionPrefsCore(maker)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 
     val shouldLimitFP = maker.bool("should_fp_limit")

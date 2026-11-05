@@ -806,4 +806,11 @@
     <string name="capture_log_all_resources">すべてのリソース</string>
     <string name="capture_log_filter_empty">選択中のフィルターに一致する記録はありません。</string>
     <string name="capture_stone_split">無償 %1$s · 有償 %2$s</string>
+    <string name="capture_log_filter">ログの絞り込み</string>
+    <string name="capture_log_date">日付</string>
+    <string name="capture_log_custom_range">期間を指定</string>
+    <string name="capture_log_retention">ログの保存件数（種類ごと）</string>
+    <string name="capture_log_retention_confirm">戦闘記録とスクリプト外の記録を、それぞれ最新の%1$d件だけ保存しますか？古い記録は完全に削除されます。</string>
+    <string name="capture_log_apply">適用</string>
+    <string name="capture_log_clear_filter">解除</string>
 </resources>

@@ -78,6 +78,32 @@ class GameNamesTest {
         assertEquals(mapOf(5L to "Five"), GameNames.parseNames("""[null,{}, {"id":5,"name":"Five"},{"id":6,"name":""}]"""))
     }
 
+    @Test fun freshNameAttemptDoesNotBlockMissingIconMap() = runBlocking {
+        File(directory, "nice_item.json").writeText("""{"100":"Fruit","101":"Silver","102":"Copper","104":"Bronze"}""")
+        File(directory, "nice_item.attempt").writeText("1000")
+        File(directory, "basic_servant.json").writeText("""{"10":"Servant"}""")
+        File(directory, "basic_equip.json").writeText("""{"9":"CE"}""")
+        val urls = mutableListOf<String>()
+        val icon = "https://static.atlasacademy.io/KR/Items/100.png"
+        val names = GameNames(directory, { urls += it; """[{"id":100,"name":"Fruit","icon":"$icon"}]""" }) { 1001 }.resolve(emptyList())
+        assertEquals(listOf("https://api.atlasacademy.io/export/KR/nice_item.json"), urls)
+        assertEquals(mapOf(100L to icon), names.itemIcons)
+        assertEquals("1000", File(directory, "nice_item.attempt").readText())
+        assertEquals(names.itemIcons, GameNames(directory, { error("must reuse icons") }) { 1002 }.resolve(emptyList()).itemIcons)
+    }
+
+    @Test fun missingIconsHaveIndependentPersistentFailureBackoff() = runBlocking {
+        File(directory, "nice_item.attempt").writeText("1000")
+        listOf("basic_servant", "basic_equip").forEach { File(directory, "$it.json").writeText("""{"1":"cached"}""") }
+        var attempts = 0
+        val download: (String) -> String = { attempts++; error("offline") }
+        GameNames(directory, download) { 1001 }.resolve(emptyList())
+        GameNames(directory, download) { 1002 }.resolve(emptyList())
+        assertEquals(1, attempts)
+        GameNames(directory, download) { 1001 + 86_400_000L }.resolve(emptyList())
+        assertEquals(2, attempts)
+    }
+
     @Test fun iconsAreKeptAlongsideNamesAndReloadedWithoutNetwork() = runBlocking {
         val url = "https://static.atlasacademy.io/KR/Items/100.png"
         val names = GameNames(directory, { """[{"id":100,"name":"Fruit","icon":"$url"}]""" }) { 1000 }.resolve(emptyList())

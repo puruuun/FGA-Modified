@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import android.content.Context
+import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
@@ -68,7 +69,9 @@ object CaptureTracker {
         if (initialized) return@synchronized
         stored.load(CertStore.directory(context))
         outsideWork {
-            OutsideLogRepository.init(context.filesDir)
+            OutsideLogRepository.init(context.filesDir) {
+                LogRetentionPrefsCore.normalize(LogRetentionPrefsCore.fromContext(context).limit.get())
+            }
             outside.load(CertStore.directory(context))
         }
         initialized = true

@@ -4,7 +4,16 @@ import io.github.fate_grand_automata.capture.CaptureLogItem
 import java.util.Calendar
 import java.util.TimeZone
 
-internal enum class LogTimeFilter { Today, Week, Month, All }
+internal enum class LogTimeFilter { Today, Week, Month, All, Custom }
+
+/** Material picker values are UTC dates, not instants in the user's zone. */
+internal fun pickerDateInZone(date: Long, zone: TimeZone): Long {
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = date }
+    return Calendar.getInstance(zone).apply {
+        clear()
+        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
+}
 
 /** Stable resource keys keep items, servants and CEs with overlapping ids separate. */
 private fun CaptureLogItem.resourceChanges(): List<Map<String, Long>> = battle?.gains?.let { gains ->
@@ -25,8 +34,9 @@ internal fun logResources(entries: List<CaptureLogItem>): Set<String> =
 internal fun filterCaptureLogs(
     entries: List<CaptureLogItem>, time: LogTimeFilter, resource: String?, now: Long,
     zone: TimeZone = TimeZone.getDefault(),
+    customStart: Long? = null, customEnd: Long? = null,
 ): List<CaptureLogItem> {
-    val days = when (time) { LogTimeFilter.Today -> 1L; LogTimeFilter.Week -> 7L; LogTimeFilter.Month -> 30L; LogTimeFilter.All -> null }
+    val days = when (time) { LogTimeFilter.Today -> 1L; LogTimeFilter.Week -> 7L; LogTimeFilter.Month -> 30L; else -> null }
     val midnight = Calendar.getInstance(zone).apply {
         timeInMillis = now
         set(Calendar.HOUR_OF_DAY, 0)
@@ -34,10 +44,13 @@ internal fun filterCaptureLogs(
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
     }
-    val start = days?.let { (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -(it - 1).toInt()) }.timeInMillis }
-    val end = (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+    val start = if (time == LogTimeFilter.Custom) customStart?.let { pickerDateInZone(it, zone) }
+        else days?.let { (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -(it - 1).toInt()) }.timeInMillis }
+    val end = if (time == LogTimeFilter.Custom) customEnd?.let { date ->
+        Calendar.getInstance(zone).apply { timeInMillis = pickerDateInZone(date, zone); add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+    } else (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     return entries.filter { entry ->
-        (start == null || entry.endedAt in start until end) &&
+        (start == null || end == null || entry.endedAt in start until end) &&
             (resource == null || entry.resourceChanges().any { (it[resource] ?: 0L) > 0 })
     }
 }

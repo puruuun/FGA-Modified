@@ -37,7 +37,7 @@ internal fun localIconLoader(context: Context) = ImageLoader.Builder(context).co
 internal fun localIconNames(context: Context): GameNameMap {
     val ids = iconItemIds + listOf(6510L, 6001L)
     val icons = ids.associateWith { id ->
-        val file = File(context.cacheDir, "fake-log-icon-$id.png")
+        val file = File(context.filesDir, "capture/icons/$id.png").apply { parentFile!!.mkdirs() }
         val bitmap = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -49,7 +49,7 @@ internal fun localIconNames(context: Context): GameNameMap {
         canvas.drawText(if (id == 1L) "QP" else (id % 100).toString(), 24f, 31f, paint)
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
-        file.toURI().toString()
+        "https://static.atlasacademy.io/test-only/$id.png"
     }
     return outsideNames.copy(itemIcons = icons, equips = mapOf(9400010L to "완강"), servants = mapOf(100100L to "알트리아"))
 }

@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.ui.log
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,15 +13,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
-import coil3.disk.DiskCache
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
+import io.github.fate_grand_automata.capture.IconFileStore
 import io.github.fate_grand_automata.capture.signedOutsideCount
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.util.grouped
 import java.io.File
-import okio.Path.Companion.toPath
 
 internal data class LogResource(
     val type: Int = 2, val id: Long, val count: Long?, val split: Pair<Long, Long>? = null, val holdings: Long? = null,
@@ -68,16 +66,38 @@ internal fun resourceName(type: Int, id: Long, names: GameNameMap): String = if 
     else -> names.item(id)
 }
 
-/** One loader/cache for all log tiles; only public image URLs reach it. */
+/** Coil only decodes local files. The permanent store owns downloading and retry policy. */
 private object LogIconLoader {
     private var loader: ImageLoader? = null
+    private val stores = mutableMapOf<File, IconFileStore>()
+    @Synchronized fun files(context: android.content.Context): IconFileStore {
+        val directory = File(context.filesDir, "capture/icons")
+        return stores.getOrPut(directory) { IconFileStore(directory) }
+    }
     @Synchronized fun get(context: android.content.Context): ImageLoader = loader ?: ImageLoader.Builder(context.applicationContext)
-        .diskCache { DiskCache.Builder().directory(File(context.cacheDir, "log-item-icons").path.toPath()).maxSizeBytes(32L * 1024 * 1024).build() }
+        .diskCache(null)
         .build().also { loader = it }
 }
 
 /** Tests supply generated local images through this seam, never real captures or a network URL. */
 internal val LocalLogIconLoader = staticCompositionLocalOf<ImageLoader?> { null }
+
+@Composable
+internal fun ResourceIcon(type: Int, id: Long, names: GameNameMap, onAvailable: (Boolean) -> Unit = {}) {
+    val context = LocalContext.current
+    val url = if (type == 2) names.itemIcons[id] else null
+    var file by remember(type, id, url) { mutableStateOf<File?>(null) }
+    var failed by remember(type, id, url) { mutableStateOf(false) }
+    var loaded by remember(type, id, url) { mutableStateOf(false) }
+    LaunchedEffect(type, id, url) {
+        if (type == 2) file = LogIconLoader.files(context).resolve(id, url)
+    }
+    LaunchedEffect(file, failed) { onAvailable(file != null && !failed) }
+    if (file != null && !failed) AsyncImage(model = file!!.toURI().toString(),
+        imageLoader = LocalLogIconLoader.current ?: LogIconLoader.get(context),
+        contentDescription = null, modifier = Modifier.size(32.dp).testTag(if (loaded) "log-icon-loaded" else "log-icon-loading"),
+        onSuccess = { loaded = true }, onError = { failed = true })
+}
 
 @Composable
 internal fun ResourceGroups(resources: List<LogResource>, names: GameNameMap) {
@@ -96,24 +116,17 @@ internal fun ResourceGroups(resources: List<LogResource>, names: GameNameMap) {
 @Composable
 internal fun ResourceTile(resource: LogResource, names: GameNameMap) {
     val name = resourceName(resource.type, resource.id, names)
-    val url = if (resource.type == 2) names.itemIcons[resource.id] else null
-    var failed by remember(url) { mutableStateOf(url == null) }
-    var loaded by remember(url) { mutableStateOf(false) }
-    var showName by remember { mutableStateOf(false) }
+    var available by remember(resource.type, resource.id) { mutableStateOf(false) }
     val count = resource.count?.let(::signedOutsideCount) ?: stringResource(R.string.capture_gains_unknown)
     val split = resource.split?.let { (free, paid) -> stringResource(R.string.capture_stone_split, signedOutsideCount(free), signedOutsideCount(paid)) }
     val holdings = resource.holdings?.let { stringResource(R.string.capture_gains_holdings, it.grouped()) }
     Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.widthIn(max = 160.dp).testTag("resource:${resource.type}:${resource.id}")
-            .semantics(mergeDescendants = true) { contentDescription = listOfNotNull(name, count, split, holdings).joinToString(", ") }
-            .combinedClickable(onClick = { showName = true }, onLongClick = { showName = true })) {
+            .semantics(mergeDescendants = true) { contentDescription = listOfNotNull(name, count, split, holdings).joinToString(", ") }) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                if (url != null && !failed) AsyncImage(model = url,
-                    imageLoader = LocalLogIconLoader.current ?: LogIconLoader.get(LocalContext.current),
-                    contentDescription = null, modifier = Modifier.size(32.dp).testTag(if (loaded) "log-icon-loaded" else "log-icon-loading"),
-                    onSuccess = { loaded = true }, onError = { failed = true })
-                if (resource.type != 2 || resource.id !in currencyIds || failed) Text(name, style = MaterialTheme.typography.labelMedium,
+                ResourceIcon(resource.type, resource.id, names) { available = it }
+                if (resource.type != 2 || resource.id !in currencyIds || !available) Text(name, style = MaterialTheme.typography.labelMedium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).widthIn(max = 100.dp))
                 Text(count, style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
             }
@@ -121,6 +134,4 @@ internal fun ResourceTile(resource: LogResource, names: GameNameMap) {
             holdings?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
         }
     }
-    if (showName) AlertDialog(onDismissRequest = { showName = false }, text = { Text(name) },
-        confirmButton = { TextButton(onClick = { showName = false }) { Text(stringResource(android.R.string.ok)) } })
 }

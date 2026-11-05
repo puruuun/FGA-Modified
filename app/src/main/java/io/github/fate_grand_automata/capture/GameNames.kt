@@ -40,8 +40,16 @@ class GameNames(
         mutex.withLock {
             val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
             val drops = runs.flatMap { it.items }
-            val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds,
-                needsIcons = !File(directory, "item_icons.json").isFile)
+            val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
+            // Older installs can have today's names/attempt without an icon map. Its retry budget is independent.
+            if (!File(directory, "item_icons.json").isFile) {
+                runCatching {
+                    if (!canAttempt("item_icons")) return@runCatching
+                    val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
+                    check(parseNames(body).isNotEmpty())
+                    saveIcons(body)
+                }
+            }
             val servants = refresh("basic_servant", cached.servants,
                 drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys })
             val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })
@@ -55,20 +63,30 @@ class GameNames(
         }.toMap()
     }.getOrDefault(emptyMap())
 
-    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, needsIcons: Boolean = false): Map<Long, String> {
-        if (cache.isNotEmpty() && ids.all { it in cache } && !needsIcons) return cache
+    private fun canAttempt(list: String): Boolean {
         val attempt = File(directory, "$list.attempt")
         val last = runCatching { attempt.readText().toLong() }.getOrNull()
-        if (last != null && now() - last < DAY_MS) return cache
+        if (last != null && now() - last < DAY_MS) return false
+        directory.mkdirs()
+        attempt.writeText(now().toString())
+        return true
+    }
+
+    private fun saveIcons(body: String) = writeCaptureFile(File(directory, "item_icons.json"),
+        JsonObject(parseIcons(body).mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
+
+    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>): Map<Long, String> {
+        if (cache.isNotEmpty() && ids.all { it in cache }) return cache
         return runCatching {
-            directory.mkdirs()
-            // Persist attempts too: failures and process restarts must not cause repeated downloads.
-            attempt.writeText(now().toString())
+            if (!canAttempt(list)) return cache
+            // A names fetch also satisfies the icon attempt, even if that fetch fails.
+            if (list == "nice_item") {
+                File(directory, "item_icons.attempt").writeText(now().toString())
+            }
             val body = download("https://api.atlasacademy.io/export/KR/$list.json")
             val names = parseNames(body)
             check(names.isNotEmpty())
-            if (list == "nice_item") writeCaptureFile(File(directory, "item_icons.json"),
-                JsonObject(parseIcons(body).mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
+            if (list == "nice_item") saveIcons(body)
             val target = File(directory, "$list.json")
             val tmp = File(directory, "$list.tmp")
             tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
@@ -94,7 +112,7 @@ class GameNames(
                 val row = element as? JsonObject ?: return@mapNotNull null
                 val id = (row["id"] as? JsonPrimitive)?.longOrNull ?: return@mapNotNull null
                 val icon = (row["icon"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
-                if (runCatching { java.net.URI(icon).let { it.scheme == "https" && it.host == "static.atlasacademy.io" && it.userInfo == null } }.getOrDefault(false)) id to icon else null
+                if (IconFileStore.isPublicIcon(icon)) id to icon else null
             }.toMap()
     }
 }

@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.battlelog
 
 import android.content.Context
+import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -21,9 +22,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BattleLogRepository internal constructor(private val directory: File) {
+class BattleLogRepository internal constructor(
+    private val directory: File,
+    private val retention: () -> Int = { LogRetentionPrefsCore.DEFAULT },
+) {
     @Inject
-    constructor(@ApplicationContext context: Context) : this(context.filesDir)
+    constructor(@ApplicationContext context: Context) : this(context.filesDir,
+        { LogRetentionPrefsCore.normalize(LogRetentionPrefsCore.fromContext(context).limit.get()) })
 
     private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
@@ -38,12 +43,13 @@ class BattleLogRepository internal constructor(private val directory: File) {
 
     suspend fun add(entry: BattleLogEntry) = update {
         (it.filterNot { previous -> previous.id == entry.id } + entry)
-            .sortedByDescending { record -> record.endedAt }.take(MAX_ENTRIES)
+            .sortedByDescending { record -> record.endedAt }.take(retention())
     }
 
     suspend fun delete(id: String) = update { it.filterNot { entry -> entry.id == id } }
 
     suspend fun clear() = update { emptyList() }
+    suspend fun trim() = update { it.take(retention()) }
 
     private suspend fun update(transform: (List<BattleLogEntry>) -> List<BattleLogEntry>) =
         withContext(Dispatchers.IO) {
@@ -73,7 +79,7 @@ class BattleLogRepository internal constructor(private val directory: File) {
             state.value = if (file.exists()) {
                 try {
                     json.decodeFromString<List<BattleLogEntry>>(file.readText())
-                        .sortedByDescending { it.endedAt }.take(MAX_ENTRIES)
+                        .sortedByDescending { it.endedAt }.take(retention())
                 } catch (e: SerializationException) {
                     Timber.w(e, "Corrupt battle log; preserving original")
                     val backup = File(directory, "battle-log.corrupt.json").let {
@@ -90,7 +96,4 @@ class BattleLogRepository internal constructor(private val directory: File) {
         return loaded
     }
 
-    companion object {
-        const val MAX_ENTRIES = 200
-    }
 }

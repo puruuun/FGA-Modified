@@ -49,7 +49,7 @@ class LogPartBScreenshotTest(private val width: Int, private val height: Int, pr
             if (width >= 840) LogScreenContent(listOf(battle), {}, {}, names, openOutsideEntries = listOf(outside))
             else Column(Modifier.fillMaxSize()) {
                 LogList(mixedCaptureLogs(listOf(battle), emptyList(), listOf(outside)), "outside:${outside.id}", {},
-                    LogDeleteSelection(), {}, {}, {}, {}, true, "", LogTimeFilter.All, {}, null, {}, emptySet(), names)
+                    LogDeleteSelection(), {}, {}, {}, {}, true, "", {}, null, {})
             }
         }
     }
@@ -61,8 +61,10 @@ class LogPartBScreenshotTest(private val width: Int, private val height: Int, pr
     }) { WithIcons { LogScreenContent(listOf(battle), {}, {}, names, openOutsideEntries = listOf(outside)) } }
 
     @Test fun activeFilter() = rule.shoot("log-part-b", "ActiveFilter", width, height, dark, "ko", beforeCapture = {
-        rule.onNodeWithText("획득 자원: 모든 자원").performClick()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-resources").performScrollToNode(hasText("무간의 톱니바퀴"))
         rule.onNode(hasText("무간의 톱니바퀴") and hasAnyAncestor(isDialog())).performClick()
+        rule.onNodeWithText("적용").performClick()
         awaitIcons()
     }) { WithIcons { LogScreenContent(listOf(battle), {}, {}, names, openOutsideEntries = listOf(outside)) } }
 

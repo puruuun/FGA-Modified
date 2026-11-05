@@ -1044,4 +1044,11 @@
     <string name="capture_log_all_resources">모든 자원</string>
     <string name="capture_log_filter_empty">선택한 필터에 맞는 기록이 없습니다.</string>
     <string name="capture_stone_split">무료 %1$s · 유료 %2$s</string>
+    <string name="capture_log_filter">로그 필터</string>
+    <string name="capture_log_date">날짜</string>
+    <string name="capture_log_custom_range">기간 지정</string>
+    <string name="capture_log_retention">로그 보관 개수 (종류별)</string>
+    <string name="capture_log_retention_confirm">전투 기록과 스크립트 밖 기록을 각각 최신 %1$d개만 보관할까요? 오래된 기록은 영구 삭제됩니다.</string>
+    <string name="capture_log_apply">적용</string>
+    <string name="capture_log_clear_filter">해제</string>
 </resources>

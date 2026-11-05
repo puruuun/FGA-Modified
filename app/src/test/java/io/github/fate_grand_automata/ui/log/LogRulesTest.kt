@@ -60,6 +60,24 @@ class LogRulesTest {
         assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Week, "2:6510", now, zone))
         assertTrue(filterCaptureLogs(all, LogTimeFilter.Today, "2:6001", now, zone).isEmpty())
     }
+
+    @Test fun customPickerDatesIncludeBothLocalDaysAndCombineWithResource() {
+        val start = Instant.parse("2026-10-30T00:00:00Z").toEpochMilli()
+        val end = Instant.parse("2026-11-05T00:00:00Z").toEpochMilli()
+        val tomorrow = battle("tomorrow", "2026-11-05T15:00:00Z")
+        assertEquals(listOf(today, week), filterCaptureLogs(all + tomorrow, LogTimeFilter.Custom, null, now, zone, start, end))
+        assertEquals(listOf(week), filterCaptureLogs(all, LogTimeFilter.Custom, "2:6001", now, zone, start, end))
+        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Custom, null, now, zone, end, end))
+    }
+
+    @Test fun customRangeUsesCalendarDaysAcrossDstInsteadOfFixed24Hours() {
+        val zone = TimeZone.getTimeZone("America/New_York")
+        val day = Instant.parse("2026-11-01T00:00:00Z").toEpochMilli()
+        val first = battle("first", "2026-11-01T04:00:00Z")
+        val last = battle("last", "2026-11-02T04:59:59Z")
+        val next = battle("next", "2026-11-02T05:00:00Z")
+        assertEquals(listOf(first, last), filterCaptureLogs(listOf(first, last, next), LogTimeFilter.Custom, null, now, zone, day, day))
+    }
     @Test fun resourcesComeOnlyFromRecordedChangesAndKeepDropTypesDistinct() {
         val ce = CaptureLogItem(battle = battleLogFixture("ce").copy(gains = RunGains(items = listOf(GainedItem(3, 6510, 1)))))
         assertEquals(setOf("2:6510", "3:6510"), logResources(listOf(today, ce)))

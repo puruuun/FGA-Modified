@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
+import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
@@ -29,8 +30,8 @@ object OutsideLogRepository {
     private var store: OutsideLogStore? = null
 
     @Synchronized
-    fun init(filesDirectory: File) {
-        if (store == null) store = OutsideLogStore(filesDirectory) { state.value = it }
+    fun init(filesDirectory: File, retention: () -> Int = { LogRetentionPrefsCore.DEFAULT }) {
+        if (store == null) store = OutsideLogStore(filesDirectory, retention) { state.value = it }
         runCatching { store!!.load() }.onFailure { warn(it) }
     }
 
@@ -40,12 +41,15 @@ object OutsideLogRepository {
     fun delete(id: String) { runCatching { store?.delete(id) }.onFailure { warn(it) } }
     @Synchronized
     fun clear() { runCatching { store?.clear() }.onFailure { warn(it) } }
+    @Synchronized
+    fun trim() { runCatching { store?.trim() }.onFailure { warn(it) } }
 
     private fun warn(error: Throwable) { Timber.w("Capture: outside log I/O failed: %s", error.javaClass.simpleName) }
 }
 
 internal class OutsideLogStore(
     private val directory: File,
+    private val retention: () -> Int = { LogRetentionPrefsCore.DEFAULT },
     private val publish: (List<OutsideLogEntry>) -> Unit = {},
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -57,7 +61,7 @@ internal class OutsideLogStore(
     fun load() {
         if (loaded) return
         entries = if (!file.exists()) emptyList() else try {
-            json.decodeFromString<List<OutsideLogEntry>>(file.readText()).sortedByDescending { it.endedAt }.take(200)
+            json.decodeFromString<List<OutsideLogEntry>>(file.readText()).sortedByDescending { it.endedAt }.take(retention())
         } catch (e: kotlinx.serialization.SerializationException) {
             // Preserve unreadable history before starting a new file; I/O failures remain retryable.
             Files.move(file.toPath(), File(directory, "outside-log.corrupt-${UUID.randomUUID()}.json").toPath())
@@ -68,10 +72,11 @@ internal class OutsideLogStore(
     }
 
     fun add(entry: OutsideLogEntry) = update {
-        (it.filterNot { old -> old.id == entry.id } + entry).sortedByDescending { it.endedAt }.take(200)
+        (it.filterNot { old -> old.id == entry.id } + entry).sortedByDescending { it.endedAt }.take(retention())
     }
     fun delete(id: String) = update { it.filterNot { entry -> entry.id == id } }
     fun clear() = update { emptyList() }
+    fun trim() = update { it.take(retention()) }
 
     private fun update(transform: (List<OutsideLogEntry>) -> List<OutsideLogEntry>) {
         load()

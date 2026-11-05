@@ -1123,4 +1123,11 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_all_resources">All resources</string>
     <string name="capture_log_filter_empty">No records match the active filters.</string>
     <string name="capture_stone_split">Free %1$s · Paid %2$s</string>
+    <string name="capture_log_filter">Filter logs</string>
+    <string name="capture_log_date">Date</string>
+    <string name="capture_log_custom_range">Custom range</string>
+    <string name="capture_log_retention">Records to keep (per type)</string>
+    <string name="capture_log_retention_confirm">Keep the newest %1$d battle records and %1$d outside records? Older records will be permanently deleted.</string>
+    <string name="capture_log_apply">Apply</string>
+    <string name="capture_log_clear_filter">Clear</string>
 </resources>

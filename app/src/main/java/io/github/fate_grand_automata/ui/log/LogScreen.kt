@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
@@ -28,6 +30,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.capture.*
+import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.exit.battleSummaryContent
@@ -40,6 +43,7 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     val entries by viewModel.entries.collectAsState()
     val outsideEntries by viewModel.outsideEntries.collectAsState()
     val openEntries by viewModel.openOutsideEntries.collectAsState()
+    val retention by viewModel.retention.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) }
@@ -52,7 +56,8 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
         if (gains.isNotEmpty() || outsideEntries.isNotEmpty() || openEntries.isNotEmpty()) names = cache.resolve(gains, itemIds + iconItemIds)
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,
-        outsideEntries = outsideEntries, openOutsideEntries = openEntries)
+        outsideEntries = outsideEntries, openOutsideEntries = openEntries,
+        retention = LogRetentionPrefsCore.normalize(retention), onRetention = viewModel::setRetention)
 }
 
 @Composable
@@ -63,10 +68,15 @@ fun LogScreenContent(
     names: GameNameMap = GameNameMap(),
     outsideEntries: List<OutsideLogEntry> = emptyList(),
     openOutsideEntries: List<OutsideLogEntry> = emptyList(),
+    retention: Int = LogRetentionPrefsCore.DEFAULT,
+    onRetention: (Int) -> Unit = {},
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
     var resource by rememberSaveable { mutableStateOf<String?>(null) }
+    var start by rememberSaveable { mutableStateOf<Long?>(null) }
+    var end by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
     var deletion by rememberSaveable(stateSaver = listSaver<LogDeleteSelection, String>(
         save = { listOf(it.active.toString()) + it.selected },
         restore = { LogDeleteSelection(it.first().toBoolean(), it.drop(1).toSet()) },
@@ -74,10 +84,14 @@ fun LogScreenContent(
     var pendingIds by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var confirmAll by rememberSaveable { mutableStateOf(false) }
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
-    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis())
+    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end)
     val filtered = time != LogTimeFilter.All || resource != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
+    val clearFilters = { time = LogTimeFilter.All; resource = null; start = null; end = null }
+    val summary = if (filtered) listOfNotNull(
+        if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
+        resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -91,8 +105,7 @@ fun LogScreenContent(
                 onDeleteSelected = { pendingIds = ArrayList(deletion.targets(all)); confirmAll = false },
                 onClear = { pendingIds = ArrayList(deletion.targets(all, all = true)); confirmAll = true },
                 hasEntries = all.isNotEmpty(), emptyText = if (twoPanes) "" else emptyText,
-                time = time, onTime = { time = it }, resource = resource, onResource = { resource = it },
-                resources = logResources(all), names = names)
+                onFilter = { showFilters = true }, filterSummary = summary, onClearFilter = clearFilters)
         }
         if (twoPanes) {
             CappedWidth {
@@ -112,6 +125,12 @@ fun LogScreenContent(
             } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
         }
     }
+    if (showFilters) LogFilterDialog(time, resource, start, end, retention, entries.size, outsideEntries.size,
+        logResources(all), names, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention ->
+            time = newTime; resource = newResource; start = newStart; end = newEnd
+            if (newRetention != retention) onRetention(newRetention)
+            showFilters = false
+        })
     if (pendingIds != null) AlertDialog(
         onDismissRequest = { pendingIds = null; confirmAll = false },
         title = { Text(stringResource(if (confirmAll) R.string.battle_log_delete_all else R.string.capture_log_delete_selected)) },
@@ -130,18 +149,32 @@ internal fun ColumnScope.LogList(
     sorted: List<CaptureLogItem>, selectedId: String?, onSelect: (String) -> Unit,
     deletion: LogDeleteSelection, onEnterDelete: () -> Unit, onCancelDelete: () -> Unit,
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
-    emptyText: String, time: LogTimeFilter, onTime: (LogTimeFilter) -> Unit,
-    resource: String?, onResource: (String?) -> Unit, resources: Set<String>, names: GameNameMap,
+    emptyText: String, onFilter: () -> Unit, filterSummary: String?, onClearFilter: () -> Unit,
 ) {
     Heading(stringResource(R.string.p_logs), trailing = {
-        if (hasEntries && !deletion.active) TextButton(onClick = onEnterDelete) { Text(stringResource(R.string.battle_log_delete)) }
+        if (!deletion.active) Row(verticalAlignment = Alignment.CenterVertically) {
+            if (hasEntries) TextButton(onClick = onEnterDelete) {
+                Icon(Icons.Default.Delete, stringResource(R.string.battle_log_delete), Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.battle_log_delete))
+            }
+            IconButton(onClick = onFilter, modifier = Modifier.testTag("log-filter-button")) {
+                BadgedBox(badge = { if (filterSummary != null) Badge(Modifier.testTag("log-filter-active")) }) {
+                    Icon(Icons.Default.FilterList, stringResource(R.string.capture_log_filter))
+                }
+            }
+        }
     })
     if (deletion.active) FlowRow(Modifier.padding(horizontal = 8.dp)) {
         TextButton(onClick = onDeleteSelected, enabled = deletion.selected.isNotEmpty()) { Text(stringResource(R.string.capture_log_delete_selected)) }
         TextButton(onClick = onClear) { Text(stringResource(R.string.battle_log_delete_all)) }
         TextButton(onClick = onCancelDelete) { Text(stringResource(android.R.string.cancel)) }
     }
-    LogFilters(time, onTime, resource, onResource, resources, names)
+    if (filterSummary != null) Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp).testTag("log-filter-summary"),
+        verticalAlignment = Alignment.CenterVertically) {
+        Text(filterSummary, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = onClearFilter) { Text(stringResource(R.string.capture_log_clear_filter)) }
+    }
     if (sorted.isEmpty()) {
         if (emptyText.isNotEmpty()) Text(emptyText, Modifier.padding(16.dp))
     } else LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
@@ -153,39 +186,6 @@ internal fun ColumnScope.LogList(
         }
     }
 }
-
-@Composable
-private fun LogFilters(time: LogTimeFilter, onTime: (LogTimeFilter) -> Unit, resource: String?, onResource: (String?) -> Unit, resources: Set<String>, names: GameNameMap) {
-    var choose by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.padding(horizontal = 16.dp)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            LogTimeFilter.entries.forEach { value ->
-                FilterChip(selected = time == value, onClick = { onTime(value) }, label = { Text(stringResource(when (value) {
-                    LogTimeFilter.Today -> R.string.capture_log_today
-                    LogTimeFilter.Week -> R.string.capture_log_week
-                    LogTimeFilter.Month -> R.string.capture_log_month
-                    LogTimeFilter.All -> R.string.capture_log_all_time
-                })) })
-            }
-        }
-        TextButton(onClick = { choose = true }) {
-            Text(stringResource(R.string.capture_log_resource) + ": " + (resource?.let { resourceLabel(it, names) } ?: stringResource(R.string.capture_log_all_resources)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-    if (choose) AlertDialog(onDismissRequest = { choose = false },
-        title = { Text(stringResource(R.string.capture_log_resource)) },
-        text = {
-            val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }
-            LazyColumn {
-                item { TextButton(onClick = { onResource(null); choose = false }) { Text(stringResource(R.string.capture_log_all_resources)) } }
-                items(labels, key = { it.first }) { (key, label) -> TextButton(onClick = { onResource(key); choose = false }) { Text(label) } }
-            }
-        }, confirmButton = { TextButton(onClick = { choose = false }) { Text(stringResource(android.R.string.cancel)) } })
-}
-
-@Composable
-private fun resourceLabel(key: String, names: GameNameMap): String =
-    resourceName(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
 
 private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap) {
     entry.battle?.let { battleLogDetailItems(it, names) }
