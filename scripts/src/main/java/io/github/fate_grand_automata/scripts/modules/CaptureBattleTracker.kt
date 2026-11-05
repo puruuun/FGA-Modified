@@ -60,19 +60,33 @@ class CaptureBattleTracker @Inject constructor(
         if (!awaited) {
             battle = feed.awaitBattle(token, 3.seconds)
             awaited = true
+            battle?.let { messages.log(ScriptLog.Bond(slotLog(it))) }
         }
         return battle
     }
 
     fun checkBond() {
         if (!enabled || bondChecked) return
-        if (!prefs.bondTrackingFeatureEnabled || !config.stopOnBondMax) return
+        if (!prefs.bondTrackingFeatureEnabled) return
         bondChecked = true
         val result = response() ?: return
+        if (!config.stopOnBondMax) return
         val slots = CaptureBondStop.check(result, config.bondMaxIgnoredCharacters).orEmpty()
         if (slots.isNotEmpty()) {
             state.nextRun()
             throw AutoBattle.BattleExitException(AutoBattle.ExitReason.BondMax(slots))
+        }
+    }
+
+    companion object {
+        /** One line per battle: own slots in deck order, then the same servants sorted by setup initPos. */
+        fun slotLog(battle: CapturedBattle): String {
+            val rows = battle.bond ?: return "capture bond slots=none"
+            val slots = rows.joinToString(" | ") {
+                "${it.slot}:svt=${it.svtId} r=${it.oldRank}->${it.newRank} cap=${it.cap} +${it.gained}"
+            }
+            val byInit = rows.sortedBy { it.initPos ?: Int.MAX_VALUE }.map { it.svtId }
+            return "capture bond slots=$slots | initPosOrder=$byInit"
         }
     }
 }

@@ -171,13 +171,30 @@ class CaptureBattleTrackingTest {
         assertEquals(listOf(1), reason.positions)
     }
 
-    @Test fun `master bond switch is respected and no wait happens without a bond stop`() {
+    @Test fun `master bond switch off means no wait and no slot log`() {
         val disabled = Fixture()
         every { disabled.api.prefs.bondTrackingFeatureEnabled } returns false
         every { disabled.config.stopOnBondMax } returns true
         disabled.feed.response = null; disabled.capture.start(); disabled.capture.checkBond()
         assertEquals(0, disabled.state.runs); assertTrue(disabled.feed.tokens.isEmpty())
-        val off = Fixture(); off.capture.start(); off.capture.checkBond()
-        assertTrue(off.feed.tokens.isEmpty())
+    }
+
+    @Test fun `slot log lists deck order and initPos order once per battle even without a bond stop`() {
+        val f = Fixture()
+        every { f.config.stopOnBondMax } returns false
+        f.feed.response = CapturedBattle(emptyMap(), listOf(
+            CapturedBond(1, 901, 9, 10, 10, 50, initPos = 3), CapturedBond(2, 902, 5, 5, 10, 7, initPos = 1)))
+        val logs = mutableListOf<ScriptLog>()
+        every { f.api.messages.log(capture(logs)) } just Runs
+        f.capture.start(); f.capture.checkBond(); f.capture.checkBond(); f.materials.parseMaterials()
+        assertEquals(1, logs.count { it is ScriptLog.Bond && it.message.contains("initPosOrder=[902, 901]") })
+        assertEquals(0, f.state.runs)
+    }
+
+    @Test fun `slot log content`() {
+        val text = CaptureBattleTracker.slotLog(CapturedBattle(emptyMap(), listOf(
+            CapturedBond(1, 901, 9, 10, 10, 50, initPos = 3), CapturedBond(2, 902, 5, 5, 10, 7, initPos = 1))))
+        assertEquals("capture bond slots=1:svt=901 r=9->10 cap=10 +50 | 2:svt=902 r=5->5 cap=10 +7 | initPosOrder=[902, 901]", text)
+        assertEquals("capture bond slots=none", CaptureBattleTracker.slotLog(CapturedBattle(null, null)))
     }
 }

@@ -31,7 +31,7 @@ class CapturedBattleTest {
             {"svtId":901,"friendship":200,"friendshipRank":12,"friendshipExceedCount":2}]}""",
             """{"userSvtCollection":[{"svtId":901,"friendship":200,"friendshipRank":12,"friendshipExceedCount":2},
             {"svtId":903,"friendship":150,"friendshipRank":10,"friendshipExceedCount":1}]}"""), previous)!!
-        assertEquals(listOf(CapturedBond(1, 901, 12, 12, 12, 0), CapturedBond(2, 903, 9, 10, 11, 50)), result.bond)
+        assertEquals(listOf(CapturedBond(1, 901, 12, 12, 12, 0, 1), CapturedBond(2, 903, 9, 10, 11, 50, 3)), result.bond)
         assertEquals(listOf(1, 2), CaptureBondStop.check(result, emptySet()))
     }
 

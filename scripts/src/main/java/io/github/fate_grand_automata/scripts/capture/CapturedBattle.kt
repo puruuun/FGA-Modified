@@ -9,6 +9,7 @@ data class CapturedBond(
     val newRank: Int?,
     val cap: Int?,
     val gained: Long?,
+    val initPos: Int? = null,
 )
 
 /** Only the values needed by automation. Unknown sections stay unknown, never zero. */
@@ -57,7 +58,8 @@ data class CapturedBattle(val drops: Map<Long, Long>?, val bond: List<CapturedBo
                 val exceed = (after.number("friendshipExceedCount") ?: before.number("friendshipExceedCount"))
                     ?.takeIf { it in 0..(Int.MAX_VALUE - 10).toLong() }
                 CapturedBond(index + 1, id, before.rank(), after.rank(), exceed?.toInt()?.plus(10),
-                    if (oldPoints != null && newPoints != null && newPoints >= oldPoints) newPoints - oldPoints else null)
+                    if (oldPoints != null && newPoints != null && newPoints >= oldPoints) newPoints - oldPoints else null,
+                    setupRow.number("initPos")?.takeIf { it in 0..Int.MAX_VALUE.toLong() }?.toInt())
             }
             return CapturedBattle(drops, bond)
         }
