@@ -137,6 +137,7 @@ Skills"</string>
     <string name="support_img_namer_file_rename_failed">"Failed to rename to: '%s'"</string>
     <string name="p_refill">"Refill"</string>
     <string name="p_battle_config">"Battle Configs"</string>
+    <string name="p_battle_config_summary">"Manage configs for Battle script"</string>
     <string name="p_more_options">"More options"</string>
     <string name="p_limit">"Limit"</string>
     <string name="p_runs">"Runs"</string>

@@ -176,6 +176,7 @@
     <string name="p_battle_config_notes">"メモ"</string>
     <string name="p_battle_config_party">"パーティー"</string>
     <string name="p_battle_config_server">"ゲームサーバー"</string>
+    <string name="p_battle_config_summary">"バトルの設定を管理する"</string>
     <string name="p_battle_config_support">"サポート"</string>
     <string name="p_battle_config_support_also_check_all">"Allもチェックする"</string>
     <string name="p_battle_config_support_bond_ce_effect_preference">"選択する絆礼装の効果"</string>

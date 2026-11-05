@@ -226,6 +226,7 @@
     <string name="p_battle_config_raid_delay">"레이드 턴 지연"</string>
     <string name="p_battle_config_raid_delay_message">"레이드를 위해 추가적인 턴 지연이 추가됩니다."</string>
     <string name="p_battle_config_server">"서버"</string>
+    <string name="p_battle_config_summary">"오토 스킬 설정관리"</string>
     <string name="p_battle_config_support">"서포트"</string>
     <string name="p_battle_config_support_also_check_all">"전체 서포트슬롯도 확인"</string>
     <string name="p_battle_config_support_bond_ce_effect_preference">"인연예장 효과 선호"</string>
