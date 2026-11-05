@@ -25,13 +25,14 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk=[36],qualifiers="en-w840dp-h800dp-hdpi")
+// Match the interactive Log tests' native runtime. API 36 remains in the isolated screenshot suite.
+@Config(sdk=[32],qualifiers="en-w840dp-h800dp-hdpi")
 class DashboardRound4UiTest {
     private val compose=createComposeRule()
     @get:Rule val rules=screenshotRules(compose)
     private val fixture by lazy { DashboardUiFixture() }
     private fun content(block:@androidx.compose.runtime.Composable ()->Unit) = compose.setContent {
-        FGATheme { CompositionLocalProvider(LocalNavigateBack provides {}) { block() } }
+        FGATheme { CompositionLocalProvider(LocalNavigateBack provides {}) { fixture.Icons { block() } } }
     }
     @Test fun equalTileHeightAndSecondaryTextIsBesideLoadedIcon() {
         content { fixture.Icons { Row {
