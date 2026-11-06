@@ -862,4 +862,10 @@
     <string name="dashboard_equipped">装備中</string>
     <string name="dashboard_owned_count">所持 %1$d騎</string>
     <string name="dashboard_quest">クエスト #%1$d</string>
+    <string name="icon_prefetch_loading_lists">アイコン一覧を取得中…</string>
+    <string name="icon_prefetch_progress">アイコンをダウンロード中 %1$d/%2$d</string>
+    <string name="icon_prefetch_ready">アイコン%1$d個を準備しました</string>
+    <string name="icon_prefetch_failed">アイコン%1$d個を準備しました、%2$d個失敗</string>
+    <string name="icon_prefetch_lists_failed">アイコン一覧を取得できませんでした</string>
+    <string name="icon_prefetch_note">初回ダウンロードは約15 MBです。Wi-Fiを推奨します。</string>
 </resources>

@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.ui.more
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -39,10 +40,12 @@ class MoreOptionsViewModel @Inject constructor(
     val prefsCore: PrefsCore,
     val gameAreaPreview: GameAreaPreviewManager,
     private val originalImporter: OriginalFgaImportService,
-    private val portraitImporter: ServantPortraitImporter
+    private val portraitImporter: ServantPortraitImporter,
+    private val supportExtraction: SupportImageExtraction,
 ) : ViewModel() {
     val storageSummary: MutableState<String?> = mutableStateOf(null)
     val extractSummary: MutableState<String> = mutableStateOf("")
+    internal val supportExtractionState = supportExtraction.state
 
     private val _originalImport = MutableStateFlow(OriginalImportState())
     val originalImport = _originalImport.asStateFlow()
@@ -148,6 +151,10 @@ class MoreOptionsViewModel @Inject constructor(
     }
 
     fun performSupportImageExtraction(context: Context) = viewModelScope.launch {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            supportExtraction.start()
+            return@launch
+        }
         // TODO: Translate
         extractSummary.value = "Extracting ..."
 

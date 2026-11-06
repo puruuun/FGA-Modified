@@ -1100,4 +1100,10 @@
     <string name="dashboard_equipped">장착 중</string>
     <string name="dashboard_owned_count">보유 %1$d기</string>
     <string name="dashboard_quest">퀘스트 #%1$d</string>
+    <string name="icon_prefetch_loading_lists">아이콘 목록 받는 중…</string>
+    <string name="icon_prefetch_progress">아이콘 받는 중 %1$d/%2$d</string>
+    <string name="icon_prefetch_ready">아이콘 %1$d개 준비됨</string>
+    <string name="icon_prefetch_failed">아이콘 %1$d개 준비됨, %2$d개 실패</string>
+    <string name="icon_prefetch_lists_failed">아이콘 목록을 받지 못했습니다</string>
+    <string name="icon_prefetch_note">첫 다운로드는 약 15 MB입니다. Wi-Fi를 권장합니다.</string>
 </resources>

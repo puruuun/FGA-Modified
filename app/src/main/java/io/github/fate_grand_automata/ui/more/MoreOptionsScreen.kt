@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,8 +46,11 @@ fun MoreOptionsScreen(
         vm.pickedDirectory(it)
     }
     val storageSummary by vm.storageSummary
-    val extractSummary by vm.extractSummary
     val context = LocalContext.current
+    val extractSummary = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val state by vm.supportExtractionState.collectAsState()
+        supportExtractionSummary(context, state)
+    } else vm.extractSummary.value
 
     MoreOptionsContent(
         prefs = vm.prefsCore,

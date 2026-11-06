@@ -1179,4 +1179,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_equipped">Equipped</string>
     <string name="dashboard_owned_count">Owned %1$d</string>
     <string name="dashboard_quest">Quest #%1$d</string>
+    <string name="icon_prefetch_loading_lists">Fetching icon lists…</string>
+    <string name="icon_prefetch_progress">Downloading icons %1$d/%2$d</string>
+    <string name="icon_prefetch_ready">%1$d icons ready</string>
+    <string name="icon_prefetch_failed">%1$d icons ready, %2$d failed</string>
+    <string name="icon_prefetch_lists_failed">Could not fetch icon lists</string>
+    <string name="icon_prefetch_note">First download: about 15 MB. Wi-Fi recommended.</string>
 </resources>

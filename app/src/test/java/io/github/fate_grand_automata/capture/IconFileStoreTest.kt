@@ -5,6 +5,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
 class IconFileStoreTest {
@@ -49,5 +51,17 @@ class IconFileStoreTest {
     @Test fun emptyResponseNeverPublishesFile() = runBlocking {
         assertNull(IconFileStore(directory, { byteArrayOf() }).resolve(1, url))
         assertFalse(File(directory, "1.png").exists())
+    }
+
+    @Test fun differentIdsDownloadConcurrentlyThroughTheSharedStore() = runBlocking {
+        val entered = CountDownLatch(2)
+        val store = IconFileStore(directory, {
+            entered.countDown()
+            check(entered.await(5, TimeUnit.SECONDS)) { "unrelated icons must not share a download lock" }
+            byteArrayOf(1)
+        })
+        val files = listOf(1L, 2L).map { id -> async { store.resolve(id, url) } }.awaitAll()
+        assertTrue(files.all { it != null && it.isFile })
+        assertEquals(setOf("1.png", "2.png"), files.map { it!!.name }.toSet())
     }
 }

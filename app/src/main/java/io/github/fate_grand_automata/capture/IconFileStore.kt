@@ -10,6 +10,7 @@ import java.net.URI
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 
 /** Public assets live in filesDir, independently of account deletion and Coil's evictable caches. */
 class IconFileStore(
@@ -17,11 +18,12 @@ class IconFileStore(
     private val download: (String) -> ByteArray = ::downloadIcon,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    private val mutex = Mutex()
+    // Share a lock for each id, allowing unrelated missing icons to download concurrently.
+    private val mutexes = ConcurrentHashMap<Long, Mutex>()
 
     suspend fun resolve(id: Long, address: String?): File? = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            if (id <= 0) return@withLock null
+        if (id <= 0) return@withContext null
+        mutexes.getOrPut(id) { Mutex() }.withLock {
             val file = File(directory, "$id.png")
             if (file.isFile && file.length() > 0) return@withLock file
             if (address == null || !isPublicIcon(address)) return@withLock null
@@ -29,7 +31,7 @@ class IconFileStore(
             val last = runCatching { attempt.readText().toLong() }.getOrNull()
             if (last != null && now() - last < RETRY_MS) return@withLock null
             runCatching {
-                check(directory.isDirectory || directory.mkdirs())
+                check(directory.isDirectory || directory.mkdirs() || directory.isDirectory)
                 attempt.writeText(now().toString())
                 val bytes = download(address)
                 check(bytes.isNotEmpty())
