@@ -991,6 +991,8 @@
     <string name="capture_service_no_certificate">"로그 수집: 먼저 인증서를 만들어 주세요. FGA 서비스는 로그 수집 없이 실행됩니다."</string>
     <string name="capture_service_failed">"로그 수집을 시작하지 못했습니다. FGA 서비스는 로그 수집 없이 실행됩니다."</string>
     <string name="capture_chaldea_create">"Chaldea 파일 만들기"</string>
+    <string name="capture_chaldea_saved">저장했습니다. Chaldea에서 이 파일을 선택하세요</string>
+    <string name="capture_chaldea_open">Chaldea로 이동</string>
     <string name="capture_chaldea_guide">"Download/FGA/%1$s에 저장했습니다. Chaldea → 가져오기 → HTTPS 스니핑 → 파일에서 → %1$s 파일을 선택하세요."</string>
     <string name="capture_chaldea_not_installed">"Chaldea가 설치되지 않았거나 열 수 없습니다. 파일은 Download/FGA/%1$s에 저장했습니다."</string>
     <string name="capture_chaldea_failed">"Chaldea 파일 저장 또는 이전 파일 정리에 실패했습니다. 다시 시도해 주세요."</string>
@@ -1079,13 +1081,13 @@
     <string name="dashboard_total">합계</string>
     <string name="dashboard_command_codes">커맨드 코드</string>
     <string name="dashboard_second_storage">두 번째 보관소</string>
-    <string name="dashboard_bond_summary">보유 %1$d기 · 인연 10 이상 %2$d기 · 인연 15 %3$d기</string>
     <string name="dashboard_search">이름으로 검색</string>
-    <string name="dashboard_sort_bond">인연순</string>
-    <string name="dashboard_sort_rarity">레어도순</string>
-    <string name="dashboard_sort_collection">도감 번호순</string>
+    <string name="dashboard_sort_bond">인연</string>
+    <string name="dashboard_sort_cost">코스트</string>
+    <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">모든 클래스</string>
     <string name="dashboard_bond">인연 %1$d</string>
+    <string name="dashboard_servant_cost">코스트 %1$d</string>
     <string name="dashboard_np">보구 %1$d</string>
     <string name="dashboard_max_level">최고 Lv %1$d</string>
     <string name="dashboard_skills">스킬 %1$s</string>
@@ -1098,7 +1100,6 @@
     <string name="dashboard_group_other">기타</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">장착 중</string>
-    <string name="dashboard_owned_count">보유 %1$d기</string>
     <string name="dashboard_quest">퀘스트 #%1$d</string>
     <string name="icon_prefetch_loading_lists">아이콘 목록 받는 중…</string>
     <string name="icon_prefetch_progress">아이콘 받는 중 %1$d/%2$d</string>

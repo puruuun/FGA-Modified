@@ -753,6 +753,8 @@
     <string name="capture_service_no_certificate">"ログ収集: 先に証明書を作成してください。FGAサービスはログ収集なしで実行します。"</string>
     <string name="capture_service_failed">"ログ収集を開始できませんでした。FGAサービスはログ収集なしで実行します。"</string>
     <string name="capture_chaldea_create">"Chaldeaファイルを作成"</string>
+    <string name="capture_chaldea_saved">保存しました。Chaldeaでこのファイルを選択してください</string>
+    <string name="capture_chaldea_open">Chaldeaを開く</string>
     <string name="capture_chaldea_guide">"Download/FGA/%1$sに保存しました。Chaldea → インポート → HTTPSスニッフィング → ファイルから → %1$sを選択してください。"</string>
     <string name="capture_chaldea_not_installed">"Chaldeaが未インストールか、開けませんでした。ファイルはDownload/FGA/%1$sに保存しました。"</string>
     <string name="capture_chaldea_failed">"Chaldeaファイルの保存または以前のファイルの削除に失敗しました。もう一度お試しください。"</string>
@@ -841,13 +843,13 @@
     <string name="dashboard_total">合計</string>
     <string name="dashboard_command_codes">コマンドコード</string>
     <string name="dashboard_second_storage">霊基保管室</string>
-    <string name="dashboard_bond_summary">所持 %1$d騎 · 絆10以上 %2$d騎 · 絆15 %3$d騎</string>
     <string name="dashboard_search">名前で検索</string>
-    <string name="dashboard_sort_bond">絆順</string>
-    <string name="dashboard_sort_rarity">レアリティ順</string>
-    <string name="dashboard_sort_collection">図鑑番号順</string>
+    <string name="dashboard_sort_bond">絆</string>
+    <string name="dashboard_sort_cost">コスト</string>
+    <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">全クラス</string>
     <string name="dashboard_bond">絆 %1$d</string>
+    <string name="dashboard_servant_cost">コスト %1$d</string>
     <string name="dashboard_np">宝具 %1$d</string>
     <string name="dashboard_max_level">最高Lv %1$d</string>
     <string name="dashboard_skills">スキル %1$s</string>
@@ -860,7 +862,6 @@
     <string name="dashboard_group_other">その他</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">装備中</string>
-    <string name="dashboard_owned_count">所持 %1$d騎</string>
     <string name="dashboard_quest">クエスト #%1$d</string>
     <string name="icon_prefetch_loading_lists">アイコン一覧を取得中…</string>
     <string name="icon_prefetch_progress">アイコンをダウンロード中 %1$d/%2$d</string>

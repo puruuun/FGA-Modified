@@ -78,22 +78,51 @@ class DashboardDataTest {
         val data = dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2}]"""), GameNameMap())
         assertNull(data.servants)
     }
-    @Test fun bondCountsSortAndPointsTieBreak() {
+    @Test fun bondRankAndPointsTieBreak() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[
             {"svtId":10,"status":2,"friendshipRank":10,"friendship":300},
             {"svtId":11,"status":2,"friendshipRank":15,"friendship":100},
             {"svtId":13,"status":2,"friendshipRank":10,"friendship":400},
             {"svtId":14,"status":2,"friendshipRank":9}]
         """), dashboardNames())
-        assertEquals(3, data.bondTen); assertEquals(1, data.bondFifteen)
-        assertEquals(listOf(11L, 13L, 10L, 14L), data.servants!!.selectServants("", ServantSort.Bond, null).map { it.id })
+        assertEquals(listOf(11L, 13L, 10L, 14L), data.servants!!.selectServants(ServantSort.Bond, null).map { it.id })
     }
-    @Test fun rarityCollectionSearchAndClassFilter() {
+    @Test fun classFilterKeepsOnlySelectedClasses() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2},{"svtId":11,"status":2}]"""), dashboardNames()).servants!!
-        assertEquals(listOf(10L,11L), data.selectServants("", ServantSort.Rarity, null).map { it.id })
-        assertEquals(listOf(11L,10L), data.selectServants("", ServantSort.Collection, null).map { it.id })
-        assertEquals(listOf(10L), data.selectServants("ALP", ServantSort.Bond, "saber").map { it.id })
-        assertTrue(data.selectServants("Beta", ServantSort.Bond, "saber").isEmpty())
+        assertEquals(listOf(10L), data.selectServants(ServantSort.Bond, setOf("saber")).map { it.id })
+        assertTrue(data.selectServants(ServantSort.Bond, setOf("beast")).isEmpty())
+    }
+    private fun servant(id: Long, rarity: Long?, bond: Long?, points: Long?, level: Long?) =
+        DashboardServant(id, AtlasBasic(id, rarity = rarity), bond, points, null, emptyList(), level)
+
+    @Test fun costTableIncludesZeroStarMashAndUnknownMetadata() {
+        listOf(0L to 4, 1L to 3, 2L to 4, 3L to 7, 4L to 12, 5L to 16).forEach { (rarity, cost) ->
+            assertEquals(cost, servant(1,rarity,null,null,null).cost)
+        }
+        assertEquals(0, servant(800100,5,null,null,null).cost)
+        assertEquals(0, servant(800100,null,null,null,null).cost)
+        assertNull(servant(1,null,null,null,null).cost)
+        assertNull(servant(1,6,null,null,null).cost)
+    }
+
+    private val sortRows get() = listOf(
+        servant(1,3,10,100,100), servant(2,5,10,100,80),
+        servant(3,5,10,100,100), servant(4,5,10,100,100),
+        servant(5,1,10,200,70), servant(6,0,11,0,1), servant(7,null,null,null,null))
+
+    @Test fun bondSortUsesPointsThenCostLevelAndId() {
+        assertEquals(listOf(6L,5L,3L,4L,2L,1L,7L), sortRows.reversed().selectServants(ServantSort.Bond,null).map { it.id })
+    }
+    @Test fun costSortUsesBondPointsLevelAndId() {
+        assertEquals(listOf(3L,4L,2L,1L,6L,5L,7L), sortRows.reversed().selectServants(ServantSort.Cost,null).map { it.id })
+        val tied = listOf(servant(1,5,10,100,1),servant(2,5,11,0,1),servant(3,5,10,200,1))
+        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Cost,null).map { it.id })
+    }
+    @Test fun levelSortUsesBondPointsCostAndId() {
+        assertEquals(listOf(3L,4L,1L,2L,5L,6L,7L), sortRows.reversed().selectServants(ServantSort.Level,null).map { it.id })
+        val tied = listOf(servant(1,5,10,100,100),servant(2,1,11,0,100),servant(3,1,10,200,100))
+        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Level,null).map { it.id })
+        assertEquals(listOf(ServantSort.Bond,ServantSort.Cost,ServantSort.Level),ServantSort.entries)
     }
     @Test fun preservesHighestCollectionStatsAndMissingStatsStayNull() {
         val servants = dashboardData(dashboardState("userSvtCollection" to """[

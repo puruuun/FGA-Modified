@@ -1,6 +1,11 @@
 package io.github.fate_grand_automata.ui.account
 
+import android.os.Build
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -8,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +35,7 @@ import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
+import io.github.fate_grand_automata.ui.rememberChaldeaAccountExport
 import io.github.fate_grand_automata.ui.log.*
 import io.github.fate_grand_automata.util.grouped
 import kotlinx.coroutines.Dispatchers
@@ -49,19 +56,26 @@ fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: (
     val open by CaptureTracker.openOutsideEntries.collectAsStateWithLifecycle()
     val battle = remember(battles, userId) { battles.filter { it.accountId == userId }.maxByOrNull { it.endedAt } }
     val recentOutside = remember(outside, open, userId) { (outside + open).filter { it.accountId == userId }.maxByOrNull { it.endedAt } }
-    AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside)
+    val export = rememberChaldeaAccountExport()
+    AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside,
+        userId = userId, exportAccount = export)
 }
 
 @Composable
 internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, displayName: String?,
     openSettings: () -> Unit, openLogs: () -> Unit, battle: BattleLogEntry? = null, outside: OutsideLogEntry? = null,
-    initialSection: Int = 0) {
+    initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { Heading(stringResource(R.string.dashboard_title)) }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    IconButton(onClick = { exportAccount(userId) }, modifier = Modifier.testTag("dashboard-export")) {
+                        Icon(Icons.Default.FileUpload, stringResource(R.string.capture_chaldea_create))
+                    }
+                }
                 IconButton(onClick = openSettings, modifier = Modifier.testTag("dashboard-settings")) {
                     Icon(Icons.Default.Settings, stringResource(R.string.capture_title))
                 }
@@ -77,29 +91,38 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (!data.equips.isNullOrEmpty()) add(5)
                     if (battle != null || outside != null) add(6)
                 }
-                val columns = if (maxWidth >= 840.dp) 2 else 1
-                val groups = sections.chunked(columns)
-                val listState = androidx.compose.foundation.lazy.rememberLazyListState(
-                    initialFirstVisibleItemIndex = groups.indexOfFirst { initialSection in it }.coerceAtLeast(0))
-                LazyColumn(state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(groups, key = { it.first() }) { group ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            group.forEach { section ->
-                                DashboardSection(section, Modifier.weight(1f)) {
-                                    when (section) {
-                                        0 -> Profile(data, displayName)
-                                        1 -> Resources(data, names, now)
-                                        2 -> Storage(data.storage!!)
-                                        3 -> Servants(data)
-                                        4 -> Inventory(data.inventory!!, names)
-                                        5 -> MysticCodes(data.equips!!, names)
-                                        6 -> Recent(battle, outside, names, openLogs)
-                                    }
-                                }
+                val target = remember { BringIntoViewRequester() }
+                LaunchedEffect(initialSection) {
+                    withFrameNanos { }
+                    target.bringIntoView()
+                }
+                val sectionContent: @Composable (Int) -> Unit = { section ->
+                    key(section) {
+                        DashboardSection(section, Modifier.fillMaxWidth().then(
+                            if (section == initialSection) Modifier.bringIntoViewRequester(target) else Modifier)) {
+                            when (section) {
+                                0 -> Profile(data, displayName)
+                                1 -> Resources(data, names, now)
+                                2 -> Storage(data.storage!!)
+                                3 -> Servants(data)
+                                4 -> Inventory(data.inventory!!, names)
+                                5 -> MysticCodes(data.equips!!, names)
+                                6 -> Recent(battle, outside, names, openLogs)
                             }
-                            if (columns == 2 && group.size == 1) Spacer(Modifier.weight(1f))
                         }
                     }
+                }
+                // One page scroll, with bounded lazy lists inside each card. The stacks
+                // measure independently: no card inherits its neighbour's height.
+                val page = Modifier.fillMaxSize().testTag("dashboard-page").verticalScroll(rememberScrollState()).padding(16.dp)
+                if (maxWidth >= 840.dp) Row(page, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf(listOf(0, 1, 2, 5, 6), listOf(3, 4)).forEachIndexed { index, stack ->
+                        Column(Modifier.weight(1f).testTag("dashboard-stack:$index"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            stack.filter { it in sections }.forEach { sectionContent(it) }
+                        }
+                    }
+                } else Column(page, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    sections.forEach { sectionContent(it) }
                 }
             }
         }
@@ -182,32 +205,32 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
 
 @Composable private fun Servants(data: DashboardData) {
     val servants = data.servants.orEmpty()
-    var query by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableStateOf(ServantSort.Bond) }
-    var className by rememberSaveable { mutableStateOf<String?>(null) }
+    var classLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var expanded by rememberSaveable { mutableStateOf(false) }
     var classMenu by remember { mutableStateOf(false) }
-    Text(if (data.bondTen != null && data.bondFifteen != null) stringResource(R.string.dashboard_bond_summary, servants.size, data.bondTen, data.bondFifteen)
-        else stringResource(R.string.dashboard_owned_count, servants.size))
-    OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.dashboard_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    // Deduplicate by the displayed label, including future beast variants and raw fallbacks.
+    val classes = linkedMapOf<String, MutableSet<String>>()
+    data.servantClasses.forEach { name -> classes.getOrPut(dashboardClass(name)) { linkedSetOf() }.add(name) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         ServantSort.entries.forEach { option ->
             FilterChip(selected = sort == option, onClick = { sort = option }, label = {
-                Text(stringResource(when (option) { ServantSort.Bond -> R.string.dashboard_sort_bond; ServantSort.Rarity -> R.string.dashboard_sort_rarity; ServantSort.Collection -> R.string.dashboard_sort_collection }))
+                Text(stringResource(when (option) { ServantSort.Bond -> R.string.dashboard_sort_bond; ServantSort.Cost -> R.string.dashboard_sort_cost; ServantSort.Level -> R.string.dashboard_sort_level }))
             })
         }
         Box {
-            OutlinedButton(onClick = { classMenu = true }) { Text(className?.let { dashboardClass(it) } ?: stringResource(R.string.dashboard_all_classes)) }
+            OutlinedButton(onClick = { classMenu = true }) { Text(classLabel ?: stringResource(R.string.dashboard_all_classes)) }
             DropdownMenu(expanded = classMenu, onDismissRequest = { classMenu = false }) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.dashboard_all_classes)) }, onClick = { className = null; classMenu = false })
-                data.servantClasses.forEach { name ->
-                    DropdownMenuItem(text = { Text(dashboardClass(name)) }, onClick = { className = name; classMenu = false })
+                DropdownMenuItem(text = { Text(stringResource(R.string.dashboard_all_classes)) }, onClick = { classLabel = null; classMenu = false })
+                classes.keys.forEach { label ->
+                    DropdownMenuItem(text = { Text(label) }, onClick = { classLabel = label; classMenu = false })
                 }
             }
         }
     }
     var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
-    LaunchedEffect(servants, query, sort, className) { selected = withContext(Dispatchers.Default) { servants.selectServants(query, sort, className) } }
+    val selectedClasses = classes[classLabel]?.toSet()
+    LaunchedEffect(servants, sort, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, selectedClasses) } }
     val shown = if (expanded) selected else selected.take(20)
     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(shown, key = { it.id }) { servant ->
@@ -215,7 +238,8 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
                 AtlasIcon("servants", servant.id, servant.atlas?.icon)
                 Column(Modifier.weight(1f)) {
                     Text(servant.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(listOfNotNull(servant.atlas?.className?.let { dashboardClass(it) }, servant.atlas?.rarity?.let { "★$it" }).joinToString(" · "), style = MaterialTheme.typography.labelSmall)
+                    Text(listOfNotNull(servant.atlas?.className?.let { dashboardClass(it) }, servant.atlas?.rarity?.let { "★$it" },
+                        servant.cost?.let { stringResource(R.string.dashboard_servant_cost, it) }).joinToString(" · "), style = MaterialTheme.typography.labelSmall)
                     val parts = buildList {
                         servant.bond?.let { add(stringResource(R.string.dashboard_bond, it)) }
                         servant.np?.let { add(stringResource(R.string.dashboard_np, it)) }
@@ -318,7 +342,7 @@ private fun InventoryGroup.label() = when (this) {
         "ruler" -> R.string.portrait_class_ruler; "avenger" -> R.string.portrait_class_avenger
         "moonCancer" -> R.string.portrait_class_mooncancer; "alterEgo" -> R.string.portrait_class_alterego
         "foreigner" -> R.string.portrait_class_foreigner; "pretender" -> R.string.portrait_class_pretender
-        else -> if (name.contains("beast", true)) R.string.portrait_class_beast else null
+        else -> if (name.startsWith("beast", true)) R.string.portrait_class_beast else null
     }
     return resource?.let { stringResource(it) } ?: name
 }

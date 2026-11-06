@@ -19,7 +19,7 @@ internal fun JsonObject.number(key: String) = (this[key] as? JsonPrimitive)?.lon
 internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
 
 enum class InventoryGroup { Materials, Gems, Pieces, Grails, Event, Other }
-enum class ServantSort { Bond, Rarity, Collection }
+enum class ServantSort { Bond, Cost, Level }
 enum class StoredKind { Servant, Equip, Other }
 
 internal fun storedKind(id: Long?, names: GameNameMap): StoredKind = when {
@@ -41,6 +41,10 @@ internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
 data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long?, val friendship: Long?,
     val np: Long?, val skills: List<Long?>, val maxLevel: Long?) {
     val name get() = atlas?.name ?: "#$id"
+    // basic_servant has rarity but no cost. Mash always has zero party cost.
+    val cost: Int? get() = if (id == 800100L) 0 else when (atlas?.rarity) {
+        5L -> 16; 4L -> 12; 3L -> 7; 2L, 0L -> 4; 1L -> 3; else -> null
+    }
 }
 data class DashboardItem(val id: Long, val count: Long, val group: InventoryGroup)
 data class DashboardEquip(val id: Long, val level: Long?, val equipped: Boolean)
@@ -61,8 +65,6 @@ data class DashboardData(
     val storage: DashboardStorage?, val servants: List<DashboardServant>?,
     val inventory: List<DashboardItem>?, val equips: List<DashboardEquip>?,
 ) {
-    val bondTen = servants?.takeIf { rows -> rows.all { it.bond != null } }?.count { it.bond!! >= 10 }
-    val bondFifteen = servants?.takeIf { rows -> rows.all { it.bond != null } }?.count { it.bond == 15L }
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
 
@@ -111,13 +113,17 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips)
 }
 
-internal fun List<DashboardServant>.selectServants(query: String, sort: ServantSort, className: String?): List<DashboardServant> =
-    filter { it.name.contains(query, ignoreCase = true) && (className == null || it.atlas?.className == className) }.sortedWith(
-        when (sort) {
-            ServantSort.Bond -> compareByDescending<DashboardServant> { it.bond ?: -1L }.thenByDescending { it.friendship ?: -1L }
-            ServantSort.Rarity -> compareByDescending { it.atlas?.rarity ?: -1L }
-            ServantSort.Collection -> compareBy { it.atlas?.collectionNo ?: Long.MAX_VALUE }
-        }.thenBy { it.id })
+internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {
+    val bond = compareByDescending<DashboardServant> { it.bond ?: -1L }.thenByDescending { it.friendship ?: -1L }
+    val cost = compareByDescending<DashboardServant> { it.cost ?: -1 }
+    val level = compareByDescending<DashboardServant> { it.maxLevel ?: -1L }
+    val order = when (sort) {
+        ServantSort.Bond -> bond.then(cost).then(level)
+        ServantSort.Cost -> cost.then(bond).then(level)
+        ServantSort.Level -> level.then(bond).then(cost)
+    }.thenBy { it.id }
+    return filter { classes == null || it.atlas?.className in classes }.sortedWith(order)
+}
 
 /** One projection per immutable state/Atlas version. Owned by a single account flow. */
 internal class DashboardProjectionCache(private val project: (AccountState, GameNameMap) -> DashboardData = ::dashboardData) {

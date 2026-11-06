@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.ui
 
 import android.content.Intent
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
@@ -31,43 +30,66 @@ fun rememberChaldeaExport(userId: String? = null): () -> Unit {
 /** Allows a picker to supply a stable account id at the moment export is requested. */
 @Composable
 fun rememberChaldeaAccountExport(): (String?) -> Unit {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return {}
     val context = LocalContext.current
+    return rememberChaldeaAccountExportAction { userId -> ChaldeaExportStore.export(context, userId) }
+}
+
+@Composable
+internal fun rememberChaldeaAccountExportAction(export: suspend (String?) -> ChaldeaExportStore.Result): (String?) -> Unit {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-    message?.let {
-        AlertDialog(
-            onDismissRequest = { message = null },
-            title = { Text(stringResource(R.string.capture_chaldea_create)) },
-            text = { Text(it) },
-            confirmButton = { TextButton(onClick = { message = null }) { Text(stringResource(android.R.string.ok)) } },
-        )
-    }
+    var result by remember { mutableStateOf<ChaldeaExportStore.Result?>(null) }
+    result?.let { ChaldeaExportResultDialog(it) { result = null } }
     return { userId ->
         if (!busy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             busy = true
             scope.launch {
                 try {
-                    when (val result = ChaldeaExportStore.export(context, userId)) {
-                        ChaldeaExportStore.Result.NoSnapshot -> message = context.getString(R.string.capture_no_snapshot)
-                        ChaldeaExportStore.Result.Failed -> message = context.getString(R.string.capture_chaldea_failed)
-                        is ChaldeaExportStore.Result.Written -> {
-                            val guide = context.getString(R.string.capture_chaldea_guide, result.name)
-                            val opened = listOf("cc.narumi.chaldea", "cc.narumi.chaldea.fdroid").any { pkg ->
-                                runCatching {
-                                    val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return@runCatching false
-                                    context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    true
-                                }.getOrDefault(false)
-                            }
-                            message = if (opened) guide else context.getString(R.string.capture_chaldea_not_installed, result.name) + "\n\n" + guide
-                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                        }
-                    }
+                    result = export(userId)
                 } finally { busy = false }
             }
         }
     }
+}
+
+@Composable
+internal fun ChaldeaExportResultDialog(result: ChaldeaExportStore.Result, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val launchIntents = remember(result, context) {
+        listOf("cc.narumi.chaldea", "cc.narumi.chaldea.fdroid").mapNotNull { pkg ->
+            context.packageManager.getLaunchIntentForPackage(pkg)
+        }
+    }
+    val message = when (result) {
+        ChaldeaExportStore.Result.NoSnapshot -> stringResource(R.string.capture_no_snapshot)
+        ChaldeaExportStore.Result.Failed -> stringResource(R.string.capture_chaldea_failed)
+        is ChaldeaExportStore.Result.Written -> buildString {
+            append(stringResource(R.string.capture_chaldea_saved))
+            append("\n\n")
+            append(stringResource(R.string.capture_chaldea_guide, result.name))
+            if (launchIntents.isEmpty()) {
+                append("\n\n")
+                append(stringResource(R.string.capture_chaldea_not_installed, result.name))
+            }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.capture_chaldea_create)) },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } },
+        dismissButton = {
+            if (result is ChaldeaExportStore.Result.Written && launchIntents.isNotEmpty()) {
+                TextButton(onClick = {
+                    launchIntents.any { intent ->
+                        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true }.getOrDefault(false)
+                    }
+                    onDismiss()
+                }) { Text(stringResource(R.string.capture_chaldea_open)) }
+            }
+        },
+    )
 }
 
 @Composable

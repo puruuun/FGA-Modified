@@ -71,7 +71,7 @@ class DashboardRound4UiTest {
         content { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{route=Route.Logs},battle=battle,
             outside=outsideFixture(),initialSection=6) }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-section:0").fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodes(hasScrollToIndexAction())[0].performScrollToIndex(2)
+        compose.onNodeWithTag("dashboard-logs").performScrollTo()
         compose.onNodeWithText("Recent quest",substring=true).assertExists()
         compose.onNodeWithText("8 runs").assertExists()
         compose.onNodeWithTag("dashboard-logs").performClick()

@@ -1070,6 +1070,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_service_no_certificate">"Log collection: create the certificate first. The FGA service is running without log collection."</string>
     <string name="capture_service_failed">"Log collection could not start. The FGA service is running without log collection."</string>
     <string name="capture_chaldea_create">"Create Chaldea file"</string>
+    <string name="capture_chaldea_saved">Saved. Select this file in Chaldea.</string>
+    <string name="capture_chaldea_open">Open Chaldea</string>
     <string name="capture_chaldea_guide">"Saved to Download/FGA/%1$s. In Chaldea: Import → HTTPS sniffing → From file → pick %1$s."</string>
     <string name="capture_chaldea_not_installed">"Chaldea is not installed or could not be opened. The file is saved: Download/FGA/%1$s."</string>
     <string name="capture_chaldea_failed">"Could not save the Chaldea file or remove earlier exports. Please try again."</string>
@@ -1158,13 +1160,13 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_total">Total</string>
     <string name="dashboard_command_codes">Command codes</string>
     <string name="dashboard_second_storage">Second storage</string>
-    <string name="dashboard_bond_summary">Owned %1$d · Bond ≥10: %2$d · Bond 15: %3$d</string>
     <string name="dashboard_search">Search by name</string>
     <string name="dashboard_sort_bond">Bond</string>
-    <string name="dashboard_sort_rarity">Rarity</string>
-    <string name="dashboard_sort_collection">Collection no.</string>
+    <string name="dashboard_sort_cost">Cost</string>
+    <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">All classes</string>
     <string name="dashboard_bond">Bond %1$d</string>
+    <string name="dashboard_servant_cost">Cost %1$d</string>
     <string name="dashboard_np">NP %1$d</string>
     <string name="dashboard_max_level">Max Lv %1$d</string>
     <string name="dashboard_skills">Skills %1$s</string>
@@ -1177,7 +1179,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_group_other">Other</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">Equipped</string>
-    <string name="dashboard_owned_count">Owned %1$d</string>
     <string name="dashboard_quest">Quest #%1$d</string>
     <string name="icon_prefetch_loading_lists">Fetching icon lists…</string>
     <string name="icon_prefetch_progress">Downloading icons %1$d/%2$d</string>
