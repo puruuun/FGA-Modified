@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +27,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.Tabbed
+import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
 
 @Composable
@@ -116,15 +119,16 @@ internal fun MoreOptionsContent(
                                 }
 
                                 MoreSettingsGroup.AdditionalFeatures -> {
-                                    additionalFeatures()
+                                    item { additionalTools() }
                                     // The VPN proxy hand-off needs Android 10 (API 29).
                                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) item {
                                         io.github.fate_grand_automata.ui.prefs.Preference(
                                             title = stringResource(R.string.capture_title),
+                                            icon = icon(Icons.Default.VpnKey),
                                             onClick = goToGainsTracker
                                         )
                                     }
-                                    item { additionalTools() }
+                                    additionalFeatures()
                                 }
 
                                 MoreSettingsGroup.Advanced -> {

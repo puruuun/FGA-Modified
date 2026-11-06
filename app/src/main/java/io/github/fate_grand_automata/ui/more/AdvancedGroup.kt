@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.ui.more
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EventRepeat
 import io.github.fate_grand_automata.BuildConfig
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Language
@@ -49,7 +50,11 @@ fun LazyListScope.advancedGroup(
     }
 
     item {
-        Preference(title = stringResource(R.string.weekly_route_settings), onClick = goToWeeklySettings)
+        Preference(
+            title = stringResource(R.string.weekly_route_settings),
+            icon = icon(Icons.Default.EventRepeat),
+            onClick = goToWeeklySettings
+        )
     }
     item {
         LanguagePref().ListPreference(

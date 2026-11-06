@@ -100,23 +100,35 @@ class DashboardRound4UiTest {
         compose.onNodeWithTag("dashboard-servant-list").performScrollToIndex(34)
         compose.onNodeWithText("샘플 서번트 35").assertExists()
     }
-    @Test fun additionalFeaturesContainsOnlyCollectionGameAreaAndTools() {
-        content { fixture.More() }
+    @Test fun additionalFeaturesOrdersToolsThenCollectionThenGameArea() {
+        var gains=0
+        content { fixture.More(gains={gains++}) }
         compose.onNodeWithText(fixture.context.getString(R.string.p_additional_features)).performClick()
         val list=compose.onNodeWithTag("more-tab:AdditionalFeatures")
-        listOf(R.string.capture_title,R.string.p_game_area,R.string.portrait_import_title,R.string.original_import_title,R.string.tools_chaldea_export).forEach {
-            list.performScrollToNode(hasText(fixture.context.getString(it)))
-            compose.onNode(hasText(fixture.context.getString(it)) and hasAnyAncestor(hasTestTag("more-tab:AdditionalFeatures"))).assertExists()
+        val titles=listOf(R.string.portrait_import_title,R.string.original_import_title,R.string.tools_chaldea_export,R.string.capture_title,R.string.p_game_area)
+        val bounds=titles.map {
+            compose.onNode(hasText(fixture.context.getString(it)) and hasAnyAncestor(hasTestTag("more-tab:AdditionalFeatures")))
+                .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         }
+        bounds.zipWithNext().forEach { (first,second) -> assertTrue(first.bottom<=second.top) }
+        compose.onNode(hasText(fixture.context.getString(R.string.capture_title)) and hasContentDescription("icon"))
+            .assertIsDisplayed().performClick()
+        assertEquals(1,gains)
         val moved=listOf(R.string.p_check_for_updates,R.string.p_support_reader_diagnostics,R.string.weekly_route_settings,R.string.p_weekly_route_feature_enabled,R.string.p_bond_tracking_feature_enabled,R.string.p_enable_quest_item_control)
         moved.forEach { key -> assertTrue(runCatching { list.performScrollToNode(hasText(fixture.context.getString(key))) }.isFailure) }
+    }
+    @Test @Config(sdk=[28]) fun additionalFeaturesHidesLogCollectionBeforeAndroid10() {
+        content { fixture.More() }
+        compose.onNodeWithText(fixture.context.getString(R.string.p_additional_features)).performClick()
+        compose.onNodeWithText(fixture.context.getString(R.string.capture_title)).assertDoesNotExist()
     }
     @Test fun advancedAndBattleContainMovedPreferencesInTheirNewLists() {
         var weekly=0
         content { fixture.More(weekly={weekly++}) }
         compose.onNodeWithText(fixture.context.getString(R.string.p_advanced)).performClick()
         compose.onNodeWithTag("more-tab:Advanced").performScrollToNode(hasText(fixture.context.getString(R.string.p_check_for_updates)))
-        compose.onNodeWithText(fixture.context.getString(R.string.weekly_route_settings)).performClick()
+        compose.onNode(hasText(fixture.context.getString(R.string.weekly_route_settings)) and hasContentDescription("icon"))
+            .assertIsDisplayed().performClick()
         assertEquals(1,weekly)
         if(BuildConfig.BUILD_TYPE=="beta") compose.onNodeWithText(fixture.context.getString(R.string.p_support_reader_diagnostics)).assertExists()
         else compose.onNodeWithText(fixture.context.getString(R.string.p_support_reader_diagnostics)).assertDoesNotExist()
