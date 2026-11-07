@@ -13,7 +13,7 @@
     <queries>
         <package android:name="cc.narumi.chaldea" />
         <package android:name="cc.narumi.chaldea.fdroid" />
-        <!-- JP visibility is needed for the root CA switch; VPN routing is still KR-only. -->
+        <!-- Visibility for installed KR/JP VPN routing and the JP root CA switch. -->
         <package android:name="com.netmarble.fgok" />
         <package android:name="com.aniplex.fategrandorder" />
     </queries>

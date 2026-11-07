@@ -58,6 +58,57 @@ class CaptureMainUiTest {
         assertEquals(Lifecycle.State.STARTED, owner.lifecycle.currentState)
     }
 
+    @Test fun jpOnlyStartReachesVpnConsentWithoutKrCertificate() {
+        shadowOf(context.packageManager).installPackage(PackageInfo().apply { packageName = CaptureVpnService.JP_GAME_PACKAGE })
+        val dir = CertStore.directory(context)
+        java.io.File(dir, "leaf-jp.p12").writeText("synthetic")
+        java.io.File(dir, "ca-jp.cer").writeText("synthetic")
+        val prefs = prefs().apply {
+            captureTrackerEnabled.set(true)
+            captureJpRoot.set(true)
+            captureConsentVersion.set(CaptureConsent.VERSION)
+        }
+        var settings = false
+        compose.setContent { FGATheme {
+            val capture = rememberCaptureMain(prefs) { settings = true }
+            CaptureServiceButtons(capture.state, capture.toggle) {}
+        } }
+        compose.onNodeWithText("Start log collection").performClick()
+        assertFalse(settings)
+        assertFalse(CertStore.exists(context))
+        val activity = shadowOf(context as android.app.Application).nextStartedActivity
+        assertNotNull(activity)
+    }
+
+    @Test fun neitherCertificateShowsExistingMainMessageAndSettings() {
+        shadowOf(context.packageManager).installPackage(PackageInfo().apply { packageName = CaptureVpnService.JP_GAME_PACKAGE })
+        val prefs = prefs().apply {
+            captureTrackerEnabled.set(true)
+            captureJpRoot.set(true)
+            captureConsentVersion.set(CaptureConsent.VERSION)
+        }
+        var settings = false
+        compose.setContent { FGATheme {
+            val capture = rememberCaptureMain(prefs) { settings = true }
+            CaptureServiceButtons(capture.state, capture.toggle) {}
+        } }
+        compose.onNodeWithText("Start log collection").performClick()
+        assertTrue(settings)
+        assertEquals(context.getString(io.github.fate_grand_automata.R.string.capture_main_no_certificate),
+            org.robolectric.shadows.ShadowToast.getTextOfLatestToast())
+    }
+
+    @Test fun mixedProfilesUseTheirOwnServerTags() {
+        compose.setContent { FGATheme { CaptureProfileRow(listOf(
+            captureAccountFixture("7001", "KR sample"),
+            captureAccountFixture("7002", "JP sample").copy(server = "JP"),
+        ), 1_800_000_000) {} } }
+        compose.onNodeWithText("KR").assertIsDisplayed()
+        compose.onNode(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.HorizontalScrollAxisRange))
+            .performScrollToIndex(1)
+        compose.onNodeWithText("JP").assertIsDisplayed()
+    }
+
     @Test fun missingGameHidesButtonOnFirstCompositionAndInstallRefreshesOnResume() {
         val prefs = prefs().apply { captureTrackerEnabled.set(true) }
         val owner = StartedOwner()

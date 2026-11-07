@@ -6,9 +6,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CaptureNamesTest {
-    @Test fun jpHostIsReservedWithoutEnablingProxyRoutingYet() {
+    @Test fun hostsIdentifyBothServers() {
         assertEquals("game.fate-go.jp", CaptureNames.JP_HOST)
-        assertEquals(mapOf(CaptureNames.GAME_HOST to "KR"), CaptureNames.HOST_SERVERS)
+        assertEquals("JP", CaptureNames.server("https://game.fate-go.jp/login/top?_userId=7002"))
+        assertEquals("KR", CaptureNames.server("https://yfgo-game.netmarble.com/login/top"))
+        assertEquals(null, CaptureNames.server("https://example.org/login/top"))
+    }
+    @Test fun jpGamePathsAreNeverNetmarbleAccountPaths() {
+        for (path in listOf("login/top", "home/top", "battle/setup", "battle/result", "externalPayment/reflect")) {
+            val target = "https://game.fate-go.jp/$path?_userId=7002"
+            assertFalse(CaptureNames.isAccountPath(target))
+            assertEquals(if (path == "login/top") CaptureNames.ApiPath.Login else CaptureNames.ApiPath.Game,
+                CaptureNames.classify(target))
+            assertEquals("https://game.fate-go.jp/$path", CaptureNames.stripQuery(target))
+        }
     }
     @Test fun accountPathsAreRecognisedWithAndWithoutQuery() {
         assertTrue(CaptureNames.isAccountPath("/NMAccount/login?token=x"))

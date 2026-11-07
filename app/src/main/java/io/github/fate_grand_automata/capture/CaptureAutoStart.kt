@@ -15,14 +15,16 @@ object CaptureAutoStart {
         CaptureTracker.discardRun()
         CaptureTracker.init(context)
         CaptureTracker.outsideScriptStart()
-        if (!CaptureController.isSupported || server != GameServer.Kr) return
+        if (!CaptureController.isSupported) return
+        val readiness = captureReadiness(context, prefs)
+        if (server != GameServer.Kr && (server != GameServer.Jp.Original || !readiness.jpReady)) return
         CaptureTracker.startRun()
         if (!prefs.captureTrackerEnabled.get() || !CaptureConsent.agreed(prefs.captureConsentVersion.get()) ||
             CaptureTracker.running.value) return
         runCatching {
             if (CaptureController.consentIntent(context) != null) {
                 toast(context, R.string.capture_auto_no_consent)
-            } else if (!CertStore.exists(context)) {
+            } else if (!readiness.ready) {
                 toast(context, R.string.capture_auto_no_certificate)
             } else {
                 CaptureTracker.starting = true

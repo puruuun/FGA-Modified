@@ -61,14 +61,15 @@ fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: (
     val recentOutside = remember(outside, open, userId) { (outside + open).filter { it.accountId == userId }.maxByOrNull { it.endedAt } }
     val export = rememberChaldeaAccountExport()
     AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside,
-        userId = userId, exportAccount = export, friendCount = version.friendCount, openFriends = openFriends)
+        userId = userId, exportAccount = export, friendCount = version.friendCount, openFriends = openFriends,
+        server = version.server)
 }
 
 @Composable
 internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, displayName: String?,
     openSettings: () -> Unit, openLogs: () -> Unit, battle: BattleLogEntry? = null, outside: OutsideLogEntry? = null,
     initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}, friendCount: Int? = null,
-    openFriends: (String) -> Unit = {}) {
+    openFriends: (String) -> Unit = {}, server: String = "KR") {
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
@@ -110,7 +111,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                         DashboardSection(section, Modifier.fillMaxWidth().then(
                             if (section == initialSection) Modifier.bringIntoViewRequester(target) else Modifier)) {
                             when (section) {
-                                0 -> Profile(data, displayName, friendCount)
+                                0 -> Profile(data, displayName, friendCount, server)
                                 1 -> Resources(data, names, now)
                                 2 -> Storage(data.storage!!)
                                 3 -> Servants(data)
@@ -156,7 +157,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     Text("${stringResource(label)}: $value", style = MaterialTheme.typography.bodyMedium)
 }
 
-@Composable private fun Profile(data: DashboardData, displayName: String?, friendCount: Int?) {
+@Composable private fun Profile(data: DashboardData, displayName: String?, friendCount: Int?, server: String) {
     val labels = mapOf("lv" to R.string.dashboard_level, "exp" to R.string.dashboard_exp,
         "costMax" to R.string.dashboard_cost, "friendKeep" to R.string.dashboard_friends,
         "createdAt" to R.string.dashboard_created, "friendPoint" to R.string.dashboard_friend_points)
@@ -164,7 +165,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     listOfNotNull(displayName, gameName).distinct().takeIf { it.isNotEmpty() }?.let {
         Text(it.joinToString(" · "), style = MaterialTheme.typography.titleLarge)
     }
-    SuggestionChip(onClick = {}, label = { Text("KR") })
+    SuggestionChip(onClick = {}, label = { Text(server) })
     labels.forEach { (key, label) -> data.profile[key]?.let { value ->
         Field(label, if (key == "createdAt") value.toLongOrNull()?.let(::date) ?: value
             else if (key == "friendKeep") friendsText(value, friendCount) else value.toLongOrNull()?.grouped() ?: value)

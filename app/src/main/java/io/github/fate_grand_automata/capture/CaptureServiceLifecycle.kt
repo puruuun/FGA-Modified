@@ -14,10 +14,9 @@ object CaptureServiceLifecycle {
         if (!CaptureController.isSupported || !prefs.captureTrackerEnabled.get() ||
             !CaptureConsent.agreed(prefs.captureConsentVersion.get()) || CaptureTracker.running.value) return
         runCatching {
-            context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
-        }.getOrNull() ?: return
-        runCatching {
-            if (!CertStore.exists(context)) {
+            val readiness = captureReadiness(context, prefs)
+            if (!readiness.gameInstalled) return
+            if (!readiness.ready) {
                 toast(context, R.string.capture_service_no_certificate)
             } else {
                 val intent = CaptureController.consentIntent(context)

@@ -5,13 +5,13 @@ import java.net.URI
 object CaptureNames {
     const val GAME_HOST = "yfgo-game.netmarble.com"
     const val JP_HOST = "game.fate-go.jp"
-    val HOST_SERVERS = mapOf(GAME_HOST to "KR")
+    val HOST_SERVERS = mapOf(GAME_HOST to "KR", JP_HOST to "JP")
     fun server(target: String): String? = runCatching {
         HOST_SERVERS[URI(target).host?.lowercase()]
     }.getOrNull()
     private val accountPrefixes = listOf("NMAccount", "NetmarbleService", "NetmarbleUserDataService")
 
-    /** Never retain the query: KR puts account identifiers there. */
+    /** Never retain the query: both servers put account identifiers there. */
     fun stripQuery(target: String): String = target.substringBefore('?').substringBefore('#')
 
     fun path(target: String): String = runCatching {

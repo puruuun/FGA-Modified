@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.ProxyInfo
@@ -35,7 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import timber.log.Timber
 
 /**
- * Routes only the game app into a local read-only proxy. The VPN needs default routes and a DNS
+ * Routes installed KR and enabled JP game apps into a local read-only proxy. The VPN needs default routes and a DNS
  * server: with a narrow route Android does not deliver [Builder.setHttpProxy] to the app. Packets
  * that reach the tun are dropped, except DNS to the fake resolver, which is forwarded.
  */
@@ -70,9 +71,14 @@ class CaptureVpnService : VpnService() {
             Handler(Looper.getMainLooper()).post { Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show() }
         }
         try {
-            val sslContext = if (CertStore.exists(this)) CertStore.serverContext(this) else null
-            if (sslContext == null) Timber.w("Capture: no certificate, the game host is tunnelled and not read")
-            val p = ProxyServer(sslContext)
+            val jpEnabled = prefs.captureJpRoot.get()
+            val contexts = captureServerContexts(
+                if (CertStore.exists(this)) CertStore.serverContext(this) else null,
+                if (jpEnabled && CertStore.existsJp(this)) CertStore.jpServerContext(this) else null,
+                jpEnabled,
+            )
+            if (contexts.isEmpty()) Timber.w("Capture: no certificate, the game host is tunnelled and not read")
+            val p = ProxyServer(contexts)
             val port = p.start()
             proxy = p
 
@@ -85,7 +91,19 @@ class CaptureVpnService : VpnService() {
                 .setSession(getString(R.string.capture_notification_title))
                 .setBlocking(false)
                 .setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))
-            builder.addAllowedApplication(GAME_PACKAGE)
+            var allowed = 0
+            for (name in allowedGamePackages(installedGamePackages(this), jpEnabled)) {
+                try {
+                    builder.addAllowedApplication(name)
+                    allowed++
+                } catch (_: PackageManager.NameNotFoundException) {
+                    // The app may have been removed after the installed-package check.
+                }
+            }
+            if (allowed == 0) {
+                stopAll(CaptureStopReason.Error)
+                return START_NOT_STICKY
+            }
             val fd = builder.establish()
             if (fd == null) {
                 Timber.w("Capture: VPN permission is missing")

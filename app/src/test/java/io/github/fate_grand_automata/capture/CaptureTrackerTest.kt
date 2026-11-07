@@ -4,6 +4,27 @@ import kotlin.test.*
 
 /** Exercises the actual response hook, using handwritten JSON and no files or Android services. */
 class CaptureTrackerTest {
+    @Test fun jpLoginTagsItsOwnAccountAndKeepsKrSeparate() {
+        fun loginAt(host: String, id: Int, name: String) = feed("https://$host/login/top", """{
+            "response":[{"nid":"login","resCode":"00","success":{}},{"nid":"userdata","resCode":"00","success":{}}],
+            "cache":{"replaced":{"userGame":[{"userId":$id,"name":"$name","exp":100}],
+            "userItem":[{"userId":$id,"itemId":100,"num":5}]},"serverTime":1800000000}}""")
+        loginAt("yfgo-game.netmarble.com", 7001, "Synthetic KR")
+        loginAt("game.fate-go.jp", 7002, "Synthetic JP")
+        val accounts = CaptureTracker.accounts.value.associateBy { it.id }
+        assertEquals(setOf("7001", "7002"), accounts.keys)
+        assertEquals("KR", accounts.getValue("7001").server)
+        assertEquals("JP", accounts.getValue("7002").server)
+        assertEquals("7002", CaptureTracker.currentId.value)
+        val jp = assertNotNull(CaptureTracker.snapshot("7002")).second
+        val body = kotlinx.serialization.json.Json.parseToJsonElement(
+            io.github.fate_grand_automata.scripts.capture.ChaldeaExport.body(jp)) as kotlinx.serialization.json.JsonObject
+        val cache = body["cache"] as kotlinx.serialization.json.JsonObject
+        assertEquals(kotlinx.serialization.json.JsonObject(jp.tables), cache["replaced"])
+        assertEquals(jp.loginResponse, body["response"])
+        assertFalse(body.containsKey("region"))
+    }
+
     @BeforeTest fun reset() {
         CaptureTracker.discardRun()
         CaptureTracker.setRunning(false)

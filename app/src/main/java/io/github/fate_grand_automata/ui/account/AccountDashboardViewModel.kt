@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.*
 import java.io.File
 import javax.inject.Inject
 
-internal data class DashboardVersion(val data: DashboardData? = null, val displayName: String? = null, val friendCount: Int? = null)
+internal data class DashboardVersion(val data: DashboardData? = null, val displayName: String? = null,
+    val friendCount: Int? = null, val server: String = "KR")
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -37,9 +38,11 @@ class AccountDashboardViewModel @Inject constructor(
     internal fun account(userId: String): StateFlow<DashboardVersion> = versions.getOrPut(userId) {
         val cache = DashboardProjectionCache()
         combine(CaptureTracker.accountStates, CaptureTracker.accounts, names, CaptureTracker.rosters) { states, accounts, atlas, rosters ->
-            listOf(states[userId], accounts.find { it.id == userId }?.displayName, atlas, rosters[userId]?.friends?.size)
-        }.mapLatest { (state, displayName, atlas, friends) ->
-            DashboardVersion(cache.get(state as AccountState?, atlas as GameNameMap), displayName as String?, friends as Int?)
+            listOf(states[userId], accounts.find { it.id == userId }, atlas, rosters[userId]?.friends?.size)
+        }.mapLatest { (state, account, atlas, friends) ->
+            val profile = account as CaptureAccount?
+            DashboardVersion(cache.get(state as AccountState?, atlas as GameNameMap), profile?.displayName,
+                friends as Int?, profile?.server ?: "KR")
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardVersion())
     }
 }

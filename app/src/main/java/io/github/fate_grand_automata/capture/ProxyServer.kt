@@ -18,11 +18,13 @@ import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
 /**
- * Local CONNECT proxy on 127.0.0.1. Intercepts only [CaptureNames.GAME_HOST]; every other host is a
- * blind tunnel. Read-only: requests and responses are forwarded byte for byte. Logs show the method,
+ * Local CONNECT proxy on 127.0.0.1. Intercepts KR and enabled JP game hosts with their own TLS
+ * contexts. Hosts without a context are blind tunnels. Read-only: requests and responses are
+ * forwarded byte for byte. Requests are never stored. Logs show the method,
  * path (no query), status and size only, never bodies, tokens or headers.
  */
-class ProxyServer(private val sslContext: SSLContext?) {
+class ProxyServer(sslContexts: Map<String, SSLContext>) {
+    private val sslContexts = sslContexts.filterKeys { it in CaptureNames.HOST_SERVERS }
     // A core-size-0 ThreadPoolExecutor hung the spike (the accept loop held its only worker), so
     // connections go to a cached pool and the accept loop has its own thread.
     private val pool = Executors.newCachedThreadPool()
@@ -82,8 +84,9 @@ class ProxyServer(private val sslContext: SSLContext?) {
             }
             val host = head.target.substringBeforeLast(':')
             val port = head.target.substringAfterLast(':', "443").toIntOrNull() ?: 443
-            if (host.equals(CaptureNames.GAME_HOST, ignoreCase = true) && sslContext != null) {
-                interceptGame(client, host, port)
+            val sslContext = sslContexts[host.lowercase()]
+            if (sslContext != null) {
+                interceptGame(client, host, port, sslContext)
             } else {
                 tunnel(client, host, port)
             }
@@ -129,9 +132,9 @@ class ProxyServer(private val sslContext: SSLContext?) {
         }
     }
 
-    private fun interceptGame(client: Socket, host: String, port: Int) {
+    private fun interceptGame(client: Socket, host: String, port: Int, sslContext: SSLContext) {
         client.getOutputStream().apply { write("HTTP/1.1 200 Connection Established\r\n\r\n".toByteArray()); flush() }
-        val tls = sslContext!!.socketFactory.createSocket(client, null, client.port, true) as SSLSocket
+        val tls = sslContext.socketFactory.createSocket(client, null, client.port, true) as SSLSocket
         try {
             tls.useClientMode = false
             tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf("http/1.1") }
@@ -164,7 +167,7 @@ class ProxyServer(private val sslContext: SSLContext?) {
         }
         live += up
         try {
-            relay(tls, up)
+            relay(tls, up, host)
         } finally {
             live -= up
             runCatching { up.close() }
@@ -172,7 +175,7 @@ class ProxyServer(private val sslContext: SSLContext?) {
         }
     }
 
-    private fun relay(client: Socket, up: Socket) {
+    private fun relay(client: Socket, up: Socket, host: String) {
         val cr = HttpReader(client.getInputStream())
         val ur = HttpReader(up.getInputStream())
         val cout = client.getOutputStream()
@@ -202,7 +205,8 @@ class ProxyServer(private val sslContext: SSLContext?) {
                 Timber.d("Capture: %s %s %d %d", req.method, path, resp.status, total)
                 val payload = body.payload
                 if (resp.status in 200..299 && payload != null && payload.isNotEmpty()) {
-                    runCatching { CaptureTracker.onGameResponse(path, payload, resp.header("Content-Encoding")) }
+                    val target = "https://$host/${CaptureNames.path(path)}"
+                    runCatching { CaptureTracker.onGameResponse(target, payload, resp.header("Content-Encoding")) }
                 }
             }
             if (resp.status == 101 || body.untilClose) return

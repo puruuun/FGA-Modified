@@ -84,6 +84,20 @@ class FriendManagerUiTest {
     private val compose = createComposeRule()
     @get:Rule val rules = screenshotRules(compose)
 
+    @Test fun accountPickerShowsKrAndJpTags() {
+        val accounts = listOf(
+            FriendManagerAccount(captureAccountFixture("7001", "KR sample"), syntheticRoster()),
+            FriendManagerAccount(captureAccountFixture("7002", "JP sample").copy(server = "JP"), syntheticRoster()),
+        )
+        compose.setContent { FGATheme {
+            FriendManagerContent(null, friendTestNames(), FRIEND_NOW, accounts, "7001")
+        } }
+        compose.onNodeWithText("KR").assertIsDisplayed()
+        compose.onNodeWithTag("friends-account").performClick()
+        compose.onNodeWithText("JP").assertIsDisplayed().performClick()
+        compose.onNodeWithText("JP").assertIsDisplayed()
+    }
+
     private fun show(roster: FriendRoster? = syntheticRoster()) =
         compose.setContent { FGATheme { FriendManagerContent(roster, friendTestNames(), FRIEND_NOW) } }
 

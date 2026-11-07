@@ -16,6 +16,18 @@ class CaptureAccountsTest {
     private fun store() = CaptureAccounts().apply { load(directory) }
     private fun fruit(store: CaptureAccounts, id: String) = store.accounts(100).first { it.id == id }.summary.goldenApples
 
+    @Test fun jpAndKrMetadataStaySeparateAfterSaveAndReload() {
+        val store = store()
+        store.apply("https://yfgo-game.netmarble.com/login/top", login(7001, "Synthetic KR"), 10)
+        store.apply("https://game.fate-go.jp/login/top", login(7002, "Synthetic JP"), 20)
+        store.save()
+        val restored = store().accounts(100).associateBy { it.id }
+        assertEquals("KR", restored.getValue("7001").server)
+        assertEquals("JP", restored.getValue("7002").server)
+        assertEquals("Synthetic KR", restored.getValue("7001").displayName)
+        assertEquals("Synthetic JP", restored.getValue("7002").displayName)
+    }
+
     @Test fun interleavedAccountsStaySeparateAndLastChangedResponseBecomesCurrent() {
         val store = store()
         store.apply("login/top", login(7001), 10)

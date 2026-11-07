@@ -66,17 +66,16 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
     val enabled by prefs.captureTrackerEnabled.asFlow().collectAsStateWithLifecycle(
         initialValue = prefs.captureTrackerEnabled.get(),
     )
+    val jpEnabled by prefs.captureJpRoot.asFlow().collectAsStateWithLifecycle(initialValue = prefs.captureJpRoot.get())
     val running by CaptureTracker.running.collectAsStateWithLifecycle()
     val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val agreement = rememberCaptureAgreement(prefs)
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
-    fun isGameInstalled() = runCatching {
-        context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
-    }.isSuccess
-    var gameInstalled by remember(context) { mutableStateOf(isGameInstalled()) }
+    var installed by remember(context) { mutableStateOf(installedGamePackages(context)) }
+    val gameInstalled = allowedGamePackages(installed, jpEnabled).isNotEmpty()
     OnResume {
-        gameInstalled = isGameInstalled()
+        installed = installedGamePackages(context)
     }
     LaunchedEffect(lifecycle) {
         CaptureTracker.init(context)
@@ -91,7 +90,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
         if (!captureButtonVisible(prefs.captureTrackerEnabled.get(), Build.VERSION.SDK_INT, gameInstalled) ||
             !CaptureConsent.agreed(prefs.captureConsentVersion.get())) return
         runCatching {
-            if (!CertStore.exists(context)) {
+            if (!captureReadiness(context, prefs).ready) {
                 Toast.makeText(context, R.string.capture_main_no_certificate, Toast.LENGTH_SHORT).show()
                 openSettings()
             } else CaptureController.start(context)
@@ -104,7 +103,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
         if (CaptureTracker.running.value) CaptureController.stop()
         else agreement(false) {
             runCatching {
-                if (!CertStore.exists(context)) {
+                if (!captureReadiness(context, prefs).ready) {
                     Toast.makeText(context, R.string.capture_main_no_certificate, Toast.LENGTH_SHORT).show()
                     openSettings()
                 } else {
@@ -171,20 +170,20 @@ fun CaptureProfileRow(profiles: List<CaptureAccount>, now: Long, onClick: (Strin
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(profiles, key = { it.id }) { account ->
-            CaptureProfileCard(account.summary.copy(masterName = account.displayName), now) { onClick(account.id) }
+            CaptureProfileCard(account.summary.copy(masterName = account.displayName), now, account.server) { onClick(account.id) }
         }
     }
 }
 
 @Composable
-fun CaptureProfileCard(summary: AccountSummary, now: Long, onClick: () -> Unit) {
+fun CaptureProfileCard(summary: AccountSummary, now: Long, server: String = "KR", onClick: () -> Unit) {
     val context = LocalContext.current
     val fullAt = fullApAt(summary, now)
     Card(onClick = onClick, modifier = Modifier.width(264.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(summary.masterName, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium)
-                Text("KR", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                Text(server, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
             }
             Text("AP ${summary.ap.grouped()} / ${summary.apMax.grouped()}")
             Text(

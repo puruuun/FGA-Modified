@@ -9,14 +9,14 @@ class ChaldeaFilesTest {
     private val latest = "chaldea-kr-7001-20261104-0902.json"
 
     @Test fun filenameHasZeroPaddedLocalMinute() {
-        assertEquals(old, ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1, 59)))
+        assertEquals("chaldea-account-7001-20261104-0901.json", ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1, 59)))
     }
 
     @Test fun filenameDoesNotDependOnDefaultLocale() {
         val before = Locale.getDefault()
         try {
             Locale.setDefault(Locale.forLanguageTag("ar"))
-            assertEquals(old, ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1)))
+            assertEquals("chaldea-account-7001-20261104-0901.json", ChaldeaFiles.name("7001", LocalDateTime.of(2026, 11, 4, 9, 1)))
         } finally { Locale.setDefault(before) }
     }
 
@@ -58,5 +58,15 @@ class ChaldeaFilesTest {
         val other = "chaldea-kr-7002-20261104-0801.json"
         assertEquals(listOf(old), ChaldeaFiles.toDelete(listOf(old, latest, other), other))
         assertTrue(ChaldeaFiles.toDelete(listOf(old, other), other).isEmpty())
+    }
+
+    @Test fun neutralAndOldKrNamesAreCleanedByAccountAndTimestamp() {
+        val newer = "chaldea-account-7001-20261104-0903.json"
+        val older = "chaldea-account-7001-20261104-0900.json"
+        val jp = "chaldea-account-7002-20261104-0904.json"
+        assertEquals(listOf(old, latest, older), ChaldeaFiles.toDelete(listOf(old, latest, older, newer, jp)))
+        assertEquals("7002", ChaldeaFiles.accountId(jp))
+        assertTrue(ChaldeaFiles.isExport(jp))
+        assertEquals("kr-test", ChaldeaFiles.accountId("chaldea-account-kr-test-20261104-0904.json"))
     }
 }
