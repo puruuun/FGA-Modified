@@ -119,6 +119,7 @@ class CESelectionTest {
         assertTrue(f.check())
         f.mlb = false
         assertFalse(f.check())
+        // Plain find: no similarity argument, so the support fine-tune offset never reaches the Grand CE slots
         verify { with(f.api) { any<Region>().find(f.first, null) } }
         verify { with(f.api) { any<Region>().find(f.third, null) } }
     }

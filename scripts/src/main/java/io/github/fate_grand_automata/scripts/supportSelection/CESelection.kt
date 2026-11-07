@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
-import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
@@ -19,8 +18,7 @@ class CESelection @Inject constructor(
     api: IFgoAutomataApi,
     private val supportPrefs: ISupportPreferences,
     private val starChecker: SupportSelectionStarChecker,
-    private val grandChecker: SupportSelectionGrandChecker,
-    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+    private val grandChecker: SupportSelectionGrandChecker
 ) : IFgoAutomataApi by api {
     // These options are only shown in the UI while Grand Servant is enabled
     private val bondCEEffect
@@ -43,7 +41,7 @@ class CESelection @Inject constructor(
             val matched = ces
                 .flatMap { entry -> images.loadSupportPattern(SupportImageKind.CE, entry) }
                 .mapNotNull {
-                    grandSearchRegion.find(it, similarity = addedTuning.support.defaultSimilarity { prefs.platformPrefs.minSimilarity })
+                    grandSearchRegion.find(it)
                 }
                 .filter {
                     !supportPrefs.mlb || isGrandLimitBroken(it.region)
