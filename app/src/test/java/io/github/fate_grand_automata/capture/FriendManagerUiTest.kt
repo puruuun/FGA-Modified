@@ -48,8 +48,17 @@ internal fun friendTestNames() = GameNameMap(
     servants = mapOf(1L to "샘플 캐스터", 2L to "샘플 세이버", 3L to "샘플 엑스트라",
         4L to "샘플 아주 길고 긴 이름을 가진 서번트 오르타 알터 오리지널"),
     equips = mapOf(90L to "샘플 예장 하나", 91L to "샘플 예장 둘",
-        92L to "샘플 아주 길고 긴 이름을 가진 예장 한정 한정 한정 한정 한정 한정"),
+        92L to "샘플 아주 길고 긴 이름을 가진 예장 한정 한정 한정 한정 한정 한정",
+        93L to "황금의잔", 94L to "칼데아의점심시간", 95L to "저편에서온달빛의축복과기원의"),
 )
+
+/** [longNameRoster] plus CEs with 4, 8 and 14 Korean characters (the last one without max limit break), all with 10/10/10 skills. */
+internal fun ceLengthRoster(): FriendRoster {
+    val base = longNameRoster()
+    fun friend(id: String, ce: Long, limit: Int) = Friend(id, "친구 $id", 100, null, listOf(101L), listOf(201L), FRIEND_NOW - 5 * 86_400,
+        listOf(FriendSlot(101, 1, 2, lv = 100, np = 1, skills = listOf(10, 10, 10), appends = listOf(10, 10, 10, 10, 10), ceId = ce, ceLimitCount = limit, ceLv = 100)))
+    return base.copy(friends = base.friends + listOf(friend("5", 93, 4), friend("6", 94, 4), friend("7", 95, 0)).associateBy { it.userId })
+}
 
 /** The synthetic roster plus one friend whose servant, CE and name are far too long for their cells. */
 internal fun longNameRoster(): FriendRoster {
@@ -207,14 +216,21 @@ class FriendManagerUiTest {
             }
             walk(row)
         }
-        // The long CE name, the "최대" tag and "Lv 100" share one row; the name gives way first.
+        // The long CE name sits on the left; "최대" and "Lv100" are stacked at its right, tag on top.
         val longCe = compose.onAllNodes(hasText("샘플 아주 길고 긴 이름을 가진 예장", substring = true), useUnmergedTree = true).fetchSemanticsNodes().first()
-        val tag = compose.onAllNodes(hasText("최대"), useUnmergedTree = true).fetchSemanticsNodes()
-            .first { it.positionInRoot.y >= longCe.positionInRoot.y - 1 && it.positionInRoot.y <= longCe.positionInRoot.y + longCe.size.height }
+        fun beside(text: String) = compose.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes()
+            .first { it.positionInRoot.y >= longCe.positionInRoot.y - 1 && it.positionInRoot.y <= longCe.positionInRoot.y + longCe.size.height + 40 }
+        val tag = beside("최대")
+        val lv = beside("Lv100")
         assertTrue(tag.positionInRoot.x >= longCe.positionInRoot.x + longCe.size.width - 1)
-        val lv = compose.onAllNodes(hasText("Lv100"), useUnmergedTree = true).fetchSemanticsNodes()
-            .first { it.positionInRoot.y >= longCe.positionInRoot.y - 1 && it.positionInRoot.y <= longCe.positionInRoot.y + longCe.size.height }
-        assertTrue(lv.positionInRoot.x >= tag.positionInRoot.x + tag.size.width - 1)
+        assertTrue(lv.positionInRoot.x >= longCe.positionInRoot.x + longCe.size.width - 1)
+        assertTrue(lv.positionInRoot.y >= tag.positionInRoot.y + tag.size.height - 1)
+        // Skills and the 10/10/10 row are never cut.
+        compose.onAllNodes(hasText("10/10/10"), useUnmergedTree = true).fetchSemanticsNodes().forEach { node ->
+            val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+            assertTrue(!layout.first().hasVisualOverflow)
+        }
     }
 
     @Test fun accountMenuSwitchesRosters() {

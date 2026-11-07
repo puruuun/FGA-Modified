@@ -34,6 +34,10 @@ class FriendsRound2ScreenshotTest {
     }
     @Test fun friendTableExpanded360Light() = content()
 
+    @Test fun ceLengths360Light() = compose.shoot("friends-round2", "CeLengths", 360, 800, locale = "ko", beforeCapture = {
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().size == 9 }
+    }) { FriendManagerContent(ceLengthRoster(), friendTestNames(), FRIEND_NOW) }
+
     @Test fun filterSheet360Light() = compose.shoot("friends-round2", "FilterSheet", 360, 800, locale = "ko", beforeCapture = {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("friends-filter").performClick()

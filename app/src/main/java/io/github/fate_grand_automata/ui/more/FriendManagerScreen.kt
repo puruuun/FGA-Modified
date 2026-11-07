@@ -140,10 +140,10 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
     Column(Modifier.fillMaxSize()) {
         Heading(stringResource(R.string.friends_title))
         accountPicker()
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
             Text(stringResource(R.string.friends2_header, roster.friends.size,
-                ((now - roster.updatedAt) / 60).coerceAtLeast(1), shown.size), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ((now - roster.updatedAt) / 60).coerceAtLeast(1), shown.size), Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
+            FlowRow(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 AssistChip(onClick = { sheet = true }, modifier = Modifier.testTag("friends-filter"),
                     leadingIcon = { Icon(Icons.Default.Tune, null, Modifier.size(18.dp)) },
                     label = { Text(stringResource(R.string.friends2_filters)) })
@@ -153,7 +153,7 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
                 if (maxLb) RemovableFilter(stringResource(R.string.friends_max_lb)) { maxLb = false }
                 if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, loginAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
             }
-            if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(vertical = 8.dp))
+            if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
             LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("friends-list"), contentPadding = PaddingValues(bottom = 16.dp)) {
                 stickyHeader { TableHeader() }
                 items(shown, key = { "${it.friend.userId}:${it.slot.deckId}:${it.slot.classId}" }) { FriendTableRow(it, names, now) }
@@ -290,7 +290,7 @@ private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap
 
 private fun isBondCe(id: Long) = id == FRIEND_TEATIME_CE_ID || id in FRIEND_BOND_20_CE_IDS
 
-private val COLUMN_WEIGHTS = listOf(.29f, .16f, .13f, .29f, .13f)
+private val COLUMN_WEIGHTS = listOf(.24f, .175f, .175f, .29f, .12f)
 
 @Composable
 private fun TableHeader() {
@@ -311,24 +311,25 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
     Column(Modifier.fillMaxWidth().testTag("friends-row")) {
         // Every cell is at most two lines, so a row never grows beyond two lines.
         Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 8.dp), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(COLUMN_WEIGHTS[0]).padding(end = 4.dp)) {
+            Column(Modifier.weight(COLUMN_WEIGHTS[0]).padding(end = 2.dp)) {
                 Text(names.servants[slot.svtId] ?: "#${slot.svtId}", style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(stringResource(R.string.friends2_name_line, slot.lv, slot.np, friend.name), style = MaterialTheme.typography.labelSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Text(slot.skills.joinToString("/"), Modifier.weight(COLUMN_WEIGHTS[1]).padding(horizontal = 1.dp), style = MaterialTheme.typography.labelMedium,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Numbers are never ellipsized: they do not wrap and are clipped only past the column edge.
+            Text(slot.skills.joinToString("/"), Modifier.weight(COLUMN_WEIGHTS[1]).padding(horizontal = 1.dp), style = MaterialTheme.typography.bodySmall,
+                maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
             Text((0..2).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" } + "\n" +
                 (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp),
-                style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                style = MaterialTheme.typography.bodySmall, maxLines = 2, softWrap = false, overflow = TextOverflow.Clip)
             Row(Modifier.weight(COLUMN_WEIGHTS[3]).padding(horizontal = 1.dp), horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically) {
+                verticalAlignment = Alignment.Top) {
                 Text(if (slot.ceId == 0L) stringResource(R.string.friends_ce_none) else names.equips[slot.ceId] ?: "#${slot.ceId}",
-                    Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (slot.ceId != 0L) {
+                    Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (slot.ceId != 0L) Column(horizontalAlignment = Alignment.End) {
                     if (slot.ceLimitCount == FriendList.MAX_LIMIT_COUNT) Text(stringResource(R.string.friends_ce_max),
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 3.dp),
+                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 4.dp, vertical = 1.dp),
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer,
                         maxLines = 1, softWrap = false)
                     Text(stringResource(R.string.friends2_level_compact, slot.ceLv), style = MaterialTheme.typography.labelSmall,
@@ -336,7 +337,7 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
                 }
             }
             Text(if (friend.lastLogin > 0) loginText(agoParts(now - friend.lastLogin)) else "–", Modifier.weight(COLUMN_WEIGHTS[4]).padding(horizontal = 1.dp),
-                style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
         }
         if (expanded) Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow).padding(8.dp).testTag("friends-expanded")) {
             friend.friendCode?.let { code ->
