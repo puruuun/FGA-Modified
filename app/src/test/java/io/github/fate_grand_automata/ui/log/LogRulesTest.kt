@@ -83,6 +83,13 @@ class LogRulesTest {
         assertEquals(setOf("2:6510", "3:6510"), logResources(listOf(today, ce)))
         assertTrue(filterCaptureLogs(listOf(ce), LogTimeFilter.All, "2:6510", now, zone).isEmpty())
     }
+    @Test fun usedStormPodIsInFilterAndFruitIsShownOnce() {
+        val gains = RunGains(fruitUsed = mapOf(100L to 2L), itemsUsed = mapOf(49L to 20L, 100L to 2L))
+        val entry = CaptureLogItem(battle = battleLogFixture("used").copy(gains = gains))
+        assertTrue("2:49" in logResources(listOf(entry)))
+        assertEquals(listOf(-2L, -20L), battleResources(gains).map { it.count })
+        assertEquals(1, battleResources(gains).count { it.id == 100L })
+    }
     @Test fun zeroRowsAndUnusedFruitAreAbsent() {
         assertTrue(outsideResources(AccountDelta(items = mapOf(100L to 0L, 6510L to 0L)), mapOf(100L to 0L)).isEmpty())
         assertEquals(listOf(LogResource(id = 1, count = 3)), outsideResources(AccountDelta(qp = 3), emptyMap()))

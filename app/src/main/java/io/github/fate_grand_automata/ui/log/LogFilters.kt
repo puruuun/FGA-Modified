@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.ui.log
 
 import io.github.fate_grand_automata.capture.CaptureLogItem
+import io.github.fate_grand_automata.scripts.capture.RunGains
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -21,6 +22,7 @@ private fun CaptureLogItem.resourceChanges(): List<Map<String, Long>> = battle?.
         gains.items.forEach { put("${it.type}:${it.objectId}", (get("${it.type}:${it.objectId}") ?: 0L) + it.gained) }
         gains.qp?.let { put("2:1", (get("2:1") ?: 0L) + it) }
         gains.fruitUsed.forEach { (id, used) -> if (used != null && used != 0L) putIfAbsent("2:$id", -used) }
+        gains.itemsUsed.forEach { (id, used) -> if (used > 0L && id !in RunGains.FRUIT_IDS) putIfAbsent("2:$id", -used) }
     })
 } ?: outside?.period?.let { period ->
     (outsideResources(period.total, period.fruitUsed) + period.sources.flatMap { outsideResources(it.delta, it.fruitUsed) })

@@ -59,6 +59,8 @@ internal fun battleResources(gains: RunGains): List<LogResource> = buildList {
         val used = gains.fruitUsed[id]
         if (id in gains.fruitUsed && used != 0L) add(LogResource(id = id, count = used?.let { -it }))
     }
+    // Fruit is shown from fruitUsed above; every other consumed item comes from itemsUsed.
+    gains.itemsUsed.filterKeys { it !in RunGains.FRUIT_IDS }.forEach { (id, used) -> if (used > 0L) add(LogResource(id = id, count = -used)) }
 }
 
 @Composable

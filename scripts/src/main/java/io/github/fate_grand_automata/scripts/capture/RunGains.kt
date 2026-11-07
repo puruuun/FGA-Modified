@@ -11,6 +11,8 @@ data class RunGains(
     val masterExp: Long? = null,
     val bond: Map<Long, Long> = emptyMap(),
     val fruitUsed: Map<Long, Long?> = emptyMap(),
+    /** Every item spent in the run (start - end + gained), positive values only. Empty when unknown. */
+    val itemsUsed: Map<Long, Long> = emptyMap(),
     val missingBattles: Int = 0,
     private val startHoldings: Map<Long, Long>? = null,
 ) {
@@ -34,6 +36,12 @@ data class RunGains(
                         totals.filter { it.type == 2 && it.objectId == id }.sumOf { it.gained }
                 else null
             },
+            itemsUsed = if (startHoldings != null && end != null) {
+                val gained = totals.filter { it.type == 2 }.groupBy { it.objectId }.mapValues { (_, rows) -> rows.sumOf { it.gained } }
+                (startHoldings.keys + end.keys).associateWith { id ->
+                    (startHoldings[id] ?: 0L) - (end[id] ?: 0L) + (gained[id] ?: 0L)
+                }.filterValues { it > 0L }
+            } else emptyMap(),
             startHoldings = null,
         )
     }

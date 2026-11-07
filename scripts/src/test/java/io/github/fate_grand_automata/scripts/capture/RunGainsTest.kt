@@ -21,6 +21,35 @@ class RunGainsTest {
         assertEquals(mapOf(100L to 3L, 101L to 1L, 102L to 0L, 104L to 0L), run.fruitUsed)
     }
 
+    private fun used(start: String, end: String, drops: List<GainedItem> = emptyList()) =
+        RunGains.start(state(start)).add(BattleGains(1, 1, drops)).finish(state(end)).itemsUsed
+
+    @Test fun stormPodSpentWithoutDropsIsCounted() {
+        assertEquals(mapOf(49L to 5L), used("""[{"itemId":49,"num":5}]""", """[{"itemId":49,"num":0}]"""))
+    }
+
+    @Test fun teapotEventIdIsCountedWithoutBeingListed() {
+        assertEquals(mapOf(94065901L to 20L), used("""[{"itemId":94065901,"num":30}]""", """[{"itemId":94065901,"num":10}]"""))
+    }
+
+    @Test fun droppedAndSpentItemNetsCorrectly() {
+        assertEquals(mapOf(49L to 3L), used("""[{"itemId":49,"num":5}]""", """[{"itemId":49,"num":4}]""", listOf(GainedItem(2, 49, 2))))
+    }
+
+    @Test fun gainingOnlyGivesNoEntry() {
+        assertTrue(used("""[{"itemId":6510,"num":1}]""", """[{"itemId":6510,"num":4}]""", listOf(GainedItem(2, 6510, 3))).isEmpty())
+    }
+
+    @Test fun missingStartOrEndGivesEmptyItemsUsed() {
+        assertTrue(RunGains.start(null).add(battle).finish(state("[]")).itemsUsed.isEmpty())
+        assertTrue(RunGains.start(state("[]")).add(battle).finish(null).itemsUsed.isEmpty())
+    }
+
+    @Test fun oldJsonWithoutItemsUsedDecodes() {
+        val run = Json { ignoreUnknownKeys = true }.decodeFromString<RunGains>("{}")
+        assertTrue(run.itemsUsed.isEmpty())
+    }
+
     @Test fun noStartSnapshotKeepsGainsAndEndHoldingsButFruitIsUnknown() {
         val run = RunGains.start(null).add(battle).finish(state("""[{"itemId":6510,"num":30}]"""))
         assertEquals(3, run.items.first { it.objectId == 6510L }.gained)
