@@ -11,11 +11,6 @@ edit_uri: edit/main/wiki/
 docs_dir: wiki
 site_dir: build/site
 
-# The hook rebuilds the full navigation from wiki/ when the site is built.
-nav:
-  - 기능 설명서:
-      - 진행 중인 이벤트: scripts/Event-Info-KR.md
-
 hooks:
   - tools/docs-site/hooks.py
 
