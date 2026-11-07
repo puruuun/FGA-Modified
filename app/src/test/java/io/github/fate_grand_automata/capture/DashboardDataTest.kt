@@ -151,7 +151,39 @@ class DashboardDataTest {
             {"itemId":5,"num":100},{"itemId":6,"num":1},{"itemId":7,"num":1},{"itemId":11,"num":1},
             {"itemId":6510,"num":2},{"itemId":6501,"num":0},{"itemId":6502,"num":-1},{"itemId":999,"num":1}]"""), GameNameMap())
         assertEquals(listOf(6510L,999L), data.inventory!!.map { it.id })
-        assertEquals(setOf(1L,2L,3L,18L,16L,100L,103L), data.resources.keys)
+        assertEquals(setOf(1L,2L,3L,18L,16L,100L,103L,4001L,49L), data.resources.keys)
+    }
+    private fun teapotNames() = GameNameMap(itemData = mapOf(
+        94065901L to AtlasBasic(94065901, "Tea A", "friendshipUpItem"), 94065902L to AtlasBasic(94065902, "Tea B", "friendshipUpItem"),
+        94065903L to AtlasBasic(94065903, "Tea C", "friendshipUpItem"), 46L to AtlasBasic(46, "Pure Prism", "purePri")))
+    @Test fun summonTicketsAndStormPodsAlwaysShownAfterOtherTiles() {
+        val none = dashboardData(dashboardState("userGame" to """[{"qp":1}]""", "userItem" to """[{"itemId":100,"num":2}]"""), GameNameMap())
+        assertEquals(listOf(1L,100L,4001L,49L), none.resources.keys.toList())
+        assertEquals(0L, none.resources[4001L]); assertEquals(0L, none.resources[49L])
+        val held = dashboardData(dashboardState("userItem" to """[{"itemId":49,"num":7},{"itemId":4001,"num":3}]"""), GameNameMap())
+        assertEquals(listOf(4001L,49L), held.resources.keys.toList())
+        assertEquals(3L, held.resources[4001L]); assertEquals(7L, held.resources[49L])
+        assertTrue(held.inventory!!.isEmpty())
+    }
+    @Test fun teapotsSumAndUseIconOfLargestCountTiesToLargerId() {
+        val items = """[{"itemId":94065901,"num":5},{"itemId":94065902,"num":9},{"itemId":94065903,"num":9},{"itemId":999,"num":1}]"""
+        val data = dashboardData(dashboardState("userItem" to items), teapotNames())
+        assertEquals(DashboardTeapots(23, 94065903L), data.teapots)
+        assertEquals(listOf(999L), data.inventory!!.map { it.id })
+        val single = dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":5},{"itemId":94065902,"num":2}]"""), teapotNames())
+        assertEquals(DashboardTeapots(7, 94065901L), single.teapots)
+    }
+    @Test fun teapotsHiddenAtZeroOrWithoutMetadata() {
+        assertNull(dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":0}]"""), teapotNames()).teapots)
+        val noMeta = dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":5}]"""), GameNameMap())
+        assertNull(noMeta.teapots); assertEquals(listOf(94065901L), noMeta.inventory!!.map { it.id })
+    }
+    @Test fun pureAndFootprintAreMaterialsByExplicitId() {
+        assertEquals(InventoryGroup.Materials, inventoryGroup(46, "purePri"))
+        assertEquals(InventoryGroup.Materials, inventoryGroup(2000, "commandCardPrmUp"))
+        assertEquals(InventoryGroup.Materials, inventoryGroup(46, null))
+        assertEquals(InventoryGroup.Other, inventoryGroup(2001, "commandCardPrmUp"))
+        assertEquals(InventoryGroup.Other, inventoryGroup(47, "purePri"))
     }
     @Test fun missingTablesAndFieldsNeverBecomeZero() {
         val data = dashboardData(dashboardState(), GameNameMap())

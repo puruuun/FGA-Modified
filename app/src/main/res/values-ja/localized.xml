@@ -845,7 +845,6 @@
     <string name="dashboard_total">合計</string>
     <string name="dashboard_command_codes">コマンドコード</string>
     <string name="dashboard_second_storage">霊基保管室</string>
-    <string name="dashboard_search">名前で検索</string>
     <string name="dashboard_sort_bond">絆</string>
     <string name="dashboard_sort_cost">コスト</string>
     <string name="dashboard_sort_level">Lv</string>
@@ -856,7 +855,8 @@
     <string name="dashboard_max_level">最高Lv %1$d</string>
     <string name="dashboard_skills">スキル %1$s</string>
     <string name="dashboard_show_all">すべて表示（%1$d）</string>
-    <string name="dashboard_group_materials">スキル強化素材</string>
+    <string name="dashboard_group_materials">強化素材</string>
+    <string name="dashboard_teapots">ティーポット</string>
     <string name="dashboard_group_gems">輝石・魔石・秘石</string>
     <string name="dashboard_group_pieces">ピース・モニュメント</string>
     <string name="dashboard_group_grails">聖杯・伝承結晶</string>

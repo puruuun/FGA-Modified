@@ -1083,7 +1083,6 @@
     <string name="dashboard_total">합계</string>
     <string name="dashboard_command_codes">커맨드 코드</string>
     <string name="dashboard_second_storage">두 번째 보관소</string>
-    <string name="dashboard_search">이름으로 검색</string>
     <string name="dashboard_sort_bond">인연</string>
     <string name="dashboard_sort_cost">코스트</string>
     <string name="dashboard_sort_level">Lv</string>
@@ -1094,7 +1093,8 @@
     <string name="dashboard_max_level">최고 Lv %1$d</string>
     <string name="dashboard_skills">스킬 %1$s</string>
     <string name="dashboard_show_all">전체 보기 (%1$d)</string>
-    <string name="dashboard_group_materials">스킬 강화 재료</string>
+    <string name="dashboard_group_materials">강화 재료</string>
+    <string name="dashboard_teapots">티포트</string>
     <string name="dashboard_group_gems">휘석·마석·비석</string>
     <string name="dashboard_group_pieces">피스·모뉴먼트</string>
     <string name="dashboard_group_grails">성배·전승 결정</string>

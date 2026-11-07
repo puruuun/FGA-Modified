@@ -29,6 +29,8 @@ internal fun storedKind(id: Long?, names: GameNameMap): StoredKind = when {
 }
 
 internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
+    // Pure Prism (type purePri) and Beast's Footprint (type commandCardPrmUp) are matched by explicit id only.
+    id == 46L || id == 2000L -> InventoryGroup.Materials
     // Atlas groups gems/Lore under skillLvUp and pieces/Grails under tdLvUp.
     type == "skillLvUp" && (id in 6001L..6008L || id in 6101L..6108L || id in 6201L..6208L) -> InventoryGroup.Gems
     type == "tdLvUp" && (id in 7001L..7008L || id in 7101L..7108L) -> InventoryGroup.Pieces
@@ -46,6 +48,10 @@ data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long
         5L -> 16; 4L -> 12; 3L -> 7; 2L, 0L -> 4; 1L -> 3; else -> null
     }
 }
+/** Summed friendshipUpItem holdings; the icon comes from the held teapot with the largest count (ties: larger id). */
+data class DashboardTeapots(val total: Long, val iconId: Long)
+internal const val SUMMON_TICKET_ID = 4001L
+internal const val STORM_POD_ID = 49L
 data class DashboardItem(val id: Long, val count: Long, val group: InventoryGroup)
 data class DashboardEquip(val id: Long, val level: Long?, val equipped: Boolean)
 data class DashboardAp(val current: Long, val max: Long, val recoverAt: Long)
@@ -64,6 +70,7 @@ data class DashboardData(
     val game: JsonObject?, val resources: Map<Long, Long>, val freePaid: Pair<Long, Long>?,
     val storage: DashboardStorage?, val servants: List<DashboardServant>?,
     val inventory: List<DashboardItem>?, val equips: List<DashboardEquip>?,
+    val teapots: DashboardTeapots? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -86,7 +93,13 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
     val resources = buildMap {
         mapOf(1L to "qp", 2L to "stone", 3L to "mana", 18L to "rarePri").forEach { (id, key) -> game?.number(key)?.let { put(id, it) } }
         listOf(16L, 100L, 101L, 104L, 102L, 103L).forEach { id -> items?.get(id)?.let { put(id, it) } }
+        // Always shown (0 without a row) once the userItem table exists; a missing table is not invented as 0.
+        if (items != null) listOf(SUMMON_TICKET_ID, STORM_POD_ID).forEach { id -> put(id, items[id] ?: 0L) }
     }
+    val teapotHeld = items?.filter { (id, count) -> count > 0 && names.itemData[id]?.type == "friendshipUpItem" }.orEmpty()
+    val teapots = teapotHeld.entries.maxWithOrNull(compareBy<Map.Entry<Long, Long>>({ it.value }, { it.key }))
+        ?.let { DashboardTeapots(teapotHeld.values.sum(), it.key) }
+    val teapotIds = teapotHeld.keys
     val classified = names.servantData.isNotEmpty() && names.equipData.isNotEmpty()
     val svts = rows("userSvt")
     val kinds = if (classified) svts?.groupingBy { storedKind(it.number("svtId"), names) }?.eachCount() else null
@@ -102,7 +115,7 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
             row.number("treasureDeviceLv1"), (1..3).map { row.number("skillLv$it") }, row.number("maxLv"))
     }
     val aliases = mapOf(5L to 1L, 6L to 2L, 7L to 2L, 11L to 16L)
-    val inventory = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources }?.map { (id, count) ->
+    val inventory = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->
         DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type))
     }
     val equips = rows("userEquip")?.mapNotNull { row ->
@@ -110,7 +123,7 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
         DashboardEquip(id, row.number("lv"), id == game?.number("userEquipId"))
     }?.sortedWith(compareByDescending<DashboardEquip> { it.level ?: -1L }.thenBy { it.id })
     val split = game?.number("freeStone")?.let { free -> game.number("chargeStone")?.let { free to it } }
-    return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips)
+    return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots)
 }
 
 internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {

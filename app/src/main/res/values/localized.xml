@@ -1162,7 +1162,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_total">Total</string>
     <string name="dashboard_command_codes">Command codes</string>
     <string name="dashboard_second_storage">Second storage</string>
-    <string name="dashboard_search">Search by name</string>
     <string name="dashboard_sort_bond">Bond</string>
     <string name="dashboard_sort_cost">Cost</string>
     <string name="dashboard_sort_level">Lv</string>
@@ -1173,7 +1172,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_max_level">Max Lv %1$d</string>
     <string name="dashboard_skills">Skills %1$s</string>
     <string name="dashboard_show_all">Show all (%1$d)</string>
-    <string name="dashboard_group_materials">Skill materials</string>
+    <string name="dashboard_group_materials">Enhancement materials</string>
+    <string name="dashboard_teapots">Teapots</string>
     <string name="dashboard_group_gems">Gems</string>
     <string name="dashboard_group_pieces">Pieces and monuments</string>
     <string name="dashboard_group_grails">Grails and Lore</string>

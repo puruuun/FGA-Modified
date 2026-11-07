@@ -150,8 +150,8 @@ internal fun ResourceGroups(resources: List<LogResource>, names: GameNameMap) {
 }
 
 @Composable
-internal fun ResourceTile(resource: LogResource, names: GameNameMap, signed: Boolean = true) {
-    val name = resourceName(resource.type, resource.id, names)
+internal fun ResourceTile(resource: LogResource, names: GameNameMap, signed: Boolean = true, label: String? = null) {
+    val name = label ?: resourceName(resource.type, resource.id, names)
     var available by remember(resource.type, resource.id) { mutableStateOf(false) }
     val format: (Long) -> String = { if (signed) signedOutsideCount(it) else it.grouped() }
     val count = resource.count?.let(format) ?: stringResource(R.string.capture_gains_unknown)

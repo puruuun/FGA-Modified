@@ -84,7 +84,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
             else BoxWithConstraints(Modifier.weight(1f)) {
                 val sections = buildList<Int> {
                     if (data.profile.isNotEmpty()) add(0)
-                    if (data.resources.isNotEmpty() || dashboardAp(data.game, now) != null || data.game?.number("carryOverActPoint") != null || (data.game?.number("commandSpellRecoverAt") ?: 0) > now) add(1)
+                    if (data.resources.isNotEmpty() || data.teapots != null || dashboardAp(data.game, now) != null || data.game?.number("carryOverActPoint") != null || (data.game?.number("commandSpellRecoverAt") ?: 0) > now) add(1)
                     if (data.storage != null) add(2)
                     if (!data.servants.isNullOrEmpty()) add(3)
                     if (!data.inventory.isNullOrEmpty()) add(4)
@@ -182,6 +182,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     game?.number("carryOverActPoint")?.let { Field(R.string.dashboard_carry_ap, it.grouped()) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         data.resources.forEach { (id, value) -> ResourceTile(LogResource(id = id, count = value, split = if (id == 2L) data.freePaid else null), names, signed = false) }
+        data.teapots?.let { ResourceTile(LogResource(id = it.iconId, count = it.total), names, signed = false, label = stringResource(R.string.dashboard_teapots)) }
     }
     game?.number("commandSpellRecoverAt")?.takeIf { it > now }?.let { Field(R.string.dashboard_command_spell, date(it)) }
 }
@@ -255,12 +256,8 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
 }
 
 @Composable private fun Inventory(items: List<DashboardItem>, names: GameNameMap) {
-    var query by rememberSaveable { mutableStateOf("") }
-    OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.dashboard_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
     var groups by remember { mutableStateOf(emptyMap<InventoryGroup, List<DashboardItem>>()) }
-    LaunchedEffect(items, query, names) { groups = withContext(Dispatchers.Default) {
-        items.filter { (names.items[it.id] ?: "#${it.id}").contains(query, ignoreCase = true) }.groupBy { it.group }
-    } }
+    LaunchedEffect(items) { groups = withContext(Dispatchers.Default) { items.groupBy { it.group } } }
     InventoryGroup.entries.forEach { group ->
         val rows = groups[group].orEmpty()
         if (rows.isNotEmpty()) key(group) {
