@@ -18,4 +18,18 @@ class FriendAccountSelectionTest {
         assertEquals("new", defaultFriendAccount(null, accounts))
         assertNull(defaultFriendAccount("missing", emptyList()))
     }
+    @Test fun requestedWithRosterWinsOverCurrent() {
+        val accounts = listOf(account("new", 200), account("cur", 100), account("req", 50))
+        assertEquals("req", defaultFriendAccount("cur", accounts, "req"))
+    }
+    @Test fun requestedWithoutRosterFallsBackToCurrentThenNewest() {
+        val accounts = listOf(account("old", 100), account("new", 200))
+        assertEquals("old", defaultFriendAccount("old", accounts, "missing"))
+        assertEquals("new", defaultFriendAccount("gone", accounts, "missing"))
+    }
+    @Test fun noRequestedBehavesAsBefore() {
+        val accounts = listOf(account("old", 100), account("new", 200))
+        assertEquals("old", defaultFriendAccount("old", accounts, null))
+        assertEquals("new", defaultFriendAccount(null, accounts, null))
+    }
 }

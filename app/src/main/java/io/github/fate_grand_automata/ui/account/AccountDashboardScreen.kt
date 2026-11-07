@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,7 +50,7 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
-fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: () -> Unit,
+fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: () -> Unit, openFriends: (String) -> Unit = {},
     vm: AccountDashboardViewModel = hiltViewModel()) {
     val version by remember(vm, userId) { vm.account(userId) }.collectAsStateWithLifecycle()
     val names by vm.names.collectAsStateWithLifecycle()
@@ -60,13 +61,14 @@ fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: (
     val recentOutside = remember(outside, open, userId) { (outside + open).filter { it.accountId == userId }.maxByOrNull { it.endedAt } }
     val export = rememberChaldeaAccountExport()
     AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside,
-        userId = userId, exportAccount = export, friendCount = version.friendCount)
+        userId = userId, exportAccount = export, friendCount = version.friendCount, openFriends = openFriends)
 }
 
 @Composable
 internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, displayName: String?,
     openSettings: () -> Unit, openLogs: () -> Unit, battle: BattleLogEntry? = null, outside: OutsideLogEntry? = null,
-    initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}, friendCount: Int? = null) {
+    initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}, friendCount: Int? = null,
+    openFriends: (String) -> Unit = {}) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
@@ -76,6 +78,11 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     IconButton(onClick = { exportAccount(userId) }, modifier = Modifier.testTag("dashboard-export")) {
                         Icon(Icons.Default.FileUpload, stringResource(R.string.capture_chaldea_create))
+                    }
+                }
+                if (friendCount != null) {
+                    IconButton(onClick = { openFriends(userId) }, modifier = Modifier.testTag("dashboard-friends")) {
+                        Icon(Icons.Default.People, stringResource(R.string.friends_title))
                     }
                 }
                 IconButton(onClick = openSettings, modifier = Modifier.testTag("dashboard-settings")) {

@@ -18,8 +18,9 @@ import javax.inject.Inject
 
 data class FriendManagerAccount(val account: CaptureAccount, val roster: FriendRoster)
 
-internal fun defaultFriendAccount(current: String?, accounts: List<FriendManagerAccount>): String? =
-    accounts.firstOrNull { it.account.id == current }?.account?.id
+internal fun defaultFriendAccount(current: String?, accounts: List<FriendManagerAccount>, requested: String? = null): String? =
+    accounts.firstOrNull { requested != null && it.account.id == requested }?.account?.id
+        ?: accounts.firstOrNull { it.account.id == current }?.account?.id
         ?: accounts.sortedWith(compareByDescending<FriendManagerAccount> { it.roster.updatedAt }.thenBy { it.account.id })
             .firstOrNull()?.account?.id
 

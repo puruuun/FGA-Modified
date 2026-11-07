@@ -65,6 +65,20 @@ class DashboardRound4UiTest {
         assertEquals(Route.GainsTracker,route)
         assertEquals("user-2",Route.AccountDashboard("user-2").userId)
     }
+    @Test fun friendsIconShownOnlyWithFriendListAndOpensDashboardAccount() {
+        var opened:String?=null
+        val hasList = androidx.compose.runtime.mutableStateOf(false)
+        content { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{},userId="acc-7",friendCount=if(hasList.value) 12 else null,openFriends={opened=it}) }
+        compose.onNodeWithTag("dashboard-friends").assertDoesNotExist()
+        compose.runOnIdle { hasList.value=true }
+        compose.onNodeWithTag("dashboard-friends").assertExists().performClick()
+        assertEquals("acc-7",opened)
+    }
+    @Test fun topBarIconsAreExportFriendsSettings() {
+        content { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{},userId="acc-7",friendCount=3) }
+        val x={tag:String->compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.left}
+        assertTrue(x("dashboard-export")<x("dashboard-friends")); assertTrue(x("dashboard-friends")<x("dashboard-settings"))
+    }
     @Test fun recentActivityShowsBothKindsAndOpensLogs() {
         var route:Route?=null
         val battle=io.github.fate_grand_automata.battlelog.battleLogFixture("latest").copy(configName="Recent quest",reasonText="8 runs")

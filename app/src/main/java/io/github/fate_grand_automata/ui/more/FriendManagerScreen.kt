@@ -54,22 +54,22 @@ internal fun friendCodeText(code: String): String = code.filter { it.isDigit() }
 }
 
 @Composable
-fun FriendManagerScreen(vm: FriendManagerViewModel = hiltViewModel()) {
+fun FriendManagerScreen(vm: FriendManagerViewModel = hiltViewModel(), requestedId: String? = null) {
     val accounts by vm.accounts.collectAsStateWithLifecycle()
     val current by vm.currentId.collectAsStateWithLifecycle()
     val names by vm.names.collectAsStateWithLifecycle()
-    FriendManagerContent(null, names, accounts = accounts, currentId = current)
+    FriendManagerContent(null, names, accounts = accounts, currentId = current, requestedId = requestedId)
 }
 
 @Composable
 internal fun FriendManagerContent(roster: FriendRoster?, names: GameNameMap, initialNow: Long? = null,
-    accounts: List<FriendManagerAccount> = emptyList(), currentId: String? = null) {
+    accounts: List<FriendManagerAccount> = emptyList(), currentId: String? = null, requestedId: String? = null) {
     var now by remember { mutableLongStateOf(initialNow ?: (System.currentTimeMillis() / 1000)) }
     LaunchedEffect(initialNow) {
         if (initialNow == null) while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) }
     }
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
-    val selectedId = chosen?.takeIf { id -> accounts.any { it.account.id == id } } ?: defaultFriendAccount(currentId, accounts)
+    val selectedId = chosen?.takeIf { id -> accounts.any { it.account.id == id } } ?: defaultFriendAccount(currentId, accounts, requestedId)
     val selected = accounts.firstOrNull { it.account.id == selectedId }
     val activeRoster = selected?.roster ?: roster
     CappedWidth {
