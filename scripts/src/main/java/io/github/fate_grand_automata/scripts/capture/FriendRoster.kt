@@ -89,7 +89,10 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
             return FriendRoster(cache.long("serverTime") ?: now, friends)
         }
 
-        /** Updates or adds the friends (type 1) found in quest support lists. Others are ignored. */
+        /**
+         * Updates or adds the friends (type 1) found in quest support lists. Others are ignored. A followerInfo is a
+         * user with the friend's complete decks, so the stored slots of the decks it lists are replaced.
+         */
         fun mergeFollowers(roster: FriendRoster, body: JsonObject): FriendRoster {
             val cache = body["cache"] as? JsonObject ?: return roster
             val followers = (cache["updated"] as? JsonObject)?.get("userFollower") as? JsonArray ?: return roster
@@ -98,28 +101,31 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                 .filter { it.long("type") == 1L }
             if (infos.isEmpty()) return roster
             val friends = roster.friends.toMutableMap()
-            for ((id, group) in infos.groupBy { it.string("userId") }) {
-                if (id == null) continue
-                val known = friends[id]
-                var friend = known ?: Friend(userId = id)
-                group.first().let { info ->
-                    info.string("userName")?.let { friend = friend.copy(name = it) }
-                    info.long("userLv")?.let { friend = friend.copy(lv = it.toInt()) }
-                    // Support lists carry no friend code: keep the one friend/top gave.
-                    info.string("friendCode")?.takeIf { it.isNotBlank() }?.let { friend = friend.copy(friendCode = it) }
+            for (info in infos) {
+                val id = info.string("userId") ?: continue
+                var friend = friends[id] ?: Friend(userId = id)
+                info.string("userName")?.let { friend = friend.copy(name = it) }
+                info.long("userLv")?.let { friend = friend.copy(lv = it.toInt()) }
+                // Support lists carry no friend code: the one friend/top gave stays.
+                info.string("friendCode")?.takeIf { it.isNotBlank() }?.let { friend = friend.copy(friendCode = it) }
+                val mainObjects = info.slotObjects("userSvtLeaderHash")
+                val eventObjects = info.slotObjects("eventUserSvtLeaderHash")
+                val mainIds = info.longs("mainSupportDeckIds")
+                val eventIds = info.longs("eventSupportDeckIds")
+                if (mainIds.isNotEmpty()) friend = friend.copy(mainDeckIds = mainIds)
+                if (eventIds.isNotEmpty()) friend = friend.copy(eventDeckIds = eventIds)
+                var slots = friend.slots
+                // Empty deck lists are not a statement about that deck type: keep what is stored.
+                for ((objects, listed) in listOf(mainObjects to mainIds, eventObjects to eventIds)) {
+                    if (objects.isEmpty()) continue
+                    val replaced = listed.toSet() + objects.mapNotNull { it.long("supportDeckId") }
+                    val fresh = objects.mapNotNull(::slot)
+                    slots = slots.filterNot { it.deckId in replaced } + fresh
                 }
-                val slots = friend.slots.toMutableList()
-                var main = friend.mainDeckIds
-                var lastLogin = friend.lastLogin
-                for (info in group) {
-                    val new = slot(info) ?: continue
-                    val index = slots.indexOfFirst { it.deckId == new.deckId && it.classId == new.classId }
-                    if (index < 0) slots += new else slots[index] = new
-                    // A friend first met through a support list has no deck lists; unknown decks count as normal.
-                    if (known == null && new.deckId !in main) main = main + new.deckId
-                    lastLogin = maxOf(lastLogin, new.updatedAt)
-                }
-                friends[id] = friend.copy(slots = slots, mainDeckIds = main, lastLogin = lastLogin)
+                friends[id] = friend.copy(
+                    slots = slots.distinctBy { it.deckId to it.classId },
+                    lastLogin = maxOf(friend.lastLogin, (mainObjects + eventObjects).maxOfOrNull { it.long("updatedAt") ?: 0L } ?: 0L),
+                )
             }
             return roster.copy(friends = friends)
         }

@@ -56,9 +56,9 @@ class FriendRosterTest {
     @Test fun messageIsNeverStored() {
         val roster = FriendRoster.fromFriendTop(twoFriends)!!
         assertFalse(roster.toJson().contains("PRIVATE-MESSAGE"))
-        val followers = obj("""{"cache":{"updated":{"userFollower":[{"followerInfo":[
-            {"type":1,"userId":"11","message":"PRIVATE-MESSAGE",${slot(101, 1, 500, 3000).removePrefix("{")}]}]}}}""")
-        assertFalse(FriendRoster.mergeFollowers(roster, followers).toJson().contains("PRIVATE-MESSAGE"))
+        val merged = FriendRoster.mergeFollowers(roster, followers(info(1, "11", listOf(slot(101, 1, 500, 3000)))))
+        assertFalse(merged.toJson().contains("PRIVATE-MESSAGE"))
+        assertNotEquals(roster, merged)
     }
 
     @Test fun lastLoginIsMaximumOverMainAndEventAndIgnoresZero() {
@@ -85,18 +85,26 @@ class FriendRosterTest {
     private fun followers(vararg infos: String) =
         obj("""{"cache":{"updated":{"userFollower":[{"followerInfo":[${infos.joinToString(",")}]}]}}}""")
 
+    /** The real shape: a followerInfo is a user whose slots sit in nested leader hashes. No friendCode. */
+    private fun info(type: Int, id: String, main: List<String>, event: List<String> = emptyList(), name: String = "Friend $id",
+        lv: Int = 120, mainIds: String = "[101,102,103]", eventIds: String = "[201,202,203]") =
+        """{"type":$type,"userId":"$id","userName":"$name","userLv":$lv,"message":"PRIVATE-MESSAGE",
+           "mainSupportDeckIds":$mainIds,"eventSupportDeckIds":$eventIds,
+           "userSvtLeaderHash":[${main.joinToString(",")}],"eventUserSvtLeaderHash":[${event.joinToString(",")}],
+           "userSvtGrandHash":[],"userClassBoardInfo":[],"followerClassStatistics":{},"pushUserSvtId":0,"tutorial1":0,"tutorial2":0}"""
+
     @Test fun followerUpdateKeepsFriendCodeAndNewFriendIsAdded() {
         val roster = FriendRoster.fromFriendTop(twoFriends)!!
         val merged = FriendRoster.mergeFollowers(roster, followers(
-            """{"type":1,"userId":"11","userName":"Renamed","userLv":121,${slot(101, 1, 501, 4500).removePrefix("{")}""",
-            """{"type":1,"userId":"99","userName":"Newcomer","userLv":50,${slot(101, 4, 800, 4400).removePrefix("{")}""",
+            info(1, "11", listOf(slot(101, 1, 501, 4500)), name = "Renamed", lv = 121),
+            info(1, "99", listOf(slot(101, 4, 800, 4400)), name = "Newcomer", lv = 50),
         ))
         val old = merged.friends.getValue("11")
         assertEquals("111222333", old.friendCode)
         assertEquals("Renamed", old.name)
         assertEquals(121, old.lv)
         assertEquals(4500, old.lastLogin)
-        // The slot with the same deck and class is replaced, the others stay.
+        // The listed main decks are replaced; the stored event slot stays because the event hash was empty.
         assertEquals(setOf(501L, 600L), old.slots.map { it.svtId }.toSet())
         val added = merged.friends.getValue("99")
         assertNull(added.friendCode)
@@ -107,10 +115,53 @@ class FriendRosterTest {
     @Test fun otherFollowerTypesAreIgnored() {
         val roster = FriendRoster.fromFriendTop(twoFriends)!!
         val merged = FriendRoster.mergeFollowers(roster, followers(
-            """{"type":2,"userId":"11","userName":"Stranger",${slot(101, 1, 999, 9999).removePrefix("{")}""",
-            """{"type":2,"userId":"77","userName":"Stranger",${slot(101, 1, 999, 9999).removePrefix("{")}""",
+            info(2, "11", listOf(slot(101, 1, 999, 9999)), name = "Stranger"),
+            info(2, "77", listOf(slot(101, 1, 999, 9999)), name = "Stranger"),
         ))
         assertSame(roster, merged)
+    }
+
+    @Test fun followerUpdateChangesASlotAndRemovesAMissingOneOfTheSameMainDeck() {
+        // Friend 11 stores deck 101 with class 1 (svt 500) and class 3 (svt 510); the new list only has class 1 changed.
+        val roster = FriendRoster.fromFriendTop(top(listOf(friendRow("11", "111222333",
+            listOf(slot(101, 1, 500, 1000), slot(101, 3, 510, 1000), slot(102, 2, 520, 1000)), listOf(slot(201, 5, 600, 2000))))))!!
+        val merged = FriendRoster.mergeFollowers(roster, followers(info(1, "11", listOf(slot(101, 1, 501, 5000, ce = 9000, limit = 4)))))
+        val friend = merged.friends.getValue("11")
+        // Deck 101 now holds only the new servant; the other main deck and the event deck are replaced/kept as listed.
+        assertEquals(listOf(501L), friend.slots.filter { it.deckId == 101L }.map { it.svtId })
+        assertEquals(4, friend.slots.first { it.svtId == 501L }.ceLimitCount)
+        assertEquals(5000, friend.lastLogin)
+        assertEquals("111222333", friend.friendCode)
+    }
+
+    @Test fun emptyEventHashKeepsStoredEventSlotsAndNonEmptyOneReplacesThem() {
+        val roster = FriendRoster.fromFriendTop(twoFriends)!!
+        val kept = FriendRoster.mergeFollowers(roster, followers(info(1, "11", listOf(slot(101, 1, 500, 3000)))))
+        assertEquals(listOf(600L), kept.friends.getValue("11").slots.filter { it.deckId == 201L }.map { it.svtId })
+        val replaced = FriendRoster.mergeFollowers(roster, followers(info(1, "11", listOf(slot(101, 1, 500, 3000)), listOf(slot(201, 5, 650, 3000)))))
+        assertEquals(listOf(650L), replaced.friends.getValue("11").slots.filter { it.deckId == 201L }.map { it.svtId })
+    }
+
+    @Test fun deckIdsAndLastLoginComeFromTheInfo() {
+        val roster = FriendRoster.fromFriendTop(twoFriends)!!
+        val merged = FriendRoster.mergeFollowers(roster, followers(
+            info(1, "11", listOf(slot(111, 1, 500, 7000), slot(112, 2, 0, 8000)), mainIds = "[111,112,113]", eventIds = "[]"),
+            info(1, "99", listOf(slot(121, 1, 800, 100)), mainIds = "[121,122,123]", eventIds = "[221,222,223]"),
+        ))
+        val friend = merged.friends.getValue("11")
+        assertEquals(listOf(111L, 112L, 113L), friend.mainDeckIds)
+        assertEquals(listOf(201L, 202L, 203L), friend.eventDeckIds) // an empty list never replaces
+        assertEquals(8000, friend.lastLogin) // the empty slot's time counts too
+        assertEquals(listOf(121L, 122L, 123L), merged.friends.getValue("99").mainDeckIds)
+        assertEquals(listOf(221L, 222L, 223L), merged.friends.getValue("99").eventDeckIds)
+        // Deck 101's old slot is not among the listed decks, so it stays.
+        assertTrue(friend.slots.any { it.deckId == 101L && it.svtId == 500L })
+    }
+
+    @Test fun slotFieldsDirectlyOnFollowerInfoAreNotSlots() {
+        val roster = FriendRoster.fromFriendTop(twoFriends)!!
+        val flat = followers("""{"type":1,"userId":"11",${slot(101, 1, 999, 9999).removePrefix("{")}""")
+        assertEquals(roster.friends.getValue("11").slots, FriendRoster.mergeFollowers(roster, flat).friends.getValue("11").slots)
     }
 
     @Test fun secondFriendTopRemovesGoneFriends() {
@@ -121,7 +172,7 @@ class FriendRosterTest {
     }
 
     @Test fun supportListsNeedAnExistingRosterAndOtherPathsAreIgnored() {
-        val body = followers("""{"type":1,"userId":"11",${slot(101, 1, 500, 3000).removePrefix("{")}""")
+        val body = followers(info(1, "11", listOf(slot(101, 1, 500, 3000))))
         assertNull(FriendRoster.update(null, "follower/list", body, 1))
         val roster = FriendRoster.update(null, "friend/top", twoFriends, 1)
         assertSame(roster, FriendRoster.update(roster, "shop/purchase", twoFriends, 2))
