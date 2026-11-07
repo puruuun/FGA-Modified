@@ -33,7 +33,10 @@ class CESelectionTest {
         val np = mockk<Pattern>(relaxed = true)
         val default = mockk<Pattern>(relaxed = true)
         var effect = BondCEEffectEnum.NP
-        var npScore = 0.739
+        var grandServant = true
+        var grandOnScreen = true
+        var requireBoth = true
+        var npScore = 0.90
         var defaultScore = 0.20
         var ceScore = 0.90
         var mlb = true
@@ -48,9 +51,10 @@ class CESelectionTest {
             every { api.images[Images.BondCeEffectNP, any()] } returns np
             every { api.images[Images.BondCeEffectDefault, any()] } returns default
             every { prefs.mlb } returns true
-            every { prefs.requireBothNormalAndRewardMatch } returns true
+            every { prefs.requireBothNormalAndRewardMatch } answers { requireBoth }
+            every { prefs.grandServant } answers { grandServant }
             every { prefs.bondCEEffect } answers { effect }
-            every { grand.isGrandPresent(any()) } returns true
+            every { grand.isGrandPresent(any()) } answers { grandOnScreen }
             every { star.isStarPresent(any()) } answers { mlb }
             val crop = mockk<Pattern>(relaxed = true)
             every { crop.width } returns 1000
@@ -74,47 +78,37 @@ class CESelectionTest {
         fun check() = selection.check(listOf("Foreign God", "Chaldea Teatime"), bounds)
     }
 
-    @Test fun `both bond templates accept 0_55 only when ahead of the opposite icon`() {
-        for (effect in listOf(BondCEEffectEnum.NP, BondCEEffectEnum.Default)) {
+    @Test fun `NP and Default use the plain find at the global min similarity`() {
+        for ((np, default) in listOf(0.844 to 0.20, 0.987 to 0.362, 0.80 to 0.79, 0.79 to 0.80, 0.55 to 0.20, 0.20 to 0.20)) {
             val f = Fixture()
-            f.effect = effect
-            f.npScore = 0.20
-            f.defaultScore = 0.20
-            for (score in listOf(0.20, 0.22, 0.45, 0.549, 0.55, 0.5926, 0.739, 0.844)) {
-                if (effect == BondCEEffectEnum.NP) f.npScore = score else f.defaultScore = score
-                assertEquals(score >= 0.55, f.check())
-            }
-        }
-        val f = Fixture()
-        assertTrue(f.check())
-        f.effect = BondCEEffectEnum.Default
-        assertFalse(f.check())
-    }
-
-    @Test fun `NP wins Default wins both below threshold and ties`() {
-        val f = Fixture()
-        for ((np, default, winner) in listOf(
-            Triple(0.5926, 0.20, BondCEEffectEnum.NP),
-            Triple(0.55, 0.54, BondCEEffectEnum.NP),
-            Triple(0.60, 0.737, BondCEEffectEnum.Default),
-            Triple(0.54, 0.55, BondCEEffectEnum.Default),
-            Triple(0.54, 0.45, null),
-            Triple(0.60, 0.60, null)
-        )) {
             f.npScore = np
             f.defaultScore = default
-            for (effect in listOf(BondCEEffectEnum.NP, BondCEEffectEnum.Default)) {
-                f.effect = effect
-                assertEquals(effect == winner, f.check(), "$effect: NP=$np Default=$default")
-            }
+            f.effect = BondCEEffectEnum.NP
+            assertEquals(np >= 0.80, f.check(), "NP=$np Default=$default")
+            f.effect = BondCEEffectEnum.Default
+            assertEquals(default >= 0.80, f.check(), "NP=$np Default=$default")
+            f.effect = BondCEEffectEnum.Ignore
+            assertTrue(f.check())
         }
     }
 
-    @Test fun `both scores use one crop without nesting snapshots`() {
+    @Test fun `a selected icon is not compared with the opposite icon`() {
+        val f = Fixture()
+        f.npScore = 0.85
+        f.defaultScore = 0.95
+        f.effect = BondCEEffectEnum.NP
+        assertTrue(f.check())
+        f.effect = BondCEEffectEnum.Default
+        assertTrue(f.check())
+    }
+
+    @Test fun `bond find passes no similarity so the global min similarity applies`() {
         val f = Fixture()
         assertTrue(f.check())
-        verify(exactly = 1) { with(f.api) { f.bond.getPattern(any()) } }
-        verify(exactly = 0) { f.api.useSameSnapIn<Any?>(any()) }
+        verify { with(f.api) { any<Region>().find(f.np, null) } }
+        f.effect = BondCEEffectEnum.Default
+        f.check()
+        verify { with(f.api) { any<Region>().find(f.default, null) } }
     }
 
     @Test fun `CE similarity and MLB gates remain unchanged`() {
@@ -125,6 +119,7 @@ class CESelectionTest {
         assertTrue(f.check())
         f.mlb = false
         assertFalse(f.check())
+        // Plain find: no similarity argument, so the support fine-tune offset never reaches the Grand CE slots
         verify { with(f.api) { any<Region>().find(f.first, null) } }
         verify { with(f.api) { any<Region>().find(f.third, null) } }
     }
@@ -137,11 +132,17 @@ class CESelectionTest {
         verify(exactly = 0) { with(f.api) { any<Region>().find(f.default, any()) } }
         verify(exactly = 0) { with(f.api) { any<Region>().getPattern(any()) } }
         verify(exactly = 0) { f.messages.log(any()) }
+        // A selected effect with diagnostics off does no extra scoring either
+        f.effect = BondCEEffectEnum.NP
+        assertTrue(f.check())
+        verify(exactly = 0) { with(f.api) { any<Region>().getPattern(any()) } }
+        verify(exactly = 0) { f.messages.log(any()) }
     }
 
-    @Test fun `diagnostics log the decision scores once and exhaust native match sequences`() {
+    @Test fun `diagnostics log scores without feeding the decision and exhaust native match sequences`() {
         val f = Fixture()
         every { f.messages.supportCeDiagnosticsEnabled } returns true
+        f.npScore = 0.85
         val crop = mockk<Pattern>(relaxed = true)
         every { crop.width } returns 1000
         every { crop.height } returns 1000
@@ -149,14 +150,67 @@ class CESelectionTest {
         every { crop.findMatches(any(), 0.01) } answers {
             sequence {
                 openScans++
-                try { yield(Match(Region(0, 0, 10, 10), if (firstArg<Pattern>() == f.np) 0.5926 else 0.20)) } finally { openScans-- }
+                // Log-only scores deliberately disagree with the find result used for the decision
+                try { yield(Match(Region(0, 0, 10, 10), if (firstArg<Pattern>() == f.np) 0.30 else 0.95)) } finally { openScans-- }
             }
         }
         every { with(f.api) { any<Region>().getPattern(any()) } } returns crop
         assertTrue(f.check())
         verify(exactly = 1) { f.messages.log(match {
-            it is ScriptLog.SupportCe && it.matched && it.np?.score == 0.5926 && it.default?.score == 0.20
+            it is ScriptLog.SupportCe && it.matched && it.np?.score == 0.30 && it.default?.score == 0.95
         }) }
         assertEquals(0, openScans)
+        f.effect = BondCEEffectEnum.Default
+        assertFalse(f.check()) // find says Default 0.20 < 0.80 even though the log score is 0.95
+    }
+
+    @Test fun `non Grand support ignores leftover bond settings`() {
+        val f = Fixture()
+        f.grandOnScreen = false
+        f.grandServant = false
+        f.effect = BondCEEffectEnum.NP
+        f.requireBoth = true
+        assertTrue(f.check())
+        f.effect = BondCEEffectEnum.Default
+        assertTrue(f.check())
+        // A missing CE still fails, so only the leftover options stopped mattering
+        f.ceScore = 0.79
+        assertFalse(f.check())
+    }
+
+    @Test fun `non Grand support with Grand Servant on keeps the old Grand only behaviour`() {
+        val f = Fixture()
+        f.grandOnScreen = false
+        f.grandServant = true
+        f.effect = BondCEEffectEnum.Ignore
+        f.requireBoth = false
+        assertTrue(f.check())
+        f.effect = BondCEEffectEnum.NP
+        assertFalse(f.check())
+        f.effect = BondCEEffectEnum.Ignore
+        f.requireBoth = true
+        assertFalse(f.check())
+    }
+
+    @Test fun `Grand support with Grand Servant off treats bond effect as Ignore and one slot as enough`() {
+        val f = Fixture()
+        f.grandServant = false
+        f.effect = BondCEEffectEnum.Default // would fail: only the NP icon scores high
+        f.requireBoth = true
+        assertTrue(f.check())
+        verify(exactly = 0) { with(f.api) { any<Region>().getPattern(any()) } }
+        // requireBoth is off too: with only the reward slot found, the check still passes
+        every { with(f.api) { any<Region>().find(f.first, any()) } } returns null
+        assertTrue(f.check())
+    }
+
+    @Test fun `Grand support with Grand Servant on still honours the bond effect and both slots`() {
+        val f = Fixture()
+        f.effect = BondCEEffectEnum.Default
+        assertFalse(f.check())
+        f.effect = BondCEEffectEnum.NP
+        assertTrue(f.check())
+        every { with(f.api) { any<Region>().find(f.first, any()) } } returns null
+        assertFalse(f.check())
     }
 }

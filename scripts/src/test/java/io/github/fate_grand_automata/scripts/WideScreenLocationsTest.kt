@@ -40,8 +40,8 @@ class WideScreenLocationsTest {
     @Test fun `Grand bond region grows six 720p pixels downward only across screen shapes`() {
         for ((width, offset) in listOf(2560 to 94, 3360 to 537, 3414 to 564)) {
             val loc = SupportScreenLocations(transforms(width))
-            assertEquals(Region(348 + offset, 192, 53, 67), loc.bondCeRegion)
-            assertEquals(Region(348 + offset, 550, 53, 67), loc.bondCeRegion.copy(y = 358 + loc.bondCeRegion.y))
+            assertEquals(Region(348 + offset, 192, 53, 55), loc.bondCeRegion)
+            assertEquals(Region(348 + offset, 550, 53, 55), loc.bondCeRegion.copy(y = 358 + loc.bondCeRegion.y))
         }
     }
 

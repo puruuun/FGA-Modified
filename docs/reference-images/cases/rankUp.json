@@ -16,7 +16,7 @@
       "name": "Kr-negative-battle-screen",
       "suite": "rankUp",
       "server": "Kr",
-      "file": "docs/reference-images/Kr/battle-screen.png",
+      "file": "docs/reference-images/Kr/battle/battle-screen.png",
       "expected": {
         "rankUp": false
       }

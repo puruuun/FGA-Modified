@@ -44,7 +44,9 @@ internal class FixtureApi(
     private var color: Pattern? = null
     private val server = GameServers.deserialize(case.optString("server", "Kr"))!!
     private val common = properties<ISupportPreferencesCommon> { if (it == "getMlbSimilarity") 0.8 else error("Unexpected preference $it") }
-    override val prefs = properties<IPreferences> { when (it) { "getGameServer" -> server; "getSupport" -> common; else -> error("Unexpected preference $it") } }
+    /** The app default min similarity; `find` below uses the same value when no similarity is passed. */
+    private val platform = properties<PlatformPrefs> { if (it == "getMinSimilarity") MIN_SIMILARITY else error("Unexpected platform preference $it") }
+    override val prefs = properties<IPreferences> { when (it) { "getGameServer" -> server; "getSupport" -> common; "getPlatformPrefs" -> platform; else -> error("Unexpected preference $it") } }
     internal val supportCeLogs = mutableListOf<ScriptLog.SupportCe>()
     override val messages = object : IScriptMessages {
         override val supportCeDiagnosticsEnabled = case.optString("view") == "CESelection"
@@ -143,7 +145,7 @@ internal class FixtureApi(
     }
     override fun Region.getPattern(tag: String): Pattern = cropFrame().use { it.copy() }.also { it.tag = tag }
     override fun Region.findAll(pattern: Pattern, similarity: Double?): List<Match> = cropFrame().use { cropped ->
-        cropped.findMatches(pattern, similarity ?: 0.8).map { Match(it.region * 2.0 + location, it.score) }.toList()
+        cropped.findMatches(pattern, similarity ?: MIN_SIMILARITY).map { Match(it.region * 2.0 + location, it.score) }.toList()
     }
     override fun Region.exists(image: Pattern, timeout: Duration, similarity: Double?) = findAll(image, similarity).isNotEmpty()
     override fun Region.waitVanish(image: Pattern, timeout: Duration, similarity: Double?) = !exists(image, timeout, similarity)
@@ -216,6 +218,8 @@ internal class MeasuredOcr(private val delegate: OcrService) : OcrService {
         try { return block() } finally { calls++; totalMs += SystemClock.elapsedRealtime() - started }
     }
 }
+
+private const val MIN_SIMILARITY = 0.8
 
 internal inline fun <reified T> properties(crossinline value: (String) -> Any?): T =
     Proxy.newProxyInstance(T::class.java.classLoader, arrayOf(T::class.java)) { _, method, _ -> value(method.name) } as T
