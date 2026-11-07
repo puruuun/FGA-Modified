@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
+import io.github.fate_grand_automata.capture.captureFeaturesAvailable
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
@@ -90,6 +91,9 @@ internal fun MoreOptionsContent(
     downloadSummary: String = "",
     downloadIcons: () -> Unit = {},
 ) {
+    val captureEnabled by prefs.captureTrackerEnabled.asFlow()
+        .collectAsState(initial = prefs.captureTrackerEnabled.get())
+    val captureAvailable = captureFeaturesAvailable(captureEnabled, android.os.Build.VERSION.SDK_INT)
     CappedWidth {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -125,7 +129,8 @@ internal fun MoreOptionsContent(
                                             extractSupportImages = extractSupportImages,
                                             extractSummary = extractSummary,
                                             downloadIcons = downloadIcons,
-                                            downloadSummary = downloadSummary
+                                            downloadSummary = downloadSummary,
+                                            showIconDownload = captureAvailable
                                         )
                                     }
                                 }
@@ -139,7 +144,7 @@ internal fun MoreOptionsContent(
                                             icon = icon(Icons.Default.VpnKey),
                                             onClick = goToGainsTracker
                                         )
-                                        io.github.fate_grand_automata.ui.prefs.Preference(
+                                        if (captureAvailable) io.github.fate_grand_automata.ui.prefs.Preference(
                                             title = stringResource(R.string.friends_title),
                                             icon = icon(Icons.Default.People),
                                             onClick = goToFriendManager

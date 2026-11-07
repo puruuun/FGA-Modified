@@ -40,8 +40,8 @@ class IconPrefetchTest {
         val existing = targets.first()
         File(directory, "${existing.directory}/${existing.id}.png").apply { parentFile!!.mkdirs(); writeBytes(byteArrayOf(7)) }
         val calls = AtomicInteger()
-        suspend fun resolve(target: IconTarget): Boolean = IconFileStore(File(directory, target.directory),
-            { calls.incrementAndGet(); byteArrayOf(1) }).resolve(target.id, target.address) != null
+        suspend fun resolve(target: IconTarget): IconOutcome = IconFileStore(File(directory, target.directory),
+            { calls.incrementAndGet(); byteArrayOf(1) }).fetch(target.id, target.address).second
         val job = IconPrefetchJob(this, { names() }, ::resolve)
         job.start().join()
         assertEquals(6, calls.get())
@@ -56,7 +56,7 @@ class IconPrefetchTest {
         val job = IconPrefetchJob(this, { names() }, {
             attempted += it
             if (it.id == 6510L) error("offline")
-            it.id != 6520L
+            if (it.id == 6520L) IconOutcome.Failed else IconOutcome.Ready
         })
         job.start().join()
         assertEquals(iconPrefetchTargets(names()).toSet(), attempted)
@@ -67,7 +67,7 @@ class IconPrefetchTest {
         val data = names().copy(mysticData = mapOf(10L to row(10).copy(icon = "https://evil.test/icon.png")))
         val job = IconPrefetchJob(this, { data }, { target ->
             IconFileStore(File(directory, target.directory), { assertTrue(IconFileStore.isPublicIcon(it)); byteArrayOf(1) })
-                .resolve(target.id, target.address) != null
+                .fetch(target.id, target.address).second
         })
         job.start().join()
         assertEquals(IconPrefetchProgress.Ready(6, 1), job.state.value)
@@ -79,7 +79,7 @@ class IconPrefetchTest {
         val enteredDownload = CompletableDeferred<Unit>()
         var listLoads = 0
         val job = IconPrefetchJob(this, { listLoads++; names() }, {
-            enteredDownload.complete(Unit); downloadGate.await(); true
+            enteredDownload.complete(Unit); downloadGate.await(); IconOutcome.Ready
         })
         assertNull(job.state.value)
         val first = job.start()
@@ -97,7 +97,7 @@ class IconPrefetchTest {
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {
             val gate = CompletableDeferred<Unit>()
-            val job = IconPrefetchJob(appScope, { gate.await(); names() }, { true })
+            val job = IconPrefetchJob(appScope, { gate.await(); names() }, { IconOutcome.Ready })
             val observer = launch { job.state.collect() }
             val running = job.start()
             observer.cancelAndJoin()
@@ -115,7 +115,7 @@ class IconPrefetchTest {
         val job = IconPrefetchJob(this, { names() }, {
             if (entered.incrementAndGet() == 4) fourEntered.complete(Unit)
             release.await()
-            true
+            IconOutcome.Ready
         })
         val running = job.start()
         withTimeout(5_000) { fourEntered.await() }
@@ -130,7 +130,7 @@ class IconPrefetchTest {
         val iconGate = CompletableDeferred<Unit>()
         val firstIcon = CompletableDeferred<Unit>()
         val job = IconPrefetchJob(this, { listGate.await(); names() }, {
-            firstIcon.complete(Unit); iconGate.await(); true
+            firstIcon.complete(Unit); iconGate.await(); IconOutcome.Ready
         })
         val running = job.start()
         yield()
@@ -178,7 +178,7 @@ class IconPrefetchTest {
     @Test fun extractionAloneNeverStartsTheIconDownload() = runBlocking {
         var extractions = 0
         var listLoads = 0
-        val tasks = SupportImageTasks(this, { extractions++ }, IconPrefetchJob(this, { listLoads++; names() }, { true }))
+        val tasks = SupportImageTasks(this, { extractions++ }, IconPrefetchJob(this, { listLoads++; names() }, { IconOutcome.Ready }))
         assertEquals(ExtractionResult.Idle, tasks.extraction.value)
         tasks.startExtraction().join()
         assertEquals(1, extractions)
@@ -189,7 +189,7 @@ class IconPrefetchTest {
 
     @Test fun failedExtractionIsReportedAndStillDoesNotDownload() = runBlocking {
         var listLoads = 0
-        val tasks = SupportImageTasks(this, { error("no support folder") }, IconPrefetchJob(this, { listLoads++; names() }, { true }))
+        val tasks = SupportImageTasks(this, { error("no support folder") }, IconPrefetchJob(this, { listLoads++; names() }, { IconOutcome.Ready }))
         tasks.startExtraction().join()
         assertEquals(ExtractionResult.Failure, tasks.extraction.value)
         assertEquals(0, listLoads)
@@ -200,7 +200,7 @@ class IconPrefetchTest {
         var extractions = 0
         var listLoads = 0
         val gate = CompletableDeferred<Unit>()
-        val tasks = SupportImageTasks(this, { extractions++ }, IconPrefetchJob(this, { listLoads++; gate.await(); names() }, { true }))
+        val tasks = SupportImageTasks(this, { extractions++ }, IconPrefetchJob(this, { listLoads++; gate.await(); names() }, { IconOutcome.Ready }))
         val first = tasks.startDownload()
         assertSame(first, tasks.startDownload())
         gate.complete(Unit)
@@ -214,12 +214,51 @@ class IconPrefetchTest {
     @Test fun secondExtractionWhileRunningIsIgnored() = runBlocking {
         var extractions = 0
         val gate = CompletableDeferred<Unit>()
-        val tasks = SupportImageTasks(this, { extractions++; gate.await() }, IconPrefetchJob(this, { names() }, { true }))
+        val tasks = SupportImageTasks(this, { extractions++; gate.await() }, IconPrefetchJob(this, { names() }, { IconOutcome.Ready }))
         val first = tasks.startExtraction()
         assertEquals(ExtractionResult.Extracting, tasks.extraction.value)
         assertSame(first, tasks.startExtraction())
         gate.complete(Unit)
         first.join()
         assertEquals(1, extractions)
+    }
+
+    @Test fun missingImageIsCountedAsNeitherReadyNorFailed() = runBlocking {
+        val job = IconPrefetchJob(this, { names() }, {
+            when (it.id) { 6510L -> IconOutcome.Missing; 6520L -> IconOutcome.Failed; else -> IconOutcome.Ready }
+        })
+        job.start().join()
+        assertEquals(IconPrefetchProgress.Ready(5, 1), job.state.value)
+    }
+
+    @Test fun networkFailureCountsAsFailedNotMissing() = runBlocking {
+        val job = IconPrefetchJob(this, { names() }, { if (it.id == 6510L) error("offline") else IconOutcome.Ready })
+        job.start().join()
+        assertEquals(IconPrefetchProgress.Ready(6, 1), job.state.value)
+    }
+
+    @Test fun fiveHundredSeventySixTargetsWithSix404sEndReadyWithNoFailures() = runBlocking {
+        val data = names().copy(servantData = (1L..570L).associateWith { row(it) }, itemData = mapOf(42L to row(42, "other")),
+            mysticData = (1L..6L).associateWith { row(it) })
+        val job = IconPrefetchJob(this, { data }, {
+            if (it.directory == "mystics") IconOutcome.Missing else IconOutcome.Ready
+        })
+        job.start().join()
+        assertEquals(576, iconPrefetchTargets(data).size)
+        assertEquals(IconPrefetchProgress.Ready(570, 0), job.state.value)
+    }
+
+    @Test fun http404StoreOutcomeIsMissingAndRemembered() = runBlocking {
+        var calls = 0
+        var time = 1000L
+        val notFound: (String) -> ByteArray = { calls++; throw IconNotFoundException() }
+        val url = "https://static.atlasacademy.io/KR/Items/6008.png"
+        assertEquals(IconOutcome.Missing, IconFileStore(directory, notFound) { time }.fetch(6008, url).second)
+        assertEquals(IconOutcome.Missing, IconFileStore(directory, notFound) { time + 1 }.fetch(6008, url).second)
+        assertEquals(1, calls)
+        time += IconFileStore.RETRY_MS
+        IconFileStore(directory, notFound) { time }.fetch(6008, url)
+        assertEquals(2, calls)
+        assertEquals(IconOutcome.Failed, IconFileStore(directory, { error("offline") }) { 0 }.fetch(1, url).second)
     }
 }

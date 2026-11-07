@@ -16,7 +16,8 @@ fun StorageGroup(
     extractSupportImages: () -> Unit,
     extractSummary: String,
     downloadIcons: () -> Unit = {},
-    downloadSummary: String = ""
+    downloadSummary: String = "",
+    showIconDownload: Boolean = true,
 ) {
     Preference(
         title = stringResource(R.string.p_folder),
@@ -32,7 +33,7 @@ fun StorageGroup(
         summary = extractSummary
     )
 
-    Preference(
+    if (showIconDownload) Preference(
         title = stringResource(R.string.icon_prefetch_title),
         icon = icon(Icons.Default.Download),
         onClick = downloadIcons,

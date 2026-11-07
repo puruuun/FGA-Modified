@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.captureFeaturesAvailable
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.rememberChaldeaAccountExport
@@ -67,7 +68,8 @@ fun AdditionalTools(vm: MoreOptionsViewModel = viewModel()) {
         )
     }
 
-    AdditionalToolsContent(accounts, vm::openPortraitImport, vm::openOriginalImport, export)
+    val captureEnabled by vm.prefsCore.captureTrackerEnabled.asFlow().collectAsStateWithLifecycle(initialValue = vm.prefsCore.captureTrackerEnabled.get())
+    AdditionalToolsContent(accounts, vm::openPortraitImport, vm::openOriginalImport, export, captureEnabled)
 }
 
 @Composable
@@ -76,9 +78,10 @@ internal fun AdditionalToolsContent(
     importPortraits: () -> Unit,
     importOriginalData: () -> Unit,
     exportAccount: (String) -> Unit,
+    captureEnabled: Boolean = true,
 ) {
     var choosingAccount by rememberSaveable { mutableStateOf(false) }
-    val canExport = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && accounts.isNotEmpty()
+    val canExport = captureFeaturesAvailable(captureEnabled, Build.VERSION.SDK_INT) && accounts.isNotEmpty()
     Column {
         Preference(title = stringResource(R.string.portrait_import_title), summary = stringResource(R.string.portrait_import_summary),
             icon = icon(Icons.Default.Image), onClick = importPortraits)

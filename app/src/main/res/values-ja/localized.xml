@@ -806,6 +806,7 @@
     <string name="capture_log_month">30日</string>
     <string name="capture_log_all_time">すべて</string>
     <string name="capture_log_resource">獲得リソース</string>
+    <string name="capture_log_resource_search">リソースを検索</string>
     <string name="capture_log_all_resources">すべてのリソース</string>
     <string name="capture_log_filter_empty">選択中のフィルターに一致する記録はありません。</string>
     <string name="capture_stone_split">無償 %1$s · 有償 %2$s</string>

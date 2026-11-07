@@ -81,3 +81,13 @@ class CaptureUiRulesTest {
         assertEquals(listOf(100L, 101L, 104L, 102L), captureFruitOrder)
     }
 }
+
+class CaptureFeaturesAvailableTest {
+    @Test fun requiresTheSwitchAndAndroid10() {
+        assertFalse(captureFeaturesAvailable(false, 28))
+        assertFalse(captureFeaturesAvailable(false, 29))
+        assertFalse(captureFeaturesAvailable(true, 28))
+        assertTrue(captureFeaturesAvailable(true, 29))
+        assertTrue(captureFeaturesAvailable(true, 36))
+    }
+}

@@ -1123,6 +1123,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_month">30 days</string>
     <string name="capture_log_all_time">All</string>
     <string name="capture_log_resource">Gained resource</string>
+    <string name="capture_log_resource_search">Search resources</string>
     <string name="capture_log_all_resources">All resources</string>
     <string name="capture_log_filter_empty">No records match the active filters.</string>
     <string name="capture_stone_split">Free %1$s · Paid %2$s</string>

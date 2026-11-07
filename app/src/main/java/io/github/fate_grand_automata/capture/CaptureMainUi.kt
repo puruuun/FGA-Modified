@@ -118,7 +118,7 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
         CaptureMainState(
             showButton = captureButtonVisible(enabled, Build.VERSION.SDK_INT, gameInstalled),
             running = running,
-            profiles = if (enabled && accounts.isNotEmpty()) CaptureTracker.accountSummaries(now) else emptyList(),
+            profiles = if (captureFeaturesAvailable(enabled, Build.VERSION.SDK_INT) && accounts.isNotEmpty()) CaptureTracker.accountSummaries(now) else emptyList(),
             now = now,
         ),
         toggle,

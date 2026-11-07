@@ -47,9 +47,10 @@ internal class DashboardUiFixture {
         CompositionLocalProvider(LocalLogIconLoader provides loader, content = content)
     }
     @Composable fun More(weekly: ()->Unit = {}, gains: ()->Unit = {}, extract: ()->Unit = {}, download: ()->Unit = {},
-        extractSummary: String = "", downloadSummary: String = "") {
+        extractSummary: String = "", downloadSummary: String = "", captureOn: Boolean = true) {
+        prefs.captureTrackerEnabled.set(captureOn)
         MoreOptionsContent(prefs, "FGA", extractSummary, extract, { additionalFeaturesGroup(prefs,preview) }, {}, {}, {}, weekly, gains, {},
             downloadSummary = downloadSummary, downloadIcons = download,
-            additionalTools = { AdditionalToolsContent(listOf(CaptureAccount("fake","샘플 마스터",io.github.fate_grand_automata.scripts.capture.AccountSummary.from(state,100),200)), {}, {}, {}) })
+            additionalTools = { AdditionalToolsContent(listOf(CaptureAccount("fake","샘플 마스터",io.github.fate_grand_automata.scripts.capture.AccountSummary.from(state,100),200)), {}, {}, {}, captureOn) })
     }
 }

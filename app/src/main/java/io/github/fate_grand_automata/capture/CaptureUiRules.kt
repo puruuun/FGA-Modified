@@ -26,3 +26,6 @@ fun fullApAt(summary: AccountSummary, now: Long): Long? =
     summary.actRecoverAt.takeIf { summary.ap < summary.apMax && it > now }
 
 val captureFruitOrder = listOf(100L, 101L, 104L, 102L)
+
+/** Log-collection features (account cards, icon download, Chaldea export, friend manager) need Android 10+ and the switch on. */
+fun captureFeaturesAvailable(enabled: Boolean, api: Int) = enabled && api >= 29

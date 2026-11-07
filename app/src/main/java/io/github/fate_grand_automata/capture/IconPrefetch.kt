@@ -35,7 +35,7 @@ internal sealed interface IconPrefetchProgress {
 internal class IconPrefetchJob(
     private val scope: CoroutineScope,
     private val lists: suspend () -> GameNameMap,
-    private val resolve: suspend (IconTarget) -> Boolean,
+    private val resolve: suspend (IconTarget) -> IconOutcome,
 ) {
     private val mutableState = MutableStateFlow<IconPrefetchProgress?>(null)
     val state = mutableState.asStateFlow()
@@ -60,18 +60,19 @@ internal class IconPrefetchJob(
             val progressLock = Mutex()
             var completed = 0
             var failed = 0
+            var missing = 0
             coroutineScope {
                 repeat(minOf(4, targets.size)) { worker ->
                     launch {
                         for (index in worker until targets.size step 4) {
                             ensureActive()
-                            val available = try { resolve(targets[index])
+                            val outcome = try { resolve(targets[index])
                             } catch (e: CancellationException) { throw e
-                            } catch (_: Exception) { false }
+                            } catch (_: Exception) { IconOutcome.Failed }
                             progressLock.withLock {
-                                completed++
-                                if (!available) failed++
-                                mutableState.value = IconPrefetchProgress.Downloading(completed, targets.size, failed)
+                                if (outcome == IconOutcome.Missing) missing++ else completed++
+                                if (outcome == IconOutcome.Failed) failed++
+                                mutableState.value = IconPrefetchProgress.Downloading(completed, targets.size - missing, failed)
                             }
                         }
                     }

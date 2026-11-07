@@ -10,10 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
@@ -52,10 +54,15 @@ internal fun LogFilterDialog(
     var draftStart by rememberSaveable { mutableStateOf(start) }
     var draftEnd by rememberSaveable { mutableStateOf(end) }
     var draftRetention by rememberSaveable { mutableStateOf(retention) }
+    var query by rememberSaveable { mutableStateOf("") }
     var picker by rememberSaveable { mutableStateOf(false) }
     var confirm by rememberSaveable { mutableStateOf(false) }
     val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention) }
-    AlertDialog(onDismissRequest = onDismiss, modifier = Modifier.testTag("log-filter-dialog"),
+    val screen = LocalConfiguration.current
+    AlertDialog(onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.width(minOf(screen.screenWidthDp * 0.9f, 900f).dp)
+            .heightIn(max = (screen.screenHeightDp * 0.9f).dp).testTag("log-filter-dialog"),
         title = { Text(stringResource(R.string.capture_log_filter)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -70,19 +77,22 @@ internal fun LogFilterDialog(
                 if (draftTime == LogTimeFilter.Custom) Text(customRangeLabel(draftStart, draftEnd), style = MaterialTheme.typography.bodySmall)
                 Text(stringResource(R.string.capture_log_resource), style = MaterialTheme.typography.titleSmall)
                 val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }
-                LazyColumn(Modifier.fillMaxWidth().height(160.dp).testTag("log-filter-resources")) {
-                    item {
+                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().testTag("log-filter-search"), singleLine = true,
+                    placeholder = { Text(stringResource(R.string.capture_log_resource_search)) })
+                val shown = labels.filter { (key, label) -> key == draftResource || label.contains(query.trim(), ignoreCase = true) }
+                Column(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()).testTag("log-filter-resources")) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         FilterChip(selected = draftResource == null, onClick = { draftResource = null },
                             label = { Text(stringResource(R.string.capture_log_all_resources)) })
-                    }
-                    items(labels, key = { it.first }) { (key, label) ->
-                        FilterChip(selected = draftResource == key, onClick = { draftResource = key }, modifier = Modifier.testTag("log-filter-resource:$key"),
-                            label = {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    ResourceIcon(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
-                                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            })
+                        shown.forEach { (key, label) ->
+                            FilterChip(selected = draftResource == key, onClick = { draftResource = key }, modifier = Modifier.testTag("log-filter-resource:$key"),
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        ResourceIcon(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
+                                        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                })
+                        }
                     }
                 }
                 Text(stringResource(R.string.capture_log_retention), style = MaterialTheme.typography.titleSmall)

@@ -33,7 +33,7 @@ class SupportImageExtraction @Inject constructor(
         icons = IconPrefetchJob(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
             lists = { GameNames(File(context.filesDir, "capture/names")).dashboard() },
-            resolve = { LogIconLoader.files(context, it.directory).resolve(it.id, it.address) != null },
+            resolve = { LogIconLoader.files(context, it.directory).fetch(it.id, it.address).second },
         ),
     )
     internal val extractionState = tasks.extraction

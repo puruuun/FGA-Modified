@@ -1044,6 +1044,7 @@
     <string name="capture_log_month">30일</string>
     <string name="capture_log_all_time">전체</string>
     <string name="capture_log_resource">획득 자원</string>
+    <string name="capture_log_resource_search">자원 검색</string>
     <string name="capture_log_all_resources">모든 자원</string>
     <string name="capture_log_filter_empty">선택한 필터에 맞는 기록이 없습니다.</string>
     <string name="capture_stone_split">무료 %1$s · 유료 %2$s</string>
