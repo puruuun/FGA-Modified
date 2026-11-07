@@ -28,6 +28,13 @@ class CESelection @Inject constructor(
         const val BOND_EFFECT_SIMILARITY = 0.55
     }
 
+    // These options are only shown in the UI while Grand Servant is enabled
+    private val bondCEEffect
+        get() = if (supportPrefs.grandServant) supportPrefs.bondCEEffect else BondCEEffectEnum.Ignore
+
+    private val requireBothNormalAndRewardMatch
+        get() = supportPrefs.grandServant && supportPrefs.requireBothNormalAndRewardMatch
+
     fun check(ces: List<String>, bounds: SupportBounds): Boolean {
         // TODO: Only check the lower part (excluding Servant)
         val searchRegion = bounds.region.clip(locations.support.listRegion)
@@ -55,13 +62,13 @@ class CESelection @Inject constructor(
             val normalMatch = matched.any { grandCeRegion1.contains(it.region) }
             val rewardMatch = matched.any { grandCeRegion3.contains(it.region) }
 
-            val ceSlotMatch = if (supportPrefs.requireBothNormalAndRewardMatch) {
+            val ceSlotMatch = if (requireBothNormalAndRewardMatch) {
                 normalMatch && rewardMatch
             } else {
                 normalMatch || rewardMatch
             }
 
-            val (np, default) = if (supportPrefs.bondCEEffect != BondCEEffectEnum.Ignore || messages.supportCeDiagnosticsEnabled) {
+            val (np, default) = if (bondCEEffect != BondCEEffectEnum.Ignore || messages.supportCeDiagnosticsEnabled) {
                 bondRegion.getPattern().use { crop ->
                     bestMatch(bondRegion, crop, images[Images.BondCeEffectNP]) to
                         bestMatch(bondRegion, crop, images[Images.BondCeEffectDefault])
@@ -69,7 +76,7 @@ class CESelection @Inject constructor(
             } else null to null
             val npScore = np?.score ?: 0.0
             val defaultScore = default?.score ?: 0.0
-            val bondEffectMatch = when (supportPrefs.bondCEEffect) {
+            val bondEffectMatch = when (bondCEEffect) {
                 BondCEEffectEnum.NP -> npScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && npScore > defaultScore
                 BondCEEffectEnum.Default -> defaultScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && defaultScore > npScore
                 BondCEEffectEnum.Ignore -> true
@@ -90,8 +97,8 @@ class CESelection @Inject constructor(
                     !supportPrefs.mlb || isLimitBroken(it.region)
                 }
             return matched.isNotEmpty()
-                && !supportPrefs.requireBothNormalAndRewardMatch
-                && supportPrefs.bondCEEffect == BondCEEffectEnum.Ignore
+                && !requireBothNormalAndRewardMatch
+                && bondCEEffect == BondCEEffectEnum.Ignore
         }
     }
 
@@ -130,7 +137,7 @@ class CESelection @Inject constructor(
             val mlb = best?.let { isGrandLimitBroken(it.second.region) }
             return "$name={ce=${best?.first ?: "none"} best=${describe(best?.second)} search=$region mlb=$mlb}"
         }
-        val selected = when (supportPrefs.bondCEEffect) {
+        val selected = when (bondCEEffect) {
             BondCEEffectEnum.NP -> np
             BondCEEffectEnum.Default -> default
             BondCEEffectEnum.Ignore -> null
@@ -138,8 +145,8 @@ class CESelection @Inject constructor(
         messages.log(ScriptLog.SupportCe(
             "grand={present=true best=${describe(bestMatch(label, images[Images.GrandCeLabel]))} search=$label} " +
                 "${slot("normal", normal)} ${slot("reward", reward)} mlbRequired=${supportPrefs.mlb} " +
-                "bothSlots=${supportPrefs.requireBothNormalAndRewardMatch} " +
-                "bond={setting=${supportPrefs.bondCEEffect} best=${describe(selected)} search=$bond " +
+                "bothSlots=${requireBothNormalAndRewardMatch} " +
+                "bond={setting=${bondCEEffect} best=${describe(selected)} search=$bond " +
                 "np=${describe(np)} default=${describe(default)} threshold=$BOND_EFFECT_SIMILARITY matched=$bondMatched} " +
                 "decision=$decision",
             np, default, decision

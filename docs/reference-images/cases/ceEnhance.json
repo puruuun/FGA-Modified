@@ -1307,8 +1307,8 @@
       "name": "ce-Kr-servant-enhancement-servant",
       "suite": "ceEnhance",
       "server": "Kr",
-      "file": "docs/reference-images/Kr/servant-enhancement-servant.png",
-      "source": "docs/reference-images/Kr/servant-enhancement-servant.png",
+      "file": "docs/reference-images/Kr/servant-enhancement/servant-enhancement-servant.png",
+      "source": "docs/reference-images/Kr/servant-enhancement/servant-enhancement-servant.png",
       "scores": {
         "execute": [
           0.3150821840763092,
@@ -1350,8 +1350,8 @@
       "name": "ce-Kr-servant-enhancement-autofill-on",
       "suite": "ceEnhance",
       "server": "Kr",
-      "file": "docs/reference-images/Kr/servant-enhancement-autofill-on.png",
-      "source": "docs/reference-images/Kr/servant-enhancement-autofill-on.png",
+      "file": "docs/reference-images/Kr/servant-enhancement/servant-enhancement-autofill-on.png",
+      "source": "docs/reference-images/Kr/servant-enhancement/servant-enhancement-autofill-on.png",
       "scores": {
         "execute": [
           0.2796467757225037,
