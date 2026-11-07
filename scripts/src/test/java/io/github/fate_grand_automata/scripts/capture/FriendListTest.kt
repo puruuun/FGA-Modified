@@ -41,8 +41,42 @@ class FriendListTest {
     }
 
     @Test fun loginRanges() {
-        assertEquals(listOf("1", "3"), ids(FriendFilter(login = FriendLogin.Within7Days)).map { it.substringBefore(':') }.distinct())
-        assertEquals(listOf("2"), ids(FriendFilter(login = FriendLogin.Over7Days)).map { it.substringBefore(':') }.distinct())
+        assertEquals(listOf("1", "3"), ids(FriendFilter(login = FriendLogin.After, loginDayStart = now - 7 * day)).map { it.substringBefore(':') }.distinct())
+        assertEquals(listOf("2"), ids(FriendFilter(login = FriendLogin.Before, loginDayStart = now - 7 * day)).map { it.substringBefore(':') }.distinct())
+    }
+
+    @Test fun loginBoundaryIsTheSelectedLocalMidnightAndUnknownIsExcluded() {
+        val picker = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+            clear(); set(2026, 10, 7)
+        }.timeInMillis
+        for (zone in listOf("Asia/Seoul", "America/New_York")) {
+            val midnight = friendLocalMidnight(picker, java.util.TimeZone.getTimeZone(zone))
+            val local = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone(zone)).apply { timeInMillis = midnight * 1000 }
+            assertEquals(7, local.get(java.util.Calendar.DAY_OF_MONTH))
+            assertEquals(0, local.get(java.util.Calendar.HOUR_OF_DAY))
+            val sample = FriendRoster(friends = listOf(-1L, 0L, 1L).mapIndexed { index, offset ->
+                Friend("$index", lastLogin = midnight + offset, slots = listOf(slot(101, 1, 500)))
+            }.associateBy { it.userId } + ("unknown" to Friend("unknown", slots = listOf(slot(101, 1, 500)))))
+            assertEquals(setOf("1", "2"), FriendList.select(sample, FriendFilter(login = FriendLogin.After, loginDayStart = midnight), now).map { it.friend.userId }.toSet())
+            assertEquals(listOf("0"), FriendList.select(sample, FriendFilter(login = FriendLogin.Before, loginDayStart = midnight), now).map { it.friend.userId })
+        }
+    }
+
+    @Test fun cePickerPinsPresentBondCesInNameOrderThenOtherCes() {
+        val names = mapOf(FRIEND_TEATIME_CE_ID to "Teatime", 9407480L to "Zulu bond", 9407740L to "Alpha bond",
+            1L to "Zulu", 2L to "Alpha", 3L to "Absent", 9407850L to "Absent bond")
+        val counts = mapOf(1L to 2, 9407480L to 3, FRIEND_TEATIME_CE_ID to 4, 2L to 1, 9407740L to 2)
+        val options = friendCeOptions(counts, names)
+        assertEquals(listOf(FRIEND_TEATIME_CE_ID, 9407740L, 9407480L, 2L, 1L), options.map { it.id })
+        assertEquals(listOf(4, 2, 3, 1, 2), options.map { it.count })
+    }
+
+    @Test fun servantSearchIsCaseInsensitiveSubstringAndEmptyListsAllByName() {
+        val counts = mapOf(1L to 2, 2L to 1, 3L to 3)
+        val names = mapOf(1L to "샘플 Alpha", 2L to "베타", 3L to "Alpha 서번트")
+        assertEquals(listOf(3L, 1L), friendServantOptions(counts, names, "ALp").map { it.id })
+        assertEquals(listOf(3L, 2L, 1L), friendServantOptions(counts, names).map { it.id })
+        assertTrue(friendServantOptions(counts, names, "missing").isEmpty())
     }
 
     @Test fun deckIndexIsOneBased() {

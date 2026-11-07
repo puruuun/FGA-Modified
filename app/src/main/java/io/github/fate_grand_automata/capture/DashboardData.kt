@@ -48,7 +48,8 @@ internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
 }
 
 data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long?, val friendship: Long?,
-    val np: Long?, val skills: List<Long?>, val maxLevel: Long?) {
+    val np: Long?, val skills: List<Long?>, val maxLevel: Long?, val level: Long? = null,
+    val appends: List<Long?> = List(5) { null }) {
     val name get() = atlas?.name ?: "#$id"
     // basic_servant has rarity but no cost. Mash always has zero party cost.
     val cost: Int? get() = if (id == 800100L) 0 else when (atlas?.rarity) {
@@ -115,11 +116,29 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
         game?.number("svtKeep"), game?.number("svtEquipKeep"), rows("userCommandCode")?.size, rows("userSvtStorage")?.size)
         .takeIf { svts != null || it.commandCodes != null || it.secondStorage != null }
     // The collection also holds CEs and other rows; without servant metadata they cannot be told apart, so the section is hidden.
+    // Keep all per-copy stats together. When several copies exist, use the highest-level copy,
+    // then NP and instance id as deterministic tie breakers.
+    val owned = svts.orEmpty().groupBy { it.number("svtId") }.mapValues { (_, copies) ->
+        copies.maxWith(compareBy<JsonObject>({ it.number("lv") ?: -1 }, { it.number("treasureDeviceLv1") ?: -1 }, { it.number("id") ?: -1 }))
+    }
+    val appendRows = rows("userSvtAppendPassiveSkillLv").orEmpty().groupBy { it.number("userSvtId") }
     val servants = rows("userSvtCollection")?.takeIf { names.servantData.isNotEmpty() }?.filter { it.number("status") == 2L }?.mapNotNull { row ->
         val id = row.number("svtId") ?: return@mapNotNull null
         if (names.servantData[id]?.type !in setOf("normal", "heroine")) return@mapNotNull null
+        val copy = owned[id]
+        val stats = copy ?: row
+        val appends = MutableList<Long?>(5) { null }
+        copy?.number("id")?.let { instance -> appendRows[instance].orEmpty().forEach { append ->
+            val nums = (append["appendPassiveSkillNums"] as? JsonArray).orEmpty()
+            val levels = (append["appendPassiveSkillLvs"] as? JsonArray).orEmpty()
+            nums.forEachIndexed { index, num ->
+                val slot = (num as? JsonPrimitive)?.intOrNull?.minus(100)
+                if (slot != null && slot in 0..4) appends[slot] = (levels.getOrNull(index) as? JsonPrimitive)?.longOrNull
+            }
+        } }
         DashboardServant(id, names.servantData[id], row.number("friendshipRank"), row.number("friendship"),
-            row.number("treasureDeviceLv1"), (1..3).map { row.number("skillLv$it") }, row.number("maxLv"))
+            stats.number("treasureDeviceLv1"), (1..3).map { stats.number("skillLv$it") }, row.number("maxLv"),
+            copy?.number("lv"), appends)
     }
     val aliases = mapOf(5L to 1L, 6L to 2L, 7L to 2L, 11L to 16L)
     val inventory = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->

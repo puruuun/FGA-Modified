@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -205,7 +207,7 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     if (limit != null && limit > 0) LinearProgressIndicator(progress = { (count.toFloat() / limit).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
 }
 
-@Composable private fun Servants(data: DashboardData) {
+@Composable internal fun Servants(data: DashboardData) {
     val servants = data.servants.orEmpty()
     var sort by rememberSaveable { mutableStateOf(ServantSort.Bond) }
     var classLabel by rememberSaveable { mutableStateOf<String?>(null) }
@@ -233,27 +235,36 @@ private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFor
     var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
     val selectedClasses = classes[classLabel]?.toSet()
     LaunchedEffect(servants, sort, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, selectedClasses) } }
-    val shown = if (expanded) selected else selected.take(20)
-    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val shown = if (expanded) selected else selected.take(5)
+    LazyColumn(Modifier.fillMaxWidth().heightIn(max = if (expanded) 560.dp else 280.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(shown, key = { it.id }) { servant ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.heightIn(min = 48.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AtlasIcon("servants", servant.id, servant.atlas?.icon)
                 Column(Modifier.weight(1f)) {
-                    Text(servant.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(listOfNotNull(servant.atlas?.className?.let { dashboardClass(it) }, servant.atlas?.rarity?.let { "★$it" },
-                        servant.cost?.let { stringResource(R.string.dashboard_servant_cost, it) }).joinToString(" · "), style = MaterialTheme.typography.labelSmall)
                     val parts = buildList {
+                        servant.atlas?.className?.let { add(dashboardClass(it)) }
+                        servant.atlas?.rarity?.let { add("★$it") }
+                        servant.level?.let { add(stringResource(R.string.friends2_level_compact, it)) }
                         servant.bond?.let { add(stringResource(R.string.dashboard_bond, it)) }
-                        servant.np?.let { add(stringResource(R.string.dashboard_np, it)) }
-                        servant.maxLevel?.let { add(stringResource(R.string.dashboard_max_level, it)) }
+                        servant.np?.let { add(stringResource(R.string.friends2_np_compact, it)) }
                     }
-                    Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-                    if (servant.skills.any { it != null }) Text(stringResource(R.string.dashboard_skills, servant.skills.joinToString(" / ") { it?.toString() ?: "—" }), style = MaterialTheme.typography.bodySmall)
+                    Text(buildAnnotatedString {
+                        append(servant.name)
+                        if (parts.isNotEmpty()) withStyle(MaterialTheme.typography.labelSmall.toSpanStyle()) {
+                            append("  "); append(parts.joinToString(" · "))
+                        }
+                    }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.friends2_dashboard_skills,
+                        (0..2).joinToString("/") { servant.skills.getOrNull(it)?.toString() ?: "–" },
+                        (0..4).joinToString("/") { servant.appends.getOrNull(it)?.toString() ?: "–" }), style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
     }
-    if (!expanded && selected.size > 20) TextButton(onClick = { expanded = true }) { Text(stringResource(R.string.dashboard_show_all, selected.size)) }
+    if (expanded || selected.size > 5) TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-servants-toggle")) {
+        Text(if (expanded) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, selected.size))
+    }
 }
 
 @Composable private fun Inventory(items: List<DashboardItem>, names: GameNameMap) {
@@ -328,7 +339,10 @@ private fun InventoryGroup.label() = when (this) {
     val loader = LocalLogIconLoader.current ?: LogIconLoader.get(context)
     var file by remember(kind, id, url) { mutableStateOf<File?>(null) }
     LaunchedEffect(kind, id, url) { file = store.resolve(id, url) }
-    if (file != null) AsyncImage(file!!.toURI().toString(), contentDescription = null, imageLoader = loader, modifier = Modifier.size(40.dp))
+    Box(Modifier.size(40.dp)) {
+        if (file != null) AsyncImage(file!!.toURI().toString(), contentDescription = null, imageLoader = loader,
+            modifier = Modifier.fillMaxSize().testTag("dashboard-icon-ready"))
+    }
 }
 
 @Composable internal fun dashboardClass(name: String): String {

@@ -33,7 +33,7 @@ class DashboardRound4ScreenshotTest(private val width: Int, private val height: 
         fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) { AccountDashboardContent(fixture.data,fixture.names,"샘플 별명",{},{}) } }
     }
     @Test fun servantCollection() = compose.shoot("dashboard-round4","ServantCollection",width,height,dark,"ko", beforeCapture = {
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
     }) {
         fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) { AccountDashboardContent(fixture.data,fixture.names,"샘플 별명",{},{},initialSection=3) } }
     }

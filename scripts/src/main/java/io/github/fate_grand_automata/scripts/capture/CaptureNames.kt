@@ -4,6 +4,10 @@ import java.net.URI
 
 object CaptureNames {
     const val GAME_HOST = "yfgo-game.netmarble.com"
+    val HOST_SERVERS = mapOf(GAME_HOST to "KR")
+    fun server(target: String): String? = runCatching {
+        HOST_SERVERS[URI(target).host?.lowercase()]
+    }.getOrNull()
     private val accountPrefixes = listOf("NMAccount", "NetmarbleService", "NetmarbleUserDataService")
 
     /** Never retain the query: KR puts account identifiers there. */

@@ -53,10 +53,10 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
          * Applies one game response. Anything unreadable leaves [previous] as it is, because a roster must
          * never be half replaced. Support lists only update a roster that friend/top already created.
          */
-        fun update(previous: FriendRoster?, path: String, body: JsonObject, now: Long): FriendRoster? = runCatching {
+        fun update(previous: FriendRoster?, path: String, body: JsonObject, now: Long, allowNew: Boolean = true): FriendRoster? = runCatching {
             when (path) {
                 "friend/top" -> fromFriendTop(body, now) ?: previous
-                "follower/list", "battle/result" -> previous?.let { mergeFollowers(it, body) }
+                "follower/list", "battle/result" -> previous?.let { mergeFollowers(it, body, allowNew) }
                 else -> previous
             }
         }.getOrDefault(previous)
@@ -93,7 +93,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
          * Updates or adds the friends (type 1) found in quest support lists. Others are ignored. A followerInfo is a
          * user with the friend's complete decks, so the stored slots of the decks it lists are replaced.
          */
-        fun mergeFollowers(roster: FriendRoster, body: JsonObject): FriendRoster {
+        fun mergeFollowers(roster: FriendRoster, body: JsonObject, allowNew: Boolean = true): FriendRoster {
             val cache = body["cache"] as? JsonObject ?: return roster
             val followers = (cache["updated"] as? JsonObject)?.get("userFollower") as? JsonArray ?: return roster
             val infos = followers.mapNotNull { it as? JsonObject }
@@ -103,6 +103,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
             val friends = roster.friends.toMutableMap()
             for (info in infos) {
                 val id = info.string("userId") ?: continue
+                if (!allowNew && id !in friends) continue
                 var friend = friends[id] ?: Friend(userId = id)
                 info.string("userName")?.let { friend = friend.copy(name = it) }
                 info.long("userLv")?.let { friend = friend.copy(lv = it.toInt()) }

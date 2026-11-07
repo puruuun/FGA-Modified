@@ -14,6 +14,32 @@ internal fun dashboardNames() = GameNameMap(
     equipData = mapOf(20L to AtlasBasic(20, "CE", "servantEquip")))
 
 class DashboardDataTest {
+    @Test fun servantCopyProvidesLevelSkillsNpAndMatchingAppendInstance() {
+        val result = dashboardData(dashboardState(
+            "userSvtCollection" to """[{"svtId":10,"status":2,"maxLv":120,"skillLv1":1,"treasureDeviceLv1":1}]""",
+            "userSvt" to """[{"id":101,"svtId":10,"lv":100,"treasureDeviceLv1":5,"skillLv1":10,"skillLv2":9,"skillLv3":8},
+                {"id":102,"svtId":10,"lv":90,"treasureDeviceLv1":2,"skillLv1":2}]""",
+            "userSvtAppendPassiveSkillLv" to """[{"userSvtId":101,"appendPassiveSkillNums":[104,100,103,102],"appendPassiveSkillLvs":[5,1,4,3]},
+                {"userSvtId":102,"appendPassiveSkillNums":[101],"appendPassiveSkillLvs":[10]}]"""
+        ), dashboardNames()).servants!!.single()
+        assertEquals(100, result.level)
+        assertEquals(5, result.np)
+        assertEquals(listOf(10L, 9L, 8L), result.skills)
+        assertEquals(listOf(1L, null, 3L, 4L, 5L), result.appends)
+    }
+
+    @Test fun allAppendNumsMapToFiveSlotsAndMalformedOrMissingLevelsStayLocked() {
+        val result = dashboardData(dashboardState(
+            "userSvtCollection" to """[{"svtId":10,"status":2},{"svtId":11,"status":2}]""",
+            "userSvt" to """[{"id":101,"svtId":10,"lv":90},{"id":102,"svtId":11}]""",
+            "userSvtAppendPassiveSkillLv" to """[{"userSvtId":101,"appendPassiveSkillNums":[100,101,102,103,104,999],"appendPassiveSkillLvs":[1,2,3,4,5,10]},
+                {"userSvtId":102,"appendPassiveSkillNums":[100,101],"appendPassiveSkillLvs":[null]}]"""
+        ), dashboardNames()).servants!!
+        assertEquals(listOf(1L, 2L, 3L, 4L, 5L), result.first().appends)
+        assertNull(result.last().level)
+        assertEquals(List(5) { null }, result.last().appends)
+    }
+
     @Test fun largeProjectionRunsOffCallerThreadAndCachesByStateVersion() = kotlinx.coroutines.runBlocking {
         val caller = Thread.currentThread()
         var calls = 0

@@ -133,16 +133,17 @@ object CaptureTracker {
         } catch (_: Exception) { null } ?: return
         synchronized(lock) {
             val previousCurrent = stored.currentId
+            val rosterId = stored.friendTarget(target, body)
+            val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, System.currentTimeMillis() / 1000)
+            if (rosterChanged) { publish(); scheduleSave(rosterId) }
             val response = stored.apply(target, body, System.currentTimeMillis() / 1000) ?: return
             runSession.collect(target, body, response.previous, response.next, response.id)
             if (CaptureNames.path(target) == "battle/result" && runSession.collectingFor(response.id)) {
                 battleInbox.add(CapturedBattle.parse(body, response.previous))
             }
             outsideWork { outside.collect(target, response) }
-            val rosterChanged = response.next != null && response.id == stored.currentId &&
-                stored.applyFriends(response.id, target, body, System.currentTimeMillis() / 1000)
             publish()
-            if (response.next !== response.previous || stored.currentId != previousCurrent || rosterChanged) scheduleSave(response.id)
+            if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
         }
     }
 

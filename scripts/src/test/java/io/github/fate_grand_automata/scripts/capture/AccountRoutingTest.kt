@@ -4,6 +4,32 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class AccountRoutingTest {
+    private fun owner(rows: String, updated: String = "[]") = AccountRouting.friendOwner(
+        Json.parseToJsonElement("""{"cache":{"replaced":{"tblFriend":$rows},"updated":{"tblFriend":$updated}}}""").jsonObject)
+
+    @Test fun friendOwnerOnMixedSidesAcrossSections() {
+        assertEquals("7001", owner("""[{"userId":7001,"friendId":11}]""",
+            """[{"userId":12,"friendId":7001},{"userId":7001,"friendId":13}]"""))
+    }
+
+    @Test fun friendOwnerNeedsExactlyOneCommonIdAndAtLeastTwoRows() {
+        assertNull(owner("""[{"userId":7001,"friendId":11},{"userId":7002,"friendId":12}]"""))
+        assertNull(owner("""[{"userId":7001,"friendId":11}]""")) // two possible ids
+        assertNull(owner("[]"))
+        assertNull(owner("""[{"userId":7001,"friendId":11},{"userId":11,"friendId":7001}]"""))
+        assertNull(owner("""[{"userId":7001,"friendId":11},null]"""))
+    }
+
+    @Test fun friendOwnerAcceptsNumberAndStringIds() {
+        assertEquals("7001", owner("""[{"userId":"7001","friendId":11},{"userId":"12","friendId":7001}]"""))
+    }
+
+    @Test fun bodyRoutingDoesNotUseCurrentFallback() {
+        assertNull(AccountRouting.bodyUserId("follower/list", Json.parseToJsonElement("{}").jsonObject))
+        assertEquals("7002", AccountRouting.bodyUserId("follower/list",
+            Json.parseToJsonElement("""{"cache":{"updated":{"userItem":[{"userId":7002}]}}}""").jsonObject))
+    }
+
     private fun route(body: String, target: String = "/home/top", current: String? = "7001") =
         AccountRouting.userId(target, Json.parseToJsonElement(body).jsonObject, current)
 

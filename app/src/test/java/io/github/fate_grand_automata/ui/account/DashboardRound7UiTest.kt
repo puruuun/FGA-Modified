@@ -38,7 +38,7 @@ class DashboardRound7UiTest {
         RuntimeEnvironment.setQualifiers("en-w${width}dp-h800dp-hdpi")
         // A short profile beside a tall collection exposes row-pairing regressions.
         show(fixture.data.copy(profile = mapOf("name" to "Short"), equips = listOf(DashboardEquip(1,10,true))))
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
         if (width >= 840) {
             val left = listOf(0,1,2,5,6).map(::bounds)
             val right = listOf(3,4).map(::bounds)
@@ -94,7 +94,7 @@ class DashboardRound7UiTest {
         }
         show(fixture.data.copy(servants = rows, inventory = null))
         val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isNotEmpty() }
         val chips = listOf("Bond","Cost","Lv").map { compose.onNode(hasText(it) and collection) }
         chips[0].assertIsSelected()
         chips.map { it.getUnclippedBoundsInRoot() }.zipWithNext().forEach { (a,b) -> assertTrue(a.left < b.left) }
@@ -108,9 +108,9 @@ class DashboardRound7UiTest {
         compose.onAllNodesWithText("Beast").assertCountEquals(1)
         compose.onAllNodesWithText("unknownClass").assertCountEquals(1)
         compose.onNodeWithText("Beast").performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6").fetchSemanticsNodes().isEmpty() }
-        (1..3).forEach { compose.onNodeWithText("Servant $it").assertExists() }
-        (4..6).forEach { compose.onNodeWithText("Servant $it").assertDoesNotExist() }
-        compose.onAllNodesWithText("Beast · ★5 · Cost 16").assertCountEquals(3)
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isEmpty() }
+        (1..3).forEach { compose.onNodeWithText("Servant $it", substring = true).assertExists() }
+        (4..6).forEach { compose.onNodeWithText("Servant $it", substring = true).assertDoesNotExist() }
+        compose.onAllNodesWithText("Beast · ★5", substring = true).assertCountEquals(3)
     }
 }

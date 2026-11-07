@@ -1,0 +1,10 @@
+<!-- Material Symbols "swords", Google, Apache-2.0.
+     https://github.com/google/material-design-icons/blob/master/symbols/web/swords/materialsymbolsoutlined/swords_24px.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960">
+    <group android:translateY="960">
+        <path android:fillColor="#FF000000"
+            android:pathData="M762,-96L645,-212l-88,88 -28,-28q-23,-23 -23,-57t23,-57l169,-169q23,-23 57,-23t57,23l28,28 -88,88 116,117q12,12 12,28t-12,28l-50,50q-12,12 -28,12t-28,-12ZM880,-724L426,-270l5,4q23,23 23,57t-23,57l-28,28 -88,-88L198,-96q-12,12 -28,12t-28,-12l-50,-50q-12,-12 -12,-28t12,-28l116,-117 -88,-88 28,-28q23,-23 57,-23t57,23l4,5 454,-454h160v160ZM334,-583l24,-23 23,-24 -23,24 -24,23ZM278,-526L80,-724v-160h160l198,198 -57,56 -174,-174h-47v47l174,174 -56,57ZM370,-327l430,-430v-47h-47L323,-374l47,47ZM370,-327l-24,-23 -23,-24 23,24 24,23Z" />
+    </group>
+</vector>

@@ -16,6 +16,7 @@ data class CaptureAccount(
     val displayName: String,
     val summary: AccountSummary,
     val lastUpdateTime: Long,
+    val server: String = "KR",
 )
 
 /** App-private account storage. All calls are serialized by CaptureTracker, including disk writes. */
@@ -32,7 +33,7 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
     private var directory: File? = null
 
     @Serializable
-    private data class Metadata(val customName: String? = null)
+    private data class Metadata(val customName: String? = null, val server: String = "KR")
 
     data class Response(val id: String, val previous: AccountState?, val next: AccountState?)
 
@@ -64,15 +65,34 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
     /** Feeds a friend list or support list response for [id]; returns true when the roster changed. */
     fun applyFriends(id: String, target: String, body: JsonObject, now: Long): Boolean {
         if (id !in states) return false
+        val ownId = AccountRouting.bodyUserId(target, body)
+        if (ownId == AccountRouting.CONFLICT) return false
+        if (CaptureNames.path(target) == "friend/top") {
+            if (AccountRouting.friendOwner(body) != id || (ownId != null && ownId != id)) return false
+        } else if (ownId?.let { it != id } ?: (id != currentId)) return false
         val previous = rosters[id]
-        val next = FriendRoster.update(previous, CaptureNames.path(target), body, now)
+        val next = FriendRoster.update(previous, CaptureNames.path(target), body, now, allowNew = ownId != null)
         if (next == null || next == previous) return false
         rosters[id] = next
         rosterDirty += id
         return true
     }
 
+    /** Roster routing never changes the current account, including a non-current friend/top owner. */
+    fun friendTarget(target: String, body: JsonObject): String? = when (CaptureNames.path(target)) {
+        "friend/top" -> AccountRouting.friendOwner(body)?.takeIf { owner ->
+            val own = AccountRouting.bodyUserId(target, body)
+            owner in states && (own == null || own == owner)
+        }
+        "follower/list", "battle/result" -> AccountRouting.userId(target, body, currentId)
+            ?.takeIf { it != AccountRouting.CONFLICT && it in states }
+        else -> null
+    }
+
     fun apply(target: String, body: JsonObject, now: Long): Response? {
+        // A friend list can belong to a saved, non-current account. It must not move the marker
+        // or reduce an unverified response into the current account's state.
+        if (CaptureNames.path(target) == "friend/top") return null
         val id = AccountRouting.userId(target, body, currentId) ?: return null
         if (id == AccountRouting.CONFLICT || !safeId(id)) {
             warn("conflicting or invalid account routing; response dropped")
@@ -85,6 +105,13 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
             states[id] = next
             dirty += id
         }
+        if (next != null) CaptureNames.server(target)?.let { server ->
+            val old = metadata[id] ?: Metadata()
+            if (id !in metadata || old.server != server) {
+                metadata[id] = old.copy(server = server)
+                dirty += id
+            }
+        }
         if (next != null && (next !== previous || CaptureNames.classify(target) == CaptureNames.ApiPath.Login)) {
             currentId = id
         }
@@ -93,7 +120,7 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
 
     fun accounts(now: Long): List<CaptureAccount> = states.map { (id, state) ->
         val summary = AccountSummary.from(state, now)
-        CaptureAccount(id, displayName(id)!!, summary, state.lastUpdateTime)
+        CaptureAccount(id, displayName(id)!!, summary, state.lastUpdateTime, metadata[id]?.server ?: "KR")
     }.sortedWith(compareByDescending<CaptureAccount> { it.id == currentId }
         .thenByDescending { it.lastUpdateTime }.thenBy { it.id })
 
@@ -104,7 +131,7 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
 
     fun rename(id: String, name: String) {
         if (id !in states) return
-        metadata[id] = Metadata(name.trim().takeIf { it.isNotBlank() })
+        metadata[id] = (metadata[id] ?: Metadata()).copy(customName = name.trim().takeIf { it.isNotBlank() })
         dirty += id
     }
 
