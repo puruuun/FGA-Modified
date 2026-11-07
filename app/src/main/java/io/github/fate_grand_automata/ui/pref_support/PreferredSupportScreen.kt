@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -49,7 +50,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun PreferredSupportScreen(
     vm: PreferredSupportViewModel = viewModel(),
-    supportVm: SupportViewModel = viewModel()
+    supportVm: SupportViewModel = viewModel(),
+    autoClassVm: SupportClassAutoViewModel = viewModel()
 ) {
     PreferredSupport(
         config = vm.supportPrefs,
@@ -59,6 +61,16 @@ fun PreferredSupportScreen(
     val context = LocalContext.current
 
     val scope = rememberCoroutineScope()
+
+    // The first composition only reflects the stored selection; just later changes pick the support class.
+    val servants by vm.supportPrefs.preferredServants.remember()
+    var lastServants by remember { mutableStateOf(servants) }
+    LaunchedEffect(servants) {
+        if (servants == lastServants) return@LaunchedEffect
+        val previous = lastServants
+        lastServants = servants
+        autoClassVm.onServantsChanged(vm.supportPrefs, previous, servants)
+    }
 
     OnResume {
         scope.launch(Dispatchers.IO) {

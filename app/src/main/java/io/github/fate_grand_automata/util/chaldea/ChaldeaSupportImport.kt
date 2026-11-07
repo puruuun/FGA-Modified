@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.util.chaldea
 
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.SupportClass
+import io.github.fate_grand_automata.scripts.enums.supportClassOfServantClass
 import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
 import io.github.fate_grand_automata.util.portraits.*
 import kotlinx.coroutines.CancellationException
@@ -64,8 +65,7 @@ class ChaldeaSupportImport(private val images: ChaldeaSupportImages) {
             val np = member.int("tdLv")?.takeIf { it in 1..5 } ?: fail(ChaldeaImportError.DATA)
             return ChaldeaSupportSettings(member.bool("ceLimitBreak") ?: false, np,
                 levels("skillLvs", 3).map { it == 10 }, levels("appendLvs", 5).map { it == 10 },
-                SupportClass.entries.firstOrNull { it.name.equals(className, ignoreCase = true) }
-                    ?: if (className in setOf("shielder", "ruler", "avenger", "moonCancer", "alterEgo", "foreigner", "pretender", "beast")) SupportClass.Extra else null)
+                supportClassOfServantClass(className))
         }
     }
 

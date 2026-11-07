@@ -85,6 +85,9 @@ object ServantPortraitFolder {
 
     fun number(folder: String): Int? = identity(folder)?.second
 
+    /** `KR` or `NA` for a regional generated folder, null for a JP/unprefixed one or a non-generated name. */
+    fun region(folder: String): String? = identity(folder)?.first?.ifEmpty { null }
+
     fun resolve(requested: String, folders: List<String>): String? {
         if (requested in folders) return requested
         val requestedId = identity(requested) ?: return null
