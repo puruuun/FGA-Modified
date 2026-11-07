@@ -69,8 +69,7 @@ class AddedFeatureTuningTest {
             SupportNpLevelReader.RECOVERY_PREFIX_SIMILARITY to 0.75, SupportNpLevelReader.KR_RECOVERY_PREFIX_SIMILARITY to 0.72,
             SupportScoreSelection.SCORE_SIMILARITY to 0.9, SupportScoreBlocks.SIMILARITY to 0.9,
             SupportScoreReader.COMPACT_FIELD_SIMILARITY to 0.94, SupportScoreReader.GRAND_FIELD_SIMILARITY to 0.90,
-            SupportSkillDisplay.LABEL_SIMILARITY to 0.9, SupportSkillLevelReader.MAX_LEVEL_SIMILARITY to 0.68,
-            CESelection.BOND_EFFECT_SIMILARITY to 0.55
+            SupportSkillDisplay.LABEL_SIMILARITY to 0.9, SupportSkillLevelReader.MAX_LEVEL_SIMILARITY to 0.68
         ))
     }
 

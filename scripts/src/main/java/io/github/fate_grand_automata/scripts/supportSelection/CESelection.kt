@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
-import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
@@ -19,14 +18,14 @@ class CESelection @Inject constructor(
     api: IFgoAutomataApi,
     private val supportPrefs: ISupportPreferences,
     private val starChecker: SupportSelectionStarChecker,
-    private val grandChecker: SupportSelectionGrandChecker,
-    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+    private val grandChecker: SupportSelectionGrandChecker
 ) : IFgoAutomataApi by api {
-    companion object {
-        // #43 KR device: true NP 0.5926–0.7317, Default 0.737/0.874, wrong icon 0.15–0.25;
-        // host CE-column background <= 0.45. Require the selected icon to beat its opposite too.
-        const val BOND_EFFECT_SIMILARITY = 0.55
-    }
+    // These options are only shown in the UI while Grand Servant is enabled
+    private val bondCEEffect
+        get() = if (supportPrefs.grandServant) supportPrefs.bondCEEffect else BondCEEffectEnum.Ignore
+
+    private val requireBothNormalAndRewardMatch
+        get() = supportPrefs.grandServant && supportPrefs.requireBothNormalAndRewardMatch
 
     fun check(ces: List<String>, bounds: SupportBounds): Boolean {
         // TODO: Only check the lower part (excluding Servant)
@@ -42,7 +41,7 @@ class CESelection @Inject constructor(
             val matched = ces
                 .flatMap { entry -> images.loadSupportPattern(SupportImageKind.CE, entry) }
                 .mapNotNull {
-                    grandSearchRegion.find(it, similarity = addedTuning.support.defaultSimilarity { prefs.platformPrefs.minSimilarity })
+                    grandSearchRegion.find(it)
                 }
                 .filter {
                     !supportPrefs.mlb || isGrandLimitBroken(it.region)
@@ -55,29 +54,21 @@ class CESelection @Inject constructor(
             val normalMatch = matched.any { grandCeRegion1.contains(it.region) }
             val rewardMatch = matched.any { grandCeRegion3.contains(it.region) }
 
-            val ceSlotMatch = if (supportPrefs.requireBothNormalAndRewardMatch) {
+            val ceSlotMatch = if (requireBothNormalAndRewardMatch) {
                 normalMatch && rewardMatch
             } else {
                 normalMatch || rewardMatch
             }
 
-            val (np, default) = if (supportPrefs.bondCEEffect != BondCEEffectEnum.Ignore || messages.supportCeDiagnosticsEnabled) {
-                bondRegion.getPattern().use { crop ->
-                    bestMatch(bondRegion, crop, images[Images.BondCeEffectNP]) to
-                        bestMatch(bondRegion, crop, images[Images.BondCeEffectDefault])
-                }
-            } else null to null
-            val npScore = np?.score ?: 0.0
-            val defaultScore = default?.score ?: 0.0
-            val bondEffectMatch = when (supportPrefs.bondCEEffect) {
-                BondCEEffectEnum.NP -> npScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && npScore > defaultScore
-                BondCEEffectEnum.Default -> defaultScore >= addedTuning.support.similarity(BOND_EFFECT_SIMILARITY) && defaultScore > npScore
+            val bondEffectMatch = when (bondCEEffect) {
+                BondCEEffectEnum.Default -> bondRegion.find(images[Images.BondCeEffectDefault]) != null
+                BondCEEffectEnum.NP -> bondRegion.find(images[Images.BondCeEffectNP]) != null
                 BondCEEffectEnum.Ignore -> true
             }
 
             val decision = ceSlotMatch && bondEffectMatch
             if (messages.supportCeDiagnosticsEnabled) {
-                logGrandDecision(ces, grandSearchRegion, grandCeRegion1, grandCeRegion3, bondRegion, np, default, bondEffectMatch, decision)
+                logGrandDecision(ces, grandSearchRegion, grandCeRegion1, grandCeRegion3, bondRegion, bondEffectMatch, decision)
             }
             return decision
         } else {
@@ -90,8 +81,8 @@ class CESelection @Inject constructor(
                     !supportPrefs.mlb || isLimitBroken(it.region)
                 }
             return matched.isNotEmpty()
-                && !supportPrefs.requireBothNormalAndRewardMatch
-                && supportPrefs.bondCEEffect == BondCEEffectEnum.Ignore
+                && !requireBothNormalAndRewardMatch
+                && bondCEEffect == BondCEEffectEnum.Ignore
         }
     }
 
@@ -119,8 +110,12 @@ class CESelection @Inject constructor(
     /** Diagnostic scans never feed the selection decision or change its configured similarity. */
     private fun logGrandDecision(
         ces: List<String>, search: Region, normal: Region, reward: Region, bond: Region,
-        np: Match?, default: Match?, bondMatched: Boolean, decision: Boolean
+        bondMatched: Boolean, decision: Boolean
     ) {
+        // Scores are for the log only; the decision above is the plain find.
+        val (np, default) = bond.getPattern().use { crop ->
+            bestMatch(bond, crop, images[Images.BondCeEffectNP]) to bestMatch(bond, crop, images[Images.BondCeEffectDefault])
+        }
         val label = locations.support.grandCeLabelRegion.copy(y = search.y + 40)
         val patterns = ces.flatMap { name -> images.loadSupportPattern(SupportImageKind.CE, name).map { name to it } }
         fun slot(name: String, region: Region): String {
@@ -130,7 +125,7 @@ class CESelection @Inject constructor(
             val mlb = best?.let { isGrandLimitBroken(it.second.region) }
             return "$name={ce=${best?.first ?: "none"} best=${describe(best?.second)} search=$region mlb=$mlb}"
         }
-        val selected = when (supportPrefs.bondCEEffect) {
+        val selected = when (bondCEEffect) {
             BondCEEffectEnum.NP -> np
             BondCEEffectEnum.Default -> default
             BondCEEffectEnum.Ignore -> null
@@ -138,9 +133,9 @@ class CESelection @Inject constructor(
         messages.log(ScriptLog.SupportCe(
             "grand={present=true best=${describe(bestMatch(label, images[Images.GrandCeLabel]))} search=$label} " +
                 "${slot("normal", normal)} ${slot("reward", reward)} mlbRequired=${supportPrefs.mlb} " +
-                "bothSlots=${supportPrefs.requireBothNormalAndRewardMatch} " +
-                "bond={setting=${supportPrefs.bondCEEffect} best=${describe(selected)} search=$bond " +
-                "np=${describe(np)} default=${describe(default)} threshold=$BOND_EFFECT_SIMILARITY matched=$bondMatched} " +
+                "bothSlots=${requireBothNormalAndRewardMatch} " +
+                "bond={setting=${bondCEEffect} best=${describe(selected)} search=$bond " +
+                "np=${describe(np)} default=${describe(default)} threshold=${prefs.platformPrefs.minSimilarity} matched=$bondMatched} " +
                 "decision=$decision",
             np, default, decision
         ))

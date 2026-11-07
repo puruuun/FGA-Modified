@@ -27,6 +27,10 @@ See [`upstream-sync.md`](upstream-sync.md) for the merge itself. For strings:
    Propose a draft for each, mark it as a draft, and use the owner's wording once they give it.
 4. **Other languages**: take upstream's text, conflicts included.
 
+The Korean names of the default support servants (`servant_name_*`) follow upstream's official
+full names, for example 마슈 키리에라이트 and 스카사하=스카디 (owner, 2026-11-07, v3070 sync).
+Take upstream's changes to them under rule 1.
+
 ## Default support images carry translated names
 
 `app/src/main/assets/Support/servant/<Name>/` and `app/src/main/assets/Support/ce/<Name>.png`

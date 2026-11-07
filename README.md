@@ -10,7 +10,7 @@
 
 ## 다운로드·업데이트
 
-**정규판 1.7.2** — 웨이브·턴별 카드 우선순위가 가끔 다른 서번트 카드를 고르던 문제를 고쳤습니다. 서포트 카드를 `SUPPORT` 표시 끝부분과 서포트 얼굴로 구분하고, "서포트 아이콘 확인 생략" 옵션은 없앴습니다. [변경 사항](wiki/releases/1.7.2-KR.md).
+**정규판 1.7.3** — 끝난 전투를 메인 → 로그에서 다시 볼 수 있습니다. Chaldea 링크는 퀘스트의 웨이브 수로 웨이브와 턴을 나누고, 애매할 때만 직접 고르게 합니다. 언어 선택은 더 많은 옵션 → 고급으로 옮겼습니다. [변경 사항](wiki/releases/1.7.3-KR.md).
 
 | 배포판 | APK | Obtainium |
 |---|---|---|
@@ -43,7 +43,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [그랜드 서포트 예장](wiki/scripts/Support-Grand-CE-KR.md) | 그랜드 서포트의 일반·보상 슬롯 예장과 인연 예장 효과를 확인합니다. |
 | [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호로 서포트 이미지를 만들어 저장합니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
-| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 공유 링크의 전투 행동을 커맨드로 변환해 입력합니다. |
+| [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 공유 링크의 전투 행동을 커맨드로 변환하고, 퀘스트의 웨이브 수로 웨이브와 턴을 나눕니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 색별 조건 줄(AND/OR)을 만족할 때만 커맨드를 시작합니다. |
 | [첫 턴 셔플](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 시작 조건이 부족하면 셔플 후 다시 검사합니다. |
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
@@ -53,6 +53,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
 | [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX가 되면 멈춥니다. |
+| [전투 기록 로그](wiki/scripts/Battle-Log-KR.md) | 끝난 전투의 결과를 최근 200개까지 저장하고 메인 → 로그에서 봅니다. |
 
 설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 

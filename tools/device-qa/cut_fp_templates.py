@@ -25,7 +25,7 @@ RECIPES = [
     ('Jp', 'fp_sell_summon_button.png', 'Jp', '41.png', 901, 505, 63, 31),
     ('Kr', 'fp_sell_summon_button.png', 'Kr', '15.png', 909, 506, 52, 30),
     ("Jp", "fp_sell_summon_button_free.png", "Jp", "36.png", 658, 503, 64, 33),
-    ("Kr", "fp_sell_summon_button_free.png", "Kr", "../friend_summon_free.png", 674, 505, 50, 31),
+    ("Kr", "fp_sell_summon_button_free.png", "Kr", "friend-summon/friend_summon_free.png", 674, 505, 50, 31),
     ("Jp", "fp_sell_locked_text_alt.png", "Jp", "qa-beta5/20261019-023512-711-watch.png", 368, 334, 68, 22),
     # Kr: the warning word and the locked label (owner screen 17, 38)
     ("Kr", "fp_sell_word_servant.png", "Kr", "17.png", 422, 150, 118, 34),

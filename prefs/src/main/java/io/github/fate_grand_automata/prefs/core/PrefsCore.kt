@@ -130,6 +130,7 @@ class PrefsCore @Inject constructor(
     val gameOffsetBottom = gameArea.bottom
 
     val dirRoot = maker.string("dir_root")
+    val supportImagesExtractedVersion = maker.int("support_images_extracted_version")
 
     var showGameServer = maker.serialized(
         key = "show_game_server",
