@@ -40,10 +40,12 @@ class JpItemFallbackTest {
     }
 
     @Test fun krNameWinsEvenWhenItHasNoIconAndNeverCallsJp() = runBlocking {
+        val urls = mutableListOf<String>()
         val names = GameNames(directory, { url ->
-            assertFalse(url.contains("/JP/"))
+            urls += url
             """[{"id":$id,"name":"한국어"}]"""
         }).resolve(run(id), listOf(id))
+        assertTrue(urls.none { it.contains("/JP/") })
         assertEquals("한국어", names.item(id))
         assertNull(names.itemIcons[id])
         assertFalse(cacheFile.exists())
@@ -71,9 +73,11 @@ class JpItemFallbackTest {
 
     @Test fun successfulJpCacheIsReusedAcrossRestartsAndDays() = runBlocking {
         GameNames(directory, { if (it.contains("/JP/")) jpBody else krBody }) { 1000 }.resolve(run(id))
-        val cache = GameNames(directory, { url -> assertFalse(url.contains("/JP/")); krBody }) { 1000 + 3 * 86_400_000L }
+        val urls = mutableListOf<String>()
+        val cache = GameNames(directory, { url -> urls += url; krBody }) { 1000 + 3 * 86_400_000L }
         assertEquals("維新まんじゅう", cache.resolve(run(id)).item(id))
         assertEquals(icon, cache.resolve(run(id)).itemIcons[id])
+        assertTrue(urls.none { it.contains("/JP/") })
     }
 
     @Test fun notFoundAndFailureHaveIndependentDailyBackoffWhileOtherIdsContinue() = runBlocking {
@@ -156,8 +160,10 @@ class JpItemFallbackTest {
     @Test fun dashboardKrMetadataWinsAndPrunesWithoutJpRequest() = runBlocking {
         GameNames(directory, { if (it.contains("/JP/")) jpBody else krBody }) { 1000 }.resolve(run(id))
         File(directory, "nice_item_details.json").writeText("""[{"id":$id,"name":"한국어","icon":"$krIcon"}]""")
-        val names = GameNames(directory, { error("must use disk") }) { 1001 }
+        val urls = mutableListOf<String>()
+        val names = GameNames(directory, { urls += it; error("offline") }) { 1001 }
             .dashboard(listOf(dashboardState("userItem" to """[{"itemId":$id,"num":1}]""")))
+        assertTrue(urls.none { it.contains("/JP/") })
         assertEquals("한국어", names.item(id))
         assertEquals(krIcon, names.itemIcons[id])
         assertTrue(Json.parseToJsonElement(cacheFile.readText()).jsonObject.isEmpty())
