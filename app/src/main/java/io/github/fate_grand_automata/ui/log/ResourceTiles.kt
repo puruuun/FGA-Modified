@@ -67,7 +67,7 @@ internal fun resourceName(type: Int, id: Long, names: GameNameMap): String = whe
         val row = names.svtData[id]
         val name = row?.name?.takeIf { it.isNotBlank() }
         if (name != null && row.type == "combineMaterial" && row.className != null) {
-            val label = if (row.className == "all") stringResource(R.string.hakuno_shuffle_colour_all) else dashboardClass(row.className)
+            val label = if (row.className.equals("all", ignoreCase = true)) stringResource(R.string.capture_class_all) else dashboardClass(row.className)
             "$name ($label)"
         } else name ?: "#$id"
     }

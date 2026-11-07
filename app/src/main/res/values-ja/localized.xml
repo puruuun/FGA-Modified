@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_class_all">全て</string>
     <string name="accessibility_disable">"無効にする"</string>
     <string name="accessibility_disabled">"無効になっています"</string>
     <string name="accessibility_disabled_go_to_settings">"設定を開く"</string>

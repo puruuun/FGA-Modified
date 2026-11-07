@@ -27,9 +27,9 @@ class CardCountLogTest {
 
     @Test fun emberNamesReuseClassLabelsIncludingAllBeastVariantsAndAllClass() {
         val classes = listOf("saber", "archer", "lancer", "rider", "caster", "assassin", "berserker", "shielder",
-            "ruler", "avenger", "moonCancer", "alterEgo", "foreigner", "pretender", "beastI", "beastIIIR", "beastEresh", "all", "unknown")
+            "ruler", "avenger", "moonCancer", "alterEgo", "foreigner", "pretender", "beastI", "beastIIIR", "beastEresh", "all", "ALL", "unknown")
         val labels = listOf("세이버", "아처", "랜서", "라이더", "캐스터", "어쌔신", "버서커", "실더",
-            "룰러", "어벤저", "문 캔서", "얼터 에고", "포리너", "프리텐더", "비스트", "비스트", "비스트", "전체", "unknown")
+            "룰러", "어벤저", "문 캔서", "얼터 에고", "포리너", "프리텐더", "비스트", "비스트", "비스트", "전체", "전체", "unknown")
         val names = GameNameMap(svtData = classes.mapIndexed { index, name ->
             index.toLong() to AtlasBasic(index.toLong(), "예지의 맹화", "combineMaterial", name)
         }.toMap())
