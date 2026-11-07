@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.BodyDecoder
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.CapturedBattle
+import io.github.fate_grand_automata.scripts.capture.FriendRoster
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,9 @@ object CaptureTracker {
     private val _accountStates = MutableStateFlow<Map<String, AccountState>>(emptyMap())
     /** Immutable per-account versions for read-only dashboards, including non-current accounts. */
     val accountStates = _accountStates.asStateFlow()
+    private val _rosters = MutableStateFlow<Map<String, FriendRoster>>(emptyMap())
+    /** Friend rosters per account. Other players' data: never logged, never exported. */
+    val rosters = _rosters.asStateFlow()
     private val _accounts = MutableStateFlow<List<CaptureAccount>>(emptyList())
     val accounts: StateFlow<List<CaptureAccount>> = _accounts.asStateFlow()
     private val _currentId = MutableStateFlow<String?>(null)
@@ -97,6 +101,7 @@ object CaptureTracker {
 
     private fun publish() {
         _accountStates.value = stored.states.toMap()
+        _rosters.value = stored.rosters.toMap()
         _state.value = stored.state
         _currentId.value = stored.currentId
         _accounts.value = stored.accounts(System.currentTimeMillis() / 1000)
@@ -134,8 +139,10 @@ object CaptureTracker {
                 battleInbox.add(CapturedBattle.parse(body, response.previous))
             }
             outsideWork { outside.collect(target, response) }
+            val rosterChanged = response.next != null && response.id == stored.currentId &&
+                stored.applyFriends(response.id, target, body, System.currentTimeMillis() / 1000)
             publish()
-            if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
+            if (response.next !== response.previous || stored.currentId != previousCurrent || rosterChanged) scheduleSave(response.id)
         }
     }
 

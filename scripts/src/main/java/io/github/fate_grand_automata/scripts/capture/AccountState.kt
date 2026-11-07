@@ -15,7 +15,13 @@ data class AccountState(
     fun toJson(): String = Json.encodeToString(this)
 
     companion object {
-        fun fromJson(value: String): AccountState = Json.decodeFromString(value)
+        /** Other players' rows. They live in the friend roster instead, never in the account state. */
+        val OTHER_PLAYER_TABLES = setOf("otherUserGame", "userFollower", "userRecommendFollower")
+
+        /** Older saved states may still hold other players' tables; they are dropped on load. */
+        fun fromJson(value: String): AccountState = Json.decodeFromString<AccountState>(value).let { state ->
+            if (state.tables.keys.any { it in OTHER_PLAYER_TABLES }) state.copy(tables = state.tables - OTHER_PLAYER_TABLES) else state
+        }
 
         /** Before a successful login snapshot, deltas cannot form an account. */
         fun reduce(previous: AccountState?, target: String, body: JsonObject, now: Long): AccountState? {
@@ -34,9 +40,9 @@ data class AccountState(
             val base = if (login) AccountState(emptyMap(), response, snapshotTime = now, lastUpdateTime = now)
                 else previous ?: return null
             val tables = base.tables.toMutableMap()
-            replaced?.forEach { (table, rows) -> if (rows is JsonArray) tables[table] = rows }
+            replaced?.forEach { (table, rows) -> if (rows is JsonArray && table !in OTHER_PLAYER_TABLES) tables[table] = rows }
             (cache["updated"] as? JsonObject)?.forEach { (table, rows) ->
-                if (rows is JsonArray) {
+                if (rows is JsonArray && table !in OTHER_PLAYER_TABLES) {
                     val current = tables[table].orEmpty().toMutableList()
                     for (row in rows) {
                         val key = rowKey(table, row) ?: continue
@@ -47,7 +53,7 @@ data class AccountState(
                 }
             }
             (cache["deleted"] as? JsonObject)?.forEach { (table, rows) ->
-                if (rows is JsonArray) {
+                if (rows is JsonArray && table !in OTHER_PLAYER_TABLES) {
                     val keys = rows.mapNotNull { rowKey(table, it) }.toSet()
                     tables[table]?.let { tables[table] = JsonArray(it.filterNot { row -> rowKey(table, row) in keys }) }
                 }

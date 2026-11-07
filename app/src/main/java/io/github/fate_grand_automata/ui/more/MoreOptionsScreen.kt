@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,7 +40,8 @@ fun MoreOptionsScreen(
     navigateToAddedFeatureTuning: () -> Unit,
     navigateToLicense: () -> Unit,
     navigateToWeeklySettings: () -> Unit = {},
-    navigateToGainsTracker: () -> Unit = {}
+    navigateToGainsTracker: () -> Unit = {},
+    navigateToFriendManager: () -> Unit = {}
 ) {
     GameAreaPreviewEffect(vm.prefsCore, vm.gameAreaPreview)
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
@@ -65,6 +67,7 @@ fun MoreOptionsScreen(
         goToLicense = navigateToLicense,
         goToWeeklySettings = navigateToWeeklySettings,
         goToGainsTracker = navigateToGainsTracker,
+        goToFriendManager = navigateToFriendManager,
         additionalTools = { AdditionalTools(vm) },
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
@@ -84,6 +87,7 @@ internal fun MoreOptionsContent(
     goToGainsTracker: () -> Unit = {},
     pickDirectory: () -> Unit,
     additionalTools: @Composable () -> Unit = {},
+    goToFriendManager: () -> Unit = {},
 ) {
     CappedWidth {
         Column(
@@ -131,6 +135,11 @@ internal fun MoreOptionsContent(
                                             title = stringResource(R.string.capture_title),
                                             icon = icon(Icons.Default.VpnKey),
                                             onClick = goToGainsTracker
+                                        )
+                                        io.github.fate_grand_automata.ui.prefs.Preference(
+                                            title = stringResource(R.string.friends_title),
+                                            icon = icon(Icons.Default.People),
+                                            onClick = goToFriendManager
                                         )
                                     }
                                     additionalFeatures()

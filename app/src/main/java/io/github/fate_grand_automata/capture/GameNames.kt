@@ -57,7 +57,8 @@ class GameNames(
     private val jpFallback = JpItemFallback(directory, download, now)
 
     // Keep this cache KR-only, so JP results cannot suppress the existing KR refresh attempts.
-    private fun resolveKr(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList()): GameNameMap {
+    private fun resolveKr(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(),
+        servantIds: Collection<Long> = emptyList(), equipIds: Collection<Long> = emptyList()): GameNameMap {
         val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
         val drops = runs.flatMap { it.items }
         val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
@@ -72,9 +73,14 @@ class GameNames(
             }
         }
         val servants = refresh("basic_servant", cached.servants,
-            drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys })
-        val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })
+            drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys } + servantIds)
+        val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId } + equipIds)
         return GameNameMap(items, servants, equips, read("item_icons")).also { loaded = it }
+    }
+
+    /** Servant and CE names for the friend manager; ids missing from the cache follow the usual daily refresh. */
+    suspend fun friends(servantIds: Collection<Long>, equipIds: Collection<Long>): GameNameMap = withContext(Dispatchers.IO) {
+        mutex.withLock { resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds) }
     }
 
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */

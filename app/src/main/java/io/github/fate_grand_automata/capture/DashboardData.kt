@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.capture
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import io.github.fate_grand_automata.util.grouped
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,6 +15,12 @@ data class AtlasBasic(
     val className: String? = null, val rarity: Long? = null, val collectionNo: Long? = null,
     val icon: String? = null,
 )
+
+/** "139/145" once a friend list was seen, the plain limit before that. */
+internal fun friendsText(keep: String, count: Int?): String {
+    val limit = keep.toLongOrNull()?.grouped() ?: keep
+    return if (count == null) limit else "$count/$limit"
+}
 
 internal fun JsonObject.number(key: String) = (this[key] as? JsonPrimitive)?.longOrNull
 internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull

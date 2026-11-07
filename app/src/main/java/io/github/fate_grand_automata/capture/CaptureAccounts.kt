@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.capture.AccountRouting
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
+import io.github.fate_grand_automata.scripts.capture.FriendRoster
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import java.io.File
@@ -22,6 +23,9 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
     val states = mutableMapOf<String, AccountState>()
     private val metadata = mutableMapOf<String, Metadata>()
     private val dirty = mutableSetOf<String>()
+    /** Friend rosters live next to the account state and are deleted with it; they are never exported. */
+    val rosters = mutableMapOf<String, FriendRoster>()
+    private val rosterDirty = mutableSetOf<String>()
     var currentId: String? = null
         private set
     val state get() = states[currentId]
@@ -40,6 +44,12 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
                 val saved = AccountState.fromJson(File(folder, STATE_FILE).readText())
                 check(snapshotId(saved) == folder.name)
                 states[folder.name] = saved
+                // A state saved before other players' tables were dropped is rewritten without them.
+                File(folder, STATE_FILE).readText().let { text ->
+                    if (AccountState.OTHER_PLAYER_TABLES.any { text.contains("\"$it\"") }) dirty += folder.name
+                }
+                runCatching { FriendRoster.fromJson(File(folder, ROSTER_FILE).readText()) }
+                    .getOrNull()?.let { rosters[folder.name] = it }
                 metadata[folder.name] = runCatching {
                     Json.decodeFromString<Metadata>(File(folder, "account.json").readText())
                 }.getOrDefault(Metadata())
@@ -48,6 +58,18 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
         currentId = runCatching { File(directory, "current").readText().takeIf { it in states } }.getOrNull()
             ?: newestId()
         migrate(File(captureDirectory, STATE_FILE))
+        if (dirty.isNotEmpty()) runCatching { save() }.onFailure { warn("rewriting a saved account state failed") }
+    }
+
+    /** Feeds a friend list or support list response for [id]; returns true when the roster changed. */
+    fun applyFriends(id: String, target: String, body: JsonObject, now: Long): Boolean {
+        if (id !in states) return false
+        val previous = rosters[id]
+        val next = FriendRoster.update(previous, CaptureNames.path(target), body, now)
+        if (next == null || next == previous) return false
+        rosters[id] = next
+        rosterDirty += id
+        return true
     }
 
     fun apply(target: String, body: JsonObject, now: Long): Response? {
@@ -104,6 +126,8 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
         states.remove(id)
         metadata.remove(id)
         dirty.remove(id)
+        rosters.remove(id)
+        rosterDirty.remove(id)
         if (currentId == id) currentId = newestId()
         save()
     }
@@ -113,6 +137,8 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
         states.clear()
         metadata.clear()
         dirty.clear()
+        rosters.clear()
+        rosterDirty.clear()
         currentId = null
     }
 
@@ -124,6 +150,11 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
             atomicWrite(File(folder, STATE_FILE), state.toJson())
             atomicWrite(File(folder, "account.json"), metadataJson.encodeToString(metadata[id] ?: Metadata()))
             dirty.remove(id)
+        }
+        for (id in rosterDirty.filter { userId == null || userId == it }) {
+            val roster = rosters[id] ?: continue
+            atomicWrite(File(File(root, id), ROSTER_FILE), roster.toJson())
+            rosterDirty.remove(id)
         }
         // A current marker must never point to a snapshot that is still waiting to be written.
         currentId?.let { if (it !in dirty) atomicWrite(File(root, "current"), it) } ?: File(root, "current").delete()
@@ -167,6 +198,7 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
 
     private companion object {
         const val STATE_FILE = "account-state.json"
+        const val ROSTER_FILE = "friends.json"
         val metadataJson = Json { encodeDefaults = true }
     }
 }

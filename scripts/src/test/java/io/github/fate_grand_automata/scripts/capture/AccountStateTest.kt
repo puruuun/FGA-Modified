@@ -8,6 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class AccountStateTest {
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
@@ -112,6 +113,30 @@ class AccountStateTest {
         val s = start()
         val back = AccountState.fromJson(s.toJson())
         assertEquals(s, back)
+        assertEquals(s.loginResponse, back.loginResponse)
+    }
+
+    private val others = listOf("otherUserGame", "userFollower", "userRecommendFollower")
+
+    @Test fun otherPlayersTablesAreNeverKept() {
+        val s = start()
+        val rows = others.joinToString(",") { """"$it":[{"userId":"99","id":1}]""" }
+        val replaced = AccountState.reduce(s, "friend/top", obj("""{"cache":{"replaced":{$rows,"userItem":[{"userId":"7","itemId":100,"num":9}]}}}"""), 60)!!
+        val updated = AccountState.reduce(replaced, "follower/list", obj("""{"cache":{"updated":{$rows}}}"""), 70)
+        val loginWith = AccountState.reduce(null, "/login/top", login(tables.dropLast(1) + ",$rows}"), 5)!!
+        for (state in listOfNotNull(replaced, updated, loginWith)) assertTrue(others.none { it in state.tables.keys })
+        assertEquals("9", items(replaced)["100"])
+        // A response that only carries other players' rows changes nothing at all.
+        assertSame(s, AccountState.reduce(s, "friend/top", obj("""{"cache":{"updated":{$rows}}}"""), 80))
+        // Deleting other players' rows is ignored the same way.
+        assertSame(s, AccountState.reduce(s, "friend/top", obj("""{"cache":{"deleted":{$rows}}}"""), 90))
+    }
+
+    @Test fun savedStatesLoseOtherPlayersTablesOnLoad() {
+        val s = start()
+        val old = s.copy(tables = s.tables + others.associateWith { kotlinx.serialization.json.JsonArray(listOf(obj("""{"id":1}"""))) })
+        val back = AccountState.fromJson(old.toJson())
+        assertEquals(s.tables, back.tables)
         assertEquals(s.loginResponse, back.loginResponse)
     }
 }

@@ -1,0 +1,95 @@
+package io.github.fate_grand_automata.capture
+
+import kotlinx.serialization.json.*
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
+import kotlin.test.*
+
+/** Synthetic fixtures only. Exercises the real filesystem and tracker-facing storage rules. */
+class FriendRosterStoreTest {
+    @TempDir lateinit var directory: File
+    private fun body(text: String) = Json.parseToJsonElement(text).jsonObject
+    private fun login(id: Int) = body("""{"response":[{"nid":"login","resCode":"00"}],
+        "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Master $id"}]}}}""")
+    private val top = body("""{"cache":{"updated":{"otherUserGame":[{"userId":"11","userName":"Friend","userLv":100,
+        "friendCode":"111222333","message":"PRIVATE-MESSAGE","mainSupportDeckIds":[101],"eventSupportDeckIds":[],
+        "userSvtLeaderHash":[{"supportDeckId":101,"classId":1,"svtId":500,"updatedAt":900}],"eventUserSvtLeaderHash":[]}]},
+        "serverTime":1000}}""")
+    private fun store() = CaptureAccounts().apply { load(directory) }
+    private fun rosterFile(id: String) = File(directory, "accounts/$id/friends.json")
+
+    @Test fun rosterIsSavedBesideTheAccountAndLoadedBack() {
+        val store = store()
+        store.apply("login/top", login(7001), 10)
+        assertTrue(store.applyFriends("7001", "friend/top", top, 20))
+        assertFalse(store.applyFriends("7001", "friend/top", top, 21)) // identical: nothing to save
+        store.save("7001")
+        assertTrue(rosterFile("7001").isFile)
+        assertFalse(rosterFile("7001").readText().contains("PRIVATE-MESSAGE"))
+        assertEquals(store.rosters, store().rosters)
+        assertEquals(setOf("11"), store().rosters.getValue("7001").friends.keys)
+    }
+
+    @Test fun noRosterWithoutAnAccountState() {
+        val store = store()
+        assertFalse(store.applyFriends("7001", "friend/top", top, 20))
+        assertTrue(store.rosters.isEmpty())
+    }
+
+    @Test fun deletingAnAccountOrAllDataRemovesTheRoster() {
+        val store = store()
+        for (id in listOf(7001, 7002)) {
+            store.apply("login/top", login(id), 10)
+            store.applyFriends(id.toString(), "friend/top", top, 20)
+        }
+        store.save()
+        store.delete("7001")
+        assertFalse(rosterFile("7001").exists())
+        assertEquals(setOf("7002"), store.rosters.keys)
+        store.clear()
+        assertTrue(store.rosters.isEmpty())
+        assertFalse(rosterFile("7002").exists())
+        assertTrue(store().rosters.isEmpty())
+    }
+
+    @Test fun rosterNeverEntersTheAccountState() {
+        val store = store()
+        store.apply("login/top", login(7001), 10)
+        store.apply("friend/top", top, 20)
+        store.applyFriends("7001", "friend/top", top, 20)
+        store.save()
+        assertFalse(File(directory, "accounts/7001/account-state.json").readText().contains("otherUserGame"))
+        assertFalse(File(directory, "accounts/7001/account-state.json").readText().contains("Friend"))
+    }
+
+    @Test fun oldSavedStateIsRewrittenWithoutOtherPlayersTables() {
+        val first = store()
+        first.apply("login/top", login(7001), 10)
+        first.save()
+        val file = File(directory, "accounts/7001/account-state.json")
+        val old = Json.parseToJsonElement(file.readText()).jsonObject.let { state ->
+            val tables = state["tables"]!!.jsonObject + ("otherUserGame" to JsonArray(listOf(body("""{"userId":"11"}"""))))
+            JsonObject(state + ("tables" to JsonObject(tables)))
+        }
+        file.writeText(old.toString())
+        assertTrue(file.readText().contains("otherUserGame"))
+        val loaded = store()
+        assertFalse("otherUserGame" in loaded.states.getValue("7001").tables)
+        assertFalse(file.readText().contains("otherUserGame"))
+    }
+
+    @Test fun malformedBodyKeepsTheStoredRoster() {
+        val store = store()
+        store.apply("login/top", login(7001), 10)
+        store.applyFriends("7001", "friend/top", top, 20)
+        val before = store.rosters.getValue("7001")
+        assertFalse(store.applyFriends("7001", "friend/top", body("""{"cache":{"updated":{"otherUserGame":"x"}}}"""), 30))
+        assertEquals(before, store.rosters.getValue("7001"))
+    }
+
+    @Test fun dashboardFriendsTextUsesTheRosterOnlyOnceKnown() {
+        assertEquals("145", friendsText("145", null))
+        assertEquals("139/145", friendsText("145", 139))
+        assertEquals("0/145", friendsText("145", 0))
+    }
+}
