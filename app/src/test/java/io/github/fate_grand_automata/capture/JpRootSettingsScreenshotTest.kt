@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.capture
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import io.github.fate_grand_automata.ui.more.GainsTrackerContent
 import io.github.fate_grand_automata.ui.more.GainsTrackerUiState
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -23,7 +25,8 @@ class JpRootSettingsScreenshotTest {
     private fun screenshot(width: Int) {
         val settings = JpRootSettings(FakeJpCaInstaller(), false) {}
         runBlocking { settings.setEnabled(true) }
-        compose.shoot("capture-jp", "Installed", width, 1200, locale = "ko") {
+        compose.shoot("capture-jp", "Installed", width, 1200, locale = "ko",
+            beforeCapture = { compose.onNodeWithText("JP 인증서: 설치됨").assertIsDisplayed() }) {
             GainsTrackerContent(GainsTrackerUiState(enabled = true, certExists = true, certInstalled = true),
                 {}, {}, {}, {}, {}, {}, {}, jpState = settings.state.value, jpInstalled = true)
         }

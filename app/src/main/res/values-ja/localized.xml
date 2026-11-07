@@ -918,12 +918,12 @@
     <string name="friends2_unit_days">日</string>
     <string name="friends2_login_chip">%1$d%2$s以上ログインなし</string>
     <string name="icon_prefetch_title">ログアイコンデータをダウンロード</string>
-<string name="capture_jp_root">JPサーバー（root）</string>
+    <string name="capture_jp_root">JPサーバー（root）</string>
     <string name="capture_jp_root_summary">root権限でJP証明書を自動インストールします</string>
-    <string name="capture_jp_installed">インストール済み</string>
-    <string name="capture_jp_absent">現在CAがインストールされていません</string>
+    <string name="capture_jp_installed">JP証明書: インストール済み</string>
+    <string name="capture_jp_absent">JP証明書: 未インストール</string>
     <string name="capture_jp_no_root">root権限がないためJP収集を有効にできません</string>
-    <string name="capture_jp_failed">失敗（%1$s）</string>
+    <string name="capture_jp_failed">JP証明書: 失敗（%1$s）</string>
     <string name="capture_jp_reboot">完全に削除するには端末を再起動してください</string>
     <string name="capture_jp_start_failed">JP証明書をインストールできなかったため、今回はJPデータを収集しません</string>
     <string name="capture_jp_restart">JPのゲームを再起動してください</string>

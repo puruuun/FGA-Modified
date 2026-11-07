@@ -63,6 +63,15 @@ class JpRootSettingsUiTest {
         show(installed = false)
         message(R.string.capture_jp_root).assertDoesNotExist()
     }
+    @Test fun jpSwitchFollowsBothKrCertificateButtonsAndPrecedesVpn() {
+        show()
+        val create = message(R.string.capture_cert_create).fetchSemanticsNode().boundsInRoot
+        val guide = message(R.string.capture_guide_button).fetchSemanticsNode().boundsInRoot
+        val jp = compose.onNodeWithTag("jp-root-switch").fetchSemanticsNode().boundsInRoot
+        val vpn = message(R.string.capture_vpn_header).fetchSemanticsNode().boundsInRoot
+        assertTrue("JP switch must follow both KR certificate buttons", jp.top >= maxOf(create.bottom, guide.bottom))
+        assertTrue("JP switch must precede the VPN section", jp.bottom <= vpn.top)
+    }
     @Test fun noRootKeepsSwitchOffAndShowsMessage() {
         fake.root = false
         show()
@@ -80,7 +89,7 @@ class JpRootSettingsUiTest {
         compose.onNodeWithTag("jp-root-switch").performClick()
         compose.waitUntil { settings.state.value.status == JpCaStatus.Installed }
         compose.onNodeWithTag("jp-root-switch").assertIsOn()
-        message(R.string.capture_jp_installed).assertIsDisplayed()
+        compose.onNodeWithText("JP 인증서: 설치됨").assertIsDisplayed()
         assertTrue(prefs.captureJpRoot.get())
         assertEquals(1, fake.certificates)
         assertEquals(1, fake.injections)

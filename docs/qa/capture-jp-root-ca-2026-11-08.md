@@ -17,3 +17,14 @@
   - C:/Users/rl/Documents/Codex/FGA-Modified-builds/capture-jp-root-ca/settings-360dp.png
   - C:/Users/rl/Documents/Codex/FGA-Modified-builds/capture-jp-root-ca/settings-1280dp.png
 - 실제 루트 기기의 마운트·SELinux·재부팅·게임 TLS 검증은 플래너와 소유자의 기기 QA 범위로 남긴다.
+
+## PR #245 리뷰 수정
+
+- 지적: JP 설정이 인증서 제목과 KR 인증서 상태 사이에 끼어 있어 두 상태가 하나로 읽혔다.
+- JP 스위치·상태·재시작 안내를 KR 인증서 버튼 뒤, VPN 제목 앞으로 옮겼다. 한·일·영 설치됨·미설치·실패 상태에 JP 인증서 이름을 붙이고 문자열 들여쓰기를 맞췄다.
+- 두 KR 인증서 버튼보다 JP 스위치가 아래에 있고 VPN보다 위에 있는지 실제 UI 경계로 확인하는 회귀 테스트를 추가했다.
+- 전체 단위 테스트 통과: app 676, prefs 48, scripts 993, libautomata 테스트 없음. 합계 1,717건, 실패·오류·건너뜀 0건.
+- 스크린샷 테스트 2건 통과. 360dp·1280dp에서 KR 상태와 JP 인증서: 설치됨이 구분되는 것을 육안 확인했다.
+  - C:/Users/rl/Documents/Codex/FGA-Modified-builds/capture-jp-root-ca/settings-review-360dp.png
+  - C:/Users/rl/Documents/Codex/FGA-Modified-builds/capture-jp-root-ca/settings-review-1280dp.png
+- 실제 su·루트·adb·기기는 사용하지 않았다.

@@ -278,7 +278,6 @@ fun GainsTrackerContent(
                     Preference(title = stringResource(R.string.capture_consent_review), onClick = onReviewConsent)
                 }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_cert_header)) }
-                item { JpRootPreference(jpState, jpInstalled, onJpRoot) }
                 item {
                     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -299,6 +298,7 @@ fun GainsTrackerContent(
                         }
                     }
                 }
+                item { JpRootPreference(jpState, jpInstalled, onJpRoot) }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_vpn_header)) }
                 item {
                     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
