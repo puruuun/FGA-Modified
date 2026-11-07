@@ -7,9 +7,11 @@ import android.provider.MediaStore
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.SingleUseCa
 import java.io.File
-import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.security.KeyStore
+import java.security.MessageDigest
+import java.util.Base64
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 
@@ -27,6 +29,42 @@ object CertStore {
     fun directory(ctx: Context) = File(ctx.filesDir, "capture").apply { mkdirs() }
 
     fun exists(ctx: Context) = File(directory(ctx), LEAF).isFile && File(directory(ctx), CA).isFile
+
+    fun existsJp(ctx: Context) = File(directory(ctx), "leaf-jp.p12").isFile && File(directory(ctx), "ca-jp.cer").isFile
+
+    @Synchronized
+    fun ensureJp(ctx: Context) { if (!existsJp(ctx)) createJp(ctx) }
+
+    /** Separate from KR; this CA stays private and is installed only through root. */
+    @Synchronized
+    fun createJp(ctx: Context) {
+        val issued = SingleUseCa.issue(CaptureNames.JP_HOST)
+        val ks = KeyStore.getInstance("PKCS12").apply { load(null, null) }
+        ks.setKeyEntry("leaf", issued.leafKey, PASSWORD, issued.chain.toTypedArray())
+        val dir = directory(ctx)
+        File(dir, "leaf-jp.p12").outputStream().use { ks.store(it, PASSWORD) }
+        File(dir, "ca-jp.cer").writeBytes(issued.caCert.encoded)
+    }
+
+    fun jpCertificate(ctx: Context): X509Certificate = File(directory(ctx), "ca-jp.cer").inputStream().use {
+        CertificateFactory.getInstance("X.509").generateCertificate(it) as X509Certificate
+    }
+
+    fun jpServerContext(ctx: Context): SSLContext {
+        val ks = KeyStore.getInstance("PKCS12")
+        File(directory(ctx), "leaf-jp.p12").inputStream().use { ks.load(it, PASSWORD) }
+        val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(ks, PASSWORD) }
+        return SSLContext.getInstance("TLS").apply { init(kmf.keyManagers, null, null) }
+    }
+
+    /** OpenSSL -subject_hash_old: MD5 of the original DER name, first uint32 little endian. */
+    fun subjectHashOld(cert: X509Certificate): String {
+        val digest = MessageDigest.getInstance("MD5").digest(cert.subjectX500Principal.encoded)
+        return digest.take(4).reversed().joinToString("") { "%02x".format(it.toInt() and 255) }
+    }
+
+    fun pem(cert: X509Certificate): String = "-----BEGIN CERTIFICATE-----\n" +
+        Base64.getMimeEncoder(64, byteArrayOf(10)).encodeToString(cert.encoded) + "\n-----END CERTIFICATE-----\n"
 
     /** Makes a new CA and leaf, replacing any earlier ones, and writes the CA to Download. */
     fun create(ctx: Context) {

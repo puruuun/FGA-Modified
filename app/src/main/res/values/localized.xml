@@ -1233,4 +1233,13 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends2_unit_days">d</string>
     <string name="friends2_login_chip">Inactive %1$d %2$s or more</string>
     <string name="icon_prefetch_title">Download log icon data</string>
+<string name="capture_jp_root">JP server (root)</string>
+    <string name="capture_jp_root_summary">Automatically install the JP CA with root access</string>
+    <string name="capture_jp_installed">Installed</string>
+    <string name="capture_jp_absent">CA is not currently installed</string>
+    <string name="capture_jp_no_root">Root access is unavailable; JP collection cannot be enabled</string>
+    <string name="capture_jp_failed">Failed (%1$s)</string>
+    <string name="capture_jp_reboot">Restart the device to remove the CA completely</string>
+    <string name="capture_jp_start_failed">JP CA installation failed. JP data will not be collected this time.</string>
+    <string name="capture_jp_restart">Please restart FGO JP</string>
 </resources>

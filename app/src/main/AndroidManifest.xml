@@ -13,8 +13,9 @@
     <queries>
         <package android:name="cc.narumi.chaldea" />
         <package android:name="cc.narumi.chaldea.fdroid" />
-        <!-- The gains tracker only routes the KR game app. -->
+        <!-- JP visibility is needed for the root CA switch; VPN routing is still KR-only. -->
         <package android:name="com.netmarble.fgok" />
+        <package android:name="com.aniplex.fategrandorder" />
     </queries>
 
     <application

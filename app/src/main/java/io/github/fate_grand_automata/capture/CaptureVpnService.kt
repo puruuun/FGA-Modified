@@ -11,18 +11,28 @@ import android.net.ConnectivityManager
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.widget.Toast
 import androidx.annotation.RequiresApi
+import dagger.hilt.android.AndroidEntryPoint
+import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.DnsPackets
 import io.github.fate_grand_automata.ui.main.MainActivity
-import timber.log.Timber
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.util.concurrent.Executors
+import javax.inject.Inject
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import timber.log.Timber
 
 /**
  * Routes only the game app into a local read-only proxy. The VPN needs default routes and a DNS
@@ -30,7 +40,10 @@ import java.util.concurrent.Executors
  * that reach the tun are dropped, except DNS to the fake resolver, which is forwarded.
  */
 @RequiresApi(Build.VERSION_CODES.Q)
+@AndroidEntryPoint
 class CaptureVpnService : VpnService() {
+    @Inject lateinit var prefs: PrefsCore
+    private val jpScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var tun: ParcelFileDescriptor? = null
     private var proxy: ProxyServer? = null
     private var drain: Thread? = null
@@ -51,6 +64,11 @@ class CaptureVpnService : VpnService() {
             return START_NOT_STICKY
         }
         if (tun != null) return START_NOT_STICKY
+        JpCaptureStart.start(jpScope,
+            captureFeaturesAvailable(prefs.captureTrackerEnabled.get(), Build.VERSION.SDK_INT),
+            prefs.captureJpRoot.get(), RootCaInjector(applicationContext)) { message ->
+            Handler(Looper.getMainLooper()).post { Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show() }
+        }
         try {
             val sslContext = if (CertStore.exists(this)) CertStore.serverContext(this) else null
             if (sslContext == null) Timber.w("Capture: no certificate, the game host is tunnelled and not read")
@@ -188,6 +206,7 @@ class CaptureVpnService : VpnService() {
     }
 
     override fun onDestroy() {
+        jpScope.cancel()
         if (CaptureTracker.running.value) stopAll(stopReason)
         dnsPool.shutdownNow()
         if (instance === this) instance = null
@@ -197,6 +216,7 @@ class CaptureVpnService : VpnService() {
     companion object {
         const val ACTION_STOP = "io.github.fate_grand_automata.capture.STOP"
         const val GAME_PACKAGE = "com.netmarble.fgok"
+        const val JP_GAME_PACKAGE = "com.aniplex.fategrandorder"
         private const val FAKE_DNS = "10.255.77.2"
         private const val CHANNEL = "capture"
         private const val NOTIFICATION_ID = 77

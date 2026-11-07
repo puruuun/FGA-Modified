@@ -1154,4 +1154,13 @@
     <string name="friends2_unit_days">일</string>
     <string name="friends2_login_chip">%1$d%2$s 이상 미접속</string>
     <string name="icon_prefetch_title">로그 아이콘 데이터 다운로드</string>
+<string name="capture_jp_root">JP 서버 (루트)</string>
+    <string name="capture_jp_root_summary">루트 권한으로 JP 인증서를 자동 설치합니다</string>
+    <string name="capture_jp_installed">설치됨</string>
+    <string name="capture_jp_absent">현재 CA가 설치되어 있지 않습니다</string>
+    <string name="capture_jp_no_root">루트 권한이 없어 JP 수집을 켤 수 없습니다</string>
+    <string name="capture_jp_failed">실패(%1$s)</string>
+    <string name="capture_jp_reboot">완전히 지우려면 기기를 재부팅하세요</string>
+    <string name="capture_jp_start_failed">JP 인증서를 설치하지 못해 이번에는 JP 데이터를 수집하지 않습니다</string>
+    <string name="capture_jp_restart">JP 게임을 다시 실행해 주세요</string>
 </resources>

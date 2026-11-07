@@ -8,9 +8,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -19,8 +19,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,37 +28,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.capture.ChaldeaExportStore
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.capture.captureAccountCards
+import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureController
+import io.github.fate_grand_automata.capture.CaptureEnableAction
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CertStore
-import io.github.fate_grand_automata.capture.CaptureConsent
-import io.github.fate_grand_automata.capture.CaptureEnableAction
+import io.github.fate_grand_automata.capture.ChaldeaExportStore
+import io.github.fate_grand_automata.capture.jpGameInstalled
+import io.github.fate_grand_automata.capture.JpRootPreference
+import io.github.fate_grand_automata.capture.JpRootSettings
+import io.github.fate_grand_automata.capture.JpRootState
 import io.github.fate_grand_automata.capture.rememberCaptureAgreement
+import io.github.fate_grand_automata.capture.RootCaInjector
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.remember
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 data class GainsTrackerUiState(
     val enabled: Boolean = false,
@@ -78,6 +84,12 @@ class GainsTrackerViewModel @Inject constructor(
     val prefsCore: PrefsCore,
 ) : ViewModel() {
     private val context = app.applicationContext
+    val jpSettings = JpRootSettings(RootCaInjector(context), prefsCore.captureJpRoot.get()) {
+        prefsCore.captureJpRoot.set(it)
+    }
+
+    fun setJpRoot(enabled: Boolean) { viewModelScope.launch { jpSettings.setEnabled(enabled) } }
+    fun refreshJpRoot() { viewModelScope.launch { jpSettings.refresh() } }
     private val cert = MutableStateFlow(false to false)
     private val clock = MutableStateFlow(System.currentTimeMillis() / 1000)
 
@@ -137,6 +149,7 @@ class GainsTrackerViewModel @Inject constructor(
 fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
+    val jpState by vm.jpSettings.state.collectAsStateWithLifecycle()
     var enabled by vm.prefsCore.captureTrackerEnabled.remember()
     val agreement = rememberCaptureAgreement(vm.prefsCore)
     var stopWithService by vm.prefsCore.captureStopWithService.remember()
@@ -144,8 +157,12 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         if (it.resultCode == android.app.Activity.RESULT_OK && enabled &&
             CaptureConsent.agreed(vm.prefsCore.captureConsentVersion.get())) CaptureController.start(context)
     }
-    // The certificate may have been installed while the settings app was in front.
-    LaunchedEffect(Unit) { vm.refreshCertificate() }
+    // Re-read CA presence after returning from system settings or another app.
+    LifecycleResumeEffect(Unit) {
+        vm.refreshCertificate()
+        vm.refreshJpRoot()
+        onPauseOrDispose {}
+    }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60_000)
@@ -186,6 +203,9 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         onDelete = vm::deleteData,
         onRenameAccount = vm::renameAccount,
         onDeleteAccount = vm::deleteAccount,
+        jpState = jpState,
+        jpInstalled = jpGameInstalled(context),
+        onJpRoot = vm::setJpRoot,
     )
 }
 
@@ -202,6 +222,9 @@ fun GainsTrackerContent(
     onReviewConsent: () -> Unit = {},
     onRenameAccount: (String, String) -> Unit = { _, _ -> },
     onDeleteAccount: (String) -> Unit = {},
+    jpState: JpRootState = JpRootState(),
+    jpInstalled: Boolean = false,
+    onJpRoot: (Boolean) -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -255,6 +278,7 @@ fun GainsTrackerContent(
                     Preference(title = stringResource(R.string.capture_consent_review), onClick = onReviewConsent)
                 }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_cert_header)) }
+                item { JpRootPreference(jpState, jpInstalled, onJpRoot) }
                 item {
                     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
