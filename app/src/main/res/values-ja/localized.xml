@@ -897,4 +897,17 @@
     <string name="friends_ce_none">礼装なし</string>
     <string name="friends_ce_max">最大凸</string>
     <string name="friends_no_match">条件に合うサポートがありません</string>
+    <string name="events_title">開催中のイベント (KR)</string>
+    <string name="events_days_left">残り%1$d日</string>
+    <string name="events_hours_left">残り%1$d時間</string>
+    <string name="events_end_pattern">M月d日 HH:mm</string>
+    <string name="events_ends_at">%1$s終了</string>
+    <string name="events_bonus_count">ボーナス礼装%1$d種</string>
+    <string name="events_campaigns">キャンペーン%1$d件 · %2$s ほか</string>
+    <string name="events_bonus_title">イベントボーナス礼装</string>
+    <string name="events_bonus_drop">ドロップ UP</string>
+    <string name="events_bonus_point">ポイント UP</string>
+    <string name="events_bonus_bond">絆 UP</string>
+    <string name="events_bonus_encounter">出現率 UP</string>
+    <string name="events_bonus_other">その他</string>
 </resources>

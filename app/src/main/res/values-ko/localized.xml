@@ -1135,4 +1135,17 @@
     <string name="friends_ce_none">예장 없음</string>
     <string name="friends_ce_max">최대 돌파</string>
     <string name="friends_no_match">조건에 맞는 서포터가 없습니다</string>
+    <string name="events_title">진행 중인 이벤트 (KR)</string>
+    <string name="events_days_left">%1$d일 남음</string>
+    <string name="events_hours_left">%1$d시간 남음</string>
+    <string name="events_end_pattern">M월 d일 HH:mm</string>
+    <string name="events_ends_at">%1$s 종료</string>
+    <string name="events_bonus_count">보너스 예장 %1$d종</string>
+    <string name="events_campaigns">캠페인 %1$d개 · %2$s 외</string>
+    <string name="events_bonus_title">이벤트 보너스 예장</string>
+    <string name="events_bonus_drop">드롭 UP</string>
+    <string name="events_bonus_point">포인트 UP</string>
+    <string name="events_bonus_bond">인연 UP</string>
+    <string name="events_bonus_encounter">출현율 UP</string>
+    <string name="events_bonus_other">기타</string>
 </resources>

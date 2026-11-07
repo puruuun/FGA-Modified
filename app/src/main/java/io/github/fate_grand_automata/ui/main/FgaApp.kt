@@ -51,6 +51,7 @@ fun FgaApp(
 ) {
     val motionDistance = with(LocalDensity.current) { 30.dp.roundToPx() }
     val context = LocalContext.current
+    val eventsVm = hiltViewModel<io.github.fate_grand_automata.events.EventViewModel>()
     val backStack = rememberNavBackStack(
         if (vm.prefs.isOnboardingRequired()) {
             Route.Onboarding
@@ -85,6 +86,7 @@ fun FgaApp(
                     entry<Route.Home> {
                         MainScreen(
                             vm = vm,
+                            eventsVm = eventsVm,
                             navigate = {
                                 when (it) {
                                     MainScreenDestinations.AccessibilitySettings -> {
@@ -106,6 +108,10 @@ fun FgaApp(
 
                                     is MainScreenDestinations.AccountDashboard -> {
                                         backStack.add(Route.AccountDashboard(it.userId))
+                                    }
+
+                                    is MainScreenDestinations.EventBonus -> {
+                                        backStack.add(Route.EventBonus(it.id))
                                     }
 
                                     MainScreenDestinations.Logs -> {
@@ -177,6 +183,9 @@ fun FgaApp(
                     }
                     entry<Route.Logs> {
                         LogScreen()
+                    }
+                    entry<Route.EventBonus> { key ->
+                        io.github.fate_grand_automata.events.EventBonusScreen(key.id, eventsVm)
                     }
                     entry<Route.FineTune> {
                         FineTuneScreen(

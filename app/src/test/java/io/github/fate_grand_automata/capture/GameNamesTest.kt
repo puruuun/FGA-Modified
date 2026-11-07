@@ -11,6 +11,25 @@ class GameNamesTest {
     @TempDir lateinit var directory: File
     private val run = RunGains(items = listOf(GainedItem(2, 6510, 1), GainedItem(3, 9, 1)), bond = mapOf(10L to 1L))
 
+    @Test fun eventNamesOnlyUseKrBasicEquipAndKeepDailyRetryRules() = runBlocking {
+        var time = 1000L
+        val urls = mutableListOf<String>()
+        var offline = false
+        fun cache() = GameNames(directory, { address ->
+            urls += address
+            if (offline) error("offline")
+            """[{"id":10,"name":"샘플 예장"}]"""
+        }) { time }
+        assertEquals("샘플 예장", cache().eventEquips(listOf(10)).equips[10])
+        cache().eventEquips(listOf(20))
+        assertEquals(1, urls.size)
+        time += 86_400_000
+        offline = true
+        assertEquals("샘플 예장", cache().eventEquips(listOf(10, 20)).equips[10])
+        cache().eventEquips(listOf(20))
+        assertEquals(List(2) { "https://api.atlasacademy.io/export/KR/basic_equip.json" }, urls)
+    }
+
     @Test fun failedDownloadsUseStableFallbacksAndAreThrottledAcrossInstances() = runBlocking {
         var calls = 0
         val downloader: (String) -> String = { calls++; error("offline") }

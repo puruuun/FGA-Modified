@@ -1214,4 +1214,17 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_ce_none">No CE</string>
     <string name="friends_ce_max">Max limit break</string>
     <string name="friends_no_match">No support servants match</string>
+    <string name="events_title">Running events (KR)</string>
+    <string name="events_days_left">%1$d days left</string>
+    <string name="events_hours_left">%1$d hours left</string>
+    <string name="events_end_pattern">MMM d HH:mm</string>
+    <string name="events_ends_at">Ends %1$s</string>
+    <string name="events_bonus_count">%1$d bonus CEs</string>
+    <string name="events_campaigns">%1$d campaigns · %2$s and more</string>
+    <string name="events_bonus_title">Event bonus CEs</string>
+    <string name="events_bonus_drop">Drop UP</string>
+    <string name="events_bonus_point">Point UP</string>
+    <string name="events_bonus_bond">Bond UP</string>
+    <string name="events_bonus_encounter">Encounter UP</string>
+    <string name="events_bonus_other">Other</string>
 </resources>

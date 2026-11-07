@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -44,6 +45,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import io.github.fate_grand_automata.events.EventCard
+import io.github.fate_grand_automata.events.EventData
+import io.github.fate_grand_automata.events.EventViewModel
+import kotlinx.coroutines.delay
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -71,6 +80,7 @@ import io.github.fate_grand_automata.util.OpenDocTreePersistable
 @OptIn(ExperimentalPermissionsApi::class)
 fun MainScreen(
     vm: MainScreenViewModel = viewModel(),
+    eventsVm: EventViewModel = viewModel(),
     navigate: (MainScreenDestinations) -> Unit
 ) {
     var dirPicker: ActivityResultLauncher<Uri?>? by remember { mutableStateOf(null) }
@@ -171,6 +181,18 @@ fun MainScreen(
         }
     }
     val accessibilityServiceStarted by TapperService.serviceStarted
+    val events by eventsVm.data.collectAsStateWithLifecycle()
+    var eventNow by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    OnResume { eventsVm.refresh() }
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                eventNow = System.currentTimeMillis() / 1000
+                delay(60_000)
+            }
+        }
+    }
 
     MainScreenContent(
         navigate = {
@@ -181,6 +203,8 @@ fun MainScreen(
             } else navigate(it)
         },
         capture = capture.state,
+        events = events,
+        eventNow = eventNow,
         toggleCapture = capture.toggle,
         overlayServiceStarted = overlayServiceStarted,
         toggleOverlayService = { toggleOverlayService() },
@@ -242,6 +266,7 @@ sealed class MainScreenDestinations {
     object BattleConfigs : MainScreenDestinations()
     object Logs : MainScreenDestinations()
     data class AccountDashboard(val userId: String) : MainScreenDestinations()
+    data class EventBonus(val id: Long) : MainScreenDestinations()
     object MoreOptions : MainScreenDestinations()
     object GainsTracker : MainScreenDestinations()
     object AccessibilitySettings : MainScreenDestinations()
@@ -257,6 +282,8 @@ internal fun MainScreenContent(
     toggleAccessibilityService: () -> Unit,
     capture: CaptureMainState = CaptureMainState(),
     toggleCapture: () -> Unit = {},
+    events: EventData = EventData(),
+    eventNow: Long = System.currentTimeMillis() / 1000,
 ) {
     Column(Modifier.fillMaxSize()) {
         CappedWidth(modifier = Modifier.weight(1f)) {
@@ -276,6 +303,10 @@ internal fun MainScreenContent(
                     item {
                         CaptureProfileRow(capture.profiles, capture.now) { navigate(MainScreenDestinations.AccountDashboard(it)) }
                     }
+                }
+
+                if (events.running(eventNow).visible) {
+                    item { EventCard(events, eventNow) { navigate(MainScreenDestinations.EventBonus(it)) } }
                 }
 
                 item {

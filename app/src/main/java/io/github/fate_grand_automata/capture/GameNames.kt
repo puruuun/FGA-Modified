@@ -83,6 +83,15 @@ class GameNames(
         mutex.withLock { resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds) }
     }
 
+    /** The public event list only needs KR CE names, independently of account or servant data. */
+    suspend fun eventEquips(ids: Collection<Long>): GameNameMap = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val equips = refresh("basic_equip", read("basic_equip"), ids.toList())
+            loaded = loaded?.copy(equips = equips)
+            GameNameMap(equips = equips)
+        }
+    }
+
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */
     suspend fun dashboard(states: Collection<AccountState> = emptyList()): GameNameMap {
         return withContext(Dispatchers.IO) { mutex.withLock {
