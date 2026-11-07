@@ -321,10 +321,11 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
             Text((0..2).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" } + "\n" +
                 (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp),
                 style = MaterialTheme.typography.bodySmall, maxLines = 2, softWrap = false, overflow = TextOverflow.Clip)
-            Column(Modifier.weight(COLUMN_WEIGHTS[3]).padding(horizontal = 1.dp)) {
+            Column(Modifier.weight(COLUMN_WEIGHTS[3]).padding(start = 1.dp, end = 4.dp)) {
+                val twoCes = slot.ce2Id?.takeIf { it != 0L } != null
                 if (slot.ceId == 0L) Text(stringResource(R.string.friends_ce_none), style = MaterialTheme.typography.bodySmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                else CeLine(names.equips[slot.ceId] ?: "#${slot.ceId}", slot.ceLimitCount, slot.ceLv)
+                else CeLine(names.equips[slot.ceId] ?: "#${slot.ceId}", slot.ceLimitCount, slot.ceLv, if (twoCes) 1 else 2)
                 // Grand Duel supports carry a second CE on its own line, so a cell is at most two lines.
                 slot.ce2Id?.takeIf { it != 0L }?.let { CeLine(names.equips[it] ?: "#$it", slot.ce2LimitCount ?: 0, slot.ce2Lv ?: 0) }
             }
@@ -349,12 +350,12 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
     }
 }
 
-/** One CE: its name, then the max tag and the level right after it on the same baseline. */
+/** One CE: its name (up to [nameLines] lines, tag and level on the first line's baseline), then the max tag and the level right after it on the same baseline. */
 @Composable
-private fun CeLine(name: String, limitCount: Int, lv: Int) {
+private fun CeLine(name: String, limitCount: Int, lv: Int, nameLines: Int = 1) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("friends-ce-line")) {
         Text(name, Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
-            maxLines = 1, overflow = TextOverflow.Ellipsis)
+            maxLines = nameLines, overflow = TextOverflow.Ellipsis)
         if (limitCount == FriendList.MAX_LIMIT_COUNT) Text(stringResource(R.string.friends_ce_max),
             Modifier.alignByBaseline().background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall)
                 .padding(horizontal = 4.dp, vertical = 1.dp),

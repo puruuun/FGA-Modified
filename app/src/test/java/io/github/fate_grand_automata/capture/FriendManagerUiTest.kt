@@ -256,6 +256,18 @@ class FriendManagerUiTest {
         assertTrue("level follows the tag", lv.positionInRoot.x - (tag.positionInRoot.x + tag.size.width) <= 8 * density)
     }
 
+    @Test fun singleCeNameUsesTwoLinesAndShowsMoreThanOneCharacterAt360() {
+        show(); rows(5)
+        val node = compose.onAllNodes(hasText("샘플 예장 하나"), useUnmergedTree = true).fetchSemanticsNodes().first()
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        val layout = results.first()
+        assertTrue("at most two lines", layout.lineCount <= 2)
+        val visible = layout.getLineEnd(0, visibleEnd = true)
+        assertTrue("only $visible character(s) of the name visible", visible > 1 || !layout.hasVisualOverflow)
+        assertTrue("the name uses a second line when needed", layout.lineCount == 2 || !layout.hasVisualOverflow)
+    }
+
     @Test fun twoCesShowTwoLinesAndRowsStayAtMostTwoLines() {
         compose.setContent { FGATheme { FriendManagerContent(duelRoster(), friendTestNames(), FRIEND_NOW) } }
         rows(duelRoster().friends.values.sumOf { f -> f.slots.count { !f.isEvent(it) } })
