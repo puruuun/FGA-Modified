@@ -33,7 +33,7 @@ data class GameNameMap(
     }
 }
 
-/** Downloads fixed public KR lists only; run data is never included in a network request. */
+/** Downloads public KR lists and missing JP item names; only public item ids enter requests. */
 class GameNames(
     private val directory: File,
     private val download: (String) -> String = ::downloadPublicList,
@@ -44,30 +44,38 @@ class GameNames(
 
     suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
-            val drops = runs.flatMap { it.items }
-            val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
-            // Older installs can have today's names/attempt without an icon map. Its retry budget is independent.
-            if (!File(directory, "item_icons.json").isFile) {
-                runCatching {
-                    if (!canAttempt("item_icons")) return@runCatching
-                    val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
-                    check(parseNames(body).isNotEmpty())
-                    saveIcons(body)
-                    saveMetadata("nice_item", parseBasic(body))
-                }
-            }
-            val servants = refresh("basic_servant", cached.servants,
-                drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys })
-            val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })
-            GameNameMap(items, servants, equips, read("item_icons")).also { loaded = it }
+            val names = resolveKr(runs, outsideItemIds)
+            jpFallback.merge(names, runs.flatMap { it.items }.filter { it.type == 2 }.map { it.objectId } + outsideItemIds)
         }
+    }
+
+    private val jpFallback = JpItemFallback(directory, download, now)
+
+    // Keep this cache KR-only, so JP results cannot suppress the existing KR refresh attempts.
+    private fun resolveKr(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList()): GameNameMap {
+        val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
+        val drops = runs.flatMap { it.items }
+        val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
+        // Older installs can have today's names/attempt without an icon map. Its retry budget is independent.
+        if (!File(directory, "item_icons.json").isFile) {
+            runCatching {
+                if (!canAttempt("item_icons")) return@runCatching
+                val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
+                check(parseNames(body).isNotEmpty())
+                saveIcons(body)
+                saveMetadata("nice_item", parseBasic(body))
+            }
+        }
+        val servants = refresh("basic_servant", cached.servants,
+            drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys })
+        val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId })
+        return GameNameMap(items, servants, equips, read("item_icons")).also { loaded = it }
     }
 
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */
     suspend fun dashboard(states: Collection<AccountState> = emptyList()): GameNameMap {
-        val names = resolve(emptyList())
         return withContext(Dispatchers.IO) { mutex.withLock {
+            val names = resolveKr(emptyList())
             refresh("basic_mystic_code", read("basic_mystic_code"), emptyList())
             fun ids(table: String, field: String) = states.flatMap { it.tables[table].orEmpty() }
                 .mapNotNull { (it as? JsonObject)?.number(field) }.toSet()
@@ -94,11 +102,14 @@ class GameNames(
             required["basic_equip"] = ids("userSvt", "svtId") - servants.keys
             val equips = metadata("basic_equip")
             val mystics = metadata("basic_mystic_code")
-            names.copy(items = names.items + items.mapValues { it.value.name ?: "#${it.key}" },
+            val kr = names.copy(items = names.items + items.mapNotNull { (id, row) ->
+                row.name?.takeIf { it.isNotBlank() }?.let { id to it }
+            }.toMap(),
                 servants = names.servants + servants.mapValues { it.value.name ?: "#${it.key}" },
                 equips = names.equips + equips.mapValues { it.value.name ?: "#${it.key}" },
                 itemIcons = names.itemIcons + items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap(),
                 servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
+            jpFallback.merge(kr, required["nice_item"].orEmpty())
         } }
     }
 

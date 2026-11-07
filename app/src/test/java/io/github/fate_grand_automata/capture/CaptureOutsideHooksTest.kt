@@ -68,6 +68,35 @@ class CaptureOutsideHooksTest {
         assertTrue(OutsideLogRepository.entries.value.isEmpty())
     }
 
+    @Test fun deletingCollectedDataKeepsJpNamesRetryMarkersAndItemIcons() = kotlinx.coroutines.runBlocking {
+        val namesDirectory = java.io.File(context.filesDir, "capture/names")
+        val icon = "https://static.atlasacademy.io/JP/Items/999001.png"
+        val cache = GameNames(namesDirectory, { url ->
+            when {
+                url.endsWith("/nice/JP/item/999001") -> """{"name":"名前","icon":"$icon"}"""
+                url.contains("/JP/") -> error("HTTP 404")
+                else -> """[{"id":100,"name":"Fruit"}]"""
+            }
+        }) { 1000 }
+        val names = cache.resolve(emptyList(), listOf(999001, 999002))
+        val iconFile = IconFileStore(java.io.File(context.filesDir, "capture/icons"), { byteArrayOf(1) })
+            .resolve(999001, names.itemIcons[999001])
+        val namesFile = java.io.File(namesDirectory, "jp_item_fallback.json")
+        val retryFile = java.io.File(namesDirectory, "jp_item_fallback_retry.json")
+        val saved = namesFile.readText()
+        val retries = retryFile.readText()
+        assertTrue(CaptureTracker.accounts.value.isNotEmpty())
+        CaptureTracker.delete()
+        assertTrue(CaptureTracker.accounts.value.isEmpty())
+        assertEquals(saved, namesFile.readText())
+        assertEquals(retries, retryFile.readText())
+        assertTrue(iconFile!!.isFile)
+        val restored = GameNames(namesDirectory, { error("network forbidden") }) { 1001 }
+            .resolve(emptyList(), listOf(999001, 999002))
+        assertEquals("名前", restored.item(999001))
+        assertEquals(icon, restored.itemIcons[999001])
+    }
+
     @Test fun allCollectionStopReasonsCloseThroughActualResponseHook() {
         CaptureStopReason.entries.forEachIndexed { i, reason ->
             CaptureTracker.setRunning(true)
