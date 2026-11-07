@@ -1,19 +1,15 @@
 package io.github.fate_grand_automata.ui.more
 
-import android.content.Context
 import android.net.Uri
-import android.os.Build
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.util.portraits.SupportCatalogEntry
 import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.util.StorageProvider
-import io.github.fate_grand_automata.util.SupportImageExtractor
 import io.github.fate_grand_automata.util.migration.ImportSelection
 import io.github.fate_grand_automata.util.migration.OriginalFgaImportService
 import io.github.fate_grand_automata.util.migration.OriginalImportProgress
@@ -44,8 +40,8 @@ class MoreOptionsViewModel @Inject constructor(
     private val supportExtraction: SupportImageExtraction,
 ) : ViewModel() {
     val storageSummary: MutableState<String?> = mutableStateOf(null)
-    val extractSummary: MutableState<String> = mutableStateOf("")
-    internal val supportExtractionState = supportExtraction.state
+    internal val extractionState = supportExtraction.extractionState
+    internal val iconState = supportExtraction.iconState
 
     private val _originalImport = MutableStateFlow(OriginalImportState())
     val originalImport = _originalImport.asStateFlow()
@@ -150,26 +146,10 @@ class MoreOptionsViewModel @Inject constructor(
         storageSummary.value = storageProvider.rootDirName
     }
 
-    fun performSupportImageExtraction(context: Context) = viewModelScope.launch {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            supportExtraction.start()
-            return@launch
-        }
-        // TODO: Translate
-        extractSummary.value = "Extracting ..."
+    /** Only extracts the default support images; the icon download is a separate action. */
+    fun performSupportImageExtraction() = supportExtraction.startExtraction()
 
-        val msg = try {
-            SupportImageExtractor(context, storageProvider).extract()
-
-            context.getString(R.string.support_imgs_extracted)
-        } catch (e: Exception) {
-            context.getString(R.string.support_imgs_extract_failed).also { msg ->
-                Timber.e(e, msg)
-            }
-        }
-
-        extractSummary.value = msg
-    }
+    fun downloadLogIcons() = supportExtraction.startIconDownload()
 
     fun pickedDirectory(uri: Uri?) {
         if (uri != null) {

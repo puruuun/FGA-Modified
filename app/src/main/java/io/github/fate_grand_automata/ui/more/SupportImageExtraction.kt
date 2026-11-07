@@ -1,7 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.content.Context
-import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
@@ -22,7 +21,7 @@ class SupportImageExtraction @Inject constructor(
     storageProvider: StorageProvider,
 ) {
     // This scope belongs to the application singleton, never to a screen or service.
-    private val job = IconPrefetchJob(
+    private val tasks = SupportImageTasks(
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
         extract = {
             try { SupportImageExtractor(context, storageProvider).extract()
@@ -31,27 +30,31 @@ class SupportImageExtraction @Inject constructor(
                 throw e
             }
         },
-        lists = { GameNames(File(context.filesDir, "capture/names")).dashboard() },
-        resolve = { LogIconLoader.files(context, it.directory).resolve(it.id, it.address) != null },
+        icons = IconPrefetchJob(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            lists = { GameNames(File(context.filesDir, "capture/names")).dashboard() },
+            resolve = { LogIconLoader.files(context, it.directory).resolve(it.id, it.address) != null },
+        ),
     )
-    internal val state = job.state
-    fun start() { job.start(Build.VERSION.SDK_INT) }
+    internal val extractionState = tasks.extraction
+    internal val iconState = tasks.icons.state
+    fun startExtraction() { tasks.startExtraction() }
+    fun startIconDownload() { tasks.startDownload() }
 }
 
-internal fun supportExtractionSummary(context: Context, state: SupportExtractionState): String = buildList {
-    when (state.extraction) {
-        ExtractionResult.Idle -> Unit
-        ExtractionResult.Extracting -> add(context.getString(R.string.support_imgs_extracting))
-        ExtractionResult.Success -> add(context.getString(R.string.support_imgs_extracted))
-        ExtractionResult.Failure -> add(context.getString(R.string.support_imgs_extract_failed))
-    }
-    when (val icons = state.icons) {
-        null -> Unit
-        IconPrefetchProgress.LoadingLists -> add(context.getString(R.string.icon_prefetch_loading_lists))
-        IconPrefetchProgress.ListsFailed -> add(context.getString(R.string.icon_prefetch_lists_failed))
-        is IconPrefetchProgress.Downloading -> add(context.getString(R.string.icon_prefetch_progress, icons.completed, icons.total))
-        is IconPrefetchProgress.Ready -> add(if (icons.failed == 0) context.getString(R.string.icon_prefetch_ready, icons.ready)
-            else context.getString(R.string.icon_prefetch_failed, icons.ready, icons.failed))
-    }
-    add(context.getString(R.string.icon_prefetch_note))
-}.joinToString("\n")
+internal fun extractionSummary(context: Context, state: ExtractionResult): String = when (state) {
+    ExtractionResult.Idle -> ""
+    ExtractionResult.Extracting -> context.getString(R.string.support_imgs_extracting)
+    ExtractionResult.Success -> context.getString(R.string.support_imgs_extracted)
+    ExtractionResult.Failure -> context.getString(R.string.support_imgs_extract_failed)
+}
+
+/** Empty when idle. */
+internal fun iconDownloadSummary(context: Context, progress: IconPrefetchProgress?): String = when (progress) {
+    null -> ""
+    IconPrefetchProgress.LoadingLists -> context.getString(R.string.icon_prefetch_loading_lists)
+    IconPrefetchProgress.ListsFailed -> context.getString(R.string.icon_prefetch_lists_failed)
+    is IconPrefetchProgress.Downloading -> context.getString(R.string.icon_prefetch_progress, progress.completed, progress.total)
+    is IconPrefetchProgress.Ready -> if (progress.failed == 0) context.getString(R.string.icon_prefetch_ready, progress.ready)
+        else context.getString(R.string.icon_prefetch_failed, progress.ready, progress.failed)
+}

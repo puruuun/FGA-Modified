@@ -1,7 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,16 +48,16 @@ fun MoreOptionsScreen(
     }
     val storageSummary by vm.storageSummary
     val context = LocalContext.current
-    val extractSummary = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        val state by vm.supportExtractionState.collectAsState()
-        supportExtractionSummary(context, state)
-    } else vm.extractSummary.value
+    val extractionState by vm.extractionState.collectAsState()
+    val iconState by vm.iconState.collectAsState()
 
     MoreOptionsContent(
         prefs = vm.prefsCore,
         storageSummary = storageSummary,
-        extractSummary = extractSummary,
-        extractSupportImages = { vm.performSupportImageExtraction(context) },
+        extractSummary = extractionSummary(context, extractionState),
+        extractSupportImages = vm::performSupportImageExtraction,
+        downloadSummary = iconDownloadSummary(context, iconState),
+        downloadIcons = vm::downloadLogIcons,
         additionalFeatures = {
             additionalFeaturesGroup(vm.prefsCore, vm.gameAreaPreview)
         },
@@ -88,6 +87,8 @@ internal fun MoreOptionsContent(
     pickDirectory: () -> Unit,
     additionalTools: @Composable () -> Unit = {},
     goToFriendManager: () -> Unit = {},
+    downloadSummary: String = "",
+    downloadIcons: () -> Unit = {},
 ) {
     CappedWidth {
         Column(
@@ -122,7 +123,9 @@ internal fun MoreOptionsContent(
                                             directoryName = storageSummary ?: "",
                                             onPickDirectory = pickDirectory,
                                             extractSupportImages = extractSupportImages,
-                                            extractSummary = extractSummary
+                                            extractSummary = extractSummary,
+                                            downloadIcons = downloadIcons,
+                                            downloadSummary = downloadSummary
                                         )
                                     }
                                 }

@@ -5,7 +5,6 @@ import io.github.fate_grand_automata.ui.log.iconItemIds
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -31,33 +30,22 @@ internal sealed interface IconPrefetchProgress {
     data class Ready(val ready: Int, val failed: Int) : IconPrefetchProgress
     data object ListsFailed : IconPrefetchProgress
 }
-internal data class SupportExtractionState(
-    val extraction: ExtractionResult = ExtractionResult.Idle,
-    val icons: IconPrefetchProgress? = null,
-)
 
-/** One process-lifetime job. The caller observes state without owning or cancelling the work. */
+/** One process-lifetime icon download. The caller observes state without owning or cancelling the work. */
 internal class IconPrefetchJob(
     private val scope: CoroutineScope,
-    private val extract: suspend () -> Unit,
     private val lists: suspend () -> GameNameMap,
     private val resolve: suspend (IconTarget) -> Boolean,
 ) {
-    private val mutableState = MutableStateFlow(SupportExtractionState())
+    private val mutableState = MutableStateFlow<IconPrefetchProgress?>(null)
     val state = mutableState.asStateFlow()
     private var job: Job? = null
 
-    @Synchronized fun start(api: Int): Job? {
-        if (api < 29) return null
+    /** A second start while the download runs returns the running job and changes nothing. */
+    @Synchronized fun start(): Job {
         job?.takeIf { it.isActive }?.let { return it }
-        mutableState.value = SupportExtractionState(ExtractionResult.Extracting)
+        mutableState.value = IconPrefetchProgress.LoadingLists
         return scope.launch(start = CoroutineStart.LAZY) {
-            val result = try {
-                extract()
-                ExtractionResult.Success
-            } catch (e: CancellationException) { throw e
-            } catch (_: Exception) { ExtractionResult.Failure }
-            mutableState.value = SupportExtractionState(result, IconPrefetchProgress.LoadingLists)
             val targets = try {
                 val names = lists()
                 check(names.items.isNotEmpty() && names.itemIcons.isNotEmpty() && names.itemData.isNotEmpty() &&
@@ -65,10 +53,10 @@ internal class IconPrefetchJob(
                 iconPrefetchTargets(names)
             } catch (e: CancellationException) { throw e
             } catch (_: Exception) {
-                mutableState.update { it.copy(icons = IconPrefetchProgress.ListsFailed) }
+                mutableState.value = IconPrefetchProgress.ListsFailed
                 return@launch
             }
-            mutableState.update { it.copy(icons = IconPrefetchProgress.Downloading(0, targets.size)) }
+            mutableState.value = IconPrefetchProgress.Downloading(0, targets.size)
             val progressLock = Mutex()
             var completed = 0
             var failed = 0
@@ -83,13 +71,41 @@ internal class IconPrefetchJob(
                             progressLock.withLock {
                                 completed++
                                 if (!available) failed++
-                                mutableState.update { it.copy(icons = IconPrefetchProgress.Downloading(completed, targets.size, failed)) }
+                                mutableState.value = IconPrefetchProgress.Downloading(completed, targets.size, failed)
                             }
                         }
                     }
                 }
             }
-            mutableState.update { it.copy(icons = IconPrefetchProgress.Ready(completed - failed, failed)) }
+            mutableState.value = IconPrefetchProgress.Ready(completed - failed, failed)
         }.also { job = it; it.start() }
     }
+}
+
+/**
+ * The default support image extraction and the icon download are two independent actions:
+ * extracting never starts the download, and the download never extracts.
+ */
+internal class SupportImageTasks(
+    private val scope: CoroutineScope,
+    private val extract: suspend () -> Unit,
+    val icons: IconPrefetchJob,
+) {
+    private val mutableExtraction = MutableStateFlow(ExtractionResult.Idle)
+    val extraction = mutableExtraction.asStateFlow()
+    private var extractionJob: Job? = null
+
+    @Synchronized fun startExtraction(): Job {
+        extractionJob?.takeIf { it.isActive }?.let { return it }
+        mutableExtraction.value = ExtractionResult.Extracting
+        return scope.launch(start = CoroutineStart.LAZY) {
+            mutableExtraction.value = try {
+                extract()
+                ExtractionResult.Success
+            } catch (e: CancellationException) { throw e
+            } catch (_: Exception) { ExtractionResult.Failure }
+        }.also { extractionJob = it; it.start() }
+    }
+
+    fun startDownload(): Job = icons.start()
 }

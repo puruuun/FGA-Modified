@@ -12,7 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,7 +40,6 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 enum class AgoUnit { Minutes, Hours, Days }
 
@@ -120,10 +121,12 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
     var ce by rememberSaveable { mutableStateOf<Long?>(null) }
     var maxLb by rememberSaveable { mutableStateOf(false) }
     var login by rememberSaveable { mutableStateOf(FriendLogin.All) }
-    var date by rememberSaveable { mutableLongStateOf(friendDefaultDate(now)) }
+    var loginAmount by rememberSaveable { mutableIntStateOf(FRIEND_INACTIVE_DEFAULT) }
+    var loginUnit by rememberSaveable { mutableStateOf(LoginUnit.Days) }
     var sheet by rememberSaveable { mutableStateOf(false) }
-    val filter = FriendFilter(event, servant, ce, maxLb, login, friendLocalMidnight(date))
-    val change: (FriendFilter) -> Unit = { event = it.event; servant = it.servantId; ce = it.ceId; maxLb = it.maxLimitBreak; login = it.login }
+    val filter = FriendFilter(event, servant, ce, maxLb, login, loginAmount, loginUnit)
+    val change: (FriendFilter) -> Unit = { event = it.event; servant = it.servantId; ce = it.ceId; maxLb = it.maxLimitBreak; login = it.login
+        loginAmount = it.loginAmount; loginUnit = it.loginUnit }
     var shown by remember { mutableStateOf(emptyList<FriendRow>()) }
     var servantCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
     var ceCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
@@ -134,25 +137,21 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
         }
         shown = result.first; servantCounts = result.second; ceCounts = result.third
     }
-    val count = listOf(servant != null, ce != null, maxLb, login != FriendLogin.All).count { it }
     Column(Modifier.fillMaxSize()) {
-        Heading(stringResource(R.string.friends_title), trailing = {
-            IconButton(onClick = { sheet = true }, modifier = Modifier.testTag("friends-filter")) {
-                BadgedBox(badge = { if (count > 0) Badge { Text(count.toString()) } }) {
-                    Icon(Icons.Default.FilterList, stringResource(R.string.friends2_filters))
-                }
-            }
-        })
+        Heading(stringResource(R.string.friends_title))
         accountPicker()
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Text(stringResource(R.string.friends2_header, roster.friends.size,
                 ((now - roster.updatedAt) / 60).coerceAtLeast(1), shown.size), style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AssistChip(onClick = { sheet = true }, modifier = Modifier.testTag("friends-filter"),
+                    leadingIcon = { Icon(Icons.Default.Tune, null, Modifier.size(18.dp)) },
+                    label = { Text(stringResource(R.string.friends2_filters)) })
                 AssistChip(onClick = { sheet = true }, label = { Text(stringResource(if (event) R.string.friends_deck_event else R.string.friends_deck_main)) })
                 servant?.let { RemovableFilter(names.servants[it] ?: "#$it") { servant = null } }
                 ce?.let { RemovableFilter(names.equips[it] ?: "#$it") { ce = null } }
                 if (maxLb) RemovableFilter(stringResource(R.string.friends_max_lb)) { maxLb = false }
-                if (login != FriendLogin.All) RemovableFilter("${stringResource(login.label())} ${pickerDateText(date)}") { login = FriendLogin.All }
+                if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, loginAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
             }
             if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(vertical = 8.dp))
             LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("friends-list"), contentPadding = PaddingValues(bottom = 16.dp)) {
@@ -161,8 +160,8 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
             }
         }
     }
-    if (sheet) FriendFilterSheet(filter, date, servantCounts, ceCounts, names, shown.size,
-        onChange = change, onDate = { date = it }, onReset = { change(FriendFilter()); date = friendDefaultDate(now) }, onDismiss = { sheet = false })
+    if (sheet) FriendFilterSheet(filter, servantCounts, ceCounts, names, shown.size,
+        onChange = change, onReset = { change(FriendFilter()) }, onDismiss = { sheet = false })
 }
 
 @Composable
@@ -171,21 +170,16 @@ private fun RemovableFilter(label: String, remove: () -> Unit) {
         trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.friends2_remove_filter), Modifier.size(16.dp)) })
 }
 
-private fun FriendLogin.label() = when (this) {
-    FriendLogin.All -> R.string.friends_login_all
-    FriendLogin.After -> R.string.friends2_login_after
-    FriendLogin.Before -> R.string.friends2_login_before
+private fun LoginUnit.label() = when (this) {
+    LoginUnit.Minutes -> R.string.friends2_unit_minutes
+    LoginUnit.Hours -> R.string.friends2_unit_hours
+    LoginUnit.Days -> R.string.friends2_unit_days
 }
 
-private fun pickerDateText(millis: Long) = SimpleDateFormat("yyyy/M/d", Locale.getDefault()).apply {
-    timeZone = TimeZone.getTimeZone("UTC")
-}.format(Date(millis))
-
 @Composable
-internal fun FriendFilterSheet(filter: FriendFilter, date: Long, servantCounts: Map<Long, Int>, ceCounts: Map<Long, Int>,
-    names: GameNameMap, shown: Int, onChange: (FriendFilter) -> Unit, onDate: (Long) -> Unit, onReset: () -> Unit, onDismiss: () -> Unit) {
+internal fun FriendFilterSheet(filter: FriendFilter, servantCounts: Map<Long, Int>, ceCounts: Map<Long, Int>,
+    names: GameNameMap, shown: Int, onChange: (FriendFilter) -> Unit, onReset: () -> Unit, onDismiss: () -> Unit) {
     var picker by remember { mutableStateOf<String?>(null) }
-    var datePicker by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         if (picker != null) {
             val ce = picker == "ce"
@@ -218,15 +212,15 @@ internal fun FriendFilterSheet(filter: FriendFilter, date: Long, servantCounts: 
                     Switch(filter.maxLimitBreak, { onChange(filter.copy(maxLimitBreak = it)) }, Modifier.testTag("friends-max-lb"))
                 }
                 Text(stringResource(R.string.friends2_last_login), style = MaterialTheme.typography.titleSmall)
-                FriendLogin.entries.forEach { option ->
-                    Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(login = option)) }, verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(filter.login == option, { onChange(filter.copy(login = option)) })
-                        Text(stringResource(option.label()))
-                    }
+                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(login = FriendLogin.All)) }, verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(filter.login == FriendLogin.All, { onChange(filter.copy(login = FriendLogin.All)) }, Modifier.testTag("friends-login-all"))
+                    Text(stringResource(R.string.friends_login_all))
                 }
-                if (filter.login != FriendLogin.All) OutlinedButton(onClick = { datePicker = true }, modifier = Modifier.testTag("friends-date")) {
-                    Text(pickerDateText(date))
+                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(login = FriendLogin.Inactive)) }, verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(filter.login == FriendLogin.Inactive, { onChange(filter.copy(login = FriendLogin.Inactive)) }, Modifier.testTag("friends-login-inactive"))
+                    Text(stringResource(R.string.friends2_login_inactive))
                 }
+                if (filter.login == FriendLogin.Inactive) InactiveInput(filter, onChange)
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onReset) { Text(stringResource(R.string.friends2_reset)) }
@@ -234,13 +228,33 @@ internal fun FriendFilterSheet(filter: FriendFilter, date: Long, servantCounts: 
             }
         }
     }
-    if (datePicker) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = date)
-        DatePickerDialog(onDismissRequest = { datePicker = false }, confirmButton = {
-            TextButton(onClick = { state.selectedDateMillis?.let(onDate); datePicker = false }) { Text(stringResource(android.R.string.ok)) }
-        }, dismissButton = { TextButton(onClick = { datePicker = false }) { Text(stringResource(android.R.string.cancel)) } }) {
-            DatePicker(state, modifier = Modifier.testTag("friends-date-picker"))
+}
+
+@Composable
+private fun InactiveInput(filter: FriendFilter, onChange: (FriendFilter) -> Unit) {
+    var text by remember { mutableStateOf(filter.loginAmount.toString()) }
+    var menu by remember { mutableStateOf(false) }
+    FlowRow(Modifier.fillMaxWidth().padding(start = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(text, { value ->
+            val digits = value.filter { it.isDigit() }.take(3)
+            text = digits
+            digits.toIntOrNull()?.takeIf { it in FRIEND_INACTIVE_MIN..FRIEND_INACTIVE_MAX }?.let { onChange(filter.copy(loginAmount = it)) }
+        }, Modifier.width(88.dp).testTag("friends-login-amount"), singleLine = true,
+            label = { Text(stringResource(R.string.friends2_login_amount)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        Box {
+            OutlinedButton(onClick = { menu = true }, modifier = Modifier.testTag("friends-login-unit")) {
+                Text(stringResource(filter.loginUnit.label()))
+            }
+            DropdownMenu(menu, { menu = false }) {
+                LoginUnit.entries.forEach { unit ->
+                    DropdownMenuItem(text = { Text(stringResource(unit.label())) }, modifier = Modifier.testTag("friends-unit-${unit.name}"),
+                        onClick = { onChange(filter.copy(loginUnit = unit)); menu = false })
+                }
+            }
         }
+        Text(stringResource(R.string.friends2_login_or_more))
     }
 }
 
@@ -276,12 +290,16 @@ private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap
 
 private fun isBondCe(id: Long) = id == FRIEND_TEATIME_CE_ID || id in FRIEND_BOND_20_CE_IDS
 
+private val COLUMN_WEIGHTS = listOf(.29f, .16f, .13f, .29f, .13f)
+
 @Composable
 private fun TableHeader() {
     Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 10.dp)) {
-        listOf(R.string.friends2_name to .40f, R.string.friends2_skills to .16f, R.string.friends2_appends to .18f, R.string.friends2_ce to .26f).forEach { (label, weight) ->
-            Text(stringResource(label), Modifier.weight(weight).padding(horizontal = 2.dp), style = MaterialTheme.typography.labelMedium)
-        }
+        listOf(R.string.friends2_name, R.string.friends2_skills, R.string.friends2_appends, R.string.friends2_ce, R.string.friends2_login_column)
+            .forEachIndexed { index, label ->
+                Text(stringResource(label), Modifier.weight(COLUMN_WEIGHTS[index]).padding(horizontal = 1.dp), style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
     }
 }
 
@@ -291,25 +309,34 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
     val slot = row.slot
     var expanded by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().testTag("friends-row")) {
-        Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 10.dp), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(.40f).padding(end = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(names.servants[slot.svtId] ?: "#${slot.svtId}", style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.friends2_slot_detail, slot.lv, slot.np, classLabel(slot.classId)), style = MaterialTheme.typography.labelSmall)
-                Text("${friend.name} · ${if (friend.lastLogin > 0) agoText(agoParts(now - friend.lastLogin)) else stringResource(R.string.friends_login_unknown)}",
-                    style = MaterialTheme.typography.labelSmall)
+        // Every cell is at most two lines, so a row never grows beyond two lines.
+        Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 8.dp), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(COLUMN_WEIGHTS[0]).padding(end = 4.dp)) {
+                Text(names.servants[slot.svtId] ?: "#${slot.svtId}", style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.friends2_name_line, slot.lv, slot.np, friend.name), style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Text(slot.skills.joinToString("/"), Modifier.weight(.16f).padding(horizontal = 2.dp), style = MaterialTheme.typography.bodySmall)
+            Text(slot.skills.joinToString("/"), Modifier.weight(COLUMN_WEIGHTS[1]).padding(horizontal = 1.dp), style = MaterialTheme.typography.labelMedium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text((0..2).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" } + "\n" +
-                (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(.18f).padding(horizontal = 2.dp), style = MaterialTheme.typography.bodySmall)
-            Column(Modifier.weight(.26f).padding(start = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if (slot.ceId == 0L) stringResource(R.string.friends_ce_none) else names.equips[slot.ceId] ?: "#${slot.ceId}", style = MaterialTheme.typography.bodySmall)
+                (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp),
+                style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Row(Modifier.weight(COLUMN_WEIGHTS[3]).padding(horizontal = 1.dp), horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(if (slot.ceId == 0L) stringResource(R.string.friends_ce_none) else names.equips[slot.ceId] ?: "#${slot.ceId}",
+                    Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (slot.ceId != 0L) {
                     if (slot.ceLimitCount == FriendList.MAX_LIMIT_COUNT) Text(stringResource(R.string.friends_ce_max),
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 4.dp),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text(stringResource(R.string.dashboard_level_value, slot.ceLv), style = MaterialTheme.typography.labelSmall)
+                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 3.dp),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1, softWrap = false)
+                    Text(stringResource(R.string.friends2_level_compact, slot.ceLv), style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1, softWrap = false)
                 }
             }
+            Text(if (friend.lastLogin > 0) loginText(agoParts(now - friend.lastLogin)) else "–", Modifier.weight(COLUMN_WEIGHTS[4]).padding(horizontal = 1.dp),
+                style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (expanded) Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow).padding(8.dp).testTag("friends-expanded")) {
             friend.friendCode?.let { code ->
@@ -321,7 +348,7 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
                         modifier = Modifier.size(40.dp).testTag("friends-copy")) { Icon(Icons.Default.ContentCopy, stringResource(R.string.dashboard_copy), Modifier.size(18.dp)) }
                 }
             }
-            Text(stringResource(R.string.friends2_expanded, friend.lv, row.deckIndex?.toString() ?: "–",
+            Text(stringResource(R.string.friends2_expanded, friend.lv, classLabel(slot.classId), row.deckIndex?.toString() ?: "–",
                 if (friend.lastLogin > 0) SimpleDateFormat("M/d HH:mm", Locale.getDefault()).format(Date(friend.lastLogin * 1000))
                 else stringResource(R.string.friends_login_unknown)), style = MaterialTheme.typography.bodySmall)
         }
@@ -330,10 +357,10 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
 }
 
 @Composable
-private fun agoText(parts: Pair<AgoUnit, Long>): String = stringResource(when (parts.first) {
-    AgoUnit.Minutes -> R.string.friends_ago_minutes
-    AgoUnit.Hours -> R.string.friends_ago_hours
-    AgoUnit.Days -> R.string.friends_ago_days
+private fun loginText(parts: Pair<AgoUnit, Long>): String = stringResource(when (parts.first) {
+    AgoUnit.Minutes -> R.string.friends2_login_min
+    AgoUnit.Hours -> R.string.friends2_login_hour
+    AgoUnit.Days -> R.string.friends2_login_day
 }, parts.second.toInt())
 
 @Composable

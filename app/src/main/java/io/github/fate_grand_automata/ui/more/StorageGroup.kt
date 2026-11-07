@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -13,7 +14,9 @@ fun StorageGroup(
     directoryName: String,
     onPickDirectory: () -> Unit,
     extractSupportImages: () -> Unit,
-    extractSummary: String
+    extractSummary: String,
+    downloadIcons: () -> Unit = {},
+    downloadSummary: String = ""
 ) {
     Preference(
         title = stringResource(R.string.p_folder),
@@ -27,5 +30,12 @@ fun StorageGroup(
         icon = icon(Icons.Default.Image),
         onClick = extractSupportImages,
         summary = extractSummary
+    )
+
+    Preference(
+        title = stringResource(R.string.icon_prefetch_title),
+        icon = icon(Icons.Default.Download),
+        onClick = downloadIcons,
+        summary = downloadSummary
     )
 }

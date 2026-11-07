@@ -46,8 +46,10 @@ internal class DashboardUiFixture {
         val loader = remember { localIconLoader(context) }
         CompositionLocalProvider(LocalLogIconLoader provides loader, content = content)
     }
-    @Composable fun More(weekly: ()->Unit = {}, gains: ()->Unit = {}) {
-        MoreOptionsContent(prefs, "FGA", "", {}, { additionalFeaturesGroup(prefs,preview) }, {}, {}, {}, weekly, gains, {},
+    @Composable fun More(weekly: ()->Unit = {}, gains: ()->Unit = {}, extract: ()->Unit = {}, download: ()->Unit = {},
+        extractSummary: String = "", downloadSummary: String = "") {
+        MoreOptionsContent(prefs, "FGA", extractSummary, extract, { additionalFeaturesGroup(prefs,preview) }, {}, {}, {}, weekly, gains, {},
+            downloadSummary = downloadSummary, downloadIcons = download,
             additionalTools = { AdditionalToolsContent(listOf(CaptureAccount("fake","샘플 마스터",io.github.fate_grand_automata.scripts.capture.AccountSummary.from(state,100),200)), {}, {}, {}) })
     }
 }

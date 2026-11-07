@@ -866,7 +866,6 @@
     <string name="icon_prefetch_ready">アイコン%1$d個を準備しました</string>
     <string name="icon_prefetch_failed">アイコン%1$d個を準備しました、%2$d個失敗</string>
     <string name="icon_prefetch_lists_failed">アイコン一覧を取得できませんでした</string>
-    <string name="icon_prefetch_note">初回ダウンロードは約15 MBです。Wi-Fiを推奨します。</string>
     <string name="friends_title">フレンド管理</string>
     <string name="friends_empty">フレンド一覧がまだありません。ログ収集をオンにしてゲームを起動し、メインメニューを開いた後、メニュー › フレンド＆フォローを一度開いてください。</string>
     <string name="friends_deck_main">通常編成</string>
@@ -877,28 +876,12 @@
     <string name="friends_max_lb">最大凸のみ</string>
     <string name="friends_login_all">すべて</string>
     <string name="friends_login_unknown">ログイン不明</string>
-    <string name="friends_ago_minutes">%1$d分前</string>
-    <string name="friends_ago_hours">%1$d時間前</string>
-    <string name="friends_ago_days">%1$d日前</string>
     <string name="friends_code">フレンドコード %1$s</string>
     <string name="friends_class_all">全体</string>
     <string name="friends_class_extra">EXTRA</string>
     <string name="friends_ce_none">礼装なし</string>
     <string name="friends_ce_max">最大</string>
     <string name="friends_no_match">条件に合うサポートがありません</string>
-    <string name="events_title">開催中のイベント (KR)</string>
-    <string name="events_days_left">残り%1$d日</string>
-    <string name="events_hours_left">残り%1$d時間</string>
-    <string name="events_end_pattern">M月d日 HH:mm</string>
-    <string name="events_ends_at">%1$s終了</string>
-    <string name="events_bonus_count">ボーナス礼装%1$d種</string>
-    <string name="events_campaigns">キャンペーン%1$d件 · %2$s ほか</string>
-    <string name="events_bonus_title">イベントボーナス礼装</string>
-    <string name="events_bonus_drop">ドロップ UP</string>
-    <string name="events_bonus_point">ポイント UP</string>
-    <string name="events_bonus_bond">絆 UP</string>
-    <string name="events_bonus_encounter">出現率 UP</string>
-    <string name="events_bonus_other">その他</string>
     <!-- Friend manager round 2 (#230): Japanese draft for owner review. -->
     <string name="friends2_account">アカウントを選択</string>
     <string name="friends2_account_detail">Lv %1$d · フレンド%2$d人 · %3$d分前に更新</string>
@@ -909,8 +892,6 @@
     <string name="friends2_servant">サーヴァント</string>
     <string name="friends2_ce">礼装</string>
     <string name="friends2_last_login">最終ログイン</string>
-    <string name="friends2_login_after">この日以降</string>
-    <string name="friends2_login_before">この日より前</string>
     <string name="friends2_reset">リセット</string>
     <string name="friends2_show_slots">%1$d枠を表示</string>
     <string name="friends2_search">サーヴァント名を検索</string>
@@ -918,10 +899,23 @@
     <string name="friends2_name">名前</string>
     <string name="friends2_skills">スキル</string>
     <string name="friends2_appends">アペンド</string>
-    <string name="friends2_slot_detail">Lv %1$d · 宝具%2$d · %3$s</string>
-    <string name="friends2_expanded">フレンドLv %1$d · 編成%2$s · 最終ログイン %3$s</string>
+    <string name="friends2_name_line">Lv%1$d 宝具%2$d · %3$s</string>
+    <string name="friends2_expanded">フレンドLv %1$d · %2$s · 編成%3$s · %4$s</string>
     <string name="friends2_level_compact">Lv%1$d</string>
     <string name="friends2_np_compact">宝具%1$d</string>
     <string name="friends2_dashboard_skills">スキル %1$s · アペンド %2$s</string>
     <string name="friends2_collapse">折りたたむ</string>
+    <!-- Round 3 (#233): Japanese draft for owner review. -->
+    <string name="friends2_login_column">ログイン</string>
+    <string name="friends2_login_min">%1$d分</string>
+    <string name="friends2_login_hour">%1$d時間</string>
+    <string name="friends2_login_day">%1$d日</string>
+    <string name="friends2_login_inactive">未ログイン</string>
+    <string name="friends2_login_amount">期間</string>
+    <string name="friends2_login_or_more">以上</string>
+    <string name="friends2_unit_minutes">分</string>
+    <string name="friends2_unit_hours">時間</string>
+    <string name="friends2_unit_days">日</string>
+    <string name="friends2_login_chip">%1$d%2$s以上ログインなし</string>
+    <string name="icon_prefetch_title">ログアイコンデータをダウンロード</string>
 </resources>

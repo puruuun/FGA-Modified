@@ -40,26 +40,35 @@ class FriendListTest {
         assertEquals(listOf("1:500", "3:600", "2:500"), ids(FriendFilter(maxLimitBreak = true)))
     }
 
-    @Test fun loginRanges() {
-        assertEquals(listOf("1", "3"), ids(FriendFilter(login = FriendLogin.After, loginDayStart = now - 7 * day)).map { it.substringBefore(':') }.distinct())
-        assertEquals(listOf("2"), ids(FriendFilter(login = FriendLogin.Before, loginDayStart = now - 7 * day)).map { it.substringBefore(':') }.distinct())
+    private fun inactive(amount: Int, unit: LoginUnit, vararg offsets: Pair<String, Long>, filterNow: Long = now) = FriendList.select(
+        FriendRoster(friends = offsets.map { (id, ago) -> Friend(id, lastLogin = filterNow - ago, slots = listOf(slot(101, 1, 500))) }
+            .associateBy { it.userId } + ("unknown" to Friend("unknown", slots = listOf(slot(101, 1, 500))))),
+        FriendFilter(login = FriendLogin.Inactive, loginAmount = amount, loginUnit = unit), filterNow,
+    ).map { it.friend.userId }.toSet()
+
+    @Test fun inactiveBoundaryIsInclusiveForMinutesHoursAndDays() {
+        for ((unit, seconds) in listOf(LoginUnit.Minutes to 60L, LoginUnit.Hours to 3_600L, LoginUnit.Days to 86_400L)) {
+            assertEquals(seconds, unit.seconds)
+            assertEquals(setOf("exact", "older"),
+                inactive(5, unit, "exact" to 5 * seconds, "older" to 5 * seconds + 1, "newer" to 5 * seconds - 1))
+        }
     }
 
-    @Test fun loginBoundaryIsTheSelectedLocalMidnightAndUnknownIsExcluded() {
-        val picker = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-            clear(); set(2026, 10, 7)
-        }.timeInMillis
-        for (zone in listOf("Asia/Seoul", "America/New_York")) {
-            val midnight = friendLocalMidnight(picker, java.util.TimeZone.getTimeZone(zone))
-            val local = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone(zone)).apply { timeInMillis = midnight * 1000 }
-            assertEquals(7, local.get(java.util.Calendar.DAY_OF_MONTH))
-            assertEquals(0, local.get(java.util.Calendar.HOUR_OF_DAY))
-            val sample = FriendRoster(friends = listOf(-1L, 0L, 1L).mapIndexed { index, offset ->
-                Friend("$index", lastLogin = midnight + offset, slots = listOf(slot(101, 1, 500)))
-            }.associateBy { it.userId } + ("unknown" to Friend("unknown", slots = listOf(slot(101, 1, 500)))))
-            assertEquals(setOf("1", "2"), FriendList.select(sample, FriendFilter(login = FriendLogin.After, loginDayStart = midnight), now).map { it.friend.userId }.toSet())
-            assertEquals(listOf("0"), FriendList.select(sample, FriendFilter(login = FriendLogin.Before, loginDayStart = midnight), now).map { it.friend.userId })
-        }
+    @Test fun unknownLoginIsNeverInactive() {
+        assertEquals(emptySet(), inactive(1, LoginUnit.Minutes))
+        assertEquals(setOf("a"), inactive(1, LoginUnit.Minutes, "a" to 600))
+    }
+
+    @Test fun inactiveDefaultsToThreeDays() {
+        val filter = FriendFilter(login = FriendLogin.Inactive)
+        assertEquals(3, filter.loginAmount)
+        assertEquals(LoginUnit.Days, filter.loginUnit)
+        assertEquals(3, FRIEND_INACTIVE_DEFAULT)
+        assertEquals(setOf("2"), FriendList.select(roster, filter, now).map { it.friend.userId }.toSet())
+    }
+
+    @Test fun allLoginsPassWithoutALoginFilter() {
+        assertEquals(6, FriendList.select(roster, FriendFilter(login = FriendLogin.All), now).size)
     }
 
     @Test fun cePickerPinsPresentBondCesInNameOrderThenOtherCes() {

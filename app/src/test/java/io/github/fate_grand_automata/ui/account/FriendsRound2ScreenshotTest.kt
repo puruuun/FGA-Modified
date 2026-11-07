@@ -24,7 +24,7 @@ class FriendsRound2ScreenshotTest {
     private val compose = createComposeRule()
     @get:Rule val rules = screenshotRules(compose)
     private fun content() {
-        val roster = syntheticRoster()
+        val roster = longNameRoster()
         val accounts = listOf(FriendManagerAccount(CaptureAccount("sample", "샘플 마스터",
             AccountSummary.from(dashboardState("userGame" to """[{"lv":160}]"""), FRIEND_NOW), FRIEND_NOW), roster))
         compose.shoot("friends-round2", "TableExpanded", 360, 800, locale = "ko", beforeCapture = {
@@ -37,7 +37,7 @@ class FriendsRound2ScreenshotTest {
     @Test fun filterSheet360Light() = compose.shoot("friends-round2", "FilterSheet", 360, 800, locale = "ko", beforeCapture = {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("friends-filter").performClick()
-        compose.onNodeWithText("이 날짜 이후").performScrollTo().performClick()
+        compose.onNodeWithTag("friends-login-inactive").performScrollTo().performClick()
     }) { FriendManagerContent(syntheticRoster(), friendTestNames(), FRIEND_NOW) }
 
     private fun servants(expanded: Boolean) {

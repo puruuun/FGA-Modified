@@ -4,8 +4,13 @@ import android.app.Application
 import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.capture.deleteLegacyEventCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import timber.log.Timber
+import java.io.File
 
 @HiltAndroidApp
 class AutomataApplication : Application() {
@@ -15,6 +20,8 @@ class AutomataApplication : Application() {
         initLogging()
 
         OpenCVLoader.initLocal()
+
+        CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }
 
     private fun initLogging() {

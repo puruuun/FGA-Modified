@@ -39,9 +39,6 @@ sealed interface Route : NavKey {
     data class AccountDashboard(val userId: String) : Route
 
     @Serializable
-    data class EventBonus(val id: Long) : Route
-
-    @Serializable
     data object WeeklyRouteSettings : Route
 
     @Serializable
