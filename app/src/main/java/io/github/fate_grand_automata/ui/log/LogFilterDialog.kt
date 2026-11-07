@@ -76,7 +76,7 @@ internal fun LogFilterDialog(
                             label = { Text(stringResource(R.string.capture_log_all_resources)) })
                     }
                     items(labels, key = { it.first }) { (key, label) ->
-                        FilterChip(selected = draftResource == key, onClick = { draftResource = key },
+                        FilterChip(selected = draftResource == key, onClick = { draftResource = key }, modifier = Modifier.testTag("log-filter-resource:$key"),
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     ResourceIcon(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)

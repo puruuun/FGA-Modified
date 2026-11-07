@@ -51,7 +51,8 @@ internal fun OutsideLogCard(entry: OutsideLogEntry, selected: Boolean, onClick: 
         "outside:${entry.id}", stringResource(R.string.capture_outside_title), entry.accountName,
         periodTime(entry),
         (if (inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") + stringResource(R.string.capture_outside_summary,
-            total.items.count { it.value > 0 }.toLong().grouped(), total.items.count { it.value < 0 }.toLong().grouped(),
+            (total.items.values + total.svts.values + total.commandCodes.values).count { it > 0 }.toLong().grouped(),
+            (total.items.values + total.svts.values + total.commandCodes.values).count { it < 0 }.toLong().grouped(),
             signedOutsideCount(total.freeStone + total.chargeStone)), selected, onClick, outside = true, checked = checked)
 }
 

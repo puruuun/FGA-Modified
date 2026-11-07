@@ -20,11 +20,18 @@ import io.github.fate_grand_automata.capture.signedOutsideCount
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.util.grouped
+import io.github.fate_grand_automata.ui.account.dashboardClass
 import java.io.File
 
 internal data class LogResource(
     val type: Int = 2, val id: Long, val count: Long?, val split: Pair<Long, Long>? = null, val holdings: Long? = null,
-)
+) {
+    companion object {
+        // Negative UI-only types keep outside counts separate from positive API drop types.
+        const val SVT = -1
+        const val COMMAND_CODE = -2
+    }
+}
 
 internal val currencyIds = setOf(1L, 2L, 3L, 5L, 6L, 7L, 11L, 16L, 18L, 100L, 101L, 104L, 102L)
 internal val iconItemIds = listOf(1L, 2L, 3L, 18L, 100L, 101L, 104L, 102L, 11L, 16L)
@@ -32,6 +39,8 @@ internal val iconItemIds = listOf(1L, 2L, 3L, 18L, 100L, 101L, 104L, 102L, 11L, 
 /** Zero fields disappear. Fruit usage remains gross usage even when later gains offset it. */
 internal fun outsideResources(delta: AccountDelta, fruitUsed: Map<Long, Long>): List<LogResource> = buildList {
     delta.items.filterKeys { it !in RunGains.FRUIT_IDS }.forEach { (id, count) -> if (count != 0L) add(LogResource(id = id, count = count)) }
+    delta.svts.forEach { (id, count) -> if (count != 0L) add(LogResource(LogResource.SVT, id, count)) }
+    delta.commandCodes.forEach { (id, count) -> if (count != 0L) add(LogResource(LogResource.COMMAND_CODE, id, count)) }
     listOf(1L to delta.qp, 3L to delta.mana, 18L to delta.rarePri).forEach { (id, count) -> if (count != 0L) add(LogResource(id = id, count = count)) }
     if (delta.freeStone != 0L || delta.chargeStone != 0L) add(LogResource(id = 2, count = delta.freeStone + delta.chargeStone, split = delta.freeStone to delta.chargeStone))
     listOf(100L, 101L, 104L, 102L).forEach { id ->
@@ -53,7 +62,22 @@ internal fun battleResources(gains: RunGains): List<LogResource> = buildList {
 }
 
 @Composable
-internal fun resourceName(type: Int, id: Long, names: GameNameMap): String = if (type != 2) names.drop(type, id) else when (id) {
+internal fun resourceName(type: Int, id: Long, names: GameNameMap): String = when (type) {
+    LogResource.SVT -> {
+        val row = names.svtData[id]
+        val name = row?.name?.takeIf { it.isNotBlank() }
+        if (name != null && row.type == "combineMaterial" && row.className != null) {
+            val label = if (row.className == "all") stringResource(R.string.hakuno_shuffle_colour_all) else dashboardClass(row.className)
+            "$name ($label)"
+        } else name ?: "#$id"
+    }
+    LogResource.COMMAND_CODE -> names.commandCodeData[id]?.name?.takeIf { it.isNotBlank() } ?: "#$id"
+    2 -> itemResourceName(id, names)
+    else -> names.drop(type, id)
+}
+
+@Composable
+private fun itemResourceName(id: Long, names: GameNameMap): String = when (id) {
     1L, 5L -> stringResource(R.string.capture_qp)
     2L, 6L, 7L -> stringResource(R.string.capture_quartz)
     3L -> stringResource(R.string.capture_mana_prism)
@@ -85,12 +109,22 @@ internal val LocalLogIconLoader = staticCompositionLocalOf<ImageLoader?> { null 
 @Composable
 internal fun ResourceIcon(type: Int, id: Long, names: GameNameMap, onAvailable: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
-    val url = if (type == 2) names.itemIcons[id] else null
+    val url = when (type) {
+        2 -> names.itemIcons[id]
+        LogResource.SVT -> names.svtData[id]?.icon
+        LogResource.COMMAND_CODE -> names.commandCodeData[id]?.icon
+        else -> null
+    }
+    val kind = when (type) {
+        LogResource.SVT -> "servants"
+        LogResource.COMMAND_CODE -> "commandCodes"
+        else -> ""
+    }
     var file by remember(type, id, url) { mutableStateOf<File?>(null) }
     var failed by remember(type, id, url) { mutableStateOf(false) }
     var loaded by remember(type, id, url) { mutableStateOf(false) }
     LaunchedEffect(type, id, url) {
-        if (type == 2) file = LogIconLoader.files(context).resolve(id, url)
+        if (type == 2 || type == LogResource.SVT || type == LogResource.COMMAND_CODE) file = LogIconLoader.files(context, kind).resolve(id, url)
     }
     LaunchedEffect(file, failed) { onAvailable(file != null && !failed) }
     if (file != null && !failed) AsyncImage(model = file!!.toURI().toString(),

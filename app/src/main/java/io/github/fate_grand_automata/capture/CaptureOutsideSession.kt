@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.UUID
 
+internal val outsideResourceTables = setOf("userGame", "tblUserGame", "userItem", "userSvt", "userSvtStorage", "userCommandCode")
+
 /** All calls, including file access, share CaptureTracker's response/lifecycle lock. */
 internal class CaptureOutsideSession(
     private val accounts: CaptureAccounts,
@@ -94,7 +96,7 @@ internal class CaptureOutsideSession(
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
             period = previous.period.add(ChangeSource.of(target), delta, time),
-            resourceBaseline = response.next!!.tables.filterKeys { it in setOf("userGame", "tblUserGame", "userItem") },
+            resourceBaseline = response.next!!.tables.filterKeys { it in outsideResourceTables },
             baselineTime = response.next.lastUpdateTime,
         )
         periods[response.id] = next
@@ -106,7 +108,7 @@ internal class CaptureOutsideSession(
         val pending = periods[response.id] ?: return
         val state = response.next ?: return
         periods[response.id] = pending.copy(
-            resourceBaseline = state.tables.filterKeys { it in setOf("userGame", "tblUserGame", "userItem") },
+            resourceBaseline = state.tables.filterKeys { it in outsideResourceTables },
             baselineTime = state.lastUpdateTime,
         )
         persist(response.id)

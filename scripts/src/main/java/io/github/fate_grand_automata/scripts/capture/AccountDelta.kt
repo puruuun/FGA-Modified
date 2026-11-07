@@ -12,8 +12,11 @@ data class AccountDelta(
     val rarePri: Long = 0,
     val freeStone: Long = 0,
     val chargeStone: Long = 0,
+    val svts: Map<Long, Long> = emptyMap(),
+    val commandCodes: Map<Long, Long> = emptyMap(),
 ) {
     val isEmpty get() = items.values.all { it == 0L } &&
+        svts.values.all { it == 0L } && commandCodes.values.all { it == 0L } &&
         qp == 0L && mana == 0L && rarePri == 0L && freeStone == 0L && chargeStone == 0L
 
     operator fun plus(other: AccountDelta) = AccountDelta(
@@ -21,6 +24,10 @@ data class AccountDelta(
             .filterValues { it != 0L },
         qp + other.qp, mana + other.mana, rarePri + other.rarePri,
         freeStone + other.freeStone, chargeStone + other.chargeStone,
+        (svts.keys + other.svts.keys).associateWith { (svts[it] ?: 0L) + (other.svts[it] ?: 0L) }
+            .filterValues { it != 0L },
+        (commandCodes.keys + other.commandCodes.keys).associateWith { (commandCodes[it] ?: 0L) + (other.commandCodes[it] ?: 0L) }
+            .filterValues { it != 0L },
     )
 
     companion object {
@@ -39,12 +46,28 @@ data class AccountDelta(
                 val newItems = items(next)
                 val oldGame = game(previous)
                 val newGame = game(next)
+                // Each card is one row. Recount both complete states, including second storage.
+                fun cards(state: AccountState, tables: List<String>, field: String): Map<Long, Long> = buildMap {
+                    for (table in tables) for (element in state.tables[table].orEmpty()) {
+                        val row = element as? JsonObject ?: continue
+                        val id = (row[field] as? JsonPrimitive)?.longOrNull ?: continue
+                        put(id, (get(id) ?: 0L) + 1L)
+                    }
+                }
+                fun cardChanges(tables: List<String>, field: String): Map<Long, Long> {
+                    val old = cards(previous, tables, field)
+                    val new = cards(next, tables, field)
+                    return (old.keys + new.keys).associateWith { (new[it] ?: 0L) - (old[it] ?: 0L) }
+                        .filterValues { it != 0L }
+                }
                 fun change(field: String) = ((newGame?.get(field) as? JsonPrimitive)?.longOrNull ?: 0L) -
                     ((oldGame?.get(field) as? JsonPrimitive)?.longOrNull ?: 0L)
                 AccountDelta(
                     (oldItems.keys + newItems.keys).associateWith { (newItems[it] ?: 0L) - (oldItems[it] ?: 0L) }
                         .filterValues { it != 0L },
                     change("qp"), change("mana"), change("rarePri"), change("freeStone"), change("chargeStone"),
+                    svts = cardChanges(listOf("userSvt", "userSvtStorage"), "svtId"),
+                    commandCodes = cardChanges(listOf("userCommandCode"), "commandCodeId"),
                 )
             }.getOrDefault(AccountDelta())
         }

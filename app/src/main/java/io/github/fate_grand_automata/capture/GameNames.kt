@@ -21,6 +21,8 @@ data class GameNameMap(
     val equipData: Map<Long, AtlasBasic> = emptyMap(),
     val mysticData: Map<Long, AtlasBasic> = emptyMap(),
     val itemData: Map<Long, AtlasBasic> = emptyMap(),
+    val svtData: Map<Long, AtlasBasic> = emptyMap(),
+    val commandCodeData: Map<Long, AtlasBasic> = emptyMap(),
 ) {
     fun item(id: Long) = items[id] ?: "Item #$id"
     fun servant(id: Long) = servants[id] ?: "Servant #$id"
@@ -42,9 +44,12 @@ class GameNames(
     private val mutex = Mutex()
     private var loaded: GameNameMap? = null
 
-    suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
+    suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val names = resolveKr(runs, outsideItemIds)
+            val kr = resolveKr(runs, outsideItemIds)
+            val names = if (includeCards) kr.copy(
+                svtData = metadata("basic_svt"), commandCodeData = metadata("basic_command_code"),
+            ) else kr
             jpFallback.merge(names, runs.flatMap { it.items }.filter { it.type == 2 }.map { it.objectId } + outsideItemIds)
         }
     }
@@ -82,22 +87,7 @@ class GameNames(
             val required = mutableMapOf("nice_item" to ids("userItem", "itemId"),
                 "basic_servant" to ids("userSvtCollection", "svtId"),
                 "basic_equip" to emptySet(), "basic_mystic_code" to ids("userEquip", "equipId"))
-            fun metadata(list: String): Map<Long, AtlasBasic> {
-                val file = File(directory, "${list}_details.json")
-                val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
-                // Servant, CE and mystic code lists never contain every id in the account (EXP cards, unreleased rows), so they refresh by age only.
-                val current = if (list == "nice_item") required[list].orEmpty().all { it in cached } else !isStale(list)
-                if (cached.isNotEmpty() && current) return cached
-                return runCatching {
-                    if (!canAttempt("${list}_details")) return cached
-                    val body = download("https://api.atlasacademy.io/export/KR/$list.json")
-                    val parsed = parseBasic(body)
-                    check(parsed.isNotEmpty())
-                    saveMetadata(list, parsed)
-                    parsed.associateBy { it.id }
-                }.getOrDefault(cached)
-            }
-            val items = metadata("nice_item")
+            val items = metadata("nice_item", required["nice_item"].orEmpty())
             val servants = metadata("basic_servant")
             required["basic_equip"] = ids("userSvt", "svtId") - servants.keys
             val equips = metadata("basic_equip")
@@ -111,6 +101,22 @@ class GameNames(
                 servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
             jpFallback.merge(kr, required["nice_item"].orEmpty())
         } }
+    }
+
+    private fun metadata(list: String, required: Set<Long> = emptySet()): Map<Long, AtlasBasic> {
+        val file = File(directory, "${list}_details.json")
+        val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
+        // Card exports refresh by age, including when an unknown id is absent from Atlas.
+        val current = if (list == "nice_item") required.all { it in cached } else !isStale(list)
+        if (cached.isNotEmpty() && current) return cached
+        return runCatching {
+            if (!canAttempt("${list}_details")) return cached
+            val body = download("https://api.atlasacademy.io/export/KR/$list.json")
+            val parsed = parseBasic(body)
+            check(parsed.isNotEmpty())
+            saveMetadata(list, parsed)
+            parsed.associateBy { it.id }
+        }.getOrDefault(cached)
     }
 
     private fun saveMetadata(list: String, rows: List<AtlasBasic>) {

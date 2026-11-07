@@ -97,6 +97,27 @@ class CaptureOutsideHooksTest {
         assertEquals(icon, restored.itemIcons[999001])
     }
 
+    @Test fun deletingCollectedDataKeepsCardMetadataAndBothIconDirectories() = kotlinx.coroutines.runBlocking {
+        val namesDirectory = java.io.File(context.filesDir, "capture/names")
+        val face = "https://static.atlasacademy.io/KR/Faces/synthetic.png"
+        val names = GameNames(namesDirectory, { """[{"id":10,"name":"합성 카드","face":"$face","type":"combineMaterial"}]""" }) { 1000 }
+            .resolve(emptyList(), includeCards = true)
+        val files = listOf("servants", "commandCodes").map { kind ->
+            IconFileStore(java.io.File(context.filesDir, "capture/icons/$kind"), { byteArrayOf(1) })
+                .resolve(10, face)!!
+        }
+        val metadata = listOf("basic_svt", "basic_command_code").associate { list ->
+            java.io.File(namesDirectory, "${list}_details.json").let { it to it.readText() }
+        }
+        CaptureTracker.delete()
+        assertTrue(CaptureTracker.accounts.value.isEmpty())
+        metadata.forEach { (file, content) -> assertEquals(content, file.readText()) }
+        assertTrue(files.all { it.isFile })
+        val restored = GameNames(namesDirectory, { error("network forbidden") }) { 1001 }.resolve(emptyList(), includeCards = true)
+        assertEquals(names.svtData, restored.svtData)
+        assertEquals(names.commandCodeData, restored.commandCodeData)
+    }
+
     @Test fun allCollectionStopReasonsCloseThroughActualResponseHook() {
         CaptureStopReason.entries.forEachIndexed { i, reason ->
             CaptureTracker.setRunning(true)

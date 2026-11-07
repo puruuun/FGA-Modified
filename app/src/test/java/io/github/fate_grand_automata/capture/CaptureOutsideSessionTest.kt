@@ -1,6 +1,10 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
+import io.github.fate_grand_automata.scripts.capture.AccountDelta
+import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonObject
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -30,6 +34,60 @@ class CaptureOutsideSessionTest {
         session.collect(path, assertNotNull(accounts.apply(path, body, time)))
     }
     private val pending get() = File(directory, "accounts/fictionalA/outside-period.json")
+
+    private fun cardResponse(svts: String, storage: String = "[]", codes: String = "[]") = Json.parseToJsonElement("""
+        {"cache":{"replaced":{"userSvt":$svts,"userSvtStorage":$storage,"userCommandCode":$codes}}}
+    """).jsonObject
+
+    @Test fun cardOnlyEnhancementAndShopChangesPersistAndResumeWithoutDoubleCounting() {
+        response("present/receive", cardResponse("""[{"id":1,"svtId":10},{"id":2,"svtId":10},{"id":3,"svtId":20}]""",
+            codes = """[{"id":1,"commandCodeId":30}]"""))
+        accounts.save()
+        session.delete("fictionalA")
+        time++
+        response("svtCombine/execute", cardResponse("""[{"id":3,"svtId":20}]""", codes = """[{"id":1,"commandCodeId":30}]"""))
+        time++
+        response("shop/sell", cardResponse("[]"))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        response("shop/sell", cardResponse("[]"))
+        session.setRunning(false)
+        val period = logs.entries.single().period
+        assertEquals(AccountDelta(svts = mapOf(10L to -2L, 20L to -1L), commandCodes = mapOf(30L to -1L)), period.total)
+        assertEquals(mapOf(10L to -2L), period.sources.single { it.source.group == ChangeSource.Group.Enhancement }.delta.svts)
+        assertEquals(mapOf(20L to -1L), period.sources.single { it.source.group == ChangeSource.Group.Shop }.delta.svts)
+    }
+
+    @Test fun storageMoveCheckpointSurvivesProcessRestart() {
+        response("present/receive", cardResponse("""[{"id":1,"svtId":10}]"""))
+        time++
+        response("card/move", cardResponse("[]", storage = """[{"id":1,"svtId":10}]"""))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        response("shop/sell", cardResponse("[]"))
+        session.setRunning(false)
+        val period = logs.entries.single().period
+        assertTrue(period.total.isEmpty)
+        assertEquals(mapOf(10L to -1L), period.sources.single { it.source.group == ChangeSource.Group.Shop }.delta.svts)
+    }
+
+    @Test fun oldPendingCheckpointKeepsCardTablesFromSavedAccount() {
+        response("present/receive", cardResponse("""[{"id":1,"svtId":10}]"""))
+        accounts.save()
+        feed()
+        val saved = Json.parseToJsonElement(pending.readText()).jsonObject
+        val old = saved.toMutableMap()
+        old["resourceBaseline"] = JsonObject(saved.getValue("resourceBaseline").jsonObject.filterKeys {
+            it in setOf("userGame", "tblUserGame", "userItem")
+        })
+        pending.writeText(JsonObject(old).toString())
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        response("shop/sell", cardResponse("[]"))
+        assertEquals(mapOf(10L to -1L), session.openEntries.value.single().period.sources.single {
+            it.source.group == ChangeSource.Group.Shop
+        }.delta.svts)
+    }
 
     @Test fun firstNonemptyDeltaOpensAndMultipleResponsesBecomeOneEntry() {
         feed()

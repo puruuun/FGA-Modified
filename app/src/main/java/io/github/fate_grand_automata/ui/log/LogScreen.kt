@@ -54,7 +54,9 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     LaunchedEffect(entries, outsideEntries, openEntries) {
         val gains = entries.mapNotNull { it.gains }
         val itemIds = (outsideEntries + openEntries).flatMap { it.period.sources.flatMap { source -> source.delta.items.keys } }
-        if (gains.isNotEmpty() || outsideEntries.isNotEmpty() || openEntries.isNotEmpty()) names = cache.resolve(gains, itemIds + iconItemIds)
+        if (gains.isNotEmpty() || outsideEntries.isNotEmpty() || openEntries.isNotEmpty()) names = cache.resolve(
+            gains, itemIds + iconItemIds, includeCards = outsideEntries.isNotEmpty() || openEntries.isNotEmpty(),
+        )
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,
         outsideEntries = outsideEntries, openOutsideEntries = openEntries,

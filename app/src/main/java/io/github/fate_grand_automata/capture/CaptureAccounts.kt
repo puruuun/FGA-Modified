@@ -90,7 +90,8 @@ internal class CaptureAccounts(private val warn: (String) -> Unit = {}) {
     fun restoreResourceBaseline(id: String, tables: Map<String, JsonArray>, time: Long) {
         val state = states[id] ?: return
         if (state.lastUpdateTime > time) return
-        val resources = setOf("userGame", "tblUserGame", "userItem")
+        // Old checkpoints contain no card tables. Keep their saved account baseline intact.
+        val resources = setOf("userGame", "tblUserGame", "userItem") + (tables.keys intersect outsideResourceTables)
         states[id] = state.copy(tables = state.tables.filterKeys { it !in resources } + tables.filterKeys { it in resources },
             lastUpdateTime = time)
         dirty += id

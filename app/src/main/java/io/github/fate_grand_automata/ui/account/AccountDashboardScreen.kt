@@ -333,7 +333,7 @@ private fun InventoryGroup.label() = when (this) {
     if (file != null) AsyncImage(file!!.toURI().toString(), contentDescription = null, imageLoader = loader, modifier = Modifier.size(40.dp))
 }
 
-@Composable private fun dashboardClass(name: String): String {
+@Composable internal fun dashboardClass(name: String): String {
     val resource = when (name) {
         "saber" -> R.string.p_support_class_saber; "archer" -> R.string.p_support_class_archer
         "lancer" -> R.string.p_support_class_lancer; "rider" -> R.string.p_support_class_rider

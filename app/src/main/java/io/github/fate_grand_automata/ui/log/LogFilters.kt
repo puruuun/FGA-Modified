@@ -15,7 +15,7 @@ internal fun pickerDateInZone(date: Long, zone: TimeZone): Long {
     }.timeInMillis
 }
 
-/** Stable resource keys keep items, servants and CEs with overlapping ids separate. */
+/** Stable resource keys keep items, battle drops and outside card counts separate. */
 private fun CaptureLogItem.resourceChanges(): List<Map<String, Long>> = battle?.gains?.let { gains ->
     listOf(buildMap {
         gains.items.forEach { put("${it.type}:${it.objectId}", (get("${it.type}:${it.objectId}") ?: 0L) + it.gained) }
