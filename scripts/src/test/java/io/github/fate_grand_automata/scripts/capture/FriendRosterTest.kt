@@ -196,4 +196,33 @@ class FriendRosterTest {
         val roster = FriendRoster.fromFriendTop(twoFriends)!!
         assertEquals(roster, FriendRoster.fromJson(roster.toJson()))
     }
+
+    @Test fun secondCeIsParsedFromEquipTarget2() {
+        val roster = FriendRoster.fromFriendTop(top(listOf(friendRow("21", null, listOf(
+            slot(101, 1, 500, 1000, ce = 9000, limit = 4, extra = ""","equipTarget2":{"svtId":9100,"limitCount":3,"lv":80}"""),
+        )))))!!
+        val slot = roster.friends.getValue("21").slots.single()
+        assertEquals(9100L, slot.ce2Id)
+        assertEquals(3, slot.ce2LimitCount)
+        assertEquals(80, slot.ce2Lv)
+        assertEquals(9000L, slot.ceId)
+    }
+
+    @Test fun missingOrEmptyEquipTarget2IsIgnored() {
+        val roster = FriendRoster.fromFriendTop(top(listOf(friendRow("22", null, listOf(
+            slot(101, 1, 500, 1000, ce = 9000, limit = 4),
+            slot(102, 2, 501, 1000, ce = 9000, limit = 4, extra = ""","equipTarget2":{"svtId":0,"limitCount":0,"lv":0}"""),
+            slot(103, 3, 502, 1000, ce = 9000, limit = 4, extra = ""","equipTarget2":null"""),
+        )))))!!
+        val slots = roster.friends.getValue("22").slots
+        assertEquals(3, slots.size)
+        slots.forEach { assertNull(it.ce2Id); assertNull(it.ce2LimitCount); assertNull(it.ce2Lv) }
+    }
+
+    @Test fun oldSavedRosterWithoutSecondCeFieldsStillLoads() {
+        val old = """{"updatedAt":5,"friends":{"1":{"userId":"1","slots":[{"deckId":101,"classId":1,"svtId":500,"ceId":9000,"ceLimitCount":4,"ceLv":100}]}}}"""
+        val slot = FriendRoster.fromJson(old).friends.getValue("1").slots.single()
+        assertEquals(9000L, slot.ceId)
+        assertNull(slot.ce2Id)
+    }
 }

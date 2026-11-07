@@ -1121,8 +1121,7 @@
     <string name="friends_ce_max">최대</string>
     <string name="friends_no_match">조건에 맞는 서포터가 없습니다</string>
     <string name="friends2_account">계정 선택</string>
-    <string name="friends2_account_detail">Lv %1$d · 친구 %2$d · 갱신 %3$d분 전</string>
-    <string name="friends2_header">친구 %1$d명 · 갱신 %2$d분 전 · 표시 %3$d칸</string>
+    <string name="friends2_account_detail">Lv %1$d · 친구 %2$d · 갱신 %3$s 전</string>
     <string name="friends2_filters">필터</string>
     <string name="friends2_remove_filter">필터 해제</string>
     <string name="friends2_deck">편성</string>

@@ -102,4 +102,27 @@ class FriendListTest {
         assertEquals(mapOf(9000L to 2, 9001L to 2), FriendList.ceCounts(main))
         assertEquals(mapOf(500L to 1), FriendList.servantCounts(FriendList.rows(roster, true)))
     }
+
+    private val duelRoster = FriendRoster(now, mapOf("9" to Friend("9", "Duel", 100, null, listOf(101L), listOf(201L), now - 60, listOf(
+        FriendSlot(101, 1, 800, ceId = 9000, ceLimitCount = 1, ce2Id = 9001, ce2LimitCount = 4, ce2Lv = 100),
+        FriendSlot(101, 2, 801, ceId = 9000, ceLimitCount = 4, ce2Id = 9001, ce2LimitCount = 0),
+        FriendSlot(101, 3, 802, ceId = 9002, ceLimitCount = 2),
+    ))))
+
+    private fun duelIds(filter: FriendFilter) = FriendList.select(duelRoster, filter, now).map { it.slot.svtId }.sorted()
+
+    @Test fun ceFilterMatchesEitherCe() {
+        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9001)))
+        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9000)))
+        assertEquals(listOf(802L), duelIds(FriendFilter(ceId = 9002)))
+    }
+
+    @Test fun maxLimitBreakMatchesEitherCe() {
+        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(maxLimitBreak = true)))
+        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9001, maxLimitBreak = true)))
+    }
+
+    @Test fun cePickerCountsBothCes() {
+        assertEquals(mapOf(9000L to 2, 9001L to 2, 9002L to 1), FriendList.ceCounts(FriendList.rows(duelRoster, false)))
+    }
 }

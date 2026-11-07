@@ -884,8 +884,7 @@
     <string name="friends_no_match">条件に合うサポートがありません</string>
     <!-- Friend manager round 2 (#230): Japanese draft for owner review. -->
     <string name="friends2_account">アカウントを選択</string>
-    <string name="friends2_account_detail">Lv %1$d · フレンド%2$d人 · %3$d分前に更新</string>
-    <string name="friends2_header">フレンド%1$d人 · %2$d分前に更新 · %3$d枠を表示</string>
+    <string name="friends2_account_detail">Lv %1$d · フレンド%2$d人 · %3$s前に更新</string>
     <string name="friends2_filters">フィルター</string>
     <string name="friends2_remove_filter">フィルターを解除</string>
     <string name="friends2_deck">編成</string>

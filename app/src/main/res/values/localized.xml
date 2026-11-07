@@ -1200,8 +1200,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_ce_max">Max</string>
     <string name="friends_no_match">No support servants match</string>
     <string name="friends2_account">Choose account</string>
-    <string name="friends2_account_detail">Lv %1$d · Friends %2$d · Updated %3$d min ago</string>
-    <string name="friends2_header">%1$d friends · Updated %2$d min ago · %3$d slots</string>
+    <string name="friends2_account_detail">Lv %1$d · Friends %2$d · Updated %3$s ago</string>
     <string name="friends2_filters">Filters</string>
     <string name="friends2_remove_filter">Remove filter</string>
     <string name="friends2_deck">Deck</string>

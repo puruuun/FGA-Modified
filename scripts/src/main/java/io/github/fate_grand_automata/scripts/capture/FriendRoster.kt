@@ -16,8 +16,18 @@ data class FriendSlot(
     val ceId: Long = 0,
     val ceLimitCount: Int = 0,
     val ceLv: Int = 0,
+    /** The second CE of a Grand Duel support, null when the slot has only one. */
+    val ce2Id: Long? = null,
+    val ce2LimitCount: Int? = null,
+    val ce2Lv: Int? = null,
     val updatedAt: Long = 0,
-)
+) {
+    /** True if either CE of the slot has this id. */
+    fun hasCe(id: Long) = ceId == id || ce2Id == id
+
+    /** True if either CE is present and at the given limit count. */
+    fun hasCeAtLimit(limit: Int) = (ceId != 0L && ceLimitCount == limit) || (ce2Id != null && ce2LimitCount == limit)
+}
 
 @Serializable
 data class Friend(
@@ -141,6 +151,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                 appends[appendSlot(id) - 1] = skill.long("skillLv")?.toInt()
             }
             val ce = row["equipTarget1"] as? JsonObject
+            val ce2 = secondCe(row)
             return FriendSlot(
                 deckId = row.long("supportDeckId") ?: 0,
                 classId = row.long("classId")?.toInt() ?: 0,
@@ -152,9 +163,19 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                 ceId = ce?.long("svtId") ?: 0,
                 ceLimitCount = ce?.long("limitCount")?.toInt() ?: 0,
                 ceLv = ce?.long("lv")?.toInt() ?: 0,
+                ce2Id = ce2?.long("svtId"),
+                ce2LimitCount = ce2?.long("limitCount")?.toInt(),
+                ce2Lv = ce2?.long("lv")?.toInt(),
                 updatedAt = row.long("updatedAt") ?: 0,
             )
         }
+
+        /**
+         * The second CE of a Grand Duel support, shaped like equipTarget1. The field name "equipTarget2" is a guess:
+         * it has not been seen in a real friend list yet, so fix it here once a capture shows the real one.
+         */
+        private fun secondCe(row: JsonObject): JsonObject? =
+            (row["equipTarget2"] as? JsonObject)?.takeIf { (it.long("svtId") ?: 0L) != 0L }
 
         private fun JsonObject.slotObjects(key: String): List<JsonObject> = when (val value = this[key]) {
             is JsonArray -> value.mapNotNull { it as? JsonObject }

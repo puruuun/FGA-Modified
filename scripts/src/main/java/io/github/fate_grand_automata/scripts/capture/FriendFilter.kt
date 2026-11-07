@@ -51,14 +51,15 @@ object FriendList {
 
     /** Servants (or CEs) present in the chosen deck type with their slot counts. */
     fun servantCounts(rows: List<FriendRow>): Map<Long, Int> = rows.groupingBy { it.slot.svtId }.eachCount()
-    fun ceCounts(rows: List<FriendRow>): Map<Long, Int> =
-        rows.filter { it.slot.ceId != 0L }.groupingBy { it.slot.ceId }.eachCount()
+    fun ceCounts(rows: List<FriendRow>): Map<Long, Int> = rows
+        .flatMap { listOfNotNull(it.slot.ceId.takeIf { id -> id != 0L }, it.slot.ce2Id?.takeIf { id -> id != 0L }).distinct() }
+        .groupingBy { it }.eachCount()
 
     /** Newest login first, then friend, deck and class. */
     fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.event)
         .filter { filter.servantId == null || it.slot.svtId == filter.servantId }
-        .filter { filter.ceId == null || it.slot.ceId == filter.ceId }
-        .filter { !filter.maxLimitBreak || (it.slot.ceId != 0L && it.slot.ceLimitCount == MAX_LIMIT_COUNT) }
+        .filter { filter.ceId == null || it.slot.hasCe(filter.ceId) }
+        .filter { !filter.maxLimitBreak || it.slot.hasCeAtLimit(MAX_LIMIT_COUNT) }
         .filter {
             val last = it.friend.lastLogin
             when (filter.login) {

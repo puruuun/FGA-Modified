@@ -60,6 +60,15 @@ internal fun ceLengthRoster(): FriendRoster {
     return base.copy(friends = base.friends + listOf(friend("5", 93, 4), friend("6", 94, 4), friend("7", 95, 0)).associateBy { it.userId })
 }
 
+/** [ceLengthRoster] plus a Grand Duel support with two CEs (a short name with max limit break, and a long one). */
+internal fun duelRoster(): FriendRoster {
+    val base = ceLengthRoster()
+    val duel = Friend("8", "관위전 친구", 100, null, listOf(101L), listOf(201L), FRIEND_NOW - 4 * 3600, listOf(
+        FriendSlot(101, 3, 2, lv = 100, np = 1, skills = listOf(10, 10, 10), appends = listOf(10, 10, 10, 10, 10),
+            ceId = 90, ceLimitCount = 4, ceLv = 100, ce2Id = 92, ce2LimitCount = 2, ce2Lv = 60)))
+    return base.copy(friends = base.friends + (duel.userId to duel))
+}
+
 /** The synthetic roster plus one friend whose servant, CE and name are far too long for their cells. */
 internal fun longNameRoster(): FriendRoster {
     val base = syntheticRoster()
@@ -93,7 +102,8 @@ class FriendManagerUiTest {
     @Test fun headerAndRowsShowTheRequestedLinesAndTapExpands() {
         show()
         rows(5)
-        compose.onNodeWithText("친구 3명 · 갱신 10분 전 · 표시 5칸").assertIsDisplayed()
+        compose.onNodeWithText("친구 3명 · 갱신 10분 전 · 표시 5칸").assertDoesNotExist()
+        compose.onAllNodesWithText("표시", substring = true).assertCountEquals(0)
         compose.onNodeWithText("이름").assertIsDisplayed()
         compose.onNodeWithText("스킬").assertIsDisplayed()
         compose.onNodeWithText("어펜드").assertIsDisplayed()
@@ -216,21 +226,71 @@ class FriendManagerUiTest {
             }
             walk(row)
         }
-        // The long CE name sits on the left; "최대" and "Lv100" are stacked at its right, tag on top.
+        // The long CE name fills the cell; "최대" and "Lv100" follow it on the same line.
         val longCe = compose.onAllNodes(hasText("샘플 아주 길고 긴 이름을 가진 예장", substring = true), useUnmergedTree = true).fetchSemanticsNodes().first()
         fun beside(text: String) = compose.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes()
-            .first { it.positionInRoot.y >= longCe.positionInRoot.y - 1 && it.positionInRoot.y <= longCe.positionInRoot.y + longCe.size.height + 40 }
+            .first { it.positionInRoot.y >= longCe.positionInRoot.y - 8 && it.positionInRoot.y <= longCe.positionInRoot.y + longCe.size.height + 8 }
         val tag = beside("최대")
         val lv = beside("Lv100")
         assertTrue(tag.positionInRoot.x >= longCe.positionInRoot.x + longCe.size.width - 1)
-        assertTrue(lv.positionInRoot.x >= longCe.positionInRoot.x + longCe.size.width - 1)
-        assertTrue(lv.positionInRoot.y >= tag.positionInRoot.y + tag.size.height - 1)
+        assertTrue(lv.positionInRoot.x >= tag.positionInRoot.x + tag.size.width - 1)
         // Skills and the 10/10/10 row are never cut.
         compose.onAllNodes(hasText("10/10/10"), useUnmergedTree = true).fetchSemanticsNodes().forEach { node ->
             val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
             node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
             assertTrue(!layout.first().hasVisualOverflow)
         }
+    }
+
+    @Test fun ceTagAndLevelStartRightAfterAShortName() {
+        show(); rows(5)
+        val density = compose.density.density
+        val name = compose.onAllNodes(hasText("샘플 예장 하나"), useUnmergedTree = true).fetchSemanticsNodes().first()
+        fun after(text: String) = compose.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes()
+            .first { kotlin.math.abs(it.positionInRoot.y - name.positionInRoot.y) < 12 * density }
+        val tag = after("최대")
+        val lv = after("Lv100")
+        val nameRight = name.positionInRoot.x + name.size.width
+        assertTrue("tag starts ${tag.positionInRoot.x - nameRight}px after the name", tag.positionInRoot.x - nameRight in -1f..(8 * density))
+        assertTrue(lv.positionInRoot.x >= tag.positionInRoot.x + tag.size.width - 1)
+        assertTrue("level follows the tag", lv.positionInRoot.x - (tag.positionInRoot.x + tag.size.width) <= 8 * density)
+    }
+
+    @Test fun twoCesShowTwoLinesAndRowsStayAtMostTwoLines() {
+        compose.setContent { FGATheme { FriendManagerContent(duelRoster(), friendTestNames(), FRIEND_NOW) } }
+        rows(duelRoster().friends.values.sumOf { f -> f.slots.count { !f.isEvent(it) } })
+        val lines = compose.onAllNodesWithTag("friends-ce-line", useUnmergedTree = true).fetchSemanticsNodes()
+        // Only the Grand Duel slot has two CE lines inside one cell.
+        val duelRow = compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().first { row ->
+            lines.count { l -> l.positionInRoot.y >= row.positionInRoot.y && l.positionInRoot.y < row.positionInRoot.y + row.size.height } == 2
+        }
+        val inRow = lines.filter { it.positionInRoot.y >= duelRow.positionInRoot.y && it.positionInRoot.y < duelRow.positionInRoot.y + duelRow.size.height }
+        assertEquals(2, inRow.size)
+        assertTrue(inRow[1].positionInRoot.y > inRow[0].positionInRoot.y)
+        assertEquals(inRow[0].positionInRoot.x, inRow[1].positionInRoot.x, 1f)
+        compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().forEach { row ->
+            fun walk(node: androidx.compose.ui.semantics.SemanticsNode) {
+                if (node.config.contains(SemanticsActions.GetTextLayoutResult)) {
+                    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                    node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+                    results.forEach { assertTrue("more than 2 lines", it.lineCount <= 2) }
+                }
+                node.children.forEach(::walk)
+            }
+            walk(row)
+            // A row is as tall as its tallest cell: two CE lines of body text plus padding, never three.
+            assertTrue(row.size.height <= 72 * compose.density.density)
+        }
+    }
+
+    @Test fun accountRowShowsHoursInsteadOfManyMinutes() {
+        val roster = syntheticRoster().copy(updatedAt = FRIEND_NOW - 205 * 60)
+        fun account(id: String, name: String) = FriendManagerAccount(
+            CaptureAccount(id, name, AccountSummary.from(dashboardState("userGame" to """[{"lv":160}]"""), FRIEND_NOW), 0), roster)
+        compose.setContent { FGATheme { FriendManagerContent(null, friendTestNames(), FRIEND_NOW, listOf(account("one", "첫 계정")), "one") } }
+        rows(5)
+        compose.onNodeWithText("갱신 3시간 전", substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText("205분", substring = true).assertCountEquals(0)
     }
 
     @Test fun accountMenuSwitchesRosters() {
@@ -243,7 +303,7 @@ class FriendManagerUiTest {
         rows(5)
         compose.onNodeWithTag("friends-account").performClick()
         compose.onNodeWithText("둘째 계정").performClick()
-        compose.onNodeWithText("친구 0명 · 갱신 1분 전 · 표시 0칸").assertIsDisplayed()
+        compose.onNodeWithText("친구 0 · 갱신 1분 전", substring = true).assertIsDisplayed()
     }
 
     @Test fun list360Light() = compose.shoot("friend-manager", "FriendList", 360, 800, locale = "ko", beforeCapture = {
@@ -251,4 +311,13 @@ class FriendManagerUiTest {
     }) {
         FriendManagerContent(syntheticRoster(), friendTestNames(), FRIEND_NOW)
     }
+
+    private fun shootDuel(width: Int, height: Int) = compose.shoot("friend-manager", "FriendListRound4", width, height, locale = "ko", beforeCapture = {
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().isNotEmpty() }
+    }) {
+        FriendManagerContent(duelRoster(), friendTestNames(), FRIEND_NOW)
+    }
+
+    @Test fun round4List360Light() = shootDuel(360, 900)
+    @Test fun round4List1280Light() = shootDuel(1280, 900)
 }

@@ -110,7 +110,7 @@ private fun AccountLabel(item: FriendManagerAccount, now: Long, modifier: Modifi
             Text(item.account.server, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
         Text(stringResource(R.string.friends2_account_detail, item.account.summary.level, item.roster.friends.size,
-            ((now - item.roster.updatedAt) / 60).coerceAtLeast(1)), style = MaterialTheme.typography.bodySmall)
+            loginText(agoParts(now - item.roster.updatedAt))), style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -141,8 +141,6 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
         Heading(stringResource(R.string.friends_title))
         accountPicker()
         Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-            Text(stringResource(R.string.friends2_header, roster.friends.size,
-                ((now - roster.updatedAt) / 60).coerceAtLeast(1), shown.size), Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
             FlowRow(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 AssistChip(onClick = { sheet = true }, modifier = Modifier.testTag("friends-filter"),
                     leadingIcon = { Icon(Icons.Default.Tune, null, Modifier.size(18.dp)) },
@@ -323,18 +321,12 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
             Text((0..2).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" } + "\n" +
                 (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp),
                 style = MaterialTheme.typography.bodySmall, maxLines = 2, softWrap = false, overflow = TextOverflow.Clip)
-            Row(Modifier.weight(COLUMN_WEIGHTS[3]).padding(horizontal = 1.dp), horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.Top) {
-                Text(if (slot.ceId == 0L) stringResource(R.string.friends_ce_none) else names.equips[slot.ceId] ?: "#${slot.ceId}",
-                    Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (slot.ceId != 0L) Column(horizontalAlignment = Alignment.End) {
-                    if (slot.ceLimitCount == FriendList.MAX_LIMIT_COUNT) Text(stringResource(R.string.friends_ce_max),
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 4.dp, vertical = 1.dp),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1, softWrap = false)
-                    Text(stringResource(R.string.friends2_level_compact, slot.ceLv), style = MaterialTheme.typography.labelSmall,
-                        maxLines = 1, softWrap = false)
-                }
+            Column(Modifier.weight(COLUMN_WEIGHTS[3]).padding(horizontal = 1.dp)) {
+                if (slot.ceId == 0L) Text(stringResource(R.string.friends_ce_none), style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                else CeLine(names.equips[slot.ceId] ?: "#${slot.ceId}", slot.ceLimitCount, slot.ceLv)
+                // Grand Duel supports carry a second CE on its own line, so a cell is at most two lines.
+                slot.ce2Id?.takeIf { it != 0L }?.let { CeLine(names.equips[it] ?: "#$it", slot.ce2LimitCount ?: 0, slot.ce2Lv ?: 0) }
             }
             Text(if (friend.lastLogin > 0) loginText(agoParts(now - friend.lastLogin)) else "–", Modifier.weight(COLUMN_WEIGHTS[4]).padding(horizontal = 1.dp),
                 style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
@@ -354,6 +346,22 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
                 else stringResource(R.string.friends_login_unknown)), style = MaterialTheme.typography.bodySmall)
         }
         HorizontalDivider()
+    }
+}
+
+/** One CE: its name, then the max tag and the level right after it on the same baseline. */
+@Composable
+private fun CeLine(name: String, limitCount: Int, lv: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("friends-ce-line")) {
+        Text(name, Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (limitCount == FriendList.MAX_LIMIT_COUNT) Text(stringResource(R.string.friends_ce_max),
+            Modifier.alignByBaseline().background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall)
+                .padding(horizontal = 4.dp, vertical = 1.dp),
+            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer,
+            maxLines = 1, softWrap = false)
+        Text(stringResource(R.string.friends2_level_compact, lv), Modifier.alignByBaseline(), style = MaterialTheme.typography.labelSmall,
+            maxLines = 1, softWrap = false)
     }
 }
 
