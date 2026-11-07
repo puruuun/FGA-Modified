@@ -976,6 +976,7 @@
     <string name="battle_log_delete_all">전체 삭제</string>
     <string name="capture_gains_title">획득량 (로그 수집)</string>
     <string name="capture_gains_tracked">추적됨</string>
+    <string name="capture_log_recorded_with_collection">로그 수집으로 기록됨</string>
     <string name="capture_gains_battles">기록한 전투: %1$s회</string>
     <string name="capture_gains_missing">%1$s회의 전투를 기록하지 못했습니다. 획득량이 일부 누락되었을 수 있습니다.</string>
     <string name="capture_gains_exp">마스터 EXP</string>

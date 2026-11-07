@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
@@ -196,6 +197,7 @@ private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: Ga
 @Composable
 internal fun LogCardFrame(id: String, title: String, account: String?, time: String, summary: String,
     selected: Boolean, onClick: () -> Unit, outside: Boolean = false, checked: Boolean? = null,
+    collected: Boolean = false,
 ) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
         .testTag("log-card:$id").semantics { this.selected = selected },
@@ -205,7 +207,8 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
             if (checked != null) Checkbox(checked = checked, onCheckedChange = { onClick() }, modifier = Modifier.size(32.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (outside) Icon(Icons.AutoMirrored.Default.CompareArrows, null, Modifier.size(16.dp))
+                    if (outside) Icon(Icons.AutoMirrored.Default.CompareArrows, null, Modifier.size(16.dp).testTag("log-outside-icon"))
+                    else if (collected) Icon(Icons.Default.VpnKey, stringResource(R.string.capture_log_recorded_with_collection), Modifier.size(16.dp))
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(title, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -224,7 +227,8 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
 private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
     val summary = listOfNotNull(stringResource(R.string.battle_log_card_runs, entry.timesRan, entry.averageTurnsPerRun),
         if (entry.gains != null) stringResource(R.string.capture_gains_tracked) else null, entry.reasonText.takeIf { it.isNotBlank() }).joinToString(" · ")
-    LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick, checked = checked)
+    LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick,
+        checked = checked, collected = entry.gains != null)
 }
 private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: GameNameMap) {
     item {

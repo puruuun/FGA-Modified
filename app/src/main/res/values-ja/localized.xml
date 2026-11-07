@@ -738,6 +738,7 @@
     <string name="battle_log_delete_all">すべて削除</string>
     <string name="capture_gains_title">獲得量（ログ収集）</string>
     <string name="capture_gains_tracked">追跡済み</string>
+    <string name="capture_log_recorded_with_collection">ログ収集で記録済み</string>
     <string name="capture_gains_battles">記録したバトル：%1$s回</string>
     <string name="capture_gains_missing">%1$s回のバトルを記録できませんでした。獲得量が一部欠けている可能性があります。</string>
     <string name="capture_gains_exp">マスターEXP</string>

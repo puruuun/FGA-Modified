@@ -1055,6 +1055,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="battle_log_delete_all">Delete all</string>
     <string name="capture_gains_title">Gains (log collection)</string>
     <string name="capture_gains_tracked">Tracked</string>
+    <string name="capture_log_recorded_with_collection">Recorded with log collection</string>
     <string name="capture_gains_battles">Battles captured: %1$s</string>
     <string name="capture_gains_missing">%1$s battles were not captured. Gains may be incomplete.</string>
     <string name="capture_gains_exp">Master EXP</string>
