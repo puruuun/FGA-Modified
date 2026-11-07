@@ -66,6 +66,18 @@ class RootCaScriptsTest {
         }
     }
 
+    @Test fun namespaceGuardPrecedesFirstMountInEveryScript() {
+        for (api in listOf(33, 34)) for (script in listOf(inject(api), RootCaScripts.isPresent(api, "bad93d86", pem),
+            RootCaScripts.remove(api, "bad93d86", pem))) {
+            val guard = script.indexOf("readlink /proc/self/ns/mnt")
+            assertTrue(guard > script.indexOf("FGA_DENIED"))
+            assertContains(script, "readlink /proc/1/ns/mnt")
+            assertContains(script, "FGA_WRONG_NS; exit 18")
+            listOf("mount -t tmpfs", "mount --bind", "umount").map { script.indexOf(it) }.filter { it >= 0 }
+                .forEach { assertTrue(guard in 0 until it) }
+        }
+    }
+
     @Test fun removeUnmountsChildrenZygotesAndSystemAndVerifiesAbsence() {
         val new = RootCaScripts.remove(34, "bad93d86", pem)
         assertContains(new, "for P in $(children \"\$Z\") \"\$Z\"")

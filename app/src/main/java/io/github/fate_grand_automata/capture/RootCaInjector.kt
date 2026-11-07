@@ -28,10 +28,13 @@ private fun logRootOutput(out: RootShellOutput) {
         out.lines.filter { Regex("FGA_[A-Z_]+(=[0-9]+)?").matches(it) }.takeLast(12))
 }
 
+/** Runs the script in init's mount namespace; `su` from an app inherits the app's own namespace. */
+val ROOT_GLOBAL_NS_COMMAND = listOf("su", "-c", "nsenter --mount=/proc/1/ns/mnt -- /system/bin/sh")
+
 /** Independently testable runner. Tests supply a shell and never start a process. */
 class RootCaRunner(private val shell: RootShell) {
     fun inject(script: String): RootCaResult = try {
-        val out = shell.run(listOf("su", "-c", "sh"), script, 10)
+        val out = shell.run(ROOT_GLOBAL_NS_COMMAND, script, 10)
         logRootOutput(out)
         RootCaInjector.parse(out)
     } catch (e: IOException) {
@@ -107,7 +110,7 @@ class RootCaInjector(
     }
 
     private fun execute(build: (Int, String, String) -> String, timeout: Long = 10) =
-        withPem(build) { shell.run(listOf("su", "-c", "sh"), it, timeout).also(::logRootOutput) }
+        withPem(build) { shell.run(ROOT_GLOBAL_NS_COMMAND, it, timeout).also(::logRootOutput) }
 
     override fun isPresent(): Boolean = runCatching {
         val out = execute(RootCaScripts::isPresent, 5)
@@ -138,6 +141,8 @@ class RootCaInjector(
         private val storeLock = Any()
         fun parse(out: RootShellOutput): RootCaResult = when {
             out.timedOut -> RootCaResult.Failed("Timed out (10 s)")
+            "FGA_WRONG_NS" in out.lines || out.exitCode == 18 -> RootCaResult.Failed("Not in the global mount namespace")
+            out.exitCode == 127 -> RootCaResult.Failed("nsenter missing")
             "FGA_DENIED" in out.lines || (out.exitCode != 0 && "FGA_ROOT" !in out.lines) -> RootCaResult.Denied
             out.exitCode != 0 -> RootCaResult.Failed(when {
                 "FGA_HASH_COLLISION" in out.lines -> "Certificate hash collision"
