@@ -49,12 +49,12 @@ class LogRulesTest {
         assertEquals(listOf(week, outside), filterCaptureLogs(all + outside, LogTimeFilter.All, "2:6001", now, zone))
         assertTrue(filterCaptureLogs(listOf(outside), LogTimeFilter.All, "2:100", now, zone).isEmpty())
     }
-    @Test fun currencyFilterMatchesQpAndDoesNotMatchLossesOrUntrackedRuns() {
+    @Test fun currencyFilterMatchesQpAndLossesButNotUntrackedRuns() {
         val qp = CaptureLogItem(battle = battleLogFixture().copy(gains = RunGains(qp = 10)))
         val untracked = CaptureLogItem(battle = battleLogFixture("untracked"))
         val loss = battle("loss", "2026-11-05T00:00:00Z", 6510, -3)
         assertEquals(listOf(qp), filterCaptureLogs(listOf(qp, untracked), LogTimeFilter.All, "2:1", now, zone))
-        assertTrue(filterCaptureLogs(listOf(loss), LogTimeFilter.All, "2:6510", now, zone).isEmpty())
+        assertEquals(listOf(loss), filterCaptureLogs(listOf(loss), LogTimeFilter.All, "2:6510", now, zone))
     }
     @Test fun timeAndResourceCombineWithoutChangingOrder() {
         assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Week, "2:6510", now, zone))
@@ -89,6 +89,8 @@ class LogRulesTest {
         assertTrue("2:49" in logResources(listOf(entry)))
         assertEquals(listOf(-2L, -20L), battleResources(gains).map { it.count })
         assertEquals(1, battleResources(gains).count { it.id == 100L })
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:49", now, zone))
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:100", now, zone))
     }
     @Test fun zeroRowsAndUnusedFruitAreAbsent() {
         assertTrue(outsideResources(AccountDelta(items = mapOf(100L to 0L, 6510L to 0L)), mapOf(100L to 0L)).isEmpty())

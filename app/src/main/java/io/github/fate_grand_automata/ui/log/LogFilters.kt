@@ -53,7 +53,7 @@ internal fun filterCaptureLogs(
     } else (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     return entries.filter { entry ->
         (start == null || end == null || entry.endedAt in start until end) &&
-            (resource == null || entry.resourceChanges().any { (it[resource] ?: 0L) > 0 })
+            (resource == null || entry.resourceChanges().any { val change = it[resource] ?: 0L; if (entry.battle != null) change != 0L else change > 0L })
     }
 }
 
