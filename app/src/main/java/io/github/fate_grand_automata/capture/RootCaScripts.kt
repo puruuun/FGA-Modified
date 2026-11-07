@@ -13,6 +13,7 @@ object RootCaScripts {
             set -eu
             if [ "${'$'}(id -u)" != 0 ]; then echo FGA_DENIED; exit 13; fi
             echo FGA_ROOT
+            if [ "${'$'}(readlink /proc/self/ns/mnt)" != "${'$'}(readlink /proc/1/ns/mnt)" ]; then echo FGA_WRONG_NS; exit 18; fi
             SYS='$SYSTEM'
             APEX='$APEX'
             CERT='$hash.0'

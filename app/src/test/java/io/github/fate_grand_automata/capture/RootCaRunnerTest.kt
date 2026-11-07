@@ -8,7 +8,7 @@ import kotlin.test.assertIs
 class RootCaRunnerTest {
     @Test fun usesStdinAndTenSecondTimeout() {
         val runner = RootCaRunner { command, stdin, timeout ->
-            assertEquals(listOf("su", "-c", "sh"), command)
+            assertEquals(listOf("su", "-c", "nsenter --mount=/proc/1/ns/mnt -- /system/bin/sh"), command)
             assertEquals("fixed script", stdin)
             assertEquals(10L, timeout)
             RootShellOutput(0, listOf("FGA_ROOT", "FGA_APPS=18", "FGA_INJECTED"))
@@ -32,5 +32,13 @@ class RootCaRunnerTest {
     }
     @Test fun allOtherExceptionsAreFailures() {
         assertIs<RootCaResult.Failed>(RootCaRunner { _, _, _ -> error("fake failure") }.inject(""))
+    }
+    @Test fun wrongNamespaceAndMissingNsenterAreFailures() {
+        assertEquals(RootCaResult.Failed("Not in the global mount namespace"),
+            RootCaInjector.parse(RootShellOutput(18, listOf("FGA_ROOT", "FGA_WRONG_NS"))))
+        assertEquals(RootCaResult.Failed("nsenter missing"), RootCaInjector.parse(RootShellOutput(127, emptyList())))
+    }
+    @Test fun globalNamespaceCommandIsSharedByAllRootScripts() {
+        assertEquals(listOf("su", "-c", "nsenter --mount=/proc/1/ns/mnt -- /system/bin/sh"), ROOT_GLOBAL_NS_COMMAND)
     }
 }
