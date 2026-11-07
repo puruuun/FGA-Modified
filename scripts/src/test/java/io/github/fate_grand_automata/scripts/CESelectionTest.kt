@@ -33,6 +33,9 @@ class CESelectionTest {
         val np = mockk<Pattern>(relaxed = true)
         val default = mockk<Pattern>(relaxed = true)
         var effect = BondCEEffectEnum.NP
+        var grandServant = true
+        var grandOnScreen = true
+        var requireBoth = true
         var npScore = 0.739
         var defaultScore = 0.20
         var ceScore = 0.90
@@ -48,9 +51,10 @@ class CESelectionTest {
             every { api.images[Images.BondCeEffectNP, any()] } returns np
             every { api.images[Images.BondCeEffectDefault, any()] } returns default
             every { prefs.mlb } returns true
-            every { prefs.requireBothNormalAndRewardMatch } returns true
+            every { prefs.requireBothNormalAndRewardMatch } answers { requireBoth }
+            every { prefs.grandServant } answers { grandServant }
             every { prefs.bondCEEffect } answers { effect }
-            every { grand.isGrandPresent(any()) } returns true
+            every { grand.isGrandPresent(any()) } answers { grandOnScreen }
             every { star.isStarPresent(any()) } answers { mlb }
             val crop = mockk<Pattern>(relaxed = true)
             every { crop.width } returns 1000
@@ -158,5 +162,55 @@ class CESelectionTest {
             it is ScriptLog.SupportCe && it.matched && it.np?.score == 0.5926 && it.default?.score == 0.20
         }) }
         assertEquals(0, openScans)
+    }
+
+    @Test fun `non Grand support ignores leftover bond settings`() {
+        val f = Fixture()
+        f.grandOnScreen = false
+        f.grandServant = false
+        f.effect = BondCEEffectEnum.NP
+        f.requireBoth = true
+        assertTrue(f.check())
+        f.effect = BondCEEffectEnum.Default
+        assertTrue(f.check())
+        // A missing CE still fails, so only the leftover options stopped mattering
+        f.ceScore = 0.79
+        assertFalse(f.check())
+    }
+
+    @Test fun `non Grand support with Grand Servant on keeps the old Grand only behaviour`() {
+        val f = Fixture()
+        f.grandOnScreen = false
+        f.grandServant = true
+        f.effect = BondCEEffectEnum.Ignore
+        f.requireBoth = false
+        assertTrue(f.check())
+        f.effect = BondCEEffectEnum.NP
+        assertFalse(f.check())
+        f.effect = BondCEEffectEnum.Ignore
+        f.requireBoth = true
+        assertFalse(f.check())
+    }
+
+    @Test fun `Grand support with Grand Servant off treats bond effect as Ignore and one slot as enough`() {
+        val f = Fixture()
+        f.grandServant = false
+        f.effect = BondCEEffectEnum.Default // would fail: only the NP icon scores high
+        f.requireBoth = true
+        assertTrue(f.check())
+        verify(exactly = 0) { with(f.api) { any<Region>().getPattern(any()) } }
+        // requireBoth is off too: with only the reward slot found, the check still passes
+        every { with(f.api) { any<Region>().find(f.first, any()) } } returns null
+        assertTrue(f.check())
+    }
+
+    @Test fun `Grand support with Grand Servant on still honours the bond effect and both slots`() {
+        val f = Fixture()
+        f.effect = BondCEEffectEnum.Default
+        assertFalse(f.check())
+        f.effect = BondCEEffectEnum.NP
+        assertTrue(f.check())
+        every { with(f.api) { any<Region>().find(f.first, any()) } } returns null
+        assertFalse(f.check())
     }
 }

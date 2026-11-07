@@ -159,6 +159,7 @@ private fun FixtureApi.verifySupportCe(): JSONObject {
                 when (it) {
                     "getMlb" -> case.getBoolean("mlb")
                     "getRequireBothNormalAndRewardMatch" -> case.getBoolean("bothSlots")
+                    "getGrandServant" -> true
                     "getBondCEEffect" -> effect
                     else -> error("Unexpected CE preference $it")
                 }
