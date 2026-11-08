@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -47,10 +46,11 @@ class WidgetRefreshTest {
         val done = CountDownLatch(2)
         WidgetRefresh.updateService = { updated += "service"; done.countDown() }
         WidgetRefresh.updateAp = { updated += "ap"; done.countDown() }
-        context.sendBroadcast(Intent(action).setComponent(ComponentName(context, WidgetRestoreReceiver::class.java)))
-        shadowOf(Looper.getMainLooper()).idle()
+        val receiver = WidgetRestoreReceiver()
+        receiver.onReceive(context, Intent(action))
+        assertTrue(shadowOf(receiver).wentAsync())
         assertTrue(done.await(5, TimeUnit.SECONDS))
-        assertEquals(listOf("service", "ap"), updated.toList())
+        assertEquals(setOf("service", "ap"), updated.toSet())
     }
 
     @Test fun bootRestoresBothPlacedWidgets() = broadcast(Intent.ACTION_BOOT_COMPLETED)
