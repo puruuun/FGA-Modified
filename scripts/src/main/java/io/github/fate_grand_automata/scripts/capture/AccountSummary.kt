@@ -1,8 +1,10 @@
 package io.github.fate_grand_automata.scripts.capture
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import kotlin.math.ceil
 
+@Serializable
 data class AccountSummary(
     val masterName: String, val level: Long, val ap: Long, val apMax: Long,
     val carryOverActPoint: Long, val stone: Long, val freeStone: Long, val chargeStone: Long,
@@ -12,7 +14,13 @@ data class AccountSummary(
     val snapshotTime: Long, val lastUpdateTime: Long,
     val actRecoverAt: Long = 0,
 ) {
+    /** The same summary at another time: only the AP regeneration depends on it. */
+    fun atTime(now: Long) = copy(ap = apAt(apMax, actRecoverAt, now))
+
     companion object {
+        private fun apAt(max: Long, recover: Long, now: Long) = if (recover <= now) max else
+            (max - ceil((recover.toDouble() - now.toDouble()) / 300.0).toLong()).coerceIn(0, max)
+
         fun from(state: AccountState, now: Long): AccountSummary {
             val game = (state.tables["userGame"] ?: state.tables["tblUserGame"])?.firstOrNull() as? JsonObject ?: JsonObject(emptyMap())
             fun n(field: String) = (game[field] as? JsonPrimitive)?.longOrNull ?: 0L
@@ -21,8 +29,7 @@ data class AccountSummary(
             fun item(id: Long) = items[id] ?: 0L
             val max = n("actMax").coerceAtLeast(0)
             val recover = n("actRecoverAt")
-            val ap = if (recover <= now) max else
-                (max - ceil((recover.toDouble() - now.toDouble()) / 300.0).toLong()).coerceIn(0, max)
+            val ap = apAt(max, recover, now)
             return AccountSummary(
                 (game["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(), n("lv"), ap, max,
                 n("carryOverActPoint"), n("stone"), n("freeStone"), n("chargeStone"),

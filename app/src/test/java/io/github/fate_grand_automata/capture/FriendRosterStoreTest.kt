@@ -73,6 +73,8 @@ class FriendRosterStoreTest {
         }
         file.writeText(old.toString())
         assertTrue(file.readText().contains("otherUserGame"))
+        // Files written before summary.json existed are upgraded on the first normal start.
+        assertTrue(File(file.parentFile, "summary.json").delete())
         val loaded = store()
         assertFalse("otherUserGame" in loaded.states.getValue("7001").tables)
         assertFalse(file.readText().contains("otherUserGame"))

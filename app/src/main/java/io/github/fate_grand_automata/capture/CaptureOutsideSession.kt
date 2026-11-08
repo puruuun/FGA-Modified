@@ -4,13 +4,39 @@ import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonUnquotedLiteral
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.UUID
+
+/**
+ * One baseline table as its JSON text (issue #258), written back into outside-period.json verbatim, so the file keeps
+ * the same format as when the baseline was a JsonArray.
+ */
+@Serializable(with = RawTableSerializer::class)
+@JvmInline
+internal value class RawTable(val json: String)
+
+@OptIn(ExperimentalSerializationApi::class)
+internal object RawTableSerializer : KSerializer<RawTable> {
+    override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
+    override fun deserialize(decoder: Decoder) = RawTable((decoder as JsonDecoder).decodeJsonElement().toString())
+    override fun serialize(encoder: Encoder, value: RawTable) =
+        (encoder as JsonEncoder).encodeJsonElement(JsonUnquotedLiteral(value.json))
+}
 
 internal val outsideResourceTables = setOf("userGame", "tblUserGame", "userItem", "userSvt", "userSvtStorage", "userCommandCode")
 
@@ -25,7 +51,7 @@ internal class CaptureOutsideSession(
     private data class Pending(
         val id: String,
         val period: OutsidePeriod,
-        val resourceBaseline: Map<String, JsonArray> = emptyMap(),
+        val resourceBaseline: Map<String, RawTable> = emptyMap(),
         val baselineTime: Long = 0,
     )
 
@@ -51,14 +77,14 @@ internal class CaptureOutsideSession(
 
     fun load(captureDirectory: File) {
         directory = File(captureDirectory, "accounts")
-        accounts.states.keys.forEach { id ->
+        accounts.ids.toList().forEach { id ->
             val file = file(id)!!
             if (file.isFile) {
                 runCatching {
-                    val saved = Json.decodeFromString<Pending>(file.readText())
+                    val saved = file.inputStream().buffered().use { Json.decodeFromStream<Pending>(it) }
                     check(saved.period.accountId == id)
                     periods[id] = saved
-                    if (saved.resourceBaseline.isNotEmpty()) accounts.restoreResourceBaseline(id, saved.resourceBaseline, saved.baselineTime)
+                    if (saved.resourceBaseline.isNotEmpty()) accounts.restoreResourceBaseline(id, saved.resourceBaseline.mapValues { it.value.json }, saved.baselineTime)
                 }.onFailure { warn() }
             }
         }
@@ -96,7 +122,7 @@ internal class CaptureOutsideSession(
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
             period = previous.period.add(ChangeSource.of(target), delta, time),
-            resourceBaseline = response.next!!.tables.filterKeys { it in outsideResourceTables },
+            resourceBaseline = response.next!!.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = response.next.lastUpdateTime,
         )
         periods[response.id] = next
@@ -108,7 +134,7 @@ internal class CaptureOutsideSession(
         val pending = periods[response.id] ?: return
         val state = response.next ?: return
         periods[response.id] = pending.copy(
-            resourceBaseline = state.tables.filterKeys { it in outsideResourceTables },
+            resourceBaseline = state.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = state.lastUpdateTime,
         )
         persist(response.id)
@@ -125,7 +151,7 @@ internal class CaptureOutsideSession(
         file(id)?.let {
             // A newly discovered account must be loadable before its first pending period is saved.
             if (!File(it.parentFile, "account-state.json").isFile) accounts.save(id)
-            writeCaptureFile(it, Json.encodeToString(periods.getValue(id)))
+            writeCaptureStream(it) { out -> Json.encodeToStream(periods.getValue(id), out) }
         }
     }
 

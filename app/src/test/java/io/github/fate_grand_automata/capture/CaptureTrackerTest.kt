@@ -120,10 +120,10 @@ class CaptureTrackerTest {
         login(7001)
         CaptureTracker.setRunning(true)
         CaptureTracker.startRun()
-        val before = CaptureTracker.state.value
+        val before = CaptureTracker.snapshot()?.second
         feed("/battle/result", """{"response":[{"success":{"phaseClearQp":9000}}],"cache":{"updated":{
             "userItem":[{"userId":7001,"itemId":100,"num":1}],"userGame":[{"userId":7002,"exp":999}]}}}""")
-        assertSame(before, CaptureTracker.state.value)
+        assertSame(before, CaptureTracker.snapshot()?.second)
         assertEquals("7001", CaptureTracker.currentId.value)
         assertEquals(0, assertNotNull(CaptureTracker.finishRun()).capturedBattles)
     }

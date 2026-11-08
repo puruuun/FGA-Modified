@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import timber.log.Timber
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
@@ -30,14 +33,9 @@ object CaptureTracker {
         internal set
     internal val battleInbox = CaptureBattleInbox()
     private const val SAVE_DELAY_SECONDS = 2L
-    private val _state = MutableStateFlow<AccountState?>(null)
-    val state: StateFlow<AccountState?> = _state.asStateFlow()
-    private val _accountStates = MutableStateFlow<Map<String, AccountState>>(emptyMap())
-    /** Immutable per-account versions for read-only dashboards, including non-current accounts. */
-    val accountStates = _accountStates.asStateFlow()
-    private val _rosters = MutableStateFlow<Map<String, FriendRoster>>(emptyMap())
-    /** Friend rosters per account. Other players' data: never logged, never exported. */
-    val rosters = _rosters.asStateFlow()
+    private val _rosterRevision = MutableStateFlow(0L)
+    /** Changes whenever any friend roster was rewritten; the rosters themselves stay on disk (issue #258). */
+    val rosterRevision: StateFlow<Long> = _rosterRevision.asStateFlow()
     private val _accounts = MutableStateFlow<List<CaptureAccount>>(emptyList())
     val accounts: StateFlow<List<CaptureAccount>> = _accounts.asStateFlow()
     private val _currentId = MutableStateFlow<String?>(null)
@@ -49,13 +47,34 @@ object CaptureTracker {
     private val _stopReason = MutableStateFlow<CaptureStopReason?>(null)
     val stopReason: StateFlow<CaptureStopReason?> = _stopReason.asStateFlow()
 
-    private val io = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "capture-save").apply { isDaemon = true } }
+    private fun lowPriority(name: String) = ThreadFactory { r ->
+        Thread({
+            runCatching { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND) }
+            r.run()
+        }, name).apply { isDaemon = true }
+    }
+    private val io = Executors.newSingleThreadScheduledExecutor(lowPriority("capture-save"))
+
+    /**
+     * All account and roster file work runs on this one low-priority thread (issue #258), never on the main or
+     * script thread. Its tasks only touch files, so a caller may wait for it while holding [lock].
+     */
+    private val diskExecutor = Executors.newSingleThreadExecutor(lowPriority("capture-disk"))
+    private val onDiskThread = ThreadLocal<Boolean>()
+    private val disk = object : DiskRunner {
+        override fun <T> run(block: () -> T): T {
+            if (onDiskThread.get() == true) return block()
+            return try {
+                diskExecutor.submit(Callable { onDiskThread.set(true); block() }).get()
+            } catch (e: ExecutionException) { throw e.cause ?: e }
+        }
+    }
     private val pendingSaves = mutableMapOf<String, ScheduledFuture<*>>()
     private var initialized = false
     /** For the home-screen widget refresh after a save. */
     private var widgetContext: Context? = null
     private val lock = Any()
-    private val stored = CaptureAccounts { Timber.w("Capture: %s", it) }
+    private val stored = CaptureAccounts({ Timber.w("Capture: %s", it) }, disk)
     private val runSession = CaptureRunSession()
     private val outside = CaptureOutsideSession(stored, OutsideLogRepository::add,
         warn = { Timber.w("Capture: unreadable outside period") })
@@ -76,6 +95,20 @@ object CaptureTracker {
         runCatching(block).onFailure { Timber.w("Capture: outside log storage failed: %s", it.javaClass.simpleName) }
     }
 
+    private var indexLoaded = false
+
+    /**
+     * Account list only: metadata and summaries, no account state, roster or outside period is parsed. For the AP
+     * widget, which may wake the process while FGA is not running (issue #258).
+     */
+    fun initSummaries(context: Context) = synchronized(lock) {
+        widgetContext = context.applicationContext
+        if (indexLoaded) return@synchronized
+        stored.load(CertStore.directory(context), migrateLegacy = false)
+        indexLoaded = true
+        publish()
+    }
+
     fun init(context: Context) = synchronized(lock) {
         widgetContext = context.applicationContext
         if (initialized) return@synchronized
@@ -87,27 +120,41 @@ object CaptureTracker {
             outside.load(CertStore.directory(context))
         }
         initialized = true
+        indexLoaded = true
         publish()
+        // Read the current account in the background so that the first response does not wait for the disk.
+        if (stored.currentId != null) io.execute { synchronized(lock) { runCatching { stored.state } } }
+        if (stored.hasUnsaved) io.execute { save() }
     }
 
     fun summary(now: Long = System.currentTimeMillis() / 1000): AccountSummary? = synchronized(lock) {
-        stored.state?.let { AccountSummary.from(it, now).copy(masterName = stored.displayName(stored.currentId!!)!!) }
+        stored.currentId?.let { id -> stored.summary(id, now)?.copy(masterName = stored.displayName(id)!!) }
     }
 
     fun accountSummaries(now: Long): List<CaptureAccount> = synchronized(lock) { stored.accounts(now) }
 
-    /** Capture id and immutable state together, so a switch cannot rename another account's export. */
-    fun snapshot(userId: String? = null): Pair<String, AccountState>? = synchronized(lock) {
-        val id = userId ?: stored.currentId ?: return@synchronized null
-        stored.states[id]?.let { id to it }
+    /**
+     * Capture id and immutable state together, so a switch cannot rename another account's export. A state that is
+     * not resident is read from disk for this call only.
+     */
+    fun snapshot(userId: String? = null): Pair<String, AccountState>? {
+        val (id, resident) = synchronized(lock) {
+            val id = userId ?: stored.currentId ?: return null
+            if (id !in stored) return null
+            id to stored.residentState(id)
+        }
+        return (resident ?: stored.readState(id))?.let { id to it }
     }
 
-    private fun runState() = stored.states[runSession.accountId]
+    /** One account's state for a read-only screen; see [snapshot]. */
+    fun loadState(userId: String): AccountState? = snapshot(userId)?.second
+
+    /** The friend roster of [userId], read from disk for this call only. */
+    fun loadRoster(userId: String): FriendRoster? = synchronized(lock) { if (userId in stored) stored else null }?.roster(userId)
+
+    private fun runState() = runSession.accountId?.let(stored::stateOf)
 
     private fun publish() {
-        _accountStates.value = stored.states.toMap()
-        _rosters.value = stored.rosters.toMap()
-        _state.value = stored.state
         _currentId.value = stored.currentId
         _accounts.value = stored.accounts(System.currentTimeMillis() / 1000)
     }
@@ -136,22 +183,30 @@ object CaptureTracker {
 
     private fun handleGameResponse(target: String, payload: ByteArray, contentEncoding: String?) {
         if (CaptureNames.isAccountPath(target)) return
+        val path = CaptureNames.path(target)
+        var login: AccountState.LoginRead? = null
         val body = try {
-            if (CaptureNames.path(target) == "friend/top") {
-                // Issue #254: the body is tens of MB decoded, so only the roster slices are ever kept.
-                BodyDecoder.decodeStream(payload, contentEncoding).use { FriendTopStream.parse(it) }
-            } else {
-                Json.parseToJsonElement(String(BodyDecoder.decode(payload, contentEncoding), Charsets.UTF_8)) as? JsonObject
+            when {
+                path == "friend/top" ->
+                    // Issue #254: the body is tens of MB decoded, so only the roster slices are ever kept.
+                    BodyDecoder.decodeStream(payload, contentEncoding).use { FriendTopStream.parse(it) }
+                path == "login/top" ->
+                    // Issue #258: the login body is read table by table; no full String or tree exists.
+                    BodyDecoder.decodeStream(payload, contentEncoding).use { AccountState.readLogin(it, target) }
+                        .also { login = it }.routing
+                else -> Json.parseToJsonElement(String(BodyDecoder.decode(payload, contentEncoding), Charsets.UTF_8)) as? JsonObject
             }
         } catch (_: Exception) { null } ?: return
         synchronized(lock) {
             val previousCurrent = stored.currentId
+            val now = System.currentTimeMillis() / 1000
             val rosterId = stored.friendTarget(target, body)
-            val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, System.currentTimeMillis() / 1000)
-            if (rosterChanged) { publish(); scheduleSave(rosterId) }
-            val response = stored.apply(target, body, System.currentTimeMillis() / 1000) ?: return
+            val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, now)
+            if (rosterChanged) { _rosterRevision.value += 1; publish(); scheduleSave(rosterId) }
+            val response = (login?.let { read -> stored.apply(target, body, now, loadPrevious = !read.replacesAccount) { read.reducer(it, now) } }
+                ?: stored.apply(target, body, now)) ?: return
             runSession.collect(target, body, response.previous, response.next, response.id)
-            if (CaptureNames.path(target) == "battle/result" && runSession.collectingFor(response.id)) {
+            if (path == "battle/result" && runSession.collectingFor(response.id)) {
                 battleInbox.add(CapturedBattle.parse(body, response.previous))
             }
             outsideWork { outside.collect(target, response) }

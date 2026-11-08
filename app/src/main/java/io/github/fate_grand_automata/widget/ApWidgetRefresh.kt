@@ -60,7 +60,7 @@ class ApWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWork
             ApWidgetRefresh.cancel(applicationContext)
             return Result.success()
         }
-        withContext(Dispatchers.IO) { CaptureTracker.init(applicationContext) }
+        withContext(Dispatchers.IO) { CaptureTracker.initSummaries(applicationContext) }
         ApWidget().updateAll(applicationContext)
         return Result.success()
     }

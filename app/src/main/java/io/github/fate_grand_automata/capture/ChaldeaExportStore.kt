@@ -35,7 +35,6 @@ object ChaldeaExportStore {
                 CaptureTracker.init(context)
                 val (id, state) = CaptureTracker.snapshot(userId) ?: return@withLock Result.NoSnapshot
                 val name = ChaldeaFiles.name(id, LocalDateTime.now())
-                val body = ChaldeaExport.body(state)
                 val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
                     put(MediaStore.Downloads.DISPLAY_NAME, name)
                     put(MediaStore.Downloads.MIME_TYPE, "application/json")
@@ -43,7 +42,7 @@ object ChaldeaExportStore {
                     put(MediaStore.Downloads.IS_PENDING, 1)
                 }))
                 created = uri
-                checkNotNull(resolver.openOutputStream(uri, "w")).bufferedWriter(Charsets.UTF_8).use { it.write(body) }
+                checkNotNull(resolver.openOutputStream(uri, "w")).bufferedWriter(Charsets.UTF_8).use { ChaldeaExport.write(state, it) }
                 // Delete previous entries only after the new body was fully written. Restore the
                 // requested name before publishing, since a same-minute insert may get a suffix.
                 val old = ownedExports(context).filter { ContentUris.parseId(it.uri) != ContentUris.parseId(uri) }

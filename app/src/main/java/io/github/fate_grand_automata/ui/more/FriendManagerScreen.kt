@@ -58,23 +58,28 @@ fun FriendManagerScreen(vm: FriendManagerViewModel = hiltViewModel(), requestedI
     val accounts by vm.accounts.collectAsStateWithLifecycle()
     val current by vm.currentId.collectAsStateWithLifecycle()
     val names by vm.names.collectAsStateWithLifecycle()
-    FriendManagerContent(null, names, accounts = accounts, currentId = current, requestedId = requestedId)
+    FriendManagerContent(null, names, accounts = accounts, currentId = current, requestedId = requestedId, onSelected = vm::select)
 }
 
 @Composable
 internal fun FriendManagerContent(roster: FriendRoster?, names: GameNameMap, initialNow: Long? = null,
-    accounts: List<FriendManagerAccount> = emptyList(), currentId: String? = null, requestedId: String? = null) {
+    accounts: List<FriendManagerAccount> = emptyList(), currentId: String? = null, requestedId: String? = null,
+    onSelected: (String?) -> Unit = {}) {
     var now by remember { mutableLongStateOf(initialNow ?: (System.currentTimeMillis() / 1000)) }
     LaunchedEffect(initialNow) {
         if (initialNow == null) while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) }
     }
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedId = chosen?.takeIf { id -> accounts.any { it.account.id == id } } ?: defaultFriendAccount(currentId, accounts, requestedId)
+    LaunchedEffect(selectedId) { onSelected(selectedId) }
     val selected = accounts.firstOrNull { it.account.id == selectedId }
     val activeRoster = selected?.roster ?: roster
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
-            if (activeRoster == null) {
+            if (activeRoster == null && selected != null) {
+                // The roster of the selected account is being read from disk.
+                Heading(stringResource(R.string.friends_title))
+            } else if (activeRoster == null) {
                 Heading(stringResource(R.string.friends_title))
                 Text(stringResource(R.string.friends_empty), Modifier.padding(16.dp).testTag("friends-empty"))
             } else key(selectedId) {
@@ -109,8 +114,8 @@ private fun AccountLabel(item: FriendManagerAccount, now: Long, modifier: Modifi
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(item.account.server, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
-        Text(stringResource(R.string.friends2_account_detail, item.account.summary.level, item.roster.friends.size,
-            loginText(agoParts(now - item.roster.updatedAt))), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.friends2_account_detail, item.account.summary.level, item.friendCount,
+            loginText(agoParts(now - item.updatedAt))), style = MaterialTheme.typography.bodySmall)
     }
 }
 

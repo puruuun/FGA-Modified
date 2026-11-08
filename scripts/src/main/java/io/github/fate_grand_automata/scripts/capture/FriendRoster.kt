@@ -1,6 +1,9 @@
 package io.github.fate_grand_automata.scripts.capture
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import java.io.InputStream
+import java.io.OutputStream
 import kotlinx.serialization.json.*
 
 /** One support servant slot of a friend. Append values are skill levels, null while locked. */
@@ -51,7 +54,25 @@ data class Friend(
 data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend> = emptyMap()) {
     fun toJson(): String = Json.encodeToString(this)
 
+    /** Same bytes as [toJson], written without building the whole text (issue #258). */
+    @OptIn(ExperimentalSerializationApi::class)
+    fun writeTo(out: OutputStream) = Json.encodeToStream(this, out)
+
     companion object {
+        @OptIn(ExperimentalSerializationApi::class)
+        fun fromStream(input: InputStream): FriendRoster = Json.decodeFromStream(input)
+
+        /** True when [body] carries a friend (type 1) support entry that [mergeFollowers] could apply. */
+        fun hasFollowerInfo(body: JsonObject): Boolean {
+            val followers = ((body["cache"] as? JsonObject)?.get("updated") as? JsonObject)?.get("userFollower") as? JsonArray
+                ?: return false
+            return followers.any { f ->
+                ((f as? JsonObject)?.get("followerInfo") as? JsonArray).orEmpty().any { info ->
+                    (info as? JsonObject)?.long("type") == 1L
+                }
+            }
+        }
+
         private val APPEND_SLOTS = mapOf(3001000L to 1, 3002000L to 2, 3033000L to 4, 3034000L to 5)
 
         fun fromJson(value: String): FriendRoster = Json.decodeFromString(value)

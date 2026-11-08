@@ -62,7 +62,7 @@ class ApWidgetConfigActivity : ComponentActivity() {
                         if (!enabled || Build.VERSION.SDK_INT < 29) {
                             apWidgetChoices(enabled, Build.VERSION.SDK_INT, emptyList())
                         } else {
-                            CaptureTracker.init(context)
+                            CaptureTracker.initSummaries(context)
                             apWidgetChoices(enabled, Build.VERSION.SDK_INT, CaptureTracker.accountSummaries(System.currentTimeMillis() / 1000))
                         }
                     }

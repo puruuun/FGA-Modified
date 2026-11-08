@@ -97,3 +97,14 @@ internal fun writeCaptureFile(file: File, text: String) {
     }
     Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
 }
+
+/** Same atomic replace as [writeCaptureFile], streamed so a large file never exists as a String (issue #258). */
+internal fun writeCaptureStream(file: File, write: (java.io.OutputStream) -> Unit) {
+    check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
+    val temp = File(file.parentFile, file.name + ".tmp")
+    temp.outputStream().buffered().use {
+        write(it)
+        it.flush()
+    }
+    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+}

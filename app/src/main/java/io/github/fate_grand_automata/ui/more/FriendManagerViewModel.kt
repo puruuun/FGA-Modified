@@ -11,24 +11,46 @@ import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.scripts.capture.FriendRoster
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 
-data class FriendManagerAccount(val account: CaptureAccount, val roster: FriendRoster)
+/**
+ * One account of the friend manager. Only [roster] of the selected account is loaded (issue #258); the others carry
+ * the friend count and update time from the account index.
+ */
+data class FriendManagerAccount(val account: CaptureAccount, val friendCount: Int, val updatedAt: Long, val roster: FriendRoster?) {
+    constructor(account: CaptureAccount, roster: FriendRoster) : this(account, roster.friends.size, roster.updatedAt, roster)
+}
 
 internal fun defaultFriendAccount(current: String?, accounts: List<FriendManagerAccount>, requested: String? = null): String? =
     accounts.firstOrNull { requested != null && it.account.id == requested }?.account?.id
         ?: accounts.firstOrNull { it.account.id == current }?.account?.id
-        ?: accounts.sortedWith(compareByDescending<FriendManagerAccount> { it.roster.updatedAt }.thenBy { it.account.id })
+        ?: accounts.sortedWith(compareByDescending<FriendManagerAccount> { it.updatedAt }.thenBy { it.account.id })
             .firstOrNull()?.account?.id
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FriendManagerViewModel @Inject constructor(@ApplicationContext context: Context) : ViewModel() {
     val currentId = CaptureTracker.currentId
-    val accounts = combine(CaptureTracker.accounts, CaptureTracker.rosters) { accounts, rosters ->
-        accounts.mapNotNull { account -> rosters[account.id]?.let { FriendManagerAccount(account, it) } }
+    private val selected = MutableStateFlow<String?>(null)
+    private val listed = CaptureTracker.accounts.map { accounts ->
+        accounts.mapNotNull { account -> account.friendCount?.let { FriendManagerAccount(account, it, account.friendUpdatedAt, null) } }
+    }
+
+    /** The account the screen shows; its roster is read from disk when it is selected or changes. */
+    fun select(id: String?) { selected.value = id }
+
+    val accounts = combine(listed, selected, currentId, CaptureTracker.rosterRevision) { list, chosen, current, _ ->
+        Triple(list, chosen, current)
+    }.mapLatest { (list, chosen, current) ->
+        val target = defaultFriendAccount(current, list, chosen)
+        list.map { item ->
+            if (item.account.id == target) item.copy(roster = withContext(Dispatchers.IO) { CaptureTracker.loadRoster(item.account.id) }) else item
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val names = MutableStateFlow(GameNameMap())
 
@@ -39,7 +61,7 @@ class FriendManagerViewModel @Inject constructor(@ApplicationContext context: Co
             combine(accounts, CaptureTracker.accounts) { friends, stored ->
                 friends to stored.any { it.server == "JP" }
             }.collectLatest { (accounts, hasJpAccount) ->
-                val slots = accounts.flatMap { it.roster.friends.values }.flatMap { it.slots }
+                val slots = accounts.mapNotNull { it.roster }.flatMap { it.friends.values }.flatMap { it.slots }
                 if (slots.isEmpty()) return@collectLatest
                 names.value = cache.friends(slots.map { it.svtId }.toSet(), slots.map { it.ceId }.filter { it != 0L }.toSet(),
                     hasJpAccount = hasJpAccount)

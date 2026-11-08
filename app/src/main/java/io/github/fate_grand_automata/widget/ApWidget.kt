@@ -81,7 +81,7 @@ suspend fun loadApWidgetState(context: Context, appWidgetId: Int, now: Long = Sy
         val bound = ApWidgetBindings(context).accountFor(appWidgetId)
         val enabled = captureEnabled(context)
         if (bound == null || !enabled || Build.VERSION.SDK_INT < 29) return@withContext ApWidgetState.NoData
-        CaptureTracker.init(context)
+        CaptureTracker.initSummaries(context)
         apWidgetState(bound, enabled, Build.VERSION.SDK_INT, CaptureTracker.accountSummaries(now), now)
     }
 
