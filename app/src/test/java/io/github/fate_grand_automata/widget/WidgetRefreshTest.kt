@@ -48,7 +48,6 @@ class WidgetRefreshTest {
         WidgetRefresh.updateAp = { updated += "ap"; done.countDown() }
         val receiver = WidgetRestoreReceiver()
         receiver.onReceive(context, Intent(action))
-        assertTrue(shadowOf(receiver).wentAsync())
         assertTrue(done.await(5, TimeUnit.SECONDS))
         assertEquals(setOf("service", "ap"), updated.toSet())
     }

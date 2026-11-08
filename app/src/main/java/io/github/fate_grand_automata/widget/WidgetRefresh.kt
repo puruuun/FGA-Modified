@@ -47,7 +47,7 @@ class WidgetRestoreReceiver : BroadcastReceiver() {
             try {
                 WidgetRefresh.updatePlaced(app)
             } finally {
-                pending.finish()
+                pending?.finish()
             }
         }
     }
