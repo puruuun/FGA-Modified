@@ -208,11 +208,9 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                     else -> SlotStop.CannotEnhance
                 })
             }
-            // A temporarily joined servant shows a notice first (upstream AutoServantLevel taps its execute button whenever
-            // it is visible). The cap only stops a tap that never takes effect from looping forever.
-            var notices = 0
-            while (!panel.dialogIsEnhance() && notices < MAX_NOTICE_TAPS && panel.noticeExecuteVisible()) {
-                notices++
+            // A temporarily joined servant shows a notice first; like upstream AutoServantLevel, tap its execute button
+            // whenever it is visible.
+            while (!panel.dialogIsEnhance() && panel.noticeExecuteVisible()) {
                 line("action=notice-execute")
                 panel.pressNoticeExecute()
                 val seenAgain = panel.awaitDialog()
@@ -283,6 +281,5 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
 
     companion object {
         const val MAX_PASSES = 11
-        const val MAX_NOTICE_TAPS = 5
     }
 }

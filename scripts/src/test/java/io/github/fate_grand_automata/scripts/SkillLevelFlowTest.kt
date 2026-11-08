@@ -161,14 +161,6 @@ class SkillLevelFlowTest {
         assertEquals(4, panel.levels[0])
     }
 
-    @Test fun `execute that never takes effect stops after the tap cap as unexpected dialog`() {
-        val panel = FakePanel(mutableListOf(3), notice = true, noticeTaps = Int.MAX_VALUE)
-        assertEquals(SlotStop.UnexpectedDialog, run(panel, 8).single().stop)
-        assertEquals(SkillLevelFlow.MAX_NOTICE_TAPS, panel.executes)
-        assertEquals(0, panel.confirms)
-        assertEquals(1, panel.cancels)
-    }
-
     @Test fun `enhancement dialog at the target after the notice is reached without confirming`() {
         val panel = FakePanel(mutableListOf(4), notice = true)
         val result = run(panel, 4).single()
