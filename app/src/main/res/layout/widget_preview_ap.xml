@@ -1,45 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:gravity="center_vertical"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:orientation="horizontal"
+    android:padding="10dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/widget_preview_name"
-        android:textColor="@color/widget_on_surface"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="AP 96 / 144"
-        android:textColor="@color/widget_on_surface"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        tools:ignore="HardcodedText"
-        xmlns:tools="http://schemas.android.com/tools" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_preview_name"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-    <ProgressBar
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="4dp"
-        android:max="144"
-        android:progress="96"
-        android:progressTint="@color/widget_accent"
-        android:progressBackgroundTint="@color/widget_track" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AP 96 / 144"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/widget_preview_full_at"
-        android:textColor="@color/widget_secondary"
-        android:textSize="12sp" />
+        <ProgressBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="2dp"
+            android:max="144"
+            android:progress="96"
+            android:progressBackgroundTint="@color/widget_track"
+            android:progressTint="@color/widget_bar_end" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="@string/widget_preview_full_at"
+            android:textColor="@color/widget_full_at"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="56dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_tile_background"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_play"
+            android:tint="@color/widget_accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_service_off"
+            android:textColor="@color/widget_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

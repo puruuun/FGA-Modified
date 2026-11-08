@@ -103,12 +103,33 @@ class ApWidgetModelTest {
         assertEquals(ApWidgetState.NoData, apWidgetState(null, true, 33, listOf(account(1301)), 1000))
     }
 
-    @Test fun layoutIsCompactAtAbout2x1AndFullAtAbout3x2() {
-        assertEquals(ApWidgetLayout.Compact, apWidgetLayout(110f, 40f))
-        assertEquals(ApWidgetLayout.Compact, apWidgetLayout(180f, 70f))
-        assertEquals(ApWidgetLayout.Compact, apWidgetLayout(140f, 110f))
-        assertEquals(ApWidgetLayout.Full, apWidgetLayout(180f, 110f))
-        assertEquals(ApWidgetLayout.Full, apWidgetLayout(250f, 180f))
+    @Test fun narrowWidgetHidesTheTimeLeftAndTheRefreshIcon() {
+        assertEquals(ApWidgetFields(showRemaining = false, showRefresh = false), apWidgetFields(180f))
+        assertEquals(ApWidgetFields(showRemaining = false, showRefresh = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP - 0.1f))
+        assertEquals(ApWidgetFields(showRemaining = true, showRefresh = true), apWidgetFields(AP_WIDGET_WIDE_MIN_DP))
+        assertEquals(ApWidgetFields(showRemaining = true, showRefresh = true), apWidgetFields(272f))
+    }
+
+    @Test fun dataAgeUsesTheLargestWholeUnit() {
+        val t = 1_800_000_000L
+        assertEquals(DataAge.Now, dataAge(t, t))
+        assertEquals(DataAge.Now, dataAge(t - 59, t))
+        assertEquals(DataAge.Minutes(1), dataAge(t - 60, t))
+        assertEquals(DataAge.Minutes(59), dataAge(t - 59 * 60 - 59, t))
+        assertEquals(DataAge.Hours(1), dataAge(t - 3600, t))
+        assertEquals(DataAge.Hours(23), dataAge(t - 23 * 3600 - 59 * 60, t))
+        assertEquals(DataAge.Days(1), dataAge(t - 86400, t))
+        assertEquals(DataAge.Days(3), dataAge(t - 3 * 86400 - 5, t))
+        // A clock that went backwards never shows a negative age.
+        assertEquals(DataAge.Now, dataAge(t + 500, t))
+    }
+
+    @Test fun remainingTimeIsHoursAndPaddedMinutes() {
+        assertEquals("3:23", remainingText(3 * 60 + 23))
+        assertEquals("0:25", remainingText(25))
+        assertEquals("0:05", remainingText(5))
+        assertEquals("10:00", remainingText(600))
+        assertEquals("0:00", remainingText(-4))
     }
 
     @Test fun choicesAreUnavailableWithoutLogCollectionOrAccounts() {
@@ -123,5 +144,6 @@ class ApWidgetModelTest {
         assertEquals(ServiceWidgetAction.Start, serviceWidgetModel(false).action)
         assertEquals(ServiceWidgetAction.Stop, serviceWidgetModel(true).action)
         assertTrue(serviceWidgetModel(false).labelRes != serviceWidgetModel(true).labelRes)
+        assertTrue(serviceWidgetModel(false).iconRes != serviceWidgetModel(true).iconRes)
     }
 }

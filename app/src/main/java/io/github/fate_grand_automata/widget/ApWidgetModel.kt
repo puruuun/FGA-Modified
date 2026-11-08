@@ -54,12 +54,6 @@ fun apWidgetState(
     return ApWidgetState.Data(apWidgetModel(account, now))
 }
 
-enum class ApWidgetLayout { Compact, Full }
-
-/** Compact (AP and full-at time only) at about 2x1 cells; the full layout from about 3x2. */
-fun apWidgetLayout(widthDp: Float, heightDp: Float) =
-    if (heightDp < 90f || widthDp < 150f) ApWidgetLayout.Compact else ApWidgetLayout.Full
-
 /** What the configuration screen shows. */
 sealed interface ApWidgetChoices {
     /** Log collection is off, Android is below 10, or no account has been collected yet. */

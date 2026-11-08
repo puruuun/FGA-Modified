@@ -3,9 +3,20 @@ package io.github.fate_grand_automata.widget
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
+import androidx.glance.ColorFilter
+import androidx.glance.Image
+import androidx.glance.action.ActionParameters
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.updateAll
+import androidx.glance.layout.Box
+import androidx.glance.layout.fillMaxHeight
+import androidx.glance.layout.size
+import io.github.fate_grand_automata.runner.ScriptRunnerService
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
@@ -15,7 +26,6 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
@@ -38,38 +48,6 @@ import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Date
-
-/** Strings shown by the AP widget; built apart from Glance so they can be unit tested. */
-data class ApWidgetTexts(
-    val name: String,
-    val server: String,
-    val apLine: String,
-    /** "Full 9:41 PM (in 4h 35m)", or "AP full". */
-    val fullLine: String,
-    /** The compact variant of [fullLine]: no time left. */
-    val fullLineShort: String,
-    val dataLine: String,
-)
-
-fun apWidgetTexts(context: Context, model: ApWidgetModel): ApWidgetTexts {
-    val clock = android.text.format.DateFormat.getTimeFormat(context)
-    fun time(epochSeconds: Long) = clock.format(Date(epochSeconds * 1000))
-    fun duration(minutes: Long) =
-        if (minutes >= 60) context.getString(R.string.widget_duration_hm, minutes / 60, minutes % 60)
-        else context.getString(R.string.widget_duration_m, minutes)
-    val full = context.getString(R.string.widget_ap_full)
-    val fullAt = model.fullAt
-    return ApWidgetTexts(
-        name = model.name,
-        server = model.server,
-        apLine = context.getString(R.string.widget_ap_value, model.ap.toString(), model.apMax.toString()),
-        fullLine = if (fullAt == null) full
-        else context.getString(R.string.widget_ap_full_at, time(fullAt), duration(model.minutesLeft ?: 0)),
-        fullLineShort = if (fullAt == null) full else context.getString(R.string.widget_ap_full_at_short, time(fullAt)),
-        dataLine = context.getString(R.string.widget_ap_data_time, time(model.dataTime)),
-    )
-}
 
 /** Whether log-collection data may be read right now (switch on, Android 10+). */
 fun captureEnabled(context: Context): Boolean =
@@ -91,88 +69,130 @@ class ApWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         val state = runCatching { loadApWidgetState(context, appWidgetId) }.getOrDefault(ApWidgetState.NoData)
-        provideContent { ApWidgetContent(state) }
+        val started = ScriptRunnerService.serviceStarted.value
+        provideContent { ApWidgetContent(state, started) }
+    }
+}
+
+/** Re-renders every AP widget from the stored summaries; nothing is fetched. */
+class RefreshApWidgetCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        withContext(Dispatchers.IO) { CaptureTracker.initSummaries(context) }
+        ApWidget().updateAll(context)
+    }
+}
+
+private val rowPadding = 8.dp
+private val gap = 6.dp
+private val maxRowHeight = 76.dp
+
+@Composable
+fun ApWidgetContent(state: ApWidgetState, serviceStarted: Boolean = false) {
+    val context = LocalContext.current
+    val size = LocalSize.current
+    val fields = apWidgetFields(size.width.value)
+    val tileWidth = if (fields.showRemaining) 60.dp else 48.dp
+    val rowHeight = if (size.height > maxRowHeight) maxRowHeight else size.height
+    Box(
+        modifier = GlanceModifier.fillMaxSize().background(ImageProvider(R.drawable.widget_background)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth().height(rowHeight).padding(rowPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            when (state) {
+                ApWidgetState.NoData -> Box(
+                    modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        .clickable(actionStartActivity(WidgetIntents.openApp(context))),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        context.getString(R.string.widget_ap_no_data),
+                        style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 13.sp),
+                        maxLines = 2,
+                    )
+                }
+
+                is ApWidgetState.Data -> {
+                    val infoWidth = size.width - rowPadding * 2 - tileWidth - gap
+                    ApInfo(state.model, fields, infoWidth, GlanceModifier.defaultWeight().fillMaxHeight())
+                }
+            }
+            Spacer(GlanceModifier.width(gap))
+            ServiceToggleTile(serviceStarted, GlanceModifier.width(tileWidth).fillMaxHeight())
+        }
     }
 }
 
 @Composable
-fun ApWidgetContent(state: ApWidgetState) {
+private fun ApInfo(model: ApWidgetModel, fields: ApWidgetFields, width: Dp, modifier: GlanceModifier) {
     val context = LocalContext.current
-    val size = LocalSize.current
-    val base = GlanceModifier.fillMaxSize().background(ImageProvider(R.drawable.widget_background))
-    when (state) {
-        ApWidgetState.NoData -> Column(
-            modifier = base.padding(8.dp).clickable(actionStartActivity(WidgetIntents.openApp(context))),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    val texts = apWidgetTexts(context, model)
+    val open: Action = actionStartActivity(WidgetIntents.openAccount(context, model.accountId))
+    Column(modifier = modifier.clickable(open), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = GlanceModifier.background(ImageProvider(R.drawable.widget_chip_background)).padding(horizontal = 5.dp, vertical = 1.dp),
+            ) {
+                Text(
+                    texts.server,
+                    style = TextStyle(color = ColorProvider(R.color.widget_chip_text), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+            }
+            Spacer(GlanceModifier.width(5.dp))
             Text(
-                context.getString(R.string.widget_ap_no_data),
-                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 13.sp),
+                texts.name,
+                modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+            )
+            Text(
+                texts.age,
+                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp),
+                maxLines = 1,
+            )
+            if (fields.showRefresh) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_refresh),
+                    contentDescription = context.getString(R.string.widget_refresh),
+                    modifier = GlanceModifier.size(18.dp).padding(2.dp).clickable(actionRunCallback<RefreshApWidgetCallback>()),
+                    colorFilter = ColorFilter.tint(ColorProvider(R.color.widget_secondary)),
+                )
+            }
+        }
+        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Text(
+                texts.apLabel,
+                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+            )
+            Spacer(GlanceModifier.width(4.dp))
+            Text(
+                texts.ap,
+                style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+            )
+            Spacer(GlanceModifier.width(3.dp))
+            Text(
+                texts.apMax,
+                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = if (fields.showRemaining) 12.sp else 11.sp),
+                maxLines = 1,
+            )
+            Spacer(GlanceModifier.width(6.dp))
+            Spacer(GlanceModifier.defaultWeight())
+            Text(
+                if (fields.showRemaining) texts.fullLine else texts.fullLineShort,
+                style = TextStyle(color = ColorProvider(R.color.widget_full_at), fontSize = if (fields.showRemaining) 11.sp else 10.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
             )
         }
-
-        is ApWidgetState.Data -> {
-            val texts = apWidgetTexts(context, state.model)
-            val open: Action = actionStartActivity(WidgetIntents.openAccount(context, state.model.accountId))
-            if (apWidgetLayout(size.width.value, size.height.value) == ApWidgetLayout.Compact) {
-                Column(
-                    modifier = base.padding(horizontal = 10.dp, vertical = 4.dp).clickable(open),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        texts.apLine,
-                        style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 15.sp, fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                    )
-                    Text(
-                        texts.fullLineShort,
-                        style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 11.sp),
-                        maxLines = 1,
-                    )
-                }
-            } else {
-                Column(
-                    modifier = base.padding(horizontal = 12.dp, vertical = 8.dp).clickable(open),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            texts.name,
-                            modifier = GlanceModifier.defaultWeight(),
-                            style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 13.sp, fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                        )
-                        Spacer(GlanceModifier.width(6.dp))
-                        Text(
-                            texts.server,
-                            style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 11.sp),
-                        )
-                    }
-                    Text(
-                        texts.apLine,
-                        style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 18.sp, fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                    )
-                    Spacer(GlanceModifier.height(1.dp))
-                    LinearProgressIndicator(
-                        progress = state.model.fraction,
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        color = ColorProvider(R.color.widget_accent),
-                        backgroundColor = ColorProvider(R.color.widget_track),
-                    )
-                    Spacer(GlanceModifier.height(3.dp))
-                    Text(
-                        texts.fullLine,
-                        style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 11.sp),
-                        maxLines = 1,
-                    )
-                    Text(
-                        texts.dataLine,
-                        style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp),
-                        maxLines = 1,
-                    )
-                }
+        Spacer(GlanceModifier.height(2.dp))
+        val fill = width * model.fraction
+        Box(modifier = GlanceModifier.fillMaxWidth().height(6.dp).background(ImageProvider(R.drawable.widget_bar_track))) {
+            if (fill >= 1.dp) {
+                Box(modifier = GlanceModifier.width(fill).fillMaxHeight().background(ImageProvider(R.drawable.widget_bar_fill))) {}
             }
         }
     }

@@ -54,23 +54,31 @@ class WidgetScreenshotTest(private val dark: Boolean) {
     }
 
     private val model = ApWidgetModel(
-        accountId = "7001", name = "주회 계정", server = "KR", ap = 96, apMax = 144,
-        fullAt = now + (4 * 60 + 35) * 60, minutesLeft = 4 * 60 + 35, dataTime = now - 600,
+        accountId = "7001", name = "칼데아_마스터", server = "KR", ap = 57, apMax = 142,
+        fullAt = now + (3 * 60 + 23) * 60, minutesLeft = 3 * 60 + 23, dataTime = now - 5,
     )
+
+    private val wide = DpSize(272.dp, 66.dp)
+    private val narrow = DpSize(200.dp, 66.dp)
+    private val fullAp get() = model.copy(ap = 144, fullAt = null, minutesLeft = null)
 
     @Test fun serviceStopped() = shoot("service_stopped_1x1", DpSize(72.dp, 72.dp)) { ServiceWidgetContent(started = false) }
 
     @Test fun serviceRunning() = shoot("service_running_1x1", DpSize(72.dp, 72.dp)) { ServiceWidgetContent(started = true) }
 
-    @Test fun apFull3x2() = shoot("ap_3x2", DpSize(250.dp, 110.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+    @Test fun ap4x1() = shoot("ap_4x1", wide) { ApWidgetContent(ApWidgetState.Data(model)) }
 
-    @Test fun apCompact2x1() = shoot("ap_compact_2x1", DpSize(160.dp, 56.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+    @Test fun ap4x1Running() = shoot("ap_4x1_on", wide) { ApWidgetContent(ApWidgetState.Data(model), serviceStarted = true) }
 
-    @Test fun apAlreadyFull() = shoot("ap_full_ap_3x2", DpSize(250.dp, 110.dp)) {
-        ApWidgetContent(ApWidgetState.Data(model.copy(ap = 144, fullAt = null, minutesLeft = null)))
-    }
+    @Test fun ap3x1() = shoot("ap_3x1", narrow) { ApWidgetContent(ApWidgetState.Data(model)) }
 
-    @Test fun apNoData() = shoot("ap_no_data_3x2", DpSize(250.dp, 110.dp)) { ApWidgetContent(ApWidgetState.NoData) }
+    @Test fun apFull4x1() = shoot("ap_full_ap_4x1", wide) { ApWidgetContent(ApWidgetState.Data(fullAp)) }
+
+    @Test fun apFull3x1() = shoot("ap_full_ap_3x1", narrow) { ApWidgetContent(ApWidgetState.Data(fullAp)) }
+
+    @Test fun apNoData() = shoot("ap_no_data_4x1", wide) { ApWidgetContent(ApWidgetState.NoData) }
+
+    @Test fun apAlreadyPlaced3x2() = shoot("ap_3x2_legacy", DpSize(250.dp, 110.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
 
     companion object {
         @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "dark={0}")

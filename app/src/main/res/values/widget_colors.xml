@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The widgets keep one dark navy look in both system themes (see values-night, which is identical). -->
 <resources>
-    <color name="widget_surface">#F3F6FA</color>
-    <color name="widget_on_surface">#1B1F23</color>
-    <color name="widget_secondary">#56616C</color>
-    <color name="widget_accent">#1B6EF3</color>
-    <color name="widget_track">#D3DAE2</color>
-    <color name="widget_stop">#B3261E</color>
+    <color name="widget_surface">#0E1626</color>
+    <color name="widget_surface_end">#16243C</color>
+    <color name="widget_stroke">#26405F</color>
+    <color name="widget_on_surface">#F2F5FA</color>
+    <color name="widget_secondary">#A9B6C8</color>
+    <color name="widget_accent">#3FA9FF</color>
+    <color name="widget_on">#4EE0B0</color>
+    <color name="widget_full_at">#5FE3B0</color>
+    <color name="widget_chip">#17314D</color>
+    <color name="widget_chip_text">#8FD3FF</color>
+    <color name="widget_track">#0A101C</color>
+    <color name="widget_bar_start">#2DD4A8</color>
+    <color name="widget_bar_end">#2F9BFF</color>
+    <color name="widget_tile">#1B2638</color>
+    <color name="widget_tile_stroke">#34445C</color>
+    <color name="widget_tile_circle">#1E4468</color>
+    <color name="widget_tile_circle_on">#1B4F46</color>
 </resources>
