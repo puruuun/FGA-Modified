@@ -62,24 +62,28 @@ class ApWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        provideContent { ApWidgetSessionContent() }
+        // Load before the first frame, so a new session never shows "no data" while the summaries load.
+        val initial = runCatching { loadApWidgetState(context) }.getOrDefault(ApWidgetState.NoData)
+        provideContent { ApWidgetSessionContent(initial) }
     }
 }
 
 /** Both state sources are observed inside the live composition. */
 @Composable
-internal fun ApWidgetSessionContent() {
-    val state by rememberApWidgetState(LocalContext.current)
+internal fun ApWidgetSessionContent(initial: ApWidgetState) {
+    val state by rememberApWidgetState(LocalContext.current, initial)
     ApWidgetContent(state, ScriptRunnerService.serviceStarted.value)
 }
 
 @Composable
 internal fun rememberApWidgetState(
     context: Context,
+    initial: ApWidgetState,
     load: suspend (Context) -> ApWidgetState = { loadApWidgetState(it) },
 ): State<ApWidgetState> {
     val revision by ApWidgetRefresh.revision.collectAsState()
-    return produceState<ApWidgetState>(ApWidgetState.NoData, context, revision) {
+    // Starts from the state loaded in provideGlance and reloads on every requested update.
+    return produceState(initial, context, revision) {
         value = runCatching { load(context) }.getOrDefault(ApWidgetState.NoData)
     }
 }

@@ -53,7 +53,7 @@ class WidgetStateTest {
         var loads = 0
         val load: suspend (Context) -> ApWidgetState = { loads++; saved }
         compose.setContent {
-            val current by rememberApWidgetState(context, load)
+            val current by rememberApWidgetState(context, ApWidgetState.NoData, load)
             val seen = current
             SideEffect { rendered = seen }
         }
@@ -70,5 +70,19 @@ class WidgetStateTest {
         runBlocking { ApWidgetRefresh.updateAll(context) }
         compose.waitUntil(5_000) { rendered == ApWidgetState.NoData }
         assertEquals(ApWidgetState.NoData, rendered)
+    }
+
+    @Test fun firstFrameShowsTheStateLoadedBeforeComposition() {
+        val initial = ApWidgetState.Data(listOf(model))
+        val frames = mutableListOf<ApWidgetState>()
+        val load: suspend (Context) -> ApWidgetState = { initial }
+        compose.setContent {
+            val current by rememberApWidgetState(context, initial, load)
+            val seen = current
+            SideEffect { frames += seen }
+        }
+        compose.waitForIdle()
+        assertEquals(initial, frames.first())
+        assertTrue(frames.none { it == ApWidgetState.NoData })
     }
 }
