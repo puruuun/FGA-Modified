@@ -18,8 +18,10 @@
         <package android:name="com.aniplex.fategrandorder" />
     </queries>
 
+    <!-- largeHeap: the JP friend/top capture needs headroom on top of the account state trees (#254). -->
     <application
         android:name=".util.AutomataApplication"
+        android:largeHeap="true"
         android:allowBackup="true"
         android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"

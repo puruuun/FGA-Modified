@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.scripts.capture.BodyDecoder
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.CapturedBattle
 import io.github.fate_grand_automata.scripts.capture.FriendRoster
+import io.github.fate_grand_automata.scripts.capture.FriendTopStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -130,10 +131,18 @@ object CaptureTracker {
     fun addTlsFailure() { _tlsFailures.value += 1 }
 
     /** Feeds one decoded game API response; account/token paths never get here. */
-    fun onGameResponse(target: String, payload: ByteArray, contentEncoding: String?) {
+    fun onGameResponse(target: String, payload: ByteArray, contentEncoding: String?) =
+        guardedCapture(CaptureNames.path(target), payload.size) { handleGameResponse(target, payload, contentEncoding) }
+
+    private fun handleGameResponse(target: String, payload: ByteArray, contentEncoding: String?) {
         if (CaptureNames.isAccountPath(target)) return
         val body = try {
-            Json.parseToJsonElement(String(BodyDecoder.decode(payload, contentEncoding), Charsets.UTF_8)) as? JsonObject
+            if (CaptureNames.path(target) == "friend/top") {
+                // Issue #254: the body is tens of MB decoded, so only the roster slices are ever kept.
+                BodyDecoder.decodeStream(payload, contentEncoding).use { FriendTopStream.parse(it) }
+            } else {
+                Json.parseToJsonElement(String(BodyDecoder.decode(payload, contentEncoding), Charsets.UTF_8)) as? JsonObject
+            }
         } catch (_: Exception) { null } ?: return
         synchronized(lock) {
             val previousCurrent = stored.currentId
@@ -220,5 +229,17 @@ object CaptureTracker {
             .onSuccess { widgetContext?.let { context -> runCatching { ApWidgetRefresh.onAccountSaved(context, userId) } } }
             .onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
         Unit
+    }
+}
+
+/**
+ * Runs one capture handler without ever letting a failure escape to the proxy relay (issue #254: an
+ * OutOfMemoryError used to vanish silently). Logs the path, encoded size and error class only.
+ */
+internal fun guardedCapture(path: String, encodedSize: Int, block: () -> Unit) {
+    try {
+        block()
+    } catch (t: Throwable) {
+        Timber.w("Capture: handling %s (%d bytes) failed: %s", path, encodedSize, t.javaClass.simpleName)
     }
 }

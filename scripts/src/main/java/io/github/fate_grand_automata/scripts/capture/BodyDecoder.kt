@@ -28,6 +28,52 @@ object BodyDecoder {
         return result
     }
 
+    /**
+     * Streaming counterpart of [decode]: nothing is buffered, and reading past [limit] decoded bytes throws
+     * an IOException. Same encodings as [decode], including the raw-deflate fallback.
+     */
+    fun decodeStream(payload: ByteArray, contentEncoding: String?, limit: Int = MAX_DECODED): InputStream {
+        require(limit >= 0)
+        var stream: InputStream = payload.inputStream()
+        for (encoding in contentEncoding.orEmpty().split(',').asReversed()) {
+            val source = stream
+            stream = when (encoding.trim().lowercase()) {
+                "", "identity" -> source
+                "gzip", "x-gzip" -> GZIPInputStream(source)
+                "zlib" -> InflaterInputStream(source)
+                "deflate" -> deflateStream(source)
+                else -> throw IOException("Unsupported content encoding")
+            }
+        }
+        return Limited(stream, limit)
+    }
+
+    private fun deflateStream(source: InputStream): InputStream {
+        // A two-byte probe tells a zlib header from raw RFC 1951 (KR Unity), as decode() does by retrying.
+        val buffered = java.io.BufferedInputStream(source, 8192)
+        buffered.mark(2)
+        val head = ByteArray(2)
+        val count = buffered.read(head)
+        buffered.reset()
+        val zlib = count == 2 && (head[0].toInt() and 0x0F) == 8 &&
+            (((head[0].toInt() and 0xFF) shl 8) or (head[1].toInt() and 0xFF)) % 31 == 0
+        return if (zlib) InflaterInputStream(buffered) else InflaterInputStream(buffered, Inflater(true))
+    }
+
+    private class Limited(input: InputStream, private val limit: Int) : java.io.FilterInputStream(input) {
+        private var total = 0L
+        override fun read(): Int {
+            val b = super.read()
+            if (b >= 0 && ++total > limit) throw IOException("Body too large")
+            return b
+        }
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            val n = super.read(b, off, len)
+            if (n > 0) { total += n; if (total > limit) throw IOException("Body too large") }
+            return n
+        }
+    }
+
     private fun inflate(bytes: ByteArray, raw: Boolean, limit: Int): ByteArray {
         val inflater = Inflater(raw)
         return try {
