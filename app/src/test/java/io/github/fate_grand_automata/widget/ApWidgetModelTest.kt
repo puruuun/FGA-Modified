@@ -104,10 +104,18 @@ class ApWidgetModelTest {
     }
 
     @Test fun narrowWidgetHidesTheTimeLeftAndTheRefreshIcon() {
-        assertEquals(ApWidgetFields(showRemaining = false, showRefresh = false), apWidgetFields(180f))
-        assertEquals(ApWidgetFields(showRemaining = false, showRefresh = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP - 0.1f))
-        assertEquals(ApWidgetFields(showRemaining = true, showRefresh = true), apWidgetFields(AP_WIDGET_WIDE_MIN_DP))
-        assertEquals(ApWidgetFields(showRemaining = true, showRefresh = true), apWidgetFields(272f))
+        fun f(remaining: Boolean, refresh: Boolean, label: Boolean, word: Boolean = true) = ApWidgetFields(remaining, refresh, label, word)
+        assertEquals(f(remaining = false, refresh = false, label = false, word = false), apWidgetFields(180f))
+        assertEquals(f(remaining = false, refresh = false, label = false, word = false), apWidgetFields(AP_WIDGET_FULL_WORD_MIN_DP - 0.1f))
+        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(AP_WIDGET_FULL_WORD_MIN_DP))
+        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(200f))
+        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP - 0.1f))
+        assertEquals(f(remaining = false, refresh = true, label = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP))
+        assertEquals(f(remaining = false, refresh = true, label = false), apWidgetFields(AP_WIDGET_REMAINING_MIN_DP - 0.1f))
+        assertEquals(f(remaining = true, refresh = true, label = false), apWidgetFields(AP_WIDGET_REMAINING_MIN_DP))
+        assertEquals(f(remaining = true, refresh = true, label = false), apWidgetFields(AP_WIDGET_LABEL_MIN_DP - 0.1f))
+        assertEquals(f(remaining = true, refresh = true, label = true), apWidgetFields(AP_WIDGET_LABEL_MIN_DP))
+        assertEquals(f(remaining = true, refresh = true, label = true), apWidgetFields(272f))
     }
 
     @Test fun dataAgeUsesTheLargestWholeUnit() {

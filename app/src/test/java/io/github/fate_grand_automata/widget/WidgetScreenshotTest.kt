@@ -78,6 +78,16 @@ class WidgetScreenshotTest(private val dark: Boolean) {
 
     @Test fun apNoData() = shoot("ap_no_data_4x1", wide) { ApWidgetContent(ApWidgetState.NoData) }
 
+    @Test fun apAt180() = shoot("ap_width_180", DpSize(180.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+
+    @Test fun apFullAt180() = shoot("ap_full_ap_width_180", DpSize(180.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(fullAp)) }
+
+    @Test fun apAt230() = shoot("ap_width_230", DpSize(230.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+
+    @Test fun apAt255() = shoot("ap_width_255", DpSize(255.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+
+    @Test fun apAt268() = shoot("ap_width_268", DpSize(268.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
+
     @Test fun apAlreadyPlaced3x2() = shoot("ap_3x2_legacy", DpSize(250.dp, 110.dp)) { ApWidgetContent(ApWidgetState.Data(model)) }
 
     companion object {

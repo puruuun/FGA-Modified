@@ -91,7 +91,7 @@ fun ApWidgetContent(state: ApWidgetState, serviceStarted: Boolean = false) {
     val context = LocalContext.current
     val size = LocalSize.current
     val fields = apWidgetFields(size.width.value)
-    val tileWidth = if (fields.showRemaining) 60.dp else 48.dp
+    val tileWidth = if (fields.showRefresh) 60.dp else 48.dp
     val rowHeight = if (size.height > maxRowHeight) maxRowHeight else size.height
     Box(
         modifier = GlanceModifier.fillMaxSize().background(ImageProvider(R.drawable.widget_background)),
@@ -163,12 +163,14 @@ private fun ApInfo(model: ApWidgetModel, fields: ApWidgetFields, width: Dp, modi
             }
         }
         Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Text(
-                texts.apLabel,
-                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
-            Spacer(GlanceModifier.width(4.dp))
+            if (fields.showApLabel) {
+                Text(
+                    texts.apLabel,
+                    style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+                Spacer(GlanceModifier.width(4.dp))
+            }
             Text(
                 texts.ap,
                 style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 18.sp, fontWeight = FontWeight.Bold),
@@ -177,14 +179,18 @@ private fun ApInfo(model: ApWidgetModel, fields: ApWidgetFields, width: Dp, modi
             Spacer(GlanceModifier.width(3.dp))
             Text(
                 texts.apMax,
-                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = if (fields.showRemaining) 12.sp else 11.sp),
+                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = if (fields.showRefresh) 12.sp else 11.sp),
                 maxLines = 1,
             )
             Spacer(GlanceModifier.width(6.dp))
             Spacer(GlanceModifier.defaultWeight())
             Text(
-                if (fields.showRemaining) texts.fullLine else texts.fullLineShort,
-                style = TextStyle(color = ColorProvider(R.color.widget_full_at), fontSize = if (fields.showRemaining) 11.sp else 10.sp, fontWeight = FontWeight.Bold),
+                when {
+                    fields.showRemaining -> texts.fullLine
+                    fields.showFullWord -> texts.fullLineShort
+                    else -> texts.fullLineTime
+                },
+                style = TextStyle(color = ColorProvider(R.color.widget_full_at), fontSize = if (fields.showRefresh) 11.sp else 10.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
         }

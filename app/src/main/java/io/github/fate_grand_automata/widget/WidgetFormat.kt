@@ -37,15 +37,33 @@ fun remainingText(minutes: Long): String {
 }
 
 /** Which optional parts the widget shows at a given width. */
-data class ApWidgetFields(val showRemaining: Boolean, val showRefresh: Boolean)
+data class ApWidgetFields(
+    /** The "(H:MM)" time left after the full-at clock time. */
+    val showRemaining: Boolean,
+    /** The refresh icon; also selects the larger tile and type sizes. */
+    val showRefresh: Boolean,
+    /** The small "AP" label in front of the current AP. */
+    val showApLabel: Boolean,
+    /** The "완충" word in front of the full-at clock time; the narrowest widget shows the time alone. */
+    val showFullWord: Boolean,
+)
 
-/** A 4x1 widget is about 250 dp wide and a 3x1 about 180 dp; the narrow one drops the time left and the refresh icon. */
+/**
+ * Width breakpoints, measured on the screenshot tests with a 12-hour Korean clock ("완충 오후 8:23 (3:23)").
+ * A standard 4x1 cell is about 270 dp wide and a 3x1 about 200 dp; the widget resizes down to 180 dp.
+ * Below each breakpoint the AP row would clip.
+ */
+const val AP_WIDGET_FULL_WORD_MIN_DP = 195f
 const val AP_WIDGET_WIDE_MIN_DP = 230f
+const val AP_WIDGET_REMAINING_MIN_DP = 255f
+const val AP_WIDGET_LABEL_MIN_DP = 268f
 
-fun apWidgetFields(widthDp: Float): ApWidgetFields {
-    val wide = widthDp >= AP_WIDGET_WIDE_MIN_DP
-    return ApWidgetFields(showRemaining = wide, showRefresh = wide)
-}
+fun apWidgetFields(widthDp: Float): ApWidgetFields = ApWidgetFields(
+    showRemaining = widthDp >= AP_WIDGET_REMAINING_MIN_DP,
+    showRefresh = widthDp >= AP_WIDGET_WIDE_MIN_DP,
+    showApLabel = widthDp >= AP_WIDGET_LABEL_MIN_DP,
+    showFullWord = widthDp >= AP_WIDGET_FULL_WORD_MIN_DP,
+)
 
 /** Strings shown by the AP widget; built apart from Glance so they can be unit tested. */
 data class ApWidgetTexts(
@@ -58,6 +76,8 @@ data class ApWidgetTexts(
     val fullLine: String,
     /** The narrow variant of [fullLine]: no time left. */
     val fullLineShort: String,
+    /** The narrowest variant: the clock time alone, or "AP full". */
+    val fullLineTime: String,
     val age: String,
 )
 
@@ -75,6 +95,7 @@ fun apWidgetTexts(context: Context, model: ApWidgetModel, now: Long = System.cur
         fullLine = if (fullAt == null) full
         else context.getString(R.string.widget_ap_full_at, time(fullAt), remainingText(model.minutesLeft ?: 0)),
         fullLineShort = if (fullAt == null) full else context.getString(R.string.widget_ap_full_at_short, time(fullAt)),
+        fullLineTime = if (fullAt == null) full else time(fullAt),
         age = dataAgeText(context, dataAge(model.dataTime, now)),
     )
 }

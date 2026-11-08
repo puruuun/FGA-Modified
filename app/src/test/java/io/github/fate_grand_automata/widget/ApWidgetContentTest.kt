@@ -41,6 +41,7 @@ class ApWidgetContentTest {
         assertEquals("/ 144", texts.apMax)
         assertEquals("Full ${clock(fullAt)} (3:23)", texts.fullLine)
         assertEquals("Full ${clock(fullAt)}", texts.fullLineShort)
+        assertEquals(clock(fullAt), texts.fullLineTime)
         assertEquals("10m ago", texts.age)
         assertEquals("Fictional", texts.name)
         assertEquals("KR", texts.server)
@@ -50,6 +51,7 @@ class ApWidgetContentTest {
         val texts = apWidgetTexts(context, model(fullAt = null, ap = 144), now)
         assertEquals("AP full", texts.fullLine)
         assertEquals("AP full", texts.fullLineShort)
+        assertEquals("AP full", texts.fullLineTime)
     }
 
     @Test fun ageTextCoversEveryUnit() {
@@ -109,6 +111,27 @@ class ApWidgetContentTest {
         onNode(hasText("Fictional")).assertExists()
         onNode(hasText(texts.ap)).assertExists()
         onNode(openDashboard).assertExists()
+    }
+
+    @Test fun narrowestLayoutShowsTheFullTimeAloneWithoutTheApLabel() = runGlanceAppWidgetUnitTest {
+        setContext(context)
+        setAppWidgetSize(DpSize(180.dp, 66.dp))
+        val m = model(now + 3600, minutes = 60)
+        val texts = apWidgetTexts(context, m)
+        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
+        onNode(hasText(texts.fullLineTime)).assertExists()
+        onNode(hasText(texts.fullLineShort)).assertDoesNotExist()
+        onNode(hasText(texts.apLabel)).assertDoesNotExist()
+        onNode(hasText(texts.ap)).assertExists()
+        onNode(openDashboard).assertExists()
+    }
+
+    @Test fun apLabelShowsOnlyOnAFull4x1() = runGlanceAppWidgetUnitTest {
+        setContext(context)
+        setAppWidgetSize(DpSize(272.dp, 66.dp))
+        val m = model(now + 3600, minutes = 60)
+        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
+        onNode(hasText(apWidgetTexts(context, m).apLabel)).assertExists()
     }
 
     @Test fun narrowLayoutAtFullApShowsApFull() = runGlanceAppWidgetUnitTest {
