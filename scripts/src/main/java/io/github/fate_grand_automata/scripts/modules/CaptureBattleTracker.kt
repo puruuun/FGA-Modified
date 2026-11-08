@@ -33,7 +33,7 @@ class CaptureBattleTracker @Inject constructor(
     fun start() {
         if (started) return
         started = true
-        if (prefs.gameServer == GameServer.Kr) {
+        if (prefs.gameServer == GameServer.Kr || prefs.gameServer == GameServer.Jp.Original) {
             for (attempt in 1..30) {
                 if (feed.isCollecting() || !feed.isStarting()) break
                 100.milliseconds.wait(applyMultiplier = false)
