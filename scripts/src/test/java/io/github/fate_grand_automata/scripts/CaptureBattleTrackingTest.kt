@@ -57,12 +57,14 @@ class CaptureBattleTrackingTest {
         fun stop(action: () -> Unit) = assertFailsWith<AutoBattle.BattleExitException>(block = action).reason
     }
 
-    @Test fun `mode is KR and collecting and remains fixed after start`() {
-        for ((server, collecting, expected) in listOf(Triple(GameServer.Kr,true,true),
-            Triple(GameServer.Jp.Original,true,false),Triple(GameServer.Kr,false,false),Triple(GameServer.En.Original,true,false))) {
+    @Test fun `only KR and official JP enable capture while collecting and keep the start decision`() {
+        for (server in GameServers.values) for (collecting in listOf(false, true)) {
+            val expected = collecting && (server == GameServer.Kr || server == GameServer.Jp.Original)
             val f = Fixture(server, collecting)
+            every { f.config.trackBond } returns true
             f.capture.start()
-            assertEquals(expected, f.capture.enabled)
+            assertEquals(expected, f.capture.enabled, "$server collecting=$collecting")
+            assertEquals(!expected && (server is GameServer.Kr || server is GameServer.Jp), f.bonds.enabled)
             f.feed.collecting = !collecting
             f.capture.start()
             assertEquals(expected, f.capture.enabled)
@@ -71,7 +73,8 @@ class CaptureBattleTrackingTest {
     }
 
     @Test fun `VPN fallback waits up to three seconds with unscaled cancellable waits`() {
-        val f = Fixture(collecting = false)
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
+        val f = Fixture(server, collecting = false)
         f.feed.starting = true
         var waits = 0
         every { with(f.api) { 100.milliseconds.wait(false) } } answers {
@@ -80,22 +83,34 @@ class CaptureBattleTrackingTest {
         }
         f.capture.start()
         assertTrue(f.capture.enabled); assertEquals(2, waits)
-        val timeout = Fixture(collecting = false)
+        val timeout = Fixture(server, collecting = false)
         timeout.feed.starting = true
         timeout.capture.start()
         assertFalse(timeout.capture.enabled)
         verify(exactly = 30) { with(timeout.api) { 100.milliseconds.wait(false) } }
-        val off = Fixture(collecting = false)
+        val off = Fixture(server, collecting = false)
         off.capture.start()
         verify(exactly = 0) { with(off.api) { 100.milliseconds.wait(any()) } }
-        val jp = Fixture(GameServer.Jp.Original, false)
-        jp.feed.starting = true
-        jp.capture.start()
-        verify(exactly = 0) { with(jp.api) { 100.milliseconds.wait(any()) } }
+        }
+        for (server in GameServers.values.filter { it != GameServer.Kr && it != GameServer.Jp.Original }) {
+            val other = Fixture(server, false)
+            other.feed.starting = true
+            other.capture.start()
+            assertFalse(other.capture.enabled)
+            verify(exactly = 0) { with(other.api) { 100.milliseconds.wait(any()) } }
+        }
     }
 
     @Test fun `captured materials skip templates sum only selected items and avoid duplicate drop screens`() {
-        val f = Fixture(); f.capture.start()
+        checkCapturedMaterials(GameServer.Kr)
+    }
+
+    @Test fun `official JP uses captured drops without template matching`() {
+        checkCapturedMaterials(GameServer.Jp.Original)
+    }
+
+    private fun checkCapturedMaterials(server: GameServer) {
+        val f = Fixture(server); f.capture.start()
         f.materials.parseMaterials(); f.materials.parseMaterials()
         assertEquals(mapOf(MaterialEnum.Bone to 3, MaterialEnum.Proof to 2), f.materials.farmed)
         verify(exactly = 0) { f.api.images.loadMaterial(any()) }
@@ -125,7 +140,15 @@ class CaptureBattleTrackingTest {
     }
 
     @Test fun `bond OCR and end summary turn off while captured MAX stops at first result`() {
-        val f = Fixture()
+        checkCapturedBondMax(GameServer.Kr)
+    }
+
+    @Test fun `official JP disables bond OCR and stops on captured MAX at first result`() {
+        checkCapturedBondMax(GameServer.Jp.Original)
+    }
+
+    private fun checkCapturedBondMax(server: GameServer) {
+        val f = Fixture(server)
         every { f.config.trackBond } returns true
         every { f.config.stopOnBondMax } returns true
         f.feed.response = CapturedBattle(emptyMap(), listOf(CapturedBond(2, 901, 9, 10, 11, 100)))
@@ -134,6 +157,8 @@ class CaptureBattleTrackingTest {
         assertEquals(BondFrame.Other, f.bonds.process())
         val reason = f.stop { f.bonds.finishResult() } as AutoBattle.ExitReason.BondMax
         assertEquals(listOf(2), reason.positions); assertEquals(1, f.state.runs)
+        assertEquals(listOf(7L), f.feed.tokens)
+        verify { f.api.messages.log(match { it is ScriptLog.Bond && it.message.contains("2:svt=901") }) }
         verify { f.reader wasNot Called }
     }
 

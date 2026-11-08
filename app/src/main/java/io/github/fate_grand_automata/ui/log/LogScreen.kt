@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
@@ -154,6 +155,13 @@ internal fun ColumnScope.LogList(
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
     emptyText: String, onFilter: () -> Unit, filterSummary: String?, onClearFilter: () -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val newestId = sorted.firstOrNull()?.id
+    // Read the old viewport before LazyColumn can retain its key after a prepend.
+    val followNewest = remember(newestId) { listState.firstVisibleItemIndex == 0 }
+    LaunchedEffect(newestId) {
+        if (newestId != null && followNewest) listState.scrollToItem(0)
+    }
     Heading(stringResource(R.string.p_logs), trailing = {
         if (!deletion.active) Row(verticalAlignment = Alignment.CenterVertically) {
             if (hasEntries) TextButton(onClick = onEnterDelete) {
@@ -180,7 +188,7 @@ internal fun ColumnScope.LogList(
     }
     if (sorted.isEmpty()) {
         if (emptyText.isNotEmpty()) Text(emptyText, Modifier.padding(16.dp))
-    } else LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
+    } else LazyColumn(Modifier.weight(1f), state = listState, verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
         items(sorted, key = { it.id }) { entry ->
             val selected = if (deletion.active) entry.id in deletion.selected else entry.id == selectedId
             val check = if (deletion.active) entry.id in deletion.selected else null

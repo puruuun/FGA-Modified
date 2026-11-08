@@ -35,6 +35,8 @@ class CaptureLauncherUiTest {
 
     @Test fun runningHidesOnlyGainOptionEvenWhenRuntimeServerIsEn() = checkRule(true, GameServer.En.Original)
     @Test fun stoppedShowsGainOptionEvenWhenRuntimeServerIsKr() = checkRule(false, GameServer.Kr)
+    @Test fun runningHidesGainOptionOnOfficialJp() = checkRule(true, GameServer.Jp.Original)
+    @Test fun stoppedShowsGainOptionOnOfficialJp() = checkRule(false, GameServer.Jp.Original)
 
     private fun checkRule(running: Boolean, server: GameServer) {
         CaptureTracker.setRunning(running)
