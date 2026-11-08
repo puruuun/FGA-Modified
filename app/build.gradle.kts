@@ -474,6 +474,7 @@ dependencies {
     implementation(libs.reorderable)
 
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.core.remoteviews)
     implementation(libs.androidx.work.runtime)
 
     testImplementation(platform(libs.junit.bom)) {

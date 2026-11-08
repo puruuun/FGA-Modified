@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated: dark card, 50% see-through (alpha 0x80). Rounded by a shape, so it works below API 31. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:endColor="#8016243C"
+        android:startColor="#800E1626" />
+    <stroke android:width="1dp" android:color="#8026405F" />
+    <corners android:radius="22dp" />
+</shape>

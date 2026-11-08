@@ -1248,7 +1248,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_service_start">Start</string>
     <string name="widget_service_stop">Stop</string>
     <string name="widget_ap_name">Account AP</string>
-    <string name="widget_ap_description">Scroll through the AP of accounts collected by log collection.</string>
+    <string name="widget_ap_description">Flip through the AP of accounts collected by log collection.</string>
     <string name="widget_ap_no_data">No account data</string>
     <string name="widget_ap_full">AP full</string>
     <string name="widget_ap_value">%1$d / %2$d</string>
@@ -1261,4 +1261,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_service_off">OFF</string>
     <string name="widget_preview_full_at">Full 9:41 PM</string>
     <string name="widget_preview_name">Sample account</string>
+    <string name="widget_settings">Widget settings</string>
+    <string name="widget_settings_summary">Theme and background opacity of the home-screen widgets.</string>
+    <string name="widget_settings_theme">Theme</string>
+    <string name="widget_settings_theme_dark">Dark theme</string>
+    <string name="widget_settings_theme_light">Light theme</string>
+    <string name="widget_settings_transparency">Background opacity</string>
 </resources>

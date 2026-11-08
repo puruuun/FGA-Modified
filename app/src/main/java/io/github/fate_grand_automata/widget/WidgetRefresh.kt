@@ -10,12 +10,20 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /** Restores only placed widgets, off the application/receiver main thread. */
 object WidgetRefresh {
     internal val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val updates = MutableStateFlow(0L)
+
+    /** Bumped on every update of the placed widgets, so live Glance sessions re-read the widget settings. */
+    internal val revision = updates.asStateFlow()
 
     internal var updateService: suspend (Context) -> Unit = { updateReceiverWidgets(it, ServiceWidgetReceiver::class.java, ServiceWidget()) }
     internal var updateAp: suspend (Context) -> Unit = { ApWidgetRefresh.updateAll(it) }
@@ -36,6 +44,7 @@ object WidgetRefresh {
         .getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)).isNotEmpty()
 
     suspend fun updatePlaced(context: Context) {
+        updates.update { it + 1 }
         val manager = AppWidgetManager.getInstance(context)
         if (manager.getAppWidgetIds(ComponentName(context, ServiceWidgetReceiver::class.java)).isNotEmpty()) {
             runCatching { updateService(context) }.onFailure { Timber.w(it, "Service widget refresh failed") }

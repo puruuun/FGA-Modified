@@ -40,6 +40,7 @@ fun MoreOptionsScreen(
     navigateToAddedFeatureTuning: () -> Unit,
     navigateToLicense: () -> Unit,
     navigateToWeeklySettings: () -> Unit = {},
+    navigateToWidgetSettings: () -> Unit = {},
     navigateToGainsTracker: () -> Unit = {},
     navigateToFriendManager: () -> Unit = {}
 ) {
@@ -66,6 +67,7 @@ fun MoreOptionsScreen(
         goToAddedFeatureTuning = navigateToAddedFeatureTuning,
         goToLicense = navigateToLicense,
         goToWeeklySettings = navigateToWeeklySettings,
+        goToWidgetSettings = navigateToWidgetSettings,
         goToGainsTracker = navigateToGainsTracker,
         goToFriendManager = navigateToFriendManager,
         additionalTools = { AdditionalTools(vm) },
@@ -90,6 +92,7 @@ internal fun MoreOptionsContent(
     goToFriendManager: () -> Unit = {},
     downloadSummary: String = "",
     downloadIcons: () -> Unit = {},
+    goToWidgetSettings: () -> Unit = {},
 ) {
     val captureEnabled by prefs.captureTrackerEnabled.asFlow()
         .collectAsState(initial = prefs.captureTrackerEnabled.get())
@@ -160,6 +163,7 @@ internal fun MoreOptionsContent(
                                         goToAddedFeatureTuning = goToAddedFeatureTuning,
                                         goToLicense = goToLicense,
                                         goToWeeklySettings = goToWeeklySettings,
+                                        goToWidgetSettings = goToWidgetSettings,
                                     )
                                 }
                             }

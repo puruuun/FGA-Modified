@@ -101,11 +101,15 @@ class ApWidgetModelTest {
         assertEquals(apWidgetItemId(a.id), apWidgetItemId(a.copy(displayName = "Renamed").id))
     }
 
-    @Test fun typeSizesChangeOnlyAtTheMeasuredBreakpoint() {
-        val compact = ApWidgetFields(12, 10)
-        val large = ApWidgetFields(18, 11)
-        for (width in listOf(180f, 200f, AP_WIDGET_LARGE_TEXT_MIN_DP - 0.1f)) assertEquals(compact, apWidgetFields(width))
-        for (width in listOf(AP_WIDGET_LARGE_TEXT_MIN_DP, 230f, 255f, 268f, 272f)) assertEquals(large, apWidgetFields(width))
+    @Test fun typeSizesChangeAtTheThreeBreakpoints() {
+        val small = ApWidgetFields(9, 8)
+        val medium = ApWidgetFields(11, 9)
+        val large = ApWidgetFields(14, 10)
+        val xlarge = ApWidgetFields(18, 11)
+        for (width in listOf(180f, 199f, AP_WIDGET_MEDIUM_TEXT_MIN_DP - 0.1f)) assertEquals(small, apWidgetFields(width))
+        for (width in listOf(AP_WIDGET_MEDIUM_TEXT_MIN_DP, 210f, AP_WIDGET_LARGE_TEXT_MIN_DP - 0.1f)) assertEquals(medium, apWidgetFields(width))
+        for (width in listOf(AP_WIDGET_LARGE_TEXT_MIN_DP, 230f, AP_WIDGET_XLARGE_TEXT_MIN_DP - 0.1f)) assertEquals(large, apWidgetFields(width))
+        for (width in listOf(AP_WIDGET_XLARGE_TEXT_MIN_DP, 268f, 272f)) assertEquals(xlarge, apWidgetFields(width))
     }
 
     @Test fun dataAgeUsesTheLargestWholeUnit() {

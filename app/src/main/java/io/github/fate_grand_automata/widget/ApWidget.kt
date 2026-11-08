@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
@@ -7,35 +8,34 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.lazy.LazyColumn
-import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
-import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.fillMaxWidth
-import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
-import androidx.glance.text.FontWeight
+import androidx.glance.semantics.semantics
+import androidx.glance.semantics.testTag
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
@@ -71,8 +71,12 @@ class ApWidget : GlanceAppWidget() {
 /** Both state sources are observed inside the live composition. */
 @Composable
 internal fun ApWidgetSessionContent(initial: ApWidgetState) {
-    val state by rememberApWidgetState(LocalContext.current, initial)
-    ApWidgetContent(state, ScriptRunnerService.serviceStarted.value)
+    val context = LocalContext.current
+    val state by rememberApWidgetState(context, initial)
+    // The theme and opacity are re-read on every requested update, like the account data.
+    val revision by ApWidgetRefresh.revision.collectAsState()
+    val settings = remember(revision) { loadWidgetSettings(context) }
+    ApWidgetContent(state, ScriptRunnerService.serviceStarted.value, settings)
 }
 
 @Composable
@@ -87,87 +91,66 @@ internal fun rememberApWidgetState(
         value = runCatching { load(context) }.getOrDefault(ApWidgetState.NoData)
     }
 }
+
 private val rowPadding = 8.dp
 private val gap = 6.dp
 private val tileWidth = 40.dp
 
+/** Matches the card's corner radius, so the text does not crowd the rounded edge. Left side only. */
+internal val infoStartPadding = 14.dp
+
+/** Test tag of the account stack, the only place the account cards live. */
+internal const val AP_STACK_TAG = "ap_stack"
+
 @Composable
-fun ApWidgetContent(state: ApWidgetState, serviceStarted: Boolean = false) {
+private fun rememberAppWidgetId(): Int {
+    val context = LocalContext.current
+    val glanceId = LocalGlanceId.current
+    return remember(glanceId) {
+        runCatching { GlanceAppWidgetManager(context).getAppWidgetId(glanceId) }.getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
+    }
+}
+
+@Composable
+fun ApWidgetContent(state: ApWidgetState, serviceStarted: Boolean = false, settings: WidgetSettings = WidgetSettings()) {
     val context = LocalContext.current
     val size = LocalSize.current
     val fields = apWidgetFields(size.width.value)
-    val infoHeight = size.height - rowPadding * 2
-    // One account fills a 1-row widget. Taller legacy widgets can show several accounts.
-    val itemHeight = minOf(infoHeight, 60.dp)
-    val infoWidth = size.width - rowPadding * 2 - tileWidth - gap
+    val palette = widgetPalette(settings.theme)
     Row(
-        modifier = GlanceModifier.fillMaxSize().background(ImageProvider(R.drawable.widget_background)).padding(rowPadding),
+        modifier = GlanceModifier.fillMaxSize().background(ImageProvider(widgetCardRes(settings))).padding(rowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         when (state) {
             ApWidgetState.NoData -> Box(
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                    .padding(start = infoStartPadding)
                     .clickable(actionStartActivity(WidgetIntents.openApp(context))),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
                     context.getString(R.string.widget_ap_no_data),
-                    style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 13.sp),
+                    style = TextStyle(color = ColorProvider(palette.secondary), fontSize = 13.sp),
                     maxLines = 2,
                 )
             }
-            is ApWidgetState.Data -> LazyColumn(GlanceModifier.defaultWeight().fillMaxHeight()) {
-                items(state.models, itemId = { apWidgetItemId(it.accountId) }) { model ->
-                    ApInfo(model, fields, infoWidth, GlanceModifier.fillMaxWidth().height(itemHeight))
+            is ApWidgetState.Data -> {
+                val appWidgetId = rememberAppWidgetId()
+                // A StackView snaps to exactly one card per swipe and has no scrollbar. Glance has no such
+                // element, so the cards are plain RemoteViews hosted through AndroidRemoteViews.
+                val stack = remember(state, settings.theme, fields, appWidgetId) {
+                    buildApStackViews(context, appWidgetId, state.models, palette, fields)
                 }
+                AndroidRemoteViews(
+                    remoteViews = stack,
+                    modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        .padding(start = infoStartPadding)
+                        .semantics { testTag = AP_STACK_TAG },
+                )
             }
         }
         Spacer(GlanceModifier.width(gap))
-        ServiceToggleTile(serviceStarted, GlanceModifier.width(tileWidth).fillMaxHeight())
-    }
-}
-
-@Composable
-private fun ApInfo(model: ApWidgetModel, fields: ApWidgetFields, width: Dp, modifier: GlanceModifier) {
-    val context = LocalContext.current
-    val texts = apWidgetTexts(context, model)
-    Column(
-        modifier = modifier.clickable(actionStartActivity(WidgetIntents.openAccount(context, model.accountId))),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                texts.name,
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
-            Text(
-                texts.age,
-                style = TextStyle(color = ColorProvider(R.color.widget_secondary), fontSize = 10.sp),
-                maxLines = 1,
-            )
-        }
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Text(
-                texts.ap,
-                style = TextStyle(color = ColorProvider(R.color.widget_on_surface), fontSize = fields.apTextSize.sp, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
-            Spacer(GlanceModifier.defaultWeight())
-            Text(
-                texts.fullLine,
-                style = TextStyle(color = ColorProvider(R.color.widget_full_at), fontSize = fields.fullTextSize.sp, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
-        }
-        Spacer(GlanceModifier.height(2.dp))
-        val fill = width * model.fraction
-        Box(modifier = GlanceModifier.fillMaxWidth().height(6.dp).background(ImageProvider(R.drawable.widget_bar_track))) {
-            if (fill >= 1.dp) {
-                Box(modifier = GlanceModifier.width(fill).fillMaxHeight().background(ImageProvider(R.drawable.widget_bar_fill))) {}
-            }
-        }
+        ServiceToggleTile(serviceStarted, GlanceModifier.width(tileWidth).fillMaxHeight(), settings)
     }
 }
 

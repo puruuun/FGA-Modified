@@ -55,6 +55,12 @@ class WidgetRefreshTest {
     @Test fun bootRestoresBothPlacedWidgets() = broadcast(Intent.ACTION_BOOT_COMPLETED)
     @Test fun packageReplacementRestoresBothPlacedWidgets() = broadcast(Intent.ACTION_MY_PACKAGE_REPLACED)
 
+    @Test fun everyUpdateOfThePlacedWidgetsBumpsTheSettingsRevision() = runBlocking {
+        val before = WidgetRefresh.revision.value
+        WidgetRefresh.updatePlaced(context)
+        assertEquals(before + 1, WidgetRefresh.revision.value)
+    }
+
     @Test fun noPlacedWidgetsDoesNoRendering() = runBlocking {
         var calls = 0
         WidgetRefresh.updateService = { calls++ }

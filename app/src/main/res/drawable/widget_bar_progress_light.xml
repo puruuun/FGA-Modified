@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background" android:drawable="@drawable/widget_bar_track_light" />
+    <!-- A scale drawable (not clip), so the teal-to-blue gradient spans the filled part like the old bar. -->
+    <item android:id="@android:id/progress">
+        <scale
+            android:drawable="@drawable/widget_bar_fill"
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%" />
+    </item>
+</layer-list>

@@ -2,6 +2,9 @@ package io.github.fate_grand_automata.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -51,7 +54,7 @@ class ServiceWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        provideContent { ServiceWidgetContent(ScriptRunnerService.serviceStarted.value) }
+        provideContent { ServiceWidgetSessionContent() }
     }
 
     companion object {
@@ -62,26 +65,46 @@ class ServiceWidget : GlanceAppWidget() {
     }
 }
 
-/** The start/stop tile: a play or stop button in a circle with ON/OFF below. Shared by both widgets. */
+/** Re-reads the theme and opacity on every requested update, so a settings change redraws a live session. */
 @Composable
-fun ServiceToggleTile(started: Boolean, modifier: GlanceModifier = GlanceModifier) {
+internal fun ServiceWidgetSessionContent() {
+    val context = LocalContext.current
+    val revision by WidgetRefresh.revision.collectAsState()
+    val settings = remember(revision) { loadWidgetSettings(context) }
+    ServiceWidgetContent(ScriptRunnerService.serviceStarted.value, settings)
+}
+
+/**
+ * The start/stop tile: a play or stop button in a circle with ON/OFF below. Shared by both widgets.
+ * The tile stays fully visible; with [asCard] (the 1x1 widget, where the tile is the whole card) its
+ * background follows the card opacity and the icon and label stay opaque.
+ */
+@Composable
+fun ServiceToggleTile(
+    started: Boolean,
+    modifier: GlanceModifier = GlanceModifier,
+    settings: WidgetSettings = WidgetSettings(),
+    asCard: Boolean = false,
+) {
     val context = LocalContext.current
     val model = serviceWidgetModel(started)
+    val palette = widgetPalette(settings.theme)
     val action: Action = when (model.action) {
         ServiceWidgetAction.Start -> actionStartActivity(WidgetIntents.startService(context))
         ServiceWidgetAction.Stop -> actionRunCallback<StopServiceCallback>()
     }
-    val accent = if (started) R.color.widget_on else R.color.widget_accent
+    val accent = if (started) palette.on else palette.accent
+    val background = if (asCard) widgetTileCardRes(settings) else palette.tileBackground
     Column(
         modifier = modifier
-            .background(ImageProvider(R.drawable.widget_tile_background))
+            .background(ImageProvider(background))
             .clickable(action),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = GlanceModifier.size(30.dp)
-                .background(ImageProvider(if (started) R.drawable.widget_toggle_circle_on else R.drawable.widget_toggle_circle)),
+                .background(ImageProvider(if (started) palette.toggleCircleOn else palette.toggleCircle)),
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -94,7 +117,7 @@ fun ServiceToggleTile(started: Boolean, modifier: GlanceModifier = GlanceModifie
         Text(
             text = context.getString(model.labelRes),
             style = TextStyle(
-                color = ColorProvider(if (started) R.color.widget_on else R.color.widget_secondary),
+                color = ColorProvider(if (started) palette.on else palette.secondary),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
             ),
@@ -103,8 +126,8 @@ fun ServiceToggleTile(started: Boolean, modifier: GlanceModifier = GlanceModifie
 }
 
 @Composable
-fun ServiceWidgetContent(started: Boolean) {
-    ServiceToggleTile(started, GlanceModifier.fillMaxSize())
+fun ServiceWidgetContent(started: Boolean, settings: WidgetSettings = WidgetSettings()) {
+    ServiceToggleTile(started, GlanceModifier.fillMaxSize(), settings, asCard = true)
 }
 
 /** Stops the service like the main-screen button does, without opening the UI. */

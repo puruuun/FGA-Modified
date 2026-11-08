@@ -936,7 +936,7 @@
     <string name="widget_service_start">開始</string>
     <string name="widget_service_stop">停止</string>
     <string name="widget_ap_name">アカウントAP</string>
-    <string name="widget_ap_description">ログ収集で集めたアカウントのAPをスクロールして確認できます。</string>
+    <string name="widget_ap_description">ログ収集で集めたアカウントのAPを上下にスワイプして確認できます。</string>
     <string name="widget_ap_no_data">アカウントデータなし</string>
     <string name="widget_ap_full">AP全回復</string>
     <string name="widget_ap_value">%1$d / %2$d</string>
@@ -949,4 +949,10 @@
     <string name="widget_service_off">OFF</string>
     <string name="widget_preview_full_at">全回復 21:41</string>
     <string name="widget_preview_name">サンプルアカウント</string>
+    <string name="widget_settings">ウィジェット設定</string>
+    <string name="widget_settings_summary">ホーム画面ウィジェットのテーマと背景の透明度を設定します。</string>
+    <string name="widget_settings_theme">テーマ</string>
+    <string name="widget_settings_theme_dark">ダークテーマ</string>
+    <string name="widget_settings_theme_light">ライトテーマ</string>
+    <string name="widget_settings_transparency">背景の透明度</string>
 </resources>

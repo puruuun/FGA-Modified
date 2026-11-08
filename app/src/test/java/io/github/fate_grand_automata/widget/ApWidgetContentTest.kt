@@ -7,6 +7,8 @@ import androidx.glance.appwidget.testing.unit.hasRunCallbackClickAction
 import androidx.glance.appwidget.testing.unit.hasStartActivityClickAction
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
 import androidx.glance.testing.unit.hasText
+import androidx.glance.testing.unit.hasTestTag
+import io.github.fate_grand_automata.prefs.core.WidgetTheme
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
 import org.junit.Test
@@ -58,50 +60,53 @@ class ApWidgetContentTest {
         assertTrue(h12.contains("오전") || h12.contains("오후"), h12)
     }
 
-    @Test fun oneAccountShowsOnlyTheNewFieldsAndItsDashboardAction() = runGlanceAppWidgetUnitTest {
+    @Test fun oneAccountShowsTheStackAndTheStartTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
-        val m = model()
-        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(m))) }
-        onNode(hasText(m.name)).assertExists()
-        onNode(hasText("57 / 142")).assertExists()
-        onNode(hasText(apWidgetTexts(context, m).fullLine)).assertExists()
-        onNode(hasText("KR")).assertDoesNotExist()
-        onNode(hasText("JP")).assertDoesNotExist()
-        onNode(hasStartActivityClickAction(WidgetIntents.openAccount(context, m.accountId))).assertExists()
+        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(model()))) }
+        // The cards are RemoteViews inside the stack, so only the stack and the tile are Glance nodes.
+        onNode(hasTestTag(AP_STACK_TAG)).assertExists()
         onNode(hasText("OFF")).assertExists()
-        // The only clickable nodes are the account and the start tile, with no refresh action.
-        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(2)
+        onNode(hasText("계정 데이터 없음")).assertDoesNotExist()
+        // The only clickable Glance node is the start tile: card taps come from the stack's template.
+        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(1)
+        onNode(hasStartActivityClickAction(WidgetIntents.startService(context))).assertExists()
     }
 
-    @Test fun threeAccountsEachOpenTheirOwnDashboardAndKeepTheStopTile() = runGlanceAppWidgetUnitTest {
+    @Test fun threeAccountsStillUseOneStackAndKeepTheStopTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
         val models = listOf(model("7003"), model("7001"), model("7002"))
         provideComposable { ApWidgetContent(ApWidgetState.Data(models), serviceStarted = true) }
-        models.forEach { m ->
-            onNode(hasText(m.name)).assertExists()
-            onNode(hasStartActivityClickAction(WidgetIntents.openAccount(context, m.accountId))).assertExists()
-        }
+        onAllNodes(hasTestTag(AP_STACK_TAG)).assertCountEquals(1)
         onNode(hasText("ON")).assertExists()
         onNode(hasRunCallbackClickAction<StopServiceCallback>()).assertExists()
-        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(4)
+        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(1)
     }
 
-    @Test fun narrowestWidgetKeepsTheCompleteFullLine() = runGlanceAppWidgetUnitTest {
+    @Test fun narrowestWidgetStillHasTheStack() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(DpSize(180.dp, 66.dp))
-        val m = model()
-        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(m))) }
-        onNode(hasText(apWidgetTexts(context, m).fullLine)).assertExists()
-        onNode(hasText("57 / 142")).assertExists()
+        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(model()))) }
+        onNode(hasTestTag(AP_STACK_TAG)).assertExists()
+        assertEquals(ApWidgetFields(9, 8), apWidgetFields(180f))
     }
 
-    @Test fun fullApShowsTheFullMessage() = runGlanceAppWidgetUnitTest {
+    @Test fun lightThemeKeepsTheStackAndTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(model(fullAt = null)))) }
-        onNode(hasText("AP 가득 참")).assertExists()
+        provideComposable {
+            ApWidgetContent(ApWidgetState.Data(listOf(model())), settings = WidgetSettings(WidgetTheme.Light, 50))
+        }
+        onNode(hasTestTag(AP_STACK_TAG)).assertExists()
+        onNode(hasText("OFF")).assertExists()
+    }
+
+    @Test fun noDataHasNoStack() = runGlanceAppWidgetUnitTest {
+        setContext(context)
+        setAppWidgetSize(wide)
+        provideComposable { ApWidgetContent(ApWidgetState.NoData) }
+        onNode(hasTestTag(AP_STACK_TAG)).assertDoesNotExist()
     }
 
     @Test fun noDataKeepsTheStartTile() = runGlanceAppWidgetUnitTest {

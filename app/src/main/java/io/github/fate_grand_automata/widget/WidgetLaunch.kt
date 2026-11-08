@@ -16,6 +16,7 @@ object WidgetIntents {
     const val EXTRA_OPEN_ACCOUNT = "io.github.fate_grand_automata.extra.OPEN_ACCOUNT"
     private const val ACTION_WIDGET_START = "io.github.fate_grand_automata.action.WIDGET_START"
     private const val ACTION_OPEN_ACCOUNT = "io.github.fate_grand_automata.action.OPEN_ACCOUNT"
+    private const val ACTION_OPEN_ACCOUNT_ITEM = "io.github.fate_grand_automata.action.OPEN_ACCOUNT_ITEM"
 
     /** Distinct actions and data keep the PendingIntents of the widgets apart; extras do not count for intent equality. */
     fun startService(context: Context) = Intent(context, MainActivity::class.java)
@@ -26,6 +27,15 @@ object WidgetIntents {
         .setAction(ACTION_OPEN_ACCOUNT)
         .setData(Uri.Builder().scheme("fga").authority("account").appendPath(accountId).build())
         .putExtra(EXTRA_OPEN_ACCOUNT, accountId)
+
+    /**
+     * The tap template of the account stack. Each card adds [openAccountFillIn]; extras of the fill-in
+     * are merged into this intent when the card is tapped.
+     */
+    fun openAccountTemplate(context: Context) = Intent(context, MainActivity::class.java)
+        .setAction(ACTION_OPEN_ACCOUNT_ITEM)
+
+    fun openAccountFillIn(accountId: String) = Intent().putExtra(EXTRA_OPEN_ACCOUNT, accountId)
 
     fun openApp(context: Context) = Intent(context, MainActivity::class.java)
 }

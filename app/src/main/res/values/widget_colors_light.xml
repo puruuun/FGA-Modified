@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light widget theme: white card, dark text, darker green so the full-at text stays readable. -->
+    <color name="widget_light_surface">#FFFFFF</color>
+    <color name="widget_light_on_surface">#17202E</color>
+    <color name="widget_light_secondary">#556070</color>
+    <color name="widget_light_accent">#1565C0</color>
+    <color name="widget_light_on">#0B7A55</color>
+    <color name="widget_light_full_at">#0B7A55</color>
+    <color name="widget_light_track">#DCE3EC</color>
+    <color name="widget_light_tile">#EEF2F8</color>
+    <color name="widget_light_tile_stroke">#C4CFDD</color>
+    <color name="widget_light_tile_circle">#D3E6FA</color>
+    <color name="widget_light_tile_circle_on">#CFEFE2</color>
+</resources>

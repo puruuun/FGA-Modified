@@ -30,13 +30,23 @@ fun dataAgeText(context: Context, age: DataAge): String = when (age) {
     is DataAge.Days -> context.getString(R.string.widget_age_days, age.value)
 }
 
-/** Compact type keeps both AP and the complete Korean 12-hour clock visible at 180 dp. */
+/**
+ * Type sizes by widget width. The StackView draws each card at 90 % of the stack, so the narrow tiers are
+ * smaller than a plain list would need; each still shows AP and the complete Korean 12-hour clock.
+ */
 data class ApWidgetFields(val apTextSize: Int, val fullTextSize: Int)
 
-const val AP_WIDGET_LARGE_TEXT_MIN_DP = 220f
+const val AP_WIDGET_MEDIUM_TEXT_MIN_DP = 200f
+const val AP_WIDGET_LARGE_TEXT_MIN_DP = 225f
+const val AP_WIDGET_XLARGE_TEXT_MIN_DP = 250f
 
 fun apWidgetFields(widthDp: Float): ApWidgetFields =
-    if (widthDp >= AP_WIDGET_LARGE_TEXT_MIN_DP) ApWidgetFields(18, 11) else ApWidgetFields(12, 10)
+    when {
+        widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(18, 11)
+        widthDp >= AP_WIDGET_LARGE_TEXT_MIN_DP -> ApWidgetFields(14, 10)
+        widthDp >= AP_WIDGET_MEDIUM_TEXT_MIN_DP -> ApWidgetFields(11, 9)
+        else -> ApWidgetFields(9, 8)
+    }
 
 /** Strings shown by the AP widget, built apart from Glance for formatting tests. */
 data class ApWidgetTexts(

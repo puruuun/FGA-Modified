@@ -67,6 +67,12 @@ class PrefsCore @Inject constructor(
     val captureConsentVersion = maker.int("capture_consent_version", 0)
     val captureStopWithService = maker.bool("capture_stop_with_service", false)
     val captureJpRoot = maker.bool("capture_jp_root", false)
+
+    /** Home-screen widget look. The widgets read the same keys straight from the preference file. */
+    val widgetTheme = maker.enum("widget_theme", WidgetTheme.Dark)
+
+    /** Percent of the widget card that is see-through: 0 (opaque) to 100, in steps of 10. */
+    val widgetBackgroundTransparency = maker.int("widget_background_transparency", 0)
     val logRetention = LogRetentionPrefsCore(maker)
     val addedFeatureTuning = AddedFeatureTuningPrefsCore(maker)
 

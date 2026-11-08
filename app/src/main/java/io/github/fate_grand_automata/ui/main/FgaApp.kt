@@ -167,12 +167,16 @@ fun FgaApp(
                             navigateToAddedFeatureTuning = { backStack.add(Route.AddedFeatureTuning) },
                             navigateToLicense = { backStack.add(Route.License) },
                             navigateToWeeklySettings = { backStack.add(Route.WeeklyRouteSettings) },
+                            navigateToWidgetSettings = { backStack.add(Route.WidgetSettings) },
                             navigateToGainsTracker = { backStack.add(Route.GainsTracker) },
                             navigateToFriendManager = { backStack.add(Route.FriendManager()) }
                         )
                     }
                     entry<Route.WeeklyRouteSettings> {
                         io.github.fate_grand_automata.ui.more.WeeklyRouteSettingsScreen(vm.prefsCore)
+                    }
+                    entry<Route.WidgetSettings> {
+                        io.github.fate_grand_automata.ui.more.WidgetSettingsScreen(vm.prefsCore)
                     }
                     entry<Route.GainsTracker> {
                         io.github.fate_grand_automata.ui.more.GainsTrackerScreen(vm = hiltViewModel())

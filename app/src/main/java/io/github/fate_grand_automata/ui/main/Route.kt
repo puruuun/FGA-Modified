@@ -42,6 +42,9 @@ sealed interface Route : NavKey {
     data object WeeklyRouteSettings : Route
 
     @Serializable
+    data object WidgetSettings : Route
+
+    @Serializable
     data object GainsTracker : Route
 
     @Serializable

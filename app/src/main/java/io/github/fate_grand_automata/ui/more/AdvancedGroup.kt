@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.EventRepeat
+import androidx.compose.material.icons.filled.Widgets
 import io.github.fate_grand_automata.BuildConfig
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Language
@@ -37,6 +38,7 @@ fun LazyListScope.advancedGroup(
     goToFineTune: () -> Unit,
     goToLicense: () -> Unit,
     goToWeeklySettings: () -> Unit = {},
+    goToWidgetSettings: () -> Unit = {},
 ) {
     item {
         prefs.checkForUpdates.SwitchPreference(
@@ -60,6 +62,14 @@ fun LazyListScope.advancedGroup(
             title = stringResource(R.string.weekly_route_settings),
             icon = icon(Icons.Default.EventRepeat),
             onClick = goToWeeklySettings
+        )
+    }
+    item {
+        Preference(
+            title = stringResource(R.string.widget_settings),
+            summary = stringResource(R.string.widget_settings_summary),
+            icon = icon(Icons.Default.Widgets),
+            onClick = goToWidgetSettings
         )
     }
     item {
