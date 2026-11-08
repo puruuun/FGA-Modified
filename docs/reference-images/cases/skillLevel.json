@@ -1614,6 +1614,324 @@
         "next": 10
       },
       "note": "Owner capture 2026-10-27, BlueStacks 2560x1080; issue #38; lossless WebP."
+    },
+    {
+      "name": "JP-notice-temp-servant",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/notice-temp-servant.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": true,
+        "executeInsideButton": true,
+        "dialog": true,
+        "enhanceTitle": false
+      },
+      "note": "Owner capture 2026-11-08, temporarily joined servant notice before the enhancement confirm; normalized to 720p from the 16:10 frame (issue #259)."
+    },
+    {
+      "name": "KR-notice-temp-servant",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/notice-temp-servant.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": true,
+        "executeInsideButton": true,
+        "dialog": true,
+        "enhanceTitle": false
+      },
+      "note": "Owner capture 2026-11-08, temporarily joined servant notice before the enhancement confirm; normalized to 720p from the 16:10 frame (issue #259)."
+    },
+    {
+      "name": "JP-04-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/04.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-16-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/16.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-17-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/17.png",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-18-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/18.png",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-02-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/02.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-15-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/15.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-08-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/08.png",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-13-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/13.png",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-25-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/25.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-26-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/26.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-27-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/27.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-28-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/28.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-29-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/29.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-30-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/30.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-31-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/31.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-32-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/32.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-33-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/33.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-34-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/34.png",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-wide-12-no-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-21x9/12.webp",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-w2560-15-notice-negative",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/wide-2560/15.webp",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-w2560-30-no-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/30.webp",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-w2560-33-append-no-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/33.webp",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-w2560-34-append-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/34.webp",
+      "view": "notice",
+      "slotMode": "Append",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "KR-w2560-skill-9to10-notice-negative",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/wide-2560/41-skill-9to10.webp",
+      "view": "notice",
+      "slotMode": "Skill",
+      "expected": {
+        "noticeExecute": false
+      },
+      "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
     }
   ]
 }

@@ -91,6 +91,14 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     fun slotLocked(mode: SkillLevelMode, slot: Int): Boolean =
         useSameSnapIn { seen(loc.slotLock(mode, slot), Images.SkillLevelLock, LOCK_SIMILARITY) }
 
+    /**
+     * The right-hand "execute" button of the temporarily joined servant notice, found the way upstream's AutoServantLevel
+     * does: [Images.Execute] in [io.github.fate_grand_automata.scripts.locations.Locations.tempServantEnhancementRegion].
+     */
+    fun noticeExecuteVisible(): Boolean = useSameSnapIn {
+        template(Images.Execute)?.let { it in locations.tempServantEnhancementRegion } == true
+    }
+
     fun onResult(): Boolean = useSameSnapIn { seen(loc.result, Images.SkillLevelResult, RESULT_SIMILARITY) }
 }
 
