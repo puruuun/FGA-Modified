@@ -138,14 +138,6 @@ class WideScreenLocationsTest {
         assertEquals(366, wide.slotLock(SkillLevelMode.Append, 0).y)
         assertEquals(1680 + (473 - 640) * 2, wide.slotClick(SkillLevelMode.Append, 0).x)
         assertEquals(1680 + (1183 - 640) * 2, wide.slotClick(SkillLevelMode.Append, 4).x)
-        // Temporary servant notice: centred dialog, the execute button is right of the centre on both shapes.
-        assertEquals(Region(120 + 1280, 1040, 560, 190), old.noticeExecute)
-        assertEquals(Location(400 + 1280, 1128), old.noticeExecuteClick)
-        assertEquals(Region(120 + 1680, 1040, 560, 190), wide.noticeExecute)
-        assertEquals(Location(400 + 1680, 1128), wide.noticeExecuteClick)
-        for ((loc, click) in listOf(old.noticeExecute to old.noticeExecuteClick, wide.noticeExecute to wide.noticeExecuteClick)) {
-            assertTrue(click.x in loc.x..loc.right && click.y in loc.y..(loc.y + loc.height))
-        }
         // 16:9 is untouched for both modes.
         assertEquals(522, old.slotClick(SkillLevelMode.Append, 0).y)
         assertEquals(410, old.slotLock(SkillLevelMode.Append, 0).y)

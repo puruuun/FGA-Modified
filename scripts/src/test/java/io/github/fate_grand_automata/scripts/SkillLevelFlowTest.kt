@@ -36,8 +36,8 @@ private class FakePanel(
     private val executeMatches: Boolean = true,
     /** Tapping execute shows nothing (no dialog). */
     private val executeOpensNothing: Boolean = false,
-    /** Tapping execute shows the notice again instead of the enhancement dialog. */
-    private val executeRepeatsNotice: Boolean = false,
+    /** Execute taps needed before the notice gives way to the enhancement dialog. */
+    private val noticeTaps: Int = 1,
     private val panelRead: (trueLevel: Int) -> Int? = { null },
     private val read: (trueLevel: Int) -> SkillLevelReading = { SkillLevelReading(it, it + 1) }
 ) : SkillLevelPanel {
@@ -50,6 +50,7 @@ private class FakePanel(
     var unlockPressed = false
     var executes = 0
     var noticeShowing = false
+    private var noticeTapsDone = 0
     val peak = levels.toMutableList()
 
     override fun isLocked(slot: Int) = slot in iconLockVisible
@@ -65,7 +66,7 @@ private class FakePanel(
     override fun pressEnhance() {
         enhances++
         if (selected in locked) unlockPressed = true
-        else if (levels[selected] < 10 && dialogOpens) { dialogOpen = true; noticeShowing = notice }
+        else if (levels[selected] < 10 && dialogOpens) { dialogOpen = true; noticeShowing = notice; noticeTapsDone = 0 }
     }
     override fun awaitDialog() = dialogOpen
     override fun dialogIsEnhance() = enhanceTitle && !noticeShowing
@@ -74,8 +75,7 @@ private class FakePanel(
         executes++
         when {
             executeOpensNothing -> { dialogOpen = false; noticeShowing = false }
-            executeRepeatsNotice -> Unit
-            else -> noticeShowing = false
+            ++noticeTapsDone >= noticeTaps -> noticeShowing = false
         }
     }
     override fun readLevels() = read(levels[selected])
@@ -151,13 +151,22 @@ class SkillLevelFlowTest {
         assertEquals(0, panel.cancels)
     }
 
-    @Test fun `notice shown again after execute stops with one execute tap`() {
-        val panel = FakePanel(mutableListOf(3), notice = true, executeRepeatsNotice = true)
-        val result = run(panel, 8).single()
-        assertEquals(SlotStop.UnexpectedDialog, result.stop)
-        assertEquals(1, panel.executes)
-        assertEquals(1, panel.cancels)
+    @Test fun `notice shown again after execute is passed again before the enhancement dialog`() {
+        val panel = FakePanel(mutableListOf(3), notice = true, noticeTaps = 2)
+        val result = SkillLevelFlow(panel).runSlot(0, 4)
+        assertEquals(SlotStop.Reached, result.stop)
+        // Two Enhance presses (3 -> 4, then the dialog at the target), two execute taps each.
+        assertEquals(4, panel.executes)
+        assertEquals(1, panel.confirms)
+        assertEquals(4, panel.levels[0])
+    }
+
+    @Test fun `execute that never takes effect stops after the tap cap as unexpected dialog`() {
+        val panel = FakePanel(mutableListOf(3), notice = true, noticeTaps = Int.MAX_VALUE)
+        assertEquals(SlotStop.UnexpectedDialog, run(panel, 8).single().stop)
+        assertEquals(SkillLevelFlow.MAX_NOTICE_TAPS, panel.executes)
         assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
     }
 
     @Test fun `enhancement dialog at the target after the notice is reached without confirming`() {

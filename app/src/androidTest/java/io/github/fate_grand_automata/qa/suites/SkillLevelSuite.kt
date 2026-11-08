@@ -46,11 +46,11 @@ internal fun FixtureApi.verifySkillLevel(): JSONObject {
                 .put("templatesCurrent", scores(loc.currentLevel(mode()))).put("templatesNext", scores(loc.nextLevel(mode())))
         }
         "notice" -> {
-            // The execute button of the temporarily joined servant notice; the match and the tap point must sit inside the 16:9 button.
+            // Upstream's temporary servant check: Execute in tempServantEnhancementRegion. The match and the tap point must sit inside the 16:9 button.
             val button = with(locations) { io.github.lib_automata.Region(138, 1066, 524, 124).xFromCenter() }
-            val pattern = runCatching { images[io.github.fate_grand_automata.scripts.Images.SkillLevelNoticeExecute] }.getOrNull()
-            val match = pattern?.let { loc.noticeExecute.findAll(it, similarity = 0.5).maxOrNull()?.takeIf { m -> m.score >= 0.8 } }
-            val click = loc.noticeExecuteClick
+            val pattern = runCatching { images[io.github.fate_grand_automata.scripts.Images.Execute] }.getOrNull()
+            val match = pattern?.let { locations.tempServantEnhancementRegion.findAll(it, similarity = 0.5).maxOrNull()?.takeIf { m -> m.score >= 0.8 } }
+            val click = locations.tempServantEnhancementLocation
             JSONObject().put("noticeExecute", screens.noticeExecuteVisible())
                 .put("executeInsideButton", match != null && button.contains(match.region) &&
                     click.x in button.x..button.right && click.y in button.y..button.bottom)

@@ -36,8 +36,6 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
         const val DIALOG_TITLE_SIMILARITY = 0.8
         /** The result prompt sits on character art; 0.75-0.77 on the append results, 0.3 at most elsewhere. */
         const val RESULT_SIMILARITY = 0.7
-        /** The "execute" label of the temporarily joined servant notice (JP and KR only). */
-        const val NOTICE_EXECUTE_SIMILARITY = 0.8
 
     }
 
@@ -93,9 +91,13 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
     fun slotLocked(mode: SkillLevelMode, slot: Int): Boolean =
         useSameSnapIn { seen(loc.slotLock(mode, slot), Images.SkillLevelLock, LOCK_SIMILARITY) }
 
-    /** The right-hand "execute" button of the temporarily joined servant notice. Missing template (other servers) is false. */
-    fun noticeExecuteVisible(): Boolean =
-        useSameSnapIn { seen(loc.noticeExecute, Images.SkillLevelNoticeExecute, NOTICE_EXECUTE_SIMILARITY) }
+    /**
+     * The right-hand "execute" button of the temporarily joined servant notice, found the way upstream's AutoServantLevel
+     * does: [Images.Execute] in [io.github.fate_grand_automata.scripts.locations.Locations.tempServantEnhancementRegion].
+     */
+    fun noticeExecuteVisible(): Boolean = useSameSnapIn {
+        template(Images.Execute)?.let { it in locations.tempServantEnhancementRegion } == true
+    }
 
     fun onResult(): Boolean = useSameSnapIn { seen(loc.result, Images.SkillLevelResult, RESULT_SIMILARITY) }
 }

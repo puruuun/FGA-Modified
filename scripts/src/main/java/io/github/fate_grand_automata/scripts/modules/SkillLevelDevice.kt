@@ -44,7 +44,7 @@ class SkillLevelDevice(
     override fun dialogIsEnhance() = screens.dialogIsEnhance(mode)
     override fun noticeExecuteVisible() = screens.noticeExecuteVisible()
     override fun pressNoticeExecute() {
-        loc.noticeExecuteClick.click()
+        locations.tempServantEnhancementLocation.click()
         addedTuning.skill.delay(SkillLevelTiming.AFTER_ENHANCE).wait()
     }
     override fun readLevels() = digits.read(mode)

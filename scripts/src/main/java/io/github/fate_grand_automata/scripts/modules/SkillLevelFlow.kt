@@ -208,12 +208,11 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                     else -> SlotStop.CannotEnhance
                 })
             }
-            if (!panel.dialogIsEnhance()) {
-                // A temporarily joined servant shows a notice first; its execute button is passed once per Enhance press.
-                if (!panel.noticeExecuteVisible()) {
-                    readings(panelText, evidence = evidence)
-                    return finish(closeDialog(SlotStop.UnexpectedDialog))
-                }
+            // A temporarily joined servant shows a notice first (upstream AutoServantLevel taps its execute button whenever
+            // it is visible). The cap only stops a tap that never takes effect from looping forever.
+            var notices = 0
+            while (!panel.dialogIsEnhance() && notices < MAX_NOTICE_TAPS && panel.noticeExecuteVisible()) {
+                notices++
                 line("action=notice-execute")
                 panel.pressNoticeExecute()
                 val seenAgain = panel.awaitDialog()
@@ -226,10 +225,10 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                         else -> SlotStop.CannotEnhance
                     })
                 }
-                if (!panel.dialogIsEnhance()) {
-                    readings(panelText, evidence = evidence)
-                    return finish(closeDialog(SlotStop.UnexpectedDialog))
-                }
+            }
+            if (!panel.dialogIsEnhance()) {
+                readings(panelText, evidence = evidence)
+                return finish(closeDialog(SlotStop.UnexpectedDialog))
             }
             activeStep = SkillLevelStep.Ocr
             val reading = panel.readLevels().inferMissing()
@@ -284,5 +283,6 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
 
     companion object {
         const val MAX_PASSES = 11
+        const val MAX_NOTICE_TAPS = 5
     }
 }
