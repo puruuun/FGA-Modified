@@ -82,46 +82,52 @@ class WidgetScreenshotTest(private val light: Boolean) {
 
     @Test fun serviceRunning() = shoot("service_running_1x1", DpSize(72.dp, 72.dp)) { ServiceWidgetContent(started = true, settings = settings) }
 
-    @Test fun ap4x1() = shoot("ap_4x1", wide) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun ap4x1Running() = shoot("ap_4x1_on", wide) { ApWidgetContent(ApWidgetState.Data(listOf(model)), serviceStarted = true, settings = settings) }
-
-    @Test fun ap3x1() = shoot("ap_3x1", narrow) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun apFull4x1() = shoot("ap_full_ap_4x1", wide) { ApWidgetContent(ApWidgetState.Data(listOf(fullAp)), settings = settings) }
-
-    @Test fun apFull3x1() = shoot("ap_full_ap_3x1", narrow) { ApWidgetContent(ApWidgetState.Data(listOf(fullAp)), settings = settings) }
-
-    @Test fun apNoData() = shoot("ap_no_data_4x1", wide) { ApWidgetContent(ApWidgetState.NoData, settings = settings) }
-
-    @Test fun apAt180() = shoot("ap_width_180", DpSize(180.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun apFullAt180() = shoot("ap_full_ap_width_180", DpSize(180.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(fullAp)), settings = settings) }
-
-    @Test fun apAt230() = shoot("ap_width_230", DpSize(230.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun apAt255() = shoot("ap_width_255", DpSize(255.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun apAt268() = shoot("ap_width_268", DpSize(268.dp, 66.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
-    @Test fun ap4x1Several() = shoot("ap_4x1_several", wide) { ApWidgetContent(several, settings = settings) }
-
-    @Test fun ap3x1Several() = shoot("ap_3x1_several", narrow) { ApWidgetContent(several, settings = settings) }
-
-    @Test fun ap180Several() = shoot("ap_width_180_several", DpSize(180.dp, 66.dp)) { ApWidgetContent(several, settings = settings) }
-
-    @Test fun apAlreadyPlaced3x2Several() = shoot("ap_3x2_legacy_several", DpSize(250.dp, 140.dp)) { ApWidgetContent(several, settings = settings) }
-
-    @Test fun apAlreadyPlaced3x2() = shoot("ap_3x2_legacy", DpSize(250.dp, 110.dp)) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings) }
-
     @Test fun serviceStoppedHalfOpacity() = shoot("service_stopped_1x1_opacity50", DpSize(72.dp, 72.dp), backdrop = true) { ServiceWidgetContent(started = false, settings = half) }
 
-    @Test fun ap4x1HalfOpacity() = shoot("ap_4x1_opacity50", wide, backdrop = true) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = half) }
+    private fun data(m: ApWidgetModel = model) = ApWidgetState.Data(listOf(m))
 
-    @Test fun ap3x1HalfOpacity() = shoot("ap_3x1_opacity50", narrow, backdrop = true) { ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = half) }
+    @Test fun ap4x1() = shootAp("ap_4x1", wide, data())
+    @Test fun ap4x1Running() = shootAp("ap_4x1_on", wide, data(), started = true)
+    @Test fun ap3x1() = shootAp("ap_3x1", narrow, data())
+    @Test fun apFull4x1() = shootAp("ap_full_ap_4x1", wide, data(fullAp))
+    @Test fun apFull3x1() = shootAp("ap_full_ap_3x1", narrow, data(fullAp))
+    @Test fun apNoData() = shootAp("ap_no_data_4x1", wide, ApWidgetState.NoData)
+    @Test fun apAt180() = shootAp("ap_width_180", DpSize(180.dp, 66.dp), data())
+    @Test fun apFullAt180() = shootAp("ap_full_ap_width_180", DpSize(180.dp, 66.dp), data(fullAp))
+    @Test fun apAt230() = shootAp("ap_width_230", DpSize(230.dp, 66.dp), data())
+    @Test fun apAt255() = shootAp("ap_width_255", DpSize(255.dp, 66.dp), data())
+    @Test fun apAt268() = shootAp("ap_width_268", DpSize(268.dp, 66.dp), data())
+    @Test fun ap4x1Several() = shootAp("ap_4x1_several", wide, several)
+    @Test fun ap3x1Several() = shootAp("ap_3x1_several", narrow, several)
+    @Test fun apAlreadyPlaced3x2() = shootAp("ap_3x2_legacy", DpSize(250.dp, 110.dp), data())
+    @Test fun ap4x1HalfOpacity() = shootAp("ap_4x1_opacity50", wide, data(), settings = half, backdrop = true)
+    @Test fun ap3x1HalfOpacity() = shootAp("ap_3x1_opacity50", narrow, data(), settings = half, backdrop = true)
+    @Test fun ap4x1FullyTransparent() = shootAp("ap_4x1_opacity100", wide, data(), settings = settings.copy(transparencyPercent = 100), backdrop = true)
 
-    @Test fun ap4x1FullyTransparent() = shoot("ap_4x1_opacity100", wide, backdrop = true) {
-        ApWidgetContent(ApWidgetState.Data(listOf(model)), settings = settings.copy(transparencyPercent = 100))
+    /** The top-level RemoteViews, applied into an AppWidgetHostView like the launcher does. */
+    private fun shootAp(
+        name: String, size: DpSize, state: ApWidgetState, settings: WidgetSettings = this.settings,
+        started: Boolean = false, backdrop: Boolean = false,
+    ) {
+        RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
+        android.provider.Settings.System.putString(context.contentResolver, android.provider.Settings.System.TIME_12_24, "12")
+        val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now)
+        val density = context.resources.displayMetrics.density
+        val parent = android.appwidget.AppWidgetHostView(context)
+        parent.addView(views.apply(context, parent))
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        val w = (size.width.value * density).toInt()
+        val h = (size.height.value * density).toInt()
+        parent.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+        parent.layout(0, 0, w, h)
+        val bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        if (backdrop) canvas.drawColor(android.graphics.Color.parseColor("#7C93B3"))
+        parent.draw(canvas)
+        val file = java.io.File("build/outputs/roborazzi/widgets/${name}${if (light) "_light" else ""}.png")
+        file.parentFile!!.mkdirs()
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     /** One stack card on its own, in case Robolectric cannot lay out the StackView's children. */

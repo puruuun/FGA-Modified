@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The whole AP widget as one top-level RemoteViews: a StackView adapter is only accepted there, not nested. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ap_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_dark_0"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:paddingStart="14dp">
+
+        <StackView
+            android:id="@+id/ap_stack"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:loopViews="false" />
+
+        <TextView
+            android:id="@+id/ap_no_data"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|start"
+            android:maxLines="2"
+            android:text="@string/widget_ap_no_data"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/ap_tile"
+        android:layout_width="40dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/widget_tile_background"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/ap_tile_circle"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/widget_toggle_circle"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/ap_tile_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_play" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/ap_tile_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

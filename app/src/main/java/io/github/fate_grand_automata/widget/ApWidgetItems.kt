@@ -60,25 +60,25 @@ fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPa
 }
 
 /**
- * The StackView with one card per account. Items go through [RemoteViewsCompat.setRemoteAdapter]: Android 12+
- * uses RemoteCollectionItems directly, older versions fall back to androidx's own RemoteViewsCompatService.
+ * Fills the StackView (R.id.ap_stack) of the top-level [views] with one card per account. Items go through
+ * [RemoteViewsCompat.setRemoteAdapter]: Android 12+ uses RemoteCollectionItems directly, older versions fall
+ * back to androidx's own RemoteViewsCompatService. [views] must be the RemoteViews given to updateAppWidget.
  */
-fun buildApStackViews(
+fun addApStack(
     context: Context,
+    views: RemoteViews,
     appWidgetId: Int,
     models: List<ApWidgetModel>,
     palette: WidgetPalette,
     fields: ApWidgetFields,
     now: Long = System.currentTimeMillis() / 1000,
-): RemoteViews {
-    val views = RemoteViews(context.packageName, R.layout.widget_ap_stack)
+) {
     val items = RemoteViewsCompat.RemoteCollectionItems.Builder()
         .setHasStableIds(true)
         .setViewTypeCount(1)
     apItemContents(context, models, now).forEach { items.addItem(it.itemId, buildApItemViews(context, it, palette, fields)) }
     RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.ap_stack, items.build())
     views.setPendingIntentTemplate(R.id.ap_stack, openAccountTemplate(context))
-    return views
 }
 
 /** Mutable on purpose: the system has to merge each card's fill-in intent into it (required from Android 12). */

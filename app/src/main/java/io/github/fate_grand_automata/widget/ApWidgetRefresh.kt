@@ -9,9 +9,6 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -19,8 +16,6 @@ import java.util.concurrent.TimeUnit
 object ApWidgetRefresh {
     private const val WORK_NAME = "ap_widget_refresh"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val updates = MutableStateFlow(0L)
-    internal val revision = updates.asStateFlow()
 
     /** Replaced in tests, which have no widget host. */
     internal var launcher: (Context) -> Unit = { context ->
@@ -29,10 +24,9 @@ object ApWidgetRefresh {
 
     fun requestUpdate(context: Context) = launcher(context.applicationContext)
 
-    /** A live Glance session must reload even when provideGlance is not called again. */
+    /** Redraws every placed AP widget from the stored summaries. */
     internal suspend fun updateAll(context: Context) {
-        updates.update { it + 1 }
-        WidgetRefresh.updateReceiverWidgets(context, ApWidgetReceiver::class.java, ApWidget())
+        ApWidgetRenderer.updateAll(context)
     }
 
     /** The existing save hook covers every account now. The check runs outside the capture lock. */

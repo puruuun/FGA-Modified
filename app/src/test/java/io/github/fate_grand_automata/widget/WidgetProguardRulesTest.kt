@@ -20,4 +20,15 @@ class WidgetProguardRulesTest {
         assertTrue(rules.contains("-keep class * extends androidx.glance.appwidget.GlanceAppWidget { <init>(); }"))
         assertTrue(rules.contains("-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver { <init>(); }"))
     }
+
+    @Test fun plainAppWidgetProviderAndStopReceiverKeepTheirNames() {
+        assertTrue(rules.contains("-keep class * extends android.appwidget.AppWidgetProvider { <init>(); }"))
+        assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }"))
+    }
+
+    @Test fun stopReceiverIsNotExported() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val block = manifest.substringAfter("android:name=\".widget.StopServiceReceiver\"").substringBefore("/>")
+        assertTrue(block.contains("android:exported=\"false\""))
+    }
 }

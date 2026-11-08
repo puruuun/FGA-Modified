@@ -65,6 +65,9 @@ class ApWidgetItemsTest {
         assertEquals(items.map { it.itemId }, apItemContents(context, models, now + 60).map { it.itemId })
     }
 
+    private fun stackViews(list: List<ApWidgetModel>) =
+        RemoteViews(context.packageName, R.layout.widget_ap_root).also { addApStack(context, it, 11, list, widgetPalette(WidgetTheme.Dark), fields, now) }
+
     private fun host(views: RemoteViews): StackView {
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))
@@ -75,7 +78,7 @@ class ApWidgetItemsTest {
     }
 
     @Test fun stackHoldsOneStableItemPerAccount() {
-        val stack = host(buildApStackViews(context, 11, models, widgetPalette(WidgetTheme.Dark), fields, now))
+        val stack = host(stackViews(models))
         val adapter = assertNotNull(stack.adapter)
         assertEquals(3, adapter.count)
         assertTrue(adapter.hasStableIds())
@@ -84,7 +87,7 @@ class ApWidgetItemsTest {
     }
 
     @Test fun oneAccountIsASingleCard() {
-        val stack = host(buildApStackViews(context, 11, models.take(1), widgetPalette(WidgetTheme.Dark), fields, now))
+        val stack = host(stackViews(models.take(1)))
         assertEquals(1, stack.adapter.count)
     }
 

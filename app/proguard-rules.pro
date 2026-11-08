@@ -13,3 +13,8 @@
 # the service widget's content was drawn into the AP widget. Keep every widget class whole and named.
 -keep class * extends androidx.glance.appwidget.GlanceAppWidget { <init>(); }
 -keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver { <init>(); }
+
+# The AP widget is a plain AppWidgetProvider (Glance cannot host a StackView adapter), and its stop tile fires an
+# explicit broadcast. The system creates both by class name, so neither may be renamed or merged.
+-keep class * extends android.appwidget.AppWidgetProvider { <init>(); }
+-keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }

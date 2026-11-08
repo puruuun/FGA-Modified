@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.widget
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -130,10 +132,22 @@ fun ServiceWidgetContent(started: Boolean, settings: WidgetSettings = WidgetSett
     ServiceToggleTile(started, GlanceModifier.fillMaxSize(), settings, asCard = true)
 }
 
-/** Stops the service like the main-screen button does, without opening the UI. */
+/** Stops the service like the main-screen button does, without opening the UI. Only when it is running. */
+internal fun stopServiceIfStarted(context: Context) {
+    if (ScriptRunnerService.serviceStarted.value) ScriptRunnerService.stopService(context)
+}
+
+/** Stops the service from the 1x1 Glance widget. */
 class StopServiceCallback : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        if (ScriptRunnerService.serviceStarted.value) ScriptRunnerService.stopService(context)
+        stopServiceIfStarted(context)
+    }
+}
+
+/** Stops the service from the stop tile of the plain-RemoteViews AP widget (not exported, explicit broadcast). */
+class StopServiceReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        stopServiceIfStarted(context.applicationContext)
     }
 }
 
