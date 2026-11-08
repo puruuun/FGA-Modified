@@ -63,14 +63,33 @@ class JpRootSettingsUiTest {
         show(installed = false)
         message(R.string.capture_jp_root).assertDoesNotExist()
     }
-    @Test fun jpSwitchFollowsBothKrCertificateButtonsAndPrecedesVpn() {
+    @Test fun serverSectionsShowKrHeadingStatusAndButtonsThenJpHeadingAndSwitchThenVpn() {
         show()
+        val kr = message(R.string.capture_cert_header).fetchSemanticsNode().boundsInRoot
+        val status = message(R.string.capture_cert_missing).fetchSemanticsNode().boundsInRoot
         val create = message(R.string.capture_cert_create).fetchSemanticsNode().boundsInRoot
         val guide = message(R.string.capture_guide_button).fetchSemanticsNode().boundsInRoot
+        val jpHeading = message(R.string.capture_jp_root).fetchSemanticsNode().boundsInRoot
+        val jpLabel = message(R.string.capture_jp_root_summary).fetchSemanticsNode().boundsInRoot
         val jp = compose.onNodeWithTag("jp-root-switch").fetchSemanticsNode().boundsInRoot
         val vpn = message(R.string.capture_vpn_header).fetchSemanticsNode().boundsInRoot
-        assertTrue("JP switch must follow both KR certificate buttons", jp.top >= maxOf(create.bottom, guide.bottom))
+        assertTrue("KR status must follow its heading", status.top >= kr.bottom)
+        assertTrue("Both KR buttons must follow the status", minOf(create.top, guide.top) >= status.bottom)
+        assertTrue("JP heading must follow both KR buttons", jpHeading.top >= maxOf(create.bottom, guide.bottom))
+        assertTrue("JP label and switch must follow their heading", minOf(jpLabel.top, jp.top) >= jpHeading.bottom)
         assertTrue("JP switch must precede the VPN section", jp.bottom <= vpn.top)
+        compose.onAllNodesWithText(context.getString(R.string.capture_jp_root)).assertCountEquals(1)
+    }
+    @Test fun krSectionIsShownWithoutKrGameInstalled() {
+        shadowOf(context.packageManager).removePackage(CaptureVpnService.GAME_PACKAGE)
+        assertThrows(android.content.pm.PackageManager.NameNotFoundException::class.java) {
+            context.packageManager.getPackageInfo(CaptureVpnService.GAME_PACKAGE, 0)
+        }
+        show()
+        message(R.string.capture_cert_header).assertIsDisplayed()
+        message(R.string.capture_cert_missing).assertIsDisplayed()
+        message(R.string.capture_cert_create).assertIsDisplayed()
+        message(R.string.capture_guide_button).assertIsDisplayed()
     }
     @Test fun noRootKeepsSwitchOffAndShowsMessage() {
         fake.root = false

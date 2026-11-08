@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.prefs.Preference
+import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,8 +94,8 @@ class JpRootSettings(
 fun JpRootPreference(state: JpRootState, installed: Boolean, onEnabled: (Boolean) -> Unit) {
     if (!jpRootVisible(Build.VERSION.SDK_INT, installed)) return
     Column {
-        Preference(title = stringResource(R.string.capture_jp_root),
-            summary = stringResource(R.string.capture_jp_root_summary), enabled = !state.busy,
+        PreferenceGroupHeader(stringResource(R.string.capture_jp_root))
+        Preference(title = stringResource(R.string.capture_jp_root_summary), enabled = !state.busy,
             onClick = { onEnabled(!state.enabled) }) {
             if (state.busy) CircularProgressIndicator()
             else Switch(checked = state.enabled, onCheckedChange = onEnabled, modifier = Modifier.testTag("jp-root-switch"))

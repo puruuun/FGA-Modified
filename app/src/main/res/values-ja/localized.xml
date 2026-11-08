@@ -682,10 +682,10 @@
     <string name="battle_config_folder_error_too_long">"30文字まで入力できます"</string>
     <string name="capture_title">"ログ収集"</string>
     <string name="capture_enable">"ログ収集を有効にする"</string>
-    <string name="capture_cert_header">"証明書"</string>
-    <string name="capture_cert_missing">"証明書がありません。先に作成してください。"</string>
-    <string name="capture_cert_not_installed">"作成済みですが、CA証明書としてまだインストールされていません。"</string>
-    <string name="capture_cert_installed">"CA証明書としてインストール済みです。"</string>
+    <string name="capture_cert_header">"KR サーバー"</string>
+    <string name="capture_cert_missing">"KR証明書: なし。先に作成してください。"</string>
+    <string name="capture_cert_not_installed">"KR証明書: 作成済みですが、CA証明書としてまだインストールされていません。"</string>
+    <string name="capture_cert_installed">"KR証明書: CA証明書としてインストール済みです。"</string>
     <string name="capture_cert_create">"証明書を作成"</string>
     <string name="capture_cert_recreate_title">"新しい証明書を作成しますか?"</string>
     <string name="capture_cert_recreate_message">"すでに証明書があります。新しく作ると古い証明書は使えなくなります。セキュリティ設定で古い証明書を削除し、新しい証明書をインストールしてください。"</string>

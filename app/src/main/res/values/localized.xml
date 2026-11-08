@@ -996,10 +996,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="battle_config_folder_error_too_long">"Up to 30 characters"</string>
     <string name="capture_title">"Log collection"</string>
     <string name="capture_enable">"Enable log collection"</string>
-    <string name="capture_cert_header">"Certificate"</string>
-    <string name="capture_cert_missing">"No certificate yet. Create one first."</string>
-    <string name="capture_cert_not_installed">"Created, but not installed as a CA certificate yet."</string>
-    <string name="capture_cert_installed">"Installed as a CA certificate."</string>
+    <string name="capture_cert_header">"KR server"</string>
+    <string name="capture_cert_missing">"KR certificate: None. Create one first."</string>
+    <string name="capture_cert_not_installed">"KR certificate: Created, but not installed as a CA certificate yet."</string>
+    <string name="capture_cert_installed">"KR certificate: Installed as a CA certificate."</string>
     <string name="capture_cert_create">"Create certificate"</string>
     <string name="capture_cert_recreate_title">"Create a new certificate?"</string>
     <string name="capture_cert_recreate_message">"A certificate already exists. A new one makes the old one stop working. Remove the old one under Security settings and install the new one."</string>

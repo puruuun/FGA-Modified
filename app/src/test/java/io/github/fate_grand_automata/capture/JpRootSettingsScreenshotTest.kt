@@ -26,7 +26,13 @@ class JpRootSettingsScreenshotTest {
         val settings = JpRootSettings(FakeJpCaInstaller(), false) {}
         runBlocking { settings.setEnabled(true) }
         compose.shoot("capture-jp", "Installed", width, 1200, locale = "ko",
-            beforeCapture = { compose.onNodeWithText("JP 인증서: 설치됨").assertIsDisplayed() }) {
+            beforeCapture = {
+                compose.onNodeWithText("KR 서버").assertIsDisplayed()
+                compose.onNodeWithText("KR 인증서: CA 인증서로 설치됨").assertIsDisplayed()
+                compose.onNodeWithText("JP 서버 (루트)").assertIsDisplayed()
+                compose.onNodeWithText("루트 권한으로 JP 인증서를 자동 설치합니다").assertIsDisplayed()
+                compose.onNodeWithText("JP 인증서: 설치됨").assertIsDisplayed()
+            }) {
             GainsTrackerContent(GainsTrackerUiState(enabled = true, certExists = true, certInstalled = true),
                 {}, {}, {}, {}, {}, {}, {}, jpState = settings.state.value, jpInstalled = true)
         }
