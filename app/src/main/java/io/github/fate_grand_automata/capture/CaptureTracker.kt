@@ -4,6 +4,7 @@ import android.content.Context
 import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.scripts.capture.AccountState
+import io.github.fate_grand_automata.widget.ApWidgetRefresh
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.BodyDecoder
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
@@ -50,6 +51,8 @@ object CaptureTracker {
     private val io = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "capture-save").apply { isDaemon = true } }
     private val pendingSaves = mutableMapOf<String, ScheduledFuture<*>>()
     private var initialized = false
+    /** For the home-screen widget refresh after a save. */
+    private var widgetContext: Context? = null
     private val lock = Any()
     private val stored = CaptureAccounts { Timber.w("Capture: %s", it) }
     private val runSession = CaptureRunSession()
@@ -73,6 +76,7 @@ object CaptureTracker {
     }
 
     fun init(context: Context) = synchronized(lock) {
+        widgetContext = context.applicationContext
         if (initialized) return@synchronized
         stored.load(CertStore.directory(context))
         outsideWork {
@@ -213,6 +217,7 @@ object CaptureTracker {
     private fun save(userId: String? = null) = synchronized(lock) {
         if (userId != null) pendingSaves.remove(userId)
         runCatching { stored.save(userId) }
+            .onSuccess { widgetContext?.let { context -> runCatching { ApWidgetRefresh.onAccountSaved(context, userId) } } }
             .onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
         Unit
     }

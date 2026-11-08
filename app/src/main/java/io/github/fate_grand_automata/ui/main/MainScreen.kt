@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -31,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,6 +68,10 @@ import io.github.fate_grand_automata.ui.dialog.FgaDialog
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
+import io.github.fate_grand_automata.widget.WidgetStartEffect
+
+/** How long after a widget tap the screen may still close itself when the service comes up. */
+private const val WIDGET_START_WINDOW_MS = 3 * 60_000L
 
 @Composable
 @OptIn(ExperimentalPermissionsApi::class)
@@ -78,6 +84,9 @@ fun MainScreen(
 
     var toggling by rememberSaveable { mutableStateOf(false) }
     var startTrackerWithService by rememberSaveable { mutableStateOf(false) }
+    // Widget-initiated start: the screen closes once the service (and the log-collection VPN) is up.
+    var widgetStartDeadline by rememberSaveable { mutableLongStateOf(0L) }
+    var widgetTrackerPending by remember { mutableStateOf(false) }
 
     val accessibilityDisabledDialog = FgaDialog()
     accessibilityDisabledDialog.build {
@@ -110,7 +119,10 @@ fun MainScreen(
     val context = LocalContext.current
 
     val startMediaProjection = rememberLauncherForActivityResult(StartMediaProjection()) {
-        if (it == null) startTrackerWithService = false
+        if (it == null) {
+            startTrackerWithService = false
+            widgetStartDeadline = 0L
+        }
         vm.onStartMediaProjectionResult(context, it)
     }
 
@@ -153,21 +165,46 @@ fun MainScreen(
         }
     }
 
+    WidgetStartEffect(
+        requests = vm.widgetRequests,
+        serviceStarted = { ScriptRunnerService.serviceStarted.value },
+    ) {
+        widgetStartDeadline = SystemClock.elapsedRealtime() + WIDGET_START_WINDOW_MS
+        toggleOverlayService()
+    }
+
     val capture = rememberCaptureMain(vm.prefsCore) { navigate(MainScreenDestinations.GainsTracker) }
     val overlayServiceStarted by ScriptRunnerService.serviceStarted
     val trackerConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK && ScriptRunnerService.serviceStarted.value) {
             CaptureServiceLifecycle.onStart(context, vm.prefsCore, requestConsent = {})
         }
+        widgetTrackerPending = false
     }
     LaunchedEffect(overlayServiceStarted, startTrackerWithService) {
         if (overlayServiceStarted && startTrackerWithService) {
             startTrackerWithService = false
-            if (capture.state.showButton) capture.withAgreement(false) {
-                if (ScriptRunnerService.serviceStarted.value) {
-                    CaptureServiceLifecycle.onStart(context, vm.prefsCore) { trackerConsent.launch(it) }
+            if (capture.state.showButton) {
+                widgetTrackerPending = true
+                capture.withAgreement(false) {
+                    var waitingForConsent = false
+                    if (ScriptRunnerService.serviceStarted.value) {
+                        CaptureServiceLifecycle.onStart(context, vm.prefsCore) {
+                            waitingForConsent = true
+                            trackerConsent.launch(it)
+                        }
+                    }
+                    // A consent prompt keeps the screen open until its result arrives.
+                    if (!waitingForConsent) widgetTrackerPending = false
                 }
             }
+        }
+    }
+    LaunchedEffect(overlayServiceStarted, startTrackerWithService, widgetTrackerPending, widgetStartDeadline) {
+        if (widgetStartDeadline != 0L && overlayServiceStarted && !startTrackerWithService && !widgetTrackerPending) {
+            val inWindow = SystemClock.elapsedRealtime() <= widgetStartDeadline
+            widgetStartDeadline = 0L
+            if (inWindow) (context as? Activity)?.finish()
         }
     }
     val accessibilityServiceStarted by TapperService.serviceStarted

@@ -929,4 +929,25 @@
     <string name="capture_jp_reboot">完全に削除するには端末を再起動してください</string>
     <string name="capture_jp_start_failed">JP証明書をインストールできなかったため、今回はJPデータを収集しません</string>
     <string name="capture_jp_restart">JPのゲームを再起動してください</string>
+
+    <!-- ホーム画面ウィジェット -->
+    <string name="widget_service_name">FGAサービス</string>
+    <string name="widget_service_description">ホーム画面からFGAサービスを開始・停止します。</string>
+    <string name="widget_service_start">開始</string>
+    <string name="widget_service_stop">停止</string>
+    <string name="widget_ap_name">アカウントAP</string>
+    <string name="widget_ap_description">ログ収集で集めたアカウント1つのAPを表示します。</string>
+    <string name="widget_ap_config_title">アカウントを選択</string>
+    <string name="widget_ap_config_unavailable">先にログ収集でアカウントを収集してください</string>
+    <string name="widget_ap_config_close">閉じる</string>
+    <string name="widget_ap_no_data">アカウントデータなし</string>
+    <string name="widget_ap_value">AP %1$s / %2$s</string>
+    <string name="widget_ap_full">AP全回復</string>
+    <string name="widget_ap_full_at">全回復 %1$s（%2$s後）</string>
+    <string name="widget_ap_full_at_short">全回復 %1$s</string>
+    <string name="widget_ap_data_time">データ %1$s</string>
+    <string name="widget_duration_hm">%1$d時間%2$d分</string>
+    <string name="widget_duration_m">%1$d分</string>
+    <string name="widget_preview_name">サンプルアカウント</string>
+    <string name="widget_preview_full_at">全回復 21:41（4時間35分後）</string>
 </resources>

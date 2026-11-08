@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.main
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -22,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initializeApplicationLanguage()
+        // A recreated activity keeps its original intent, which already ran once.
+        vm.widgetRequests.consume(intent, restored = savedInstanceState != null)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
@@ -35,6 +38,12 @@ class MainActivity : AppCompatActivity() {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         cutoutManager.applyCutout(this)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        vm.widgetRequests.consume(intent)
     }
 
     override fun onStart() {

@@ -18,6 +18,7 @@ import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.util.StorageProvider
+import io.github.fate_grand_automata.widget.WidgetLaunchRequests
 import io.github.fate_grand_automata.util.GitHubUpdate
 import io.github.fate_grand_automata.util.GitHubUpdateChecker
 import io.github.fate_grand_automata.util.SupportImageExtractor
@@ -40,6 +41,9 @@ class MainScreenViewModel @Inject constructor(
 ) : ViewModel() {
 
     val availableUpdate = mutableStateOf<GitHubUpdate?>(null)
+
+    /** Taps from the home-screen widgets; survive rotation and are handed out once. */
+    val widgetRequests = WidgetLaunchRequests()
 
     fun dismissUpdate() { availableUpdate.value = null }
 

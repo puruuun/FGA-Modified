@@ -473,6 +473,9 @@ dependencies {
 
     implementation(libs.reorderable)
 
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.work.runtime)
+
     testImplementation(platform(libs.junit.bom)) {
         because("kotlin-test comes with conflicting junit versions")
     }
@@ -487,6 +490,7 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(composeBom)
     testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.androidx.glance.appwidget.testing)
 }
 
 tasks.withType<Test>().configureEach {

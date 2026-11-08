@@ -1171,4 +1171,25 @@
     <string name="capture_jp_reboot">완전히 지우려면 기기를 재부팅하세요</string>
     <string name="capture_jp_start_failed">JP 인증서를 설치하지 못해 이번에는 JP 데이터를 수집하지 않습니다</string>
     <string name="capture_jp_restart">JP 게임을 다시 실행해 주세요</string>
+
+    <!-- 홈 화면 위젯 -->
+    <string name="widget_service_name">FGA 서비스</string>
+    <string name="widget_service_description">홈 화면에서 FGA 서비스를 시작하거나 중지합니다.</string>
+    <string name="widget_service_start">시작</string>
+    <string name="widget_service_stop">중지</string>
+    <string name="widget_ap_name">계정 AP</string>
+    <string name="widget_ap_description">로그 수집으로 모은 계정 하나의 AP를 보여 줍니다.</string>
+    <string name="widget_ap_config_title">계정 선택</string>
+    <string name="widget_ap_config_unavailable">로그 수집으로 계정을 먼저 수집해 주세요</string>
+    <string name="widget_ap_config_close">닫기</string>
+    <string name="widget_ap_no_data">계정 데이터 없음</string>
+    <string name="widget_ap_value">AP %1$s / %2$s</string>
+    <string name="widget_ap_full">AP 가득 참</string>
+    <string name="widget_ap_full_at">가득 참 %1$s (%2$s 후)</string>
+    <string name="widget_ap_full_at_short">가득 참 %1$s</string>
+    <string name="widget_ap_data_time">데이터 %1$s</string>
+    <string name="widget_duration_hm">%1$d시간 %2$d분</string>
+    <string name="widget_duration_m">%1$d분</string>
+    <string name="widget_preview_name">예시 계정</string>
+    <string name="widget_preview_full_at">가득 참 오후 9:41 (4시간 35분 후)</string>
 </resources>

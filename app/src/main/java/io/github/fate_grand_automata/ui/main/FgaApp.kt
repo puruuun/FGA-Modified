@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -67,6 +68,20 @@ fun FgaApp(
         if (backStack.size > 1) {
             { backStack.removeLastOrNull() }
         } else null
+
+    // A widget start tap that arrives before onboarding is done must not start the service later.
+    LaunchedEffect(Unit) { if (vm.prefs.isOnboardingRequired()) vm.widgetRequests.takeStart() }
+
+    // Account widget tap: open that account's dashboard once, on top of the home screen.
+    val widgetAccount = vm.widgetRequests.accountPending
+    LaunchedEffect(widgetAccount) {
+        val id = vm.widgetRequests.takeAccount() ?: return@LaunchedEffect
+        if (!vm.prefs.isOnboardingRequired()) {
+            backStack.clear()
+            backStack.add(Route.Home)
+            backStack.add(Route.AccountDashboard(id))
+        }
+    }
 
     FgaScreen {
         AppUpdateDialog(vm)
