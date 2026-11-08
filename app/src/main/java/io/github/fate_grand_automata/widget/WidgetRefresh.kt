@@ -5,7 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import androidx.glance.appwidget.updateAll
+import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,8 +17,20 @@ import timber.log.Timber
 object WidgetRefresh {
     internal val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    internal var updateService: suspend (Context) -> Unit = { ServiceWidget().updateAll(it) }
+    internal var updateService: suspend (Context) -> Unit = { updateReceiverWidgets(it, ServiceWidgetReceiver::class.java, ServiceWidget()) }
     internal var updateAp: suspend (Context) -> Unit = { ApWidgetRefresh.updateAll(it) }
+
+    /**
+     * Updates the widgets placed for one receiver, found by its component.
+     * Glance's own updateAll finds them through a stored receiver-to-class-name map, which goes stale
+     * when a new build renames or merges the widget classes; the receiver component never changes.
+     */
+    internal suspend fun updateReceiverWidgets(context: Context, receiver: Class<*>, widget: GlanceAppWidget) {
+        val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, receiver))
+        if (ids.isEmpty()) return
+        val glance = GlanceAppWidgetManager(context)
+        for (id in ids) widget.update(context, glance.getGlanceIdBy(id))
+    }
 
     internal fun hasApWidget(context: Context): Boolean = AppWidgetManager.getInstance(context)
         .getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)).isNotEmpty()

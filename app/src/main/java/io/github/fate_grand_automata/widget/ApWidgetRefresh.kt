@@ -1,8 +1,6 @@
 package io.github.fate_grand_automata.widget
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -34,7 +32,7 @@ object ApWidgetRefresh {
     /** A live Glance session must reload even when provideGlance is not called again. */
     internal suspend fun updateAll(context: Context) {
         updates.update { it + 1 }
-        ApWidget().updateAll(context)
+        WidgetRefresh.updateReceiverWidgets(context, ApWidgetReceiver::class.java, ApWidget())
     }
 
     /** The existing save hook covers every account now. The check runs outside the capture lock. */
@@ -61,8 +59,7 @@ object ApWidgetRefresh {
 
 class ApWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val manager = GlanceAppWidgetManager(applicationContext)
-        if (manager.getGlanceIds(ApWidget::class.java).isEmpty()) {
+        if (!WidgetRefresh.hasApWidget(applicationContext)) {
             ApWidgetRefresh.cancel(applicationContext)
             return Result.success()
         }
