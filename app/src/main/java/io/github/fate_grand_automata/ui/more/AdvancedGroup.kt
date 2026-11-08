@@ -1,8 +1,13 @@
 package io.github.fate_grand_automata.ui.more
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.EventRepeat
 import io.github.fate_grand_automata.BuildConfig
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -13,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
@@ -112,6 +118,30 @@ fun LazyListScope.advancedGroup(
         prefs.autoStartService.SwitchPreference(
             title = stringResource(R.string.p_auto_start_service),
             icon = icon(R.drawable.ic_launch)
+        )
+    }
+
+    item {
+        val context = LocalContext.current
+        Preference(
+            title = stringResource(R.string.p_battery_optimization_action),
+            icon = icon(Icons.Default.BatterySaver),
+            onClick = {
+                try {
+                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                } catch (_: ActivityNotFoundException) {
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:${BuildConfig.APPLICATION_ID}")
+                            )
+                        )
+                    } catch (_: ActivityNotFoundException) {
+                        // Some devices provide neither settings screen.
+                    }
+                }
+            }
         )
     }
 
