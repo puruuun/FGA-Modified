@@ -35,7 +35,7 @@ data class GameNameMap(
     }
 }
 
-/** Downloads public KR lists and missing JP item names; only public item ids enter requests. */
+/** Downloads public lists and missing JP item names; only public item ids enter requests. */
 class GameNames(
     private val directory: File,
     private val download: (String) -> String = ::downloadPublicList,
@@ -44,13 +44,15 @@ class GameNames(
     private val mutex = Mutex()
     private var loaded: GameNameMap? = null
 
-    suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
+    suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false,
+        hasJpAccount: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
             val kr = resolveKr(runs, outsideItemIds)
             val names = if (includeCards) kr.copy(
                 svtData = metadata("basic_svt"), commandCodeData = metadata("basic_command_code"),
             ) else kr
-            jpFallback.merge(names, runs.flatMap { it.items }.filter { it.type == 2 }.map { it.objectId } + outsideItemIds)
+            jpFallback.merge(withJpLists(names, hasJpAccount, includeCards),
+                runs.flatMap { it.items }.filter { it.type == 2 }.map { it.objectId } + outsideItemIds)
         }
     }
 
@@ -79,12 +81,12 @@ class GameNames(
     }
 
     /** Servant and CE names for the friend manager; ids missing from the cache follow the usual daily refresh. */
-    suspend fun friends(servantIds: Collection<Long>, equipIds: Collection<Long>): GameNameMap = withContext(Dispatchers.IO) {
-        mutex.withLock { resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds) }
+    suspend fun friends(servantIds: Collection<Long>, equipIds: Collection<Long>, hasJpAccount: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
+        mutex.withLock { withJpLists(resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds), hasJpAccount) }
     }
 
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */
-    suspend fun dashboard(states: Collection<AccountState> = emptyList()): GameNameMap {
+    suspend fun dashboard(states: Collection<AccountState> = emptyList(), hasJpAccount: Boolean = false): GameNameMap {
         return withContext(Dispatchers.IO) { mutex.withLock {
             val names = resolveKr(emptyList())
             refresh("basic_mystic_code", read("basic_mystic_code"), emptyList())
@@ -105,22 +107,46 @@ class GameNames(
                 equips = names.equips + equips.mapValues { it.value.name ?: "#${it.key}" },
                 itemIcons = names.itemIcons + items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap(),
                 servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
-            jpFallback.merge(kr, required["nice_item"].orEmpty())
+            jpFallback.merge(withJpLists(kr, hasJpAccount), required["nice_item"].orEmpty())
         } }
     }
 
-    private fun metadata(list: String, required: Set<Long> = emptySet()): Map<Long, AtlasBasic> {
-        val file = File(directory, "${list}_details.json")
+    /** JP exports have their own files and budgets. Never feed the merged result back into loaded. */
+    private fun withJpLists(kr: GameNameMap, hasJpAccount: Boolean, includeCards: Boolean = false): GameNameMap {
+        if (!hasJpAccount) return kr
+        val items = metadata("nice_item", server = "JP").filterKeys { it !in kr.items && it !in kr.itemData }
+        val servants = metadata("basic_servant", server = "JP").filterKeys { it !in kr.servants && it !in kr.servantData }
+        val equips = metadata("basic_equip", server = "JP").filterKeys { it !in kr.equips && it !in kr.equipData }
+        val mystics = metadata("basic_mystic_code", server = "JP")
+        fun names(rows: Map<Long, AtlasBasic>) = rows.mapNotNull { (id, row) ->
+            row.name?.takeIf { it.isNotBlank() }?.let { id to it }
+        }.toMap()
+        return kr.copy(
+            items = names(items) + kr.items,
+            servants = names(servants) + kr.servants,
+            equips = names(equips) + kr.equips,
+            itemIcons = items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap() + kr.itemIcons,
+            itemData = items + kr.itemData,
+            servantData = servants + kr.servantData,
+            equipData = equips + kr.equipData,
+            mysticData = mystics + kr.mysticData,
+            svtData = if (includeCards) servants + equips + kr.svtData else kr.svtData,
+        )
+    }
+
+    private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
+        val cache = if (server == "JP") "jp_$list" else list
+        val file = File(directory, "${cache}_details.json")
         val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
         // Card exports refresh by age, including when an unknown id is absent from Atlas.
-        val current = if (list == "nice_item") required.all { it in cached } else !isStale(list)
+        val current = if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
         if (cached.isNotEmpty() && current) return cached
         return runCatching {
-            if (!canAttempt("${list}_details")) return cached
-            val body = download("https://api.atlasacademy.io/export/KR/$list.json")
+            if (!canAttempt("${cache}_details")) return cached
+            val body = download("https://api.atlasacademy.io/export/$server/$list.json")
             val parsed = parseBasic(body)
             check(parsed.isNotEmpty())
-            saveMetadata(list, parsed)
+            saveMetadata(cache, parsed)
             parsed.associateBy { it.id }
         }.getOrDefault(cached)
     }

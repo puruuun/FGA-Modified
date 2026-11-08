@@ -46,16 +46,16 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     val openEntries by viewModel.openOutsideEntries.collectAsState()
     val retention by viewModel.retention.collectAsState()
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) }
-    }
+    val accounts by CaptureTracker.accounts.collectAsState()
     val cache = remember { GameNames(File(context.filesDir, "capture/names")) }
     var names by remember { mutableStateOf(GameNameMap()) }
-    LaunchedEffect(entries, outsideEntries, openEntries) {
+    LaunchedEffect(entries, outsideEntries, openEntries, accounts) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) }
         val gains = entries.mapNotNull { it.gains }
         val itemIds = (outsideEntries + openEntries).flatMap { it.period.sources.flatMap { source -> source.delta.items.keys } }
         if (gains.isNotEmpty() || outsideEntries.isNotEmpty() || openEntries.isNotEmpty()) names = cache.resolve(
             gains, itemIds + iconItemIds, includeCards = outsideEntries.isNotEmpty() || openEntries.isNotEmpty(),
+            hasJpAccount = CaptureTracker.accounts.value.any { it.server == "JP" },
         )
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,

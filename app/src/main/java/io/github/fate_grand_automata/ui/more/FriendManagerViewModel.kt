@@ -36,10 +36,13 @@ class FriendManagerViewModel @Inject constructor(@ApplicationContext context: Co
         viewModelScope.launch(Dispatchers.IO) {
             CaptureTracker.init(context)
             val cache = GameNames(File(context.filesDir, "capture/names"))
-            accounts.collectLatest { accounts ->
+            combine(accounts, CaptureTracker.accounts) { friends, stored ->
+                friends to stored.any { it.server == "JP" }
+            }.collectLatest { (accounts, hasJpAccount) ->
                 val slots = accounts.flatMap { it.roster.friends.values }.flatMap { it.slots }
                 if (slots.isEmpty()) return@collectLatest
-                names.value = cache.friends(slots.map { it.svtId }.toSet(), slots.map { it.ceId }.filter { it != 0L }.toSet())
+                names.value = cache.friends(slots.map { it.svtId }.toSet(), slots.map { it.ceId }.filter { it != 0L }.toSet(),
+                    hasJpAccount = hasJpAccount)
             }
         }
     }

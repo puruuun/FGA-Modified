@@ -32,7 +32,11 @@ class SupportImageExtraction @Inject constructor(
         },
         icons = IconPrefetchJob(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-            lists = { GameNames(File(context.filesDir, "capture/names")).dashboard() },
+            lists = {
+                CaptureTracker.init(context)
+                GameNames(File(context.filesDir, "capture/names")).dashboard(
+                    hasJpAccount = CaptureTracker.accounts.value.any { it.server == "JP" })
+            },
             resolve = { LogIconLoader.files(context, it.directory).fetch(it.id, it.address).second },
         ),
     )

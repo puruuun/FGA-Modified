@@ -10,7 +10,7 @@ import kotlinx.coroutines.sync.withLock
 
 internal data class IconTarget(val directory: String, val id: Long, val address: String?)
 
-/** Public KR exports only; no account state is needed to build this list. */
+/** Public Atlas metadata only; no account state is needed to build this list. */
 internal fun iconPrefetchTargets(names: GameNameMap): List<IconTarget> = buildList {
     names.servantData.values.filter { it.type in setOf("normal", "heroine") }.forEach {
         add(IconTarget("servants", it.id, it.icon))

@@ -29,8 +29,10 @@ class AccountDashboardViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             CaptureTracker.init(context)
             val cache = GameNames(File(context.filesDir, "capture/names"))
-            CaptureTracker.accountStates.collectLatest { states ->
-                names.value = cache.dashboard(states.values)
+            combine(CaptureTracker.accountStates, CaptureTracker.accounts) { states, accounts ->
+                states to accounts.any { it.server == "JP" }
+            }.collectLatest { (states, hasJpAccount) ->
+                names.value = cache.dashboard(states.values, hasJpAccount = hasJpAccount)
             }
         }
     }
