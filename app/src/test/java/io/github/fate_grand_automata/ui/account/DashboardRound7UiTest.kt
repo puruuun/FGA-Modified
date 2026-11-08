@@ -36,7 +36,7 @@ class DashboardRound7UiTest {
     private fun bounds(id: Int) = compose.onNodeWithTag("dashboard-section:$id").getUnclippedBoundsInRoot()
     @Test fun jpProfileChipUsesTheAccountServer() {
         compose.setContent { FGATheme {
-            AccountDashboardContent(fixture.data, fixture.names, "JP sample", {}, {}, server = "JP")
+            fixture.Icons { AccountDashboardContent(fixture.data, fixture.names, "JP sample", {}, {}, server = "JP") }
         } }
         compose.onNodeWithText("JP").assertIsDisplayed()
         compose.onNodeWithText("KR").assertDoesNotExist()
