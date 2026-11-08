@@ -42,7 +42,7 @@ const val AP_WIDGET_XLARGE_TEXT_MIN_DP = 250f
 
 fun apWidgetFields(widthDp: Float): ApWidgetFields =
     when {
-        widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(18, 11)
+        widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(16, 11)
         widthDp >= AP_WIDGET_LARGE_TEXT_MIN_DP -> ApWidgetFields(14, 10)
         widthDp >= AP_WIDGET_MEDIUM_TEXT_MIN_DP -> ApWidgetFields(11, 9)
         else -> ApWidgetFields(9, 8)

@@ -134,7 +134,7 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun singleCard() {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
-        val views = buildApItemViews(context, apItemContent(context, model), widgetPalette(settings.theme), ApWidgetFields(18, 11))
+        val views = buildApItemViews(context, apItemContent(context, model), widgetPalette(settings.theme), ApWidgetFields(16, 11))
         val density = context.resources.displayMetrics.density
         val w = (200 * density).toInt()
         val h = (50 * density).toInt()

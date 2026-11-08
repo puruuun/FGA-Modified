@@ -137,16 +137,67 @@ class ApWidgetViewsTest {
     @Test fun textSizesFollowTheReportedWidth() {
         val manager = AppWidgetManager.getInstance(context)
         val id = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
-        assertEquals(ApWidgetRenderer.DEFAULT_WIDTH_DP, ApWidgetRenderer.widthDp(manager, id))
+        assertEquals(ApWidgetRenderer.DEFAULT_WIDTH_DP, ApWidgetRenderer.widthDp(context, manager, id))
         manager.updateAppWidgetOptions(id, Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180) })
-        assertEquals(180, ApWidgetRenderer.widthDp(manager, id))
+        assertEquals(180, ApWidgetRenderer.widthDp(context, manager, id))
         fun apSize(width: Int): Float {
             val stack = assertNotNull(find(host(build(data(1), width = width))))
             val item = stack.adapter.getView(0, null, stack)
             return item.findViewById<TextView>(R.id.ap_item_ap).textSize / context.resources.displayMetrics.scaledDensity
         }
         assertEquals(9f, apSize(180), 0.1f)
-        assertEquals(18f, apSize(272), 0.1f)
+        assertEquals(16f, apSize(272), 0.1f)
+    }
+
+    private fun lawnchair() = Bundle().apply {
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 183)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 74)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 378)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 188)
+        putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(android.util.SizeF(183.6f, 188.0f), android.util.SizeF(378.5f, 74.3f)))
+    }
+
+    @Test fun lawnchairLandscapeUsesTheWideSizeAndPortraitTheNarrowOne() {
+        assertEquals(378, chooseWidgetWidthDp(lawnchair(), landscape = true))
+        assertEquals(183, chooseWidgetWidthDp(lawnchair(), landscape = false))
+        assertEquals(ApWidgetFields(16, 11), apWidgetFields(chooseWidgetWidthDp(lawnchair(), true).toFloat()))
+        assertEquals(ApWidgetFields(9, 8), apWidgetFields(chooseWidgetWidthDp(lawnchair(), false).toFloat()))
+    }
+
+    @Test fun withoutSizesLandscapeUsesMaxWidthAndPortraitMinWidth() {
+        val options = lawnchair().apply { remove(AppWidgetManager.OPTION_APPWIDGET_SIZES) }
+        assertEquals(378, chooseWidgetWidthDp(options, landscape = true))
+        assertEquals(183, chooseWidgetWidthDp(options, landscape = false))
+    }
+
+    @Test fun missingOptionsFallBackToTheOtherValueThenTheDefault() {
+        val onlyMin = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 200) }
+        assertEquals(200, chooseWidgetWidthDp(onlyMin, landscape = true))
+        val onlyMax = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 300) }
+        assertEquals(300, chooseWidgetWidthDp(onlyMax, landscape = false))
+        assertEquals(ApWidgetRenderer.DEFAULT_WIDTH_DP, chooseWidgetWidthDp(Bundle(), landscape = true))
+    }
+
+    @Test fun theCurrentConfigurationDecidesTheOrientation() {
+        val manager = AppWidgetManager.getInstance(context)
+        val id = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        manager.updateAppWidgetOptions(id, lawnchair())
+        assertEquals(378, ApWidgetRenderer.widthDp(landscapeContext(true), manager, id))
+        assertEquals(183, ApWidgetRenderer.widthDp(landscapeContext(false), manager, id))
+    }
+
+    private fun landscapeContext(landscape: Boolean): Context {
+        val config = android.content.res.Configuration(context.resources.configuration)
+        config.orientation = if (landscape) android.content.res.Configuration.ORIENTATION_LANDSCAPE else android.content.res.Configuration.ORIENTATION_PORTRAIT
+        return context.createConfigurationContext(config)
+    }
+
+    @Test fun everyStackCardIsOpaqueInBothThemes() {
+        for (theme in WidgetTheme.entries) {
+            val view = host(build(data(1), theme)).let { find(it)!!.adapter.getView(0, null, find(it)!!) }
+            val gradient = (view.findViewById<View>(R.id.ap_item_root).background as android.graphics.drawable.GradientDrawable)
+            assertTrue(gradient.colors!!.all { android.graphics.Color.alpha(it) == 255 }, "$theme")
+        }
     }
 
     @Test fun updateAllDrawsEveryPlacedWidgetThroughAHostView() = runBlocking {

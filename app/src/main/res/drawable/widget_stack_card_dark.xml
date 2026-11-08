@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Opaque card of one stack item: it must fully hide the cards behind it. Same colours and corners as the outer card, no stroke. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:endColor="#FF16243C"
+        android:startColor="#FF0E1626" />
+    <corners android:radius="22dp" />
+</shape>

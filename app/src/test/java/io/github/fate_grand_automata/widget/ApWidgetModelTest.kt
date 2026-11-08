@@ -105,7 +105,7 @@ class ApWidgetModelTest {
         val small = ApWidgetFields(9, 8)
         val medium = ApWidgetFields(11, 9)
         val large = ApWidgetFields(14, 10)
-        val xlarge = ApWidgetFields(18, 11)
+        val xlarge = ApWidgetFields(16, 11)
         for (width in listOf(180f, 199f, AP_WIDGET_MEDIUM_TEXT_MIN_DP - 0.1f)) assertEquals(small, apWidgetFields(width))
         for (width in listOf(AP_WIDGET_MEDIUM_TEXT_MIN_DP, 210f, AP_WIDGET_LARGE_TEXT_MIN_DP - 0.1f)) assertEquals(medium, apWidgetFields(width))
         for (width in listOf(AP_WIDGET_LARGE_TEXT_MIN_DP, 230f, AP_WIDGET_XLARGE_TEXT_MIN_DP - 0.1f)) assertEquals(large, apWidgetFields(width))

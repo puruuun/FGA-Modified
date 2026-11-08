@@ -12,8 +12,9 @@
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:paddingStart="14dp">
+        android:layout_marginTop="-4dp"
+        android:layout_marginBottom="-4dp"
+        android:layout_weight="1">
 
         <StackView
             android:id="@+id/ap_stack"
@@ -26,6 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center_vertical|start"
+            android:paddingStart="14dp"
             android:maxLines="2"
             android:text="@string/widget_ap_no_data"
             android:textSize="13sp"

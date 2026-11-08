@@ -5,6 +5,9 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.os.Bundle
+import android.util.SizeF
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
@@ -39,14 +42,35 @@ object ApWidgetRenderer {
         val started = ScriptRunnerService.serviceStarted.value
         for (id in ids) {
             runCatching {
-                manager.updateAppWidget(id, buildApWidgetViews(context, id, state, settings, started, widthDp(manager, id)))
+                manager.updateAppWidget(id, buildApWidgetViews(context, id, state, settings, started, widthDp(context, manager, id)))
             }.onFailure { Timber.w(it, "AP widget %d update failed", id) }
         }
     }
 
-    /** The narrow (portrait) width the launcher reports, so the text never outgrows the widget. */
-    internal fun widthDp(manager: AppWidgetManager, id: Int): Int =
-        manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0).takeIf { it > 0 } ?: DEFAULT_WIDTH_DP
+    /** The width the launcher gives this widget in the current orientation. */
+    internal fun widthDp(context: Context, manager: AppWidgetManager, id: Int): Int =
+        chooseWidgetWidthDp(manager.getAppWidgetOptions(id), isLandscape(context))
+
+    internal fun isLandscape(context: Context) =
+        context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+}
+
+/**
+ * Picks the widget width in dp from the launcher's option bundle for the current orientation.
+ * Android 12+ launchers list the possible sizes ([AppWidgetManager.OPTION_APPWIDGET_SIZES]): portrait is the
+ * narrowest, landscape the widest. Older ones only give min/max: portrait is MIN_WIDTH, landscape MAX_WIDTH.
+ * (Reading MIN_WIDTH in landscape picked the smallest type: Lawnchair reports 183 dp there for a 378 dp widget.)
+ */
+@Suppress("DEPRECATION")
+fun chooseWidgetWidthDp(options: Bundle, landscape: Boolean): Int {
+    val sizes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        runCatching { options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES) }.getOrNull()
+    } else null
+    val fromSizes = sizes?.map { it.width }?.filter { it > 0 }?.let { if (landscape) it.maxOrNull() else it.minOrNull() }
+    val min = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+    val max = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0)
+    val width = fromSizes?.toInt() ?: (if (landscape) max.takeIf { it > 0 } ?: min else min.takeIf { it > 0 } ?: max)
+    return width.takeIf { it > 0 } ?: ApWidgetRenderer.DEFAULT_WIDTH_DP
 }
 
 /** The complete widget: card, account stack (or "no data"), and the start/stop tile. */

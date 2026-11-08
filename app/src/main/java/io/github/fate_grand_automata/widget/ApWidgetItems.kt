@@ -41,6 +41,7 @@ fun apItemContents(context: Context, models: List<ApWidgetModel>, now: Long = Sy
 fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPalette, fields: ApWidgetFields): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_item)
     fun color(res: Int) = ContextCompat.getColor(context, res)
+    views.setInt(R.id.ap_item_root, "setBackgroundResource", palette.stackCard)
     views.setTextViewText(R.id.ap_item_name, content.texts.name)
     views.setTextViewText(R.id.ap_item_age, content.texts.age)
     views.setTextViewText(R.id.ap_item_ap, content.texts.ap)
