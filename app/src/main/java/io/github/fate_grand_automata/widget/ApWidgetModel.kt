@@ -8,13 +8,10 @@ import io.github.fate_grand_automata.capture.fullApAt
 data class ApWidgetModel(
     val accountId: String,
     val name: String,
-    val server: String,
     val ap: Long,
     val apMax: Long,
     /** Epoch seconds when AP is full, or null when it is already full. */
     val fullAt: Long?,
-    /** Whole minutes until [fullAt], rounded up; null when AP is full. */
-    val minutesLeft: Long?,
     /** Epoch seconds of the last captured data for the account. */
     val dataTime: Long,
 ) {
@@ -27,40 +24,37 @@ fun apWidgetModel(account: CaptureAccount, now: Long): ApWidgetModel {
     return ApWidgetModel(
         accountId = account.id,
         name = account.displayName,
-        server = account.server,
         ap = account.summary.ap,
         apMax = account.summary.apMax,
         fullAt = fullAt,
-        minutesLeft = fullAt?.let { (it - now + 59) / 60 },
         dataTime = account.lastUpdateTime,
     )
 }
 
 sealed interface ApWidgetState {
-    /** Account deleted, log collection off, or Android below 10. */
+    /** No collected accounts, log collection off, or Android below 10. */
     data object NoData : ApWidgetState
-    data class Data(val model: ApWidgetModel) : ApWidgetState
+    data class Data(val models: List<ApWidgetModel>) : ApWidgetState
 }
 
 fun apWidgetState(
-    boundAccountId: String?,
     captureEnabled: Boolean,
     api: Int,
     accounts: List<CaptureAccount>,
     now: Long,
 ): ApWidgetState {
-    if (boundAccountId == null || !captureFeaturesAvailable(captureEnabled, api)) return ApWidgetState.NoData
-    val account = accounts.find { it.id == boundAccountId } ?: return ApWidgetState.NoData
-    return ApWidgetState.Data(apWidgetModel(account, now))
+    if (!captureFeaturesAvailable(captureEnabled, api) || accounts.isEmpty()) return ApWidgetState.NoData
+    // accountSummaries already orders the current account first, then by last collection time.
+    return ApWidgetState.Data(accounts.map { apWidgetModel(it, now) })
 }
 
-/** What the configuration screen shows. */
-sealed interface ApWidgetChoices {
-    /** Log collection is off, Android is below 10, or no account has been collected yet. */
-    data object Unavailable : ApWidgetChoices
-    data class Accounts(val accounts: List<CaptureAccount>) : ApWidgetChoices
+/** Stable across refreshes and reordering, including non-numeric legacy account IDs. */
+fun apWidgetItemId(accountId: String): Long {
+    // A 64-bit FNV-1a hash avoids String.hashCode collisions (e.g. "Aa" and "BB").
+    var hash = -3750763034362895579L
+    for (byte in accountId.toByteArray(Charsets.UTF_8)) {
+        hash = (hash xor (byte.toLong() and 0xff)) * 1099511628211L
+    }
+    // Glance reserves negative IDs for automatically assigned items.
+    return hash and Long.MAX_VALUE
 }
-
-fun apWidgetChoices(captureEnabled: Boolean, api: Int, accounts: List<CaptureAccount>): ApWidgetChoices =
-    if (!captureFeaturesAvailable(captureEnabled, api) || accounts.isEmpty()) ApWidgetChoices.Unavailable
-    else ApWidgetChoices.Accounts(accounts)

@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.widget
 
 import io.github.fate_grand_automata.capture.CaptureAccount
+import io.github.fate_grand_automata.capture.CaptureAccounts
 import io.github.fate_grand_automata.capture.fullApAt
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
@@ -13,12 +14,14 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApWidgetModelTest {
-    private fun account(recoverAt: Long, now: Long = 1000, max: Long = 100, id: String = "1", name: String = "Master", server: String = "KR"): CaptureAccount {
-        val game = Json.parseToJsonElement(
-            """[{"userId":"$id","name":"$name","lv":120,"actMax":$max,"actRecoverAt":$recoverAt}]"""
-        ).jsonArray
-        val state = AccountState(mapOf("userGame" to game), Json.parseToJsonElement("[]").jsonArray, null, 1, 7777)
-        return CaptureAccount(id, name, AccountSummary.from(state, now), state.lastUpdateTime, server)
+    private fun state(id: String, recoverAt: Long, updatedAt: Long = 7777) = AccountState(
+        mapOf("userGame" to Json.parseToJsonElement("""[{"userId":"$id","name":"Master $id","actMax":100,"actRecoverAt":$recoverAt}]""").jsonArray),
+        Json.parseToJsonElement("[]").jsonArray, null, 1, updatedAt,
+    )
+
+    private fun account(recoverAt: Long, now: Long = 1000, id: String = "1"): CaptureAccount {
+        val s = state(id, recoverAt)
+        return CaptureAccount(id, "Master $id", AccountSummary.from(s, now), s.lastUpdateTime, "KR")
     }
 
     @Test fun partialApUsesTheMainScreenCardValues() {
@@ -28,94 +31,81 @@ class ApWidgetModelTest {
         assertEquals(100, m.apMax)
         assertEquals(a.summary.ap, m.ap)
         assertEquals(fullApAt(a.summary, 1000), m.fullAt)
-        assertEquals(1301L, m.fullAt)
         assertEquals(0.98f, m.fraction)
-    }
-
-    @Test fun timeLeftRoundsUpToWholeMinutes() {
-        assertEquals(5L, apWidgetModel(account(1300), 1000).minutesLeft)
-        assertEquals(6L, apWidgetModel(account(1301), 1000).minutesLeft)
-        assertEquals(1L, apWidgetModel(account(1301, now = 1241), 1241).minutesLeft)
-        assertEquals(1L, apWidgetModel(account(1301, now = 1300), 1300).minutesLeft)
-        assertEquals(60L, apWidgetModel(account(4600, max = 100), 1000).minutesLeft)
+        assertEquals(7777, m.dataTime)
     }
 
     @Test fun zeroApHasFullTimeAtTheServerInstant() {
         val m = apWidgetModel(account(1000 + 100 * 300), 1000)
         assertEquals(0, m.ap)
         assertEquals(0f, m.fraction)
-        assertEquals(1000L + 100 * 300, m.fullAt)
-        assertEquals(500L, m.minutesLeft)
+        assertEquals(31000, m.fullAt)
     }
 
-    @Test fun fullApHasNoTimeAndNoTimeLeft() {
-        val m = apWidgetModel(account(1000), 1000)
-        assertEquals(100, m.ap)
-        assertEquals(1f, m.fraction)
-        assertNull(m.fullAt)
-        assertNull(m.minutesLeft)
-    }
-
-    @Test fun recoverAtInThePastMeansFull() {
-        val m = apWidgetModel(account(500), 1000)
-        assertEquals(100, m.ap)
-        assertNull(m.fullAt)
+    @Test fun fullAndPastRecoveryHaveNoFullTime() {
+        for (recoverAt in listOf(1000L, 500L)) {
+            val m = apWidgetModel(account(recoverAt), 1000)
+            assertEquals(100, m.ap)
+            assertEquals(1f, m.fraction)
+            assertNull(m.fullAt)
+        }
     }
 
     @Test fun apKeepsRecoveringBetweenCapturesWithoutNewData() {
-        val a = account(1301, now = 1000)
-        // Recomputing the stored account at a later time moves AP and the remaining time, not the full-at instant.
-        val later = a.copy(summary = AccountSummary.from(
-            AccountState(mapOf("userGame" to Json.parseToJsonElement("""[{"userId":"1","actMax":100,"actRecoverAt":1301}]""").jsonArray),
-                Json.parseToJsonElement("[]").jsonArray, null, 1, 7777), 1181))
-        val m = apWidgetModel(later, 1181)
+        val m = apWidgetModel(account(1301, now = 1181), 1181)
         assertEquals(99, m.ap)
-        assertEquals(1301L, m.fullAt)
-        assertEquals(2L, m.minutesLeft)
-        assertEquals(7777L, m.dataTime)
+        assertEquals(1301, m.fullAt)
+        assertEquals(7777, m.dataTime)
     }
 
-    @Test fun nameAndServerComeFromTheAccount() {
-        val m = apWidgetModel(account(1301, name = "주회 계정", server = "JP", id = "42"), 1000)
+    @Test fun nameAndIdComeFromTheAccount() {
+        val m = apWidgetModel(account(1301, id = "42").copy(displayName = "주회 계정"), 1000)
         assertEquals("42", m.accountId)
         assertEquals("주회 계정", m.name)
-        assertEquals("JP", m.server)
     }
 
-    @Test fun zeroMaxDoesNotDivideByZero() {
-        assertEquals(0f, apWidgetModel(account(5000, max = 0), 1000).fraction)
+    @Test fun fractionHandlesZeroMaxAndOverCap() {
+        val m = apWidgetModel(account(1301), 1000)
+        assertEquals(0f, m.copy(apMax = 0).fraction)
+        assertEquals(1f, m.copy(ap = 120).fraction)
     }
 
-    @Test fun stateIsDataForABoundAccountWhenFeaturesAreAvailable() {
-        val state = apWidgetState("1", true, 33, listOf(account(1301)), 1000)
-        assertIs<ApWidgetState.Data>(state)
-        assertEquals("1", state.model.accountId)
+    @Test fun noAccountsOrUnavailableCollectionGivesNoData() {
+        assertEquals(ApWidgetState.NoData, apWidgetState(true, 33, emptyList(), 1000))
+        assertEquals(ApWidgetState.NoData, apWidgetState(false, 33, listOf(account(1301)), 1000))
+        assertEquals(ApWidgetState.NoData, apWidgetState(true, 28, listOf(account(1301)), 1000))
     }
 
-    @Test fun stateIsNoDataWhenTheAccountWasDeleted() {
-        assertEquals(ApWidgetState.NoData, apWidgetState("2", true, 33, listOf(account(1301)), 1000))
-        assertEquals(ApWidgetState.NoData, apWidgetState("1", true, 33, emptyList(), 1000))
+    @Test fun accountOrderIsTheTrackerOrderWithCurrentFirstThenNewest() {
+        val store = CaptureAccounts()
+        fun add(id: String, time: Long) {
+            val s = state(id, 1301, time)
+            store.apply("https://yfgo-game.netmarble.com/login/top", Json.parseToJsonElement("""{"cache":{"replaced":{"userGame":[{"userId":"$id"}]}}}""") as kotlinx.serialization.json.JsonObject, time, reduce = { s })
+        }
+        add("old", 10)
+        add("new", 30)
+        add("middle", 20)
+        add("current", 5)
+        val accounts = store.accounts(1000)
+        assertEquals(listOf("current", "new", "middle", "old"), accounts.map { it.id })
+        val result = assertIs<ApWidgetState.Data>(apWidgetState(true, 33, accounts, 1000))
+        assertEquals(accounts.map { it.id }, result.models.map { it.accountId })
     }
 
-    @Test fun stateIsNoDataWhenLogCollectionIsOffOrAndroidIsBelow10() {
-        assertEquals(ApWidgetState.NoData, apWidgetState("1", false, 33, listOf(account(1301)), 1000))
-        assertEquals(ApWidgetState.NoData, apWidgetState("1", true, 28, listOf(account(1301)), 1000))
-        assertEquals(ApWidgetState.NoData, apWidgetState(null, true, 33, listOf(account(1301)), 1000))
+    @Test fun stableItemIdsSurviveReorderRenameAndHashCodeCollisions() {
+        val ids = listOf("7001", "7002", "Aa", "BB", "legacy_account-1")
+        assertEquals(ids.size, ids.map(::apWidgetItemId).toSet().size)
+        assertEquals(ids.associateWith(::apWidgetItemId), ids.reversed().associateWith(::apWidgetItemId))
+        assertTrue(ids.map(::apWidgetItemId).all { it >= 0 })
+        val a = account(1301)
+        assertEquals(apWidgetItemId(a.id), apWidgetItemId(a.copy(displayName = "Renamed").id))
     }
 
-    @Test fun narrowWidgetHidesTheTimeLeftAndTheRefreshIcon() {
-        fun f(remaining: Boolean, refresh: Boolean, label: Boolean, word: Boolean = true) = ApWidgetFields(remaining, refresh, label, word)
-        assertEquals(f(remaining = false, refresh = false, label = false, word = false), apWidgetFields(180f))
-        assertEquals(f(remaining = false, refresh = false, label = false, word = false), apWidgetFields(AP_WIDGET_FULL_WORD_MIN_DP - 0.1f))
-        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(AP_WIDGET_FULL_WORD_MIN_DP))
-        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(200f))
-        assertEquals(f(remaining = false, refresh = false, label = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP - 0.1f))
-        assertEquals(f(remaining = false, refresh = true, label = false), apWidgetFields(AP_WIDGET_WIDE_MIN_DP))
-        assertEquals(f(remaining = false, refresh = true, label = false), apWidgetFields(AP_WIDGET_REMAINING_MIN_DP - 0.1f))
-        assertEquals(f(remaining = true, refresh = true, label = false), apWidgetFields(AP_WIDGET_REMAINING_MIN_DP))
-        assertEquals(f(remaining = true, refresh = true, label = false), apWidgetFields(AP_WIDGET_LABEL_MIN_DP - 0.1f))
-        assertEquals(f(remaining = true, refresh = true, label = true), apWidgetFields(AP_WIDGET_LABEL_MIN_DP))
-        assertEquals(f(remaining = true, refresh = true, label = true), apWidgetFields(272f))
+    @Test fun typeSizesChangeOnlyAtTheMeasuredBreakpoint() {
+        val compact = ApWidgetFields(12, 10)
+        val large = ApWidgetFields(18, 11)
+        for (width in listOf(180f, 200f, AP_WIDGET_LARGE_TEXT_MIN_DP - 0.1f)) assertEquals(compact, apWidgetFields(width))
+        for (width in listOf(AP_WIDGET_LARGE_TEXT_MIN_DP, 230f, 255f, 268f, 272f)) assertEquals(large, apWidgetFields(width))
     }
 
     @Test fun dataAgeUsesTheLargestWholeUnit() {
@@ -123,35 +113,17 @@ class ApWidgetModelTest {
         assertEquals(DataAge.Now, dataAge(t, t))
         assertEquals(DataAge.Now, dataAge(t - 59, t))
         assertEquals(DataAge.Minutes(1), dataAge(t - 60, t))
-        assertEquals(DataAge.Minutes(59), dataAge(t - 59 * 60 - 59, t))
+        assertEquals(DataAge.Minutes(59), dataAge(t - 3599, t))
         assertEquals(DataAge.Hours(1), dataAge(t - 3600, t))
-        assertEquals(DataAge.Hours(23), dataAge(t - 23 * 3600 - 59 * 60, t))
+        assertEquals(DataAge.Hours(23), dataAge(t - 86399, t))
         assertEquals(DataAge.Days(1), dataAge(t - 86400, t))
         assertEquals(DataAge.Days(3), dataAge(t - 3 * 86400 - 5, t))
-        // A clock that went backwards never shows a negative age.
         assertEquals(DataAge.Now, dataAge(t + 500, t))
-    }
-
-    @Test fun remainingTimeIsHoursAndPaddedMinutes() {
-        assertEquals("3:23", remainingText(3 * 60 + 23))
-        assertEquals("0:25", remainingText(25))
-        assertEquals("0:05", remainingText(5))
-        assertEquals("10:00", remainingText(600))
-        assertEquals("0:00", remainingText(-4))
-    }
-
-    @Test fun choicesAreUnavailableWithoutLogCollectionOrAccounts() {
-        val accounts = listOf(account(1301))
-        assertEquals(ApWidgetChoices.Unavailable, apWidgetChoices(false, 33, accounts))
-        assertEquals(ApWidgetChoices.Unavailable, apWidgetChoices(true, 28, accounts))
-        assertEquals(ApWidgetChoices.Unavailable, apWidgetChoices(true, 33, emptyList()))
-        assertTrue(apWidgetChoices(true, 33, accounts) is ApWidgetChoices.Accounts)
     }
 
     @Test fun serviceWidgetFollowsTheServiceState() {
         assertEquals(ServiceWidgetAction.Start, serviceWidgetModel(false).action)
         assertEquals(ServiceWidgetAction.Stop, serviceWidgetModel(true).action)
         assertTrue(serviceWidgetModel(false).labelRes != serviceWidgetModel(true).labelRes)
-        assertTrue(serviceWidgetModel(false).iconRes != serviceWidgetModel(true).iconRes)
     }
 }

@@ -21,6 +21,8 @@ class AutomataApplication : Application() {
 
         OpenCVLoader.initLocal()
 
+        io.github.fate_grand_automata.widget.WidgetRefresh.requestUpdate(this)
+
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }
 

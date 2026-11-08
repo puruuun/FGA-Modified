@@ -20,7 +20,6 @@ import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -33,10 +32,6 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 enum class ServiceWidgetAction { Start, Stop }
 
@@ -56,18 +51,13 @@ class ServiceWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val started = ScriptRunnerService.serviceStarted.value
-        provideContent { ServiceWidgetContent(started) }
+        provideContent { ServiceWidgetContent(ScriptRunnerService.serviceStarted.value) }
     }
 
     companion object {
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
         /** Called when the service starts or stops; updates every placed service and AP widget (both carry the toggle). */
         fun requestUpdate(context: Context) {
-            val app = context.applicationContext
-            scope.launch { runCatching { ServiceWidget().updateAll(app) } }
-            scope.launch { runCatching { ApWidget().updateAll(app) } }
+            WidgetRefresh.requestUpdate(context)
         }
     }
 }

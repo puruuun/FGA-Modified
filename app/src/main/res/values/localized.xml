@@ -1248,23 +1248,17 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_service_start">Start</string>
     <string name="widget_service_stop">Stop</string>
     <string name="widget_ap_name">Account AP</string>
-    <string name="widget_ap_description">Shows the AP of one account collected by log collection.</string>
-    <string name="widget_ap_config_title">Choose an account</string>
-    <string name="widget_ap_config_unavailable">Collect an account with log collection first.</string>
-    <string name="widget_ap_config_close">Close</string>
+    <string name="widget_ap_description">Scroll through the AP of accounts collected by log collection.</string>
     <string name="widget_ap_no_data">No account data</string>
     <string name="widget_ap_full">AP full</string>
-    <string name="widget_ap_label">AP</string>
-    <string name="widget_ap_max">/ %1$s</string>
-    <string name="widget_ap_full_at">Full %1$s (%2$s)</string>
-    <string name="widget_ap_full_at_short">Full %1$s</string>
+    <string name="widget_ap_value">%1$d / %2$d</string>
+    <string name="widget_ap_full_at">Full %1$s</string>
     <string name="widget_age_now">Just now</string>
     <string name="widget_age_minutes">%1$dm ago</string>
     <string name="widget_age_hours">%1$dh ago</string>
     <string name="widget_age_days">%1$dd ago</string>
-    <string name="widget_refresh">Refresh</string>
     <string name="widget_service_on">ON</string>
     <string name="widget_service_off">OFF</string>
-    <string name="widget_preview_full_at">Full 9:41 PM (4:35)</string>
+    <string name="widget_preview_full_at">Full 9:41 PM</string>
     <string name="widget_preview_name">Sample account</string>
 </resources>

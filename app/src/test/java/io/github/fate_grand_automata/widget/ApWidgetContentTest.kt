@@ -18,170 +18,121 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], qualifiers = "en")
+@Config(sdk = [32], qualifiers = "ko")
 class ApWidgetContentTest {
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     private val now = 1_800_000_000L
-
-    private fun model(fullAt: Long?, ap: Long = 96, max: Long = 144, minutes: Long? = null) = ApWidgetModel(
-        accountId = "7001", name = "Fictional", server = "KR", ap = ap, apMax = max,
-        fullAt = fullAt, minutesLeft = minutes, dataTime = now - 600,
+    private fun model(id: String = "7001", fullAt: Long? = now + 3600) = ApWidgetModel(
+        accountId = id, name = "계정 $id", ap = 57, apMax = 142, fullAt = fullAt, dataTime = now - 600,
     )
+    private val wide = DpSize(272.dp, 66.dp)
+    private fun clock(t: Long) = android.text.format.DateFormat.getTimeFormat(context).format(Date(t * 1000))
 
-    private fun clock(epochSeconds: Long) = android.text.format.DateFormat.getTimeFormat(context).format(Date(epochSeconds * 1000))
-
-    private val wide = DpSize(272.dp, 64.dp)
-    private val narrow = DpSize(200.dp, 64.dp)
-
-    @Test fun textsShowApFullTimeTimeLeftAndAge() {
-        val fullAt = now + (3 * 60 + 23) * 60
-        val texts = apWidgetTexts(context, model(fullAt, minutes = 3 * 60 + 23), now)
-        assertEquals("AP", texts.apLabel)
-        assertEquals("96", texts.ap)
-        assertEquals("/ 144", texts.apMax)
-        assertEquals("Full ${clock(fullAt)} (3:23)", texts.fullLine)
-        assertEquals("Full ${clock(fullAt)}", texts.fullLineShort)
-        assertEquals(clock(fullAt), texts.fullLineTime)
-        assertEquals("10m ago", texts.age)
-        assertEquals("Fictional", texts.name)
-        assertEquals("KR", texts.server)
+    @Test fun textsShowApFullTimeAndThisAccountsCollectionAge() {
+        val texts = apWidgetTexts(context, model(), now)
+        assertEquals("57 / 142", texts.ap)
+        assertEquals("완충 ${clock(now + 3600)}", texts.fullLine)
+        assertEquals("10분 전", texts.age)
+        assertEquals("계정 7001", texts.name)
+        assertTrue(!texts.fullLine.contains("("))
     }
 
     @Test fun fullApSaysSoWithoutATime() {
-        val texts = apWidgetTexts(context, model(fullAt = null, ap = 144), now)
-        assertEquals("AP full", texts.fullLine)
-        assertEquals("AP full", texts.fullLineShort)
-        assertEquals("AP full", texts.fullLineTime)
+        assertEquals("AP 가득 참", apWidgetTexts(context, model(fullAt = null), now).fullLine)
     }
 
     @Test fun ageTextCoversEveryUnit() {
-        assertEquals("Just now", dataAgeText(context, DataAge.Now))
-        assertEquals("5m ago", dataAgeText(context, DataAge.Minutes(5)))
-        assertEquals("2h ago", dataAgeText(context, DataAge.Hours(2)))
-        assertEquals("3d ago", dataAgeText(context, DataAge.Days(3)))
+        assertEquals("방금", dataAgeText(context, DataAge.Now))
+        assertEquals("5분 전", dataAgeText(context, DataAge.Minutes(5)))
+        assertEquals("2시간 전", dataAgeText(context, DataAge.Hours(2)))
+        assertEquals("3일 전", dataAgeText(context, DataAge.Days(3)))
     }
 
-    @Test fun timeFormatFollowsTheDevice12And24HourSetting() {
-        val fullAt = now + 3600 * 3
+    @Test fun timeFormatFollowsDevice12And24HourSetting() {
         val resolver = context.contentResolver
         android.provider.Settings.System.putString(resolver, android.provider.Settings.System.TIME_12_24, "24")
-        val h24 = apWidgetTexts(context, model(fullAt, minutes = 180), now).fullLineShort
+        val h24 = apWidgetTexts(context, model(), now).fullLine
         assertTrue(Regex("""\d{2}:\d{2}$""").containsMatchIn(h24), h24)
         android.provider.Settings.System.putString(resolver, android.provider.Settings.System.TIME_12_24, "12")
-        val h12 = apWidgetTexts(context, model(fullAt, minutes = 180), now).fullLineShort
-        assertTrue(h12.contains("AM") || h12.contains("PM"), h12)
+        val h12 = apWidgetTexts(context, model(), now).fullLine
+        assertTrue(h12.contains("오전") || h12.contains("오후"), h12)
     }
 
-    private val refresh = hasRunCallbackClickAction<RefreshApWidgetCallback>()
-    private val openDashboard get() = hasStartActivityClickAction(WidgetIntents.openAccount(context, "7001"))
-
-    @Test fun wideLayoutShowsEveryFieldAndBothActions() = runGlanceAppWidgetUnitTest {
+    @Test fun oneAccountShowsOnlyTheNewFieldsAndItsDashboardAction() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
-        val m = model(now + 3600, minutes = 60)
-        val texts = apWidgetTexts(context, m)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
-        onNode(hasText("Fictional")).assertExists()
-        onNode(hasText("KR")).assertExists()
-        onNode(hasText(texts.ap)).assertExists()
-        onNode(hasText(texts.apMax)).assertExists()
-        onNode(hasText(texts.fullLine)).assertExists()
-        onNode(hasText(texts.age)).assertExists()
-        onNode(refresh).assertExists()
-        onNode(openDashboard).assertExists()
+        val m = model()
+        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(m))) }
+        onNode(hasText(m.name)).assertExists()
+        onNode(hasText("57 / 142")).assertExists()
+        onNode(hasText(apWidgetTexts(context, m).fullLine)).assertExists()
+        onNode(hasText("KR")).assertDoesNotExist()
+        onNode(hasText("JP")).assertDoesNotExist()
+        onNode(hasStartActivityClickAction(WidgetIntents.openAccount(context, m.accountId))).assertExists()
+        onNode(hasText("OFF")).assertExists()
+        // The only clickable nodes are the account and the start tile, with no refresh action.
+        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(2)
     }
 
-    @Test fun wideLayoutAtFullApShowsApFull() = runGlanceAppWidgetUnitTest {
+    @Test fun threeAccountsEachOpenTheirOwnDashboardAndKeepTheStopTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(model(null, ap = 144))) }
-        onNode(hasText(context.getString(R.string.widget_ap_full))).assertExists()
-        onNode(refresh).assertExists()
+        val models = listOf(model("7003"), model("7001"), model("7002"))
+        provideComposable { ApWidgetContent(ApWidgetState.Data(models), serviceStarted = true) }
+        models.forEach { m ->
+            onNode(hasText(m.name)).assertExists()
+            onNode(hasStartActivityClickAction(WidgetIntents.openAccount(context, m.accountId))).assertExists()
+        }
+        onNode(hasText("ON")).assertExists()
+        onNode(hasRunCallbackClickAction<StopServiceCallback>()).assertExists()
+        onAllNodes(androidx.glance.testing.unit.hasClickAction()).assertCountEquals(4)
     }
 
-    @Test fun narrowLayoutHidesTheTimeLeftAndTheRefreshIcon() = runGlanceAppWidgetUnitTest {
-        setContext(context)
-        setAppWidgetSize(narrow)
-        val m = model(now + 3600, minutes = 60)
-        val texts = apWidgetTexts(context, m)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
-        onNode(hasText(texts.fullLineShort)).assertExists()
-        onNode(hasText(texts.fullLine)).assertDoesNotExist()
-        onNode(refresh).assertDoesNotExist()
-        onNode(hasText("Fictional")).assertExists()
-        onNode(hasText(texts.ap)).assertExists()
-        onNode(openDashboard).assertExists()
-    }
-
-    @Test fun narrowestLayoutShowsTheFullTimeAloneWithoutTheApLabel() = runGlanceAppWidgetUnitTest {
+    @Test fun narrowestWidgetKeepsTheCompleteFullLine() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(DpSize(180.dp, 66.dp))
-        val m = model(now + 3600, minutes = 60)
-        val texts = apWidgetTexts(context, m)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
-        onNode(hasText(texts.fullLineTime)).assertExists()
-        onNode(hasText(texts.fullLineShort)).assertDoesNotExist()
-        onNode(hasText(texts.apLabel)).assertDoesNotExist()
-        onNode(hasText(texts.ap)).assertExists()
-        onNode(openDashboard).assertExists()
+        val m = model()
+        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(m))) }
+        onNode(hasText(apWidgetTexts(context, m).fullLine)).assertExists()
+        onNode(hasText("57 / 142")).assertExists()
     }
 
-    @Test fun apLabelShowsOnlyOnAFull4x1() = runGlanceAppWidgetUnitTest {
+    @Test fun fullApShowsTheFullMessage() = runGlanceAppWidgetUnitTest {
         setContext(context)
-        setAppWidgetSize(DpSize(272.dp, 66.dp))
-        val m = model(now + 3600, minutes = 60)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
-        onNode(hasText(apWidgetTexts(context, m).apLabel)).assertExists()
+        setAppWidgetSize(wide)
+        provideComposable { ApWidgetContent(ApWidgetState.Data(listOf(model(fullAt = null)))) }
+        onNode(hasText("AP 가득 참")).assertExists()
     }
 
-    @Test fun narrowLayoutAtFullApShowsApFull() = runGlanceAppWidgetUnitTest {
-        setContext(context)
-        setAppWidgetSize(narrow)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(model(null, ap = 144))) }
-        onNode(hasText(context.getString(R.string.widget_ap_full))).assertExists()
-    }
-
-    @Test fun alreadyPlaced3x2WidgetStillRendersTheRow() = runGlanceAppWidgetUnitTest {
-        setContext(context)
-        setAppWidgetSize(DpSize(250.dp, 110.dp))
-        val m = model(now + 3600, minutes = 60)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(m)) }
-        onNode(hasText("Fictional")).assertExists()
-        onNode(hasText(apWidgetTexts(context, m).fullLineShort)).assertExists()
-    }
-
-    @Test fun missingDataShowsTheNoDataMessageAndKeepsTheToggle() = runGlanceAppWidgetUnitTest {
+    @Test fun noDataKeepsTheStartTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
         provideComposable { ApWidgetContent(ApWidgetState.NoData) }
-        onNode(hasText(context.getString(R.string.widget_ap_no_data))).assertExists()
-        onNode(hasText(context.getString(R.string.widget_service_off))).assertExists()
+        onNode(hasText("계정 데이터 없음")).assertExists()
+        onNode(hasText("OFF")).assertExists()
         onNode(hasStartActivityClickAction(WidgetIntents.startService(context))).assertExists()
-        onNode(refresh).assertDoesNotExist()
     }
 
-    @Test fun apWidgetToggleTileFollowsTheServiceState() = runGlanceAppWidgetUnitTest {
+    @Test fun noDataKeepsTheStopTile() = runGlanceAppWidgetUnitTest {
         setContext(context)
         setAppWidgetSize(wide)
-        provideComposable { ApWidgetContent(ApWidgetState.Data(model(now + 3600, minutes = 60)), serviceStarted = true) }
-        onNode(hasText(context.getString(R.string.widget_service_on))).assertExists()
-        onNode(hasText(context.getString(R.string.widget_service_off))).assertDoesNotExist()
+        provideComposable { ApWidgetContent(ApWidgetState.NoData, serviceStarted = true) }
+        onNode(hasText("계정 데이터 없음")).assertExists()
+        onNode(hasText("ON")).assertExists()
         onNode(hasRunCallbackClickAction<StopServiceCallback>()).assertExists()
     }
 
     @Test fun serviceWidgetShowsOffAndStartsWhileStopped() = runGlanceAppWidgetUnitTest {
         setContext(context)
-        provideComposable { ServiceWidgetContent(started = false) }
-        onNode(hasText(context.getString(R.string.widget_service_off))).assertExists()
-        onNode(hasText(context.getString(R.string.widget_service_on))).assertDoesNotExist()
+        provideComposable { ServiceWidgetContent(false) }
+        onNode(hasText("OFF")).assertExists()
         onNode(hasStartActivityClickAction(WidgetIntents.startService(context))).assertExists()
     }
 
     @Test fun serviceWidgetShowsOnAndStopsWhileRunning() = runGlanceAppWidgetUnitTest {
         setContext(context)
-        provideComposable { ServiceWidgetContent(started = true) }
-        onNode(hasText(context.getString(R.string.widget_service_on))).assertExists()
-        onNode(hasText(context.getString(R.string.widget_service_off))).assertDoesNotExist()
+        provideComposable { ServiceWidgetContent(true) }
+        onNode(hasText("ON")).assertExists()
         onNode(hasRunCallbackClickAction<StopServiceCallback>()).assertExists()
     }
 }

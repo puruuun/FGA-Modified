@@ -1178,23 +1178,17 @@
     <string name="widget_service_start">시작</string>
     <string name="widget_service_stop">중지</string>
     <string name="widget_ap_name">계정 AP</string>
-    <string name="widget_ap_description">로그 수집으로 모은 계정 하나의 AP를 보여 줍니다.</string>
-    <string name="widget_ap_config_title">계정 선택</string>
-    <string name="widget_ap_config_unavailable">로그 수집으로 계정을 먼저 수집해 주세요</string>
-    <string name="widget_ap_config_close">닫기</string>
+    <string name="widget_ap_description">로그 수집으로 모은 계정들의 AP를 스크롤하여 확인합니다.</string>
     <string name="widget_ap_no_data">계정 데이터 없음</string>
     <string name="widget_ap_full">AP 가득 참</string>
-    <string name="widget_ap_label">AP</string>
-    <string name="widget_ap_max">/ %1$s</string>
-    <string name="widget_ap_full_at">완충 %1$s (%2$s)</string>
-    <string name="widget_ap_full_at_short">완충 %1$s</string>
+    <string name="widget_ap_value">%1$d / %2$d</string>
+    <string name="widget_ap_full_at">완충 %1$s</string>
     <string name="widget_age_now">방금</string>
     <string name="widget_age_minutes">%1$d분 전</string>
     <string name="widget_age_hours">%1$d시간 전</string>
     <string name="widget_age_days">%1$d일 전</string>
-    <string name="widget_refresh">새로고침</string>
     <string name="widget_service_on">ON</string>
     <string name="widget_service_off">OFF</string>
-    <string name="widget_preview_full_at">완충 오후 9:41 (4:35)</string>
+    <string name="widget_preview_full_at">완충 오후 9:41</string>
     <string name="widget_preview_name">예시 계정</string>
 </resources>

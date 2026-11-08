@@ -9,8 +9,6 @@
     <color name="widget_accent">#3FA9FF</color>
     <color name="widget_on">#4EE0B0</color>
     <color name="widget_full_at">#5FE3B0</color>
-    <color name="widget_chip">#17314D</color>
-    <color name="widget_chip_text">#8FD3FF</color>
     <color name="widget_track">#0A101C</color>
     <color name="widget_bar_start">#2DD4A8</color>
     <color name="widget_bar_end">#2F9BFF</color>

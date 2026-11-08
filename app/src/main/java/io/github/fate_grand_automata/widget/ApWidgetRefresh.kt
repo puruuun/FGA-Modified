@@ -8,34 +8,40 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import io.github.fate_grand_automata.capture.CaptureTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
-/** Refresh of the account AP widgets: every 15 minutes while one exists, and after the tracker saves bound data. */
+/** Refresh every 15 minutes while an AP widget exists, and after any account summary is saved. */
 object ApWidgetRefresh {
     private const val WORK_NAME = "ap_widget_refresh"
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val updates = MutableStateFlow(0L)
+    internal val revision = updates.asStateFlow()
 
     /** Replaced in tests, which have no widget host. */
     internal var launcher: (Context) -> Unit = { context ->
-        scope.launch { runCatching { ApWidget().updateAll(context) } }
+        scope.launch { runCatching { updateAll(context) } }
     }
 
     fun requestUpdate(context: Context) = launcher(context.applicationContext)
 
-    /**
-     * The one hook after the tracker saved account data. It only reads the small bindings file, so
-     * it is cheap when no AP widget is placed. A null [accountId] means "everything was flushed".
-     */
+    /** A live Glance session must reload even when provideGlance is not called again. */
+    internal suspend fun updateAll(context: Context) {
+        updates.update { it + 1 }
+        ApWidget().updateAll(context)
+    }
+
+    /** The existing save hook covers every account now. The check runs outside the capture lock. */
+    @Suppress("UNUSED_PARAMETER")
     fun onAccountSaved(context: Context, accountId: String?) {
-        val bindings = ApWidgetBindings(context)
-        val relevant = if (accountId == null) bindings.hasBindings() else bindings.isBound(accountId)
-        if (relevant) requestUpdate(context)
+        val app = context.applicationContext
+        scope.launch { if (WidgetRefresh.hasApWidget(app)) requestUpdate(app) }
     }
 
     fun schedule(context: Context) {
@@ -60,8 +66,7 @@ class ApWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWork
             ApWidgetRefresh.cancel(applicationContext)
             return Result.success()
         }
-        withContext(Dispatchers.IO) { CaptureTracker.initSummaries(applicationContext) }
-        ApWidget().updateAll(applicationContext)
+        ApWidgetRefresh.updateAll(applicationContext)
         return Result.success()
     }
 }
