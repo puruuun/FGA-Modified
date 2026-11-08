@@ -91,6 +91,10 @@ interface SkillLevelPanel {
     fun awaitDialog(): Boolean
     /** The dialog is the enhancement dialog (title), not the unlock one. */
     fun dialogIsEnhance(): Boolean
+    /** The notice of a temporarily joined servant shows its right-hand "execute" button (JP and KR). */
+    fun noticeExecuteVisible(): Boolean
+    /** Taps the notice's execute button and lets the screen settle. */
+    fun pressNoticeExecute()
     fun readLevels(): SkillLevelReading
     fun confirm()
     /** Taps cancel and waits for the dialog to close. Returns false when it stayed open. */
@@ -205,8 +209,27 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
                 })
             }
             if (!panel.dialogIsEnhance()) {
-                readings(panelText, evidence = evidence)
-                return finish(closeDialog(SlotStop.UnexpectedDialog))
+                // A temporarily joined servant shows a notice first; its execute button is passed once per Enhance press.
+                if (!panel.noticeExecuteVisible()) {
+                    readings(panelText, evidence = evidence)
+                    return finish(closeDialog(SlotStop.UnexpectedDialog))
+                }
+                line("action=notice-execute")
+                panel.pressNoticeExecute()
+                val seenAgain = panel.awaitDialog()
+                line("seen=$seenAgain")
+                if (!seenAgain) {
+                    readings(panelText, evidence = evidence)
+                    return finish(when {
+                        reachedByLastConfirm() -> SlotStop.Reached
+                        panel.maxButtonVisible() -> SlotStop.Max
+                        else -> SlotStop.CannotEnhance
+                    })
+                }
+                if (!panel.dialogIsEnhance()) {
+                    readings(panelText, evidence = evidence)
+                    return finish(closeDialog(SlotStop.UnexpectedDialog))
+                }
             }
             activeStep = SkillLevelStep.Ocr
             val reading = panel.readLevels().inferMissing()

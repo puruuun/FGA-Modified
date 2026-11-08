@@ -30,6 +30,14 @@ private class FakePanel(
     /** The game deselects the servant once every skill is 10. */
     private val skipDeselectsAtTen: Boolean = false,
     private val cancelCloses: Boolean = true,
+    /** The notice of a temporarily joined servant comes before the enhancement dialog. */
+    private val notice: Boolean = false,
+    /** The notice's execute button matches. */
+    private val executeMatches: Boolean = true,
+    /** Tapping execute shows nothing (no dialog). */
+    private val executeOpensNothing: Boolean = false,
+    /** Tapping execute shows the notice again instead of the enhancement dialog. */
+    private val executeRepeatsNotice: Boolean = false,
     private val panelRead: (trueLevel: Int) -> Int? = { null },
     private val read: (trueLevel: Int) -> SkillLevelReading = { SkillLevelReading(it, it + 1) }
 ) : SkillLevelPanel {
@@ -40,6 +48,8 @@ private class FakePanel(
     var panelReads = 0
     var enhances = 0
     var unlockPressed = false
+    var executes = 0
+    var noticeShowing = false
     val peak = levels.toMutableList()
 
     override fun isLocked(slot: Int) = slot in iconLockVisible
@@ -55,10 +65,19 @@ private class FakePanel(
     override fun pressEnhance() {
         enhances++
         if (selected in locked) unlockPressed = true
-        else if (levels[selected] < 10 && dialogOpens) dialogOpen = true
+        else if (levels[selected] < 10 && dialogOpens) { dialogOpen = true; noticeShowing = notice }
     }
     override fun awaitDialog() = dialogOpen
-    override fun dialogIsEnhance() = enhanceTitle
+    override fun dialogIsEnhance() = enhanceTitle && !noticeShowing
+    override fun noticeExecuteVisible() = noticeShowing && executeMatches
+    override fun pressNoticeExecute() {
+        executes++
+        when {
+            executeOpensNothing -> { dialogOpen = false; noticeShowing = false }
+            executeRepeatsNotice -> Unit
+            else -> noticeShowing = false
+        }
+    }
     override fun readLevels() = read(levels[selected])
     override fun confirm() {
         check(dialogOpen)
@@ -99,6 +118,67 @@ class SkillLevelFlowTest {
         assertEquals(SlotStop.CannotEnhance, SkillLevelFlow(panel).runSlot(0, 8).stop)
         assertEquals(listOf("padlock", "select", "panel", "unlock", "enhance", "dialog", "max"), actions)
         assertEquals(0, base.confirms)
+    }
+
+    @Test fun `temporary servant notice is passed once and the enhancement then confirms`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), notice = true)
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(4)).single()
+        assertEquals(SlotResult(0, 4, 3, 4, SlotStop.Reached, SkillLevelStep.Ocr), result)
+        // Two Enhance presses (3 -> 4, then the dialog at the target): one execute tap each, one confirm.
+        assertEquals(2, panel.executes)
+        assertEquals(1, panel.confirms)
+        assertEquals(1, panel.cancels)
+        assertEquals(4, panel.levels[0])
+        assertTrue(logs.any { "action=notice-execute" in it })
+    }
+
+    @Test fun `notice without an execute match cancels as unexpected dialog and never taps execute`() {
+        val panel = FakePanel(mutableListOf(3), notice = true, executeMatches = false)
+        val result = run(panel, 8).single()
+        assertEquals(SlotStop.UnexpectedDialog, result.stop)
+        assertEquals(0, panel.executes)
+        assertEquals(1, panel.cancels)
+        assertEquals(0, panel.confirms)
+    }
+
+    @Test fun `execute that opens nothing ends like the not seen branch`() {
+        val panel = FakePanel(mutableListOf(3), notice = true, executeOpensNothing = true)
+        val result = run(panel, 8).single()
+        assertEquals(SlotStop.CannotEnhance, result.stop)
+        assertEquals(1, panel.executes)
+        assertEquals(0, panel.confirms)
+        assertEquals(0, panel.cancels)
+    }
+
+    @Test fun `notice shown again after execute stops with one execute tap`() {
+        val panel = FakePanel(mutableListOf(3), notice = true, executeRepeatsNotice = true)
+        val result = run(panel, 8).single()
+        assertEquals(SlotStop.UnexpectedDialog, result.stop)
+        assertEquals(1, panel.executes)
+        assertEquals(1, panel.cancels)
+        assertEquals(0, panel.confirms)
+    }
+
+    @Test fun `enhancement dialog at the target after the notice is reached without confirming`() {
+        val panel = FakePanel(mutableListOf(4), notice = true)
+        val result = run(panel, 4).single()
+        assertEquals(SlotStop.Reached, result.stop)
+        assertEquals(1, panel.executes)
+        assertEquals(0, panel.confirms)
+        assertEquals(1, panel.cancels)
+    }
+
+    @Test fun `normal servant never looks for the notice`() {
+        val base = FakePanel(mutableListOf(3))
+        val actions = mutableListOf<String>()
+        val panel = object : SkillLevelPanel by base {
+            override fun noticeExecuteVisible(): Boolean { actions += "notice"; return base.noticeExecuteVisible() }
+            override fun confirm() { actions += "confirm"; base.confirm() }
+        }
+        assertEquals(SlotStop.Reached, SkillLevelFlow(panel).runSlot(0, 4).stop)
+        assertEquals(listOf("confirm"), actions)
+        assertEquals(0, base.executes)
     }
 
     @Test fun `no dialog after the last confirm preserves reached below level ten`() {

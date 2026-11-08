@@ -11,7 +11,8 @@ import org.json.JSONObject
 /**
  * Offline fixtures of the 0008 skill / append level screens: production readers on the owner captures, no gestures.
  * Views: mode (centre label + servant selected), button (bottom-right button label), dialog (confirm dialog),
- * levels (OCR of `Lv.current > Lv.next`), locks (padlock per append slot), result.
+ * levels (OCR of `Lv.current > Lv.next`), locks (padlock per append slot), result,
+ * notice (temporarily joined servant notice execute button).
  */
 internal fun FixtureApi.verifySkillLevel(): JSONObject {
     check(!live) { "skill level QA must never operate a live game" }
@@ -43,6 +44,17 @@ internal fun FixtureApi.verifySkillLevel(): JSONObject {
                 .put("currentInferred", level.currentInferred).put("nextInferred", level.nextInferred)
                 .put("rawCurrent", raw(loc.currentLevel(mode()))).put("rawNext", raw(loc.nextLevel(mode())))
                 .put("templatesCurrent", scores(loc.currentLevel(mode()))).put("templatesNext", scores(loc.nextLevel(mode())))
+        }
+        "notice" -> {
+            // The execute button of the temporarily joined servant notice; the match and the tap point must sit inside the 16:9 button.
+            val button = with(locations) { io.github.lib_automata.Region(138, 1066, 524, 124).xFromCenter() }
+            val pattern = runCatching { images[io.github.fate_grand_automata.scripts.Images.SkillLevelNoticeExecute] }.getOrNull()
+            val match = pattern?.let { loc.noticeExecute.findAll(it, similarity = 0.5).maxOrNull()?.takeIf { m -> m.score >= 0.8 } }
+            val click = loc.noticeExecuteClick
+            JSONObject().put("noticeExecute", screens.noticeExecuteVisible())
+                .put("executeInsideButton", match != null && button.contains(match.region) &&
+                    click.x in button.x..button.right && click.y in button.y..button.bottom)
+                .put("dialog", screens.dialogVisible()).put("enhanceTitle", screens.dialogIsEnhance(mode()))
         }
         "locks" -> JSONObject().put("locks", JSONArray((0 until mode().slots).map { screens.slotLocked(mode(), it) }))
         "result" -> JSONObject().put("result", screens.onResult())

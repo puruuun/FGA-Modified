@@ -80,6 +80,14 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     fun dialogConfirm(mode: SkillLevelMode) = Location(400, dialogButtonY(mode)).xFromCenter()
     private fun dialogButtonY(mode: SkillLevelMode) = if (mode == SkillLevelMode.Skill) 1180 else 1132
 
+    /**
+     * Temporarily joined servant notice (JP 実行する, KR 실행), shown before the enhancement dialog: the right-hand button, measured on the
+     * owner JP and KR captures normalized to 720p (button x 708..972, y 533..595; centre 840, 564), i.e. centre +400 and y 1128 at 1440p.
+     * The dialog is centred on every aspect ratio, like the enhancement dialog. Append mode was not captured and uses the same place.
+     */
+    val noticeExecute = Region(120, 1040, 560, 190).xFromCenter()
+    val noticeExecuteClick = Location(400, 1128).xFromCenter()
+
     /** Tapped to skip the animation and the result: the title area, which does nothing on the skill screens. */
     val skipClick = Location(720, 72).xFromCenter()
     /** "Touch the screen" prompt of the result. */

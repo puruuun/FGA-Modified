@@ -62,6 +62,8 @@ class SkillLevelCheckFlowTest {
         override fun pressEnhance() { enhances++; actions += "enhance" }
         override fun awaitDialog(): Boolean { actions += "dialog"; return dialog }
         override fun dialogIsEnhance() = enhanceTitle
+        override fun noticeExecuteVisible() = false
+        override fun pressNoticeExecute() = fail("check mode must never tap the notice execute button")
         override fun readLevels(): SkillLevelReading {
             dialogReads++
             check(!readThrows) { "reader failed" }

@@ -58,6 +58,7 @@ class AddedFeatureTuningTest {
             SkillLevelScreens.UNLOCK_BUTTON_SIMILARITY to 0.7, SkillLevelScreens.MAX_BUTTON_SIMILARITY to 0.8,
             SkillLevelScreens.DIALOG_SIMILARITY to 0.8, SkillLevelScreens.LOCK_SIMILARITY to 0.85,
             SkillLevelScreens.DIALOG_TITLE_SIMILARITY to 0.8, SkillLevelScreens.RESULT_SIMILARITY to 0.7,
+            SkillLevelScreens.NOTICE_EXECUTE_SIMILARITY to 0.8,
             PanelOutlineMatcher.MIN_SCORE to 0.70
         ))
         check(defaults.ce, listOf(0.85 to 0.85))

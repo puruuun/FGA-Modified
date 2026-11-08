@@ -37,6 +37,7 @@ enum class Images(val path: String) {
     SkillLevelDialogTitle("skill_level_dialog_title.png"),
     AppendLevelDialogTitle("append_level_dialog_title.png"),
     SkillLevelResult("skill_level_result.png"),
+    SkillLevelNoticeExecute("skill_level_notice_execute.png"),
     BattleScreen("battle.png"),
     ServantExist("servant_exist.png"),
     TargetDanger("target_danger.png"),

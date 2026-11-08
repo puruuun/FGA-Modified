@@ -42,6 +42,11 @@ class SkillLevelDevice(
 
     override fun awaitDialog() = poll(SkillLevelTiming.DIALOG_POLLS) { screens.dialogVisible() }
     override fun dialogIsEnhance() = screens.dialogIsEnhance(mode)
+    override fun noticeExecuteVisible() = screens.noticeExecuteVisible()
+    override fun pressNoticeExecute() {
+        loc.noticeExecuteClick.click()
+        addedTuning.skill.delay(SkillLevelTiming.AFTER_ENHANCE).wait()
+    }
     override fun readLevels() = digits.read(mode)
 
     override fun confirm() = loc.dialogConfirm(mode).click()
