@@ -3,18 +3,9 @@
     android:id="@+id/ap_item_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_stack_card_dark"
     android:gravity="center_vertical"
     android:paddingStart="14dp"
     android:orientation="vertical">
-
-    <!-- StackView sizes every card from the natural width of the first one. This invisible, zero-height
-         spacer makes that width huge, so the card is as wide as the stack allows and the bar spans it. -->
-    <FrameLayout
-        android:layout_width="2000dp"
-        android:layout_height="0dp"
-        android:visibility="invisible" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,7 +19,7 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <TextView
@@ -70,24 +61,24 @@
         android:id="@+id/ap_item_bar_dark"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="5dp"
-        android:layout_marginTop="1dp"
+        android:layout_height="6dp"
+        android:layout_marginTop="2dp"
         android:indeterminate="false"
         android:max="1000"
-        android:maxHeight="5dp"
-        android:minHeight="5dp"
+        android:maxHeight="6dp"
+        android:minHeight="6dp"
         android:progressDrawable="@drawable/widget_bar_progress" />
 
     <ProgressBar
         android:id="@+id/ap_item_bar_light"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="5dp"
-        android:layout_marginTop="1dp"
+        android:layout_height="6dp"
+        android:layout_marginTop="2dp"
         android:indeterminate="false"
         android:max="1000"
-        android:maxHeight="5dp"
-        android:minHeight="5dp"
+        android:maxHeight="6dp"
+        android:minHeight="6dp"
         android:progressDrawable="@drawable/widget_bar_progress_light"
         android:visibility="gone" />
 </LinearLayout>

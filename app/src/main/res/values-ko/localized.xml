@@ -1178,7 +1178,7 @@
     <string name="widget_service_start">시작</string>
     <string name="widget_service_stop">중지</string>
     <string name="widget_ap_name">계정 AP</string>
-    <string name="widget_ap_description">로그 수집으로 모은 계정들의 AP를 위아래로 넘겨 확인합니다.</string>
+    <string name="widget_ap_description">로그 수집으로 모은 계정들의 AP를 확인하고 ▲▼ 버튼으로 계정을 바꿉니다.</string>
     <string name="widget_ap_no_data">계정 데이터 없음</string>
     <string name="widget_ap_full">AP 가득 참</string>
     <string name="widget_ap_value">%1$d / %2$d</string>

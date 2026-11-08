@@ -127,6 +127,10 @@
         </receiver>
 
         <receiver
+            android:name=".widget.ApWidgetNavReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".widget.StopServiceReceiver"
             android:exported="false" />
 

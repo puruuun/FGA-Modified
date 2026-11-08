@@ -42,6 +42,11 @@ class ApWidgetReceiver : AppWidgetProvider() {
         render(context, appWidgetManager, intArrayOf(appWidgetId))
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        ApWidgetShown.remove(context, appWidgetIds)
+    }
+
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         ApWidgetRefresh.cancel(context)

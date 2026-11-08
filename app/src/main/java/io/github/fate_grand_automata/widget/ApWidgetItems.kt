@@ -41,7 +41,6 @@ fun apItemContents(context: Context, models: List<ApWidgetModel>, now: Long = Sy
 fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPalette, fields: ApWidgetFields): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_item)
     fun color(res: Int) = ContextCompat.getColor(context, res)
-    views.setInt(R.id.ap_item_root, "setBackgroundResource", palette.stackCard)
     views.setTextViewText(R.id.ap_item_name, content.texts.name)
     views.setTextViewText(R.id.ap_item_age, content.texts.age)
     views.setTextViewText(R.id.ap_item_ap, content.texts.ap)
@@ -61,25 +60,28 @@ fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPa
 }
 
 /**
- * Fills the StackView (R.id.ap_stack) of the top-level [views] with one card per account. Items go through
- * [RemoteViewsCompat.setRemoteAdapter]: Android 12+ uses RemoteCollectionItems directly, older versions fall
- * back to androidx's own RemoteViewsCompatService. [views] must be the RemoteViews given to updateAppWidget.
+ * Fills the AdapterViewFlipper (R.id.ap_flipper) of the top-level [views] with one card per account. Items go
+ * through [RemoteViewsCompat.setRemoteAdapter]: Android 12+ uses RemoteCollectionItems directly, older versions
+ * fall back to androidx's own RemoteViewsCompatService. [views] must be the RemoteViews given to updateAppWidget.
+ * [displayedIndex] is the account to show; it is set after the adapter so every full render keeps it.
  */
-fun addApStack(
+fun addApFlipper(
     context: Context,
     views: RemoteViews,
     appWidgetId: Int,
     models: List<ApWidgetModel>,
     palette: WidgetPalette,
     fields: ApWidgetFields,
+    displayedIndex: Int = 0,
     now: Long = System.currentTimeMillis() / 1000,
 ) {
     val items = RemoteViewsCompat.RemoteCollectionItems.Builder()
         .setHasStableIds(true)
         .setViewTypeCount(1)
     apItemContents(context, models, now).forEach { items.addItem(it.itemId, buildApItemViews(context, it, palette, fields)) }
-    RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.ap_stack, items.build())
-    views.setPendingIntentTemplate(R.id.ap_stack, openAccountTemplate(context))
+    RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.ap_flipper, items.build())
+    views.setDisplayedChild(R.id.ap_flipper, displayedIndex.coerceIn(0, (models.size - 1).coerceAtLeast(0)))
+    views.setPendingIntentTemplate(R.id.ap_flipper, openAccountTemplate(context))
 }
 
 /** Mutable on purpose: the system has to merge each card's fill-in intent into it (required from Android 12). */

@@ -8,8 +8,8 @@ import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterViewFlipper
 import android.widget.RemoteViews
-import android.widget.StackView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
@@ -53,11 +53,11 @@ class ApWidgetViewsTest {
         return host
     }
 
-    private fun find(v: View): StackView? =
-        if (v is StackView) v else (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { find(g.getChildAt(it)) } }
+    private fun find(v: View): AdapterViewFlipper? =
+        if (v is AdapterViewFlipper) v else (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { find(g.getChildAt(it)) } }
 
     private fun build(state: ApWidgetState, theme: WidgetTheme = WidgetTheme.Dark, started: Boolean = false, width: Int = 250) =
-        buildApWidgetViews(context, 21, state, WidgetSettings(theme, 0), started, width, now)
+        buildApWidgetViews(context, 21, state, WidgetSettings(theme, 0), started, width, now = now)
 
     @Test fun oneAndThreeAccountsFillTheTopLevelStackInBothThemes() {
         for (theme in WidgetTheme.entries) for (n in listOf(1, 3)) {
@@ -76,7 +76,7 @@ class ApWidgetViewsTest {
         val message = host.findViewById<TextView>(R.id.ap_no_data)
         assertEquals(View.VISIBLE, message.visibility)
         assertEquals("계정 데이터 없음", message.text.toString())
-        assertEquals(View.GONE, host.findViewById<View>(R.id.ap_stack).visibility)
+        assertEquals(View.GONE, host.findViewById<View>(R.id.ap_flipper).visibility)
         assertNull(find(host)?.adapter)
         // The message opens the app.
         message.performClick()
@@ -145,8 +145,8 @@ class ApWidgetViewsTest {
             val item = stack.adapter.getView(0, null, stack)
             return item.findViewById<TextView>(R.id.ap_item_ap).textSize / context.resources.displayMetrics.scaledDensity
         }
-        assertEquals(9f, apSize(180), 0.1f)
-        assertEquals(16f, apSize(272), 0.1f)
+        assertEquals(8f, apSize(180), 0.1f)
+        assertEquals(18f, apSize(272), 0.1f)
     }
 
     private fun lawnchair() = Bundle().apply {
@@ -160,8 +160,8 @@ class ApWidgetViewsTest {
     @Test fun lawnchairLandscapeUsesTheWideSizeAndPortraitTheNarrowOne() {
         assertEquals(378, chooseWidgetWidthDp(lawnchair(), landscape = true))
         assertEquals(183, chooseWidgetWidthDp(lawnchair(), landscape = false))
-        assertEquals(ApWidgetFields(16, 11), apWidgetFields(chooseWidgetWidthDp(lawnchair(), true).toFloat()))
-        assertEquals(ApWidgetFields(9, 8), apWidgetFields(chooseWidgetWidthDp(lawnchair(), false).toFloat()))
+        assertEquals(ApWidgetFields(18, 11), apWidgetFields(chooseWidgetWidthDp(lawnchair(), true).toFloat()))
+        assertEquals(ApWidgetFields(8, 7), apWidgetFields(chooseWidgetWidthDp(lawnchair(), false).toFloat()))
     }
 
     @Test fun withoutSizesLandscapeUsesMaxWidthAndPortraitMinWidth() {
@@ -192,12 +192,126 @@ class ApWidgetViewsTest {
         return context.createConfigurationContext(config)
     }
 
-    @Test fun everyStackCardIsOpaqueInBothThemes() {
+    @Test fun theCardHasNoBackgroundOfItsOwn() {
         for (theme in WidgetTheme.entries) {
-            val view = host(build(data(1), theme)).let { find(it)!!.adapter.getView(0, null, find(it)!!) }
-            val gradient = (view.findViewById<View>(R.id.ap_item_root).background as android.graphics.drawable.GradientDrawable)
-            assertTrue(gradient.colors!!.all { android.graphics.Color.alpha(it) == 255 }, "$theme")
+            val flipper = find(host(build(data(2), theme)))!!
+            val item = flipper.adapter.getView(0, null, flipper)
+            assertNull(item.findViewById<View>(R.id.ap_item_root).background, "$theme")
         }
+    }
+
+    private fun flipper(shown: String?, models: List<ApWidgetModel> = data(3).models): AdapterViewFlipper {
+        val views = buildApWidgetViews(context, 21, ApWidgetState.Data(models), WidgetSettings(), false, 250, shown, now)
+        return find(host(views))!!
+    }
+
+    @Test fun theShownAccountIsTheDisplayedChildAndFallsBackToTheFirst() {
+        assertEquals(2, flipper("7003").displayedChild)
+        assertEquals(0, flipper(null).displayedChild)
+        assertEquals(0, flipper("gone").displayedChild)
+    }
+
+    @Test fun aReorderKeepsShowingTheSameAccount() {
+        val reordered = listOf(model("7003"), model("7001"), model("7002"))
+        assertEquals(0, flipper("7003", reordered).displayedChild)
+        assertEquals(1, flipper("7001", reordered).displayedChild)
+        assertEquals(2, flipper("7002", reordered).displayedChild)
+    }
+
+    @Test fun theButtonColumnIsHiddenWithOneAccountAndShownWithSeveral() {
+        assertEquals(View.GONE, host(build(data(1))).findViewById<View>(R.id.ap_nav).visibility)
+        assertEquals(View.VISIBLE, host(build(data(2))).findViewById<View>(R.id.ap_nav).visibility)
+        assertEquals(View.GONE, host(build(ApWidgetState.NoData)).findViewById<View>(R.id.ap_nav).visibility)
+    }
+
+    @Test fun eachButtonSendsItsOwnExplicitBroadcastForThisWidgetId() {
+        val host = host(build(data(3)))
+        host.findViewById<View>(R.id.ap_nav_down).performClick()
+        host.findViewById<View>(R.id.ap_nav_up).performClick()
+        val sent = shadowOf(context).broadcastIntents
+        assertEquals(2, sent.size)
+        sent.forEach { assertEquals(ApWidgetNavReceiver::class.java.name, it.component!!.className) }
+        assertEquals(listOf(ApWidgetNavReceiver.NEXT, ApWidgetNavReceiver.PREVIOUS), sent.map { it.getIntExtra(ApWidgetNavReceiver.EXTRA_DIRECTION, 0) })
+        assertEquals(listOf(21, 21), sent.map { it.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) })
+        // Every widget id and direction has its own request code.
+        val codes = listOf(1, 2).flatMap { id -> listOf(1, -1).map { shadowOf(navPendingIntent(context, id, it)).requestCode } }
+        assertEquals(4, codes.toSet().size)
+    }
+
+    @Test fun cardTapAndTileStillWorkNextToTheButtons() {
+        val host = host(build(data(3), started = false))
+        host.findViewById<View>(R.id.ap_tile).performClick()
+        assertEquals(WidgetIntents.startService(context).action, shadowOf(context).nextStartedActivity.action)
+        assertTrue(shadowOf(openAccountTemplate(context)).flags and android.app.PendingIntent.FLAG_MUTABLE != 0)
+    }
+
+    @Test fun nextAndPreviousWrapAroundInTheTrackersOrder() = runBlocking {
+        val manager = AppWidgetManager.getInstance(context)
+        val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        ApWidgetRenderer.loader = { data(3) }
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.NEXT)
+        assertEquals("7002", ApWidgetShown.get(context, a))
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.NEXT)
+        assertEquals("7003", ApWidgetShown.get(context, a))
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.NEXT)
+        assertEquals("7001", ApWidgetShown.get(context, a))
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.PREVIOUS)
+        assertEquals("7003", ApWidgetShown.get(context, a))
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.PREVIOUS)
+        assertEquals("7002", ApWidgetShown.get(context, a))
+    }
+
+    @Test fun stepUpdatesOnlyItsOwnWidgetAndSurvivesAFullRender() = runBlocking {
+        val manager = AppWidgetManager.getInstance(context)
+        val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        val b = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        ApWidgetRenderer.loader = { data(3) }
+        ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.NEXT)
+        assertEquals("7002", ApWidgetShown.get(context, a))
+        assertNull(ApWidgetShown.get(context, b))
+        // The 15-minute refresh redraws everything and keeps the choice.
+        ApWidgetRenderer.updateAll(context)
+        assertEquals("7002", ApWidgetShown.get(context, a))
+        assertNull(ApWidgetShown.get(context, b))
+    }
+
+    @Test fun theReceiverRunsTheStepForTheIdInTheIntentOnly() {
+        val manager = AppWidgetManager.getInstance(context)
+        val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        val b = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        ApWidgetRenderer.loader = { data(3) }
+        ApWidgetNavReceiver().onReceive(
+            context,
+            android.content.Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, b).putExtra(ApWidgetNavReceiver.EXTRA_DIRECTION, -1),
+        )
+        val end = System.currentTimeMillis() + 3000
+        while (ApWidgetShown.get(context, b) == null && System.currentTimeMillis() < end) Thread.sleep(10)
+        assertEquals("7003", ApWidgetShown.get(context, b))
+        assertNull(ApWidgetShown.get(context, a))
+    }
+
+    @Test fun deletingAWidgetForgetsItsAccount() {
+        ApWidgetShown.set(context, 31, "7002")
+        ApWidgetShown.set(context, 32, "7003")
+        ApWidgetReceiver().onDeleted(context, intArrayOf(31))
+        assertNull(ApWidgetShown.get(context, 31))
+        assertEquals("7003", ApWidgetShown.get(context, 32))
+    }
+
+    @Test fun stepWithNoAccountsDoesNothing() = runBlocking {
+        ApWidgetRenderer.loader = { ApWidgetState.NoData }
+        ApWidgetRenderer.step(context, 41, ApWidgetNavReceiver.NEXT)
+        assertNull(ApWidgetShown.get(context, 41))
+    }
+
+    @Test fun pureStepWrapsAndFallsBack() {
+        val m = data(3).models
+        assertEquals(1, ApWidgetShown.step(m, "7001", 1))
+        assertEquals(0, ApWidgetShown.step(m, "7003", 1))
+        assertEquals(2, ApWidgetShown.step(m, "7001", -1))
+        assertEquals(1, ApWidgetShown.step(m, null, 1))
+        assertEquals(1, ApWidgetShown.step(m, "gone", 1))
+        assertEquals(0, ApWidgetShown.step(emptyList(), "x", 1))
     }
 
     @Test fun updateAllDrawsEveryPlacedWidgetThroughAHostView() = runBlocking {
@@ -209,7 +323,7 @@ class ApWidgetViewsTest {
         val hostView = shadow.getViewFor(id)
         shadowOf(android.os.Looper.getMainLooper()).idle()
         // The shadow host reapplies the views; adapter contents are checked where the views are applied fresh.
-        assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_stack).visibility)
+        assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_flipper).visibility)
         assertEquals(View.GONE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
         assertEquals(1, manager.getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)).size)
         // A later refresh with no data replaces the stack with the message.

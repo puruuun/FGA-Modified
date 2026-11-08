@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.widget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -14,6 +15,7 @@ import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -42,9 +44,23 @@ object ApWidgetRenderer {
         val started = ScriptRunnerService.serviceStarted.value
         for (id in ids) {
             runCatching {
-                manager.updateAppWidget(id, buildApWidgetViews(context, id, state, settings, started, widthDp(context, manager, id)))
+                manager.updateAppWidget(
+                    id,
+                    buildApWidgetViews(context, id, state, settings, started, widthDp(context, manager, id), ApWidgetShown.get(context, id)),
+                )
             }.onFailure { Timber.w(it, "AP widget %d update failed", id) }
         }
+    }
+
+    /** Shows the next or previous account (wrapping around) on one widget and remembers it. */
+    internal suspend fun step(context: Context, appWidgetId: Int, direction: Int) {
+        val state = runCatching { loader(context) }.getOrDefault(ApWidgetState.NoData) as? ApWidgetState.Data ?: return
+        val index = ApWidgetShown.step(state.models, ApWidgetShown.get(context, appWidgetId), direction)
+        ApWidgetShown.set(context, appWidgetId, state.models[index].accountId)
+        val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
+        views.setDisplayedChild(R.id.ap_flipper, index)
+        runCatching { AppWidgetManager.getInstance(context).partiallyUpdateAppWidget(appWidgetId, views) }
+            .onFailure { Timber.w(it, "AP widget %d step failed", appWidgetId) }
     }
 
     /** The width the launcher gives this widget in the current orientation. */
@@ -81,6 +97,8 @@ fun buildApWidgetViews(
     settings: WidgetSettings,
     serviceStarted: Boolean,
     widthDp: Int,
+    /** The account this widget shows; the first one when it is null or no longer exists. */
+    shownAccountId: String? = null,
     now: Long = System.currentTimeMillis() / 1000,
 ): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
@@ -91,12 +109,23 @@ fun buildApWidgetViews(
 
     when (state) {
         is ApWidgetState.Data -> {
-            views.setViewVisibility(R.id.ap_stack, View.VISIBLE)
+            views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
             views.setViewVisibility(R.id.ap_no_data, View.GONE)
-            addApStack(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat()), now)
+            val index = ApWidgetShown.indexOf(state.models, shownAccountId)
+            addApFlipper(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat()), index, now)
+            // The up/down buttons only make sense with more than one account.
+            val several = state.models.size > 1
+            views.setViewVisibility(R.id.ap_nav, if (several) View.VISIBLE else View.GONE)
+            if (several) {
+                views.setInt(R.id.ap_nav_up_icon, "setColorFilter", color(palette.secondary))
+                views.setInt(R.id.ap_nav_down_icon, "setColorFilter", color(palette.secondary))
+                views.setOnClickPendingIntent(R.id.ap_nav_up, navPendingIntent(context, appWidgetId, ApWidgetNavReceiver.PREVIOUS))
+                views.setOnClickPendingIntent(R.id.ap_nav_down, navPendingIntent(context, appWidgetId, ApWidgetNavReceiver.NEXT))
+            }
         }
         ApWidgetState.NoData -> {
-            views.setViewVisibility(R.id.ap_stack, View.GONE)
+            views.setViewVisibility(R.id.ap_flipper, View.GONE)
+            views.setViewVisibility(R.id.ap_nav, View.GONE)
             views.setViewVisibility(R.id.ap_no_data, View.VISIBLE)
             views.setTextColor(R.id.ap_no_data, color(palette.secondary))
             views.setOnClickPendingIntent(R.id.ap_no_data, activityPendingIntent(context, WidgetIntents.openApp(context)))
@@ -130,3 +159,39 @@ private fun activityPendingIntent(context: Context, intent: Intent): PendingInte
 
 private fun immutableFlags() =
     PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
+/** An explicit broadcast per widget id and direction; the request code keeps all of them apart. */
+internal fun navPendingIntent(context: Context, appWidgetId: Int, direction: Int): PendingIntent {
+    val intent = Intent(context, ApWidgetNavReceiver::class.java)
+        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        .putExtra(ApWidgetNavReceiver.EXTRA_DIRECTION, direction)
+    val requestCode = appWidgetId * 2 + if (direction > 0) 1 else 0
+    return PendingIntent.getBroadcast(context, requestCode, intent, immutableFlags())
+}
+
+/**
+ * The up/down buttons of one AP widget. It remembers the shown account id for that widget id only and moves
+ * the flipper there with a partial update, so the fade plays and nothing else is redrawn.
+ */
+class ApWidgetNavReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        val direction = intent.getIntExtra(EXTRA_DIRECTION, 0)
+        if (id == AppWidgetManager.INVALID_APPWIDGET_ID || direction == 0) return
+        val pending = goAsync()
+        val app = context.applicationContext
+        WidgetRefresh.scope.launch {
+            try {
+                ApWidgetRenderer.step(app, id, if (direction > 0) NEXT else PREVIOUS)
+            } finally {
+                pending?.finish()
+            }
+        }
+    }
+
+    companion object {
+        const val EXTRA_DIRECTION = "io.github.fate_grand_automata.extra.AP_DIRECTION"
+        const val NEXT = 1
+        const val PREVIOUS = -1
+    }
+}

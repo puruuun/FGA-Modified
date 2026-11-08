@@ -49,8 +49,6 @@ data class WidgetPalette(
     @param:DrawableRes val tileBackground: Int,
     @param:DrawableRes val toggleCircle: Int,
     @param:DrawableRes val toggleCircleOn: Int,
-    /** Opaque card of one stack item, so the cards behind the top one stay hidden. */
-    @param:DrawableRes val stackCard: Int,
     val light: Boolean,
 )
 
@@ -64,7 +62,6 @@ fun widgetPalette(theme: WidgetTheme): WidgetPalette = when (theme) {
         tileBackground = R.drawable.widget_tile_background,
         toggleCircle = R.drawable.widget_toggle_circle,
         toggleCircleOn = R.drawable.widget_toggle_circle_on,
-        stackCard = R.drawable.widget_stack_card_dark,
         light = false,
     )
     WidgetTheme.Light -> WidgetPalette(
@@ -76,7 +73,6 @@ fun widgetPalette(theme: WidgetTheme): WidgetPalette = when (theme) {
         tileBackground = R.drawable.widget_tile_background_light,
         toggleCircle = R.drawable.widget_toggle_circle_light,
         toggleCircleOn = R.drawable.widget_toggle_circle_on_light,
-        stackCard = R.drawable.widget_stack_card_light,
         light = true,
     )
 }

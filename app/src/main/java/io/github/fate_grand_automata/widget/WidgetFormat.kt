@@ -31,8 +31,8 @@ fun dataAgeText(context: Context, age: DataAge): String = when (age) {
 }
 
 /**
- * Type sizes by widget width. The StackView draws each card at 90 % of the stack, so the narrow tiers are
- * smaller than a plain list would need; each still shows AP and the complete Korean 12-hour clock.
+ * Type sizes by widget width. The info area loses the up/down button column and the tile, so the narrow
+ * tiers are small; each still shows AP and the complete Korean 12-hour clock without clipping.
  */
 data class ApWidgetFields(val apTextSize: Int, val fullTextSize: Int)
 
@@ -42,10 +42,10 @@ const val AP_WIDGET_XLARGE_TEXT_MIN_DP = 250f
 
 fun apWidgetFields(widthDp: Float): ApWidgetFields =
     when {
-        widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(16, 11)
+        widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(18, 11)
         widthDp >= AP_WIDGET_LARGE_TEXT_MIN_DP -> ApWidgetFields(14, 10)
-        widthDp >= AP_WIDGET_MEDIUM_TEXT_MIN_DP -> ApWidgetFields(11, 9)
-        else -> ApWidgetFields(9, 8)
+        widthDp >= AP_WIDGET_MEDIUM_TEXT_MIN_DP -> ApWidgetFields(10, 8)
+        else -> ApWidgetFields(8, 7)
     }
 
 /** Strings shown by the AP widget, built apart from Glance for formatting tests. */

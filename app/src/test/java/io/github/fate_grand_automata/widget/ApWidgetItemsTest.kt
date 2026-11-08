@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ProgressBar
 import android.widget.RemoteViews
-import android.widget.StackView
+import android.widget.AdapterViewFlipper
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
@@ -66,14 +66,14 @@ class ApWidgetItemsTest {
     }
 
     private fun stackViews(list: List<ApWidgetModel>) =
-        RemoteViews(context.packageName, R.layout.widget_ap_root).also { addApStack(context, it, 11, list, widgetPalette(WidgetTheme.Dark), fields, now) }
+        RemoteViews(context.packageName, R.layout.widget_ap_root).also { addApFlipper(context, it, 11, list, widgetPalette(WidgetTheme.Dark), fields, 0, now) }
 
-    private fun host(views: RemoteViews): StackView {
+    private fun host(views: RemoteViews): AdapterViewFlipper {
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))
         shadowOf(android.os.Looper.getMainLooper()).idle()
-        fun find(v: View): StackView? =
-            if (v is StackView) v else (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { find(g.getChildAt(it)) } }
+        fun find(v: View): AdapterViewFlipper? =
+            if (v is AdapterViewFlipper) v else (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { find(g.getChildAt(it)) } }
         return assertNotNull(find(parent))
     }
 

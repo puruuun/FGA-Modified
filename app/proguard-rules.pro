@@ -18,3 +18,4 @@
 # explicit broadcast. The system creates both by class name, so neither may be renamed or merged.
 -keep class * extends android.appwidget.AppWidgetProvider { <init>(); }
 -keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }
+-keep class io.github.fate_grand_automata.widget.ApWidgetNavReceiver { <init>(); }

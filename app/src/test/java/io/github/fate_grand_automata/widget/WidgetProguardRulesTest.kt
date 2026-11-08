@@ -24,6 +24,7 @@ class WidgetProguardRulesTest {
     @Test fun plainAppWidgetProviderAndStopReceiverKeepTheirNames() {
         assertTrue(rules.contains("-keep class * extends android.appwidget.AppWidgetProvider { <init>(); }"))
         assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }"))
+        assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.ApWidgetNavReceiver { <init>(); }"))
     }
 
     @Test fun stopReceiverIsNotExported() {

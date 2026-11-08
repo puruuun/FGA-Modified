@@ -99,9 +99,12 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun apAt268() = shootAp("ap_width_268", DpSize(268.dp, 66.dp), data())
     @Test fun ap4x1Several() = shootAp("ap_4x1_several", wide, several)
     @Test fun ap3x1Several() = shootAp("ap_3x1_several", narrow, several)
+    @Test fun ap180Several() = shootAp("ap_width_180_several", DpSize(180.dp, 66.dp), several)
+    @Test fun ap230Several() = shootAp("ap_width_230_several", DpSize(230.dp, 66.dp), several)
+    @Test fun ap183Several() = shootAp("ap_width_183_several", DpSize(183.dp, 74.dp), several)
     @Test fun apAlreadyPlaced3x2() = shootAp("ap_3x2_legacy", DpSize(250.dp, 110.dp), data())
-    @Test fun ap4x1HalfOpacity() = shootAp("ap_4x1_opacity50", wide, data(), settings = half, backdrop = true)
-    @Test fun ap3x1HalfOpacity() = shootAp("ap_3x1_opacity50", narrow, data(), settings = half, backdrop = true)
+    @Test fun ap4x1HalfOpacity() = shootAp("ap_4x1_opacity50", wide, several, settings = half, backdrop = true)
+    @Test fun ap3x1HalfOpacity() = shootAp("ap_3x1_opacity50", narrow, several, settings = half, backdrop = true)
     @Test fun ap4x1FullyTransparent() = shootAp("ap_4x1_opacity100", wide, data(), settings = settings.copy(transparencyPercent = 100), backdrop = true)
 
     /** The top-level RemoteViews, applied into an AppWidgetHostView like the launcher does. */
@@ -112,7 +115,7 @@ class WidgetScreenshotTest(private val light: Boolean) {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
         android.provider.Settings.System.putString(context.contentResolver, android.provider.Settings.System.TIME_12_24, "12")
-        val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now)
+        val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now = now)
         val density = context.resources.displayMetrics.density
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))
@@ -134,7 +137,7 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun singleCard() {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
-        val views = buildApItemViews(context, apItemContent(context, model), widgetPalette(settings.theme), ApWidgetFields(16, 11))
+        val views = buildApItemViews(context, apItemContent(context, model), widgetPalette(settings.theme), ApWidgetFields(18, 11))
         val density = context.resources.displayMetrics.density
         val w = (200 * density).toInt()
         val h = (50 * density).toInt()

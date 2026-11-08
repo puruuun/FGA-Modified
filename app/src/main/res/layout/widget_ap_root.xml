@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The whole AP widget as one top-level RemoteViews: a StackView adapter is only accepted there, not nested. -->
+<!-- The whole AP widget as one top-level RemoteViews: a collection adapter is only accepted there, not nested. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/ap_root"
     android:layout_width="match_parent"
@@ -12,33 +12,72 @@
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginTop="-4dp"
-        android:layout_marginBottom="-4dp"
+        android:layout_marginEnd="2dp"
         android:layout_weight="1">
 
-        <StackView
-            android:id="@+id/ap_stack"
+        <!-- One account card at a time; the up/down buttons switch it. -->
+        <AdapterViewFlipper
+            android:id="@+id/ap_flipper"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:loopViews="false" />
+            android:autoStart="false"
+            android:inAnimation="@animator/widget_fade_in"
+            android:outAnimation="@animator/widget_fade_out" />
 
         <TextView
             android:id="@+id/ap_no_data"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center_vertical|start"
-            android:paddingStart="14dp"
             android:maxLines="2"
+            android:paddingStart="14dp"
             android:text="@string/widget_ap_no_data"
             android:textSize="13sp"
             android:visibility="gone" />
     </FrameLayout>
 
     <LinearLayout
+        android:id="@+id/ap_nav"
+        android:layout_width="24dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="2dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:id="@+id/ap_nav_up"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/ap_nav_up_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_widget_chevron_up" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/ap_nav_down"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/ap_nav_down_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_widget_chevron_down" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/ap_tile"
         android:layout_width="40dp"
         android:layout_height="match_parent"
-        android:layout_marginStart="6dp"
+        android:layout_marginStart="4dp"
         android:background="@drawable/widget_tile_background"
         android:gravity="center"
         android:orientation="vertical">
