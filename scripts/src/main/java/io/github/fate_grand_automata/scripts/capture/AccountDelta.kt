@@ -33,6 +33,18 @@ data class AccountDelta(
     )
 
     companion object {
+        /** The real shape keeps friendPoint in tblUserGame; userGame is only a fallback. */
+        private fun friendPoint(state: AccountState): Long? =
+            listOf("tblUserGame", "userGame").firstNotNullOfOrNull { table ->
+                ((state.tables[table]?.firstOrNull() as? JsonObject)?.get("friendPoint") as? JsonPrimitive)?.longOrNull
+            }
+
+        private fun friendPointChange(previous: AccountState, next: AccountState): Long {
+            val old = friendPoint(previous) ?: return 0L
+            val new = friendPoint(next) ?: return 0L
+            return new - old
+        }
+
         /** A missing snapshot is not a baseline. Malformed rows/fields contribute zero. */
         fun between(previous: AccountState?, next: AccountState?): AccountDelta {
             if (previous == null || next == null) return AccountDelta()
@@ -70,7 +82,7 @@ data class AccountDelta(
                     change("qp"), change("mana"), change("rarePri"), change("freeStone"), change("chargeStone"),
                     svts = cardChanges(listOf("userSvt", "userSvtStorage"), "svtId"),
                     commandCodes = cardChanges(listOf("userCommandCode"), "commandCodeId"),
-                    friendPoint = change("friendPoint"),
+                    friendPoint = friendPointChange(previous, next),
                 )
             }.getOrDefault(AccountDelta())
         }

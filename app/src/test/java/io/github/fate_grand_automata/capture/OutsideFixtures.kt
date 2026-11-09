@@ -9,7 +9,8 @@ import kotlinx.serialization.json.jsonObject
 /** Entirely handwritten fictional account/resource data. */
 internal fun outsideLogin(id: String = "fictionalA", fruit: Long = 10, svts: String = "[]") = Json.parseToJsonElement("""
     {"response":[{"nid":"login","resCode":"00"}],"cache":{"replaced":{
-      "userGame":[{"userId":"$id","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10,"friendPoint":10000}],
+      "userGame":[{"userId":"$id","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10}],
+      "tblUserGame":[{"userId":"$id","friendPoint":10000,"createdAt":5,"flag":0}],
       "userItem":[{"userId":"$id","itemId":100,"num":$fruit}],
       "userSvt":$svts
     }}}
@@ -18,7 +19,8 @@ internal fun outsideLogin(id: String = "fictionalA", fruit: Long = 10, svts: Str
 /** Synthetic KR gacha/draw assumption: cache.updated userGame holdings and new userSvt instance rows. */
 internal fun outsideFriendPointSummon(friendPoint: Long = 9800, includeCards: Boolean = true) = Json.parseToJsonElement("""
     {"response":[{"nid":"gacha","resCode":"00"}],"cache":{"updated":{
-      "userGame":[{"userId":"fictionalA","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10,"friendPoint":$friendPoint}]
+      "userGame":[{"userId":"fictionalA","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10}],
+      "tblUserGame":[{"userId":"fictionalA","friendPoint":$friendPoint,"createdAt":5,"flag":0}]
       ${if (includeCards) """, "userSvt":[
         {"userId":"fictionalA","id":1002,"svtId":100100,"lv":1},
         {"userId":"fictionalA","id":1003,"svtId":9700010,"lv":1}

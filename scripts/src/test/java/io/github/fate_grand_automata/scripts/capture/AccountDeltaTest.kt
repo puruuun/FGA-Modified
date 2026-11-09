@@ -12,12 +12,32 @@ class AccountDeltaTest {
         assertTrue((spent + AccountDelta(friendPoint = 200)).isEmpty)
     }
 
-    @Test fun friendPointsComeFromBothGameTableNames() {
+    private fun tbl(friendPoint: String?, game: String = """{"qp":1,"freeStone":90}""") = AccountState(
+        buildMap {
+            put("userGame", JsonArray(listOf(Json.parseToJsonElement(game))))
+            if (friendPoint != null) put("tblUserGame", JsonArray(listOf(Json.parseToJsonElement(friendPoint))))
+        },
+        JsonArray(emptyList()), snapshotTime = 1, lastUpdateTime = 1,
+    )
+
+    @Test fun friendPointComesFromTblUserGameWhenBothTablesArePresent() {
+        val before = tbl("""{"friendPoint":20000,"createdAt":5}""")
+        val after = tbl("""{"friendPoint":18000,"createdAt":5}""")
+        assertEquals(AccountDelta(friendPoint = -2000), AccountDelta.between(before, after))
+    }
+
+    @Test fun friendPointFallsBackToUserGameWithoutTblUserGame() {
         val before = state(game = """{"friendPoint":"3000000200"}""")
         val after = state(game = """{"friendPoint":3000000000}""")
         assertEquals(AccountDelta(friendPoint = -200), AccountDelta.between(before, after))
-        fun alias(state: AccountState) = state.copy(tables = mapOf("tblUserGame" to state.tables.getValue("userGame")))
-        assertEquals(AccountDelta(friendPoint = -200), AccountDelta.between(alias(before), alias(after)))
+    }
+
+    @Test fun friendPointIsZeroWhenEitherSideLacksIt() {
+        val has = tbl("""{"friendPoint":18000}""")
+        val missing = tbl(null)
+        assertEquals(AccountDelta(), AccountDelta.between(missing, has))
+        assertEquals(AccountDelta(), AccountDelta.between(has, missing))
+        assertEquals(0L, AccountDelta.between(tbl("""{"createdAt":5}"""), has).friendPoint)
     }
 
     @Test fun oldJsonWithoutFriendPointsDecodesWithZero() {
