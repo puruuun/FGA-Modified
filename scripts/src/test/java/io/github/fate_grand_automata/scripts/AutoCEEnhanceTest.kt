@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.scripts
 import io.github.fate_grand_automata.scripts.entrypoints.AutoCEEnhance
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.modules.CEEnhanceScreens
+import io.github.lib_automata.Location
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.mockk.*
@@ -14,7 +15,14 @@ class AutoCEEnhanceTest {
     private val screens = mockk<CEEnhanceScreens>(relaxed = true)
     private val script = AutoCEEnhance(mockk(relaxed = true), screens, mockk(relaxed = true), api)
 
+    private val executeRegion = Region(0, 0, 4, 4)
+    private val warningConfirmLocation = Location(3, 3)
+    private val enhanceLocation = Location(4, 4)
+
     init {
+        every { screens.loc.execute } returns executeRegion
+        every { screens.loc.filterWarningConfirm } returns warningConfirmLocation
+        every { api.locations.enhancementClick } returns enhanceLocation
         every { api.prefs.gameServer } returns GameServer.Kr
         every { with(api) { any<Region>().exists(any<Pattern>(), any(), any()) } } returns true
     }
@@ -62,5 +70,29 @@ class AutoCEEnhanceTest {
         script.execute()
         verify(exactly = 2) { with(api) { toggle.click(1) } }
         verify(exactly = 3) { with(api) { toggle.exists(any<Pattern>(), any(), any()) } }
+    }
+
+    @Test fun `filter warning visible is confirmed between execute and enhance`() {
+        every { with(api) { screens.loc.filterWarningConfirmRegion.exists(any<Pattern>(), any(), any()) } } returns true
+        script.execute()
+        verifyOrder {
+            with(api) {
+                executeRegion.click(1)
+                warningConfirmLocation.click(1)
+                enhanceLocation.click(1)
+            }
+        }
+    }
+
+    @Test fun `filter warning not visible goes straight from execute to enhance`() {
+        every { with(api) { screens.loc.filterWarningConfirmRegion.exists(any<Pattern>(), any(), any()) } } returns false
+        script.execute()
+        verifyOrder {
+            with(api) {
+                executeRegion.click(1)
+                enhanceLocation.click(1)
+            }
+        }
+        verify(exactly = 0) { with(api) { warningConfirmLocation.click(any()) } }
     }
 }

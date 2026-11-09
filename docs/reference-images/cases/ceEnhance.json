@@ -36,6 +36,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -75,6 +79,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -113,6 +121,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -151,6 +163,10 @@
         "ok": [
           0.9365700101852417,
           1
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent",
@@ -190,6 +206,10 @@
         "ok": [
           0,
           0.043382622031494976
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -228,6 +248,10 @@
         "ok": [
           0.08284567207098006,
           0.16284567207098008
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -266,6 +290,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Disabled",
@@ -305,6 +333,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -343,6 +375,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -381,6 +417,10 @@
         "ok": [
           0,
           0.057805736511945725
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -419,6 +459,10 @@
         "ok": [
           0.08284567207098006,
           0.16284567207098008
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -457,6 +501,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -496,6 +544,10 @@
         "ok": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -535,10 +587,31 @@
         "ok": [
           0.9365551686286926,
           1
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent",
       "detect": "CEEnhance"
+    },
+    {
+      "name": "ce-Jp-15",
+      "suite": "ceEnhance",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/ce-enhance/15.webp",
+      "source": "build/orchestration/inputs/ce-filter-warning/jp-ce-filter-warning.webp",
+      "scores": {
+        "ok": [
+          0,
+          0.3
+        ],
+        "warnOk": [
+          0.94,
+          1
+        ]
+      }
     },
     {
       "name": "ce-Kr-01",
@@ -578,6 +651,10 @@
         "okKR": [
           0,
           0.06648616023361684
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -621,6 +698,10 @@
         "okKR": [
           0.069451524913311,
           0.149451524913311
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -664,6 +745,10 @@
         "okKR": [
           0.9329845523834228,
           1
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent",
@@ -707,6 +792,10 @@
         "okKR": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -749,6 +838,10 @@
         "okKR": [
           0,
           0.0757813835144043
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -791,6 +884,10 @@
         "okKR": [
           0,
           0.05612359285354614
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -833,6 +930,10 @@
         "okKR": [
           0.069451524913311,
           0.149451524913311
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Disabled"
@@ -875,6 +976,10 @@
         "okKR": [
           0,
           0.04705699948593974
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -917,6 +1022,10 @@
         "okKR": [
           0,
           0.048578602224588395
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -959,6 +1068,10 @@
         "okKR": [
           0,
           0.06607840858399869
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -1002,6 +1115,10 @@
         "okKR": [
           0.8954316592216491,
           0.9754316592216492
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent",
@@ -1045,6 +1162,10 @@
         "okKR": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -1087,6 +1208,10 @@
         "okKR": [
           0.24187757730484008,
           0.32187757730484007
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent",
@@ -1130,6 +1255,10 @@
         "okKR": [
           0,
           0.07959807753562928
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -1172,6 +1301,10 @@
         "okKR": [
           0,
           0.05612359285354614
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -1214,6 +1347,10 @@
         "okKR": [
           0,
           0.05612359285354614
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -1256,6 +1393,10 @@
         "okKR": [
           0,
           0.0690094055235386
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Disabled",
@@ -1299,6 +1440,10 @@
         "okKR": [
           0,
           0.04
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
@@ -1341,6 +1486,10 @@
         "okKR": [
           0,
           0.057947398126125337
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Active",
@@ -1384,6 +1533,10 @@
         "okKR": [
           0.03199264317750931,
           0.11199264317750932
+        ],
+        "warnOk": [
+          0,
+          0.4
         ]
       },
       "recommended": "Absent"
