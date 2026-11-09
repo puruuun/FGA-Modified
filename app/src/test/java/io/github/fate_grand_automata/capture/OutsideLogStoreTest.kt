@@ -47,7 +47,9 @@ class OutsideLogStoreTest {
         store.add(outsideFixture("middle", 2000))
         val battles = BattleLogRepository(directory).entries.first()
         assertEquals(listOf("after", "outside:middle", "before"), mixedCaptureLogs(battles, store.entries).map { it.id })
-        assertEquals(legacy, File(directory, "battle-log.json").readText())
+        // The old file is migrated once into battle-log/ (issue #280) and then removed.
+        assertFalse(File(directory, "battle-log.json").exists())
+        assertTrue(File(directory, "battle-log/index.json").exists())
         store.clear()
         assertEquals(2, BattleLogRepository(directory).entries.first().size)
     }

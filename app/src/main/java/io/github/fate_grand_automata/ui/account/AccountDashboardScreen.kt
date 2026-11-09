@@ -321,7 +321,7 @@ private fun InventoryGroup.label() = when (this) {
 @Composable private fun Recent(battle: BattleLogEntry?, outside: OutsideLogEntry?, names: GameNameMap, openLogs: () -> Unit) {
     battle?.let {
         Text("${date(it.endedAt / 1000)} · ${it.configName}")
-        it.gains?.battles?.maxByOrNull { row -> row.time }?.questId?.let { id ->
+        (it.gains?.lastQuestId ?: it.gains?.battles?.maxByOrNull { row -> row.time }?.questId)?.let { id ->
             Text(stringResource(R.string.dashboard_quest, id), style = MaterialTheme.typography.bodySmall)
         }
         val gains = it.gains?.let(::battleResources).orEmpty()

@@ -14,9 +14,19 @@ data class RunGains(
     /** Every item spent in the run (start - end + gained), positive values only. Empty when unknown. */
     val itemsUsed: Map<Long, Long> = emptyMap(),
     val missingBattles: Int = 0,
+    /** Set only on the stored summary, whose per-battle rows live in a separate file (issue #280). */
+    val storedBattleCount: Int = 0,
+    /** Quest id of the newest battle, kept in the stored summary so the dashboard needs no battle rows. */
+    val lastQuestId: Long? = null,
     private val startHoldings: Map<Long, Long>? = null,
 ) {
-    val capturedBattles: Int get() = battles.size
+    val capturedBattles: Int get() = if (battles.isEmpty()) storedBattleCount else battles.size
+
+    /** The summary kept in the log index: every total, but none of the per-battle rows. */
+    fun summarized(): RunGains = copy(
+        battles = emptyList(), storedBattleCount = capturedBattles,
+        lastQuestId = battles.maxByOrNull { it.time }?.questId ?: lastQuestId,
+    )
 
     fun add(battle: BattleGains): RunGains = copy(battles = battles + battle)
 

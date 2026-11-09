@@ -37,6 +37,7 @@ import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.exit.battleSummaryContent
 import java.io.File
+import io.github.fate_grand_automata.scripts.capture.BattleGains
 import java.text.DateFormat
 import java.util.Date
 
@@ -61,7 +62,8 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,
         outsideEntries = outsideEntries, openOutsideEntries = openEntries,
-        retention = LogRetentionPrefsCore.normalize(retention), onRetention = viewModel::setRetention)
+        retention = LogRetentionPrefsCore.normalize(retention), onRetention = viewModel::setRetention,
+        loadBattles = viewModel::battlesOf)
 }
 
 @Composable
@@ -74,6 +76,7 @@ fun LogScreenContent(
     openOutsideEntries: List<OutsideLogEntry> = emptyList(),
     retention: Int = LogRetentionPrefsCore.DEFAULT,
     onRetention: (Int) -> Unit = {},
+    loadBattles: (suspend (String) -> List<BattleGains>?)? = null,
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
@@ -117,14 +120,14 @@ fun LogScreenContent(
                     Column(Modifier.weight(0.48f).fillMaxHeight(), content = list)
                     Column(Modifier.weight(0.52f).fillMaxHeight()) {
                         if (selected == null) Text(emptyText, Modifier.padding(16.dp))
-                        else LazyColumn(Modifier.fillMaxSize()) { captureLogDetailItems(selected, names) }
+                        else LazyColumn(Modifier.fillMaxSize()) { captureLogDetailItems(selected, names, loadBattles) }
                     }
                 }
             }
         } else {
             BackHandler(enabled = selected != null && !deletion.active) { selectedId = null }
             if (selected != null && !deletion.active) {
-                selected.battle?.let { BattleLogDetail(it, onBack = { selectedId = null }, names = names) }
+                selected.battle?.let { BattleLogDetail(it, onBack = { selectedId = null }, names = names, loadBattles = loadBattles) }
                 selected.outside?.let { OutsideLogDetail(it, onBack = { selectedId = null }, names = names) }
             } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
         }
@@ -198,8 +201,8 @@ internal fun ColumnScope.LogList(
     }
 }
 
-private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap) {
-    entry.battle?.let { battleLogDetailItems(it, names) }
+private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap, loadBattles: (suspend (String) -> List<BattleGains>?)?) {
+    entry.battle?.let { battleLogDetailItems(it, names, loadBattles) }
     entry.outside?.let { outsideLogDetailItems(it, names) }
 }
 
@@ -240,7 +243,7 @@ private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Uni
     LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick,
         checked = checked, collected = entry.gains != null)
 }
-private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: GameNameMap) {
+private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: GameNameMap, loadBattles: (suspend (String) -> List<BattleGains>?)? = null) {
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(entry.configName, style = MaterialTheme.typography.titleMedium)
@@ -254,11 +257,11 @@ private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: Gam
         refillEnabled = entry.refillEnabled,
         ceLimitReached = entry.reasonKey == "limit_ces"
     )
-    entry.gains?.let { gainsContent(it, names) }
+    entry.gains?.let { gainsContent(it, names, loadBattles?.let { load -> { load(entry.id) } }) }
 }
 
 @Composable
-fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit, names: GameNameMap = GameNameMap()) {
+fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit, names: GameNameMap = GameNameMap(), loadBattles: (suspend (String) -> List<BattleGains>?)? = null) {
     CappedWidth {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Heading(
@@ -270,7 +273,7 @@ fun BattleLogDetail(entry: BattleLogEntry, onBack: () -> Unit, names: GameNameMa
                 }
             )
             LazyColumn(Modifier.weight(1f)) {
-                battleLogDetailItems(entry, names)
+                battleLogDetailItems(entry, names, loadBattles)
             }
         }
     }

@@ -41,6 +41,9 @@ class LogViewModel @Inject constructor(
         OutsideLogRepository.trim()
     } }
 
+    /** Read when the user opens "전투별 내역"; the rows are not kept in memory. */
+    suspend fun battlesOf(id: String) = repository.battles(id)
+
     fun delete(id: String) { viewModelScope.launch {
         if (id.startsWith("outside:")) withContext(Dispatchers.IO) { CaptureTracker.deleteOutsideEntry(id.removePrefix("outside:")) }
         else repository.delete(id)

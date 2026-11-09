@@ -36,7 +36,7 @@ object OutsideLogRepository {
     }
 
     @Synchronized
-    internal fun add(entry: OutsideLogEntry) { checkNotNull(store).add(entry) }
+    internal fun add(entry: OutsideLogEntry) { runCatching { checkNotNull(store).add(entry) }.onFailure { warn(it) } }
     @Synchronized
     fun delete(id: String) { runCatching { store?.delete(id) }.onFailure { warn(it) } }
     @Synchronized

@@ -153,11 +153,11 @@ class BattleLogTest {
     fun failedWriteDoesNotThrowOrPublishUnsavedState() = runBlocking {
         val repository = BattleLogRepository(directory)
         repository.add(battleLogFixture())
-        val persisted = File(directory, "battle-log.json").readText()
-        File(directory, "battle-log.json.tmp").mkdir()
+        val persisted = File(directory, "battle-log/index.json").readText()
+        File(directory, "battle-log/index.json.tmp").mkdir()
         repository.clear()
         assertEquals(1, repository.entries.first().size)
-        assertEquals(persisted, File(directory, "battle-log.json").readText())
+        assertEquals(persisted, File(directory, "battle-log/index.json").readText())
     }
 
     @Test
