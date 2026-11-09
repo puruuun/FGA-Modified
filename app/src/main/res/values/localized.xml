@@ -1060,6 +1060,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_gains_missing">%1$s battles were not captured. Gains may be incomplete.</string>
     <string name="capture_gains_exp">Master EXP</string>
     <string name="capture_gains_bond">Bond</string>
+    <string name="capture_gains_bond_max">MAX</string>
     <string name="capture_gains_unknown">Unknown</string>
     <string name="capture_gains_holdings">Holdings at end: %1$s</string>
     <string name="capture_gains_breakdown">Show battles</string>

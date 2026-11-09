@@ -39,18 +39,20 @@ internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap, loa
             )
             ResourceGroups(battleResources(gains), names)
             GainLine(stringResource(R.string.capture_gains_exp), gains.masterExp)
-            if (gains.bond.isNotEmpty()) Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
-            gains.bond.entries.sortedByDescending { it.value }.forEach { (id, value) -> GainLine(names.servant(id), value) }
+            val bondRows = gains.displayBond()
+            if (bondRows.isNotEmpty()) Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
+            bondRows.forEach { GainLine(names.servant(it.svtId), it.points, max = it.max) }
             BattleBreakdown(gains, names, loadBattles, entryId)
         }
     }
 }
 
 @Composable
-private fun GainLine(name: String, count: Long?, prefix: String = "+") {
+private fun GainLine(name: String, count: Long?, prefix: String = "+", max: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(name, Modifier.weight(1f))
-        Text(count?.let { "$prefix${it.grouped()}" } ?: stringResource(R.string.capture_gains_unknown))
+        val text = count?.let { "$prefix${it.grouped()}" } ?: stringResource(R.string.capture_gains_unknown)
+        Text(if (max) "$text ${stringResource(R.string.capture_gains_bond_max)}" else text)
     }
 }
 
@@ -77,7 +79,7 @@ private fun BattleBreakdown(gains: RunGains, names: GameNameMap, loadBattles: (s
             Text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(Date(battle.time * 1000)))
             ResourceGroups(battleResources(RunGains(items = battle.items, qp = battle.qp)), names)
             GainLine(stringResource(R.string.capture_gains_exp), battle.masterExp)
-            battle.bond.forEach { (id, value) -> GainLine(names.servant(id), value) }
+            battle.displayBond().forEach { GainLine(names.servant(it.svtId), it.points, max = it.max) }
         }
     }
 }

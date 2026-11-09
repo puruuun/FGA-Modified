@@ -10,6 +10,8 @@ data class RunGains(
     val qp: Long? = null,
     val masterExp: Long? = null,
     val bond: Map<Long, Long> = emptyMap(),
+    /** Servants that reached bond MAX in any battle of the run. */
+    val bondMax: Set<Long> = emptySet(),
     val fruitUsed: Map<Long, Long?> = emptyMap(),
     /** Every item spent in the run (start - end + gained), positive values only. Empty when unknown. */
     val itemsUsed: Map<Long, Long> = emptyMap(),
@@ -28,6 +30,8 @@ data class RunGains(
         lastQuestId = battles.maxByOrNull { it.time }?.questId ?: lastQuestId,
     )
 
+    fun displayBond(): List<BondDisplay> = bond.displayBond(bondMax).sortedByDescending { it.points }
+
     fun add(battle: BattleGains): RunGains = copy(battles = battles + battle)
 
     fun finish(endState: AccountState?): RunGains {
@@ -40,6 +44,7 @@ data class RunGains(
             qp = battles.mapNotNull { it.qp }.takeIf { it.isNotEmpty() }?.sum(),
             masterExp = battles.mapNotNull { it.masterExp }.takeIf { it.isNotEmpty() }?.sum(),
             bond = battles.flatMap { it.bond.entries }.groupBy { it.key }.mapValues { (_, rows) -> rows.sumOf { it.value } },
+            bondMax = battles.flatMapTo(mutableSetOf()) { it.bondMax },
             fruitUsed = FRUIT_IDS.associateWith { id ->
                 if (startHoldings != null && end != null)
                     (startHoldings[id] ?: 0L) - (end[id] ?: 0L) +

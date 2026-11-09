@@ -15,7 +15,12 @@ data class BattleGains(
     val qp: Long? = null,
     val masterExp: Long? = null,
     val bond: Map<Long, Long> = emptyMap(),
+    /** Own servants whose bond rank went from below the cap to the cap in this battle. */
+    val bondMax: Set<Long> = emptySet(),
 ) {
+    /** Bond rows to show: points above zero, with the MAX flag. Also cleans up old saved logs. */
+    fun displayBond(): List<BondDisplay> = bond.displayBond(bondMax)
+
     companion object {
         /** Tolerant of missing/malformed rows. A missing success object is not a battle. */
         fun parse(body: JsonObject, previousState: AccountState?, now: Long = System.currentTimeMillis() / 1000): BattleGains? {
@@ -37,10 +42,25 @@ data class BattleGains(
                 .associateBy { it.number("svtId") }.toMutableMap()
             // The result's old rows take precedence over an earlier account snapshot.
             success.rows("oldUserSvtCollection").forEach { oldBond[it.number("svtId")] = it }
-            val bond = updated.rows("userSvtCollection").mapNotNull { row ->
-                val id = row.number("svtId") ?: return@mapNotNull null
-                delta(row.number("friendship"), oldBond[id]?.number("friendship"))?.let { id to it }
-            }.toMap()
+            val newRows = updated.rows("userSvtCollection")
+            val ownIds = ownDeckSvtIds(success, previousState)
+            val bond = mutableMapOf<Long, Long>()
+            val bondMax = mutableSetOf<Long>()
+            newRows.forEach { row ->
+                val id = row.number("svtId") ?: return@forEach
+                if (ownIds != null && id !in ownIds) return@forEach
+                val before = oldBond[id]
+                val points = delta(row.number("friendship"), before?.number("friendship")) ?: return@forEach
+                bond[id] = points
+                val oldRank = before.number("friendshipRank")
+                val newRank = row.number("friendshipRank")
+                val exceed = (row.number("friendshipExceedCount") ?: before.number("friendshipExceedCount"))
+                    ?.takeIf { it in 0..1000 }
+                if (oldRank != null && newRank != null && exceed != null) {
+                    val cap = 10 + exceed
+                    if (oldRank < cap && newRank >= cap) bondMax += id
+                }
+            }
             val questId = updated.rows("userQuest").firstOrNull()?.number("questId")
                 ?: updated.rows("battle").firstOrNull()?.number("questId")
                 ?: updated.rows("userBattle").firstOrNull()?.number("questId")
@@ -51,9 +71,33 @@ data class BattleGains(
                 time = now, questId = questId,
                 items = sumItems(drops.filterNot { it.type == 2 && it.objectId == 1L }),
                 qp = qpParts.takeIf { it.isNotEmpty() }?.sum(),
-                masterExp = delta(newGame?.number("exp"), oldGame?.number("exp")), bond = bond,
+                masterExp = delta(newGame?.number("exp"), oldGame?.number("exp")), bond = bond, bondMax = bondMax,
             )
         }
+
+        /**
+         * Servant ids of the owner's own deck in this battle (same support rule as [CapturedBattle]), or null when the
+         * deck is unknown, in which case every returned row is used.
+         */
+        private fun ownDeckSvtIds(success: JsonObject, previousState: AccountState?): Set<Long>? {
+            val deck = (success["myDeck"].obj()?.get("svts") as? JsonArray)?.takeIf { it.isNotEmpty() } ?: return null
+            val setup = previousState?.tables?.get("battle")?.lastOrNull().obj()
+                ?.get("battleInfo").obj()?.get("myDeck").obj()?.rows("svts").orEmpty()
+            val userSvts = previousState?.tables?.get("userSvt").orEmpty().mapNotNull { it.obj() } + success.rows("oldUserSvt")
+            val ids = deck.mapNotNull { element ->
+                val row = element.obj()
+                if (row.isSupport()) return@mapNotNull null
+                val setupRow = setup.firstOrNull { it.number("id") == row.number("id") &&
+                    row.number("userSvtId") != null && it.number("userSvtId") == row.number("userSvtId") && !it.isSupport() }
+                row.number("svtId") ?: setupRow.number("svtId") ?: userSvts.firstOrNull {
+                    row.number("userSvtId") != null && it.number("id") == row.number("userSvtId")
+                }.number("svtId")
+            }.toSet()
+            return ids.takeIf { it.isNotEmpty() }
+        }
+
+        private fun JsonObject?.isSupport() = (this?.get("isFollowerSvt") as? JsonPrimitive)?.booleanOrNull == true ||
+            (number("followerType") ?: 0) != 0L || (number("npcFollowerSvtId") ?: 0) != 0L
 
         private fun delta(new: Long?, old: Long?): Long? =
             if (new != null && old != null && new >= old) new - old else null
@@ -74,3 +118,10 @@ internal fun AccountState?.itemHoldings(): Map<Long, Long>? = this?.tables?.get(
         row.number("num")?.let { id to it }
     }.toMap()
 }
+
+/** One bond line in the log: [points] is always above zero. */
+data class BondDisplay(val svtId: Long, val points: Long, val max: Boolean)
+
+/** Rows with zero points are dropped (older logs stored them). The MAX flag is kept only for shown servants. */
+fun Map<Long, Long>.displayBond(max: Set<Long>): List<BondDisplay> =
+    filterValues { it > 0L }.map { (id, points) -> BondDisplay(id, points, id in max) }

@@ -746,6 +746,7 @@
     <string name="capture_gains_missing">%1$s回のバトルを記録できませんでした。獲得量が一部欠けている可能性があります。</string>
     <string name="capture_gains_exp">マスターEXP</string>
     <string name="capture_gains_bond">絆</string>
+    <string name="capture_gains_bond_max">MAX</string>
     <string name="capture_gains_unknown">不明</string>
     <string name="capture_gains_holdings">終了時の所持数：%1$s</string>
     <string name="capture_gains_breakdown">バトルごとの内訳を表示</string>

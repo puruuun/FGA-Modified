@@ -71,4 +71,86 @@ class BattleGainsTest {
         assertNull(result.masterExp)
         assertTrue(result.bond.isEmpty())
     }
+
+    // Synthetic ids only. Servants 10 and 20 are own, 30 is a support, 40 is an NPC follower.
+    private fun deckResult(old: String, new: String, deck: String = DECK) = parse(
+        """{"myDeck":{"svts":$deck},"oldUserSvtCollection":$old}""", """{"userSvtCollection":$new}""")
+
+    private companion object {
+        const val DECK = """[{"id":1,"svtId":10,"userSvtId":1},{"id":2,"svtId":20,"userSvtId":2},
+            {"id":3,"svtId":30,"userSvtId":3,"isFollowerSvt":true},{"id":4,"svtId":40,"userSvtId":4,"npcFollowerSvtId":99}]"""
+        const val JP_DECK = """[{"id":1,"svtId":10,"userSvtId":1},{"id":3,"svtId":30,"userSvtId":3,"followerType":1}]"""
+    }
+
+    @Test fun supportAndNpcRowsAreNotBondEvenWithZeroDelta() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":10,"friendship":100},{"svtId":30,"friendship":500},{"svtId":40,"friendship":0}]""",
+            """[{"svtId":10,"friendship":300},{"svtId":30,"friendship":500},{"svtId":40,"friendship":0}]"""))
+        assertEquals(mapOf(10L to 200L), result.bond)
+    }
+
+    @Test fun officialJpFollowerTypeSupportIsExcluded() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":10,"friendship":0},{"svtId":30,"friendship":0}]""",
+            """[{"svtId":10,"friendship":50},{"svtId":30,"friendship":50}]""", JP_DECK))
+        assertEquals(mapOf(10L to 50L), result.bond)
+    }
+
+    @Test fun unknownDeckFallsBackToAllRows() {
+        val result = assertNotNull(parse("{}", """{"userSvtCollection":[{"svtId":30,"friendship":5}]}""",
+            AccountState(mapOf("userSvtCollection" to Json.parseToJsonElement("""[{"svtId":30,"friendship":1}]""").jsonArray),
+                JsonArray(emptyList()), snapshotTime = 1, lastUpdateTime = 1)))
+        assertEquals(mapOf(30L to 4L), result.bond)
+    }
+
+    @Test fun reachingRank10WithNoExceedIsMax() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":10,"friendship":100,"friendshipRank":9,"friendshipExceedCount":0}]""",
+            """[{"svtId":10,"friendship":2555,"friendshipRank":10,"friendshipExceedCount":0}]"""))
+        assertEquals(setOf(10L), result.bondMax)
+    }
+
+    @Test fun reachingRank12WithTwoExceedIsMax() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":20,"friendship":100,"friendshipRank":11,"friendshipExceedCount":2}]""",
+            """[{"svtId":20,"friendship":900,"friendshipRank":12,"friendshipExceedCount":2}]"""))
+        assertEquals(setOf(20L), result.bondMax)
+    }
+
+    @Test fun servantAlreadyAtCapIsNotMaxAgain() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":10,"friendship":100,"friendshipRank":10,"friendshipExceedCount":0}]""",
+            """[{"svtId":10,"friendship":400,"friendshipRank":10,"friendshipExceedCount":0}]"""))
+        assertEquals(mapOf(10L to 300L), result.bond)
+        assertTrue(result.bondMax.isEmpty())
+    }
+
+    @Test fun rankIncreaseBelowCapIsNotMax() {
+        val result = assertNotNull(deckResult(
+            """[{"svtId":20,"friendship":100,"friendshipRank":10,"friendshipExceedCount":2}]""",
+            """[{"svtId":20,"friendship":900,"friendshipRank":11,"friendshipExceedCount":2}]"""))
+        assertTrue(result.bondMax.isEmpty())
+    }
+
+    @Test fun oldRankComesFromPreviousStateWhenResultHasNoOldRow() {
+        val state = AccountState(mapOf("userSvtCollection" to Json.parseToJsonElement(
+            """[{"svtId":10,"friendship":100,"friendshipRank":9}]""").jsonArray), JsonArray(emptyList()), snapshotTime = 1, lastUpdateTime = 1)
+        val result = assertNotNull(parse("""{"myDeck":{"svts":$DECK}}""",
+            """{"userSvtCollection":[{"svtId":10,"friendship":900,"friendshipRank":10,"friendshipExceedCount":0}]}""", state))
+        assertEquals(setOf(10L), result.bondMax)
+    }
+
+    @Test fun oldJsonWithoutNewFieldsDecodes() {
+        val battle = Json.decodeFromString<BattleGains>("""{"time":1,"bond":{"10":0,"20":5}}""")
+        assertTrue(battle.bondMax.isEmpty())
+        val run = Json.decodeFromString<RunGains>("""{"bond":{"10":5}}""")
+        assertTrue(run.bondMax.isEmpty())
+    }
+
+    @Test fun displayDropsZeroRowsAndMarksMax() {
+        val battle = BattleGains(1, bond = mapOf(10L to 0L, 20L to 2455L), bondMax = setOf(10L, 20L))
+        assertEquals(listOf(BondDisplay(20, 2455, true)), battle.displayBond())
+        val run = RunGains(bond = mapOf(1L to 0L, 2L to 100L, 3L to 300L), bondMax = setOf(3L))
+        assertEquals(listOf(BondDisplay(3, 300, true), BondDisplay(2, 100, false)), run.displayBond())
+    }
 }

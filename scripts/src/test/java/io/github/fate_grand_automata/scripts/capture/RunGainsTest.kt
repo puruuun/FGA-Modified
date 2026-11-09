@@ -84,4 +84,11 @@ class RunGainsTest {
     @Test fun extraCapturesNeverProduceNegativeMissingBattles() {
         assertEquals(0, RunGains.start(null).add(battle).withRunCount(0).missingBattles)
     }
+
+    @Test fun finishUnitesBondMaxOfAllBattlesAndSummaryKeepsIt() {
+        val run = RunGains.start(null).add(battle.copy(bondMax = setOf(10L))).add(battle.copy(bond = mapOf(20L to 5L), bondMax = setOf(20L)))
+            .finish(null)
+        assertEquals(setOf(10L, 20L), run.bondMax)
+        assertEquals(setOf(10L, 20L), run.summarized().bondMax)
+    }
 }

@@ -990,6 +990,7 @@
     <string name="capture_gains_missing">%1$s회의 전투를 기록하지 못했습니다. 획득량이 일부 누락되었을 수 있습니다.</string>
     <string name="capture_gains_exp">마스터 EXP</string>
     <string name="capture_gains_bond">인연</string>
+    <string name="capture_gains_bond_max">MAX</string>
     <string name="capture_gains_unknown">알 수 없음</string>
     <string name="capture_gains_holdings">종료 시 보유량: %1$s</string>
     <string name="capture_gains_breakdown">전투별 내역 펼치기</string>
