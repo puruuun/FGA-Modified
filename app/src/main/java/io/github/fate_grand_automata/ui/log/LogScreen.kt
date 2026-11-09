@@ -94,7 +94,6 @@ fun LogScreenContent(
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
     val profiles = logProfiles(all)
     val activeProfile = availableLogProfile(profile, profiles)
-    LaunchedEffect(activeProfile) { profile = activeProfile }
     val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile)
     val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
@@ -137,7 +136,7 @@ fun LogScreenContent(
         }
     }
     if (showFilters) LogFilterDialog(time, resource, start, end, retention, entries.size, outsideEntries.size,
-        all, names, activeProfile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile ->
+        all, names, profile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile ->
             time = newTime; resource = newResource; start = newStart; end = newEnd
             profile = newProfile
             if (newRetention != retention) onRetention(newRetention)

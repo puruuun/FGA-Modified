@@ -60,7 +60,6 @@ internal fun LogFilterDialog(
     var confirm by rememberSaveable { mutableStateOf(false) }
     val profiles = logProfiles(entries)
     val activeProfile = availableLogProfile(draftProfile, profiles)
-    LaunchedEffect(activeProfile) { draftProfile = activeProfile }
     val resources = logResources(filterCaptureLogs(entries, draftTime, null, System.currentTimeMillis(),
         customStart = draftStart, customEnd = draftEnd, profile = activeProfile))
     val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile) }
@@ -134,7 +133,7 @@ internal fun LogFilterDialog(
         // DatePickerDialog hard-codes a 360 dp Surface, ignoring the requested content width.
         BasicAlertDialog(onDismissRequest = { picker = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            modifier = Modifier.width(minOf(screen.screenWidthDp - 32, 600).dp).testTag("log-date-range-dialog")) {
+            modifier = Modifier.width(minOf(600, maxOf(360, screen.screenWidthDp - 32), screen.screenWidthDp).dp).testTag("log-date-range-dialog")) {
             Surface(shape = DatePickerDefaults.shape, tonalElevation = DatePickerDefaults.TonalElevation,
                 color = DatePickerDefaults.colors().containerColor) {
                 Column {

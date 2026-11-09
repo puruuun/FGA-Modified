@@ -73,9 +73,21 @@ class LogRefineScreenshotTest(private val width: Int, private val height: Int, p
         assertEquals(1, layouts.single().lineCount)
         assertFalse("Headline ${layouts.single().layoutInput.text}", layouts.single().isLineEllipsized(0))
         val dialogWidth = rule.onNodeWithTag("log-date-range-dialog").fetchSemanticsNode().boundsInRoot.width / rule.density.density
-        assertEquals(minOf(width - 32, 600).toFloat(), dialogWidth, 2f)
+        assertEquals(minOf(600, maxOf(360, width - 32), width).toFloat(), dialogWidth, 2f)
         val pickerWidth = rule.onNodeWithTag("log-date-range-picker").fetchSemanticsNode().boundsInRoot.width / rule.density.density
         assertEquals(dialogWidth, pickerWidth, 2f)
+        val weekdays = when (locale) {
+            "ko" -> listOf("일", "월", "화", "수", "목", "금", "토")
+            "ja" -> listOf("日", "月", "火", "水", "木", "金", "土")
+            else -> listOf("S", "M", "T", "W", "T", "F", "S")
+        }
+        val centers = weekdays.toSet().flatMap { day ->
+            rule.onAllNodes(hasText(day) and hasAnyAncestor(hasTestTag("log-date-range-picker")), useUnmergedTree = true)
+                .fetchSemanticsNodes().map { it.boundsInRoot.center.x }
+        }.sorted()
+        assertEquals(7, centers.size)
+        val gaps = centers.zipWithNext { left, right -> right - left }
+        assertTrue("Weekday column gaps $gaps", gaps.max() - gaps.min() <= 2f)
     }
 
     @Test fun profileChipsAndRetentionChoices() {

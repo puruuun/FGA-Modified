@@ -49,6 +49,47 @@ class LogProfileUiTest {
         rule.onNodeWithTag("log-card:legacy").assertExists()
     }
 
+    @Test fun savedProfileSurvivesRestoreWithEmptyLogsBeforeEntriesArrive() {
+        var loaded by mutableStateOf(true)
+        val restoration = StateRestorationTester(rule)
+        restoration.setContent { FGATheme(false) {
+            LogScreenContent(if (loaded) listOf(battle, other, legacy) else emptyList(), {}, {},
+                outsideEntries = if (loaded) listOf(outside) else emptyList())
+        } }
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:a").performClick()
+        rule.onNodeWithText("Apply").performClick()
+        rule.runOnIdle { loaded = false }
+        restoration.emulateSavedInstanceStateRestore()
+        rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:all").assertIsSelected()
+        rule.runOnIdle { loaded = true }
+        rule.onNodeWithTag("log-filter-profile:a").assertIsSelected()
+        rule.onNodeWithText("Apply").performClick()
+        rule.onNodeWithTag("log-card:battle").assertExists()
+        rule.onNodeWithTag("log-card:outside:${outside.id}").assertExists()
+        rule.onNodeWithTag("log-card:other").assertDoesNotExist()
+        rule.onNodeWithTag("log-card:legacy").assertDoesNotExist()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:a").assertIsSelected()
+    }
+
+    @Test fun savedDialogProfileSurvivesEmptyLogsBeforeEntriesArrive() {
+        var entries by mutableStateOf(emptyList<CaptureLogItem>())
+        var appliedProfile: String? = null
+        val restoration = StateRestorationTester(rule)
+        restoration.setContent { FGATheme(false) {
+            LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 0,
+                entries, outsideNames, "a", {}, { _, _, _, _, _, profile -> appliedProfile = profile })
+        } }
+        restoration.emulateSavedInstanceStateRestore()
+        rule.onNodeWithTag("log-filter-profile:all").assertIsSelected()
+        rule.runOnIdle { entries = mixedCaptureLogs(listOf(battle, other, legacy), listOf(outside)) }
+        rule.onNodeWithTag("log-filter-profile:a").assertIsSelected()
+        rule.onNodeWithText("Apply").performClick()
+        rule.runOnIdle { org.junit.Assert.assertEquals("a", appliedProfile) }
+    }
     @Test fun removingSelectedProfilesLastLogFallsBackToAll() {
         var battles by mutableStateOf(listOf(battle, other, legacy))
         rule.setContent { FGATheme(false) { LogScreenContent(battles, {}, {}) } }
