@@ -147,13 +147,13 @@ class LogInteractionsTest {
     @Test fun raisingRetentionDoesNotAskToTrimAndDialogDraftSurvivesRotation() {
         val changes = mutableListOf<Int>()
         val restoration = StateRestorationTester(rule)
-        restoration.setContent { FGATheme(darkTheme = false) { LogScreenContent(listOf(battle), {}, {}, onRetention = changes::add) } }
+        restoration.setContent { FGATheme(darkTheme = false) { LogScreenContent(listOf(battle), {}, {}, retention = 100, onRetention = changes::add) } }
         rule.onNodeWithTag("log-filter-button").performClick()
-        rule.onNodeWithText("500").performScrollTo().performClick()
+        rule.onNodeWithText("200").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
-        rule.onNodeWithText("500").performScrollTo().assertIsSelected()
+        rule.onNodeWithText("200").performScrollTo().assertIsSelected()
         rule.onNodeWithText("Apply").performClick()
-        assertEquals(listOf(500), changes)
+        assertEquals(listOf(200), changes)
     }
 
     @Test fun customRangeDraftSurvivesRotationAndApplyPassesTheInclusiveDates() {
@@ -161,8 +161,8 @@ class LogInteractionsTest {
         var applied = false
         val restoration = StateRestorationTester(rule)
         restoration.setContent { FGATheme(darkTheme = false) {
-            LogFilterDialog(LogTimeFilter.Custom, "2:6510", day, day, 200, 0, 0, setOf("2:6510"), outsideNames, {},
-                { time, resource, start, end, retention ->
+            LogFilterDialog(LogTimeFilter.Custom, "2:6510", day, day, 200, 0, 0, listOf(CaptureLogItem(outside = live.copy(endedAt = day))), outsideNames, null, {},
+                { time, resource, start, end, retention, _ ->
                     assertEquals(LogTimeFilter.Custom, time)
                     assertEquals("2:6510", resource)
                     assertEquals(day, start); assertEquals(day, end); assertEquals(200, retention)
@@ -173,6 +173,8 @@ class LogInteractionsTest {
         rule.onNodeWithText("Custom range").assertIsSelected().performClick()
         rule.onAllNodes(isDialog()).assertCountEquals(2)
         rule.onAllNodesWithText("Cancel").onLast().performClick()
+        rule.onNodeWithText("Custom range").performClick()
+        rule.onNodeWithText("OK").performClick()
         rule.onNodeWithText("Apply").performClick()
         assertTrue(applied)
     }

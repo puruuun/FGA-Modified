@@ -81,6 +81,7 @@ fun LogScreenContent(
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
     var resource by rememberSaveable { mutableStateOf<String?>(null) }
+    var profile by rememberSaveable { mutableStateOf<String?>(null) }
     var start by rememberSaveable { mutableStateOf<Long?>(null) }
     var end by rememberSaveable { mutableStateOf<Long?>(null) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
@@ -91,14 +92,17 @@ fun LogScreenContent(
     var pendingIds by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var confirmAll by rememberSaveable { mutableStateOf(false) }
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
-    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end)
-    val filtered = time != LogTimeFilter.All || resource != null
+    val profiles = logProfiles(all)
+    val activeProfile = availableLogProfile(profile, profiles)
+    LaunchedEffect(activeProfile) { profile = activeProfile }
+    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile)
+    val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
-    val clearFilters = { time = LogTimeFilter.All; resource = null; start = null; end = null }
+    val clearFilters = { time = LogTimeFilter.All; resource = null; profile = null; start = null; end = null }
     val summary = if (filtered) listOfNotNull(
         if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
-        resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
+        activeProfile?.let { profiles[it] }, resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -133,8 +137,9 @@ fun LogScreenContent(
         }
     }
     if (showFilters) LogFilterDialog(time, resource, start, end, retention, entries.size, outsideEntries.size,
-        logResources(all), names, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention ->
+        all, names, activeProfile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile ->
             time = newTime; resource = newResource; start = newStart; end = newEnd
+            profile = newProfile
             if (newRetention != retention) onRetention(newRetention)
             showFilters = false
         })

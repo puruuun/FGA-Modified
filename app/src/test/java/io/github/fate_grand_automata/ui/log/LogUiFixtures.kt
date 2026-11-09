@@ -17,6 +17,19 @@ import coil3.request.ErrorResult
 import coil3.request.ImageResult
 import coil3.request.SuccessResult
 import java.net.URI
+import io.github.fate_grand_automata.capture.CaptureLogItem
+import io.github.fate_grand_automata.capture.outsideFixture
+import io.github.fate_grand_automata.scripts.capture.AccountDelta
+import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
+
+internal fun resourceLogFixture(keys: Set<String>): List<CaptureLogItem> {
+    fun counts(type: Int) = keys.filter { it.substringBefore(':').toInt() == type }
+        .associate { it.substringAfter(':').toLong() to 1L }
+    val period = OutsidePeriod("synthetic", 1).add(ChangeSource.of("present/receive"),
+        AccountDelta(items = counts(2), svts = counts(LogResource.SVT), commandCodes = counts(LogResource.COMMAND_CODE)), 2)
+    return listOf(CaptureLogItem(outside = outsideFixture().copy(period = period)))
+}
 
 /** Robolectric runs on Windows: decode local files explicitly, and prohibit every network request. */
 internal fun localIconLoader(context: Context) = ImageLoader.Builder(context).components {

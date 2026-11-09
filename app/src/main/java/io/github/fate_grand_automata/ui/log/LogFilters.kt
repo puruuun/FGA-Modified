@@ -7,6 +7,19 @@ import java.util.TimeZone
 
 internal enum class LogTimeFilter { Today, Week, Month, All, Custom }
 
+private val CaptureLogItem.accountId: String? get() = battle?.accountId ?: outside?.accountId
+
+/** Use the newest recorded name for each profile, falling back to its id for unnamed history. */
+internal fun logProfiles(entries: List<CaptureLogItem>): Map<String, String> =
+    entries.sortedByDescending { it.endedAt }.mapNotNull { entry ->
+        entry.accountId?.let { id -> id to (entry.battle?.accountName ?: entry.outside?.accountName) }
+    }.groupBy({ it.first }, { it.second }).mapValues { (id, names) ->
+        names.firstOrNull { !it.isNullOrBlank() } ?: "#$id"
+    }
+
+internal fun availableLogProfile(profile: String?, profiles: Map<String, String>): String? =
+    profile?.takeIf { it in profiles }
+
 /** Material picker values are UTC dates, not instants in the user's zone. */
 internal fun pickerDateInZone(date: Long, zone: TimeZone): Long {
     val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = date }
@@ -37,6 +50,7 @@ internal fun filterCaptureLogs(
     entries: List<CaptureLogItem>, time: LogTimeFilter, resource: String?, now: Long,
     zone: TimeZone = TimeZone.getDefault(),
     customStart: Long? = null, customEnd: Long? = null,
+    profile: String? = null,
 ): List<CaptureLogItem> {
     val days = when (time) { LogTimeFilter.Today -> 1L; LogTimeFilter.Week -> 7L; LogTimeFilter.Month -> 30L; else -> null }
     val midnight = Calendar.getInstance(zone).apply {
@@ -52,7 +66,8 @@ internal fun filterCaptureLogs(
         Calendar.getInstance(zone).apply { timeInMillis = pickerDateInZone(date, zone); add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     } else (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     return entries.filter { entry ->
-        (start == null || end == null || entry.endedAt in start until end) &&
+        (profile == null || entry.accountId == profile) &&
+            (start == null || end == null || entry.endedAt in start until end) &&
             (resource == null || entry.resourceChanges().any { val change = it[resource] ?: 0L; if (entry.battle != null) change != 0L else change > 0L })
     }
 }

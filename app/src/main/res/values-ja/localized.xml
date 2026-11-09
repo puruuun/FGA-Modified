@@ -782,7 +782,6 @@
     <string name="capture_ap_full">"全回復"</string>
     <string name="capture_ap_full_at">"%1$sにAP全回復"</string>
     <string name="capture_outside_title">スクリプト外の変化</string>
-    <string name="capture_outside_summary">アイテム +%1$s種 / −%2$s種 · 聖晶石 %3$s</string>
     <string name="capture_outside_totals">合計</string>
     <string name="capture_outside_sources">入手・使用先別</string>
     <string name="capture_outside_gained">獲得 (+)</string>
@@ -958,4 +957,7 @@
     <string name="widget_settings_transparency">背景の透明度</string>
     <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
     <string name="support_picker_download">画像を取得</string>
+    <!-- Log screen profile filter -->
+    <string name="capture_log_profile">プロフィール</string>
+    <string name="capture_log_all_profiles">すべて</string>
 </resources>

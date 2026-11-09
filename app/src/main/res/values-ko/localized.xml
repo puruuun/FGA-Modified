@@ -1026,7 +1026,6 @@
     <string name="capture_ap_full">"가득 참"</string>
     <string name="capture_ap_full_at">"%1$s에 AP 가득 참"</string>
     <string name="capture_outside_title">스크립트 밖 변화</string>
-    <string name="capture_outside_summary">아이템 +%1$s종 / −%2$s종 · 성정석 %3$s</string>
     <string name="capture_outside_totals">전체 변화</string>
     <string name="capture_outside_sources">출처별 변화</string>
     <string name="capture_outside_gained">획득 (+)</string>
@@ -1200,4 +1199,7 @@
     <string name="widget_settings_transparency">배경 투명도</string>
     <string name="widget_settings_show_log_button">로그 수집 버튼 표시</string>
     <string name="support_picker_download">이미지 받기</string>
+    <!-- Log screen profile filter -->
+    <string name="capture_log_profile">프로필</string>
+    <string name="capture_log_all_profiles">전체</string>
 </resources>

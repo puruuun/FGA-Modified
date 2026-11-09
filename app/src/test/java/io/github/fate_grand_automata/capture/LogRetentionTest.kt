@@ -25,7 +25,9 @@ class LogRetentionTest {
         assertEquals(200, prefs.limit.get())
         prefs.limit.set(500)
         assertEquals(500, LogRetentionPrefsCore.fromContext(context).limit.get())
-        assertEquals(listOf(50, 100, 200, 500), LogRetentionPrefsCore.choices)
+        assertEquals(listOf(50, 100, 200), LogRetentionPrefsCore.choices)
+        assertEquals(200, LogRetentionPrefsCore.normalize(prefs.limit.get()))
+        LogRetentionPrefsCore.choices.forEach { assertEquals(it, LogRetentionPrefsCore.normalize(it)) }
         assertEquals(200, LogRetentionPrefsCore.normalize(-1))
     }
 
@@ -53,7 +55,7 @@ class LogRetentionTest {
         assertEquals(50, outside.entries.size)
     }
 
-    @Test fun higherLimitAllowsMoreThan200ForBothKinds() = runBlocking {
+    @Test fun saved500KeepsNewest200ForBothKindsOnLoadTrimAddAndReload() = runBlocking {
         val directory = context.filesDir
         val prefs = LogRetentionPrefsCore.fromContext(context)
         prefs.limit.set(500)
@@ -61,10 +63,15 @@ class LogRetentionTest {
         File(directory, "battle-log.json").writeText(Json.encodeToString(battles))
         File(directory, "outside-log.json").writeText(Json.encodeToString((1..250).map { outsideFixture("o$it", it.toLong()) }))
         val battle = BattleLogRepository(context)
-        val outside = OutsideLogStore(directory, { prefs.limit.get() }).apply { load() }
+        val outside = OutsideLogStore(directory, { LogRetentionPrefsCore.normalize(prefs.limit.get()) }).apply { load() }
+        assertEquals((250 downTo 51).map { "b$it" }, battle.entries.first().map { it.id })
+        assertEquals((250 downTo 51).map { "o$it" }, outside.entries.map { it.id })
+        battle.trim()
+        outside.trim()
         battle.add(battleLogFixture("b251").copy(endedAt = 251))
         outside.add(outsideFixture("o251", 251))
-        assertEquals(251, battle.entries.first().size)
-        assertEquals(251, outside.entries.size)
+        assertEquals((251 downTo 52).map { "b$it" }, BattleLogRepository(context).entries.first().map { it.id })
+        assertEquals((251 downTo 52).map { "o$it" }, OutsideLogStore(directory,
+            { LogRetentionPrefsCore.normalize(prefs.limit.get()) }).apply { load() }.entries.map { it.id })
     }
 }

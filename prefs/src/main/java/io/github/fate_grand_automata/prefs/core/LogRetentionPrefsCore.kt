@@ -7,7 +7,7 @@ class LogRetentionPrefsCore(maker: PrefMaker) {
 
     companion object {
         const val DEFAULT = 200
-        val choices = listOf(50, 100, 200, 500)
+        val choices = listOf(50, 100, 200)
         fun normalize(value: Int) = value.takeIf { it in choices } ?: DEFAULT
         fun fromContext(context: Context) = LogRetentionPrefsCore(PrefMaker(
             context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)))

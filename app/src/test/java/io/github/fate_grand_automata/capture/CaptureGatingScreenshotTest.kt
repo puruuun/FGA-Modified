@@ -35,7 +35,7 @@ class CaptureGatingScreenshotTest(private val width: Int) {
         })
         val keys = (1L..20L).map { "${LogResource.SVT}:$it" }.toSet()
         compose.setContent { FGATheme(darkTheme = false) {
-            LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 0, keys, names, {}, { _, _, _, _, _ -> })
+            LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 0, resourceLogFixture(keys), names, null, {}, { _, _, _, _, _, _ -> })
         } }
         compose.onNodeWithTag("log-filter-search").performTextInput("사과")
         compose.waitForIdle()

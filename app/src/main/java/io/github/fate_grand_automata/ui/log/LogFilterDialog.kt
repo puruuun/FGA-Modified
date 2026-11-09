@@ -1,8 +1,6 @@
 package io.github.fate_grand_automata.ui.log
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -18,9 +16,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
+import io.github.fate_grand_automata.capture.CaptureLogItem
 import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.TimeZone
 
 @Composable
@@ -36,9 +36,9 @@ internal fun timeFilterLabel(time: LogTimeFilter): String = stringResource(when 
 internal fun resourceLabel(key: String, names: GameNameMap): String =
     resourceName(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
 
-internal fun customRangeLabel(start: Long?, end: Long?): String {
+internal fun customRangeLabel(start: Long?, end: Long?, locale: Locale = Locale.getDefault()): String {
     if (start == null || end == null) return ""
-    val format = DateFormat.getDateInstance(DateFormat.SHORT)
+    val format = DateFormat.getDateInstance(DateFormat.SHORT, locale)
     return listOf(start, end).joinToString(" – ") { format.format(Date(pickerDateInZone(it, TimeZone.getDefault()))) }
 }
 
@@ -46,18 +46,24 @@ internal fun customRangeLabel(start: Long?, end: Long?): String {
 @Composable
 internal fun LogFilterDialog(
     time: LogTimeFilter, resource: String?, start: Long?, end: Long?, retention: Int,
-    battleCount: Int, outsideCount: Int, resources: Set<String>, names: GameNameMap,
-    onDismiss: () -> Unit, onApply: (LogTimeFilter, String?, Long?, Long?, Int) -> Unit,
+    battleCount: Int, outsideCount: Int, entries: List<CaptureLogItem>, names: GameNameMap, profile: String?,
+    onDismiss: () -> Unit, onApply: (LogTimeFilter, String?, Long?, Long?, Int, String?) -> Unit,
 ) {
     var draftTime by rememberSaveable { mutableStateOf(time) }
     var draftResource by rememberSaveable { mutableStateOf(resource) }
+    var draftProfile by rememberSaveable { mutableStateOf(profile) }
     var draftStart by rememberSaveable { mutableStateOf(start) }
     var draftEnd by rememberSaveable { mutableStateOf(end) }
     var draftRetention by rememberSaveable { mutableStateOf(retention) }
     var query by rememberSaveable { mutableStateOf("") }
     var picker by rememberSaveable { mutableStateOf(false) }
     var confirm by rememberSaveable { mutableStateOf(false) }
-    val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention) }
+    val profiles = logProfiles(entries)
+    val activeProfile = availableLogProfile(draftProfile, profiles)
+    LaunchedEffect(activeProfile) { draftProfile = activeProfile }
+    val resources = logResources(filterCaptureLogs(entries, draftTime, null, System.currentTimeMillis(),
+        customStart = draftStart, customEnd = draftEnd, profile = activeProfile))
+    val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile) }
     val screen = LocalConfiguration.current
     AlertDialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -71,10 +77,21 @@ internal fun LogFilterDialog(
                     LogTimeFilter.entries.forEach { value ->
                         FilterChip(selected = draftTime == value, onClick = {
                             if (value == LogTimeFilter.Custom) picker = true else draftTime = value
-                        }, label = { Text(timeFilterLabel(value)) })
+                        }, modifier = Modifier.testTag("log-filter-time:$value"), label = { Text(timeFilterLabel(value)) })
                     }
                 }
                 if (draftTime == LogTimeFilter.Custom) Text(customRangeLabel(draftStart, draftEnd), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.capture_log_profile), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterChip(selected = activeProfile == null, onClick = { draftProfile = null },
+                        modifier = Modifier.testTag("log-filter-profile:all"),
+                        label = { Text(stringResource(R.string.capture_log_all_profiles)) })
+                    profiles.forEach { (id, name) ->
+                        FilterChip(selected = activeProfile == id, onClick = { draftProfile = id },
+                            modifier = Modifier.testTag("log-filter-profile:$id"),
+                            label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                    }
+                }
                 Text(stringResource(R.string.capture_log_resource), style = MaterialTheme.typography.titleSmall)
                 val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }
                 OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().testTag("log-filter-search"), singleLine = true,
@@ -114,16 +131,34 @@ internal fun LogFilterDialog(
         dismissButton = { TextButton(onClick = { confirm = false }) { Text(stringResource(android.R.string.cancel)) } })
     if (picker) {
         val state = rememberDateRangePickerState(initialSelectedStartDateMillis = draftStart, initialSelectedEndDateMillis = draftEnd)
-        DatePickerDialog(onDismissRequest = { picker = false },
-            confirmButton = { TextButton(enabled = state.selectedStartDateMillis != null && state.selectedEndDateMillis != null,
-                onClick = {
-                    draftStart = state.selectedStartDateMillis
-                    draftEnd = state.selectedEndDateMillis
-                    draftTime = LogTimeFilter.Custom
-                    picker = false
-                }) { Text(stringResource(android.R.string.ok)) } },
-            dismissButton = { TextButton(onClick = { picker = false }) { Text(stringResource(android.R.string.cancel)) } }) {
-            DateRangePicker(state, Modifier.heightIn(max = 500.dp), showModeToggle = true)
+        // DatePickerDialog hard-codes a 360 dp Surface, ignoring the requested content width.
+        BasicAlertDialog(onDismissRequest = { picker = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+            modifier = Modifier.width(minOf(screen.screenWidthDp - 32, 600).dp).testTag("log-date-range-dialog")) {
+            Surface(shape = DatePickerDefaults.shape, tonalElevation = DatePickerDefaults.TonalElevation,
+                color = DatePickerDefaults.colors().containerColor) {
+                Column {
+                    DateRangePicker(state, Modifier.fillMaxWidth()
+                        .heightIn(max = (screen.screenHeightDp * 0.7f).coerceAtMost(500f).dp)
+                        .testTag("log-date-range-picker"),
+                        headline = {
+                            Text(customRangeLabel(state.selectedStartDateMillis, state.selectedEndDateMillis, screen.locales[0])
+                                .ifEmpty { stringResource(R.string.capture_log_custom_range) },
+                                Modifier.padding(horizontal = 16.dp).testTag("log-date-range-headline"),
+                                style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }, showModeToggle = true)
+                    Row(Modifier.align(Alignment.End).padding(end = 8.dp, bottom = 8.dp)) {
+                        TextButton(onClick = { picker = false }) { Text(stringResource(android.R.string.cancel)) }
+                        TextButton(enabled = state.selectedStartDateMillis != null && state.selectedEndDateMillis != null,
+                            onClick = {
+                                draftStart = state.selectedStartDateMillis
+                                draftEnd = state.selectedEndDateMillis
+                                draftTime = LogTimeFilter.Custom
+                                picker = false
+                            }) { Text(stringResource(android.R.string.ok)) }
+                    }
+                }
+            }
         }
     }
 }

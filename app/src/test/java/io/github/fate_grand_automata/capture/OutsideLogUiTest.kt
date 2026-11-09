@@ -24,6 +24,19 @@ class OutsideLogUiTest {
     private val composeRule = createComposeRule()
     @get:Rule val rules = screenshotRules(composeRule)
 
+    @Test fun outsideCardSourcesMatchDetailOrderWithInProgressPrefixAndStayOnOneLine() {
+        composeRule.setContent { FGATheme(false) {
+            OutsideLogCard(outsideFixture(), false, {}, inProgress = true)
+        } }
+        val summary = "In progress · Gift box · Enhancement · AP recovery · Summon · Other · unknown/sample"
+        composeRule.onNodeWithText(summary).assertExists()
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        composeRule.onNodeWithText(summary, useUnmergedTree = true)
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals(1, layouts.single().lineCount)
+        assertTrue(layouts.single().isLineEllipsized(0))
+    }
+
     @Test fun mixedListOpensOutsideDetailAndBackReturnsToBothCards() {
         composeRule.setContent { FGATheme(false) {
             LogScreenContent(listOf(battleLogFixture()), {}, {}, outsideNames, outsideEntries = listOf(outsideFixture()))

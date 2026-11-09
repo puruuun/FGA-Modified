@@ -46,14 +46,12 @@ private fun periodTime(entry: OutsideLogEntry): String {
 
 @Composable
 internal fun OutsideLogCard(entry: OutsideLogEntry, selected: Boolean, onClick: () -> Unit, inProgress: Boolean = false, checked: Boolean? = null) {
-    val total = entry.period.total
+    val sources = entry.period.sources.map { sourceName(it.source) }.joinToString(" · ")
     LogCardFrame(
         "outside:${entry.id}", stringResource(R.string.capture_outside_title), entry.accountName,
         periodTime(entry),
-        (if (inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") + stringResource(R.string.capture_outside_summary,
-            (total.items.values + total.svts.values + total.commandCodes.values).count { it > 0 }.toLong().grouped(),
-            (total.items.values + total.svts.values + total.commandCodes.values).count { it < 0 }.toLong().grouped(),
-            signedOutsideCount(total.freeStone + total.chargeStone)), selected, onClick, outside = true, checked = checked)
+        (if (inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") + sources,
+        selected, onClick, outside = true, checked = checked)
 }
 
 internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: GameNameMap) {
