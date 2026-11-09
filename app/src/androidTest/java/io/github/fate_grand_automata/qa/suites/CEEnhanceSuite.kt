@@ -21,7 +21,8 @@ internal fun FixtureApi.verifyCEEnhance(): JSONObject = useSameSnapIn {
         "disabled" to (Images.ServantAutoSelectOff to locations.servant.servantAutoSelectRegion),
         "on" to (Images.StateON to loc.autoFill),
         "close" to (Images.Close to locations.servant.emptyEmberOrQPDialogRegion),
-        "ok" to (Images.Ok to locations.servant.finalConfirmRegion)
+        "ok" to (Images.Ok to locations.servant.finalConfirmRegion),
+        "warnOk" to (Images.Ok to loc.filterWarningConfirmRegion)
     ) + if (prefs.gameServer is io.github.fate_grand_automata.scripts.enums.GameServer.Kr)
         mapOf("okKR" to (Images.OkKR to locations.servant.finalConfirmRegion)) else emptyMap()
     val expected = case.getJSONObject("scores")

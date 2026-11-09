@@ -80,6 +80,10 @@ class AutoCEEnhance @Inject constructor(
         screens.loc.execute.click()
         justExecuted = true
         addedTuning.ce.delay(1.seconds).wait()
+        if (filterWarningVisible()) {
+            screens.loc.filterWarningConfirm.click()
+            addedTuning.ce.delay(1.seconds).wait()
+        }
         locations.enhancementClick.click()
     }
 
@@ -117,5 +121,9 @@ class AutoCEEnhance @Inject constructor(
 
     private fun confirmVisible() = okPatterns().any {
         locations.servant.finalConfirmRegion.exists(it, similarity = addedTuning.ce.defaultSimilarity { prefs.platformPrefs.minSimilarity })
+    }
+
+    private fun filterWarningVisible() = okPatterns().any {
+        screens.loc.filterWarningConfirmRegion.exists(it, similarity = addedTuning.ce.defaultSimilarity { prefs.platformPrefs.minSimilarity })
     }
 }

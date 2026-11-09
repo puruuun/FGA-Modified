@@ -89,6 +89,7 @@ app  ──▶ scripts ──▶ libautomata
 
 ## Repo conventions
 
+- Target servers (owner decision, 2026-11-08): new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`) only**. Do not add branches, tests or walkthrough steps for BetterFGO, NA, CN or TW, and do not ask the owner about them. Existing upstream code for those servers stays, and upstream syncs keep merging it.
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
 - Hilt + KSP for DI; Compose (BOM-managed) with several `ExperimentalX` opt-ins already enabled in `app/build.gradle.kts`.
 - Dependencies live in `gradle/libs.versions.toml` — always add/bump there, never inline coordinates.
