@@ -6,6 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import io.github.fate_grand_automata.battlelog.battleLogFixture
+import io.github.fate_grand_automata.scripts.capture.AccountDelta
+import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.log.LogScreenContent
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -35,6 +38,36 @@ class OutsideLogUiTest {
             .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
         assertEquals(1, layouts.single().lineCount)
         assertTrue(layouts.single().isLineEllipsized(0))
+    }
+
+    @Test fun friendPointsShowSignedGroupedTotalsAndSummonBreakdown() {
+        assertFriendPointsInTotalsAndSource("Friend points")
+    }
+
+    @Test
+    @Config(qualifiers = "ko-w360dp-h800dp-hdpi")
+    fun friendPointsUseKoreanLabelInTotalsAndSummonBreakdown() {
+        assertFriendPointsInTotalsAndSource("프렌드 포인트")
+    }
+
+    @Test
+    @Config(qualifiers = "ja-w360dp-h800dp-hdpi")
+    fun friendPointsUseJapaneseLabelInTotalsAndSummonBreakdown() {
+        assertFriendPointsInTotalsAndSource("フレンドポイント")
+    }
+
+    private fun assertFriendPointsInTotalsAndSource(label: String) {
+        val period = OutsidePeriod("fictionalA", 10)
+            .add(ChangeSource.of("gacha/draw"), AccountDelta(friendPoint = -1200), 11)
+            .add(ChangeSource.of("present/receive"), AccountDelta(friendPoint = 3600), 12)
+        val entry = outsideFixture().copy(period = period)
+        composeRule.setContent { FGATheme(false) { OutsideLogDetail(entry, {}) } }
+        composeRule.onNodeWithContentDescription("$label, +2,400").assertIsDisplayed()
+        val summon = hasTestTag("outside-source:Summon:")
+        composeRule.onNode(hasScrollAction()).performScrollToNode(summon)
+        composeRule.onNode(hasClickAction() and hasAnyAncestor(summon)).performClick()
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("$label, −1,200"))
+        composeRule.onNode(hasContentDescription("$label, −1,200") and hasAnyAncestor(summon)).assertIsDisplayed()
     }
 
     @Test fun mixedListOpensOutsideDetailAndBackReturnsToBothCards() {

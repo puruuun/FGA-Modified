@@ -35,6 +35,59 @@ class CaptureOutsideSessionTest {
     }
     private val pending get() = File(directory, "accounts/fictionalA/outside-period.json")
 
+    @Test fun oldPendingWithoutFriendPointsResumesWithZeroAndCountsNextChange() {
+        feed()
+        val oldPeriod = Json.parseToJsonElement(pending.readText()).jsonObject.getValue("period").toString()
+        assertFalse(oldPeriod.contains("friendPoint"))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        assertEquals(AccountDelta(items = mapOf(100L to -2L)), session.openEntries.value.single().period.total)
+        response("gacha/draw", outsideFriendPointSummon(includeCards = false))
+        session.setRunning(false)
+        assertEquals(AccountDelta(items = mapOf(100L to -2L), friendPoint = -200), logs.entries.single().period.total)
+    }
+
+    @Test fun friendPointOnlySummonOpensAndExtendsPeriodAndResumesWithoutDoubleCounting() {
+        val target = "https://yfgo-game.netmarble.com/gacha/draw"
+        response(target, outsideFriendPointSummon(includeCards = false))
+        val opened = session.openEntries.value.single()
+        assertEquals(AccountDelta(friendPoint = -200), opened.period.total)
+        assertEquals(ChangeSource(ChangeSource.Group.Summon), opened.period.sources.single().source)
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        response(target, outsideFriendPointSummon(includeCards = false))
+        time = 20
+        response(target, outsideFriendPointSummon(friendPoint = 9600, includeCards = false))
+        val extended = session.openEntries.value.single()
+        assertEquals(opened.id, extended.id)
+        assertEquals(20_000, extended.endedAt)
+        session.setRunning(false)
+        assertEquals(AccountDelta(friendPoint = -400), logs.entries.single().period.total)
+        assertEquals(AccountDelta(friendPoint = -400), logs.entries.single().period.sources.single().delta)
+    }
+
+    @Test fun krFriendPointSummonCountsServantAndCeUnderSummonSource() {
+        response("login/top", outsideLogin(svts = """[{"userId":"fictionalA","id":1001,"svtId":100100,"lv":1}]"""))
+        val target = "https://yfgo-game.netmarble.com/gacha/draw"
+        response(target, outsideFriendPointSummon())
+        response(target, outsideFriendPointSummon())
+        session.setRunning(false)
+        val period = logs.entries.single().period
+        val expected = AccountDelta(svts = mapOf(100100L to 1L, 9700010L to 1L), friendPoint = -200)
+        assertEquals(expected, period.total)
+        assertEquals(ChangeSource(ChangeSource.Group.Summon), period.sources.single().source)
+        assertEquals(expected, period.sources.single().delta)
+    }
+
+    @Test fun friendPointRewardKeepsItsOwnResponseSource() {
+        val reward = JsonObject(outsideFriendPointSummon(friendPoint = 10200, includeCards = false).filterKeys { it != "response" })
+        response("home/top", reward)
+        val period = session.openEntries.value.single().period
+        assertEquals(AccountDelta(friendPoint = 200), period.total)
+        assertEquals(ChangeSource.of("home/top"), period.sources.single().source)
+        assertEquals(period.total, period.sources.single().delta)
+    }
+
     private fun cardResponse(svts: String, storage: String = "[]", codes: String = "[]") = Json.parseToJsonElement("""
         {"cache":{"replaced":{"userSvt":$svts,"userSvtStorage":$storage,"userCommandCode":$codes}}}
     """).jsonObject
