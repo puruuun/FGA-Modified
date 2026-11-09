@@ -192,6 +192,10 @@
     <string name="p_battle_config">"バトルの設定"</string>
     <string name="p_battle_config_card_priority">"カードの優先順位"</string>
     <string name="p_battle_config_cmd">"コマンド"</string>
+    <string name="command_start_waiting_many">"カード待機: %1$s"</string>
+    <string name="command_start_waiting_many_item">"サーヴァント%1$d番、現在%2$d枚 (最小%3$s枚)、%4$s"</string>
+    <string name="command_start_third_servant">"3番目の条件: 対象サーヴァント"</string>
+    <string name="command_start_duplicate_targets_all">"各条件に異なるサーヴァントを選択してください。"</string>
     <string name="p_battle_config_name">"パーティー名"</string>
     <string name="p_battle_config_notes">"メモ"</string>
     <string name="p_battle_config_party">"パーティー"</string>

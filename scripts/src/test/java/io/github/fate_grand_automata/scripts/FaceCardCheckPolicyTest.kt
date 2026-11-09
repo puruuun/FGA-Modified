@@ -61,7 +61,9 @@ class FaceCardCheckPolicyTest {
             secondaryStartEnabled: Boolean = false,
             shuffleCards: ShuffleCardsEnum = ShuffleCardsEnum.None,
             primary: ProfileInput = profile(),
-            secondary: ProfileInput = profile()
+            secondary: ProfileInput = profile(),
+            tertiaryStartEnabled: Boolean = false,
+            tertiary: ProfileInput = profile()
         ): IBattleConfig {
             val config = mockk<IBattleConfig>()
             val first = execution(primary)
@@ -69,6 +71,8 @@ class FaceCardCheckPolicyTest {
             every { config.secondaryStartEnabled } returns secondaryStartEnabled
             every { config.shuffleCards } returns shuffleCards
             every { config.secondaryExecution } returns execution(secondary)
+            every { config.tertiaryStartEnabled } returns tertiaryStartEnabled
+            every { config.tertiaryExecution } returns execution(tertiary)
             every { config.skillCommand } answers { first.skillCommand }
             every { config.cardPriority } answers { first.cardPriority }
             every { config.cardPrioritySplit } answers { first.cardPrioritySplit }
@@ -87,6 +91,28 @@ class FaceCardCheckPolicyTest {
         val decision = FaceCardCheckPolicy.decide(input)
         assertTrue(decision.enabled)
         assertEquals(expected, decision.reason)
+    }
+
+    @Test
+    fun `tertiary profile counts only with card-count mode and both later starts on`() {
+        val needy = profile(styles = listOf(CardPriorityStyle.Servant))
+        fun decide(mode: CommandStartMode, second: Boolean, third: Boolean) = FaceCardCheckPolicy.decide(
+            config(commandStartMode = mode, secondaryStartEnabled = second, tertiaryStartEnabled = third, tertiary = needy)
+        )
+        assertEquals(
+            FaceCardReason(FaceCardReasonKind.ServantStyle, entry = 0, profile = 2),
+            decide(CommandStartMode.CardCount, second = true, third = true).reason
+        )
+        assertEquals("face-card check: on (servant style, entry 1, tertiary)",
+            decide(CommandStartMode.CardCount, second = true, third = true).toLogText())
+        for ((mode, second, third) in listOf(
+            Triple(CommandStartMode.CardCount, false, true),
+            Triple(CommandStartMode.Basic, true, true),
+            Triple(CommandStartMode.CardCount, true, false)
+        )) {
+            assertEquals(FaceCardReasonKind.CardCountStart.takeIf { mode == CommandStartMode.CardCount },
+                decide(mode, second, third).reason?.kind)
+        }
     }
 
     @Test

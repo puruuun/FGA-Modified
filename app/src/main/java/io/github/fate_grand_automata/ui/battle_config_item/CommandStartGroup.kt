@@ -243,8 +243,38 @@ fun CommandStartGroup(config: BattleConfigCore) {
                         config.secondaryStartQuick, config.secondaryStartCombineMode
                     )
                     val first by config.commandStartServant.remember()
-                    if (first == secondTarget) {
-                        PreferenceError(stringResource(R.string.command_start_duplicate_targets))
+
+                    // The third target is offered only while the second one is on.
+                    var thirdEnabled by config.tertiaryStartEnabled.remember()
+                    var thirdTarget by config.tertiaryStartServant.remember()
+                    DropdownPreference(
+                        title = stringResource(R.string.command_start_third_servant),
+                        value = if (thirdEnabled) thirdTarget else 0,
+                        entries = mapOf(0 to stringResource(R.string.command_start_second_disabled)) +
+                            (1..3).associateWith { stringResource(R.string.command_start_servant_slot, it) },
+                        onValueChange = {
+                            if (it == 0) {
+                                thirdEnabled = false
+                            } else {
+                                thirdTarget = it
+                                thirdEnabled = true
+                            }
+                        }
+                    )
+                    if (thirdEnabled) {
+                        CommandStartConditionRows(
+                            config.tertiaryStartCardCount, config.tertiaryStartBuster, config.tertiaryStartArts,
+                            config.tertiaryStartQuick, config.tertiaryStartCombineMode
+                        )
+                    }
+                    val targets = listOfNotNull(first, secondTarget, thirdTarget.takeIf { thirdEnabled })
+                    if (targets.size != targets.toSet().size) {
+                        PreferenceError(
+                            stringResource(
+                                if (thirdEnabled) R.string.command_start_duplicate_targets_all
+                                else R.string.command_start_duplicate_targets
+                            )
+                        )
                     }
                 }
 

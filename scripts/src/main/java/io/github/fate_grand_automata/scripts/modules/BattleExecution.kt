@@ -54,14 +54,20 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
     val shuffleCardsWave = config.shuffleCardsWave
     private val secondary = if (config.commandStartMode == CommandStartMode.CardCount && config.secondaryStartEnabled)
         Profile(config.secondaryExecution) else null
+    private val tertiary = if (secondary != null && config.tertiaryStartEnabled)
+        Profile(config.tertiaryExecution) else null
 
     var selectedIndex: Int? = null
         private set
     // The first profile also supplies the shared waiting attack priorities.
-    val active get() = if (selectedIndex == 1) checkNotNull(secondary) else primary
+    val active get() = when (selectedIndex) {
+        1 -> checkNotNull(secondary)
+        2 -> checkNotNull(tertiary)
+        else -> primary
+    }
 
     fun select(index: Int) {
-        require(index == 0 || (index == 1 && secondary != null))
+        require(index == 0 || (index == 1 && secondary != null) || (index == 2 && tertiary != null))
         check(selectedIndex == null || selectedIndex == index) { "Execution profile is already selected" }
         selectedIndex = index
     }

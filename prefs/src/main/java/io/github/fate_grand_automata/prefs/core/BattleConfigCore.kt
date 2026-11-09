@@ -34,9 +34,11 @@ class BattleConfigCore(
     val folder = maker.string("battle_config_folder", "")
     val execution = ExecutionProfileCore(maker)
     val secondaryExecution = ExecutionProfileCore(maker, "secondary_")
+    val tertiaryExecution = ExecutionProfileCore(maker, "tertiary_")
     fun executionProfile(index: Int): ExecutionProfileCore = when (index) {
         0 -> execution
         1 -> secondaryExecution
+        2 -> tertiaryExecution
         else -> error("Invalid execution profile: $index")
     }
     val skillCommand get() = execution.skillCommand
@@ -71,6 +73,14 @@ class BattleConfigCore(
     val secondaryStartArts get() = secondaryStartColours.arts
     val secondaryStartQuick get() = secondaryStartColours.quick
     val secondaryStartCombineMode get() = secondaryStartColours.combineMode
+    val tertiaryStartEnabled = maker.bool("tertiary_start_enabled")
+    val tertiaryStartServant = maker.int("tertiary_start_servant", 3)
+    val tertiaryStartCardCount = maker.int("tertiary_start_card_count", 2)
+    private val tertiaryStartColours = CommandStartColoursCore(maker, "tertiary_start_")
+    val tertiaryStartBuster get() = tertiaryStartColours.buster
+    val tertiaryStartArts get() = tertiaryStartColours.arts
+    val tertiaryStartQuick get() = tertiaryStartColours.quick
+    val tertiaryStartCombineMode get() = tertiaryStartColours.combineMode
     val bond = BondPrefsCore(maker)
     val notes = maker.string("autoskill_notes")
 

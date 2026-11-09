@@ -27,6 +27,15 @@ interface IBattleConfig : IExecutionProfile {
     val secondaryStartQuick: Int
     val secondaryStartCombineMode: CommandStartCombineMode
     val secondaryExecution: IExecutionProfile
+    /** The third target; only used with the second target on, in card-count mode. */
+    val tertiaryStartEnabled: Boolean
+    val tertiaryStartServant: Int
+    val tertiaryStartCardCount: Int
+    val tertiaryStartBuster: Int
+    val tertiaryStartArts: Int
+    val tertiaryStartQuick: Int
+    val tertiaryStartCombineMode: CommandStartCombineMode
+    val tertiaryExecution: IExecutionProfile
     /** Skill and NP automatic use is shared by both start conditions. */
     var spam: List<ServantSpamConfig>
     val trackBond: Boolean
@@ -39,6 +48,7 @@ interface IBattleConfig : IExecutionProfile {
     fun executionProfile(index: Int): IExecutionProfile = when (index) {
         0 -> this
         1 -> secondaryExecution
+        2 -> tertiaryExecution
         else -> error("Invalid execution profile: $index")
     }
     val party: Int

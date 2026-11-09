@@ -290,6 +290,8 @@ private fun CommandsCard(
     showSecond: Boolean,
     navigate: (BattleConfigDestination) -> Unit
 ) {
+    val thirdEnabled by config.tertiaryStartEnabled.remember()
+    val showThird = showSecond && thirdEnabled
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -316,6 +318,15 @@ private fun CommandsCard(
                                     openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(1)) }
                                 )
                             }
+                            if (showThird) {
+                                HorizontalDivider()
+                                SkillCommandGroup(
+                                    config = config.tertiaryExecution,
+                                    supportPrefs = config.support,
+                                    title = stringResource(R.string.command_start_edit_command, 3),
+                                    openSkillMaker = { navigate(BattleConfigDestination.SkillMaker(2)) }
+                                )
+                            }
                         }
                     }
 }
@@ -327,6 +338,8 @@ private fun SummaryCard(
     showSecond: Boolean,
     navigate: (BattleConfigDestination) -> Unit
 ) {
+    val thirdEnabled by config.tertiaryStartEnabled.remember()
+    val showThird = showSecond && thirdEnabled
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -402,6 +415,10 @@ private fun SummaryCard(
                                 HorizontalDivider()
                                 ProfilePriorityPreference(config.secondaryExecution, 1, navigate)
                             }
+                            if (showThird) {
+                                HorizontalDivider()
+                                ProfilePriorityPreference(config.tertiaryExecution, 2, navigate)
+                            }
                             HorizontalDivider()
                             FaceCardCheckLine(config)
                         }
@@ -454,9 +471,11 @@ private fun FaceCardCheckLine(config: BattleConfigCore) {
     val shuffle by config.shuffleCards.remember()
     val primary = profileInput(config.execution)
     val secondary = profileInput(config.secondaryExecution)
+    val thirdEnabled by config.tertiaryStartEnabled.remember()
+    val tertiary = profileInput(config.tertiaryExecution)
 
     val decision = FaceCardCheckPolicy.decide(
-        FaceCardCheckPolicy.Input(startMode, secondEnabled, shuffle, primary, secondary)
+        FaceCardCheckPolicy.Input(startMode, secondEnabled, shuffle, primary, secondary, thirdEnabled, tertiary)
     )
     val text = decision.reason?.takeIf { decision.enabled }?.let {
         stringResource(R.string.face_card_check_auto_on, faceCardReasonText(it))
@@ -472,7 +491,7 @@ private fun FaceCardCheckLine(config: BattleConfigCore) {
 @Composable
 private fun faceCardReasonText(reason: FaceCardReason): String {
     val entry = reason.entry?.let {
-        (if (reason.turnSplit) "T" else "W") + "${it + 1}" + if (reason.profile == 1) " (2)" else ""
+        (if (reason.turnSplit) "T" else "W") + "${it + 1}" + if (reason.profile > 0) " (${reason.profile + 1})" else ""
     } ?: ""
     return when (reason.kind) {
         FaceCardReasonKind.ServantStyle -> stringResource(R.string.face_card_reason_servant_style, entry)
