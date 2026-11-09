@@ -24,12 +24,12 @@ class ServantPortraitImporter @Inject constructor(
     suspend fun search(kind: SupportCatalogKind, query: String, language: String) =
         lookup.search(kind, query, language)
 
-    suspend fun run(entry: SupportCatalogEntry,
+    suspend fun run(entry: SupportCatalogEntry, updateSelections: Boolean = true,
                     onProgress: (PortraitImportProgress) -> Unit): PortraitImportReport = withContext(Dispatchers.IO) {
         val portraits = lookup.portraits(entry)
         val folder = try {
             storage.createNoMediaFile()
-            storage.prepareSupportPortraitFolder(entry.kind.storage, entry.number, entry.name, entry.sourceRegion)
+            storage.prepareSupportPortraitFolder(entry.kind.storage, entry.number, entry.name, entry.sourceRegion, updateSelections)
         } catch (e: Exception) { throw PortraitImportException(PortraitImportError.Storage) }
         var saved = 0
         var failed = 0

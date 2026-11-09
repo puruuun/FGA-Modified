@@ -6,18 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.fate_grand_automata.util.portraits.SupportCatalogEntry
-import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.util.StorageProvider
 import io.github.fate_grand_automata.util.migration.ImportSelection
 import io.github.fate_grand_automata.util.migration.OriginalFgaImportService
 import io.github.fate_grand_automata.util.migration.OriginalImportProgress
 import io.github.fate_grand_automata.util.migration.OriginalImportReport
-import io.github.fate_grand_automata.util.portraits.PortraitImportError
-import io.github.fate_grand_automata.util.portraits.PortraitImportException
-import io.github.fate_grand_automata.util.portraits.PortraitImportProgress
-import io.github.fate_grand_automata.util.portraits.PortraitImportReport
 import io.github.fate_grand_automata.util.portraits.ServantPortraitImporter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -46,62 +40,8 @@ class MoreOptionsViewModel @Inject constructor(
     private val _originalImport = MutableStateFlow(OriginalImportState())
     val originalImport = _originalImport.asStateFlow()
 
-    private val _portraitImport = MutableStateFlow(PortraitImportState())
-    val portraitImport = _portraitImport.asStateFlow()
-
-    fun openPortraitImport() { _portraitImport.value = PortraitImportState(open = true) }
-    fun closePortraitImport() {
-        if (!_portraitImport.value.busy) _portraitImport.update { it.copy(open = false) }
-    }
-    fun changePortraitKind(kind: SupportCatalogKind) {
-        if (!_portraitImport.value.busy) _portraitImport.update {
-            PortraitImportState(open = true, kind = kind)
-        }
-    }
-    fun changePortraitNumber(query: String) {
-        if (!_portraitImport.value.busy && query.length <= 120) _portraitImport.update {
-            it.copy(query = query, error = null, report = null, candidates = emptyList(), selected = null, searched = false)
-        }
-    }
-    fun selectPortrait(entry: SupportCatalogEntry) {
-        if (!_portraitImport.value.busy && entry in _portraitImport.value.candidates)
-            _portraitImport.update { it.copy(selected = entry, report = null, error = null) }
-    }
-    fun searchPortraits(language: String) {
-        val request = _portraitImport.value
-        if (!request.canSearch) return
-        _portraitImport.update { it.copy(busy = true, searching = true, error = null, report = null,
-            progress = null, selected = null, candidates = emptyList(), searched = false) }
-        viewModelScope.launch {
-            try {
-                val entries = portraitImporter.search(request.kind, request.query, language)
-                _portraitImport.update { it.copy(candidates = entries, selected = entries.singleOrNull(), searched = true) }
-            } catch (e: CancellationException) { throw e
-            } catch (e: Exception) {
-                Timber.w(e, "Support catalog search failed")
-                _portraitImport.update { it.copy(error = (e as? PortraitImportException)?.reason ?: PortraitImportError.Metadata) }
-            } finally { _portraitImport.update { it.copy(busy = false, searching = false) } }
-        }
-    }
-    fun importPortraits() {
-        val request = _portraitImport.value
-        val entry = request.selected ?: return
-        if (!request.canStart || storageProvider.rootDirName == null) return
-        _portraitImport.update { it.copy(busy = true, error = null, report = null, progress = null) }
-        viewModelScope.launch {
-            try {
-                val report = portraitImporter.run(entry) { progress ->
-                    _portraitImport.update { it.copy(progress = progress) }
-                }
-                _portraitImport.update { it.copy(report = report) }
-            } catch (e: CancellationException) { throw e
-            } catch (e: Exception) {
-                Timber.w(e, "Support image import failed")
-                _portraitImport.update { it.copy(error = (e as? PortraitImportException)?.reason ?: PortraitImportError.Metadata) }
-            } finally { _portraitImport.update { it.copy(busy = false) } }
-        }
-    }
-
+    val portraitController = PortraitImportController(storageProvider, portraitImporter, viewModelScope)
+    fun openPortraitImport() = portraitController.openPortraitImport()
     fun openOriginalImport() { _originalImport.value = OriginalImportState(open = true) }
     fun closeOriginalImport() {
         if (!_originalImport.value.busy) _originalImport.update { it.copy(open = false) }
@@ -158,23 +98,6 @@ class MoreOptionsViewModel @Inject constructor(
             storageSummary.value = storageProvider.rootDirName
         }
     }
-}
-
-data class PortraitImportState(
-    val open: Boolean = false,
-    val kind: SupportCatalogKind = SupportCatalogKind.Servant,
-    val query: String = "",
-    val busy: Boolean = false,
-    val searching: Boolean = false,
-    val searched: Boolean = false,
-    val candidates: List<SupportCatalogEntry> = emptyList(),
-    val selected: SupportCatalogEntry? = null,
-    val progress: PortraitImportProgress? = null,
-    val report: PortraitImportReport? = null,
-    val error: PortraitImportError? = null
-) {
-    val canSearch get() = !busy && query.isNotBlank()
-    val canStart get() = !busy && selected != null
 }
 
 data class OriginalImportState(

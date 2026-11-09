@@ -205,11 +205,14 @@ class StorageProvider @Inject constructor(
     fun prepareServantPortraitFolder(metadata: ServantPortraitMetadata): String =
         prepareSupportPortraitFolder(SupportImageKind.Servant, metadata.collectionNo, metadata.name)
 
-    fun prepareSupportPortraitFolder(kind: SupportImageKind, number: Int, name: String, region: String? = null): String {
+    fun prepareSupportPortraitFolder(kind: SupportImageKind, number: Int, name: String, region: String? = null,
+                                    updateSelections: Boolean = true): String {
         require(kind == SupportImageKind.Servant || kind == SupportImageKind.CE)
         val folderName = ServantPortraitFolder.name(number, name, region)
         val folder = kind.imageFolder
         val existing = ServantPortraitFolder.resolve(folderName, folder.listFiles().filter { it.isDirectory }.mapNotNull { it.name })
+        // A picker download must not rewrite stored preferences or invalidate its pending keys.
+        if (!updateSelections && existing != null) return existing
         if (existing != null && existing != folderName) {
             val previous = folder.findFile(existing)
             val moved = previous != null && SupportFolderRename.confirmed(
@@ -225,7 +228,7 @@ class StorageProvider @Inject constructor(
             folder.getOrCreateDir(folderName)
         }
         // Preserve all battle profiles when a generated folder acquires or changes its name.
-        for (id in prefsCore.battleConfigList.get()) {
+        for (id in if (updateSelections) prefsCore.battleConfigList.get() else emptySet()) {
             val support = prefsCore.forBattleConfig(id).support
             val preferred = if (kind == SupportImageKind.CE) support.preferredCEs else support.preferredServants
             val selected = preferred.get()

@@ -16,7 +16,8 @@ fun <T> multiSelectListDialog(
     selected: Set<T>,
     onSelectedChange: (Set<T>) -> Unit,
     entries: Map<T, String>,
-    title: String
+    title: String,
+    dialogAction: (@Composable ((T) -> Unit) -> Unit)? = null
 ): FgaDialog {
     val dialog = FgaDialog()
 
@@ -34,7 +35,8 @@ fun <T> multiSelectListDialog(
         }
 
         buttons(
-            onSubmit = { onSelectedChange(current) }
+            onSubmit = { onSelectedChange(current) },
+            leadingAction = dialogAction?.let { action -> { action { current = current + it } } }
         )
     }
 
@@ -49,6 +51,7 @@ fun <T> Pref<Set<T>>.MultiSelectListPreference(
     icon: VectorIcon? = null,
     entries: Map<T, String>,
     enabled: Boolean = true,
+    dialogAction: (@Composable ((T) -> Unit) -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     var selected by remember()
@@ -60,7 +63,8 @@ fun <T> Pref<Set<T>>.MultiSelectListPreference(
         selected = selected,
         onSelectedChange = { selected = it },
         entries = entries,
-        title = title
+        title = title,
+        dialogAction = dialogAction
     )
 
     Preference(

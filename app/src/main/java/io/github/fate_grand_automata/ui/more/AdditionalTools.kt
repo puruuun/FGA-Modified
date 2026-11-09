@@ -31,24 +31,8 @@ fun AdditionalTools(vm: MoreOptionsViewModel = viewModel()) {
     val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
     LaunchedEffect(context) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) } }
     val export = rememberChaldeaAccountExport()
-    val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) { vm.pickedDirectory(it) }
     val originalImport by vm.originalImport.collectAsStateWithLifecycle()
-    val portraitImport by vm.portraitImport.collectAsStateWithLifecycle()
-    val portraitContext = LocalContext.current
-    if (portraitImport.open) {
-        val destinationName by vm.storageSummary
-        ServantPortraitImportDialog(
-            state = portraitImport,
-            destinationName = destinationName,
-            onNumber = vm::changePortraitNumber,
-            onKind = vm::changePortraitKind,
-            onSelect = vm::selectPortrait,
-            onSearch = { vm.searchPortraits(portraitContext.resources.configuration.locales[0].toLanguageTag()) },
-            onStart = vm::importPortraits,
-            onPickDirectory = { pickDirectory.launch(Uri.EMPTY) },
-            onDismiss = vm::closePortraitImport
-        )
-    }
+    PortraitImportHost(vm.portraitController, vm.storageProvider, onDirectoryPicked = vm::pickedDirectory)
     val importScripts = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
         vm.selectImportFolder(scripts = true, uri = it)
     }

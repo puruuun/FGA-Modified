@@ -43,6 +43,7 @@ import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.SupportNameResources.getLocalizedCEName
 import io.github.fate_grand_automata.util.SupportNameResources.getLocalizedServantName
+import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.util.stringRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -129,7 +130,10 @@ internal fun PreferredSupport(
 
                         config.preferredServants.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_servants),
-                            entries = servantEntries
+                            entries = servantEntries,
+                            imageDownload = { select ->
+                                SupportImageDownload(SupportCatalogKind.Servant, select, { vm.refresh(context) })
+                            }
                         )
 
                         // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
@@ -222,7 +226,10 @@ internal fun PreferredSupport(
 
                         config.preferredCEs.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_ces),
-                            entries = ceEntries
+                            entries = ceEntries,
+                            imageDownload = { select ->
+                                SupportImageDownload(SupportCatalogKind.CE, select, { vm.refresh(context) })
+                            }
                         )
 
                         if (prefCEs.isNotEmpty()) {

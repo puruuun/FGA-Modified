@@ -17,9 +17,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.compositionLocalOf
 import coil3.compose.AsyncImage
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.util.portraits.*
+
+/** Test hook: Robolectric cannot size a platform-width dialog that holds a full-width text field. Null keeps the platform default. */
+internal val LocalPortraitImportDialogWidth = compositionLocalOf<androidx.compose.ui.unit.Dp?> { null }
 
 @Composable
 fun ServantPortraitImportDialog(
@@ -35,7 +39,9 @@ fun ServantPortraitImportDialog(
 ) {
     AlertDialog(
         onDismissRequest = { if (!state.busy) onDismiss() },
-        properties = DialogProperties(dismissOnBackPress = !state.busy, dismissOnClickOutside = !state.busy),
+        modifier = LocalPortraitImportDialogWidth.current?.let { Modifier.width(it) } ?: Modifier,
+        properties = DialogProperties(dismissOnBackPress = !state.busy, dismissOnClickOutside = !state.busy,
+            usePlatformDefaultWidth = LocalPortraitImportDialogWidth.current == null),
         title = { Text(stringResource(R.string.portrait_import_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {

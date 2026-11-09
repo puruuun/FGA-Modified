@@ -100,7 +100,8 @@ class FgaDialog private constructor(initialVisibility: Boolean = false) {
         showCancel: Boolean = true,
         okEnabled: Boolean = true,
         okLabel: String = stringResource(android.R.string.ok),
-        cancelLabel: String = stringResource(android.R.string.cancel)
+        cancelLabel: String = stringResource(android.R.string.cancel),
+        leadingAction: (@Composable () -> Unit)? = null
     ) {
         Row(
             horizontalArrangement = Arrangement.End,
@@ -108,6 +109,10 @@ class FgaDialog private constructor(initialVisibility: Boolean = false) {
                 .fillMaxWidth()
                 .padding(16.dp, 5.dp)
         ) {
+            if (leadingAction != null) {
+                leadingAction()
+                Spacer(Modifier.weight(1f))
+            }
             if (showCancel) {
                 TextButton(
                     onClick = {
