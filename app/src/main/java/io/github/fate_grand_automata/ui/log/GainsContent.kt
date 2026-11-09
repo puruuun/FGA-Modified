@@ -28,7 +28,7 @@ import java.text.DateFormat
 import java.util.Date
 
 /** [loadBattles] reads the per-battle rows of a stored entry; without it the rows already in [gains] are used. */
-internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap, loadBattles: (suspend () -> List<BattleGains>?)? = null) {
+internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap, loadBattles: (suspend () -> List<BattleGains>?)? = null, entryId: String? = null) {
     item {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.capture_gains_title), style = MaterialTheme.typography.titleMedium)
@@ -41,7 +41,7 @@ internal fun LazyListScope.gainsContent(gains: RunGains, names: GameNameMap, loa
             GainLine(stringResource(R.string.capture_gains_exp), gains.masterExp)
             if (gains.bond.isNotEmpty()) Text(stringResource(R.string.capture_gains_bond), style = MaterialTheme.typography.titleSmall)
             gains.bond.entries.sortedByDescending { it.value }.forEach { (id, value) -> GainLine(names.servant(id), value) }
-            BattleBreakdown(gains, names, loadBattles)
+            BattleBreakdown(gains, names, loadBattles, entryId)
         }
     }
 }
@@ -55,14 +55,15 @@ private fun GainLine(name: String, count: Long?, prefix: String = "+") {
 }
 
 @Composable
-private fun BattleBreakdown(gains: RunGains, names: GameNameMap, loadBattles: (suspend () -> List<BattleGains>?)?) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+private fun BattleBreakdown(gains: RunGains, names: GameNameMap, loadBattles: (suspend () -> List<BattleGains>?)?, entryId: String?) {
+    // Keyed by entry: the two-pane layout reuses this composable when another entry is selected.
+    var expanded by rememberSaveable(entryId) { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) {
         Text(stringResource(if (expanded) R.string.capture_gains_collapse else R.string.capture_gains_breakdown))
     }
     if (!expanded) return
     // Read only while the breakdown is open and dropped with the screen (issue #280). Null = still loading.
-    val loaded by produceState<Loaded?>(null, gains.storedBattleCount) {
+    val loaded by produceState<Loaded?>(null, entryId, gains.storedBattleCount) {
         value = Loaded(if (loadBattles == null) gains.battles else loadBattles())
     }
     val battles = loaded?.battles

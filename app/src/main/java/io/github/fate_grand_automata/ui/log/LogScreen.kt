@@ -257,7 +257,7 @@ private fun LazyListScope.battleLogDetailItems(entry: BattleLogEntry, names: Gam
         refillEnabled = entry.refillEnabled,
         ceLimitReached = entry.reasonKey == "limit_ces"
     )
-    entry.gains?.let { gainsContent(it, names, loadBattles?.let { load -> { load(entry.id) } }) }
+    entry.gains?.let { gainsContent(it, names, loadBattles?.let { load -> { load(entry.id) } }, entry.id) }
 }
 
 @Composable
