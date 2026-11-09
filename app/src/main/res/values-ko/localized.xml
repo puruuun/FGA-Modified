@@ -1202,6 +1202,7 @@
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">프로필</string>
     <string name="capture_log_all_profiles">전체</string>
+    <string name="capture_log_no_profile">프로필 없음</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">프렌드 포인트</string>
 </resources>

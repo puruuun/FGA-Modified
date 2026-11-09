@@ -48,4 +48,30 @@ class LogProfileTest {
         assertNull(availableLogProfile("a", logProfiles(listOf(other, legacy))))
         assertNull(availableLogProfile(null, profiles))
     }
+
+    @Test fun noProfileChoiceKeepsOnlyEntriesWithoutAccountId() {
+        assertEquals(listOf(legacy), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = NO_LOG_PROFILE))
+        assertTrue(NO_LOG_PROFILE.any { !it.isDigit() })
+        assertEquals(listOf(battle, outside), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = "a"))
+    }
+
+    @Test fun noProfileCombinesWithTimeAndResourceFilters() {
+        val old = CaptureLogItem(battle = battleLogFixture("old").copy(
+            endedAt = now - 10 * 86_400_000L, gains = RunGains(items = listOf(GainedItem(2, 6510, 1)))))
+        val recent = CaptureLogItem(battle = battleLogFixture("recent").copy(
+            endedAt = now, gains = RunGains(items = listOf(GainedItem(2, 6510, 1)))))
+        val all = entries + old + recent
+        assertEquals(listOf(legacy, recent), filterCaptureLogs(all, LogTimeFilter.Today, null, now, zone, profile = NO_LOG_PROFILE))
+        assertEquals(listOf(recent), filterCaptureLogs(all, LogTimeFilter.Today, "2:6510", now, zone, profile = NO_LOG_PROFILE))
+        assertEquals(setOf("2:6510"), logResources(filterCaptureLogs(all, LogTimeFilter.All, null, now, zone, profile = NO_LOG_PROFILE)))
+    }
+
+    @Test fun noProfileIsAvailableOnlyWhileAnIdlessLogExistsAndFallsBackToAll() {
+        assertTrue(hasLogWithoutProfile(entries))
+        assertFalse(hasLogWithoutProfile(listOf(battle, outside, other)))
+        assertEquals(NO_LOG_PROFILE, availableLogProfile(NO_LOG_PROFILE, logProfiles(entries), hasLogWithoutProfile(entries)))
+        assertNull(availableLogProfile(NO_LOG_PROFILE, logProfiles(listOf(battle)), hasLogWithoutProfile(listOf(battle))))
+        assertNull(availableLogProfile(NO_LOG_PROFILE, logProfiles(entries)))
+        assertEquals("a", availableLogProfile("a", logProfiles(entries), false))
+    }
 }

@@ -960,6 +960,7 @@
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">プロフィール</string>
     <string name="capture_log_all_profiles">すべて</string>
+    <string name="capture_log_no_profile">プロフィールなし</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">フレンドポイント</string>
 </resources>

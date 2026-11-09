@@ -48,6 +48,7 @@ class LogRefineScreenshotTest(private val width: Int, private val height: Int, p
     private val entries = mixedCaptureLogs(listOf(
         battleLogFixture("b").copy(accountId = "b", accountName = "샘플 B"),
         battleLogFixture("c").copy(accountId = "c", accountName = null),
+        battleLogFixture("d"),
     ), listOf(outside))
 
     private fun showFilters(time: LogTimeFilter = LogTimeFilter.All) {
@@ -98,6 +99,12 @@ class LogRefineScreenshotTest(private val width: Int, private val height: Int, p
         rule.onNodeWithText("#c").assertExists()
         rule.onNodeWithText("500").assertDoesNotExist()
         capture("log-filter-dialog", "ProfileFilter")
+    }
+
+    @Test fun noProfileChipIsShownAfterProfileChips() {
+        showFilters()
+        rule.onNodeWithTag("log-filter-profile:none").assertExists()
+        capture("log-filter-dialog", "NoProfileFilter")
     }
 
     @Test fun outsideSourceLinePreservesOrderAndInProgressPrefix() = rule.shoot(

@@ -1272,6 +1272,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">Profile</string>
     <string name="capture_log_all_profiles">All profiles</string>
+    <string name="capture_log_no_profile">No profile</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">Friend points</string>
 </resources>

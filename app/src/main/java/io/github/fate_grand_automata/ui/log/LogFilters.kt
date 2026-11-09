@@ -17,8 +17,13 @@ internal fun logProfiles(entries: List<CaptureLogItem>): Map<String, String> =
         names.firstOrNull { !it.isNullOrBlank() } ?: "#$id"
     }
 
-internal fun availableLogProfile(profile: String?, profiles: Map<String, String>): String? =
-    profile?.takeIf { it in profiles }
+/** Reserved profile choice for logs without an account id; real account ids are digits, so it cannot collide. */
+internal const val NO_LOG_PROFILE = "!none"
+
+internal fun hasLogWithoutProfile(entries: List<CaptureLogItem>): Boolean = entries.any { it.accountId == null }
+
+internal fun availableLogProfile(profile: String?, profiles: Map<String, String>, hasNoProfileLog: Boolean = false): String? =
+    profile?.takeIf { if (it == NO_LOG_PROFILE) hasNoProfileLog else it in profiles }
 
 /** Material picker values are UTC dates, not instants in the user's zone. */
 internal fun pickerDateInZone(date: Long, zone: TimeZone): Long {
@@ -66,7 +71,7 @@ internal fun filterCaptureLogs(
         Calendar.getInstance(zone).apply { timeInMillis = pickerDateInZone(date, zone); add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     } else (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     return entries.filter { entry ->
-        (profile == null || entry.accountId == profile) &&
+        (profile == null || (if (profile == NO_LOG_PROFILE) entry.accountId == null else entry.accountId == profile)) &&
             (start == null || end == null || entry.endedAt in start until end) &&
             (resource == null || entry.resourceChanges().any { val change = it[resource] ?: 0L; if (entry.battle != null) change != 0L else change > 0L })
     }
