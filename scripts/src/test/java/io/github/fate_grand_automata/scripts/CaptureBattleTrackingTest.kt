@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.capture.*
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.enums.*
 import io.github.fate_grand_automata.scripts.models.BondFrame
+import io.github.fate_grand_automata.scripts.models.BondValue
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
@@ -139,26 +140,71 @@ class CaptureBattleTrackingTest {
         assertTrue(f.feed.tokens.isEmpty())
     }
 
-    @Test fun `bond OCR and end summary turn off while captured MAX stops at first result`() {
-        checkCapturedBondMax(GameServer.Kr)
+    @Test fun `with capture on the bond stop comes from OCR and never from the captured result`() {
+        checkOcrBondStop(GameServer.Kr)
     }
 
-    @Test fun `official JP disables bond OCR and stops on captured MAX at first result`() {
-        checkCapturedBondMax(GameServer.Jp.Original)
+    @Test fun `official JP stops on OCR MAX while capture supplies the numbers`() {
+        checkOcrBondStop(GameServer.Jp.Original)
     }
 
-    private fun checkCapturedBondMax(server: GameServer) {
+    private fun checkOcrBondStop(server: GameServer) {
+        val max = BondFrame.Normal(List(5) { if (it == 1) BondValue.Max else BondValue.Unknown })
+        // A captured MAX that CaptureBondStop would stop on must not stop by itself.
+        val captured = Fixture(server)
+        every { captured.config.trackBond } returns true
+        every { captured.config.stopOnBondMax } returns true
+        captured.feed.response = CapturedBattle(emptyMap(), listOf(CapturedBond(2, 901, 9, 10, 11, 100)))
+        val logs = mutableListOf<ScriptLog>()
+        every { captured.api.messages.log(capture(logs)) } just Runs
+        captured.capture.start(); captured.bonds.beginBattle()
+        assertTrue(captured.bonds.enabled); assertNull(captured.bonds.summary())
+        captured.bonds.finishResult(); captured.bonds.finishResult()
+        assertEquals(0, captured.state.runs); assertEquals(listOf(7L), captured.feed.tokens)
+        verify { captured.api.messages.log(match { it is ScriptLog.Bond && it.message.contains("2:svt=901") }) }
+        assertEquals(1, logs.count { it is ScriptLog.Bond && it.message.contains("comparison only)=[2]") })
+        verify { captured.reader wasNot Called }
+
+        // Two adjacent OCR MAX frames in a watched slot stop with BondMax; gains are not read.
         val f = Fixture(server)
         every { f.config.trackBond } returns true
         every { f.config.stopOnBondMax } returns true
+        every { f.reader.read(false) } returns max
+        f.capture.start(); f.bonds.beginBattle()
+        val reason = f.stop { f.bonds.process() } as AutoBattle.ExitReason.BondMax
+        assertEquals(listOf(2), reason.positions); assertEquals(1, f.state.runs)
+        verify { f.reader.read(false) }
+        verify(exactly = 0) { f.reader.read(true) }
+        assertNull(f.bonds.summary())
+
+        // An ignored slot does not stop.
+        val ignored = Fixture(server)
+        every { ignored.config.stopOnBondMax } returns true
+        every { ignored.config.bondMaxIgnoredCharacters } returns setOf(2)
+        every { ignored.reader.read(false) } returns max
+        ignored.capture.start()
+        assertEquals(max, ignored.bonds.process()); assertEquals(0, ignored.state.runs)
+
+        // A level-up to 10+ stops.
+        val levelUp = Fixture(server)
+        every { levelUp.config.stopOnBondMax } returns true
+        every { levelUp.reader.read(false) } returns BondFrame.LevelUp(10, null, true)
+        levelUp.capture.start()
+        levelUp.stop { levelUp.bonds.process() } as AutoBattle.ExitReason.BondMax
+        assertEquals(1, levelUp.state.runs)
+        verify(exactly = 0) { levelUp.reader.read(true) }
+    }
+
+    @Test fun `capture on with only bond tracking leaves the bond tracker off and the reader unused`() {
+        val f = Fixture()
+        every { f.config.trackBond } returns true
+        every { f.config.stopOnBondMax } returns false
         f.feed.response = CapturedBattle(emptyMap(), listOf(CapturedBond(2, 901, 9, 10, 11, 100)))
         f.capture.start(); f.bonds.beginBattle()
         assertFalse(f.bonds.enabled); assertFalse(f.bonds.isScreen()); assertNull(f.bonds.summary())
         assertEquals(BondFrame.Other, f.bonds.process())
-        val reason = f.stop { f.bonds.finishResult() } as AutoBattle.ExitReason.BondMax
-        assertEquals(listOf(2), reason.positions); assertEquals(1, f.state.runs)
-        assertEquals(listOf(7L), f.feed.tokens)
-        verify { f.api.messages.log(match { it is ScriptLog.Bond && it.message.contains("2:svt=901") }) }
+        f.bonds.finishResult()
+        assertEquals(0, f.state.runs)
         verify { f.reader wasNot Called }
     }
 
@@ -184,16 +230,24 @@ class CaptureBattleTrackingTest {
         }
     }
 
-    @Test fun `a response without drops or bond sections continues and the next battle still stops on MAX`() {
+    @Test fun `checkBond never throws, awaits once per battle and logs what the captured data would decide`() {
         val f = Fixture()
         every { f.config.stopOnBondMax } returns true
+        val logs = mutableListOf<ScriptLog>()
+        every { f.api.messages.log(capture(logs)) } just Runs
+        fun decisions() = logs.filterIsInstance<ScriptLog.Bond>().map { it.message }
+            .filter { it.contains("comparison only") }
         f.feed.response = CapturedBattle(null, null); f.capture.start()
-        f.capture.checkBond(); f.materials.parseMaterials()
+        f.capture.checkBond(); f.capture.checkBond(); f.materials.parseMaterials()
         assertEquals(0, f.state.runs)
+        assertEquals(listOf("capture stop decision (comparison only)=undecided"), decisions())
         f.feed.sequence = 8; f.feed.response = CapturedBattle(emptyMap(), listOf(CapturedBond(1, 901, 10, 10, 10, 0)))
         f.capture.beginBattle()
-        val reason = f.stop { f.capture.checkBond() } as AutoBattle.ExitReason.BondMax
-        assertEquals(listOf(1), reason.positions)
+        f.capture.checkBond(); f.capture.checkBond()
+        assertEquals(0, f.state.runs)
+        assertEquals(2, decisions().size)
+        assertEquals("capture stop decision (comparison only)=[1]", decisions().last())
+        assertEquals(listOf(7L, 8L), f.feed.tokens)
     }
 
     @Test fun `master bond switch off means no wait and no slot log`() {

@@ -71,11 +71,9 @@ class CaptureBattleTracker @Inject constructor(
         bondChecked = true
         val result = response() ?: return
         if (!config.stopOnBondMax) return
-        val slots = CaptureBondStop.check(result, config.bondMaxIgnoredCharacters).orEmpty()
-        if (slots.isNotEmpty()) {
-            state.nextRun()
-            throw AutoBattle.BattleExitException(AutoBattle.ExitReason.BondMax(slots))
-        }
+        // Diagnostic only: the stop itself comes from the screen reading in BondTracker.
+        val decision = CaptureBondStop.check(result, config.bondMaxIgnoredCharacters)
+        messages.log(ScriptLog.Bond("capture stop decision (comparison only)=${decision ?: "undecided"}"))
     }
 
     companion object {
