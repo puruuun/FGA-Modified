@@ -7,7 +7,7 @@ import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.capture.deleteLegacyEventCache
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.widget.WidgetRefresh
-import io.github.fate_grand_automata.widget.observeWidgetSettingChanges
+import io.github.fate_grand_automata.widget.WidgetSettingsObserver
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,9 +28,7 @@ class AutomataApplication : Application() {
         OpenCVLoader.initLocal()
 
         WidgetRefresh.requestUpdate(this)
-        CoroutineScope(Dispatchers.IO).launch {
-            observeWidgetSettingChanges(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
-        }
+        WidgetSettingsObserver.start(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
 
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }

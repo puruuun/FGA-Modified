@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.WidgetTheme
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -53,6 +54,31 @@ class WidgetSettingsUpdatesTest {
         waitFor(updates, 4)
         assertEquals(4, updates.get())
         job.cancelAndJoin()
+    }
+
+    @Test fun startIsIdempotentAndTheRetainedJobStaysActive() {
+        val prefs = prefs("widget_observer")
+        val updates = AtomicInteger()
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default)
+        try {
+            WidgetSettingsObserver.stop()
+            WidgetSettingsObserver.start(prefs, scope) { updates.incrementAndGet() }
+            val first = WidgetSettingsObserver.job
+            WidgetSettingsObserver.start(prefs, scope) { updates.incrementAndGet() }
+            assertEquals(true, first === WidgetSettingsObserver.job)
+            assertEquals(true, first!!.isActive)
+            Thread.sleep(300)
+            System.gc()
+            assertEquals(0, updates.get())
+            prefs.widgetShowLogButton.set(true)
+            waitFor(updates, 1)
+            Thread.sleep(200)
+            assertEquals(1, updates.get())
+            assertEquals(true, WidgetSettingsObserver.job!!.isActive)
+        } finally {
+            WidgetSettingsObserver.stop()
+            scope.cancel()
+        }
     }
 
     @Test fun settingsStoredByThePrefsAreWhatTheWidgetsRead() {
