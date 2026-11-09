@@ -14,6 +14,8 @@ data class ApWidgetModel(
     val fullAt: Long?,
     /** Epoch seconds of the last captured data for the account. */
     val dataTime: Long,
+    /** Game server of the account as stored by the tracker, e.g. "KR" or "JP". */
+    val server: String = "KR",
 ) {
     val fraction: Float get() = if (apMax <= 0) 0f else (ap.toFloat() / apMax).coerceIn(0f, 1f)
 }
@@ -28,6 +30,7 @@ fun apWidgetModel(account: CaptureAccount, now: Long): ApWidgetModel {
         apMax = account.summary.apMax,
         fullAt = fullAt,
         dataTime = account.lastUpdateTime,
+        server = account.server,
     )
 }
 

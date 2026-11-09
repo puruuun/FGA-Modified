@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle
 import io.github.fate_grand_automata.prefs.core.WidgetTheme
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.FGASliderColors
@@ -28,6 +29,19 @@ fun WidgetSettingsScreen(prefs: PrefsCore) {
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
             Heading(stringResource(R.string.widget_settings))
+            prefs.widgetDisplayStyle.ListPreference(
+                title = stringResource(R.string.widget_settings_display_style),
+                entries = mapOf(
+                    WidgetDisplayStyle.OneAccount to stringResource(R.string.widget_settings_display_one),
+                    WidgetDisplayStyle.AllAccounts to stringResource(R.string.widget_settings_display_all),
+                ),
+            )
+            prefs.widgetShowServer.SwitchPreference(
+                title = stringResource(R.string.widget_settings_show_server),
+            )
+            prefs.widgetShowServiceButton.SwitchPreference(
+                title = stringResource(R.string.widget_settings_show_service_button),
+            )
             prefs.widgetShowLogButton.SwitchPreference(
                 title = stringResource(R.string.widget_settings_show_log_button),
             )

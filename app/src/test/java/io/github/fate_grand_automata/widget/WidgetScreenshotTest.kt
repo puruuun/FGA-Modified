@@ -122,6 +122,23 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun ap3x1HalfOpacity() = shootAp("ap_3x1_opacity50", narrow, several, settings = half, backdrop = true)
     @Test fun ap4x1FullyTransparent() = shootAp("ap_4x1_opacity100", wide, data(), settings = settings.copy(transparencyPercent = 100), backdrop = true)
 
+    // Issue #300: all-accounts style (3 accounts), phone 4x1, 5x1 and a tablet, with the log (key icon) tile off/on.
+    private val threeAccounts get() = ApWidgetState.Data(
+        listOf(model, model.copy(accountId = "7002", name = "두 번째", ap = 131, apMax = 146), model.copy(accountId = "7003", name = "세 번째", ap = 142, fullAt = null, server = "JP")),
+    )
+    private val allStyle get() = settings.copy(displayStyle = io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle.AllAccounts, showLogButton = false)
+
+    @Test fun all4x1() = shootAp("all_phone_4x1", wide, threeAccounts, allStyle)
+    @Test fun all5x1() = shootAp("all_phone_5x1", DpSize(350.dp, 74.dp), threeAccounts, allStyle)
+    @Test fun allTablet() = shootAp("all_tablet", DpSize(560.dp, 74.dp), threeAccounts, allStyle)
+    @Test fun allTabletNoService() = shootAp("all_tablet_no_service", DpSize(560.dp, 74.dp), threeAccounts, allStyle.copy(showServiceButton = false))
+    @Test fun allTabletServer() = shootAp("all_tablet_server", DpSize(560.dp, 74.dp), threeAccounts, allStyle.copy(showServer = true))
+    @Test fun allTabletLogKey() = shootAp("all_tablet_log_key", DpSize(560.dp, 74.dp), threeAccounts, allStyle.copy(showLogButton = true, showServer = true))
+    @Test fun allTabletLogKeyOn() = shootAp("all_tablet_log_key_on", DpSize(560.dp, 74.dp), threeAccounts, allStyle.copy(showLogButton = true, showServer = true), collecting = true)
+    @Test fun all5x1NoService() = shootAp("all_phone_5x1_no_service", DpSize(350.dp, 74.dp), threeAccounts, allStyle.copy(showServiceButton = false))
+    @Test fun oneStyleServer() = shootAp("ap_4x1_server", wide, several, settings.copy(showLogButton = false, showServer = true))
+    @Test fun oneStyleLogKey() = shootAp("ap_log_key_4x1", wide, several, settings.copy(showLogButton = true), collecting = false)
+
     /** The top-level RemoteViews, applied into an AppWidgetHostView like the launcher does. */
     private fun shootAp(
         name: String, size: DpSize, state: ApWidgetState, settings: WidgetSettings = this.settings,

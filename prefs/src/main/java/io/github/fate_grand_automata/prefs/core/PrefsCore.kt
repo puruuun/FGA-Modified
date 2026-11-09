@@ -70,7 +70,10 @@ class PrefsCore @Inject constructor(
 
     /** Home-screen widget look. The widgets read the same keys straight from the preference file. */
     val widgetTheme = maker.enum("widget_theme", WidgetTheme.Dark)
-    val widgetShowLogButton = maker.bool("widget_show_log_button", false)
+    val widgetShowLogButton = maker.bool("widget_show_log_button", true)
+    val widgetDisplayStyle = maker.enum("widget_display_style", WidgetDisplayStyle.OneAccount)
+    val widgetShowServiceButton = maker.bool("widget_show_service_button", true)
+    val widgetShowServer = maker.bool("widget_show_server", false)
 
     /** Percent of the widget card that is see-through: 0 (opaque) to 100, in steps of 10. */
     val widgetBackgroundTransparency = maker.int("widget_background_transparency", 0)

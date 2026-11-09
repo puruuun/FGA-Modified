@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -110,6 +111,7 @@ fun buildApWidgetViews(
 
     views.setInt(R.id.ap_root, "setBackgroundResource", widgetCardRes(settings))
     val showLog = widgetLogTileVisible(logAvailable, widthDp, AP_LOG_TILE_MIN_WIDTH_DP)
+    val allAccounts = settings.displayStyle == WidgetDisplayStyle.AllAccounts
     views.setViewVisibility(R.id.ap_log_tile, if (showLog) View.VISIBLE else View.GONE)
     if (showLog) {
         views.setInt(R.id.ap_log_tile, "setBackgroundResource", if (collecting) R.drawable.widget_log_tile_on else palette.tileBackground)
@@ -123,12 +125,22 @@ fun buildApWidgetViews(
 
     when (state) {
         is ApWidgetState.Data -> {
-            views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
             views.setViewVisibility(R.id.ap_no_data, View.GONE)
-            val index = ApWidgetShown.indexOf(state.models, shownAccountId)
-            addApFlipper(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat(), showLog), index, now)
-            // The up/down buttons only make sense with more than one account.
-            val several = state.models.size > 1
+            if (allAccounts) {
+                views.setViewVisibility(R.id.ap_flipper, View.GONE)
+                val cells = allAccountsCellCount(widthDp, showLog, settings.showServiceButton, state.models.size)
+                addAllAccountsRow(context, views, state.models, palette, cells, settings.showServer, now)
+            } else {
+                views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
+                views.setViewVisibility(R.id.ap_all, View.GONE)
+                val index = ApWidgetShown.indexOf(state.models, shownAccountId)
+                addApFlipper(
+                    context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat(), showLog), index, now,
+                    showServer = settings.showServer,
+                )
+            }
+            // The up/down buttons only make sense with more than one account, and only in the stack style.
+            val several = state.models.size > 1 && !allAccounts
             views.setViewVisibility(R.id.ap_nav, if (several) View.VISIBLE else View.GONE)
             if (several) {
                 views.setInt(R.id.ap_nav_up_icon, "setColorFilter", color(palette.secondary))
@@ -139,6 +151,7 @@ fun buildApWidgetViews(
         }
         ApWidgetState.NoData -> {
             views.setViewVisibility(R.id.ap_flipper, View.GONE)
+            views.setViewVisibility(R.id.ap_all, View.GONE)
             views.setViewVisibility(R.id.ap_nav, View.GONE)
             views.setViewVisibility(R.id.ap_no_data, View.VISIBLE)
             views.setTextColor(R.id.ap_no_data, color(palette.secondary))
@@ -149,6 +162,7 @@ fun buildApWidgetViews(
     // The start/stop tile, same look as the Glance tile of the 1x1 widget.
     val model = serviceWidgetModel(serviceStarted)
     val accent = if (serviceStarted) palette.on else palette.accent
+    views.setViewVisibility(R.id.ap_tile, if (settings.showServiceButton) View.VISIBLE else View.GONE)
     views.setInt(R.id.ap_tile, "setBackgroundResource", palette.tileBackground)
     views.setInt(R.id.ap_tile_circle, "setBackgroundResource", if (serviceStarted) palette.toggleCircleOn else palette.toggleCircle)
     views.setImageViewResource(R.id.ap_tile_icon, model.iconRes)
@@ -167,6 +181,10 @@ internal fun tilePendingIntent(context: Context, action: ServiceWidgetAction): P
         context, 0, Intent(context, StopServiceReceiver::class.java), immutableFlags(),
     )
 }
+
+/** Tap on one account of the all-accounts row; the per-account data URI keeps the PendingIntents apart. */
+internal fun openAccountPendingIntent(context: Context, accountId: String): PendingIntent =
+    PendingIntent.getActivity(context, 0, WidgetIntents.openAccount(context, accountId), immutableFlags())
 
 private fun activityPendingIntent(context: Context, intent: Intent): PendingIntent =
     PendingIntent.getActivity(context, 0, intent, immutableFlags())

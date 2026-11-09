@@ -6,6 +6,7 @@ import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefMaker
+import io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle
 import io.github.fate_grand_automata.prefs.core.WidgetTheme
 
 /** What the widget settings screen stores. Widgets read it straight from the preference file. */
@@ -13,7 +14,10 @@ data class WidgetSettings(
     val theme: WidgetTheme = WidgetTheme.Dark,
     /** 0 (opaque, the original look) to 100, in steps of [TRANSPARENCY_STEP]. */
     val transparencyPercent: Int = 0,
-    val showLogButton: Boolean = false,
+    val showLogButton: Boolean = true,
+    val displayStyle: WidgetDisplayStyle = WidgetDisplayStyle.OneAccount,
+    val showServiceButton: Boolean = true,
+    val showServer: Boolean = false,
 ) {
     companion object {
         const val TRANSPARENCY_STEP = 10
@@ -29,7 +33,10 @@ internal fun readWidgetSettings(prefs: SharedPreferences): WidgetSettings {
     return WidgetSettings(
         theme = maker.enum("widget_theme", WidgetTheme.Dark).get(),
         transparencyPercent = normalizeTransparency(maker.int("widget_background_transparency", 0).get()),
-        showLogButton = maker.bool("widget_show_log_button", false).get(),
+        showLogButton = maker.bool("widget_show_log_button", true).get(),
+        displayStyle = maker.enum("widget_display_style", WidgetDisplayStyle.OneAccount).get(),
+        showServiceButton = maker.bool("widget_show_service_button", true).get(),
+        showServer = maker.bool("widget_show_server", false).get(),
     )
 }
 
