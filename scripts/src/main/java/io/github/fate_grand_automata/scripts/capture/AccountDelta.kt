@@ -14,10 +14,11 @@ data class AccountDelta(
     val chargeStone: Long = 0,
     val svts: Map<Long, Long> = emptyMap(),
     val commandCodes: Map<Long, Long> = emptyMap(),
+    val friendPoint: Long = 0,
 ) {
     val isEmpty get() = items.values.all { it == 0L } &&
         svts.values.all { it == 0L } && commandCodes.values.all { it == 0L } &&
-        qp == 0L && mana == 0L && rarePri == 0L && freeStone == 0L && chargeStone == 0L
+        qp == 0L && mana == 0L && rarePri == 0L && freeStone == 0L && chargeStone == 0L && friendPoint == 0L
 
     operator fun plus(other: AccountDelta) = AccountDelta(
         (items.keys + other.items.keys).associateWith { (items[it] ?: 0) + (other.items[it] ?: 0) }
@@ -28,6 +29,7 @@ data class AccountDelta(
             .filterValues { it != 0L },
         (commandCodes.keys + other.commandCodes.keys).associateWith { (commandCodes[it] ?: 0L) + (other.commandCodes[it] ?: 0L) }
             .filterValues { it != 0L },
+        friendPoint = friendPoint + other.friendPoint,
     )
 
     companion object {
@@ -68,6 +70,7 @@ data class AccountDelta(
                     change("qp"), change("mana"), change("rarePri"), change("freeStone"), change("chargeStone"),
                     svts = cardChanges(listOf("userSvt", "userSvtStorage"), "svtId"),
                     commandCodes = cardChanges(listOf("userCommandCode"), "commandCodeId"),
+                    friendPoint = change("friendPoint"),
                 )
             }.getOrDefault(AccountDelta())
         }

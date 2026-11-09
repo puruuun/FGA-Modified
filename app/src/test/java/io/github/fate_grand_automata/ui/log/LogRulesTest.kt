@@ -3,13 +3,27 @@ package io.github.fate_grand_automata.ui.log
 import io.github.fate_grand_automata.battlelog.battleLogFixture
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
+import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import io.github.fate_grand_automata.scripts.capture.GainedItem
+import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import java.time.Instant
 import java.util.TimeZone
 import kotlin.test.*
 
 class LogRulesTest {
+    @Test fun friendPointsUseTheSameResourceListAndGainsFilterAsQp() {
+        fun entry(id: String, change: Long) = CaptureLogItem(outside = outsideFixture(id).let { outside ->
+            outside.copy(period = OutsidePeriod("fictionalA", 10)
+                .add(ChangeSource.of("gacha/draw"), AccountDelta(friendPoint = change), 11))
+        })
+        val gain = entry("gain", 200)
+        val loss = entry("loss", -200)
+        assertEquals(setOf("2:4"), logResources(listOf(gain, loss)))
+        assertEquals(listOf(gain), filterCaptureLogs(listOf(gain, loss), LogTimeFilter.All, "2:4", now, zone))
+        assertEquals(listOf(LogResource(id = 4, count = -200)), outsideResources(AccountDelta(friendPoint = -200), emptyMap()))
+    }
+
     private val zone = TimeZone.getTimeZone("Asia/Seoul")
     private val now = Instant.parse("2026-11-05T05:00:00Z").toEpochMilli()
     private fun battle(id: String, date: String, resource: Long = 6510, count: Long = 3) = CaptureLogItem(battle = battleLogFixture(id).copy(

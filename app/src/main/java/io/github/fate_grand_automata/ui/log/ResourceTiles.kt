@@ -33,15 +33,15 @@ internal data class LogResource(
     }
 }
 
-internal val currencyIds = setOf(1L, 2L, 3L, 5L, 6L, 7L, 11L, 16L, 18L, 100L, 101L, 104L, 102L)
-internal val iconItemIds = listOf(1L, 2L, 3L, 18L, 100L, 101L, 104L, 102L, 11L, 16L)
+internal val currencyIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 11L, 16L, 18L, 100L, 101L, 104L, 102L)
+internal val iconItemIds = listOf(1L, 2L, 3L, 4L, 18L, 100L, 101L, 104L, 102L, 11L, 16L)
 
 /** Zero fields disappear. Fruit usage remains gross usage even when later gains offset it. */
 internal fun outsideResources(delta: AccountDelta, fruitUsed: Map<Long, Long>): List<LogResource> = buildList {
     delta.items.filterKeys { it !in RunGains.FRUIT_IDS }.forEach { (id, count) -> if (count != 0L) add(LogResource(id = id, count = count)) }
     delta.svts.forEach { (id, count) -> if (count != 0L) add(LogResource(LogResource.SVT, id, count)) }
     delta.commandCodes.forEach { (id, count) -> if (count != 0L) add(LogResource(LogResource.COMMAND_CODE, id, count)) }
-    listOf(1L to delta.qp, 3L to delta.mana, 18L to delta.rarePri).forEach { (id, count) -> if (count != 0L) add(LogResource(id = id, count = count)) }
+    listOf(1L to delta.qp, 4L to delta.friendPoint, 3L to delta.mana, 18L to delta.rarePri).forEach { (id, count) -> if (count != 0L) add(LogResource(id = id, count = count)) }
     if (delta.freeStone != 0L || delta.chargeStone != 0L) add(LogResource(id = 2, count = delta.freeStone + delta.chargeStone, split = delta.freeStone to delta.chargeStone))
     listOf(100L, 101L, 104L, 102L).forEach { id ->
         val used = fruitUsed[id] ?: 0L
@@ -83,6 +83,7 @@ private fun itemResourceName(id: Long, names: GameNameMap): String = when (id) {
     1L, 5L -> stringResource(R.string.capture_qp)
     2L, 6L, 7L -> stringResource(R.string.capture_quartz)
     3L -> stringResource(R.string.capture_mana_prism)
+    4L -> stringResource(R.string.capture_friend_points)
     18L -> stringResource(R.string.capture_rare_prism)
     11L, 16L -> stringResource(R.string.capture_fragments)
     100L -> stringResource(R.string.capture_apples_gold)

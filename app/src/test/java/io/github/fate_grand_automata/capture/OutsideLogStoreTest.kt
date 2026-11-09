@@ -12,6 +12,17 @@ import kotlin.test.*
 class OutsideLogStoreTest {
     @TempDir lateinit var directory: File
 
+    @Test fun oldOutsideLogWithoutFriendPointsLoadsUnchanged() {
+        val entry = outsideFixture()
+        val legacy = Json.encodeToString(listOf(entry))
+        assertFalse(legacy.contains("friendPoint"))
+        File(directory, "outside-log.json").writeText(legacy)
+        val store = OutsideLogStore(directory).apply { load() }
+        assertEquals(listOf(entry), store.entries)
+        assertEquals(0, store.entries.single().period.total.friendPoint)
+        assertTrue(store.entries.single().period.sources.all { it.delta.friendPoint == 0L })
+    }
+
     @Test fun keepsNewest200AndReplayReplacesSameId() {
         File(directory, "outside-log.json").writeText(Json.encodeToString((1..200).map { outsideFixture("$it", it * 1000L) }))
         val store = OutsideLogStore(directory)

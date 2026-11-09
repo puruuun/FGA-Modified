@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.io.TempDir
@@ -8,6 +9,24 @@ import kotlin.test.*
 
 /** Handwritten fixtures; no captures or real ids. Exercises the actual filesystem and reducer. */
 class CaptureAccountsTest {
+    @Test fun krFriendPointSummonMergesNewServantAndCeRowsAndKeepsExistingCards() {
+        val store = store()
+        val target = "https://yfgo-game.netmarble.com/gacha/draw"
+        store.apply("https://yfgo-game.netmarble.com/login/top",
+            outsideLogin(svts = """[{"userId":"fictionalA","id":1001,"svtId":100100,"lv":1}]"""), 1)
+        val response = assertNotNull(store.apply(target, outsideFriendPointSummon(), 2))
+        val state = assertNotNull(response.next)
+        assertEquals(3, state.tables.getValue("userSvt").size)
+        assertEquals(setOf(1001L, 1002L, 1003L), state.tables.getValue("userSvt").map { it.jsonObject.getValue("id").jsonPrimitive.long }.toSet())
+        assertEquals(AccountDelta(
+            svts = mapOf(100100L to 1L, 9700010L to 1L), friendPoint = -200),
+            AccountDelta.between(response.previous, state))
+        store.save()
+        assertEquals(state, store().state)
+        val repeated = assertNotNull(store.apply(target, outsideFriendPointSummon(), 3))
+        assertSame(repeated.previous, repeated.next)
+    }
+
     @TempDir lateinit var directory: File
     private fun body(text: String) = Json.parseToJsonElement(text).jsonObject
     private fun login(id: Int, name: String = "Master $id") = body("""{"response":[{"nid":"login","resCode":"00"}],

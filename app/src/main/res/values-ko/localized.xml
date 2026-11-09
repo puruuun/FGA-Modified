@@ -1200,4 +1200,6 @@
     <string name="widget_settings_transparency">배경 투명도</string>
     <string name="widget_settings_show_log_button">로그 수집 버튼 표시</string>
     <string name="support_picker_download">이미지 받기</string>
+    <!-- Outside-log friend points (#290). -->
+    <string name="capture_friend_points">프렌드 포인트</string>
 </resources>

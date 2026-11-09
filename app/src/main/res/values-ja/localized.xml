@@ -958,4 +958,6 @@
     <string name="widget_settings_transparency">背景の透明度</string>
     <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
     <string name="support_picker_download">画像を取得</string>
+    <!-- Outside-log friend points (#290). -->
+    <string name="capture_friend_points">フレンドポイント</string>
 </resources>

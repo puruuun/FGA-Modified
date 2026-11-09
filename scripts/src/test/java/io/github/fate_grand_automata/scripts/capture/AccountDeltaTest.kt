@@ -4,6 +4,28 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class AccountDeltaTest {
+    @Test fun friendPointOnlyChangesAreNotEmptyAndAddAsLongs() {
+        val spent = AccountDelta(friendPoint = -200)
+        assertFalse(spent.isEmpty)
+        assertFalse(AccountDelta(friendPoint = 25).isEmpty)
+        assertEquals(AccountDelta(friendPoint = 3_000_000_000L), spent + AccountDelta(friendPoint = 3_000_000_200L))
+        assertTrue((spent + AccountDelta(friendPoint = 200)).isEmpty)
+    }
+
+    @Test fun friendPointsComeFromBothGameTableNames() {
+        val before = state(game = """{"friendPoint":"3000000200"}""")
+        val after = state(game = """{"friendPoint":3000000000}""")
+        assertEquals(AccountDelta(friendPoint = -200), AccountDelta.between(before, after))
+        fun alias(state: AccountState) = state.copy(tables = mapOf("tblUserGame" to state.tables.getValue("userGame")))
+        assertEquals(AccountDelta(friendPoint = -200), AccountDelta.between(alias(before), alias(after)))
+    }
+
+    @Test fun oldJsonWithoutFriendPointsDecodesWithZero() {
+        val old = """{"items":{"100":-2},"qp":1000,"svts":{"10":1}}"""
+        assertEquals(AccountDelta(items = mapOf(100L to -2L), qp = 1000, svts = mapOf(10L to 1L)),
+            Json.decodeFromString<AccountDelta>(old))
+    }
+
     private fun state(items: String = "[]", game: String = "{}") = AccountState(
         mapOf("userItem" to Json.parseToJsonElement(items).jsonArray,
             "userGame" to JsonArray(listOf(Json.parseToJsonElement(game)))),

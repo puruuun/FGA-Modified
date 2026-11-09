@@ -1270,4 +1270,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_settings_transparency">Background opacity</string>
     <string name="widget_settings_show_log_button">Show log collection button</string>
     <string name="support_picker_download">Download images</string>
+    <!-- Outside-log friend points (#290). -->
+    <string name="capture_friend_points">Friend points</string>
 </resources>
