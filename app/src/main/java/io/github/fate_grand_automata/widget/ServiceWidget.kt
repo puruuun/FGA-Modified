@@ -15,6 +15,7 @@ import androidx.glance.ColorFilter
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
@@ -24,12 +25,17 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.width
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -37,6 +43,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
+import io.github.fate_grand_automata.capture.CaptureTracker
 
 enum class ServiceWidgetAction { Start, Stop }
 
@@ -53,7 +60,7 @@ fun serviceWidgetModel(started: Boolean) =
     else ServiceWidgetModel(R.string.widget_service_off, R.string.widget_service_start, R.drawable.ic_play, ServiceWidgetAction.Start)
 
 class ServiceWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent { ServiceWidgetSessionContent() }
@@ -73,7 +80,11 @@ internal fun ServiceWidgetSessionContent() {
     val context = LocalContext.current
     val revision by WidgetRefresh.revision.collectAsState()
     val settings = remember(revision) { loadWidgetSettings(context) }
-    ServiceWidgetContent(ScriptRunnerService.serviceStarted.value, settings)
+    val collecting by CaptureTracker.running.collectAsState()
+    ServiceWidgetContent(
+        ScriptRunnerService.serviceStarted.value, settings, collecting,
+        widgetLogButtonAvailable(context, settings),
+    )
 }
 
 /**
@@ -87,16 +98,24 @@ fun ServiceToggleTile(
     modifier: GlanceModifier = GlanceModifier,
     settings: WidgetSettings = WidgetSettings(),
     asCard: Boolean = false,
+    capture: Boolean = false,
 ) {
     val context = LocalContext.current
-    val model = serviceWidgetModel(started)
+    val model = if (capture) serviceWidgetModel(started).copy(
+        iconRes = R.drawable.ic_widget_log,
+        descriptionRes = if (started) R.string.capture_main_stop else R.string.capture_main_start,
+    ) else serviceWidgetModel(started)
     val palette = widgetPalette(settings.theme)
-    val action: Action = when (model.action) {
+    val action: Action = if (capture) {
+        actionSendBroadcast(Intent(context, ToggleCaptureReceiver::class.java).addFlags(Intent.FLAG_RECEIVER_FOREGROUND))
+    } else when (model.action) {
         ServiceWidgetAction.Start -> actionStartActivity(WidgetIntents.startService(context))
         ServiceWidgetAction.Stop -> actionRunCallback<StopServiceCallback>()
     }
-    val accent = if (started) palette.on else palette.accent
-    val background = if (asCard) widgetTileCardRes(settings) else palette.tileBackground
+    val accent = if (capture && started) R.color.widget_log_on_foreground else if (started) palette.on else palette.accent
+    val background = if (capture && started) R.drawable.widget_log_tile_on else if (asCard) widgetTileCardRes(settings) else palette.tileBackground
+    val circle = if (capture && started) R.drawable.widget_log_circle_on else if (started) palette.toggleCircleOn else palette.toggleCircle
+    val labelColor = if (capture && started) R.color.widget_log_on_foreground else if (started) palette.on else palette.secondary
     Column(
         modifier = modifier
             .background(ImageProvider(background))
@@ -106,7 +125,7 @@ fun ServiceToggleTile(
     ) {
         Box(
             modifier = GlanceModifier.size(30.dp)
-                .background(ImageProvider(if (started) palette.toggleCircleOn else palette.toggleCircle)),
+                .background(ImageProvider(circle)),
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -119,7 +138,7 @@ fun ServiceToggleTile(
         Text(
             text = context.getString(model.labelRes),
             style = TextStyle(
-                color = ColorProvider(if (started) palette.on else palette.secondary),
+                color = ColorProvider(labelColor),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
             ),
@@ -128,8 +147,20 @@ fun ServiceToggleTile(
 }
 
 @Composable
-fun ServiceWidgetContent(started: Boolean, settings: WidgetSettings = WidgetSettings()) {
-    ServiceToggleTile(started, GlanceModifier.fillMaxSize(), settings, asCard = true)
+fun ServiceWidgetContent(
+    started: Boolean,
+    settings: WidgetSettings = WidgetSettings(),
+    collecting: Boolean = false,
+    logAvailable: Boolean = false,
+) {
+    val showLog = widgetLogTileVisible(logAvailable, LocalSize.current.width.value.toInt(), SERVICE_LOG_TILE_MIN_WIDTH_DP)
+    if (showLog) {
+        Row(GlanceModifier.fillMaxSize()) {
+            ServiceToggleTile(collecting, GlanceModifier.defaultWeight().fillMaxHeight(), settings, asCard = true, capture = true)
+            Spacer(GlanceModifier.width(4.dp))
+            ServiceToggleTile(started, GlanceModifier.defaultWeight().fillMaxHeight(), settings, asCard = true)
+        }
+    } else ServiceToggleTile(started, GlanceModifier.fillMaxSize(), settings, asCard = true)
 }
 
 /** Stops the service like the main-screen button does, without opening the UI. Only when it is running. */

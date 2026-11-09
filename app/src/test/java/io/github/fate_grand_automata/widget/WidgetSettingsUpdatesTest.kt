@@ -46,6 +46,12 @@ class WidgetSettingsUpdatesTest {
         prefs.widgetBackgroundTransparency.set(40)
         waitFor(updates, 2)
         assertEquals(2, updates.get())
+        prefs.widgetShowLogButton.set(true)
+        waitFor(updates, 3)
+        assertEquals(3, updates.get())
+        prefs.captureTrackerEnabled.set(true)
+        waitFor(updates, 4)
+        assertEquals(4, updates.get())
         job.cancelAndJoin()
     }
 
@@ -56,5 +62,7 @@ class WidgetSettingsUpdatesTest {
         prefs.widgetTheme.set(WidgetTheme.Light)
         prefs.widgetBackgroundTransparency.set(60)
         assertEquals(WidgetSettings(WidgetTheme.Light, 60), readWidgetSettings(sp))
+        prefs.widgetShowLogButton.set(true)
+        assertEquals(WidgetSettings(WidgetTheme.Light, 60, true), readWidgetSettings(sp))
     }
 }

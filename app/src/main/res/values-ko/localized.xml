@@ -1197,4 +1197,5 @@
     <string name="widget_settings_theme_dark">어두운 테마</string>
     <string name="widget_settings_theme_light">밝은 테마</string>
     <string name="widget_settings_transparency">배경 투명도</string>
+    <string name="widget_settings_show_log_button">로그 수집 버튼 표시</string>
 </resources>

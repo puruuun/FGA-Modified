@@ -5,12 +5,14 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.merge
 
 /**
- * Calls [onChanged] after the user changes the widget theme or opacity, never for the value read when
- * collection starts. Collecting never returns; cancel it with the screen.
+ * Calls [onChanged] after a widget appearance or log-button availability preference changes, never
+ * for the initial read. The application observes these even while another settings screen is open.
  */
 suspend fun observeWidgetSettingChanges(prefs: PrefsCore, onChanged: () -> Unit) {
     merge(
         prefs.widgetTheme.asFlow().drop(1),
         prefs.widgetBackgroundTransparency.asFlow().drop(1),
+        prefs.widgetShowLogButton.asFlow().drop(1),
+        prefs.captureTrackerEnabled.asFlow().drop(1),
     ).collect { onChanged() }
 }

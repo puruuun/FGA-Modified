@@ -5,6 +5,10 @@ import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.capture.deleteLegacyEventCache
+import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.widget.WidgetRefresh
+import io.github.fate_grand_automata.widget.observeWidgetSettingChanges
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,6 +18,8 @@ import java.io.File
 
 @HiltAndroidApp
 class AutomataApplication : Application() {
+    @Inject lateinit var prefsCore: PrefsCore
+
     override fun onCreate() {
         super.onCreate()
 
@@ -21,7 +27,10 @@ class AutomataApplication : Application() {
 
         OpenCVLoader.initLocal()
 
-        io.github.fate_grand_automata.widget.WidgetRefresh.requestUpdate(this)
+        WidgetRefresh.requestUpdate(this)
+        CoroutineScope(Dispatchers.IO).launch {
+            observeWidgetSettingChanges(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
+        }
 
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }

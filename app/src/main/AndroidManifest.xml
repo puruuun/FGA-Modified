@@ -131,6 +131,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".widget.ToggleCaptureReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".widget.StopServiceReceiver"
             android:exported="false" />
 

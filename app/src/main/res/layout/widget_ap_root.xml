@@ -7,12 +7,15 @@
     android:background="@drawable/widget_card_dark_0"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:paddingStart="8dp"
+    android:paddingEnd="22dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginEnd="2dp"
+        android:layout_marginEnd="8dp"
         android:layout_weight="1">
 
         <!-- One account card at a time; the up/down buttons switch it. -->
@@ -71,6 +74,37 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_widget_chevron_down" />
         </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ap_log_tile"
+        android:layout_width="40dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/widget_tile_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:id="@+id/ap_log_circle"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/widget_toggle_circle">
+            <ImageView
+                android:id="@+id/ap_log_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_widget_log" />
+        </FrameLayout>
+        <TextView
+            android:id="@+id/ap_log_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <LinearLayout

@@ -82,11 +82,26 @@ class WidgetScreenshotTest(private val light: Boolean) {
 
     @Test fun serviceRunning() = shoot("service_running_1x1", DpSize(72.dp, 72.dp)) { ServiceWidgetContent(started = true, settings = settings) }
 
+    @Test fun logService1x1() = shoot("log_service_1x1", DpSize(72.dp, 72.dp)) {
+        ServiceWidgetContent(false, settings.copy(showLogButton = true), logAvailable = true)
+    }
+    @Test fun logService2x1Off() = shoot("log_service_2x1_off", DpSize(150.dp, 72.dp)) {
+        ServiceWidgetContent(false, settings.copy(showLogButton = true), logAvailable = true)
+    }
+    @Test fun logService2x1On() = shoot("log_service_2x1_on", DpSize(150.dp, 72.dp)) {
+        ServiceWidgetContent(true, settings.copy(showLogButton = true), collecting = true, logAvailable = true)
+    }
+
     @Test fun serviceStoppedHalfOpacity() = shoot("service_stopped_1x1_opacity50", DpSize(72.dp, 72.dp), backdrop = true) { ServiceWidgetContent(started = false, settings = half) }
 
     private fun data(m: ApWidgetModel = model) = ApWidgetState.Data(listOf(m))
 
     @Test fun ap4x1() = shootAp("ap_4x1", wide, data())
+    @Test fun apLog4x1Off() = shootAp("ap_log_4x1_off", wide, several, settings.copy(showLogButton = true))
+    @Test fun apLog4x1On() = shootAp("ap_log_4x1_on", wide, several, settings.copy(showLogButton = true), collecting = true)
+    @Test fun apLog3x1Hidden() = shootAp("ap_log_3x1_hidden", narrow, several, settings.copy(showLogButton = true))
+    @Test fun apLogAtThreshold() = shootAp("ap_log_width_250", DpSize(250.dp, 66.dp), several, settings.copy(showLogButton = true))
+    @Test fun apLogAt378() = shootAp("ap_log_width_378", DpSize(378.dp, 74.dp), several, settings.copy(showLogButton = true))
     @Test fun ap4x1Running() = shootAp("ap_4x1_on", wide, data(), started = true)
     @Test fun ap3x1() = shootAp("ap_3x1", narrow, data())
     @Test fun apFull4x1() = shootAp("ap_full_ap_4x1", wide, data(fullAp))
@@ -111,11 +126,13 @@ class WidgetScreenshotTest(private val light: Boolean) {
     private fun shootAp(
         name: String, size: DpSize, state: ApWidgetState, settings: WidgetSettings = this.settings,
         started: Boolean = false, backdrop: Boolean = false,
+        collecting: Boolean = false,
     ) {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
         android.provider.Settings.System.putString(context.contentResolver, android.provider.Settings.System.TIME_12_24, "12")
-        val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now = now)
+        val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now = now,
+            collecting = collecting, logAvailable = settings.showLogButton)
         val density = context.resources.displayMetrics.density
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))

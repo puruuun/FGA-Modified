@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.widget.ApWidgetRefresh
+import io.github.fate_grand_automata.widget.WidgetRefresh
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.BodyDecoder
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
@@ -161,11 +162,14 @@ object CaptureTracker {
 
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
         starting = false
-        synchronized(lock) {
+        val changed = synchronized(lock) {
             runSession.setRunning(running, runState())
             outsideWork { outside.setRunning(running) }
+            val changed = _running.value != running
             _running.value = running
+            changed
         }
+        if (changed) widgetContext?.let(WidgetRefresh::requestUpdate)
         if (running) {
             _stopReason.value = null
             _tlsFailures.value = 0

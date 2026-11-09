@@ -44,6 +44,7 @@ import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
 import io.github.fate_grand_automata.ui.skill_maker.SkillMakerActivity
 import io.github.fate_grand_automata.ui.spam.SpamScreen
 import io.github.fate_grand_automata.ui.spam.SpamScreenViewModel
+import io.github.fate_grand_automata.widget.WidgetCaptureNavigationEffect
 
 @Composable
 fun FgaApp(
@@ -71,6 +72,11 @@ fun FgaApp(
 
     // A widget start tap that arrives before onboarding is done must not start the service later.
     LaunchedEffect(Unit) { if (vm.prefs.isOnboardingRequired()) vm.widgetRequests.takeStart() }
+
+    WidgetCaptureNavigationEffect(vm.widgetRequests, vm.prefs.isOnboardingRequired()) {
+        backStack.clear()
+        backStack.add(Route.Home)
+    }
 
     // Account widget tap: open that account's dashboard once, on top of the home screen.
     val widgetAccount = vm.widgetRequests.accountPending

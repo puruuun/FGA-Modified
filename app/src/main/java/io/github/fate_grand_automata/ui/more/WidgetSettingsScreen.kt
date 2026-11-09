@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -19,22 +17,20 @@ import io.github.fate_grand_automata.ui.FGASliderColors
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
+import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
-import io.github.fate_grand_automata.widget.WidgetRefresh
 import io.github.fate_grand_automata.widget.WidgetSettings
 import io.github.fate_grand_automata.widget.normalizeTransparency
-import io.github.fate_grand_automata.widget.observeWidgetSettingChanges
 
 /** Theme and card opacity of the home-screen widgets. Both widgets redraw as soon as a value changes. */
 @Composable
 fun WidgetSettingsScreen(prefs: PrefsCore) {
-    val context = LocalContext.current
-    LaunchedEffect(prefs) {
-        observeWidgetSettingChanges(prefs) { WidgetRefresh.requestUpdate(context) }
-    }
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
             Heading(stringResource(R.string.widget_settings))
+            prefs.widgetShowLogButton.SwitchPreference(
+                title = stringResource(R.string.widget_settings_show_log_button),
+            )
             prefs.widgetTheme.ListPreference(
                 title = stringResource(R.string.widget_settings_theme),
                 entries = mapOf(

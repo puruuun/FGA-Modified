@@ -31,21 +31,25 @@ fun dataAgeText(context: Context, age: DataAge): String = when (age) {
 }
 
 /**
- * Type sizes by widget width. The info area loses the up/down button column and the tile, so the narrow
- * tiers are small; each still shows AP and the complete Korean 12-hour clock without clipping.
+ * Type sizes with 22 dp content insets and the larger navigation gap. A visible log tile takes another
+ * 44 dp. The narrow tiers still fit AP and the complete Korean 12-hour clock side by side.
  */
 data class ApWidgetFields(val apTextSize: Int, val fullTextSize: Int)
 
-const val AP_WIDGET_MEDIUM_TEXT_MIN_DP = 200f
-const val AP_WIDGET_LARGE_TEXT_MIN_DP = 225f
-const val AP_WIDGET_XLARGE_TEXT_MIN_DP = 250f
+const val AP_WIDGET_MEDIUM_TEXT_MIN_DP = 220f
+const val AP_WIDGET_LARGE_TEXT_MIN_DP = 245f
+const val AP_WIDGET_XLARGE_TEXT_MIN_DP = 270f
 
-fun apWidgetFields(widthDp: Float): ApWidgetFields =
+fun apWidgetFields(widthDp: Float, showLog: Boolean = false): ApWidgetFields =
+    apWidgetFieldsForContent(widthDp - if (showLog) 44 else 0)
+
+private fun apWidgetFieldsForContent(widthDp: Float): ApWidgetFields =
     when {
         widthDp >= AP_WIDGET_XLARGE_TEXT_MIN_DP -> ApWidgetFields(18, 11)
         widthDp >= AP_WIDGET_LARGE_TEXT_MIN_DP -> ApWidgetFields(14, 10)
         widthDp >= AP_WIDGET_MEDIUM_TEXT_MIN_DP -> ApWidgetFields(10, 8)
-        else -> ApWidgetFields(8, 7)
+        widthDp >= 195f -> ApWidgetFields(8, 7)
+        else -> ApWidgetFields(6, 5)
     }
 
 /** Strings shown by the AP widget, built apart from Glance for formatting tests. */

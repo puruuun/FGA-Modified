@@ -112,4 +112,42 @@ class WidgetLaunchRequestsTest {
         assertEquals(0, toggles)
         assertFalse(requests.startPending)
     }
+
+    @Test fun logStartReturnsToMainFromAnExistingScreenThenRunsOnce() {
+        val requests = WidgetLaunchRequests()
+        var main by androidx.compose.runtime.mutableStateOf(false)
+        var starts = 0
+        requests.requestCaptureStart()
+        compose.setContent {
+            WidgetCaptureNavigationEffect(requests, onboardingRequired = false) { main = true }
+            if (main) WidgetCaptureStartEffect(requests, running = false) { starts++ }
+        }
+        compose.waitForIdle()
+        assertEquals(true, main)
+        assertEquals(1, starts)
+        assertFalse(requests.captureStartPending)
+    }
+
+    @Test fun logStartBeforeOnboardingIsDiscardedAndNeverRunsLater() {
+        val requests = WidgetLaunchRequests()
+        var onboarding by androidx.compose.runtime.mutableStateOf(true)
+        var navigations = 0
+        requests.requestCaptureStart()
+        compose.setContent { WidgetCaptureNavigationEffect(requests, onboarding) { navigations++ } }
+        compose.waitForIdle()
+        assertFalse(requests.captureStartPending)
+        onboarding = false
+        compose.waitForIdle()
+        assertEquals(0, navigations)
+    }
+
+    @Test fun aRunningCaptureIsNeverStoppedByAnActivityStartExtra() {
+        val requests = WidgetLaunchRequests()
+        var toggles = 0
+        requests.requestCaptureStart()
+        compose.setContent { WidgetCaptureStartEffect(requests, running = true) { toggles++ } }
+        compose.waitForIdle()
+        assertEquals(0, toggles)
+        assertFalse(requests.captureStartPending)
+    }
 }

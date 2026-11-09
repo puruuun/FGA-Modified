@@ -955,4 +955,5 @@
     <string name="widget_settings_theme_dark">ダークテーマ</string>
     <string name="widget_settings_theme_light">ライトテーマ</string>
     <string name="widget_settings_transparency">背景の透明度</string>
+    <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
 </resources>

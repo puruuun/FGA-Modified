@@ -69,6 +69,7 @@ import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.util.OpenDocTreePersistable
 import io.github.fate_grand_automata.widget.WidgetStartEffect
+import io.github.fate_grand_automata.widget.WidgetCaptureStartEffect
 
 /** How long after a widget tap the screen may still close itself when the service comes up. */
 private const val WIDGET_START_WINDOW_MS = 3 * 60_000L
@@ -173,7 +174,15 @@ fun MainScreen(
         toggleOverlayService()
     }
 
-    val capture = rememberCaptureMain(vm.prefsCore) { navigate(MainScreenDestinations.GainsTracker) }
+    var widgetCapturePending by rememberSaveable { mutableStateOf(false) }
+    val capture = rememberCaptureMain(vm.prefsCore, onStartFinished = { started ->
+        if (widgetCapturePending && started) (context as? Activity)?.finish()
+        widgetCapturePending = false
+    }) { navigate(MainScreenDestinations.GainsTracker) }
+    WidgetCaptureStartEffect(vm.widgetRequests, capture.state.running) {
+        widgetCapturePending = true
+        capture.toggle()
+    }
     val overlayServiceStarted by ScriptRunnerService.serviceStarted
     val trackerConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK && ScriptRunnerService.serviceStarted.value) {

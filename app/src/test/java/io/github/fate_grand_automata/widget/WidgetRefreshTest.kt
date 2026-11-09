@@ -97,6 +97,22 @@ class WidgetRefreshTest {
         assertFalse(shadowOf(receiver).wentAsync())
     }
 
+    @Test fun everyCaptureRunningTransitionRefreshesBothPlacedWidgets() {
+        place(1, ServiceWidgetReceiver::class.java)
+        place(2, ApWidgetReceiver::class.java)
+        val done = CountDownLatch(4)
+        val service = java.util.concurrent.atomic.AtomicInteger()
+        val ap = java.util.concurrent.atomic.AtomicInteger()
+        WidgetRefresh.updateService = { service.incrementAndGet(); done.countDown() }
+        WidgetRefresh.updateAp = { ap.incrementAndGet(); done.countDown() }
+        io.github.fate_grand_automata.capture.CaptureTracker.initSummaries(context)
+        io.github.fate_grand_automata.capture.CaptureTracker.setRunning(true)
+        io.github.fate_grand_automata.capture.CaptureTracker.setRunning(false)
+        assertTrue(done.await(5, TimeUnit.SECONDS))
+        assertEquals(2, service.get())
+        assertEquals(2, ap.get())
+    }
+
     @Test fun saveHookRefreshesAnyAccountWhenAnApWidgetIsPlaced() {
         place(2, ApWidgetReceiver::class.java)
         val done = CountDownLatch(3)

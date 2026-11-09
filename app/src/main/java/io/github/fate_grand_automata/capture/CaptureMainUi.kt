@@ -29,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +48,8 @@ import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.util.grouped
 import java.util.Date
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class CaptureMainState(
     val showButton: Boolean = false,
@@ -61,7 +65,11 @@ class CaptureMainActions(
 )
 
 @Composable
-fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMainActions {
+fun rememberCaptureMain(
+    prefs: PrefsCore,
+    onStartFinished: (Boolean) -> Unit = {},
+    openSettings: () -> Unit,
+): CaptureMainActions {
     val context = LocalContext.current
     val enabled by prefs.captureTrackerEnabled.asFlow().collectAsStateWithLifecycle(
         initialValue = prefs.captureTrackerEnabled.get(),
@@ -70,7 +78,16 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
     val running by CaptureTracker.running.collectAsStateWithLifecycle()
     val accounts by CaptureTracker.accounts.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val agreement = rememberCaptureAgreement(prefs)
+    val finishStart by rememberUpdatedState(onStartFinished)
+    var awaitingStart by rememberSaveable { mutableStateOf(false) }
+    val agreement = rememberCaptureAgreement(prefs) { finishStart(false) }
+    LaunchedEffect(awaitingStart) {
+        if (awaitingStart) {
+            val started = withTimeoutOrNull(30_000) { CaptureTracker.running.first { it } } == true
+            awaitingStart = false
+            finishStart(started)
+        }
+    }
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     var installed by remember(context) { mutableStateOf(installedGamePackages(context)) }
     val gameInstalled = allowedGamePackages(installed, jpEnabled).isNotEmpty()
@@ -88,16 +105,26 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
     }
     fun start() {
         if (!captureButtonVisible(prefs.captureTrackerEnabled.get(), Build.VERSION.SDK_INT, gameInstalled) ||
-            !CaptureConsent.agreed(prefs.captureConsentVersion.get())) return
+            !CaptureConsent.agreed(prefs.captureConsentVersion.get())) {
+            finishStart(false)
+            return
+        }
         runCatching {
             if (!captureReadiness(context, prefs).ready) {
                 Toast.makeText(context, R.string.capture_main_no_certificate, Toast.LENGTH_SHORT).show()
+                finishStart(false)
                 openSettings()
-            } else CaptureController.start(context)
-        }.onFailure { Toast.makeText(context, R.string.capture_start_failed, Toast.LENGTH_SHORT).show() }
+            } else {
+                CaptureController.start(context)
+                awaitingStart = true
+            }
+        }.onFailure {
+            finishStart(false)
+            Toast.makeText(context, R.string.capture_start_failed, Toast.LENGTH_SHORT).show()
+        }
     }
     val vpnConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) start()
+        if (it.resultCode == Activity.RESULT_OK) start() else finishStart(false)
     }
     val toggle: () -> Unit = {
         if (CaptureTracker.running.value) CaptureController.stop()
@@ -105,12 +132,16 @@ fun rememberCaptureMain(prefs: PrefsCore, openSettings: () -> Unit): CaptureMain
             runCatching {
                 if (!captureReadiness(context, prefs).ready) {
                     Toast.makeText(context, R.string.capture_main_no_certificate, Toast.LENGTH_SHORT).show()
+                    finishStart(false)
                     openSettings()
                 } else {
                     val intent = CaptureController.consentIntent(context)
                     if (intent == null) start() else vpnConsent.launch(intent)
                 }
-            }.onFailure { Toast.makeText(context, R.string.capture_start_failed, Toast.LENGTH_SHORT).show() }
+            }.onFailure {
+                finishStart(false)
+                Toast.makeText(context, R.string.capture_start_failed, Toast.LENGTH_SHORT).show()
+            }
         }
     }
     return CaptureMainActions(

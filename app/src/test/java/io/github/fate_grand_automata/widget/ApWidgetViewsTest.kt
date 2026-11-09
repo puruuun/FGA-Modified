@@ -145,7 +145,7 @@ class ApWidgetViewsTest {
             val item = stack.adapter.getView(0, null, stack)
             return item.findViewById<TextView>(R.id.ap_item_ap).textSize / context.resources.displayMetrics.scaledDensity
         }
-        assertEquals(8f, apSize(180), 0.1f)
+        assertEquals(6f, apSize(180), 0.1f)
         assertEquals(18f, apSize(272), 0.1f)
     }
 
@@ -161,7 +161,7 @@ class ApWidgetViewsTest {
         assertEquals(378, chooseWidgetWidthDp(lawnchair(), landscape = true))
         assertEquals(183, chooseWidgetWidthDp(lawnchair(), landscape = false))
         assertEquals(ApWidgetFields(18, 11), apWidgetFields(chooseWidgetWidthDp(lawnchair(), true).toFloat()))
-        assertEquals(ApWidgetFields(8, 7), apWidgetFields(chooseWidgetWidthDp(lawnchair(), false).toFloat()))
+        assertEquals(ApWidgetFields(6, 5), apWidgetFields(chooseWidgetWidthDp(lawnchair(), false).toFloat()))
     }
 
     @Test fun withoutSizesLandscapeUsesMaxWidthAndPortraitMinWidth() {

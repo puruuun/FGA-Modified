@@ -19,10 +19,10 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 
 /** Both first enable and manual starts pass through this gate. Cancel never runs the action. */
 @Composable
-fun rememberCaptureAgreement(prefs: PrefsCore): (Boolean, () -> Unit) -> Unit {
+fun rememberCaptureAgreement(prefs: PrefsCore, onCancel: () -> Unit = {}): (Boolean, () -> Unit) -> Unit {
     val pending = remember { mutableStateOf<(() -> Unit)?>(null) }
     if (pending.value != null) CaptureConsentDialog(
-        onCancel = { pending.value = null },
+        onCancel = { pending.value = null; onCancel() },
         onAgree = {
             prefs.captureConsentVersion.set(CaptureConsent.VERSION)
             val action = pending.value

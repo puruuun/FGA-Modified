@@ -13,6 +13,7 @@ data class WidgetSettings(
     val theme: WidgetTheme = WidgetTheme.Dark,
     /** 0 (opaque, the original look) to 100, in steps of [TRANSPARENCY_STEP]. */
     val transparencyPercent: Int = 0,
+    val showLogButton: Boolean = false,
 ) {
     companion object {
         const val TRANSPARENCY_STEP = 10
@@ -28,6 +29,7 @@ internal fun readWidgetSettings(prefs: SharedPreferences): WidgetSettings {
     return WidgetSettings(
         theme = maker.enum("widget_theme", WidgetTheme.Dark).get(),
         transparencyPercent = normalizeTransparency(maker.int("widget_background_transparency", 0).get()),
+        showLogButton = maker.bool("widget_show_log_button", false).get(),
     )
 }
 

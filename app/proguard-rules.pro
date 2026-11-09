@@ -19,3 +19,5 @@
 -keep class * extends android.appwidget.AppWidgetProvider { <init>(); }
 -keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }
 -keep class io.github.fate_grand_automata.widget.ApWidgetNavReceiver { <init>(); }
+-keep class io.github.fate_grand_automata.widget.ToggleCaptureReceiver { <init>(); }
+-keep class io.github.fate_grand_automata.widget.WidgetRestoreReceiver { <init>(); }

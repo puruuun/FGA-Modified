@@ -25,11 +25,15 @@ class WidgetProguardRulesTest {
         assertTrue(rules.contains("-keep class * extends android.appwidget.AppWidgetProvider { <init>(); }"))
         assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.StopServiceReceiver { <init>(); }"))
         assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.ApWidgetNavReceiver { <init>(); }"))
+        assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.ToggleCaptureReceiver { <init>(); }"))
+        assertTrue(rules.contains("-keep class io.github.fate_grand_automata.widget.WidgetRestoreReceiver { <init>(); }"))
     }
 
     @Test fun stopReceiverIsNotExported() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
         val block = manifest.substringAfter("android:name=\".widget.StopServiceReceiver\"").substringBefore("/>")
         assertTrue(block.contains("android:exported=\"false\""))
+        val capture = manifest.substringAfter("android:name=\".widget.ToggleCaptureReceiver\"").substringBefore("/>")
+        assertTrue(capture.contains("android:exported=\"false\""))
     }
 }

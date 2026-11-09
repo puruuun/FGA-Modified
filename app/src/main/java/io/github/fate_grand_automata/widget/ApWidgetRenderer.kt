@@ -15,6 +15,7 @@ import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
+import io.github.fate_grand_automata.capture.CaptureTracker
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -100,19 +101,32 @@ fun buildApWidgetViews(
     /** The account this widget shows; the first one when it is null or no longer exists. */
     shownAccountId: String? = null,
     now: Long = System.currentTimeMillis() / 1000,
+    collecting: Boolean = CaptureTracker.running.value,
+    logAvailable: Boolean = widgetLogButtonAvailable(context, settings),
 ): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
     val palette = widgetPalette(settings.theme)
     fun color(res: Int) = ContextCompat.getColor(context, res)
 
     views.setInt(R.id.ap_root, "setBackgroundResource", widgetCardRes(settings))
+    val showLog = widgetLogTileVisible(logAvailable, widthDp, AP_LOG_TILE_MIN_WIDTH_DP)
+    views.setViewVisibility(R.id.ap_log_tile, if (showLog) View.VISIBLE else View.GONE)
+    if (showLog) {
+        views.setInt(R.id.ap_log_tile, "setBackgroundResource", if (collecting) R.drawable.widget_log_tile_on else palette.tileBackground)
+        views.setInt(R.id.ap_log_circle, "setBackgroundResource", if (collecting) R.drawable.widget_log_circle_on else palette.toggleCircle)
+        views.setInt(R.id.ap_log_icon, "setColorFilter", color(if (collecting) R.color.widget_log_on_foreground else palette.accent))
+        views.setContentDescription(R.id.ap_log_tile, context.getString(if (collecting) R.string.capture_main_stop else R.string.capture_main_start))
+        views.setTextViewText(R.id.ap_log_label, context.getString(if (collecting) R.string.widget_service_on else R.string.widget_service_off))
+        views.setTextColor(R.id.ap_log_label, color(if (collecting) R.color.widget_log_on_foreground else palette.secondary))
+        views.setOnClickPendingIntent(R.id.ap_log_tile, capturePendingIntent(context))
+    }
 
     when (state) {
         is ApWidgetState.Data -> {
             views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
             views.setViewVisibility(R.id.ap_no_data, View.GONE)
             val index = ApWidgetShown.indexOf(state.models, shownAccountId)
-            addApFlipper(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat()), index, now)
+            addApFlipper(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat(), showLog), index, now)
             // The up/down buttons only make sense with more than one account.
             val several = state.models.size > 1
             views.setViewVisibility(R.id.ap_nav, if (several) View.VISIBLE else View.GONE)
