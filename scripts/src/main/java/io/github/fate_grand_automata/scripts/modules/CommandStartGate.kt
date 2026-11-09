@@ -15,22 +15,42 @@ import javax.inject.Inject
 /** The gate latches once per quest; only actual battle counters advance while waiting. */
 @ScriptScope
 class CommandStartGate @Inject constructor(config: IBattleConfig) {
+    /** One start target: the servant whose face cards are counted and what the hand must hold. */
+    class Condition(
+        val slot: TeamSlot,
+        /** Count 0 means the Any row is unused; with no colour either, the gate falls back to Any 1. */
+        val required: Int,
+        val colours: CardColourCounts,
+        val combineMode: CommandStartCombineMode
+    )
+
     val mode = config.commandStartMode
     val target = TeamSlot.list[config.commandStartServant.coerceIn(1..3) - 1]
     val secondaryEnabled = mode == CommandStartMode.CardCount && config.secondaryStartEnabled
     val secondaryTarget = if (secondaryEnabled) TeamSlot.list[config.secondaryStartServant.coerceIn(1..3) - 1] else null
-    val hasDuplicateTargets get() = secondaryEnabled && target == secondaryTarget
+    /** The third target only exists in card-count mode with the second target on as well. */
+    val tertiaryEnabled = secondaryEnabled && config.tertiaryStartEnabled
+    val tertiaryTarget = if (tertiaryEnabled) TeamSlot.list[config.tertiaryStartServant.coerceIn(1..3) - 1] else null
     private val primaryColours = CardColourCounts(
         config.commandStartBuster.coerceIn(0..5), config.commandStartArts.coerceIn(0..5), config.commandStartQuick.coerceIn(0..5)
     )
-    /** Count 0 means the Any row is unused; with no colour either, the gate falls back to Any 1. */
     val requiredCards = effectiveCount(config.commandStartCardCount, primaryColours)
-    private val primaryCombineMode = config.commandStartCombineMode
     private val secondaryColours = if (secondaryEnabled) CardColourCounts(
         config.secondaryStartBuster.coerceIn(0..5), config.secondaryStartArts.coerceIn(0..5), config.secondaryStartQuick.coerceIn(0..5)
     ) else CardColourCounts()
     val secondaryRequired = if (secondaryEnabled) effectiveCount(config.secondaryStartCardCount, secondaryColours) else 0
-    private val secondaryCombineMode = if (secondaryEnabled) config.secondaryStartCombineMode else CommandStartCombineMode.And
+    private val tertiaryColours = if (tertiaryEnabled) CardColourCounts(
+        config.tertiaryStartBuster.coerceIn(0..5), config.tertiaryStartArts.coerceIn(0..5), config.tertiaryStartQuick.coerceIn(0..5)
+    ) else CardColourCounts()
+    val tertiaryRequired = if (tertiaryEnabled) effectiveCount(config.tertiaryStartCardCount, tertiaryColours) else 0
+
+    /** The enabled targets in check order; the index is the execution profile index. */
+    val conditions: List<Condition> = listOfNotNull(
+        Condition(target, requiredCards, primaryColours, config.commandStartCombineMode),
+        secondaryTarget?.let { Condition(it, secondaryRequired, secondaryColours, config.secondaryStartCombineMode) },
+        tertiaryTarget?.let { Condition(it, tertiaryRequired, tertiaryColours, config.tertiaryStartCombineMode) }
+    )
+    val hasDuplicateTargets get() = conditions.map { it.slot }.let { it.size != it.toSet().size }
     private val maxWaitingTurns = config.commandStartMaxTurns.coerceAtLeast(0)
 
     private var start: CommandPosition? = null
@@ -46,7 +66,8 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
         data class Ready(val count: Int, val profileIndex: Int = 0, val colours: CardColourCounts = CardColourCounts()) : Result()
         data class Wait(
             val count: Int, val secondaryCount: Int? = null,
-            val colours: CardColourCounts = CardColourCounts(), val secondaryColours: CardColourCounts? = null
+            val colours: CardColourCounts = CardColourCounts(), val secondaryColours: CardColourCounts? = null,
+            val tertiaryCount: Int? = null, val tertiaryColours: CardColourCounts? = null
         ) : Result()
         data object RecognitionFailed : Result()
         data object TargetUnavailable : Result()
@@ -65,18 +86,19 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
             cards.any { !it.isStunned && (it.servant == TeamSlot.Unknown || it.type == CardTypeEnum.Unknown) }
         ) return Result.RecognitionFailed
 
-        fun usableCards(slot: TeamSlot?) = cards.filter { slot in deployed && it.servant == slot && !it.isStunned }
-        val primary = usableCards(target)
-        val secondary = usableCards(secondaryTarget)
-        val colours = countColours(primary)
-        val secondColours = countColours(secondary)
-        return when {
-            meets(primary.size, colours, requiredCards, primaryColours, primaryCombineMode) -> Result.Ready(primary.size, 0, colours)
-            secondaryEnabled && meets(secondary.size, secondColours, secondaryRequired, secondaryColours, secondaryCombineMode) ->
-                Result.Ready(secondary.size, 1, secondColours)
-            maxWaitingTurns > 0 && waitingTurns >= maxWaitingTurns -> Result.WaitLimitReached
-            else -> Result.Wait(primary.size, secondary.size.takeIf { secondaryEnabled }, colours, secondColours.takeIf { secondaryEnabled })
+        fun usableCards(slot: TeamSlot) = cards.filter { slot in deployed && it.servant == slot && !it.isStunned }
+        val usable = conditions.map { usableCards(it.slot) }
+        val colours = usable.map(::countColours)
+        conditions.forEachIndexed { index, condition ->
+            if (meets(usable[index].size, colours[index], condition.required, condition.colours, condition.combineMode)) {
+                return Result.Ready(usable[index].size, index, colours[index])
+            }
         }
+        if (maxWaitingTurns > 0 && waitingTurns >= maxWaitingTurns) return Result.WaitLimitReached
+        return Result.Wait(
+            usable[0].size, usable.getOrNull(1)?.size, colours[0], colours.getOrNull(1),
+            usable.getOrNull(2)?.size, colours.getOrNull(2)
+        )
     }
 
     private fun effectiveCount(raw: Int, colours: CardColourCounts): Int {
@@ -105,7 +127,7 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
     }
 
     fun hasAvailableTarget(deployed: Collection<TeamSlot>) =
-        target in deployed || (secondaryEnabled && secondaryTarget in deployed)
+        conditions.any { it.slot in deployed }
 
     fun recordWaitingTurn() {
         check(isWaiting)
@@ -115,7 +137,7 @@ class CommandStartGate @Inject constructor(config: IBattleConfig) {
     fun startAt(stage: Int, turn: Int, profileIndex: Int = 0, totalTurns: Int = 0) {
         check(isWaiting)
         require(stage >= 0 && turn >= 0)
-        require(profileIndex == 0 || (profileIndex == 1 && secondaryEnabled))
+        require(profileIndex in conditions.indices)
         selectedProfile = profileIndex
         startTotalTurns = totalTurns
         start = CommandPosition(stage, turn)

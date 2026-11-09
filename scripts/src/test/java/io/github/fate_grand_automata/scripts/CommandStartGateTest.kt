@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.CommandStartCombineMode
@@ -16,6 +17,7 @@ import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -32,7 +34,11 @@ class CommandStartGateTest {
         colours: CardColourCounts = CardColourCounts(),
         combine: CommandStartCombineMode = CommandStartCombineMode.And,
         secondColours: CardColourCounts = CardColourCounts(),
-        secondCombine: CommandStartCombineMode = CommandStartCombineMode.And
+        secondCombine: CommandStartCombineMode = CommandStartCombineMode.And,
+        third: Int? = null,
+        thirdRequired: Int = 2,
+        thirdColours: CardColourCounts = CardColourCounts(),
+        thirdCombine: CommandStartCombineMode = CommandStartCombineMode.And
     ): CommandStartGate {
         val config = mockk<IBattleConfig>()
         every { config.commandStartMode } returns mode
@@ -50,6 +56,13 @@ class CommandStartGateTest {
         every { config.secondaryStartEnabled } returns (second != null)
         every { config.secondaryStartServant } returns (second ?: 2)
         every { config.secondaryStartCardCount } returns secondRequired
+        every { config.tertiaryStartEnabled } returns (third != null)
+        every { config.tertiaryStartServant } returns (third ?: 3)
+        every { config.tertiaryStartCardCount } returns thirdRequired
+        every { config.tertiaryStartBuster } returns thirdColours.buster
+        every { config.tertiaryStartArts } returns thirdColours.arts
+        every { config.tertiaryStartQuick } returns thirdColours.quick
+        every { config.tertiaryStartCombineMode } returns thirdCombine
         return CommandStartGate(config)
     }
 
@@ -370,5 +383,71 @@ class CommandStartGateTest {
         val gate = gate(required = 3, colours = CardColourCounts(buster = 2))
         assertThat(gate.check(hand(2), deployed)).isEqualTo(waitResult(2))
         assertThat(gate.check(hand(3), deployed)).isEqualTo(readyResult(3))
+    }
+
+    /** Servant A holds [a] cards, B [b] and C the rest; every card is Buster. */
+    private fun triHand(a: Int, b: Int) = CommandCard.Face.list.mapIndexed { index, card ->
+        ParsedCard(card, when {
+            index < a -> TeamSlot.A
+            index < a + b -> TeamSlot.B
+            else -> TeamSlot.C
+        }, null, CardTypeEnum.Buster)
+    }
+
+    @Test
+    fun `third target meeting alone is ready with profile index 2`() {
+        val gate = gate(required = 5, second = 2, secondRequired = 5, third = 3, thirdRequired = 2)
+        assertThat(gate.check(triHand(2, 2), deployed)).isEqualTo(
+            CommandStartGate.Result.Wait(2, 2, CardColourCounts(2), CardColourCounts(2), 1, CardColourCounts(1))
+        )
+        assertThat(gate.check(triHand(2, 1), deployed)).isEqualTo(readyResult(2, 2))
+    }
+
+    @Test
+    fun `targets 1 and 3 both meeting pick index 0 and 2 and 3 pick index 1`() {
+        val first = gate(required = 1, second = 2, secondRequired = 5, third = 3, thirdRequired = 1)
+        assertThat(first.check(triHand(1, 1), deployed)).isEqualTo(readyResult(1, 0))
+        val second = gate(required = 5, second = 2, secondRequired = 1, third = 3, thirdRequired = 1)
+        assertThat(second.check(triHand(1, 1), deployed)).isEqualTo(readyResult(1, 1))
+    }
+
+    @Test
+    fun `any two enabled targets on the same servant are duplicates`() {
+        for ((first, second, third) in listOf(Triple(1, 2, 1), Triple(1, 2, 2), Triple(3, 2, 3))) {
+            val gate = gate(target = first, second = second, third = third)
+            assertTrue(gate.hasDuplicateTargets)
+            assertThat(gate.check(triHand(2, 2), deployed)).isEqualTo(CommandStartGate.Result.DuplicateTargets)
+        }
+        assertFalse(gate(target = 1, second = 2, third = 3).hasDuplicateTargets)
+    }
+
+    @Test
+    fun `only the third target deployed still counts as available`() {
+        val gate = gate(target = 1, second = 2, third = 3)
+        assertTrue(gate.hasAvailableTarget(listOf(TeamSlot.C)))
+        assertFalse(gate.hasAvailableTarget(listOf(TeamSlot.D)))
+        assertThat(gate.check(triHand(1, 1), listOf(TeamSlot.D))).isEqualTo(CommandStartGate.Result.TargetUnavailable)
+    }
+
+    @Test
+    fun `third target is ignored when the second is off or in basic mode`() {
+        val noSecond = gate(third = 3)
+        assertFalse(noSecond.tertiaryEnabled)
+        assertThat(noSecond.conditions.size).isEqualTo(1)
+        val basic = gate(mode = CommandStartMode.Basic, second = 2, third = 3)
+        assertFalse(basic.tertiaryEnabled)
+        val on = gate(second = 2, third = 3)
+        assertThat(on.conditions.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `third target wait limit behaves like the others and startAt validates index 2`() {
+        val gate = gate(required = 5, second = 2, secondRequired = 5, third = 3, thirdRequired = 5, limit = 1)
+        assertThat(gate.check(triHand(1, 1), deployed)).isInstanceOf(CommandStartGate.Result.Wait::class)
+        gate.recordWaitingTurn()
+        assertThat(gate.check(triHand(1, 1), deployed)).isEqualTo(CommandStartGate.Result.WaitLimitReached)
+        gate.startAt(0, 0, 2)
+        assertThat(gate.selectedProfile).isEqualTo(2)
+        assertFailsWith<IllegalArgumentException> { gate(second = 2).startAt(0, 0, 2) }
     }
 }

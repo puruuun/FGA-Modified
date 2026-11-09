@@ -123,6 +123,22 @@ class BattleCommandStartTest {
     }
 
     @Test
+    fun `third target lists every target while waiting then starts the third profile`() {
+        val f = Fixture(dual = true, third = true, required = 5, secondRequired = 5, thirdRequired = 2)
+        every { f.card.readCommandCards() } returns hand(2, 2)
+        f.battle.performBattle()
+        verify(exactly = 1) { f.api.messages.notify(match<ScriptNotify.CommandStartWaitingMany> {
+            it.targets.map { t -> t.servant to t.count } == listOf(1 to 2, 2 to 2, 3 to 1)
+        }) }
+        verify(exactly = 0) { f.autoSkill.execute(any(), any()) }
+        every { f.card.readCommandCards() } returns hand(1, 2)
+        f.battle.performBattle()
+        assertThat(f.execution.selectedIndex).isEqualTo(2)
+        verify { f.api.messages.notify(match<ScriptNotify.CommandStarted> { it.profileIndex == 2 }) }
+        verify(exactly = 1) { f.autoSkill.execute(0, 0) }
+    }
+
+    @Test
     fun `first turn shuffle rechecks colour conditions with the new hand`() {
         val f = Fixture(colours = CardColourCounts(arts = 1, quick = 1), shuffleMode = ShuffleCardsEnum.FirstTurnStartCondition)
         val mixed = hand(2).mapIndexed { index, card ->
@@ -149,7 +165,9 @@ class BattleCommandStartTest {
         combine: CommandStartCombineMode = CommandStartCombineMode.And,
         secondRequired: Int = 2,
         secondColours: CardColourCounts = CardColourCounts(),
-        secondCombine: CommandStartCombineMode = CommandStartCombineMode.And
+        secondCombine: CommandStartCombineMode = CommandStartCombineMode.And,
+        third: Boolean = false,
+        thirdRequired: Int = 2
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val config = mockk<IBattleConfig>(relaxed = true)
@@ -186,6 +204,10 @@ class BattleCommandStartTest {
             every { config.secondaryStartServant } returns 2
             every { config.secondaryStartCardCount } returns secondRequired
             every { config.secondaryExecution } returns TestExecutionProfile(skillCommand = "5")
+            every { config.tertiaryStartEnabled } returns third
+            every { config.tertiaryStartServant } returns 3
+            every { config.tertiaryStartCardCount } returns thirdRequired
+            every { config.tertiaryExecution } returns TestExecutionProfile(skillCommand = "6")
             every { config.skillCommand } returns "4"
             every { config.cardPriority } returns io.github.fate_grand_automata.scripts.models.CardPriorityPerWave.default
             every { config.servantPriority } returns io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave.default
@@ -197,7 +219,7 @@ class BattleCommandStartTest {
             every { config.spam } returns emptyList()
             every { config.shuffleCards } returns shuffleMode
             every { config.shuffleCardsWave } returns shuffleWave
-            every { tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B)
+            every { tracker.deployed } returns mapOf(FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B, FieldSlot.C to TeamSlot.C)
             every { api.locations.battle.screenCheckRegion } returns screen
             every { api.locations.attack.backClick } returns back
             every { api.locations.battle.attackClick } returns attack

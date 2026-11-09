@@ -29,6 +29,14 @@ internal class BattleConfig(
     override val secondaryStartQuick by prefs.secondaryStartQuick
     override val secondaryStartCombineMode by prefs.secondaryStartCombineMode
     override val secondaryExecution = ExecutionProfile(prefs.secondaryExecution)
+    override val tertiaryStartEnabled by prefs.tertiaryStartEnabled
+    override val tertiaryStartServant by prefs.tertiaryStartServant
+    override val tertiaryStartCardCount by prefs.tertiaryStartCardCount
+    override val tertiaryStartBuster by prefs.tertiaryStartBuster
+    override val tertiaryStartArts by prefs.tertiaryStartArts
+    override val tertiaryStartQuick by prefs.tertiaryStartQuick
+    override val tertiaryStartCombineMode by prefs.tertiaryStartCombineMode
+    override val tertiaryExecution = ExecutionProfile(prefs.tertiaryExecution)
 
     override var cardPriority by prefs.cardPriority
     override val cardPrioritySplit by prefs.cardPrioritySplit

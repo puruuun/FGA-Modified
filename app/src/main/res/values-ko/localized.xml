@@ -882,6 +882,10 @@
     <string name="added_tuning_reset_all">전체 기본값으로</string>
     <string name="command_start_waiting_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$s장), %4$s</string>
     <string name="command_start_waiting_both_colours">카드 대기: 서번트 %1$d번, 현재 %2$d장 (최소 %3$s장), %7$s · 서번트 %4$d번, 현재 %5$d장 (최소 %6$s장), %8$s</string>
+    <string name="command_start_waiting_many">카드 대기: %1$s</string>
+    <string name="command_start_waiting_many_item">서번트 %1$d번, 현재 %2$d장 (최소 %3$s장), %4$s</string>
+    <string name="command_start_third_servant">세 번째 조건: 대상 서번트</string>
+    <string name="command_start_duplicate_targets_all">각 조건에 서로 다른 서번트를 선택해 주세요.</string>
     <string name="command_started_profile_colours">%1$d번째 커맨드 시작: %2$d웨이브 %3$d턴 (%4$s)</string>
     <string name="command_start_conditions">시작 조건</string>
     <string name="command_start_cond_any">전체</string>
