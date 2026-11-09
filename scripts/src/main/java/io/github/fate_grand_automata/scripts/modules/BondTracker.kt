@@ -23,11 +23,14 @@ class BondTracker @Inject constructor(
 ) : IFgoAutomataApi by api {
     private val ledger = BondLedger()
     private var battleRun: Int? = null
-    val enabled get() = capture?.enabled != true && prefs.bondTrackingFeatureEnabled && (config.trackBond || config.stopOnBondMax) &&
+    /** With log collection on, the captured data supplies the numbers; the screen is read only for the MAX stops. */
+    private val capturing get() = capture?.enabled == true
+    val enabled get() = prefs.bondTrackingFeatureEnabled &&
+        (config.stopOnBondMax || (config.trackBond && !capturing)) &&
         (prefs.gameServer is GameServer.Kr || prefs.gameServer is GameServer.Jp)
 
     fun isScreen() = enabled && reader.isScreen()
-    fun summary(): BondSummary? = if (enabled && config.trackBond) ledger.summary() else null
+    fun summary(): BondSummary? = if (enabled && config.trackBond && !capturing) ledger.summary() else null
 
     fun beginBattle() { if (enabled) battleRun = state.runs }
 
@@ -42,7 +45,7 @@ class BondTracker @Inject constructor(
         // Wait for the result animation before capturing a fresh frame. Keep the user's
         // requested 1.2 second delay independent of the general wait multiplier.
         addedTuning.bond.delay(1200.milliseconds).wait(applyMultiplier = false)
-        val readGains = config.trackBond
+        val readGains = config.trackBond && !capturing
         fun read(number: Int): BondFrame = reader.read(readGains).also { frame ->
             messages.log(ScriptLog.Bond("run=${state.runs} read=$number ${frame::class.simpleName}"))
             reader.lastColumns.forEach { column ->
