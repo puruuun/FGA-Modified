@@ -1449,6 +1449,27 @@
       "recommended": "Absent"
     },
     {
+      "name": "ce-Kr-19",
+      "suite": "ceEnhance",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/ce-enhance/19.webp",
+      "source": "build/orchestration/inputs/ce-filter-warning/kr-tablet-ce-filter-warning.png",
+      "scores": {
+        "ok": [
+          0,
+          0.3
+        ],
+        "okKR": [
+          0,
+          0.3
+        ],
+        "warnOk": [
+          0.9,
+          1
+        ]
+      }
+    },
+    {
       "name": "ce-Kr-servant-enhancement-servant",
       "suite": "ceEnhance",
       "server": "Kr",
