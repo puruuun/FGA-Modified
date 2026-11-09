@@ -1267,4 +1267,5 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_settings_theme_dark">Dark theme</string>
     <string name="widget_settings_theme_light">Light theme</string>
     <string name="widget_settings_transparency">Background opacity</string>
+    <string name="support_picker_download">Download images</string>
 </resources>

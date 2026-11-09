@@ -16,7 +16,8 @@ import io.github.fate_grand_automata.ui.prefs.remember
 fun Pref<Set<String>>.SupportSelectPreference(
     title: String,
     entries: Map<String, String>,
-    icon: VectorIcon? = null
+    icon: VectorIcon? = null,
+    imageDownload: (@Composable ((String) -> Unit) -> Unit)? = null
 ) {
     val value by remember()
 
@@ -24,6 +25,7 @@ fun Pref<Set<String>>.SupportSelectPreference(
         title = title,
         entries = entries,
         icon = icon,
+        dialogAction = imageDownload,
         summary = {
             if (it.isEmpty())
                 stringResource(R.string.p_not_set)
