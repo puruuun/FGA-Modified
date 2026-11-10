@@ -35,9 +35,11 @@ class ApWidgetViewsTest {
     private val context get() = ApplicationProvider.getApplicationContext<Application>()
     private val now = 1_800_000_000L
     private val originalLoader = ApWidgetRenderer.loader
+    private val originalScope = WidgetRefresh.scope
 
     @After fun restore() {
         ApWidgetRenderer.loader = originalLoader
+        WidgetRefresh.scope = originalScope
         (ScriptRunnerService.serviceStarted as androidx.compose.runtime.MutableState<Boolean>).value = false
     }
 
@@ -297,12 +299,12 @@ class ApWidgetViewsTest {
         val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         val b = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         ApWidgetRenderer.loader = { data(3) }
+        // The receiver's work runs inline, so the step is done when onReceive returns.
+        WidgetRefresh.scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined)
         ApWidgetNavReceiver().onReceive(
             context,
             android.content.Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, b).putExtra(ApWidgetNavReceiver.EXTRA_DIRECTION, -1),
         )
-        val end = System.currentTimeMillis() + 3000
-        while (ApWidgetShown.get(context, b) == null && System.currentTimeMillis() < end) Thread.sleep(10)
         assertEquals("7003", ApWidgetShown.get(context, b))
         assertNull(ApWidgetShown.get(context, a))
     }
@@ -338,7 +340,7 @@ class ApWidgetViewsTest {
         ApWidgetRenderer.loader = { data(3) }
         ApWidgetRenderer.updateAll(context)
         val hostView = shadow.getViewFor(id)
-        idleUntil { hostView.findViewById<View>(R.id.ap_flipper)?.visibility == View.VISIBLE }
+        settleMainLooperAndAsyncTasks()
         // The shadow host reapplies the views; adapter contents are checked where the views are applied fresh.
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_flipper).visibility)
         assertEquals(View.GONE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
@@ -346,18 +348,8 @@ class ApWidgetViewsTest {
         // A later refresh with no data replaces the stack with the message.
         ApWidgetRenderer.loader = { ApWidgetState.NoData }
         ApWidgetRenderer.updateAll(context)
-        idleUntil { hostView.findViewById<View>(R.id.ap_no_data)?.visibility == View.VISIBLE }
+        settleMainLooperAndAsyncTasks()
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
-    }
-
-    /** The shadow host applies the views on the main looper; wait for it instead of assuming one idle is enough. */
-    private fun idleUntil(condition: () -> Boolean) {
-        val end = System.currentTimeMillis() + 3000
-        do {
-            shadowOf(android.os.Looper.getMainLooper()).idle()
-            if (condition()) return
-            Thread.sleep(10)
-        } while (System.currentTimeMillis() < end)
     }
 
     @Test fun noPlacedWidgetLoadsNothing() = runBlocking {

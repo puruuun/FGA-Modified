@@ -90,15 +90,9 @@ class WidgetAccountNavigationTest {
 
     private fun tapCard(host: ViewGroup, expectedId: String) {
         val flipper = host.findViewById<AdapterViewFlipper>(R.id.ap_flipper)
-        // Collection items may be applied asynchronously, so wait for the card to appear.
-        var found: View? = null
-        for (i in 0 until 100) {
-            shadowOf(Looper.getMainLooper()).idle()
-            found = flipper.currentView?.let { findById(it, R.id.ap_item_root) }
-            if (found != null) break
-            Thread.sleep(20)
-        }
-        val card = assertNotNull(found)
+        // Collection items are applied asynchronously: drain the background work and the main looper.
+        settleMainLooperAndAsyncTasks()
+        val card = assertNotNull(flipper.currentView?.let { findById(it, R.id.ap_item_root) })
         // A root-only fill-in tag has no listener and fails this assertion on the old layout.
         assertTrue(card.hasOnClickListeners())
         assertTrue(card.isClickable)

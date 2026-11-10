@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit
 /** Refresh every 15 minutes while an AP widget exists, and after any account summary is saved. */
 object ApWidgetRefresh {
     private const val WORK_NAME = "ap_widget_refresh"
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Production always runs on Dispatchers.IO; tests swap in an inline scope. */
+    internal var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Replaced in tests, which have no widget host. */
     internal var launcher: (Context) -> Unit = { context ->

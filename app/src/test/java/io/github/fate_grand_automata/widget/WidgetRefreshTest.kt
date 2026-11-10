@@ -6,15 +6,18 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -26,11 +29,21 @@ class WidgetRefreshTest {
     private val originalService = WidgetRefresh.updateService
     private val originalAp = WidgetRefresh.updateAp
     private val originalLauncher = ApWidgetRefresh.launcher
+    private val originalScope = WidgetRefresh.scope
+    private val originalApScope = ApWidgetRefresh.scope
+
+    /** Runs every launched refresh inline on the calling thread, so the tests never wait on the clock. */
+    @Before fun inlineScopes() {
+        WidgetRefresh.scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        ApWidgetRefresh.scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+    }
 
     @After fun restore() {
         WidgetRefresh.updateService = originalService
         WidgetRefresh.updateAp = originalAp
         ApWidgetRefresh.launcher = originalLauncher
+        WidgetRefresh.scope = originalScope
+        ApWidgetRefresh.scope = originalApScope
     }
 
     private fun place(id: Int, receiver: Class<*>) {
@@ -48,7 +61,7 @@ class WidgetRefreshTest {
         WidgetRefresh.updateAp = { updated += "ap"; done.countDown() }
         val receiver = WidgetRestoreReceiver()
         receiver.onReceive(context, Intent(action))
-        assertTrue(done.await(5, TimeUnit.SECONDS))
+        assertEquals(0L, done.count)
         assertEquals(setOf("service", "ap"), updated.toSet())
     }
 
@@ -108,7 +121,7 @@ class WidgetRefreshTest {
         io.github.fate_grand_automata.capture.CaptureTracker.initSummaries(context)
         io.github.fate_grand_automata.capture.CaptureTracker.setRunning(true)
         io.github.fate_grand_automata.capture.CaptureTracker.setRunning(false)
-        assertTrue(done.await(5, TimeUnit.SECONDS))
+        assertEquals(0L, done.count)
         assertEquals(2, service.get())
         assertEquals(2, ap.get())
     }
@@ -120,6 +133,6 @@ class WidgetRefreshTest {
         ApWidgetRefresh.onAccountSaved(context, "7001")
         ApWidgetRefresh.onAccountSaved(context, "7002")
         ApWidgetRefresh.onAccountSaved(context, null)
-        assertTrue(done.await(5, TimeUnit.SECONDS))
+        assertEquals(0L, done.count)
     }
 }

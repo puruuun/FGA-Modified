@@ -18,7 +18,8 @@ import timber.log.Timber
 
 /** Restores only placed widgets, off the application/receiver main thread. */
 object WidgetRefresh {
-    internal val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Production always runs on Dispatchers.IO; tests swap in an inline scope so no wall-clock waiting is needed. */
+    internal var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val updates = MutableStateFlow(0L)
 

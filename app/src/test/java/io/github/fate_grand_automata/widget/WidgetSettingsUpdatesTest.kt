@@ -25,33 +25,23 @@ class WidgetSettingsUpdatesTest {
 
     private fun prefs(name: String) = PrefsCore(PrefMaker(context.getSharedPreferences(name, Context.MODE_PRIVATE)), context)
 
-    private fun waitFor(count: AtomicInteger, expected: Int) {
-        val end = System.currentTimeMillis() + 3000
-        while (count.get() < expected && System.currentTimeMillis() < end) Thread.sleep(10)
-    }
-
     @Test fun changingThemeOrOpacityRequestsAWidgetUpdate() = runBlocking {
         val prefs = prefs("widget_updates")
         val updates = AtomicInteger()
-        val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+        val job = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
             observeWidgetSettingChanges(prefs) { updates.incrementAndGet() }
         }
-        Thread.sleep(300)
         // Opening the screen reads the stored values but is not a change.
         assertEquals(0, updates.get())
 
         prefs.widgetTheme.set(WidgetTheme.Light)
-        waitFor(updates, 1)
         assertEquals(1, updates.get())
 
         prefs.widgetBackgroundTransparency.set(40)
-        waitFor(updates, 2)
         assertEquals(2, updates.get())
         prefs.widgetShowLogButton.set(true)
-        waitFor(updates, 3)
         assertEquals(3, updates.get())
         prefs.captureTrackerEnabled.set(true)
-        waitFor(updates, 4)
         assertEquals(4, updates.get())
         job.cancelAndJoin()
     }
@@ -59,19 +49,15 @@ class WidgetSettingsUpdatesTest {
     @Test fun changingTheDisplayStyleOrTheNewButtonsRequestsAWidgetUpdate() = runBlocking {
         val prefs = prefs("widget_updates_style")
         val updates = AtomicInteger()
-        val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+        val job = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
             observeWidgetSettingChanges(prefs) { updates.incrementAndGet() }
         }
-        Thread.sleep(300)
         assertEquals(0, updates.get())
         prefs.widgetDisplayStyle.set(io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle.AllAccounts)
-        waitFor(updates, 1)
         assertEquals(1, updates.get())
         prefs.widgetShowServiceButton.set(false)
-        waitFor(updates, 2)
         assertEquals(2, updates.get())
         prefs.widgetShowServer.set(true)
-        waitFor(updates, 3)
         assertEquals(3, updates.get())
         job.cancelAndJoin()
     }
@@ -79,7 +65,7 @@ class WidgetSettingsUpdatesTest {
     @Test fun startIsIdempotentAndTheRetainedJobStaysActive() {
         val prefs = prefs("widget_observer")
         val updates = AtomicInteger()
-        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Unconfined)
         try {
             WidgetSettingsObserver.stop()
             WidgetSettingsObserver.start(prefs, scope) { updates.incrementAndGet() }
@@ -87,12 +73,9 @@ class WidgetSettingsUpdatesTest {
             WidgetSettingsObserver.start(prefs, scope) { updates.incrementAndGet() }
             assertEquals(true, first === WidgetSettingsObserver.job)
             assertEquals(true, first!!.isActive)
-            Thread.sleep(300)
             System.gc()
             assertEquals(0, updates.get())
             prefs.widgetShowLogButton.set(true)
-            waitFor(updates, 1)
-            Thread.sleep(200)
             assertEquals(1, updates.get())
             assertEquals(true, WidgetSettingsObserver.job!!.isActive)
         } finally {
