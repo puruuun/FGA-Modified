@@ -874,7 +874,6 @@
     <string name="icon_prefetch_failed">アイコン%1$d個を準備しました、%2$d個失敗</string>
     <string name="icon_prefetch_lists_failed">アイコン一覧を取得できませんでした</string>
     <string name="friends_grand">グランド</string>
-    <string name="friends_grand_only">グランドサーヴァントのみ</string>
     <string name="friends_title">フレンド管理</string>
     <string name="friends_empty">フレンド一覧がまだありません。ログ収集をオンにしてゲームを起動し、メインメニューを開いた後、メニュー › フレンド＆フォローを一度開いてください。</string>
     <string name="friends_deck_main">通常編成</string>
@@ -902,7 +901,7 @@
     <string name="friends2_last_login">最終ログイン</string>
     <string name="friends2_reset">リセット</string>
     <string name="friends2_show_slots">%1$d枠を表示</string>
-    <string name="friends2_search">サーヴァント名を検索</string>
+    <string name="friends2_search">サーヴァント名・クラスを検索</string>
     <string name="friends2_bond_bonus">絆ボーナス</string>
     <string name="friends2_name">名前</string>
     <string name="friends2_skills">スキル</string>
@@ -972,4 +971,21 @@
     <string name="capture_log_no_profile">プロフィールなし</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">フレンドポイント</string>
+    <string name="friends_deck_grand">グランド編成</string>
+    <string name="friends_filter_all">すべて</string>
+    <string name="friends_not_max_lb">最大解放以外</string>
+    <string name="friends_friend_name">フレンド名</string>
+    <string name="friends_servant_level">サーヴァントレベル</string>
+    <string name="friends_level_min">%1$d以上</string>
+    <string name="friends_ce_limit">概念礼装の限界突破</string>
+    <string name="friends_bond_np">絆: NPチャージ</string>
+    <string name="friends_bond_base">絆: 通常効果</string>
+    <string name="friends_bond_none">絆: なし</string>
+    <string name="friends_class_saber">セイバー</string>
+    <string name="friends_class_archer">アーチャー</string>
+    <string name="friends_class_lancer">ランサー</string>
+    <string name="friends_class_rider">ライダー</string>
+    <string name="friends_class_caster">キャスター</string>
+    <string name="friends_class_assassin">アサシン</string>
+    <string name="friends_class_berserker">バーサーカー</string>
 </resources>

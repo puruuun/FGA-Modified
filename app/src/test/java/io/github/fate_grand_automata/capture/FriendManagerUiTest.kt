@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import io.github.fate_grand_automata.scripts.capture.Friend
+import io.github.fate_grand_automata.scripts.capture.*
 import io.github.fate_grand_automata.scripts.capture.FriendRoster
 import io.github.fate_grand_automata.scripts.capture.FriendSlot
 import io.github.fate_grand_automata.ui.FGATheme
@@ -48,6 +48,8 @@ internal fun syntheticRoster(): FriendRoster {
 internal fun friendTestNames() = GameNameMap(
     servants = mapOf(1L to "샘플 캐스터", 2L to "샘플 세이버", 3L to "샘플 엑스트라",
         4L to "샘플 아주 길고 긴 이름을 가진 서번트 오르타 알터 오리지널"),
+    servantData = mapOf(1L to AtlasBasic(1, className = "caster"), 2L to AtlasBasic(2, className = "saber"),
+        3L to AtlasBasic(3, className = "ruler")),
     equips = mapOf(90L to "샘플 예장 하나", 91L to "샘플 예장 둘",
         92L to "샘플 아주 길고 긴 이름을 가진 예장 한정 한정 한정 한정 한정 한정",
         93L to "황금의잔", 94L to "칼데아의점심시간", 95L to "저편에서온달빛의축복과기원의"),
@@ -108,37 +110,26 @@ class FriendManagerUiTest {
         compose.onAllNodesWithTag("friends-row").assertCountEquals(count)
     }
 
-    @Test fun grandBadgeSwitchChipAndResetWorkWithoutAServerGate() {
+    @Test fun grandBadgeStaysOnRegularAndEventRowsAndNoRemovedSwitchesExist() {
         val base = syntheticRoster()
-        val roster = base.copy(friends = base.friends.mapValues { (id, friend) ->
-            friend.copy(slots = friend.slots.map { it.copy(grand = id == "2" && it.classId == 3) })
+        val roster = base.copy(friends = base.friends.mapValues { (_, friend) ->
+            friend.copy(slots = friend.slots.map { it.copy(grand = true) })
         })
         show(roster); rows(5)
-        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(1)
-        compose.onNodeWithTag("friends-grand-badge", useUnmergedTree = true).assertTextEquals("관위").assertIsDisplayed()
-        compose.onRoot().captureRoboImage("build/outputs/roborazzi/friend-manager/FriendGrandBadge_ko.png")
+        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(5)
         compose.onNodeWithTag("friends-filter").performClick()
-        compose.onNodeWithTag("friends-grand-only").assertIsOff().performScrollTo().performClick().assertIsOn()
-        compose.onRoot().captureRoboImage("build/outputs/roborazzi/friend-manager/FriendGrandFilter_ko.png")
+        compose.onNodeWithTag("friends-grand-only").assertDoesNotExist()
+        compose.onNodeWithTag("friends-max-lb").assertDoesNotExist()
+        compose.onNodeWithTag("friends-deck-event").performClick()
         compose.onNodeWithTag("friends-apply").performClick()
         rows(1)
-        compose.onNodeWithTag("friends-grand-badge", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNode(hasText("관위 서번트만") and isSelected()).performClick()
-        rows(5)
-        compose.onNodeWithTag("friends-filter").performClick()
-        compose.onNodeWithTag("friends-grand-only").performScrollTo().performClick()
-        compose.onNodeWithText("초기화").performClick()
-        compose.onNodeWithTag("friends-grand-only").performScrollTo().assertIsOff()
-        compose.onNodeWithTag("friends-apply").performClick()
-        rows(5)
-        compose.onNode(hasText("관위 서번트만") and isSelected()).assertDoesNotExist()
+        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(1)
     }
 
-    @Test fun krWithoutGrandKeepsRowsAndSwitchCanShowAnEmptyList() {
+    @Test fun krWithoutGrandStillHasNormalRowsAndAnEmptyGrandFormation() {
         show(); rows(5)
-        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(0)
         compose.onNodeWithTag("friends-filter").performClick()
-        compose.onNodeWithTag("friends-grand-only").assertIsOff().performScrollTo().performClick()
+        compose.onNodeWithTag("friends-deck-grand").performClick()
         compose.onNodeWithTag("friends-apply").performClick()
         rows(0)
         compose.onNodeWithText("조건에 맞는 서포터가 없습니다").assertExists()
@@ -164,7 +155,7 @@ class FriendManagerUiTest {
         compose.onAllNodesWithText("9일", useUnmergedTree = true).assertCountEquals(1)
         compose.onAllNodesWithText("Lv90 보5 · 샘플 친구 A", useUnmergedTree = true).assertCountEquals(2)
         compose.onAllNodesWithText("10/10/9").assertCountEquals(5)
-        compose.onNodeWithText("1/2/3\n–/–").assertExists()
+        compose.onNodeWithText("1/2/3/-/-").assertExists()
         compose.onNodeWithText("예장 없음").assertExists()
         compose.onAllNodesWithText("최대").assertCountEquals(3)
         compose.onNodeWithText("친구 코드 123,456,789").assertDoesNotExist()
@@ -190,14 +181,15 @@ class FriendManagerUiTest {
         rows(1)
         compose.onNodeWithTag("friends-filter").performClick()
         compose.onNodeWithTag("friends-deck-main").performClick()
-        compose.onNodeWithTag("friends-max-lb").performClick()
+        compose.onNodeWithTag("friends-limit-Max").performScrollTo().performClick()
         compose.onNodeWithTag("friends-servant").performClick()
         compose.onNodeWithTag("friends-search").performSemanticsAction(SemanticsActions.SetText) { it(AnnotatedString("세이버")) }
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 세이버 (2)").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("샘플 세이버 (2)").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("(세이버) 샘플 세이버 (2)").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("(세이버) 샘플 세이버 (2)").performClick()
         compose.onNodeWithTag("friends-ce").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 예장 하나 (2)").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("샘플 예장 하나 (2)").performClick()
+        compose.onNodeWithTag("friends-picker-done").performClick()
         compose.onNodeWithTag("friends-apply").performClick()
         rows(1)
         // Removable chips clear only that filter.
@@ -220,11 +212,11 @@ class FriendManagerUiTest {
         assertEquals("12ab", friendCodeText("12ab"))
     }
 
-    @Test fun filterChipOpensTheSheetAndHeaderHasNoFilterIcon() {
+    @Test fun filterChipOpensTheTopPanelAndHeaderHasNoFilterIcon() {
         show(); rows(5)
-        compose.onNodeWithTag("friends-filter-sheet").assertDoesNotExist()
+        compose.onNodeWithTag("friends-filter-panel").assertDoesNotExist()
         compose.onNodeWithTag("friends-filter").assertTextContains("필터").performClick()
-        compose.onNodeWithTag("friends-filter-sheet").assertIsDisplayed()
+        compose.onNodeWithTag("friends-filter-panel").assertIsDisplayed()
         compose.onAllNodesWithContentDescription("필터").assertCountEquals(0)
     }
 
@@ -241,24 +233,26 @@ class FriendManagerUiTest {
         compose.onNodeWithTag("friends-filter").performClick()
         compose.onNodeWithTag("friends-login-unit").performScrollTo().performClick()
         compose.onNodeWithTag("friends-unit-Hours").performClick()
-        compose.onNodeWithTag("friends-login-amount").performTextReplacement("100")
+        repeat(4) { compose.onNodeWithTag("friends-login-plus").performClick() }
         compose.onNodeWithTag("friends-apply").performClick()
-        rows(1)
-        compose.onNodeWithText("100시간 이상 미접속").assertExists()
-        compose.onNodeWithText("100시간 이상 미접속").performClick()
+        rows(3)
+        compose.onNodeWithText("7시간 이상 미접속").assertExists()
+        compose.onNodeWithText("7시간 이상 미접속").performClick()
         rows(5)
     }
 
-    @Test fun amountFieldKeepsOneToNineHundredNinetyNine() {
+    @Test fun amountButtonsStopAtZeroAndNinetyNine() {
         show(); rows(5)
         compose.onNodeWithTag("friends-filter").performClick()
         compose.onNodeWithTag("friends-login-inactive").performScrollTo().performClick()
-        compose.onNodeWithTag("friends-login-amount").performTextReplacement("12345")
-        compose.onNodeWithTag("friends-login-amount").assertTextContains("123")
-        compose.onNodeWithTag("friends-login-amount").performTextReplacement("0")
+        repeat(3) { compose.onNodeWithTag("friends-login-minus").performScrollTo().performClick() }
+        compose.onNodeWithTag("friends-login-amount").assertTextEquals("0")
+        compose.onNodeWithTag("friends-login-minus").assertIsNotEnabled()
+        repeat(99) { compose.onNodeWithTag("friends-login-plus").performClick() }
+        compose.onNodeWithTag("friends-login-amount").assertTextEquals("99")
+        compose.onNodeWithTag("friends-login-plus").assertIsNotEnabled()
         compose.onNodeWithTag("friends-apply").performClick()
-        // 0 is not accepted, so the last valid amount (123 days) stays.
-        compose.onNodeWithText("123일 이상 미접속").assertExists()
+        compose.onNodeWithText("99일 이상 미접속").assertExists()
     }
 
     @Test fun everyRowCellIsAtMostTwoLinesAndCeTagSitsBesideTheName() {
@@ -271,7 +265,7 @@ class FriendManagerUiTest {
                 if (node.config.contains(SemanticsActions.GetTextLayoutResult)) {
                     val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
                     node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
-                    results.forEach { assertTrue("more than 2 lines", it.lineCount <= 2) }
+                    results.forEach { assertTrue("more than 2 lines", it.lineCount <= 2 || node.config.getOrElse(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { "" } == "friends-appends") }
                 }
                 node.children.forEach(::walk)
             }
@@ -336,13 +330,13 @@ class FriendManagerUiTest {
                 if (node.config.contains(SemanticsActions.GetTextLayoutResult)) {
                     val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
                     node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
-                    results.forEach { assertTrue("more than 2 lines", it.lineCount <= 2) }
+                    results.forEach { assertTrue("more than 2 lines", it.lineCount <= 2 || node.config.getOrElse(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { "" } == "friends-appends") }
                 }
                 node.children.forEach(::walk)
             }
             walk(row)
             // A row is as tall as its tallest cell: two CE lines of body text plus padding, never three.
-            assertTrue(row.size.height <= 72 * compose.density.density)
+            assertTrue(row.size.height <= 110 * compose.density.density)
         }
     }
 

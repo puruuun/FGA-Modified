@@ -1118,7 +1118,6 @@
     <string name="icon_prefetch_failed">아이콘 %1$d개 준비됨, %2$d개 실패</string>
     <string name="icon_prefetch_lists_failed">아이콘 목록을 받지 못했습니다</string>
     <string name="friends_grand">관위</string>
-    <string name="friends_grand_only">관위 서번트만</string>
     <string name="friends_title">프렌드 관리</string>
     <string name="friends_empty">아직 친구 목록이 없습니다. 로그 수집을 켠 상태에서 게임을 시작해 메인 메뉴를 방문한 뒤 메뉴 › 친구&amp;팔로우를 한 번 열어 주세요.</string>
     <string name="friends_deck_main">일반 편성</string>
@@ -1145,7 +1144,7 @@
     <string name="friends2_last_login">최종 로그인</string>
     <string name="friends2_reset">초기화</string>
     <string name="friends2_show_slots">%1$d칸 보기</string>
-    <string name="friends2_search">서번트 이름 검색</string>
+    <string name="friends2_search">서번트 이름 또는 클래스 검색</string>
     <string name="friends2_bond_bonus">인연 보너스</string>
     <string name="friends2_name">이름</string>
     <string name="friends2_skills">스킬</string>
@@ -1214,4 +1213,21 @@
     <string name="capture_log_no_profile">프로필 없음</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">프렌드 포인트</string>
+    <string name="friends_deck_grand">관위 편성</string>
+    <string name="friends_filter_all">전체</string>
+    <string name="friends_not_max_lb">최대 돌파 아님</string>
+    <string name="friends_friend_name">친구 이름</string>
+    <string name="friends_servant_level">서번트 레벨</string>
+    <string name="friends_level_min">%1$d 이상</string>
+    <string name="friends_ce_limit">예장 돌파</string>
+    <string name="friends_bond_np">인연: NP 차지</string>
+    <string name="friends_bond_base">인연: 기본 효과</string>
+    <string name="friends_bond_none">인연: 없음</string>
+    <string name="friends_class_saber">세이버</string>
+    <string name="friends_class_archer">아처</string>
+    <string name="friends_class_lancer">랜서</string>
+    <string name="friends_class_rider">라이더</string>
+    <string name="friends_class_caster">캐스터</string>
+    <string name="friends_class_assassin">어새신</string>
+    <string name="friends_class_berserker">버서커</string>
 </resources>

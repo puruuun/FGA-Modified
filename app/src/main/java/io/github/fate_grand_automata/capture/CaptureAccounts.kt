@@ -151,7 +151,7 @@ internal class CaptureAccounts(
         disk.run { atomicWriteStream(File(File(root, id), ROSTER_FILE)) { roster.writeTo(it) } }
     }
 
-    /** Local schema diagnostics only. Never copies a row value, except numeric Grand flag counts. */
+    /** Local schema diagnostics only. Never copies a row value, except numeric Grand flag and bond-effect counts. */
     fun recordFriendFields(target: String, body: JsonObject, now: Long) {
         val root = directory?.parentFile ?: return
         runCatching {
@@ -172,13 +172,19 @@ internal class CaptureAccounts(
                 }
                 else -> return
             }
-            fun slots(row: JsonObject): List<JsonObject> = listOf("userSvtLeaderHash", "eventUserSvtLeaderHash").flatMap { key ->
-                when (val value = row[key]) {
-                    is JsonArray -> value.filterIsInstance<JsonObject>()
-                    is JsonObject -> value.values.filterIsInstance<JsonObject>()
-                    else -> emptyList()
-                }
+            fun hash(row: JsonObject, key: String): List<JsonObject> = when (val value = row[key]) {
+                is JsonArray -> value.filterIsInstance<JsonObject>()
+                is JsonObject -> value.values.filterIsInstance<JsonObject>()
+                else -> emptyList()
             }
+            fun slots(row: JsonObject) = listOf("userSvtLeaderHash", "eventUserSvtLeaderHash").flatMap { hash(row, it) }
+            val grandRows = rows.flatMap { hash(it, "userSvtGrandHash") }
+            val grandScript = grandRows.firstOrNull()?.get("script") as? JsonObject
+            val bondCounts = grandRows.groupingBy { row ->
+                val script = row["script"] as? JsonObject
+                // Only numeric states are permitted. Unreadable text must never enter the diagnostic.
+                (script?.get("equipTarget2SkillChange") as? JsonPrimitive)?.longOrNull?.toString() ?: "none"
+            }.eachCount()
             val counts = linkedMapOf("0" to 0, "1" to 0)
             rows.forEach { row -> slots(row).forEach { slot ->
                 (slot["grandSvt"] as? JsonPrimitive)?.longOrNull?.toString()?.let { value ->
@@ -191,6 +197,9 @@ internal class CaptureAccounts(
                 put("time", now)
                 putJsonArray("friendFields") { rows.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
                 putJsonArray("slotFields") { rows.firstOrNull()?.let(::slots)?.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
+                putJsonArray("grandFields") { grandRows.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
+                putJsonArray("grandScriptKeys") { grandScript?.keys?.sorted()?.forEach { add(it) } }
+                putJsonObject("bondEffectValues") { bondCounts.toSortedMap().forEach { (value, count) -> put(value, count) } }
                 putJsonObject("grandValues") { counts.toSortedMap().forEach { (value, count) -> put(value, count) } }
             }
             disk.run {

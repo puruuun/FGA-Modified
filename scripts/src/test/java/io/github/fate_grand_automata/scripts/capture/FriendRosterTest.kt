@@ -41,7 +41,8 @@ class FriendRosterTest {
         val kr = FriendRoster.fromFriendTop(twoFriends)!!
         assertTrue(kr.friends.values.flatMap { it.slots }.none { it.grand })
         assertEquals(2, FriendList.select(kr, FriendFilter(), 5000).size)
-        assertTrue(FriendList.select(kr, FriendFilter(grandOnly = true), 5000).isEmpty())
+        assertTrue(kr.friends.values.all { it.grandSlots.isEmpty() })
+        assertTrue(FriendRoster.fromJson(old).friends.getValue("11").grandSlots.isEmpty())
     }
 
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject

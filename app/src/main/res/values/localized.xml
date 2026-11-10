@@ -1188,7 +1188,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="icon_prefetch_failed">%1$d icons ready, %2$d failed</string>
     <string name="icon_prefetch_lists_failed">Could not fetch icon lists</string>
     <string name="friends_grand">Grand</string>
-    <string name="friends_grand_only">Grand servants only</string>
     <string name="friends_title">Friend manager</string>
     <string name="friends_empty">No friend list yet. Turn on log collection, start the game and visit the main menu, then open Menu › Friends &amp; Followers once.</string>
     <string name="friends_deck_main">Regular deck</string>
@@ -1215,7 +1214,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends2_last_login">Last login</string>
     <string name="friends2_reset">Reset</string>
     <string name="friends2_show_slots">Show %1$d slots</string>
-    <string name="friends2_search">Search servant names</string>
+    <string name="friends2_search">Search servant names or classes</string>
     <string name="friends2_bond_bonus">Bond bonus</string>
     <string name="friends2_name">Name</string>
     <string name="friends2_skills">Skills</string>
@@ -1284,4 +1283,21 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_no_profile">No profile</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">Friend points</string>
+    <string name="friends_deck_grand">Grand formation</string>
+    <string name="friends_filter_all">All</string>
+    <string name="friends_not_max_lb">Not max limit break</string>
+    <string name="friends_friend_name">Friend name</string>
+    <string name="friends_servant_level">Servant level</string>
+    <string name="friends_level_min">%1$d or higher</string>
+    <string name="friends_ce_limit">CE limit break</string>
+    <string name="friends_bond_np">Bond: NP charge</string>
+    <string name="friends_bond_base">Bond: Base effect</string>
+    <string name="friends_bond_none">Bond: None</string>
+    <string name="friends_class_saber">Saber</string>
+    <string name="friends_class_archer">Archer</string>
+    <string name="friends_class_lancer">Lancer</string>
+    <string name="friends_class_rider">Rider</string>
+    <string name="friends_class_caster">Caster</string>
+    <string name="friends_class_assassin">Assassin</string>
+    <string name="friends_class_berserker">Berserker</string>
 </resources>

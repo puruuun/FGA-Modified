@@ -4,8 +4,8 @@ enum class FriendLogin { All, Inactive }
 
 enum class LoginUnit(val seconds: Long) { Minutes(60), Hours(3_600), Days(86_400) }
 
-const val FRIEND_INACTIVE_MIN = 1
-const val FRIEND_INACTIVE_MAX = 999
+const val FRIEND_INACTIVE_MIN = 0
+const val FRIEND_INACTIVE_MAX = 99
 const val FRIEND_INACTIVE_DEFAULT = 3
 
 /** The six CEs that give 20% bond to a borrowed support; Teatime (15%) is pinned separately. */
@@ -25,19 +25,31 @@ fun friendCeOptions(counts: Map<Long, Int>, names: Map<Long, String>): List<Frie
     }.thenBy { it.name }.thenBy { it.id })
 
 /** One list row: a non-empty support slot of a friend. [deckIndex] is the 1-based "편성 N", or null if unknown. */
-data class FriendRow(val friend: Friend, val slot: FriendSlot, val event: Boolean, val deckIndex: Int?)
+data class FriendRow(val friend: Friend, val slot: FriendSlot, val event: Boolean, val deckIndex: Int?,
+    val grandSlot: FriendGrandSlot? = null) {
+    val ces: List<FriendCe> get() = listOfNotNull(
+        FriendCe(slot.ceId, slot.ceLimitCount, slot.ceLv).takeIf { it.id != 0L },
+        grandSlot?.ce3?.takeIf { it.id != 0L },
+    )
+}
+
+enum class FriendFormation { Main, Event, Grand }
+enum class FriendCeLimit { All, Max, NotMax }
 
 data class FriendFilter(
-    val event: Boolean = false,
+    val formation: FriendFormation = FriendFormation.Main,
     val servantId: Long? = null,
-    val ceId: Long? = null,
-    val maxLimitBreak: Boolean = false,
+    val ceIds: Set<Long> = emptySet(),
+    val ceLimit: FriendCeLimit = FriendCeLimit.All,
     val login: FriendLogin = FriendLogin.All,
-    /** Used with [FriendLogin.Inactive]: not logged in for at least this many [loginUnit]s. */
+    /** Clamped on use so restored amounts from older screens remain safe. */
     val loginAmount: Int = FRIEND_INACTIVE_DEFAULT,
     val loginUnit: LoginUnit = LoginUnit.Days,
-    val grandOnly: Boolean = false,
-)
+    val friendName: String = "",
+    val minLevel: Int = 0,
+) {
+    val inactiveAmount get() = loginAmount.coerceIn(FRIEND_INACTIVE_MIN, FRIEND_INACTIVE_MAX)
+}
 
 object FriendList {
     const val MAX_LIMIT_COUNT = 4
@@ -50,23 +62,38 @@ object FriendList {
         }
     }
 
+    fun rows(roster: FriendRoster, formation: FriendFormation): List<FriendRow> = when (formation) {
+        FriendFormation.Main -> rows(roster, false)
+        FriendFormation.Event -> rows(roster, true)
+        FriendFormation.Grand -> roster.friends.values.flatMap { friend ->
+            friend.grandSlots.map { FriendRow(friend, it.supportSlot(), false, null, it) }
+        }
+    }
+
     /** Servants (or CEs) present in the chosen deck type with their slot counts. */
     fun servantCounts(rows: List<FriendRow>): Map<Long, Int> = rows.groupingBy { it.slot.svtId }.eachCount()
     fun ceCounts(rows: List<FriendRow>): Map<Long, Int> = rows
-        .flatMap { listOfNotNull(it.slot.ceId.takeIf { id -> id != 0L }, it.slot.ce2Id?.takeIf { id -> id != 0L }).distinct() }
+        .flatMap { row -> row.ces.map { it.id }.distinct() }
         .groupingBy { it }.eachCount()
 
-    /** Newest login first, then friend, deck and class. */
-    fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.event)
-        .filter { !filter.grandOnly || it.slot.grand }
+    /** Newest login first, then friend and deck/class (Grand seat for the Grand formation). */
+    fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.formation)
+        .filter { it.friend.name.contains(filter.friendName, ignoreCase = true) }
         .filter { filter.servantId == null || it.slot.svtId == filter.servantId }
-        .filter { filter.ceId == null || it.slot.hasCe(filter.ceId) }
-        .filter { !filter.maxLimitBreak || it.slot.hasCeAtLimit(MAX_LIMIT_COUNT) }
+        .filter { it.slot.lv >= filter.minLevel }
+        .filter { row ->
+            val candidates = row.ces.filter { filter.ceIds.isEmpty() || it.id in filter.ceIds }
+            (filter.ceIds.isEmpty() || candidates.isNotEmpty()) && when (filter.ceLimit) {
+                FriendCeLimit.All -> true
+                FriendCeLimit.Max -> candidates.any { it.limitCount == MAX_LIMIT_COUNT }
+                FriendCeLimit.NotMax -> candidates.any { it.limitCount != MAX_LIMIT_COUNT }
+            }
+        }
         .filter {
             val last = it.friend.lastLogin
             when (filter.login) {
                 FriendLogin.All -> true
-                FriendLogin.Inactive -> last > 0 && now - last >= filter.loginAmount * filter.loginUnit.seconds
+                FriendLogin.Inactive -> last > 0 && now - last >= filter.inactiveAmount * filter.loginUnit.seconds
             }
         }
         .sortedWith(
