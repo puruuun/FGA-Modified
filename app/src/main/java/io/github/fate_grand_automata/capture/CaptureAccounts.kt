@@ -151,6 +151,54 @@ internal class CaptureAccounts(
         disk.run { atomicWriteStream(File(File(root, id), ROSTER_FILE)) { roster.writeTo(it) } }
     }
 
+    /** Local schema diagnostics only. Never copies a row value, except numeric Grand flag counts. */
+    fun recordFriendFields(target: String, body: JsonObject, now: Long) {
+        val root = directory?.parentFile ?: return
+        runCatching {
+            val updated = (body["cache"] as? JsonObject)?.get("updated") as? JsonObject ?: return
+            val source: String
+            val rows: List<JsonObject>
+            when (CaptureNames.path(target)) {
+                "friend/top" -> {
+                    source = "friendTop"
+                    rows = (updated["otherUserGame"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
+                }
+                "follower/list", "battle/result" -> {
+                    val followers = updated["userFollower"] as? JsonArray ?: return
+                    source = "followers"
+                    rows = followers.filterIsInstance<JsonObject>().flatMap {
+                        (it["followerInfo"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
+                    }
+                }
+                else -> return
+            }
+            fun slots(row: JsonObject): List<JsonObject> = listOf("userSvtLeaderHash", "eventUserSvtLeaderHash").flatMap { key ->
+                when (val value = row[key]) {
+                    is JsonArray -> value.filterIsInstance<JsonObject>()
+                    is JsonObject -> value.values.filterIsInstance<JsonObject>()
+                    else -> emptyList()
+                }
+            }
+            val counts = linkedMapOf("0" to 0, "1" to 0)
+            rows.forEach { row -> slots(row).forEach { slot ->
+                (slot["grandSvt"] as? JsonPrimitive)?.longOrNull?.toString()?.let { value ->
+                    counts[value] = (counts[value] ?: 0) + 1
+                }
+            } }
+            val diagnostic = buildJsonObject {
+                put("server", CaptureNames.server(target) ?: "unknown")
+                put("source", source)
+                put("time", now)
+                putJsonArray("friendFields") { rows.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
+                putJsonArray("slotFields") { rows.firstOrNull()?.let(::slots)?.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
+                putJsonObject("grandValues") { counts.toSortedMap().forEach { (value, count) -> put(value, count) } }
+            }
+            disk.run {
+                writeCaptureStream(File(root, "diagnostics/friend-fields.json")) { it.write(diagnostic.toString().toByteArray(Charsets.UTF_8)) }
+            }
+        }.onFailure { warn("writing friend field diagnostics failed") }
+    }
+
     /** Feeds a friend list or support list response for [id]; returns true when the roster changed. */
     fun applyFriends(id: String, target: String, body: JsonObject, now: Long): Boolean {
         val entry = index[id] ?: return false

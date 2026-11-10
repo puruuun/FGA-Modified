@@ -7,6 +7,43 @@ import kotlin.test.*
 
 /** Synthetic bodies only: made-up ids, names and codes. */
 class FriendRosterTest {
+    @Test fun grandFlagAcceptsPositiveNumbersAndDefaultsToFalse() {
+        for ((extra, expected) in listOf(
+            "" to false, ""","grandSvt":1""" to true, ""","grandSvt":2""" to true,
+            ""","grandSvt":0""" to false, ""","grandSvt":-1""" to false,
+            ",\"grandSvt\":\"unreadable\"" to false, ""","grandSvt":null""" to false,
+        )) {
+            val body = top(listOf(friendRow("11", null, listOf(slot(101, 1, 500, 1, extra = extra)))))
+            val roster = assertNotNull(FriendRoster.fromFriendTop(body))
+            assertEquals(expected, roster.friends.getValue("11").slots.single().grand, extra)
+            assertEquals(roster, FriendRoster.fromJson(roster.toJson()))
+        }
+    }
+
+    @Test fun followerRefreshReplacesGrandFlagAndKeepsUntouchedEventSlot() {
+        val grand = slot(101, 1, 500, 1, extra = ""","grandSvt":1""")
+        val event = slot(201, 1, 500, 1, extra = ""","grandSvt":1""")
+        val roster = FriendRoster.fromFriendTop(top(listOf(friendRow("11", null, listOf(grand), listOf(event)))))!!
+        assertTrue(roster.friends.getValue("11").slots.all { it.grand })
+        for (extra in listOf("", ""","grandSvt":0""")) {
+            val fresh = slot(101, 1, 500, 2, extra = extra)
+            val merged = FriendRoster.mergeFollowers(roster, followers(info(1, "11", listOf(fresh))))
+            assertFalse(merged.friends.getValue("11").slots.single { it.deckId == 101L }.grand)
+            assertTrue(merged.friends.getValue("11").slots.single { it.deckId == 201L }.grand)
+            val restored = FriendRoster.mergeFollowers(merged, followers(info(1, "11", listOf(grand))))
+            assertTrue(restored.friends.getValue("11").slots.all { it.grand })
+        }
+    }
+
+    @Test fun oldJsonAndKrFixtureWithoutGrandBehaveAsBefore() {
+        val old = """{"friends":{"11":{"userId":"11","slots":[{"deckId":101,"classId":1,"svtId":500}]}}}"""
+        assertFalse(FriendRoster.fromJson(old).friends.getValue("11").slots.single().grand)
+        val kr = FriendRoster.fromFriendTop(twoFriends)!!
+        assertTrue(kr.friends.values.flatMap { it.slots }.none { it.grand })
+        assertEquals(2, FriendList.select(kr, FriendFilter(), 5000).size)
+        assertTrue(FriendList.select(kr, FriendFilter(grandOnly = true), 5000).isEmpty())
+    }
+
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
 
     private fun slot(deck: Int, cls: Int, svt: Long, updatedAt: Long, ce: Long = 0, limit: Int = 0,

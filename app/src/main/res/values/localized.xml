@@ -1187,6 +1187,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="icon_prefetch_ready">%1$d icons ready</string>
     <string name="icon_prefetch_failed">%1$d icons ready, %2$d failed</string>
     <string name="icon_prefetch_lists_failed">Could not fetch icon lists</string>
+    <string name="friends_grand">Grand</string>
+    <string name="friends_grand_only">Grand servants only</string>
     <string name="friends_title">Friend manager</string>
     <string name="friends_empty">No friend list yet. Turn on log collection, start the game and visit the main menu, then open Menu › Friends &amp; Followers once.</string>
     <string name="friends_deck_main">Regular deck</string>

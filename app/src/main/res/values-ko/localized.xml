@@ -1117,6 +1117,8 @@
     <string name="icon_prefetch_ready">아이콘 %1$d개 준비됨</string>
     <string name="icon_prefetch_failed">아이콘 %1$d개 준비됨, %2$d개 실패</string>
     <string name="icon_prefetch_lists_failed">아이콘 목록을 받지 못했습니다</string>
+    <string name="friends_grand">관위</string>
+    <string name="friends_grand_only">관위 서번트만</string>
     <string name="friends_title">프렌드 관리</string>
     <string name="friends_empty">아직 친구 목록이 없습니다. 로그 수집을 켠 상태에서 게임을 시작해 메인 메뉴를 방문한 뒤 메뉴 › 친구&amp;팔로우를 한 번 열어 주세요.</string>
     <string name="friends_deck_main">일반 편성</string>

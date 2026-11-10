@@ -24,6 +24,7 @@ data class FriendSlot(
     val ce2LimitCount: Int? = null,
     val ce2Lv: Int? = null,
     val updatedAt: Long = 0,
+    val grand: Boolean = false,
 ) {
     /** True if either CE of the slot has this id. */
     fun hasCe(id: Long) = ceId == id || ce2Id == id
@@ -188,6 +189,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                 ce2LimitCount = ce2?.long("limitCount")?.toInt(),
                 ce2Lv = ce2?.long("lv")?.toInt(),
                 updatedAt = row.long("updatedAt") ?: 0,
+                grand = (row.long("grandSvt") ?: 0) > 0,
             )
         }
 
