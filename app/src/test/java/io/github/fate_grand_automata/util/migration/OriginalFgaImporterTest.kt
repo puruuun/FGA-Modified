@@ -116,6 +116,101 @@ class OriginalFgaImporterTest {
         assertEquals(original, records.first())
     }
 
+    @Test fun `three identical exports all import into an empty app`() {
+        val source = dir("scripts")
+        listOf("a.fga", "a (1).fga", "a (2).fga").forEach { script(source, it) }
+        val report = OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(imported = 3), report.scripts)
+        assertEquals(3, records.size)
+        assertTrue(records.all { it["autoskill_name"] == values()["autoskill_name"] })
+        assertEquals(0, report.issueCount)
+    }
+
+    @Test fun `one existing config skips only one of three identical exports`() {
+        val source = dir("scripts")
+        records += values()
+        listOf("a.fga", "a (1).fga", "a (2).fga").forEach { script(source, it) }
+        val report = OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(imported = 2, skipped = 1), report.scripts)
+        assertEquals(3, records.size)
+        assertEquals(0, report.issueCount)
+    }
+
+    @Test fun `importing the same three identical exports twice adds no more copies`() {
+        val source = dir("scripts")
+        listOf("a.fga", "a (1).fga", "a (2).fga").forEach { script(source, it) }
+        val importer = OriginalFgaImporter(store)
+        assertEquals(ImportCounts(imported = 3), importer.run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
+        val repeated = importer.run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(skipped = 3), repeated.scripts)
+        assertEquals(3, records.size)
+        assertEquals(0, repeated.issueCount)
+    }
+
+    @Test fun `same name with different content imports every config`() {
+        val source = dir("scripts")
+        val commands = listOf("a1", "b2", "c3")
+        commands.forEachIndexed { index, command ->
+            script(source, "$index.fga", values() + ("autoskill_cmd" to command))
+        }
+        val report = OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(imported = 3), report.scripts)
+        assertEquals(commands, records.map { it["autoskill_cmd"] })
+        assertTrue(records.all { it["autoskill_name"] == values()["autoskill_name"] })
+        assertEquals(0, report.issueCount)
+    }
+
+    @Test fun `mixed duplicates changed content and invalid export keep counts issues and progress`() {
+        val source = dir("scripts")
+        val original = values() + ("battle_config_mat" to linkedSetOf("Proof", "Bone"))
+        records += original
+        listOf("a.fga", "a (1).fga", "a (2).fga").forEach {
+            script(source, it, values() + ("battle_config_mat" to listOf("Bone", "Proof")))
+        }
+        script(source, "different.fga", original + ("autoskill_cmd" to "a1"))
+        File(source, "invalid.fga").writeText("not json")
+        val progress = mutableListOf<OriginalImportProgress>()
+        val report = OriginalFgaImporter(store).run(
+            ImportSelection.Scripts, LocalDocument(source), null, null, onProgress = progress::add
+        )
+        assertEquals(ImportCounts(imported = 3, skipped = 1, failed = 1), report.scripts)
+        assertEquals(ImportCounts(), report.images)
+        assertEquals(4, records.size)
+        assertEquals(original, records.first())
+        assertEquals(1, records.count { it["autoskill_cmd"] == "a1" })
+        assertEquals(listOf(ImportIssue(ImportPart.Scripts, "invalid.fga", ImportProblem.InvalidScript)), report.issues)
+        assertEquals(1, report.issueCount)
+        assertEquals((0..5).map { OriginalImportProgress(ImportPart.Scripts, it, 5) }, progress)
+    }
+
+    @Test fun `more existing copies than exports are preserved and every export is skipped`() {
+        val source = dir("scripts")
+        repeat(4) { records += values() }
+        listOf("a.fga", "a (1).fga", "a (2).fga").forEach { script(source, it) }
+        val report = OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(skipped = 3), report.scripts)
+        assertEquals(4, records.size)
+        assertEquals(0, report.issueCount)
+    }
+
+    @Test fun `failed script save does not skip later identical exports`() {
+        val source = dir("scripts")
+        listOf("a.fga", "b.fga", "c.fga").forEach { script(source, it) }
+        var attempts = 0
+        val failingStore = object : ImportedScriptStore {
+            override fun existing() = records.toList()
+            override fun add(values: Map<String, *>) {
+                if (attempts++ == 0) throw IOException("Storage full")
+                records += values
+            }
+        }
+        val report = OriginalFgaImporter(failingStore).run(ImportSelection.Scripts, LocalDocument(source), null, null)
+        assertEquals(ImportCounts(imported = 2, failed = 1), report.scripts)
+        assertEquals(2, records.size)
+        assertEquals(listOf(ImportIssue(ImportPart.Scripts, "a.fga", ImportProblem.ReadWrite)), report.issues)
+        assertEquals(1, report.issueCount)
+    }
+
     @Test fun `damaged unrelated and unsupported scripts fail individually without empty entries`() {
         val source = dir("scripts")
         File(source, "bad.fga").writeText("not json")
