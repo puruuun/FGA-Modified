@@ -88,7 +88,12 @@ class ApWidgetAllAccountsTest {
         assertEquals(3, allAccountsCellCount(350, showLog = false, showService = true, accountCount = 5))
         assertEquals(2, allAccountsCellCount(300, showLog = false, showService = true, accountCount = 5))
         assertEquals(1, allAccountsCellCount(272, showLog = true, showService = true, accountCount = 5))
-        assertEquals(3, allAccountsCellCount(400, showLog = false, showService = true, accountCount = 5))
+        assertEquals(4, allAccountsCellCount(400, showLog = false, showService = true, accountCount = 5))
+        // No age label any more: log + service tiles on a phone 4x1 keep one cell below 292 dp, two from there on.
+        assertEquals(1, allAccountsCellCount(291, showLog = true, showService = true, accountCount = 5))
+        assertEquals(2, allAccountsCellCount(292, showLog = true, showService = true, accountCount = 5))
+        assertEquals(2, allAccountsCellCount(360, showLog = true, showService = true, accountCount = 5))
+        assertEquals(3, allAccountsCellCount(400, showLog = true, showService = true, accountCount = 5))
         assertEquals(4, allAccountsCellCount(400, showLog = false, showService = false, accountCount = 5))
         assertEquals(5, allAccountsCellCount(900, showLog = true, showService = true, accountCount = 5))
         // Never more than there are accounts, never fewer than one.
@@ -102,7 +107,7 @@ class ApWidgetAllAccountsTest {
             Triple(1, 250, 1), Triple(1, 600, 1),
             Triple(2, 250, 2), Triple(2, 300, 2), Triple(2, 600, 2),
             Triple(3, 300, 2), Triple(3, 400, 3), Triple(3, 700, 3),
-            Triple(5, 272, 2), Triple(5, 350, 3), Triple(5, 400, 3), Triple(5, 500, 4), Triple(5, 700, 5),
+            Triple(5, 272, 2), Triple(5, 350, 3), Triple(5, 400, 4), Triple(5, 500, 5), Triple(5, 700, 5),
         )
         for ((n, width, expected) in cases) {
             val host = host(data(n), width = width)
@@ -126,12 +131,15 @@ class ApWidgetAllAccountsTest {
                     val h = (height * density).toInt()
                     host.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
                     host.layout(0, 0, w, h)
-                    for (id in listOf(R.id.ap_tile_circle, R.id.ap_log_circle, R.id.ap_compact_age)) {
+                    for (id in listOf(R.id.ap_tile_circle, R.id.ap_log_circle)) {
                         val view = host.findViewById<View>(id)
                         if (view.isShown) {
                             val visible = android.graphics.Rect()
                             assertTrue(view.getGlobalVisibleRect(visible), "width=$width height=$height id=$id")
                             assertEquals(view.height, visible.height(), "Clipped control at width=$width height=$height id=$id")
+                            // The circle keeps its normal round 30 dp shape at every height.
+                            assertEquals((30 * density).toInt(), view.width, "width=$width height=$height id=$id")
+                            assertEquals(view.width, view.height, "width=$width height=$height id=$id")
                         }
                     }
                     for (cell in cells(host)) {
@@ -157,7 +165,6 @@ class ApWidgetAllAccountsTest {
         buildApWidgetViews(context, 21, data(3), WidgetSettings(showLogButton = false), false, 272, now = now)
             .reapply(context, root)
         assertEquals(View.VISIBLE, root.findViewById<View>(R.id.ap_tile_label).visibility)
-        assertEquals(View.GONE, root.findViewById<View>(R.id.ap_compact_age).visibility)
         assertEquals((8 * context.resources.displayMetrics.density).toInt(), root.paddingTop)
     }
 
@@ -181,24 +188,23 @@ class ApWidgetAllAccountsTest {
         assertEquals("AP 가득 참", cell.findViewById<TextView>(R.id.ap_all_full).text.toString())
     }
 
-    @Test fun oneAgeLabelUsesTheOldestShownAccount() {
-        // Accounts are 10, 20 and 30 minutes old; with room for two cells the oldest shown is 20 minutes.
-        val two = host(data(3), width = 300)
-        assertEquals(2, cells(two).size)
-        assertEquals("20분 전", two.findViewById<TextView>(R.id.ap_compact_age).text.toString())
-        assertEquals(View.GONE, two.findViewById<View>(R.id.ap_all_age).visibility)
-        val three = host(data(3), width = 400)
-        assertEquals("30분 전", three.findViewById<TextView>(R.id.ap_all_age).text.toString())
-        assertEquals(View.GONE, three.findViewById<View>(R.id.ap_compact_age).visibility)
+    @Test fun allAccountsStyleHasNoDataAgeLabel() {
+        for (width in listOf(272, 300, 400, 560)) {
+            for (log in listOf(false, true)) {
+                val host = host(data(3), all.copy(showLogButton = log), width = width, logAvailable = log)
+                val ages = allTexts(host).filter { it.contains("분 전") || it.contains("방금") || it.contains("시간 전") }
+                assertEquals(emptyList(), ages, "width=$width log=$log")
+            }
+        }
     }
 
-    @Test fun noButtonsKeepsTheAgeBesideTheAccounts() {
-        val host = host(data(3), all.copy(showServiceButton = false), width = 272)
-        assertEquals(2, cells(host).size)
-        assertEquals(View.VISIBLE, host.findViewById<View>(R.id.ap_all_age).visibility)
-        assertEquals("20분 전", host.findViewById<TextView>(R.id.ap_all_age).text.toString())
-        assertEquals(View.GONE, host.findViewById<View>(R.id.ap_compact_age).visibility)
+    @Test fun withoutTheServiceTileTheRowFitsTwoCellsOnAPhone() {
+        assertEquals(2, cells(host(data(3), all.copy(showServiceButton = false), width = 272)).size)
     }
+
+    private fun allTexts(v: View): List<String> =
+        (if (v is TextView) listOf(v.text.toString()) else emptyList()) +
+            ((v as? ViewGroup)?.let { g -> (0 until g.childCount).flatMap { allTexts(g.getChildAt(it)) } } ?: emptyList())
 
     @Test fun serverBadgeShowsOnlyWhenEnabled() {
         val state = ApWidgetState.Data(listOf(model(1, server = "KR"), model(2, server = "JP")))
@@ -241,8 +247,8 @@ class ApWidgetAllAccountsTest {
     }
 
     @Test fun hidingTheServiceTileGivesTheRowRoomForAnotherCell() {
-        assertEquals(3, cells(host(data(5), all.copy(showServiceButton = true), width = 400)).size)
-        assertEquals(4, cells(host(data(5), all.copy(showServiceButton = false), width = 400)).size)
+        assertEquals(3, cells(host(data(5), all.copy(showServiceButton = true), width = 360)).size)
+        assertEquals(4, cells(host(data(5), all.copy(showServiceButton = false), width = 360)).size)
     }
 
     @Test fun logTileKeepsItsWidthRule() {
@@ -251,7 +257,8 @@ class ApWidgetAllAccountsTest {
         assertEquals(View.GONE, host(data(2), settings, width = 200, logAvailable = true).findViewById<View>(R.id.ap_log_tile).visibility)
         assertEquals(View.GONE, host(data(2), settings, width = 300, logAvailable = false).findViewById<View>(R.id.ap_log_tile).visibility)
         // A visible log tile takes room from the cells.
-        assertEquals(2, cells(host(data(5), settings, width = 400, logAvailable = true)).size)
+        assertEquals(3, cells(host(data(5), settings, width = 400, logAvailable = true)).size)
+        assertEquals(4, cells(host(data(5), all.copy(showLogButton = false), width = 400)).size)
     }
 
     @Test fun noDataStillShowsTheMessageInTheAllAccountsStyle() {

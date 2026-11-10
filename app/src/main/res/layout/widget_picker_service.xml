@@ -1,24 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview of the 1x1 FGA service widget: only the start/stop tile, as the real widget looks. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_tile_background"
     android:gravity="center"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:orientation="vertical">
 
-    <ImageView
+    <FrameLayout
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_play"
-        android:tint="@color/widget_accent" />
+        android:background="@drawable/widget_toggle_circle">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_play"
+            android:tint="@color/widget_accent" />
+    </FrameLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxLines="1"
         android:text="@string/widget_service_off"
         android:textColor="@color/widget_secondary"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:textStyle="bold" />
 </LinearLayout>

@@ -936,11 +936,9 @@
 
     <!-- ホーム画面ウィジェット -->
     <string name="widget_service_name">FGAサービス</string>
-    <string name="widget_service_description">ホーム画面からFGAサービスを開始・停止します。</string>
     <string name="widget_service_start">開始</string>
     <string name="widget_service_stop">停止</string>
-    <string name="widget_ap_name">アカウントAP</string>
-    <string name="widget_ap_description">ログ収集で集めたアカウントのAPを確認し、▲▼ボタンでアカウントを切り替えられます。</string>
+    <string name="widget_ap_name">アカウント情報</string>
     <string name="widget_ap_no_data">アカウントデータなし</string>
     <string name="widget_ap_full">AP全回復</string>
     <string name="widget_ap_value">%1$d / %2$d</string>

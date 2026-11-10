@@ -13,15 +13,8 @@ const val ALL_CELL_MIN_WIDTH_DP = 76
 /** Card insets (8 + 22), the gap after the account area (8) and the row's own left padding (14). */
 private const val ALL_FIXED_INSETS_DP = 8 + 22 + 8 + 14
 
-/** Room kept for the one data-age label (a few Korean characters or "5h ago"). */
-private const val ALL_AGE_LABEL_DP = 44
-
 /** Width of one 40 dp tile and its 4 dp margin. */
 private const val TILE_DP = 44
-
-/** On phones the age sits above the buttons, sharing their width. */
-internal fun compactAllAccountsAge(widthDp: Int, showLog: Boolean, showService: Boolean) =
-    widthDp < 400 && (showLog || showService)
 
 /**
  * How many accounts fit in the one-row style: as many as the width allows at [ALL_CELL_MIN_WIDTH_DP] each,
@@ -29,16 +22,12 @@ internal fun compactAllAccountsAge(widthDp: Int, showLog: Boolean, showService: 
  */
 fun allAccountsCellCount(widthDp: Int, showLog: Boolean, showService: Boolean, accountCount: Int): Int {
     val tiles = (if (showLog) TILE_DP else 0) + (if (showService) TILE_DP else 0)
-    val age = if (compactAllAccountsAge(widthDp, showLog, showService)) 0 else ALL_AGE_LABEL_DP
-    val room = widthDp - ALL_FIXED_INSETS_DP - age - tiles
+    val room = widthDp - ALL_FIXED_INSETS_DP - tiles
     return (room / ALL_CELL_MIN_WIDTH_DP).coerceAtLeast(1).coerceAtMost(accountCount.coerceAtLeast(0))
 }
 
 /** The accounts the row shows, in model order. */
 fun shownAllAccounts(models: List<ApWidgetModel>, cells: Int): List<ApWidgetModel> = models.take(cells)
-
-/** The label's age follows the stalest of the shown accounts. */
-fun oldestDataTime(models: List<ApWidgetModel>): Long? = models.minOfOrNull { it.dataTime }
 
 /** "KR" / "JP" badge text, or null when the badge is off. */
 fun serverBadgeText(show: Boolean, server: String): String? = server.trim().uppercase().takeIf { show && it.isNotEmpty() }
@@ -90,16 +79,9 @@ fun addAllAccountsRow(
     showServer: Boolean,
     now: Long = System.currentTimeMillis() / 1000,
     heightDp: Int = 74,
-    compactAge: Boolean = false,
 ) {
     val shown = shownAllAccounts(models, cells)
     views.setViewVisibility(R.id.ap_all, View.VISIBLE)
     views.removeAllViews(R.id.ap_all_cells)
     shown.forEach { views.addView(R.id.ap_all_cells, buildAllCell(context, it, palette, showServer, now, heightDp)) }
-    val oldest = oldestDataTime(shown)
-    val ageId = if (compactAge) R.id.ap_compact_age else R.id.ap_all_age
-    views.setViewVisibility(R.id.ap_all_age, if (compactAge) View.GONE else View.VISIBLE)
-    views.setViewVisibility(R.id.ap_compact_age, if (compactAge) View.VISIBLE else View.GONE)
-    views.setTextViewText(ageId, oldest?.let { dataAgeText(context, dataAge(it, now)) } ?: "")
-    views.setTextColor(ageId, ContextCompat.getColor(context, palette.secondary))
 }

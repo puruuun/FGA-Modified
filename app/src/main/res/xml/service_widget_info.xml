@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/widget_service_description"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:minWidth="40dp"
     android:minHeight="40dp"
-    android:previewImage="@drawable/widget_preview_service_image"
-    android:previewLayout="@layout/widget_preview_service"
+    android:previewImage="@drawable/widget_picker_service_image"
+    android:previewLayout="@layout/widget_picker_service"
     android:resizeMode="horizontal"
     android:minResizeWidth="40dp"
     android:maxResizeWidth="160dp"

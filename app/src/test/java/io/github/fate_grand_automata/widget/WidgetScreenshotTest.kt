@@ -21,6 +21,7 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.WidgetTheme
 
 /** Renders the real Glance widgets (as RemoteViews) in light and dark, for the owner's review. */
@@ -141,6 +142,28 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun all5x1NoService() = shootAp("all_phone_5x1_no_service", DpSize(350.dp, 74.dp), threeAccounts, allStyle.copy(showServiceButton = false))
     @Test fun oneStyleServer() = shootAp("ap_4x1_server", wide, several, settings.copy(showLogButton = false, showServer = true))
     @Test fun oneStyleLogKey() = shootAp("ap_log_key_4x1", wide, several, settings.copy(showLogButton = true), collecting = false)
+
+    // Issue #314: the widget picker previews, rendered at their target sizes.
+    @Test fun pickerService1x1() = shootLayout("picker_service_1x1", R.layout.widget_picker_service, DpSize(72.dp, 72.dp))
+    @Test fun pickerAccount4x1() = shootLayout("picker_account_4x1", R.layout.widget_picker_account, DpSize(272.dp, 72.dp))
+    @Test fun allMinHeightLogService() = shootAp("all_phone_4x1_min_height_log_service", DpSize(300.dp, 40.dp), threeAccounts, allStyle.copy(showLogButton = true))
+
+    private fun shootLayout(name: String, layout: Int, size: DpSize) {
+        RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
+        val density = context.resources.displayMetrics.density
+        val w = (size.width.value * density).toInt()
+        val h = (size.height.value * density).toInt()
+        val view = android.view.LayoutInflater.from(context).inflate(layout, null)
+        view.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, w, h)
+        val bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.parseColor("#7C93B3"))
+        view.draw(canvas)
+        val file = java.io.File("build/outputs/roborazzi/widgets/${name}${if (light) "_light" else ""}.png")
+        file.parentFile!!.mkdirs()
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+    }
 
     /** The top-level RemoteViews, applied into an AppWidgetHostView like the launcher does. */
     private fun shootAp(

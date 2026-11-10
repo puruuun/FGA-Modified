@@ -1248,11 +1248,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
 
     <!-- Home-screen widgets -->
     <string name="widget_service_name">FGA service</string>
-    <string name="widget_service_description">Start or stop the FGA service from the home screen.</string>
     <string name="widget_service_start">Start</string>
     <string name="widget_service_stop">Stop</string>
-    <string name="widget_ap_name">Account AP</string>
-    <string name="widget_ap_description">Check the AP of accounts collected by log collection and switch accounts with the up and down buttons.</string>
+    <string name="widget_ap_name">Account info</string>
     <string name="widget_ap_no_data">No account data</string>
     <string name="widget_ap_full">AP full</string>
     <string name="widget_ap_value">%1$d / %2$d</string>

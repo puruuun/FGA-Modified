@@ -133,17 +133,14 @@ fun buildApWidgetViews(
     val allAccounts = settings.displayStyle == WidgetDisplayStyle.AllAccounts
     val density = context.resources.displayMetrics.density
     views.setViewPadding(R.id.ap_root, (8 * density).toInt(), (8 * density).toInt(), (22 * density).toInt(), (8 * density).toInt())
-    views.setViewVisibility(R.id.ap_compact_age, View.GONE)
     views.setViewVisibility(R.id.ap_log_label, View.VISIBLE)
     views.setViewVisibility(R.id.ap_tile_label, View.VISIBLE)
-    views.setTextViewTextSize(R.id.ap_compact_age, TypedValue.COMPLEX_UNIT_SP, 9f)
     if (allAccounts && state is ApWidgetState.Data && heightDp < 74) {
         val vertical = if (heightDp < 56) 0 else (2 * density).toInt()
         views.setViewPadding(R.id.ap_root, (8 * density).toInt(), vertical, (22 * density).toInt(), vertical)
         if (heightDp < 56) {
             views.setViewVisibility(R.id.ap_log_label, View.GONE)
             views.setViewVisibility(R.id.ap_tile_label, View.GONE)
-            views.setTextViewTextSize(R.id.ap_compact_age, TypedValue.COMPLEX_UNIT_SP, 7f)
         }
     }
     views.setViewVisibility(R.id.ap_log_tile, if (showLog) View.VISIBLE else View.GONE)
@@ -165,7 +162,7 @@ fun buildApWidgetViews(
                 val cells = allAccountsCellCount(widthDp, showLog, settings.showServiceButton, state.models.size)
                 addAllAccountsRow(
                     context, views, state.models, palette, cells, settings.showServer, now,
-                    heightDp = heightDp, compactAge = compactAllAccountsAge(widthDp, showLog, settings.showServiceButton),
+                    heightDp = heightDp,
                 )
             } else {
                 views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
