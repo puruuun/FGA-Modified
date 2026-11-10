@@ -1008,4 +1008,7 @@
     <string name="friends_skill_not_ten">10以外</string>
     <string name="friends_skill_slot">スキル%1$d</string>
     <string name="friends_append_slot">アペンド%1$d</string>
+    <string name="capture_log_source">出所</string>
+    <string name="capture_log_all_sources">すべての出所</string>
+    <string name="capture_source_script">スクリプト</string>
 </resources>

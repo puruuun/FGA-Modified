@@ -2,8 +2,29 @@ package io.github.fate_grand_automata.ui.log
 
 import io.github.fate_grand_automata.capture.CaptureLogItem
 import io.github.fate_grand_automata.scripts.capture.RunGains
+import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.SourceDelta
 import java.util.Calendar
 import java.util.TimeZone
+
+internal enum class LogSourceFilter { Script, GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Other }
+
+internal fun ChangeSource.logSource(): LogSourceFilter =
+    if (script) LogSourceFilter.Script else when (group) {
+        ChangeSource.Group.GiftBox -> LogSourceFilter.GiftBox
+        ChangeSource.Group.Shop -> LogSourceFilter.Shop
+        ChangeSource.Group.Summon -> LogSourceFilter.Summon
+        ChangeSource.Group.Lottery -> LogSourceFilter.Lottery
+        ChangeSource.Group.Enhancement -> LogSourceFilter.Enhancement
+        ChangeSource.Group.ApRecovery -> LogSourceFilter.ApRecovery
+        ChangeSource.Group.ManualQuest -> LogSourceFilter.ManualQuest
+        ChangeSource.Group.Missions -> LogSourceFilter.Missions
+        ChangeSource.Group.Other -> LogSourceFilter.Other
+    }
+
+/** Stable partition: matching sources lead, with all other details still visible. */
+internal fun orderedLogSources(sources: List<SourceDelta>, source: LogSourceFilter?): List<SourceDelta> =
+    if (source == null) sources else sources.filter { it.source.logSource() == source } + sources.filter { it.source.logSource() != source }
 
 internal enum class LogTimeFilter { Today, Week, Month, All, Custom }
 
@@ -55,7 +76,7 @@ internal fun filterCaptureLogs(
     entries: List<CaptureLogItem>, time: LogTimeFilter, resource: String?, now: Long,
     zone: TimeZone = TimeZone.getDefault(),
     customStart: Long? = null, customEnd: Long? = null,
-    profile: String? = null,
+    profile: String? = null, source: LogSourceFilter? = null,
 ): List<CaptureLogItem> {
     val days = when (time) { LogTimeFilter.Today -> 1L; LogTimeFilter.Week -> 7L; LogTimeFilter.Month -> 30L; else -> null }
     val midnight = Calendar.getInstance(zone).apply {
@@ -71,6 +92,8 @@ internal fun filterCaptureLogs(
         Calendar.getInstance(zone).apply { timeInMillis = pickerDateInZone(date, zone); add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     } else (midnight.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
     return entries.filter { entry ->
+        (source == null || (if (entry.battle != null) source == LogSourceFilter.Script else
+            entry.outside?.period?.sources?.any { it.source.logSource() == source } == true)) &&
         (profile == null || (if (profile == NO_LOG_PROFILE) entry.accountId == null else entry.accountId == profile)) &&
             (start == null || end == null || entry.endedAt in start until end) &&
             (resource == null || entry.resourceChanges().any { val change = it[resource] ?: 0L; if (entry.battle != null) change != 0L else change > 0L })

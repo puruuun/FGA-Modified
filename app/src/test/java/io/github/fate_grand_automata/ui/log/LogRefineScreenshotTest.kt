@@ -55,7 +55,7 @@ class LogRefineScreenshotTest(private val width: Int, private val height: Int, p
         RuntimeEnvironment.setQualifiers("$locale-w${width}dp-h${height}dp-notnight-hdpi")
         rule.setContent { FGATheme(false) {
             LogFilterDialog(time, null, start, end, 200, 2, 1, entries, outsideNames, null,
-                {}, { _, _, _, _, _, _ -> })
+                {}, { _, _, _, _, _, _, _ -> })
         } }
     }
 

@@ -1320,4 +1320,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_skill_not_ten">Not 10</string>
     <string name="friends_skill_slot">Skill%1$d</string>
     <string name="friends_append_slot">Append%1$d</string>
+    <string name="capture_log_source">Source</string>
+    <string name="capture_log_all_sources">All sources</string>
+    <string name="capture_source_script">Script</string>
 </resources>

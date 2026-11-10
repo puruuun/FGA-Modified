@@ -64,10 +64,24 @@ class CaptureNonBattleScriptTest {
         val period = open.single().period
         assertEquals(id, open.single().id)
         assertEquals(-200, period.total.friendPoint)
-        assertTrue(period.sources.any { it.source == ChangeSource(ChangeSource.Group.Summon) })
+        assertTrue(period.sources.any { it.source == ChangeSource(ChangeSource.Group.Summon, script = true) })
         CaptureAutoStart.onScriptEnd()
+        summon(9600)
+        assertEquals(-200L, open.single().period.sources.single { !it.source.script && it.source.group == ChangeSource.Group.Summon }.delta.friendPoint)
+        assertEquals(-200L, open.single().period.sources.single { it.source.script }.delta.friendPoint)
         assertNull(CaptureTracker.finishRun())
         assertEquals(id, open.single().id)
+    }
+
+    @Test @Config(qualifiers = "ja") fun officialJpNonBattleMarksOnlyScriptTimeChanges() {
+        CaptureAutoStart.onScriptStart(context, prefs, GameServer.Jp.Original, battle = false)
+        summon(9800)
+        assertTrue(open.single().period.sources.single().source.script)
+        CaptureAutoStart.onScriptEnd()
+        summon(9600)
+        val sources = open.single().period.sources
+        assertEquals(listOf(true, false), sources.map { it.source.script })
+        assertEquals(listOf(-200L, -200L), sources.map { it.delta.friendPoint })
     }
 
     @Test fun nonBattleStartWithoutPeriodOpensOneOnChange() {

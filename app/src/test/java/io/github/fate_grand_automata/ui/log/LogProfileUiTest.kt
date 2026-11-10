@@ -81,7 +81,7 @@ class LogProfileUiTest {
         val restoration = StateRestorationTester(rule)
         restoration.setContent { FGATheme(false) {
             LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 0,
-                entries, outsideNames, "a", {}, { _, _, _, _, _, profile -> appliedProfile = profile })
+                entries, outsideNames, "a", {}, { _, _, _, _, _, profile, _ -> appliedProfile = profile })
         } }
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithTag("log-filter-profile:all").assertIsSelected()

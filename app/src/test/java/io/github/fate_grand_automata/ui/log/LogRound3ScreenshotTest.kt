@@ -57,7 +57,7 @@ class LogRound3ScreenshotTest(private val width: Int, private val height: Int, p
 
     @Test fun activeFilter() = rule.shoot("log-round3", "ActiveFilter", width, height, dark, "ko", beforeCapture = {
         rule.onNodeWithTag("log-filter-button").performClick()
-        rule.onNodeWithTag("log-filter-resources").performScrollToNode(hasText("무간의 톱니바퀴"))
+        rule.onNodeWithTag("log-filter-resources").performScrollTo().performScrollToNode(hasText("무간의 톱니바퀴"))
         rule.onNode(hasText("무간의 톱니바퀴") and hasAnyAncestor(isDialog())).performClick()
         rule.onNodeWithText("적용").performClick()
         rule.onNodeWithTag("log-filter-summary").assertIsDisplayed()
