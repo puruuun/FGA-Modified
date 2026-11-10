@@ -128,4 +128,25 @@ class LogProfileUiTest {
         rule.onNodeWithTag("log-card:outside:${recent.id}").assertExists()
         rule.onNodeWithTag("log-card:outside:${old.id}").assertDoesNotExist()
     }
+
+    @Test fun noProfileChipAppearsOnlyWithAnIdlessLogAndFiltersAndSummarizes() {
+        var battles by mutableStateOf(listOf(battle, other))
+        rule.setContent { FGATheme(false) { LogScreenContent(battles, {}, {}) } }
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:none").assertDoesNotExist()
+        rule.onNodeWithText("Cancel").performClick()
+        rule.runOnIdle { battles = listOf(battle, other, legacy) }
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:none").assertExists().performClick()
+        rule.onNodeWithTag("log-filter-profile:none").assertIsSelected()
+        rule.onNodeWithText("Apply").performClick()
+        rule.onNodeWithTag("log-card:legacy").assertExists()
+        rule.onNodeWithTag("log-card:battle").assertDoesNotExist()
+        rule.onNodeWithTag("log-card:other").assertDoesNotExist()
+        rule.onNodeWithTag("log-filter-summary").assertExists()
+        rule.onNodeWithText("No profile").assertExists()
+        rule.runOnIdle { battles = listOf(battle, other) }
+        rule.onNodeWithTag("log-card:battle").assertExists()
+        rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
+    }
 }

@@ -952,6 +952,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="added_tuning_reset_all">Reset all sections</string>
     <string name="command_start_waiting_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$s), %4$s</string>
     <string name="command_start_waiting_both_colours">Waiting: Servant %1$d, cards %2$d (minimum %3$s), %7$s; Servant %4$d, cards %5$d (minimum %6$s), %8$s</string>
+    <string name="command_start_waiting_many">Waiting: %1$s</string>
+    <string name="command_start_waiting_many_item">Servant %1$d, cards %2$d (minimum %3$s), %4$s</string>
+    <string name="command_start_third_servant">Third condition: target Servant</string>
+    <string name="command_start_duplicate_targets_all">Choose a different Servant for each condition.</string>
     <string name="command_started_profile_colours">Command profile %1$d started at wave %2$d, turn %3$d (%4$s)</string>
     <string name="command_start_conditions">Start conditions</string>
     <string name="command_start_cond_any">Any</string>
@@ -1277,6 +1281,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">Profile</string>
     <string name="capture_log_all_profiles">All profiles</string>
+    <string name="capture_log_no_profile">No profile</string>
     <!-- Outside-log friend points (#290). -->
     <string name="capture_friend_points">Friend points</string>
 </resources>

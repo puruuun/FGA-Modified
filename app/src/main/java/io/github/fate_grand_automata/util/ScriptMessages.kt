@@ -251,6 +251,17 @@ class ScriptMessages @Inject constructor(
                     action.firstColours.toString(), action.secondColours.toString()
                 ).also { Timber.i(it) }
             )
+            is ScriptNotify.CommandStartWaitingMany -> notification.status(
+                context.getString(
+                    R.string.command_start_waiting_many,
+                    action.targets.joinToString(" · ") {
+                        context.getString(
+                            R.string.command_start_waiting_many_item,
+                            it.servant, it.count, requiredText(it.required), it.colours.toString()
+                        )
+                    }
+                ).also { Timber.i(it) }
+            )
             is ScriptNotify.CommandStarted -> notification.status(
                 context.getString(R.string.command_started_profile_colours, action.profileIndex + 1, action.stage, action.turn, action.colours.toString())
                     .also { Timber.i(it) }

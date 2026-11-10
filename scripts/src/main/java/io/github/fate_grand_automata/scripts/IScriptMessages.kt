@@ -24,6 +24,10 @@ sealed class ScriptNotify {
         val secondServant: Int, val secondCount: Int, val secondRequired: Int,
         val firstColours: CardColourCounts, val secondColours: CardColourCounts
     ) : ScriptNotify()
+    /** Waiting status for three start targets, in check order. */
+    class CommandStartWaitingMany(val targets: List<Target>) : ScriptNotify() {
+        class Target(val servant: Int, val count: Int, val required: Int, val colours: CardColourCounts)
+    }
     class CommandStartSkipped(val waitingTurns: Int) : ScriptNotify()
 }
 

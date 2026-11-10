@@ -147,7 +147,23 @@ class Battle @Inject constructor(
             }
 
             is CommandStartGate.Result.Wait -> {
-                messages.notify(if (checked.secondaryCount != null) {
+                messages.notify(if (checked.tertiaryCount != null) {
+                    ScriptNotify.CommandStartWaitingMany(
+                        listOf(
+                            ScriptNotify.CommandStartWaitingMany.Target(
+                                commandStart.target.position, checked.count, commandStart.requiredCards, checked.colours
+                            ),
+                            ScriptNotify.CommandStartWaitingMany.Target(
+                                checkNotNull(commandStart.secondaryTarget).position, checkNotNull(checked.secondaryCount),
+                                commandStart.secondaryRequired, checkNotNull(checked.secondaryColours)
+                            ),
+                            ScriptNotify.CommandStartWaitingMany.Target(
+                                checkNotNull(commandStart.tertiaryTarget).position, checked.tertiaryCount,
+                                commandStart.tertiaryRequired, checkNotNull(checked.tertiaryColours)
+                            )
+                        )
+                    )
+                } else if (checked.secondaryCount != null) {
                     ScriptNotify.CommandStartWaitingBoth(
                         commandStart.target.position, checked.count, commandStart.requiredCards,
                         checkNotNull(commandStart.secondaryTarget).position, checked.secondaryCount, commandStart.secondaryRequired,

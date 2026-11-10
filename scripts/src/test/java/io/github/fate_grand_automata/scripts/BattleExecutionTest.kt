@@ -41,6 +41,7 @@ class BattleExecutionTest {
         second: TestExecutionProfile = TestExecutionProfile(skillCommand = "d5,e5,#,f5"),
         mode: CommandStartMode = CommandStartMode.CardCount,
         enabled: Boolean = true,
+        third: TestExecutionProfile? = null,
         spam: List<ServantSpamConfig> = emptyList(),
         shuffle: ShuffleCardsEnum = ShuffleCardsEnum.None,
         shuffleWave: Int = 3
@@ -62,6 +63,8 @@ class BattleExecutionTest {
         every { config.commandStartMode } returns mode
         every { config.secondaryStartEnabled } returns enabled
         every { config.secondaryExecution } returns second
+        every { config.tertiaryStartEnabled } returns (third != null)
+        if (third != null) every { config.tertiaryExecution } returns third
     }
 
     @Test
@@ -193,6 +196,39 @@ class BattleExecutionTest {
             val state = BattleState().also { it.nextStage(); it.commandPosition = CommandPosition(0, 0) }
             SkillSpam(mockk<IFgoAutomataApi>(relaxed = true), tracker, state, execution, caster).spamSkills()
             verify(exactly = 1) { caster.canSpam(SpamEnum.Spam) }
+        }
+    }
+
+    @Test
+    fun `select 2 works only when the third target is enabled and uses its own profile`() {
+        val withoutThird = BattleExecution(config())
+        assertFailsWith<IllegalArgumentException> { withoutThird.select(2) }
+        val third = TestExecutionProfile(
+            skillCommand = "c5",
+            cardPriority = CardPriorityPerWave.of("Q, A, B, WQ, WA, WB, RQ, RA, RB"),
+            useServantPriority = true,
+            servantPriority = ServantPriorityPerWave.of("3,2,1,4,5,6")
+        )
+        val execution = BattleExecution(config(third = third))
+        execution.select(2)
+        assertThat(execution.selectedIndex).isEqualTo(2)
+        val cards = listOf(
+            ParsedCard(CommandCard.Face.A, TeamSlot.A, FieldSlot.A, CardTypeEnum.Buster),
+            ParsedCard(CommandCard.Face.B, TeamSlot.B, FieldSlot.B, CardTypeEnum.Arts),
+            ParsedCard(CommandCard.Face.C, TeamSlot.C, FieldSlot.C, CardTypeEnum.Quick)
+        )
+        assertThat(execution.active.priority.sort(cards, 0).map { it.card })
+            .isEqualTo(listOf(CommandCard.Face.C, CommandCard.Face.B, CommandCard.Face.A))
+        assertFailsWith<IllegalStateException> { execution.select(1) }
+    }
+
+    @Test
+    fun `the third profile is ignored when the second target is off or in basic mode`() {
+        for ((mode, enabled) in listOf(CommandStartMode.Basic to true, CommandStartMode.CardCount to false)) {
+            val execution = BattleExecution(
+                config(mode = mode, enabled = enabled, third = TestExecutionProfile(skillCommand = "!"))
+            )
+            assertFailsWith<IllegalArgumentException> { execution.select(2) }
         }
     }
 }

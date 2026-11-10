@@ -23,7 +23,7 @@ enum class FaceCardReasonKind {
 
 /**
  * [entry] is the 0-based wave or turn entry where that applies. [profile] is 0 for the primary
- * profile and 1 for the secondary one. [turnSplit] tells whether the entry is a turn rather than a wave.
+ * profile, 1 for the secondary one and 2 for the third. [turnSplit] tells whether the entry is a turn rather than a wave.
  */
 data class FaceCardReason(
     val kind: FaceCardReasonKind,
@@ -45,7 +45,11 @@ data class FaceCardCheckDecision(val enabled: Boolean, val reason: FaceCardReaso
             FaceCardReasonKind.CardCountStart -> "card-count start"
         }
         val entry = reason.entry?.let { ", entry ${it + 1}" } ?: ""
-        val profile = if (reason.profile == 1) ", secondary" else ""
+        val profile = when (reason.profile) {
+            1 -> ", secondary"
+            2 -> ", tertiary"
+            else -> ""
+        }
         return "face-card check: on ($name$entry$profile)"
     }
 }
@@ -87,7 +91,10 @@ object FaceCardCheckPolicy {
         val shuffleCards: ShuffleCardsEnum,
         val primary: ProfileInput,
         /** Only considered when the secondary start is active. */
-        val secondary: ProfileInput
+        val secondary: ProfileInput,
+        /** Only considered when the secondary and tertiary starts are both active. */
+        val tertiaryStartEnabled: Boolean = false,
+        val tertiary: ProfileInput = secondary
     ) {
         companion object {
             fun of(config: IBattleConfig) = Input(
@@ -95,7 +102,11 @@ object FaceCardCheckPolicy {
                 secondaryStartEnabled = config.secondaryStartEnabled,
                 shuffleCards = config.shuffleCards,
                 primary = ProfileInput.of(config),
-                secondary = ProfileInput.of(config.secondaryExecution)
+                secondary = ProfileInput.of(config.secondaryExecution),
+                // Read only when the secondary start is on, like BattleExecution does.
+                tertiaryStartEnabled = config.secondaryStartEnabled && config.tertiaryStartEnabled,
+                tertiary = if (config.secondaryStartEnabled && config.tertiaryStartEnabled)
+                    ProfileInput.of(config.tertiaryExecution) else ProfileInput.of(config.secondaryExecution)
             )
         }
     }
@@ -104,10 +115,12 @@ object FaceCardCheckPolicy {
 
     fun decide(input: Input): FaceCardCheckDecision {
         val cardCount = input.commandStartMode == CommandStartMode.CardCount
-        // Mirrors BattleExecution: the secondary profile only exists in card-count mode with the secondary start on.
+        // Mirrors BattleExecution: the secondary profile only exists in card-count mode with the secondary start on,
+        // and the tertiary one additionally needs its own start on.
         val profiles = listOfNotNull(
             input.primary,
-            input.secondary.takeIf { cardCount && input.secondaryStartEnabled }
+            input.secondary.takeIf { cardCount && input.secondaryStartEnabled },
+            input.tertiary.takeIf { cardCount && input.secondaryStartEnabled && input.tertiaryStartEnabled }
         )
 
         fun on(reason: FaceCardReason) = FaceCardCheckDecision(true, reason)

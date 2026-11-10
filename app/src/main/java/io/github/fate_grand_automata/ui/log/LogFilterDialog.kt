@@ -59,7 +59,8 @@ internal fun LogFilterDialog(
     var picker by rememberSaveable { mutableStateOf(false) }
     var confirm by rememberSaveable { mutableStateOf(false) }
     val profiles = logProfiles(entries)
-    val activeProfile = availableLogProfile(draftProfile, profiles)
+    val hasNoProfile = hasLogWithoutProfile(entries)
+    val activeProfile = availableLogProfile(draftProfile, profiles, hasNoProfile)
     val resources = logResources(filterCaptureLogs(entries, draftTime, null, System.currentTimeMillis(),
         customStart = draftStart, customEnd = draftEnd, profile = activeProfile))
     val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile) }
@@ -90,6 +91,9 @@ internal fun LogFilterDialog(
                             modifier = Modifier.testTag("log-filter-profile:$id"),
                             label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                     }
+                    if (hasNoProfile) FilterChip(selected = activeProfile == NO_LOG_PROFILE, onClick = { draftProfile = NO_LOG_PROFILE },
+                        modifier = Modifier.testTag("log-filter-profile:none"),
+                        label = { Text(stringResource(R.string.capture_log_no_profile)) })
                 }
                 Text(stringResource(R.string.capture_log_resource), style = MaterialTheme.typography.titleSmall)
                 val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }

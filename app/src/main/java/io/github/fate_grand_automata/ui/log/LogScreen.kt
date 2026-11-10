@@ -93,15 +93,16 @@ fun LogScreenContent(
     var confirmAll by rememberSaveable { mutableStateOf(false) }
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
     val profiles = logProfiles(all)
-    val activeProfile = availableLogProfile(profile, profiles)
+    val activeProfile = availableLogProfile(profile, profiles, hasLogWithoutProfile(all))
     val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile)
     val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
+    val noProfileLabel = stringResource(R.string.capture_log_no_profile)
     val clearFilters = { time = LogTimeFilter.All; resource = null; profile = null; start = null; end = null }
     val summary = if (filtered) listOfNotNull(
         if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
-        activeProfile?.let { profiles[it] }, resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
+        activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
