@@ -129,6 +129,9 @@ class WidgetScreenshotTest(private val light: Boolean) {
     private val allStyle get() = settings.copy(displayStyle = io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle.AllAccounts, showLogButton = false)
 
     @Test fun all4x1() = shootAp("all_phone_4x1", wide, threeAccounts, allStyle)
+    @Test fun all4x1MinimumHeight() = shootAp("all_phone_4x1_min_height", DpSize(272.dp, 40.dp), threeAccounts, allStyle)
+    @Test fun all4x1LogKey() = shootAp("all_phone_4x1_log_key", wide, threeAccounts, allStyle.copy(showLogButton = true))
+    @Test fun all4x1MinimumHeightLogKey() = shootAp("all_phone_4x1_min_height_log_key", DpSize(272.dp, 40.dp), threeAccounts, allStyle.copy(showLogButton = true))
     @Test fun all5x1() = shootAp("all_phone_5x1", DpSize(350.dp, 74.dp), threeAccounts, allStyle)
     @Test fun allTablet() = shootAp("all_tablet", DpSize(560.dp, 74.dp), threeAccounts, allStyle)
     @Test fun allTabletNoService() = shootAp("all_tablet_no_service", DpSize(560.dp, 74.dp), threeAccounts, allStyle.copy(showServiceButton = false))
@@ -149,7 +152,7 @@ class WidgetScreenshotTest(private val light: Boolean) {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
         android.provider.Settings.System.putString(context.contentResolver, android.provider.Settings.System.TIME_12_24, "12")
         val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now = now,
-            collecting = collecting, logAvailable = settings.showLogButton)
+            collecting = collecting, logAvailable = settings.showLogButton, heightDp = size.height.value.toInt())
         val density = context.resources.displayMetrics.density
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))

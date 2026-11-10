@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -37,9 +38,9 @@ class ApWidgetAllAccountsTest {
     private val all = WidgetSettings(displayStyle = WidgetDisplayStyle.AllAccounts, showLogButton = false)
 
     private fun host(
-        state: ApWidgetState, settings: WidgetSettings = all, width: Int = 400, logAvailable: Boolean = false,
+        state: ApWidgetState, settings: WidgetSettings = all, width: Int = 400, logAvailable: Boolean = false, height: Int = 74,
     ): AppWidgetHostView {
-        val views: RemoteViews = buildApWidgetViews(context, 21, state, settings, false, width, now = now, collecting = false, logAvailable = logAvailable)
+        val views: RemoteViews = buildApWidgetViews(context, 21, state, settings, false, width, now = now, collecting = false, logAvailable = logAvailable, heightDp = height)
         val host = AppWidgetHostView(context)
         host.addView(views.apply(context, host))
         shadowOf(android.os.Looper.getMainLooper()).idle()
@@ -81,9 +82,10 @@ class ApWidgetAllAccountsTest {
     // --- how many cells fit ------------------------------------------------------------------------
 
     @Test fun cellCountFollowsTheWidthAndTheTiles() {
-        // 76 dp per cell after 96 dp of insets, the age label and the tiles.
+        // Phones share the age label's width with the tiles.
         assertEquals(1, allAccountsCellCount(150, showLog = false, showService = true, accountCount = 5))
-        assertEquals(1, allAccountsCellCount(272, showLog = false, showService = true, accountCount = 5))
+        assertEquals(2, allAccountsCellCount(272, showLog = false, showService = true, accountCount = 5))
+        assertEquals(3, allAccountsCellCount(350, showLog = false, showService = true, accountCount = 5))
         assertEquals(2, allAccountsCellCount(300, showLog = false, showService = true, accountCount = 5))
         assertEquals(1, allAccountsCellCount(272, showLog = true, showService = true, accountCount = 5))
         assertEquals(3, allAccountsCellCount(400, showLog = false, showService = true, accountCount = 5))
@@ -98,9 +100,9 @@ class ApWidgetAllAccountsTest {
         val cases = listOf(
             // accounts, width, expected cells (service tile on, log off)
             Triple(1, 250, 1), Triple(1, 600, 1),
-            Triple(2, 250, 1), Triple(2, 300, 2), Triple(2, 600, 2),
+            Triple(2, 250, 2), Triple(2, 300, 2), Triple(2, 600, 2),
             Triple(3, 300, 2), Triple(3, 400, 3), Triple(3, 700, 3),
-            Triple(5, 272, 1), Triple(5, 400, 3), Triple(5, 500, 4), Triple(5, 700, 5),
+            Triple(5, 272, 2), Triple(5, 350, 3), Triple(5, 400, 3), Triple(5, 500, 4), Triple(5, 700, 5),
         )
         for ((n, width, expected) in cases) {
             val host = host(data(n), width = width)
@@ -109,6 +111,54 @@ class ApWidgetAllAccountsTest {
             // The shown cells are the first ones, in model order.
             assertEquals((1..expected).map { "계정$it" }, cells(host).map { it.findViewById<TextView>(R.id.ap_all_name).text.toString() })
         }
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [36], qualifiers = "ko-xhdpi")
+    @Test fun threeLinesFitAtTheMinimumAndTypicalOneRowHeights() {
+        val models = data(5).models.map { it.copy(name = "계정이름") }
+        for (height in listOf(40, 56, 65, 66, 73, 74)) {
+            for (width in listOf(272, 350, 560)) {
+                for (log in listOf(false, true)) {
+                    val host = host(ApWidgetState.Data(models), all.copy(showLogButton = log), width, log, height)
+                    val density = context.resources.displayMetrics.density
+                    val w = (width * density).toInt()
+                    val h = (height * density).toInt()
+                    host.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+                    host.layout(0, 0, w, h)
+                    for (id in listOf(R.id.ap_tile_circle, R.id.ap_log_circle, R.id.ap_compact_age)) {
+                        val view = host.findViewById<View>(id)
+                        if (view.isShown) {
+                            val visible = android.graphics.Rect()
+                            assertTrue(view.getGlobalVisibleRect(visible), "width=$width height=$height id=$id")
+                            assertEquals(view.height, visible.height(), "Clipped control at width=$width height=$height id=$id")
+                        }
+                    }
+                    for (cell in cells(host)) {
+                        for (id in listOf(R.id.ap_all_name, R.id.ap_all_ap, R.id.ap_all_full)) {
+                            val text = cell.findViewById<TextView>(id)
+                            val bounds = android.graphics.Rect(0, 0, text.width, text.height)
+                            host.offsetDescendantRectToMyCoords(text, bounds)
+                            val label = "width=$width height=$height log=$log text=${text.text} layout=${text.layout.height} view=${text.height} padding=${text.paddingTop},${text.paddingBottom}"
+                            assertTrue(bounds.top >= 0 && bounds.bottom <= h, label)
+                            assertTrue(text.layout.height <= text.height - text.paddingTop - text.paddingBottom, label)
+                            assertEquals(0, text.layout.getEllipsisCount(0), label)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun reapplyingTheOneAccountStyleRestoresItsPaddingAndButtonLabels() {
+        val host = host(data(3), width = 272, height = 40)
+        val root = host.getChildAt(0)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.ap_tile_label).visibility)
+        buildApWidgetViews(context, 21, data(3), WidgetSettings(showLogButton = false), false, 272, now = now)
+            .reapply(context, root)
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.ap_tile_label).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.ap_compact_age).visibility)
+        assertEquals((8 * context.resources.displayMetrics.density).toInt(), root.paddingTop)
     }
 
     // --- cell contents --------------------------------------------------------------------------------
@@ -135,9 +185,19 @@ class ApWidgetAllAccountsTest {
         // Accounts are 10, 20 and 30 minutes old; with room for two cells the oldest shown is 20 minutes.
         val two = host(data(3), width = 300)
         assertEquals(2, cells(two).size)
-        assertEquals("20분 전", two.findViewById<TextView>(R.id.ap_all_age).text.toString())
+        assertEquals("20분 전", two.findViewById<TextView>(R.id.ap_compact_age).text.toString())
+        assertEquals(View.GONE, two.findViewById<View>(R.id.ap_all_age).visibility)
         val three = host(data(3), width = 400)
         assertEquals("30분 전", three.findViewById<TextView>(R.id.ap_all_age).text.toString())
+        assertEquals(View.GONE, three.findViewById<View>(R.id.ap_compact_age).visibility)
+    }
+
+    @Test fun noButtonsKeepsTheAgeBesideTheAccounts() {
+        val host = host(data(3), all.copy(showServiceButton = false), width = 272)
+        assertEquals(2, cells(host).size)
+        assertEquals(View.VISIBLE, host.findViewById<View>(R.id.ap_all_age).visibility)
+        assertEquals("20분 전", host.findViewById<TextView>(R.id.ap_all_age).text.toString())
+        assertEquals(View.GONE, host.findViewById<View>(R.id.ap_compact_age).visibility)
     }
 
     @Test fun serverBadgeShowsOnlyWhenEnabled() {

@@ -178,6 +178,23 @@ class ApWidgetViewsTest {
         assertEquals(ApWidgetRenderer.DEFAULT_WIDTH_DP, chooseWidgetWidthDp(Bundle(), landscape = true))
     }
 
+    @Test fun heightUsesTheSameSizeAsTheCurrentWidth() {
+        assertEquals(74, chooseWidgetHeightDp(lawnchair(), landscape = true))
+        assertEquals(188, chooseWidgetHeightDp(lawnchair(), landscape = false))
+        val legacy = lawnchair().apply { remove(AppWidgetManager.OPTION_APPWIDGET_SIZES) }
+        assertEquals(74, chooseWidgetHeightDp(legacy, landscape = true))
+        assertEquals(188, chooseWidgetHeightDp(legacy, landscape = false))
+        assertEquals(40, chooseWidgetHeightDp(Bundle(), landscape = false))
+        val onlyMin = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40) }
+        assertEquals(40, chooseWidgetHeightDp(onlyMin, landscape = false))
+        val onlyMax = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 65) }
+        assertEquals(65, chooseWidgetHeightDp(onlyMax, landscape = true))
+        val invalid = Bundle().apply {
+            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(android.util.SizeF(272f, 0f)))
+        }
+        assertEquals(40, chooseWidgetHeightDp(invalid, landscape = false))
+    }
+
     @Test fun theCurrentConfigurationDecidesTheOrientation() {
         val manager = AppWidgetManager.getInstance(context)
         val id = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
