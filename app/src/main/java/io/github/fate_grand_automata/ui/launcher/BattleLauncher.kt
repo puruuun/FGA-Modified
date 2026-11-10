@@ -382,11 +382,11 @@ fun battleLauncher(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     QuestItemCheckbox(
                         useStormPod, questItemsEnabled, stringResource(R.string.p_use_storm_pod),
-                        modifier = Modifier.weight(1f), maxLines = 1
+                        modifier = Modifier.weight(1f), maxLines = 2
                     ) { useStormPod = it }
                     QuestItemCheckbox(
                         useTeapot, questItemsEnabled, stringResource(R.string.p_use_teapot),
-                        modifier = Modifier.weight(1f), maxLines = 1
+                        modifier = Modifier.weight(1f), maxLines = 2
                     ) { useTeapot = it }
                 }
                 Text(
@@ -584,7 +584,7 @@ private fun QuestItemCheckbox(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.alpha(if (enabled) 1f else 0.5f),
             maxLines = maxLines,
-            overflow = if (maxLines == 1) TextOverflow.Ellipsis else TextOverflow.Clip
+            overflow = if (maxLines == Int.MAX_VALUE) TextOverflow.Clip else TextOverflow.Ellipsis
         )
     }
 }

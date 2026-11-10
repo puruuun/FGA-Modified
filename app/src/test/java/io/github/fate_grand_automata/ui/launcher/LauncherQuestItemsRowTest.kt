@@ -27,14 +27,14 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [32])
-class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: GameServer) {
+class LauncherQuestItemsRowTest(private val widthDp: Int, private val heightDp: Int, private val server: GameServer) {
     private val compose = createComposeRule()
     @get:Rule val rules = screenshotRules(compose)
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
     fun equalHalvesStayOnOneLineAndSaveIndependentSelections() {
-        RuntimeEnvironment.setQualifiers("ko-w${widthDp}dp-h900dp-hdpi")
+        RuntimeEnvironment.setQualifiers("ko-w${widthDp}dp-h${heightDp}dp-hdpi")
         val fixture = CaptureLauncherFixture(context, server)
         val perServer = fixture.prefs.getPerServerConfigPref(server).apply {
             useStormPod = false
@@ -47,7 +47,7 @@ class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: Ga
             folder = "launcher-quest-items",
             name = if (server == GameServer.Kr) "kr" else "jp",
             widthDp = widthDp,
-            heightDp = 900,
+            heightDp = heightDp,
             locale = "ko",
             beforeCapture = { compose.onNodeWithText(storm).performScrollTo() }
         ) {
@@ -68,9 +68,9 @@ class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: Ga
             val layouts = mutableListOf<TextLayoutResult>()
             compose.onNodeWithText(text, useUnmergedTree = true)
                 .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            assertEquals(1, layouts.single().lineCount)
+            assertEquals("$text must fit on one line", 1, layouts.single().lineCount)
+            assertFalse("$text must not be ellipsized", layouts.single().isLineEllipsized(0))
             assertTrue(layouts.single().size.height <= left.height)
-            if (widthDp == 320) assertTrue(layouts.single().isLineEllipsized(0))
         }
         val bondTrack = context.getString(R.string.p_bond_track)
         assertEquals(
@@ -78,12 +78,6 @@ class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: Ga
             compose.onNodeWithText(bondTrack).fetchSemanticsNode().boundsInRoot.width,
             1f
         )
-        if (widthDp == 320) {
-            val layouts = mutableListOf<TextLayoutResult>()
-            compose.onNodeWithText(bondTrack, useUnmergedTree = true)
-                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            assertTrue("The full-width bond label still wraps", layouts.single().lineCount > 1)
-        }
 
         // Tapping either label toggles only its own checkbox; tapping the checkbox also works.
         compose.onNodeWithText(storm, useUnmergedTree = true).performTouchInput { click() }
@@ -104,7 +98,7 @@ class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: Ga
 
     @Test
     fun disablingTheFeatureKeepsSelectionsAndHidesTheBlock() {
-        RuntimeEnvironment.setQualifiers("ko-w${widthDp}dp-h900dp-hdpi")
+        RuntimeEnvironment.setQualifiers("ko-w${widthDp}dp-h${heightDp}dp-hdpi")
         val fixture = CaptureLauncherFixture(context, server)
         fixture.core.questItemControl.ignore.set(true)
         val perServer = fixture.prefs.getPerServerConfigPref(server).apply {
@@ -121,9 +115,9 @@ class LauncherQuestItemsRowTest(private val widthDp: Int, private val server: Ga
 
     companion object {
         @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}dp_{1}")
-        fun params(): List<Array<Any>> = listOf(360, 320).flatMap { width ->
-            listOf(GameServer.Kr, GameServer.Jp.Original).map { arrayOf(width, it) }
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}dp_{2}")
+        fun params(): List<Array<Any>> = listOf(640 to 360, 780 to 360, 1280 to 800).flatMap { (width, height) ->
+            listOf(GameServer.Kr, GameServer.Jp.Original).map { arrayOf(width, height, it) }
         }
     }
 }
