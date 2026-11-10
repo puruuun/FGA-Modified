@@ -73,7 +73,9 @@ internal class CaptureOutsideSession(
     }
     private var directory: File? = null
     private var running = false
+    // Battle scripts pause outside recording; every script marks changes made during its lifetime.
     private var scriptActive = false
+    private var scriptMade = false
 
     fun load(captureDirectory: File) {
         directory = File(captureDirectory, "accounts")
@@ -97,12 +99,13 @@ internal class CaptureOutsideSession(
         if (!value) closeAll()
     }
 
-    fun scriptStart() {
-        scriptActive = true
-        closeAll()
+    fun scriptStart(battle: Boolean = true) {
+        scriptMade = true
+        scriptActive = battle
+        if (battle) closeAll()
     }
-    fun scriptEnd() { scriptActive = false }
-    fun serviceStop() { scriptActive = false; closeAll() }
+    fun scriptEnd() { scriptActive = false; scriptMade = false }
+    fun serviceStop() { scriptEnd(); closeAll() }
 
     fun collect(target: String, response: CaptureAccounts.Response) {
         if (!running) return
@@ -121,7 +124,7 @@ internal class CaptureOutsideSession(
         val time = now()
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
-            period = previous.period.add(ChangeSource.of(target), delta, time),
+            period = previous.period.add(ChangeSource.of(target).copy(script = scriptMade), delta, time),
             resourceBaseline = response.next!!.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = response.next.lastUpdateTime,
         )

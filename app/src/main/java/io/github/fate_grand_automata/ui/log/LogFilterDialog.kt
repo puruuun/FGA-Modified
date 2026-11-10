@@ -33,6 +33,20 @@ internal fun timeFilterLabel(time: LogTimeFilter): String = stringResource(when 
 })
 
 @Composable
+internal fun sourceFilterLabel(source: LogSourceFilter): String = stringResource(when (source) {
+    LogSourceFilter.Script -> R.string.capture_source_script
+    LogSourceFilter.GiftBox -> R.string.capture_source_gift_box
+    LogSourceFilter.Shop -> R.string.capture_source_shop
+    LogSourceFilter.Summon -> R.string.capture_source_summon
+    LogSourceFilter.Lottery -> R.string.capture_source_lottery
+    LogSourceFilter.Enhancement -> R.string.capture_source_enhancement
+    LogSourceFilter.ApRecovery -> R.string.capture_source_ap_recovery
+    LogSourceFilter.ManualQuest -> R.string.capture_source_manual_quest
+    LogSourceFilter.Missions -> R.string.capture_source_missions
+    LogSourceFilter.Other -> R.string.capture_source_other
+})
+
+@Composable
 internal fun resourceLabel(key: String, names: GameNameMap): String =
     resourceName(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
 
@@ -47,11 +61,13 @@ internal fun customRangeLabel(start: Long?, end: Long?, locale: Locale = Locale.
 internal fun LogFilterDialog(
     time: LogTimeFilter, resource: String?, start: Long?, end: Long?, retention: Int,
     battleCount: Int, outsideCount: Int, entries: List<CaptureLogItem>, names: GameNameMap, profile: String?,
-    onDismiss: () -> Unit, onApply: (LogTimeFilter, String?, Long?, Long?, Int, String?) -> Unit,
+    onDismiss: () -> Unit, onApply: (LogTimeFilter, String?, Long?, Long?, Int, String?, LogSourceFilter?) -> Unit,
+    source: LogSourceFilter? = null,
 ) {
     var draftTime by rememberSaveable { mutableStateOf(time) }
     var draftResource by rememberSaveable { mutableStateOf(resource) }
     var draftProfile by rememberSaveable { mutableStateOf(profile) }
+    var draftSource by rememberSaveable { mutableStateOf(source) }
     var draftStart by rememberSaveable { mutableStateOf(start) }
     var draftEnd by rememberSaveable { mutableStateOf(end) }
     var draftRetention by rememberSaveable { mutableStateOf(retention) }
@@ -62,8 +78,8 @@ internal fun LogFilterDialog(
     val hasNoProfile = hasLogWithoutProfile(entries)
     val activeProfile = availableLogProfile(draftProfile, profiles, hasNoProfile)
     val resources = logResources(filterCaptureLogs(entries, draftTime, null, System.currentTimeMillis(),
-        customStart = draftStart, customEnd = draftEnd, profile = activeProfile))
-    val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile) }
+        customStart = draftStart, customEnd = draftEnd, profile = activeProfile, source = draftSource))
+    val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile, draftSource) }
     val screen = LocalConfiguration.current
     AlertDialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -94,6 +110,17 @@ internal fun LogFilterDialog(
                     if (hasNoProfile) FilterChip(selected = activeProfile == NO_LOG_PROFILE, onClick = { draftProfile = NO_LOG_PROFILE },
                         modifier = Modifier.testTag("log-filter-profile:none"),
                         label = { Text(stringResource(R.string.capture_log_no_profile)) })
+                }
+                Text(stringResource(R.string.capture_log_source), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterChip(selected = draftSource == null, onClick = { draftSource = null },
+                        modifier = Modifier.testTag("log-filter-source:all"),
+                        label = { Text(stringResource(R.string.capture_log_all_sources)) })
+                    LogSourceFilter.entries.forEach { value ->
+                        FilterChip(selected = draftSource == value, onClick = { draftSource = value },
+                            modifier = Modifier.testTag("log-filter-source:$value"),
+                            label = { Text(sourceFilterLabel(value)) })
+                    }
                 }
                 Text(stringResource(R.string.capture_log_resource), style = MaterialTheme.typography.titleSmall)
                 val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }

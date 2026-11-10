@@ -23,6 +23,16 @@ class OutsideLogStoreTest {
         assertTrue(store.entries.single().period.sources.all { it.delta.friendPoint == 0L })
     }
 
+    @Test fun oldOutsideLogWithoutScriptFlagKeepsEveryGroup() {
+        val entry = outsideFixture()
+        val legacy = Json.encodeToString(listOf(entry))
+        assertFalse(legacy.contains("script"))
+        File(directory, "outside-log.json").writeText(legacy)
+        val loaded = OutsideLogStore(directory).apply { load() }.entries.single()
+        assertEquals(entry, loaded)
+        assertTrue(loaded.period.sources.none { it.source.script })
+    }
+
     @Test fun keepsNewest200AndReplayReplacesSameId() {
         File(directory, "outside-log.json").writeText(Json.encodeToString((1..200).map { outsideFixture("$it", it * 1000L) }))
         val store = OutsideLogStore(directory)

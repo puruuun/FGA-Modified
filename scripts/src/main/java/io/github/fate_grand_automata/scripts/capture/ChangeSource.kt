@@ -2,9 +2,12 @@ package io.github.fate_grand_automata.scripts.capture
 
 import kotlinx.serialization.Serializable
 
-/** Only present/receive and battle/result have been confirmed in KR captures. */
+/**
+ * Only present/receive and battle/result have been confirmed in KR captures.
+ * [script] is captured at record time; old files retain their original group through the false default.
+ */
 @Serializable
-data class ChangeSource(val group: Group, val path: String? = null) {
+data class ChangeSource(val group: Group, val path: String? = null, val script: Boolean = false) {
     @Serializable
     enum class Group { GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Other }
 

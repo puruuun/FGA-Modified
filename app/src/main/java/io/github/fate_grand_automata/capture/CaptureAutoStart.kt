@@ -14,12 +14,12 @@ object CaptureAutoStart {
      * Called just before a script runs. Never blocks or fails the script.
      *
      * [battle] is true for battle scripts only. Other scripts (summon, lottery, gift box, enhancement ...) leave the
-     * outside-change period open and start no run session, so their changes are recorded like manual play.
+     * outside-change period open and start no run session; their recorded sources are marked as script-made.
      */
     fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer, battle: Boolean = true) {
         CaptureTracker.discardRun()
         CaptureTracker.init(context)
-        if (battle) CaptureTracker.outsideScriptStart()
+        CaptureTracker.outsideScriptStart(battle)
         if (!CaptureController.isSupported) return
         val readiness = captureReadiness(context, prefs)
         if (server != GameServer.Kr && (server != GameServer.Jp.Original || !readiness.jpReady)) return

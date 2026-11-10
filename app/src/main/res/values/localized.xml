@@ -1314,4 +1314,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_class_caster">Caster</string>
     <string name="friends_class_assassin">Assassin</string>
     <string name="friends_class_berserker">Berserker</string>
+    <string name="capture_log_source">Source</string>
+    <string name="capture_log_all_sources">All sources</string>
+    <string name="capture_source_script">Script</string>
 </resources>

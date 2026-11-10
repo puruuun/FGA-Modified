@@ -220,7 +220,7 @@ object CaptureTracker {
         }
     }
 
-    fun outsideScriptStart() = synchronized(lock) { outsideWork { outside.scriptStart() } }
+    fun outsideScriptStart(battle: Boolean = true) = synchronized(lock) { outsideWork { outside.scriptStart(battle) } }
     fun serviceStop() = synchronized(lock) { outsideWork { outside.serviceStop() } }
     fun startRun() = synchronized(lock) {
         battleInbox.clear()

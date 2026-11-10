@@ -60,9 +60,9 @@ class LogInteractionsTest {
         val restoration = StateRestorationTester(rule)
         restoration.setContent { FGATheme(darkTheme = false) { LogScreenContent(listOf(battle.copy(endedAt = 1)), {}, {}, outsideNames, outsideEntries = listOf(live.copy(endedAt = 1))) } }
         rule.onNodeWithTag("log-filter-button").performClick()
-        rule.onNodeWithTag("log-filter-resources").performScrollToNode(hasText("무간의 톱니바퀴"))
+        rule.onNodeWithTag("log-filter-resources").performScrollTo().performScrollToNode(hasText("무간의 톱니바퀴"))
         rule.onNodeWithText("무간의 톱니바퀴").performClick()
-        rule.onNodeWithText("Today").performClick()
+        rule.onNodeWithText("Today").performScrollTo().performClick()
         rule.onNodeWithText("Apply").performClick()
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithText("Today · 무간의 톱니바퀴").assertIsDisplayed()
@@ -162,7 +162,7 @@ class LogInteractionsTest {
         val restoration = StateRestorationTester(rule)
         restoration.setContent { FGATheme(darkTheme = false) {
             LogFilterDialog(LogTimeFilter.Custom, "2:6510", day, day, 200, 0, 0, listOf(CaptureLogItem(outside = live.copy(endedAt = day))), outsideNames, null, {},
-                { time, resource, start, end, retention, _ ->
+                { time, resource, start, end, retention, _, _ ->
                     assertEquals(LogTimeFilter.Custom, time)
                     assertEquals("2:6510", resource)
                     assertEquals(day, start); assertEquals(day, end); assertEquals(200, retention)

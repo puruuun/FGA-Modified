@@ -26,7 +26,7 @@ class LogFilterDialogTest {
 
     private fun show(selected: String? = null) = rule.setContent {
         FGATheme(darkTheme = false) {
-            LogFilterDialog(LogTimeFilter.All, selected, null, null, 200, 0, 0, resourceLogFixture(keys), names, null, {}, { _, _, _, _, _, _ -> })
+            LogFilterDialog(LogTimeFilter.All, selected, null, null, 200, 0, 0, resourceLogFixture(keys), names, null, {}, { _, _, _, _, _, _, _ -> })
         }
     }
 

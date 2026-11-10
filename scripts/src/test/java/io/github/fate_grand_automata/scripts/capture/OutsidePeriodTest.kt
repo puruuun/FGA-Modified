@@ -38,6 +38,18 @@ class OutsidePeriodTest {
         assertTrue(cancelled.isEmpty)
     }
 
+    @Test fun oldJsonKeepsOriginalGroupAndNewScriptSourcesRoundTripSeparately() {
+        val legacy = """{"accountId":"fictional","startedAt":10,"sources":[{"source":{"group":"Lottery"},"delta":{"qp":100}}],"total":{"qp":100}}"""
+        val old = Json.decodeFromString<OutsidePeriod>(legacy)
+        assertEquals(ChangeSource(ChangeSource.Group.Lottery), old.sources.single().source)
+        assertFalse(old.sources.single().source.script)
+        val script = ChangeSource(ChangeSource.Group.Lottery, script = true)
+        val current = old.add(script, AccountDelta(qp = 200), 20)
+        assertEquals(2, current.sources.size)
+        assertEquals(AccountDelta(qp = 300), current.total)
+        assertEquals(current, Json.decodeFromString<OutsidePeriod>(Json.encodeToString(current)))
+    }
+
     @Test fun serializationRoundTripIncludesSourcesTotalsAndFruit() {
         val period = OutsidePeriod("fictional", 10)
             .add(ChangeSource.of("unknown/path?discard=yes"), AccountDelta(mapOf(100L to -2L), chargeStone = -30), 20)
