@@ -338,7 +338,7 @@ class ApWidgetViewsTest {
         ApWidgetRenderer.loader = { data(3) }
         ApWidgetRenderer.updateAll(context)
         val hostView = shadow.getViewFor(id)
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        idleUntil { hostView.findViewById<View>(R.id.ap_flipper)?.visibility == View.VISIBLE }
         // The shadow host reapplies the views; adapter contents are checked where the views are applied fresh.
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_flipper).visibility)
         assertEquals(View.GONE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
@@ -346,8 +346,18 @@ class ApWidgetViewsTest {
         // A later refresh with no data replaces the stack with the message.
         ApWidgetRenderer.loader = { ApWidgetState.NoData }
         ApWidgetRenderer.updateAll(context)
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        idleUntil { hostView.findViewById<View>(R.id.ap_no_data)?.visibility == View.VISIBLE }
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
+    }
+
+    /** The shadow host applies the views on the main looper; wait for it instead of assuming one idle is enough. */
+    private fun idleUntil(condition: () -> Boolean) {
+        val end = System.currentTimeMillis() + 3000
+        do {
+            shadowOf(android.os.Looper.getMainLooper()).idle()
+            if (condition()) return
+            Thread.sleep(10)
+        } while (System.currentTimeMillis() < end)
     }
 
     @Test fun noPlacedWidgetLoadsNothing() = runBlocking {
