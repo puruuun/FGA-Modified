@@ -70,7 +70,7 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
                 emptyList()
             }
             if (files.isEmpty() && scriptCounts.failed == 0) issue(ImportPart.Scripts, "", ImportProblem.NoFiles)
-            val known = scripts.existing().map { comparable(it) }.toMutableSet()
+            val existingCounts = scripts.existing().groupingBy { comparable(it) }.eachCount().toMutableMap()
             files.forEachIndexed { index, (path, file) ->
                 onProgress(OriginalImportProgress(ImportPart.Scripts, index, files.size))
                 var problem = ImportProblem.ReadWrite
@@ -89,12 +89,14 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
                     problem = ImportProblem.UnsupportedCommand
                     (values["autoskill_cmd"] as? String)?.let { AutoSkillCommand.parse(it) }
                     val comparable = comparable(values)
-                    if (comparable in known) {
+                    val existingCount = existingCounts[comparable] ?: 0
+                    if (existingCount > 0) {
+                        // Each existing config accounts for only one matching exported file.
+                        existingCounts[comparable] = existingCount - 1
                         scriptCounts = scriptCounts.copy(skipped = scriptCounts.skipped + 1)
                     } else {
                         problem = ImportProblem.ReadWrite
                         scripts.add(values)
-                        known += comparable
                         scriptCounts = scriptCounts.copy(imported = scriptCounts.imported + 1)
                     }
                 } catch (e: Exception) {
