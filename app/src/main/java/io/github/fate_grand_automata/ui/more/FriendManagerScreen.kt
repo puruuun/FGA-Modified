@@ -206,6 +206,8 @@ private fun FriendCeLimit.label() = when (this) {
     FriendCeLimit.NotMax -> R.string.friends_not_max_lb
 }
 
+internal val FriendFilterPanelMaxWidth = 640.dp
+
 @Composable
 internal fun FriendFilterPanel(filter: FriendFilter, servantCounts: Map<Long, Int>, ceCounts: Map<Long, Int>,
     names: GameNameMap, shown: Int, onChange: (FriendFilter) -> Unit, onReset: () -> Unit, onDismiss: () -> Unit) {
@@ -214,8 +216,9 @@ internal fun FriendFilterPanel(filter: FriendFilter, servantCounts: Map<Long, In
     BackHandler { if (picker != null) picker = null else onDismiss() }
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = .4f)).clickable(onClick = onDismiss))
-        AnimatedVisibility(visibleState = entrance, enter = slideInVertically { -it }) {
-            Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).testTag("friends-filter-panel"),
+        // Same width as the old bottom sheet (owner, 2026-11-10): full width on phones, at most 640 dp and centred on wide screens.
+        AnimatedVisibility(visibleState = entrance, enter = slideInVertically { -it }, modifier = Modifier.align(Alignment.TopCenter)) {
+            Surface(Modifier.widthIn(max = FriendFilterPanelMaxWidth).fillMaxWidth().fillMaxHeight(.92f).testTag("friends-filter-panel"),
                 shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
                 if (picker != null) {
                     val ce = picker == "ce"
@@ -234,9 +237,9 @@ internal fun FriendFilterPanel(filter: FriendFilter, servantCounts: Map<Long, In
                         Text(stringResource(R.string.friends2_filters), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                         IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, stringResource(android.R.string.cancel)) }
                     }
-                    BoxWithConstraints(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                        val wide = maxWidth >= 720.dp
-                        FlowRow(Modifier.fillMaxWidth(), maxItemsInEachRow = if (wide) 2 else 1,
+                    Box(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                        // One column at every width (owner, 2026-11-10): sections stack top to bottom.
+                        FlowRow(Modifier.fillMaxWidth(), maxItemsInEachRow = 1,
                             horizontalArrangement = Arrangement.spacedBy(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(stringResource(R.string.friends2_deck), style = MaterialTheme.typography.titleSmall)
