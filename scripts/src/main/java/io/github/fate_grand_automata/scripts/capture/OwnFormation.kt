@@ -6,8 +6,8 @@ import kotlinx.serialization.json.*
 data class OwnDeck(val deckId: Long, val index: Int, val slots: List<FriendSlot>)
 
 /**
- * The owner's own support and Grand formations, read from the stored account state. Display only: the slot and Grand
- * types are the friend manager's, so both screens share one row look.
+ * The owner's own support and Grand formations, read from the stored account state. Display only:
+ * shares slot data with the friend manager, while the dashboard supplies its own compact rows.
  */
 data class OwnFormations(
     val main: List<OwnDeck> = emptyList(),

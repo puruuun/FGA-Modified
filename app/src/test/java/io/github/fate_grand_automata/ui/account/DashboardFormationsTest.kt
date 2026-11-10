@@ -3,6 +3,8 @@ package io.github.fate_grand_automata.ui.account
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.LocalNavigateBack
@@ -73,14 +75,19 @@ class DashboardFormationsUiTest {
         show(FormationCase(grand = false))
         compose.onNodeWithTag("dashboard-section:7").assertExists()
         compose.onNodeWithText("서포트 편성").assertExists()
-        compose.onNodeWithTag("formation-time", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("formation-time", useUnmergedTree = true).assertDoesNotExist()
         // Deck 1 (id 101): four class slots, one of them with the Grand badge and one with two CEs.
         assertEquals(4, rows())
         assertEquals(1, compose.onAllNodesWithTag("formation-grand-badge").fetchSemanticsNodes().size)
         compose.onAllNodesWithText("관위").assertCountEquals(1)
         compose.onAllNodesWithText("샘플 서번트 4").assertCountEquals(1)
         compose.onAllNodesWithText("샘플 예장 B", substring = true).assertCountEquals(1)
-        compose.onAllNodesWithTag("formation-appends")[0].assertTextEquals("5/4/-/-/-")
+        compose.onAllNodesWithTag("formation-appends").assertCountEquals(0)
+        compose.onNodeWithText("10/9/8").assertDoesNotExist()
+        compose.onNodeWithText("5/4/-/-/-").assertDoesNotExist()
+        compose.onNodeWithText("스킬").assertDoesNotExist()
+        compose.onNodeWithText("어펜드").assertDoesNotExist()
+        compose.onNodeWithText("Lv81 · 보2 ·", substring = true).assertExists()
         // Deck 2 (id 102) has one slot.
         compose.onNodeWithText("편성 2").performScrollTo().performClick()
         compose.waitForIdle()
@@ -108,8 +115,13 @@ class DashboardFormationsUiTest {
         labels.assertCountEquals(3)
         assertEquals(listOf("인연: NP 차지", "인연: 기본 효과", "인연: 없음"),
             (0..2).map { labels[it].fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString { t -> t.text } })
-        compose.onAllNodesWithText("자리 1", substring = true).assertCountEquals(1)
-        compose.onAllNodesWithText("자리 3", substring = true).assertCountEquals(1)
+        val seats = (1..3).map { compose.onNodeWithTag("formation-seat:$it").getUnclippedBoundsInRoot() }
+        seats.zipWithNext().forEach { (a,b) -> assertTrue(a.bottom < b.top) }
+        compose.onAllNodesWithTag("formation-time", useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithText("데이터 기준", substring = true).assertDoesNotExist()
+        val grand = hasAnyAncestor(hasTestTag("dashboard-section:8"))
+        compose.onAllNodes(hasTestTag("formation-ce-line") and grand).assertCountEquals(6)
+        compose.onNodeWithText("10/10/10").assertDoesNotExist()
     }
 
     @Test fun missingFormationDataShowsTheNoDataMessage() {
@@ -120,6 +132,57 @@ class DashboardFormationsUiTest {
         compose.onNodeWithTag("formation-none", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("편성 정보 없음").assertExists()
         compose.onNodeWithTag("dashboard-section:8").assertDoesNotExist()
+    }
+
+    @Test fun ceNamesEllipsizeOnOneLineWhileLevelAndMaxRemainVisible() {
+        val case = FormationCase(grand = true)
+        val longName = "아주 긴 개념예장 이름을 반복해서 한 줄보다 길게 표시하는 테스트"
+        compose.setContent { FGATheme { case.fixture.Icons {
+            AccountDashboardContent(case.data, case.names.copy(equips = case.names.equips.mapValues { longName }),
+                "샘플", {}, {})
+        } } }
+        val ceText = hasAnyAncestor(hasTestTag("formation-ce-line")) and hasText(longName)
+        val names = compose.onAllNodes(ceText, useUnmergedTree = true)
+        assertEquals(11, names.fetchSemanticsNodes().size) // support 5, Grand CE1/CE3 x 3
+        for (index in names.fetchSemanticsNodes().indices) {
+            val layouts = mutableListOf<TextLayoutResult>()
+            names[index].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals(1, layouts.single().lineCount)
+            assertTrue(layouts.single().isLineEllipsized(0))
+        }
+        val lines = compose.onAllNodesWithTag("formation-ce-line")
+        lines.fetchSemanticsNodes().indices.forEach { index ->
+            val bounds = lines[index].getUnclippedBoundsInRoot()
+            val texts = lines[index].onChildren().filter(hasText(" · Lv", substring = true) or hasText(" · 최대"))
+            texts.fetchSemanticsNodes().indices.forEach { i ->
+                val textBounds = texts[i].getUnclippedBoundsInRoot()
+                assertTrue(textBounds.left >= bounds.left && textBounds.right <= bounds.right)
+            }
+        }
+        compose.onAllNodesWithText(" · 최대", useUnmergedTree = true).assertCountEquals(7)
+        compose.onAllNodesWithText(" · Lv40", useUnmergedTree = true).assertCountEquals(1)
+        compose.onAllNodesWithText(" · Lv60", useUnmergedTree = true).assertCountEquals(3)
+    }
+
+    @Test fun emptyCesHaveOneLineIncludingBothEmptyGrandEquipmentSlots() {
+        val case = FormationCase(grand = true)
+        val formations = case.data.formations!!
+        val empty = formations.copy(main = formations.main.take(1).map { deck ->
+            deck.copy(slots = deck.slots.take(1).map { it.copy(ceId = 0, ce2Id = null) })
+        }, grand = formations.grand.take(1).map { it.copy(
+            ce1 = io.github.fate_grand_automata.scripts.capture.FriendCe(),
+            ce3 = io.github.fate_grand_automata.scripts.capture.FriendCe()) })
+        show(case, case.data.copy(formations = empty))
+        val none = compose.onAllNodesWithText("예장 없음")
+        none.assertCountEquals(3)
+        repeat(3) { index ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            none[index].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals(1, layouts.single().lineCount)
+        }
+        compose.onAllNodesWithText(" · 최대").assertCountEquals(0)
+        // Only the servant face uses the Atlas icon store, including the Grand seat.
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready").fetchSemanticsNodes().size == 2 }
     }
 }
 

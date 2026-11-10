@@ -26,6 +26,9 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -98,10 +101,10 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (data.storage != null) add(2)
                     if (!data.servants.isNullOrEmpty()) add(3)
                     if (!data.inventory.isNullOrEmpty()) add(4)
-                    if (!data.equips.isNullOrEmpty()) add(5)
-                    if (battle != null || outside != null) add(6)
                     add(7)
                     if (data.formations?.grand?.isNotEmpty() == true) add(8)
+                    if (!data.equips.isNullOrEmpty()) add(5)
+                    if (battle != null || outside != null) add(6)
                 }
                 val target = remember { BringIntoViewRequester() }
                 LaunchedEffect(initialSection) {
@@ -110,7 +113,10 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                 }
                 val sectionContent: @Composable (Int) -> Unit = { section ->
                     key(section) {
-                        DashboardSection(section, Modifier.fillMaxWidth().then(
+                        DashboardSection(section, Modifier.fillMaxWidth().semantics {
+                            isTraversalGroup = true
+                            traversalIndex = sections.indexOf(section).toFloat()
+                        }.then(
                             if (section == initialSection) Modifier.bringIntoViewRequester(target) else Modifier)) {
                             when (section) {
                                 0 -> Profile(data, displayName, friendCount, server)
@@ -120,22 +126,15 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                                 4 -> Inventory(data.inventory!!, names)
                                 5 -> MysticCodes(data.equips!!, names)
                                 6 -> Recent(battle, outside, names, openLogs)
-                                7 -> SupportFormation(data.formations, names, data.lastUpdateTime)
-                                8 -> GrandFormation(data.formations!!.grand, names, data.lastUpdateTime)
+                                7 -> SupportFormation(data.formations, names)
+                                8 -> GrandFormation(data.formations!!.grand, names)
                             }
                         }
                     }
                 }
-                // One page scroll, with bounded lazy lists inside each card. The stacks
-                // measure independently: no card inherits its neighbour's height.
+                // One page scroll, with bounded lazy lists inside each card.
                 val page = Modifier.fillMaxSize().testTag("dashboard-page").verticalScroll(rememberScrollState()).padding(16.dp)
-                if (maxWidth >= 840.dp) Row(page, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(listOf(0, 1, 2, 5, 6), listOf(3, 4, 7, 8)).forEachIndexed { index, stack ->
-                        Column(Modifier.weight(1f).testTag("dashboard-stack:$index"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            stack.filter { it in sections }.forEach { sectionContent(it) }
-                        }
-                    }
-                } else Column(page, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DashboardMasonry(wide = maxWidth >= 840.dp, modifier = page) {
                     sections.forEach { sectionContent(it) }
                 }
             }
@@ -346,7 +345,7 @@ private fun InventoryGroup.label() = when (this) {
 }
 
 /** Per-kind directories prevent mystic code IDs colliding with item IDs. */
-@Composable private fun AtlasIcon(kind: String, id: Long, url: String?) {
+@Composable internal fun AtlasIcon(kind: String, id: Long, url: String?) {
     val context = LocalContext.current
     val store = remember(context, kind) { LogIconLoader.files(context, kind) }
     val loader = LocalLogIconLoader.current ?: LogIconLoader.get(context)

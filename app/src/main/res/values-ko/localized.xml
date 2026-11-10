@@ -1085,7 +1085,6 @@
     <string name="dashboard_formation_deck">편성 %1$d</string>
     <string name="dashboard_formation_seat">자리 %1$d</string>
     <string name="dashboard_formation_none">편성 정보 없음</string>
-    <string name="dashboard_formation_updated">데이터 기준 %1$s</string>
     <string name="dashboard_level">마스터 레벨</string>
     <string name="dashboard_exp">경험치</string>
     <string name="dashboard_cost">파티 코스트 상한</string>

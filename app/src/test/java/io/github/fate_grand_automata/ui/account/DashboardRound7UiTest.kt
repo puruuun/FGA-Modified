@@ -47,37 +47,38 @@ class DashboardRound7UiTest {
         show(fixture.data.copy(profile = mapOf("name" to "Short"), equips = listOf(DashboardEquip(1,10,true))))
         compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
         if (width >= 840) {
-            val left = listOf(0,1,2,5,6).map(::bounds)
-            val right = listOf(3,4).map(::bounds)
-            assertEquals(left.first().top, right.first().top)
-            left.zipWithNext().forEach { (a,b) -> assertTrue(a.bottom <= b.top); assertEquals(a.left,b.left) }
-            assertTrue(right[0].bottom <= right[1].top)
-            assertEquals(right[0].left,right[1].left)
-            assertTrue(left[0].right < right[0].left)
-            assertTrue("Resources follow the short profile, without waiting for the collection", left[1].top < right[0].bottom)
-            assertEquals(12f, (left[1].top-left[0].bottom).value, 0.1f)
-            // Both stacks move by the same page scroll distance.
+            val columns = (0..1).map { compose.onNodeWithTag("dashboard-stack:$it").getUnclippedBoundsInRoot() }
+            val nextY = FloatArray(2) { columns[it].top.value }
+            listOf(0,1,2,3,4,7,5,6).forEach { id ->
+                compose.onAllNodesWithTag("dashboard-section:$id").assertCountEquals(1)
+                val card = bounds(id)
+                val column = if (nextY[0] <= nextY[1]) 0 else 1
+                assertEquals(columns[column].left, card.left)
+                assertEquals(nextY[column], card.top.value, 0.1f)
+                nextY[column] = card.bottom.value + 12f
+            }
+            // Cards in either column share the same page scroll.
             val beforeLeft = bounds(0).top
-            val beforeRight = bounds(3).top
+            val beforeRight = bounds(1).top
             compose.onNodeWithTag("dashboard-page").performTouchInput { swipeUp() }
             assertTrue(bounds(0).top < beforeLeft)
-            assertEquals((beforeLeft-bounds(0).top).value,(beforeRight-bounds(3).top).value,0.1f)
+            assertEquals((beforeLeft-bounds(0).top).value,(beforeRight-bounds(1).top).value,0.1f)
         } else {
             compose.onNodeWithTag("dashboard-stack:0").assertDoesNotExist()
-            val cards = (0..6).map(::bounds)
+            val cards = listOf(0,1,2,3,4,7,5,6).map(::bounds)
             cards.zipWithNext().forEach { (a,b) -> assertTrue(a.bottom<=b.top); assertEquals(a.left,b.left) }
         }
     }
-    @Test fun independentStacksAt840() = layout(840)
-    @Test fun independentStacksAt1280() = layout(1280)
-    @Test fun singleColumnAt360KeepsExistingOrder() = layout(360)
+    @Test fun masonryAt840() = layout(840)
+    @Test fun masonryAt1280() = layout(1280)
+    @Test fun singleColumnAt360KeepsCardOrder() = layout(360)
 
     @Test fun missingSectionsDropOutOfTheirStack() {
         show(fixture.data.copy(profile = emptyMap(),storage = null, equips = listOf(DashboardEquip(1,10,true))))
         compose.onNodeWithTag("dashboard-section:0").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-section:2").assertDoesNotExist()
         assertEquals(bounds(1).top,bounds(3).top)
-        assertEquals(12f,(bounds(5).top-bounds(1).bottom).value,0.1f)
+        assertTrue(bounds(4).top >= minOf(bounds(1).bottom, bounds(3).bottom))
     }
 
     @Test fun exportUsesThisDashboardAccountAndSitsLeftOfSettings() {

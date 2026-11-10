@@ -841,7 +841,6 @@
     <string name="dashboard_formation_deck">編成%1$d</string>
     <string name="dashboard_formation_seat">枠%1$d</string>
     <string name="dashboard_formation_none">編成情報なし</string>
-    <string name="dashboard_formation_updated">データ時点 %1$s</string>
     <string name="dashboard_level">マスターレベル</string>
     <string name="dashboard_exp">経験値</string>
     <string name="dashboard_cost">編成コスト上限</string>
