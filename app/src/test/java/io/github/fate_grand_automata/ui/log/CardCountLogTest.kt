@@ -89,11 +89,11 @@ class CardCountLogTest {
         val resources = setOf("-1:9700100", "-1:9400010", "-2:10")
         rule.setContent {
             androidx.compose.runtime.CompositionLocalProvider(LocalLogIconLoader provides localIconLoader(context)) {
-                LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 1, resourceLogFixture(resources), names, null, {}, { _, _, _, _, _, _ -> })
+                LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 1, resourceLogFixture(resources), names, null, {}, { _, _, _, _, _, _, _ -> })
             }
         }
         listOf("-1:9700100" to "예지의 맹화 (전체)", "-1:9400010" to "합성 예장", "-2:10" to "합성 코드").forEach { (key, name) ->
-            rule.onNodeWithTag("log-filter-resources").performScrollToNode(hasText(name))
+            rule.onNodeWithTag("log-filter-resources").performScrollTo().performScrollToNode(hasText(name))
             rule.onNodeWithText(name).assertIsDisplayed()
             rule.waitUntil(10_000) {
                 rule.onAllNodes(hasTestTag("log-icon-loaded") and hasAnyAncestor(hasTestTag("log-filter-resource:$key")), useUnmergedTree = true)

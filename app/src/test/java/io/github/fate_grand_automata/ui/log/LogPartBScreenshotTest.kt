@@ -62,7 +62,7 @@ class LogPartBScreenshotTest(private val width: Int, private val height: Int, pr
 
     @Test fun activeFilter() = rule.shoot("log-part-b", "ActiveFilter", width, height, dark, "ko", beforeCapture = {
         rule.onNodeWithTag("log-filter-button").performClick()
-        rule.onNodeWithTag("log-filter-resources").performScrollToNode(hasText("무간의 톱니바퀴"))
+        rule.onNodeWithTag("log-filter-resources").performScrollTo().performScrollToNode(hasText("무간의 톱니바퀴"))
         rule.onNode(hasText("무간의 톱니바퀴") and hasAnyAncestor(isDialog())).performClick()
         rule.onNodeWithText("적용").performClick()
         awaitIcons()

@@ -170,6 +170,23 @@ class CaptureOutsideSessionTest {
         assertEquals(7, AccountSummary.from(reloaded.state!!, time).goldenApples)
     }
 
+    @Test fun nonBattleScriptMarksOnlyItsChangesWithoutClosingOrPausingPeriod() {
+        response("gacha/draw", outsideFriendPointSummon(9800, includeCards = false))
+        val id = session.openEntries.value.single().id
+        session.scriptStart(battle = false)
+        response("gacha/draw", outsideFriendPointSummon(9600, includeCards = false))
+        session.scriptEnd()
+        response("gacha/draw", outsideFriendPointSummon(9400, includeCards = false))
+        val entry = session.openEntries.value.single()
+        assertEquals(id, entry.id)
+        assertTrue(logs.entries.isEmpty())
+        assertEquals(-600L, entry.period.total.friendPoint)
+        assertEquals(-200L, entry.period.sources.single { it.source.script }.delta.friendPoint)
+        assertEquals(-400L, entry.period.sources.single { !it.source.script }.delta.friendPoint)
+        session.setRunning(false)
+        assertEquals(entry.period, logs.entries.single().period)
+    }
+
     @Test fun scriptStartClosesPeriodAndRunResponsesCannotFeedOutsideLog() {
         feed()
         time = 15

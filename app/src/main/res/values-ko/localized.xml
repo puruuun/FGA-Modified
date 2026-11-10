@@ -1037,10 +1037,10 @@
     <string name="capture_source_gift_box">선물함</string>
     <string name="capture_source_shop">상점</string>
     <string name="capture_source_summon">소환</string>
-    <string name="capture_source_lottery">룰렛</string>
+    <string name="capture_source_lottery">복권</string>
     <string name="capture_source_enhancement">강화</string>
     <string name="capture_source_ap_recovery">AP 회복</string>
-    <string name="capture_source_manual_quest">수동 퀘스트</string>
+    <string name="capture_source_manual_quest">직접 퀘스트</string>
     <string name="capture_source_missions">미션</string>
     <string name="capture_source_other">기타</string>
     <string name="capture_log_confirm_clear">모든 기록을 삭제할까요?</string>
@@ -1243,4 +1243,13 @@
     <string name="friends_class_caster">캐스터</string>
     <string name="friends_class_assassin">어새신</string>
     <string name="friends_class_berserker">버서커</string>
+    <string name="friends_servants_selected_count">서번트 %1$d기 선택</string>
+    <string name="friends_picker_done">완료</string>
+    <string name="friends_skill_ten">10</string>
+    <string name="friends_skill_not_ten">10 아님</string>
+    <string name="friends_skill_slot">스킬%1$d</string>
+    <string name="friends_append_slot">어펜드%1$d</string>
+    <string name="capture_log_source">출처</string>
+    <string name="capture_log_all_sources">전체</string>
+    <string name="capture_source_script">스크립트</string>
 </resources>

@@ -170,10 +170,10 @@ class FriendGrandTest {
         assertEquals(listOf(502L, 503L, 500L), selected(FriendFilter(login = FriendLogin.Inactive, loginAmount = 0)))
         assertEquals(listOf(500L), selected(FriendFilter(login = FriendLogin.Inactive, loginAmount = 99)))
         for (formation in FriendFormation.entries) {
-            val filter = FriendFilter(formation = formation, friendName = "bet", servantId = if (formation == FriendFormation.Event) 501 else 500,
+            val filter = FriendFilter(formation = formation, friendName = "bet", servantIds = setOf(if (formation == FriendFormation.Event) 501 else 500),
                 ceIds = setOf(9000, 9001), ceLimit = FriendCeLimit.NotMax, minLevel = 90,
                 login = FriendLogin.Inactive, loginAmount = 99)
-            assertEquals(if (formation == FriendFormation.Main) emptyList() else listOf(filter.servantId!!), selected(filter))
+            assertEquals(if (formation == FriendFormation.Main) emptyList() else filter.servantIds.toList(), selected(filter))
         }
         assertEquals(listOf(10001, 10003, 10002), FriendList.select(roster, FriendFilter(formation = FriendFormation.Grand), now).map { it.grandSlot!!.seat })
     }

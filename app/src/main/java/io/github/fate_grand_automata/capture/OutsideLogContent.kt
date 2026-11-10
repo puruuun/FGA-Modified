@@ -21,6 +21,10 @@ import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.log.LogCardFrame
+import io.github.fate_grand_automata.ui.log.LogSourceFilter
+import io.github.fate_grand_automata.ui.log.logSource
+import io.github.fate_grand_automata.ui.log.orderedLogSources
+import io.github.fate_grand_automata.ui.log.sourceFilterLabel
 import io.github.fate_grand_automata.ui.log.ResourceGroups
 import io.github.fate_grand_automata.ui.log.outsideResources
 import io.github.fate_grand_automata.util.grouped
@@ -54,7 +58,7 @@ internal fun OutsideLogCard(entry: OutsideLogEntry, selected: Boolean, onClick: 
         selected, onClick, outside = true, checked = checked)
 }
 
-internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: GameNameMap) {
+internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: GameNameMap, source: LogSourceFilter? = null) {
     item {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.capture_outside_title), style = MaterialTheme.typography.titleMedium)
@@ -69,11 +73,11 @@ internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: 
             Text(stringResource(R.string.capture_outside_sources), style = MaterialTheme.typography.titleMedium)
         }
     }
-    entry.period.sources.forEach { source ->
-        item(key = "source:${source.source.group}:${source.source.path.orEmpty()}") {
+    orderedLogSources(entry.period.sources, source).forEach { source ->
+        item(key = "source:${source.source.group}:${source.source.path.orEmpty()}:${source.source.script}") {
             var expanded by rememberSaveable(entry.id, source.source) { mutableStateOf(false) }
             Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                .testTag("outside-source:${source.source.group}:${source.source.path.orEmpty()}")) {
+                .testTag("outside-source:${source.source.group}:${source.source.path.orEmpty()}${if (source.source.script) ":script" else ""}")) {
                 TextButton(onClick = { expanded = !expanded }) {
                     Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
                     Text(sourceName(source.source), Modifier.padding(start = 8.dp))
@@ -86,18 +90,8 @@ internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: 
 
 @Composable
 private fun sourceName(source: ChangeSource): String {
-    val label = stringResource(when (source.group) {
-        ChangeSource.Group.GiftBox -> R.string.capture_source_gift_box
-        ChangeSource.Group.Shop -> R.string.capture_source_shop
-        ChangeSource.Group.Summon -> R.string.capture_source_summon
-        ChangeSource.Group.Lottery -> R.string.capture_source_lottery
-        ChangeSource.Group.Enhancement -> R.string.capture_source_enhancement
-        ChangeSource.Group.ApRecovery -> R.string.capture_source_ap_recovery
-        ChangeSource.Group.ManualQuest -> R.string.capture_source_manual_quest
-        ChangeSource.Group.Missions -> R.string.capture_source_missions
-        ChangeSource.Group.Other -> R.string.capture_source_other
-    })
-    return if (source.group == ChangeSource.Group.Other) "$label · ${source.path.orEmpty()}" else label
+    val label = sourceFilterLabel(source.logSource())
+    return if (!source.script && source.group == ChangeSource.Group.Other) "$label · ${source.path.orEmpty()}" else label
 }
 
 @Composable
@@ -108,13 +102,13 @@ private fun OutsideDelta(delta: AccountDelta, names: GameNameMap, fruitUsed: Map
 }
 
 @Composable
-fun OutsideLogDetail(entry: OutsideLogEntry, onBack: () -> Unit, names: GameNameMap = GameNameMap()) {
+internal fun OutsideLogDetail(entry: OutsideLogEntry, onBack: () -> Unit, names: GameNameMap = GameNameMap(), source: LogSourceFilter? = null) {
     CappedWidth {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Heading(stringResource(R.string.capture_outside_title), leading = {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Default.ArrowBack, stringResource(R.string.navigate_back)) }
             })
-            LazyColumn(Modifier.weight(1f)) { outsideLogDetailItems(entry, names) }
+            LazyColumn(Modifier.weight(1f)) { outsideLogDetailItems(entry, names, source) }
         }
     }
 }

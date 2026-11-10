@@ -82,6 +82,7 @@ fun LogScreenContent(
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
     var resource by rememberSaveable { mutableStateOf<String?>(null) }
     var profile by rememberSaveable { mutableStateOf<String?>(null) }
+    var source by rememberSaveable { mutableStateOf<LogSourceFilter?>(null) }
     var start by rememberSaveable { mutableStateOf<Long?>(null) }
     var end by rememberSaveable { mutableStateOf<Long?>(null) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
@@ -94,15 +95,15 @@ fun LogScreenContent(
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
     val profiles = logProfiles(all)
     val activeProfile = availableLogProfile(profile, profiles, hasLogWithoutProfile(all))
-    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile)
-    val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null
+    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile, source = source)
+    val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null || source != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
     val noProfileLabel = stringResource(R.string.capture_log_no_profile)
-    val clearFilters = { time = LogTimeFilter.All; resource = null; profile = null; start = null; end = null }
+    val clearFilters = { time = LogTimeFilter.All; resource = null; profile = null; source = null; start = null; end = null }
     val summary = if (filtered) listOfNotNull(
         if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
-        activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resource?.let { resourceLabel(it, names) }).joinToString(" · ") else null
+        activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resource?.let { resourceLabel(it, names) }, source?.let { sourceFilterLabel(it) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -124,7 +125,7 @@ fun LogScreenContent(
                     Column(Modifier.weight(0.48f).fillMaxHeight(), content = list)
                     Column(Modifier.weight(0.52f).fillMaxHeight()) {
                         if (selected == null) Text(emptyText, Modifier.padding(16.dp))
-                        else LazyColumn(Modifier.fillMaxSize()) { captureLogDetailItems(selected, names, loadBattles) }
+                        else LazyColumn(Modifier.fillMaxSize()) { captureLogDetailItems(selected, names, loadBattles, source) }
                     }
                 }
             }
@@ -132,17 +133,17 @@ fun LogScreenContent(
             BackHandler(enabled = selected != null && !deletion.active) { selectedId = null }
             if (selected != null && !deletion.active) {
                 selected.battle?.let { BattleLogDetail(it, onBack = { selectedId = null }, names = names, loadBattles = loadBattles) }
-                selected.outside?.let { OutsideLogDetail(it, onBack = { selectedId = null }, names = names) }
+                selected.outside?.let { OutsideLogDetail(it, onBack = { selectedId = null }, names = names, source = source) }
             } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
         }
     }
     if (showFilters) LogFilterDialog(time, resource, start, end, retention, entries.size, outsideEntries.size,
-        all, names, profile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile ->
+        all, names, profile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile, newSource ->
             time = newTime; resource = newResource; start = newStart; end = newEnd
-            profile = newProfile
+            profile = newProfile; source = newSource
             if (newRetention != retention) onRetention(newRetention)
             showFilters = false
-        })
+        }, source = source)
     if (pendingIds != null) AlertDialog(
         onDismissRequest = { pendingIds = null; confirmAll = false },
         title = { Text(stringResource(if (confirmAll) R.string.battle_log_delete_all else R.string.capture_log_delete_selected)) },
@@ -206,9 +207,9 @@ internal fun ColumnScope.LogList(
     }
 }
 
-private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap, loadBattles: (suspend (String) -> List<BattleGains>?)?) {
+private fun LazyListScope.captureLogDetailItems(entry: CaptureLogItem, names: GameNameMap, loadBattles: (suspend (String) -> List<BattleGains>?)?, source: LogSourceFilter?) {
     entry.battle?.let { battleLogDetailItems(it, names, loadBattles) }
-    entry.outside?.let { outsideLogDetailItems(it, names) }
+    entry.outside?.let { outsideLogDetailItems(it, names, source) }
 }
 
 /** Shared two-line frame gives both entry kinds the same selected border and checkbox behavior. */
