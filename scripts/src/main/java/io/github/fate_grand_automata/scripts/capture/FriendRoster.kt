@@ -34,6 +34,35 @@ data class FriendSlot(
 }
 
 @Serializable
+data class FriendCe(val id: Long = 0, val limitCount: Int = 0, val lv: Int = 0)
+
+@Serializable
+enum class FriendBondEffect { NpCharge, Base, None }
+
+/** Grand seats are independent of the normal and event support decks. */
+@Serializable
+data class FriendGrandSlot(
+    val seat: Int,
+    val svtId: Long,
+    val lv: Int = 0,
+    val np: Int = 0,
+    val skills: List<Int> = emptyList(),
+    val appends: List<Int?> = List(5) { null },
+    val ce1: FriendCe = FriendCe(),
+    val ce3: FriendCe = FriendCe(),
+    val bondCeId: Long? = null,
+    val bondEffect: FriendBondEffect = FriendBondEffect.None,
+) {
+    /** Shared display fields, with the bond CE kept out of the equipment filter. */
+    fun supportSlot() = FriendSlot(
+        deckId = 0, classId = seat, svtId = svtId, lv = lv, np = np, skills = skills, appends = appends,
+        ceId = ce1.id, ceLimitCount = ce1.limitCount, ceLv = ce1.lv,
+        ce2Id = ce3.id.takeIf { it != 0L }, ce2LimitCount = ce3.limitCount, ce2Lv = ce3.lv,
+        grand = true,
+    )
+}
+
+@Serializable
 data class Friend(
     val userId: String,
     val name: String = "",
@@ -43,6 +72,7 @@ data class Friend(
     val eventDeckIds: List<Long> = emptyList(),
     val lastLogin: Long = 0,
     val slots: List<FriendSlot> = emptyList(),
+    val grandSlots: List<FriendGrandSlot> = emptyList(),
 ) {
     fun isEvent(slot: FriendSlot) = slot.deckId in eventDeckIds && slot.deckId !in mainDeckIds
 }
@@ -116,6 +146,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                     eventDeckIds = row.longs("eventSupportDeckIds"),
                     lastLogin = all.maxOfOrNull { it.long("updatedAt") ?: 0L }?.coerceAtLeast(0) ?: 0,
                     slots = all.mapNotNull(::slot).distinctBy { it.deckId to it.classId },
+                    grandSlots = row.slotObjects("userSvtGrandHash").mapNotNull(::grandSlot).distinctBy { it.seat },
                 )
             }.associateBy { it.userId }
             return FriendRoster(cache.long("serverTime") ?: now, friends)
@@ -141,6 +172,9 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
                 info.long("userLv")?.let { friend = friend.copy(lv = it.toInt()) }
                 // Support lists carry no friend code: the one friend/top gave stays.
                 info.string("friendCode")?.takeIf { it.isNotBlank() }?.let { friend = friend.copy(friendCode = it) }
+                if ("userSvtGrandHash" in info) friend = friend.copy(
+                    grandSlots = info.slotObjects("userSvtGrandHash").mapNotNull(::grandSlot).distinctBy { it.seat },
+                )
                 val mainObjects = info.slotObjects("userSvtLeaderHash")
                 val eventObjects = info.slotObjects("eventUserSvtLeaderHash")
                 val mainIds = info.longs("mainSupportDeckIds")
@@ -193,8 +227,28 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
             )
         }
 
+        private fun grandSlot(row: JsonObject): FriendGrandSlot? {
+            val support = slot(row) ?: return null
+            fun ce(key: String): FriendCe {
+                val value = row[key] as? JsonObject
+                return FriendCe(value?.long("svtId") ?: 0, value?.long("limitCount")?.toInt() ?: 0, value?.long("lv")?.toInt() ?: 0)
+            }
+            val bond = (row["equipTarget2"] as? JsonObject)?.long("svtId")?.takeIf { it != 0L }
+            val changed = (row["script"] as? JsonObject)?.long("equipTarget2SkillChange") == 1L
+            return FriendGrandSlot(
+                seat = row.long("grandGraphId")?.toInt() ?: return null,
+                svtId = support.svtId, lv = support.lv, np = support.np, skills = support.skills, appends = support.appends,
+                ce1 = ce("equipTarget1"), ce3 = ce("equipTarget3"), bondCeId = bond,
+                bondEffect = when {
+                    bond == null -> FriendBondEffect.None
+                    changed -> FriendBondEffect.NpCharge
+                    else -> FriendBondEffect.Base
+                },
+            )
+        }
+
         /**
-         * The second CE of a Grand Duel support, shaped like equipTarget1. The field name "equipTarget2" is a guess:
+         * The second CE of a legacy support slot, shaped like equipTarget1. The field name "equipTarget2" is a guess:
          * it has not been seen in a real friend list yet, so fix it here once a capture shows the real one.
          */
         private fun secondCe(row: JsonObject): JsonObject? =

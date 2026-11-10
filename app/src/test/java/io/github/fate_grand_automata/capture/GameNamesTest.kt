@@ -118,4 +118,23 @@ class GameNamesTest {
             {"id":4,"icon":"file:///private"}, {"id":5,"icon":null}, null]
         """))
     }
+
+    @Test fun friendNamesKeepAtlasClassesAcrossLegacyCacheMigrationAndJpFallback() = runBlocking {
+        File(directory, "basic_servant.json").writeText("""{"1":"한국 서번트"}""")
+        File(directory, "basic_equip.json").writeText("""{"90":"예장"}""")
+        val cache = GameNames(directory, { url ->
+            when {
+                "/JP/basic_servant" in url -> """[{"id":1,"name":"JP overlap","className":"saber"},{"id":2,"name":"JP servant","className":"moonCancer"}]"""
+                "/KR/basic_servant" in url -> """[{"id":1,"name":"한국 서번트","className":"caster"}]"""
+                else -> """[{"id":100,"name":"item"}]"""
+            }
+        }) { 1000 }
+        val names = cache.friends(setOf(1, 2), setOf(90), hasJpAccount = true)
+        assertEquals("한국 서번트", names.servants[1])
+        assertEquals("caster", names.servantData[1]?.className)
+        assertEquals("JP servant", names.servants[2])
+        assertEquals("moonCancer", names.servantData[2]?.className)
+        val offline = GameNames(directory, { error("must use cache") }) { 1001 }.friends(setOf(1, 2), setOf(90), hasJpAccount = true)
+        assertEquals(names, offline)
+    }
 }

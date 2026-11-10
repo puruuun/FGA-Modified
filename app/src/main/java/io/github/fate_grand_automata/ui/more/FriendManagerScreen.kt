@@ -1,5 +1,9 @@
 package io.github.fate_grand_automata.ui.more
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,8 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.scripts.capture.*
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
+import io.github.fate_grand_automata.ui.account.dashboardClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,7 +77,7 @@ internal fun FriendManagerContent(roster: FriendRoster?, names: GameNameMap, ini
     LaunchedEffect(selectedId) { onSelected(selectedId) }
     val selected = accounts.firstOrNull { it.account.id == selectedId }
     val activeRoster = selected?.roster ?: roster
-    CappedWidth {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             if (activeRoster == null && selected != null) {
                 // The roster of the selected account is being read from disk.
@@ -121,52 +124,62 @@ private fun AccountLabel(item: FriendManagerAccount, now: Long, modifier: Modifi
 
 @Composable
 private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, accountPicker: @Composable () -> Unit) {
-    var event by rememberSaveable { mutableStateOf(false) }
+    var formation by rememberSaveable { mutableStateOf(FriendFormation.Main) }
     var servant by rememberSaveable { mutableStateOf<Long?>(null) }
-    var ce by rememberSaveable { mutableStateOf<Long?>(null) }
-    var maxLb by rememberSaveable { mutableStateOf(false) }
-    var grandOnly by rememberSaveable { mutableStateOf(false) }
+    var ces by rememberSaveable { mutableStateOf(arrayListOf<Long>()) }
+    var ceLimit by rememberSaveable { mutableStateOf(FriendCeLimit.All) }
+    var friendName by rememberSaveable { mutableStateOf("") }
+    var minLevel by rememberSaveable { mutableIntStateOf(0) }
+    var levelAtMost by rememberSaveable { mutableStateOf(false) }
     var login by rememberSaveable { mutableStateOf(FriendLogin.All) }
     var loginAmount by rememberSaveable { mutableIntStateOf(FRIEND_INACTIVE_DEFAULT) }
     var loginUnit by rememberSaveable { mutableStateOf(LoginUnit.Days) }
-    var sheet by rememberSaveable { mutableStateOf(false) }
-    val filter = FriendFilter(event, servant, ce, maxLb, login, loginAmount, loginUnit, grandOnly)
-    val change: (FriendFilter) -> Unit = { event = it.event; servant = it.servantId; ce = it.ceId; maxLb = it.maxLimitBreak; login = it.login
-        loginAmount = it.loginAmount; loginUnit = it.loginUnit; grandOnly = it.grandOnly }
+    var panel by rememberSaveable { mutableStateOf(false) }
+    val filter = FriendFilter(formation, servant, ces.toSet(), ceLimit, login, loginAmount, loginUnit, friendName, minLevel, levelAtMost)
+    val change: (FriendFilter) -> Unit = {
+        formation = it.formation; servant = it.servantId; ces = ArrayList(it.ceIds); ceLimit = it.ceLimit
+        login = it.login; loginAmount = it.inactiveAmount; loginUnit = it.loginUnit
+        friendName = it.friendName; minLevel = it.minLevel; levelAtMost = it.levelAtMost
+    }
     var shown by remember { mutableStateOf(emptyList<FriendRow>()) }
     var servantCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
     var ceCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
-    LaunchedEffect(roster, filter) {
+    LaunchedEffect(roster, filter, now) {
         val result = withContext(Dispatchers.Default) {
-            val rows = FriendList.rows(roster, event)
+            val rows = FriendList.rows(roster, formation)
             Triple(FriendList.select(roster, filter, now), FriendList.servantCounts(rows), FriendList.ceCounts(rows))
         }
         shown = result.first; servantCounts = result.second; ceCounts = result.third
     }
-    Column(Modifier.fillMaxSize()) {
-        Heading(stringResource(R.string.friends_title))
-        accountPicker()
-        Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-            FlowRow(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(onClick = { sheet = true }, modifier = Modifier.testTag("friends-filter"),
-                    leadingIcon = { Icon(Icons.Default.Tune, null, Modifier.size(18.dp)) },
-                    label = { Text(stringResource(R.string.friends2_filters)) })
-                AssistChip(onClick = { sheet = true }, label = { Text(stringResource(if (event) R.string.friends_deck_event else R.string.friends_deck_main)) })
-                servant?.let { RemovableFilter(names.servants[it] ?: "#$it") { servant = null } }
-                ce?.let { RemovableFilter(names.equips[it] ?: "#$it") { ce = null } }
-                if (maxLb) RemovableFilter(stringResource(R.string.friends_max_lb)) { maxLb = false }
-                if (grandOnly) RemovableFilter(stringResource(R.string.friends_grand_only)) { grandOnly = false }
-                if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, loginAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
-            }
-            if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
-            LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("friends-list"), contentPadding = PaddingValues(bottom = 16.dp)) {
-                stickyHeader { TableHeader() }
-                items(shown, key = { "${it.friend.userId}:${it.slot.deckId}:${it.slot.classId}" }) { FriendTableRow(it, names, now) }
+    Box(Modifier.fillMaxSize()) {
+        CappedWidth {
+            Column(Modifier.fillMaxSize()) {
+                Heading(stringResource(R.string.friends_title))
+                accountPicker()
+                Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+                    FlowRow(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        AssistChip(onClick = { panel = true }, modifier = Modifier.testTag("friends-filter"),
+                            leadingIcon = { Icon(Icons.Default.Tune, null, Modifier.size(18.dp)) },
+                            label = { Text(stringResource(R.string.friends2_filters)) })
+                        AssistChip(onClick = { panel = true }, label = { Text(stringResource(formation.label())) })
+                        servant?.let { RemovableFilter(names.servants[it] ?: "#$it") { servant = null } }
+                        ces.forEach { id -> RemovableFilter(names.equips[id] ?: "#$id") { ces = ArrayList(ces - id) } }
+                        if (ceLimit != FriendCeLimit.All) RemovableFilter(stringResource(ceLimit.label())) { ceLimit = FriendCeLimit.All }
+                        if (friendName.isNotEmpty()) RemovableFilter(friendName) { friendName = "" }
+                        if (minLevel > 0) RemovableFilter(stringResource(if (levelAtMost) R.string.friends_level_max else R.string.friends_level_min, minLevel)) { minLevel = 0 }
+                        if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, filter.inactiveAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
+                    }
+                    if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
+                    LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("friends-list"), contentPadding = PaddingValues(bottom = 16.dp)) {
+                        stickyHeader { TableHeader() }
+                        items(shown, key = { "${it.friend.userId}:${it.slot.deckId}:${it.slot.classId}" }) { FriendTableRow(it, names, now) }
+                    }
+                }
             }
         }
+        if (panel) FriendFilterPanel(filter, servantCounts, ceCounts, names, shown.size,
+            onChange = change, onReset = { change(FriendFilter()) }, onDismiss = { panel = false })
     }
-    if (sheet) FriendFilterSheet(filter, servantCounts, ceCounts, names, shown.size,
-        onChange = change, onReset = { change(FriendFilter()) }, onDismiss = { sheet = false })
 }
 
 @Composable
@@ -181,59 +194,118 @@ private fun LoginUnit.label() = when (this) {
     LoginUnit.Days -> R.string.friends2_unit_days
 }
 
+private fun FriendFormation.label() = when (this) {
+    FriendFormation.Main -> R.string.friends_deck_main
+    FriendFormation.Event -> R.string.friends_deck_event
+    FriendFormation.Grand -> R.string.friends_deck_grand
+}
+
+private fun FriendCeLimit.label() = when (this) {
+    FriendCeLimit.All -> R.string.friends_filter_all
+    FriendCeLimit.Max -> R.string.friends_max_lb
+    FriendCeLimit.NotMax -> R.string.friends_not_max_lb
+}
+
+internal val FriendFilterPanelMaxWidth = 640.dp
+
 @Composable
-internal fun FriendFilterSheet(filter: FriendFilter, servantCounts: Map<Long, Int>, ceCounts: Map<Long, Int>,
+internal fun FriendFilterPanel(filter: FriendFilter, servantCounts: Map<Long, Int>, ceCounts: Map<Long, Int>,
     names: GameNameMap, shown: Int, onChange: (FriendFilter) -> Unit, onReset: () -> Unit, onDismiss: () -> Unit) {
     var picker by remember { mutableStateOf<String?>(null) }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        if (picker != null) {
-            val ce = picker == "ce"
-            FriendPicker(ce, if (ce) ceCounts else servantCounts, names, onDismiss = { picker = null }) { id ->
-                onChange(if (ce) filter.copy(ceId = id) else filter.copy(servantId = id)); picker = null
-            }
-        } else Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("friends-filter-sheet")) {
-            Text(stringResource(R.string.friends2_filters), style = MaterialTheme.typography.titleLarge)
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.friends2_deck), style = MaterialTheme.typography.titleSmall)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf(false, true).forEachIndexed { index, event ->
-                        SegmentedButton(selected = filter.event == event,
-                            onClick = { if (filter.event != event) onChange(filter.copy(event = event, servantId = null, ceId = null)) },
-                            shape = SegmentedButtonDefaults.itemShape(index, 2), modifier = Modifier.testTag(if (event) "friends-deck-event" else "friends-deck-main")) {
-                            Text(stringResource(if (event) R.string.friends_deck_event else R.string.friends_deck_main))
+    val entrance = remember { MutableTransitionState(false).apply { targetState = true } }
+    BackHandler { if (picker != null) picker = null else onDismiss() }
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = .4f)).clickable(onClick = onDismiss))
+        // Same width as the old bottom sheet (owner, 2026-11-10): full width on phones, at most 640 dp and centred on wide screens.
+        AnimatedVisibility(visibleState = entrance, enter = slideInVertically { -it }, modifier = Modifier.align(Alignment.TopCenter)) {
+            Surface(Modifier.widthIn(max = FriendFilterPanelMaxWidth).fillMaxWidth().fillMaxHeight(.92f).testTag("friends-filter-panel"),
+                shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
+                if (picker != null) {
+                    val ce = picker == "ce"
+                    FriendPicker(ce, if (ce) ceCounts else servantCounts, names, filter, onDismiss = { picker = null }) { id ->
+                        if (ce) onChange(filter.copy(ceIds = when {
+                            id == null -> emptySet()
+                            id in filter.ceIds -> filter.ceIds - id
+                            else -> filter.ceIds + id
+                        })) else {
+                            onChange(filter.copy(servantId = id))
+                            picker = null
                         }
                     }
+                } else Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.friends2_filters), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, stringResource(android.R.string.cancel)) }
+                    }
+                    Box(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                        // One column at every width (owner, 2026-11-10): sections stack top to bottom.
+                        FlowRow(Modifier.fillMaxWidth(), maxItemsInEachRow = 1,
+                            horizontalArrangement = Arrangement.spacedBy(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.friends2_deck), style = MaterialTheme.typography.titleSmall)
+                                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                                    FriendFormation.entries.forEachIndexed { index, deck ->
+                                        SegmentedButton(selected = filter.formation == deck,
+                                            onClick = { if (filter.formation != deck) onChange(filter.copy(formation = deck, servantId = null, ceIds = emptySet())) },
+                                            shape = SegmentedButtonDefaults.itemShape(index, 3),
+                                            modifier = Modifier.testTag("friends-deck-" + deck.name.lowercase())) {
+                                            Text(stringResource(deck.label()))
+                                        }
+                                    }
+                                }
+                                OutlinedTextField(filter.friendName, { onChange(filter.copy(friendName = it)) },
+                                    Modifier.fillMaxWidth().testTag("friends-name"), singleLine = true,
+                                    label = { Text(stringResource(R.string.friends_friend_name)) })
+                                Text(stringResource(R.string.friends2_servant), style = MaterialTheme.typography.titleSmall)
+                                OutlinedButton(onClick = { picker = "servant" }, modifier = Modifier.fillMaxWidth().testTag("friends-servant")) {
+                                    Text(filter.servantId?.let { servantPickerName(names, it) } ?: stringResource(R.string.friends_all_servants))
+                                }
+                                Text(stringResource(R.string.friends_servant_level), style = MaterialTheme.typography.titleSmall)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(false, true).forEach { atMost ->
+                                        FilterChip(selected = filter.levelAtMost == atMost, onClick = { onChange(filter.copy(levelAtMost = atMost)) },
+                                            modifier = Modifier.testTag(if (atMost) "friends-level-at-most" else "friends-level-at-least"),
+                                            label = { Text(stringResource(if (atMost) R.string.friends_level_dir_max else R.string.friends_level_dir_min)) })
+                                    }
+                                }
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(0, 80, 90, 100, 120).forEach { level ->
+                                        FilterChip(selected = filter.minLevel == level, onClick = { onChange(filter.copy(minLevel = level)) },
+                                            modifier = Modifier.testTag("friends-level-$level"),
+                                            label = { Text(if (level == 0) stringResource(R.string.friends_filter_all) else level.toString()) })
+                                    }
+                                }
+                            }
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.friends2_ce), style = MaterialTheme.typography.titleSmall)
+                                OutlinedButton(onClick = { picker = "ce" }, modifier = Modifier.fillMaxWidth().testTag("friends-ce")) {
+                                    Text(if (filter.ceIds.isEmpty()) stringResource(R.string.friends_all_ces)
+                                        else filter.ceIds.joinToString { names.equips[it] ?: "#$it" })
+                                }
+                                Text(stringResource(R.string.friends_ce_limit), style = MaterialTheme.typography.titleSmall)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    FriendCeLimit.entries.forEach { limit ->
+                                        FilterChip(selected = filter.ceLimit == limit, onClick = { onChange(filter.copy(ceLimit = limit)) },
+                                            modifier = Modifier.testTag("friends-limit-" + limit.name),
+                                            label = { Text(stringResource(limit.label())) })
+                                    }
+                                }
+                                Text(stringResource(R.string.friends2_last_login), style = MaterialTheme.typography.titleSmall)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(filter.login == FriendLogin.All, { onChange(filter.copy(login = FriendLogin.All)) }, Modifier.testTag("friends-login-all"))
+                                    Text(stringResource(R.string.friends_login_all), Modifier.clickable { onChange(filter.copy(login = FriendLogin.All)) })
+                                    RadioButton(filter.login == FriendLogin.Inactive, { onChange(filter.copy(login = FriendLogin.Inactive)) }, Modifier.testTag("friends-login-inactive"))
+                                    Text(stringResource(R.string.friends2_login_inactive), Modifier.clickable { onChange(filter.copy(login = FriendLogin.Inactive)) })
+                                }
+                                if (filter.login == FriendLogin.Inactive) InactiveInput(filter, onChange)
+                            }
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = onReset) { Text(stringResource(R.string.friends2_reset)) }
+                        Button(onClick = onDismiss, modifier = Modifier.weight(1f).testTag("friends-apply")) { Text(stringResource(R.string.friends2_show_slots, shown)) }
+                    }
                 }
-                Text(stringResource(R.string.friends2_servant), style = MaterialTheme.typography.titleSmall)
-                OutlinedButton(onClick = { picker = "servant" }, modifier = Modifier.fillMaxWidth().testTag("friends-servant")) {
-                    Text(filter.servantId?.let { names.servants[it] ?: "#$it" } ?: stringResource(R.string.friends_all_servants))
-                }
-                Text(stringResource(R.string.friends2_ce), style = MaterialTheme.typography.titleSmall)
-                OutlinedButton(onClick = { picker = "ce" }, modifier = Modifier.fillMaxWidth().testTag("friends-ce")) {
-                    Text(filter.ceId?.let { names.equips[it] ?: "#$it" } ?: stringResource(R.string.friends_all_ces))
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.friends_grand_only), Modifier.weight(1f))
-                    Switch(filter.grandOnly, { onChange(filter.copy(grandOnly = it)) }, Modifier.testTag("friends-grand-only"))
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.friends_max_lb), Modifier.weight(1f))
-                    Switch(filter.maxLimitBreak, { onChange(filter.copy(maxLimitBreak = it)) }, Modifier.testTag("friends-max-lb"))
-                }
-                Text(stringResource(R.string.friends2_last_login), style = MaterialTheme.typography.titleSmall)
-                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(login = FriendLogin.All)) }, verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(filter.login == FriendLogin.All, { onChange(filter.copy(login = FriendLogin.All)) }, Modifier.testTag("friends-login-all"))
-                    Text(stringResource(R.string.friends_login_all))
-                }
-                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(login = FriendLogin.Inactive)) }, verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(filter.login == FriendLogin.Inactive, { onChange(filter.copy(login = FriendLogin.Inactive)) }, Modifier.testTag("friends-login-inactive"))
-                    Text(stringResource(R.string.friends2_login_inactive))
-                }
-                if (filter.login == FriendLogin.Inactive) InactiveInput(filter, onChange)
-            }
-            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onReset) { Text(stringResource(R.string.friends2_reset)) }
-                Button(onClick = onDismiss, modifier = Modifier.weight(1f).testTag("friends-apply")) { Text(stringResource(R.string.friends2_show_slots, shown)) }
             }
         }
     }
@@ -241,24 +313,22 @@ internal fun FriendFilterSheet(filter: FriendFilter, servantCounts: Map<Long, In
 
 @Composable
 private fun InactiveInput(filter: FriendFilter, onChange: (FriendFilter) -> Unit) {
-    var text by remember { mutableStateOf(filter.loginAmount.toString()) }
     var menu by remember { mutableStateOf(false) }
-    FlowRow(Modifier.fillMaxWidth().padding(start = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(text, { value ->
-            val digits = value.filter { it.isDigit() }.take(3)
-            text = digits
-            digits.toIntOrNull()?.takeIf { it in FRIEND_INACTIVE_MIN..FRIEND_INACTIVE_MAX }?.let { onChange(filter.copy(loginAmount = it)) }
-        }, Modifier.width(88.dp).testTag("friends-login-amount"), singleLine = true,
-            label = { Text(stringResource(R.string.friends2_login_amount)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+    val amount = filter.inactiveAmount
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = { onChange(filter.copy(loginAmount = amount - 1)) }, enabled = amount > FRIEND_INACTIVE_MIN,
+            modifier = Modifier.testTag("friends-login-minus")) { Text("−") }
+        Text(amount.toString(), Modifier.testTag("friends-login-amount"))
+        IconButton(onClick = { onChange(filter.copy(loginAmount = amount + 1)) }, enabled = amount < FRIEND_INACTIVE_MAX,
+            modifier = Modifier.testTag("friends-login-plus")) { Text("+") }
         Box {
             OutlinedButton(onClick = { menu = true }, modifier = Modifier.testTag("friends-login-unit")) {
                 Text(stringResource(filter.loginUnit.label()))
             }
             DropdownMenu(menu, { menu = false }) {
                 LoginUnit.entries.forEach { unit ->
-                    DropdownMenuItem(text = { Text(stringResource(unit.label())) }, modifier = Modifier.testTag("friends-unit-${unit.name}"),
+                    DropdownMenuItem(text = { Text(stringResource(unit.label())) }, modifier = Modifier.testTag("friends-unit-" + unit.name),
                         onClick = { onChange(filter.copy(loginUnit = unit)); menu = false })
                 }
             }
@@ -268,29 +338,47 @@ private fun InactiveInput(filter: FriendFilter, onChange: (FriendFilter) -> Unit
 }
 
 @Composable
-private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, onDismiss: () -> Unit, choose: (Long?) -> Unit) {
-    var query by rememberSaveable { mutableStateOf("") }
-    var options by remember { mutableStateOf(emptyList<FriendOption>()) }
-    LaunchedEffect(ce, counts, names, query) {
-        options = withContext(Dispatchers.Default) {
-            if (ce) friendCeOptions(counts, names.equips) else friendServantOptions(counts, names.servants, query)
-        }
+internal fun servantPickerName(names: GameNameMap, id: Long): String {
+    val name = names.servants[id] ?: "#$id"
+    val cls = names.servantData[id]?.className ?: return name
+    val label = when (cls) {
+        "saber" -> stringResource(R.string.friends_class_saber)
+        "archer" -> stringResource(R.string.friends_class_archer)
+        "lancer" -> stringResource(R.string.friends_class_lancer)
+        "rider" -> stringResource(R.string.friends_class_rider)
+        "caster" -> stringResource(R.string.friends_class_caster)
+        "assassin" -> stringResource(R.string.friends_class_assassin)
+        "berserker" -> stringResource(R.string.friends_class_berserker)
+        else -> dashboardClass(cls)
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+    return "($label) $name"
+}
+
+@Composable
+private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, filter: FriendFilter,
+    onDismiss: () -> Unit, choose: (Long?) -> Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val displayNames = if (ce) names.equips else counts.keys.associateWith { servantPickerName(names, it) }
+    val options = if (ce) friendCeOptions(counts, displayNames) else friendServantOptions(counts, displayNames, query)
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(if (ce) R.string.friends2_ce else R.string.friends2_servant), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("friends-picker-done")) { Text(stringResource(android.R.string.ok)) }
         }
         if (!ce) OutlinedTextField(query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.friends2_search)) }, modifier = Modifier.fillMaxWidth().testTag("friends-search"))
-        LazyColumn(Modifier.heightIn(max = 420.dp)) {
+        LazyColumn(Modifier.weight(1f)) {
             item { TextButton(onClick = { choose(null) }) { Text(stringResource(if (ce) R.string.friends_all_ces else R.string.friends_all_servants)) } }
             if (ce && options.firstOrNull()?.id?.let(::isBondCe) == true) item {
                 Text(stringResource(R.string.friends2_bond_bonus), style = MaterialTheme.typography.titleSmall)
             }
             itemsIndexed(options, key = { _, option -> option.id }) { index, option ->
                 if (ce && index > 0 && isBondCe(options[index - 1].id) && !isBondCe(option.id)) HorizontalDivider()
-                TextButton(onClick = { choose(option.id) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.friends_option_count, option.name, option.count), Modifier.fillMaxWidth())
+                val label = stringResource(R.string.friends_option_count, option.name, option.count)
+                if (ce) Row(Modifier.fillMaxWidth().clickable { choose(option.id) }, verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(option.id in filter.ceIds, { choose(option.id) })
+                    Text(label)
+                } else TextButton(onClick = { choose(option.id) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(label, Modifier.fillMaxWidth())
                 }
             }
         }
@@ -318,7 +406,6 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
     val slot = row.slot
     var expanded by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().testTag("friends-row")) {
-        // Every cell is at most two lines, so a row never grows beyond two lines.
         Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 8.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(COLUMN_WEIGHTS[0]).padding(end = 2.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -337,16 +424,24 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
             // Numbers are never ellipsized: they do not wrap and are clipped only past the column edge.
             Text(slot.skills.joinToString("/"), Modifier.weight(COLUMN_WEIGHTS[1]).padding(horizontal = 1.dp), style = MaterialTheme.typography.bodySmall,
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
-            Text((0..2).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" } + "\n" +
-                (3..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "–" }, Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp),
-                style = MaterialTheme.typography.bodySmall, maxLines = 2, softWrap = false, overflow = TextOverflow.Clip)
+            Text((0..4).joinToString("/") { slot.appends.getOrNull(it)?.toString() ?: "-" },
+                Modifier.weight(COLUMN_WEIGHTS[2]).padding(horizontal = 1.dp).testTag("friends-appends"),
+                style = MaterialTheme.typography.bodySmall, softWrap = true)
             Column(Modifier.weight(COLUMN_WEIGHTS[3]).padding(start = 1.dp, end = 4.dp)) {
-                val twoCes = slot.ce2Id?.takeIf { it != 0L } != null
+                val twoCes = row.grandSlot != null || slot.ce2Id?.takeIf { it != 0L } != null
                 if (slot.ceId == 0L) Text(stringResource(R.string.friends_ce_none), style = MaterialTheme.typography.bodySmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 else CeLine(names.equips[slot.ceId] ?: "#${slot.ceId}", slot.ceLimitCount, slot.ceLv, if (twoCes) 1 else 2)
-                // Grand Duel supports carry a second CE on its own line, so a cell is at most two lines.
+                // The two equipment lines precede the independent bond-effect label.
+                if (row.grandSlot != null && slot.ce2Id == null) Text(stringResource(R.string.friends_ce_none), style = MaterialTheme.typography.bodySmall)
                 slot.ce2Id?.takeIf { it != 0L }?.let { CeLine(names.equips[it] ?: "#$it", slot.ce2LimitCount ?: 0, slot.ce2Lv ?: 0) }
+                row.grandSlot?.let { grand ->
+                    Text(stringResource(when (grand.bondEffect) {
+                        FriendBondEffect.NpCharge -> R.string.friends_bond_np
+                        FriendBondEffect.Base -> R.string.friends_bond_base
+                        FriendBondEffect.None -> R.string.friends_bond_none
+                    }), style = MaterialTheme.typography.labelSmall, modifier = Modifier.testTag("friends-bond-effect"))
+                }
             }
             Text(if (friend.lastLogin > 0) loginText(agoParts(now - friend.lastLogin)) else "–", Modifier.weight(COLUMN_WEIGHTS[4]).padding(horizontal = 1.dp),
                 style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
@@ -361,7 +456,8 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
                         modifier = Modifier.size(40.dp).testTag("friends-copy")) { Icon(Icons.Default.ContentCopy, stringResource(R.string.dashboard_copy), Modifier.size(18.dp)) }
                 }
             }
-            Text(stringResource(R.string.friends2_expanded, friend.lv, classLabel(slot.classId), row.deckIndex?.toString() ?: "–",
+            Text(stringResource(R.string.friends2_expanded, friend.lv, if (row.grandSlot != null) servantPickerName(names, slot.svtId) else classLabel(slot.classId),
+                row.grandSlot?.seat?.toString() ?: row.deckIndex?.toString() ?: "–",
                 if (friend.lastLogin > 0) SimpleDateFormat("M/d HH:mm", Locale.getDefault()).format(Date(friend.lastLogin * 1000))
                 else stringResource(R.string.friends_login_unknown)), style = MaterialTheme.typography.bodySmall)
         }

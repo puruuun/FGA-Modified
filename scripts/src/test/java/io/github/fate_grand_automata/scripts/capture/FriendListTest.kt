@@ -21,24 +21,9 @@ class FriendListTest {
 
     private fun ids(filter: FriendFilter) = FriendList.select(roster, filter, now).map { it.friend.userId + ":" + it.slot.svtId }
 
-    @Test fun grandOnlyCombinesWithServantCeLimitLoginAndDeckFilters() {
-        val grandRoster = roster.copy(friends = roster.friends.mapValues { (_, friend) ->
-            friend.copy(slots = friend.slots.map { it.copy(grand = it.svtId == 500L || it.svtId == 600L) })
-        })
-        fun selected(filter: FriendFilter) = FriendList.select(grandRoster, filter, now).map { it.friend.userId + ":" + it.slot.svtId }
-        val grand = FriendFilter(grandOnly = true)
-        assertEquals(listOf("1:500", "1:600", "3:600", "2:500", "4:500"), selected(grand))
-        assertEquals(listOf("1:500", "2:500"), selected(grand.copy(servantId = 500, ceId = 9000, maxLimitBreak = true)))
-        assertEquals(listOf("2:500"), selected(grand.copy(servantId = 500, ceId = 9000, maxLimitBreak = true, login = FriendLogin.Inactive)))
-        assertTrue(selected(grand.copy(servantId = 700)).isEmpty())
-        assertTrue(selected(grand.copy(ceId = 9999)).isEmpty())
-        assertEquals(listOf("1:500"), selected(grand.copy(event = true)))
-        assertFalse(FriendFilter().grandOnly)
-    }
-
     @Test fun deckToggleSplitsMainAndEvent() {
         assertEquals(6, FriendList.select(roster, FriendFilter(), now).size)
-        assertEquals(listOf("1:500"), ids(FriendFilter(event = true)))
+        assertEquals(listOf("1:500"), ids(FriendFilter(formation = FriendFormation.Event)))
     }
 
     @Test fun sortedByNewestLoginThenFriendDeckClass() {
@@ -47,12 +32,12 @@ class FriendListTest {
 
     @Test fun servantAndCeFilters() {
         assertEquals(listOf("1:500", "2:500", "4:500"), ids(FriendFilter(servantId = 500)))
-        assertEquals(listOf("1:600", "3:600"), ids(FriendFilter(ceId = 9001)))
-        assertEquals(listOf("3:600"), ids(FriendFilter(servantId = 600, ceId = 9001, maxLimitBreak = true)))
+        assertEquals(listOf("1:600", "3:600"), ids(FriendFilter(ceIds = setOf(9001))))
+        assertEquals(listOf("3:600"), ids(FriendFilter(servantId = 600, ceIds = setOf(9001), ceLimit = FriendCeLimit.Max)))
     }
 
     @Test fun maxLimitBreakNeedsALimitBrokenCe() {
-        assertEquals(listOf("1:500", "3:600", "2:500"), ids(FriendFilter(maxLimitBreak = true)))
+        assertEquals(listOf("1:500", "3:600", "2:500"), ids(FriendFilter(ceLimit = FriendCeLimit.Max)))
     }
 
     private fun inactive(amount: Int, unit: LoginUnit, vararg offsets: Pair<String, Long>, filterNow: Long = now) = FriendList.select(
@@ -126,18 +111,18 @@ class FriendListTest {
 
     private fun duelIds(filter: FriendFilter) = FriendList.select(duelRoster, filter, now).map { it.slot.svtId }.sorted()
 
-    @Test fun ceFilterMatchesEitherCe() {
-        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9001)))
-        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9000)))
-        assertEquals(listOf(802L), duelIds(FriendFilter(ceId = 9002)))
+    @Test fun normalCeFilterUsesOnlyTheSlotCe() {
+        assertTrue(duelIds(FriendFilter(ceIds = setOf(9001))).isEmpty())
+        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceIds = setOf(9000))))
+        assertEquals(listOf(802L), duelIds(FriendFilter(ceIds = setOf(9002))))
     }
 
-    @Test fun maxLimitBreakMatchesEitherCe() {
-        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(maxLimitBreak = true)))
-        assertEquals(listOf(800L, 801L), duelIds(FriendFilter(ceId = 9001, maxLimitBreak = true)))
+    @Test fun normalLimitBreakUsesOnlyTheSlotCe() {
+        assertEquals(listOf(801L), duelIds(FriendFilter(ceLimit = FriendCeLimit.Max)))
+        assertTrue(duelIds(FriendFilter(ceIds = setOf(9001), ceLimit = FriendCeLimit.Max)).isEmpty())
     }
 
-    @Test fun cePickerCountsBothCes() {
-        assertEquals(mapOf(9000L to 2, 9001L to 2, 9002L to 1), FriendList.ceCounts(FriendList.rows(duelRoster, false)))
+    @Test fun normalCePickerCountsOnlySlotCes() {
+        assertEquals(mapOf(9000L to 2, 9002L to 1), FriendList.ceCounts(FriendList.rows(duelRoster, false)))
     }
 }

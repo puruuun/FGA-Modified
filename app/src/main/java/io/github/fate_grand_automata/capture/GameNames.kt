@@ -82,7 +82,10 @@ class GameNames(
 
     /** Servant and CE names for the friend manager; ids missing from the cache follow the usual daily refresh. */
     suspend fun friends(servantIds: Collection<Long>, equipIds: Collection<Long>, hasJpAccount: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
-        mutex.withLock { withJpLists(resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds), hasJpAccount) }
+        mutex.withLock {
+            val kr = resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds)
+            withJpLists(kr.copy(servantData = metadata("basic_servant")), hasJpAccount)
+        }
     }
 
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */

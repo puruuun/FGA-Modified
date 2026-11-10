@@ -61,9 +61,10 @@ class FriendManagerViewModel @Inject constructor(@ApplicationContext context: Co
             combine(accounts, CaptureTracker.accounts) { friends, stored ->
                 friends to stored.any { it.server == "JP" }
             }.collectLatest { (accounts, hasJpAccount) ->
-                val slots = accounts.mapNotNull { it.roster }.flatMap { it.friends.values }.flatMap { it.slots }
+                val friends = accounts.mapNotNull { it.roster }.flatMap { it.friends.values }
+                val slots = friends.flatMap { friend -> friend.slots + friend.grandSlots.map { it.supportSlot() } }
                 if (slots.isEmpty()) return@collectLatest
-                names.value = cache.friends(slots.map { it.svtId }.toSet(), slots.map { it.ceId }.filter { it != 0L }.toSet(),
+                names.value = cache.friends(slots.map { it.svtId }.toSet(), slots.flatMap { listOfNotNull(it.ceId, it.ce2Id) }.filter { it != 0L }.toSet(),
                     hasJpAccount = hasJpAccount)
             }
         }
