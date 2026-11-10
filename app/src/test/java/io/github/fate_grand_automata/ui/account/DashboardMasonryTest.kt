@@ -117,6 +117,32 @@ class DashboardMasonryScreenshotTest(private val width: Int, private val height:
         }
     }
 
+    @Test fun longCeNameShowsEightCharactersAndLevelFollowsWithoutGap() {
+        RuntimeEnvironment.setQualifiers("ko-w${width}dp-h1400dp-hdpi")
+        val case = FormationCase(grand = true)
+        val longName = "아주 긴 개념예장 이름을 줄여도 레벨과 최대 표시는 남습니다"
+        compose.setContent { FGATheme { case.fixture.Icons {
+            AccountDashboardContent(case.data, case.names.copy(equips = case.names.equips.mapValues { longName }),
+                "샘플", {}, {}, initialSection = 7)
+        } } }
+        val names = compose.onAllNodes(hasAnyAncestor(hasTestTag("formation-ce-line")) and hasText(longName), useUnmergedTree = true)
+        assertTrue(names.fetchSemanticsNodes().isNotEmpty())
+        names.fetchSemanticsNodes().indices.forEach { index ->
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            names[index].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            val layout = layouts.single()
+            assertEquals(1, layout.lineCount)
+            assertTrue("visible chars ${layout.getLineEnd(0, visibleEnd = true)}", layout.getLineEnd(0, visibleEnd = true) >= 8)
+        }
+        val lines = compose.onAllNodesWithTag("formation-ce-line", useUnmergedTree = true)
+        lines.fetchSemanticsNodes().indices.forEach { index ->
+            val line = lines[index]
+            val name = line.onChildren()[0].getUnclippedBoundsInRoot()
+            val level = line.onChildren()[1].getUnclippedBoundsInRoot()
+            assertEquals(name.right.value, level.left.value, 2f)
+        }
+    }
+
     @Test fun longCeNames() {
         val case = FormationCase(grand = true)
         compose.shoot("dashboard-masonry", "FormationRows", width, 1400, locale = "ko") {
