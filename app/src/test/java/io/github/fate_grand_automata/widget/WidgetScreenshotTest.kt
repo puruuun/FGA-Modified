@@ -160,14 +160,14 @@ class WidgetScreenshotTest(private val light: Boolean) {
     ).map { it }
     private val oneStyle get() = settings.copy(showLogButton = false)
     @Test fun logs3x2One() = shootAp("logs_phone_3x2_one", DpSize(220.dp, 128.dp), several, oneStyle, logs = logItems.take(2))
-    @Test fun logs4x2One() = shootAp("logs_phone_4x2_one", DpSize(272.dp, 128.dp), several, oneStyle, logs = logItems.take(2))
-    @Test fun logsTabletOne() = shootAp("logs_tablet_one", DpSize(560.dp, 128.dp), several, oneStyle, logs = logItems.take(5))
+    @Test fun logs4x2One() = shootAp("logs_phone_4x2_one", DpSize(272.dp, 128.dp), several, oneStyle, logs = logItems.take(3))
+    @Test fun logsTabletOne() = shootAp("logs_tablet_one", DpSize(560.dp, 128.dp), several, oneStyle, logs = logItems.take(6))
     @Test fun logs3x2All() = shootAp("logs_phone_3x2_all", DpSize(220.dp, 128.dp), threeAccounts, allStyle, logs = logItems.take(2))
-    @Test fun logs4x2All() = shootAp("logs_phone_4x2_all", DpSize(272.dp, 128.dp), threeAccounts, allStyle, logs = logItems.take(2))
-    @Test fun logsTabletAll() = shootAp("logs_tablet_all", DpSize(560.dp, 128.dp), threeAccounts, allStyle.copy(showServer = true), logs = logItems.take(5))
+    @Test fun logs4x2All() = shootAp("logs_phone_4x2_all", DpSize(272.dp, 128.dp), threeAccounts, allStyle, logs = logItems.take(3))
+    @Test fun logsTabletAll() = shootAp("logs_tablet_all", DpSize(560.dp, 128.dp), threeAccounts, allStyle.copy(showServer = true), logs = logItems)
     @Test fun logsEmpty4x2() = shootAp("logs_phone_4x2_empty", DpSize(272.dp, 128.dp), several, oneStyle, logs = emptyList())
-    @Test fun logs4x2HalfOpacity() = shootAp("logs_phone_4x2_opacity50", DpSize(272.dp, 128.dp), several, half.copy(showLogButton = false), backdrop = true, logs = logItems.take(2))
-    @Test fun logs4x2LogKey() = shootAp("logs_phone_4x2_log_key", DpSize(300.dp, 128.dp), several, settings.copy(showLogButton = true), logs = logItems.take(2))
+    @Test fun logs4x2HalfOpacity() = shootAp("logs_phone_4x2_opacity50", DpSize(272.dp, 128.dp), several, half.copy(showLogButton = false), backdrop = true, logs = logItems.take(3))
+    @Test fun logs4x2LogKey() = shootAp("logs_phone_4x2_log_key", DpSize(300.dp, 128.dp), several, settings.copy(showLogButton = true), logs = logItems.take(3))
     @Test fun pickerAccountLogs() = shootLayout("picker_account_logs_3x2", R.layout.widget_picker_account_logs, DpSize(220.dp, 128.dp))
 
     private fun shootLayout(name: String, layout: Int, size: DpSize) {

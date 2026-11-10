@@ -119,11 +119,10 @@ class WidgetRecentLogsTest {
     }
 
     @Test fun cardCountFollowsTheWidth() {
-        assertEquals(1, widgetLogCardCount(183)) // the narrowest 3-cell launcher width: one card, never cramped
-        assertEquals(2, widgetLogCardCount(214))
+        assertEquals(2, widgetLogCardCount(183))
         assertEquals(2, widgetLogCardCount(220)) // 3x2 phone
-        assertEquals(2, widgetLogCardCount(272)) // 4x2 phone
-        assertEquals(5, widgetLogCardCount(560)) // tablet
+        assertEquals(3, widgetLogCardCount(272)) // 4x2 phone
+        assertEquals(6, widgetLogCardCount(560)) // tablet
         assertEquals(1, widgetLogCardCount(100)) // never fewer than one
         assertEquals(WIDGET_LOG_CARD_MAX, widgetLogCardCount(5000))
     }
@@ -133,8 +132,8 @@ class WidgetRecentLogsTest {
     @Test fun phoneAndTabletWidthsShowAsManyCardsAsFit() {
         val all = items(8)
         assertEquals(2, cards(host(all, width = 220)).size)
-        assertEquals(2, cards(host(all, width = 272)).size)
-        assertEquals(5, cards(host(all, width = 560)).size)
+        assertEquals(3, cards(host(all, width = 272)).size)
+        assertEquals(6, cards(host(all, width = 560)).size)
         // Fewer items than fit: only those.
         assertEquals(1, cards(host(items(1), width = 560)).size)
     }
@@ -142,7 +141,7 @@ class WidgetRecentLogsTest {
     @Test fun cardsShowIconTitleAccountAndSummary() {
         val b = battle("b1", 1_000)
         val o = outside("o1", 2_000_000_000_000)
-        val host = host(listOf(CaptureLogItem(outside = o, inProgress = true), CaptureLogItem(battle = b)), width = 300)
+        val host = host(listOf(CaptureLogItem(outside = o, inProgress = true), CaptureLogItem(battle = b)), width = 272)
         val (first, second) = cards(host)
         assertEquals("스크립트 밖 변화", text(first, R.id.ap_log_card_title))
         assertTrue(text(first, R.id.ap_log_card_summary).startsWith("진행 중 · "))
@@ -157,25 +156,6 @@ class WidgetRecentLogsTest {
             assertEquals(android.text.TextUtils.TruncateAt.END, view.ellipsize)
         }
         assertFalse(visible(host, R.id.ap_logs_empty))
-    }
-
-    @Test fun narrowCardsDropTheAccountNameAndWiderCardsKeepIt() {
-        // 3x2 and 4x2 phone widths and the tablet: cards under 130 dp, so the title gets the room.
-        for (width in listOf(220, 272, 560)) {
-            val count = widgetLogCardCount(width)
-            assertTrue(widgetLogCardWidthDp(width, count) < WIDGET_LOG_CARD_ACCOUNT_MIN_WIDTH_DP, "width $width")
-            for (card in cards(host(items(8), width = width))) {
-                assertEquals(View.GONE, card.findViewById<View>(R.id.ap_log_card_account).visibility, "width $width")
-                // Icon, one-line ellipsized title and summary stay.
-                assertEquals(1, card.findViewById<TextView>(R.id.ap_log_card_title).maxLines)
-                assertTrue(visible(card, R.id.ap_log_card_icon))
-            }
-        }
-        // Two cards at 300 dp are 137 dp each: the account name stays.
-        assertTrue(widgetLogCardWidthDp(300, widgetLogCardCount(300)) >= WIDGET_LOG_CARD_ACCOUNT_MIN_WIDTH_DP)
-        for (card in cards(host(items(8), width = 300))) assertTrue(visible(card, R.id.ap_log_card_account))
-        // One card on a wide row is wide too.
-        assertTrue(visible(cards(host(items(1), width = 272)).single(), R.id.ap_log_card_account))
     }
 
     @Test fun noLogsShowsTheEmptyText() {

@@ -20,8 +20,8 @@ import timber.log.Timber
 /** Height of the log-card row, including its bottom padding. The top row gets the rest of the widget. */
 const val WIDGET_LOGS_ROW_HEIGHT_DP = 54
 
-/** Narrowest a log card may be: two fit a 3x2 and a 4x2 phone widget, five a 560 dp tablet. */
-const val WIDGET_LOG_CARD_MIN_WIDTH_DP = 96
+/** Narrowest a log card may be: about two fit a 3x2 phone widget and about three a 4x2. */
+const val WIDGET_LOG_CARD_MIN_WIDTH_DP = 80
 
 /** Row insets (8 + 10), and the 4 dp gap each card carries after it. */
 private const val LOGS_ROW_INSETS_DP = 8 + 10
@@ -29,13 +29,6 @@ private const val LOG_CARD_GAP_DP = 4
 
 /** Never read or draw more cards than this, however wide the widget is. */
 const val WIDGET_LOG_CARD_MAX = 8
-
-/** Cards narrower than this drop the small account name so the title gets the room. */
-const val WIDGET_LOG_CARD_ACCOUNT_MIN_WIDTH_DP = 130
-
-/** Width of one card when [count] share [widthDp]: the row's inner width split evenly, less each card's gap. */
-fun widgetLogCardWidthDp(widthDp: Int, count: Int): Int =
-    (widthDp - LOGS_ROW_INSETS_DP) / count.coerceAtLeast(1) - LOG_CARD_GAP_DP
 
 /** How many cards fit in [widthDp]: as many as the width allows at the minimum card width, at least one. */
 fun widgetLogCardCount(widthDp: Int): Int =
@@ -102,20 +95,17 @@ fun addLogsRow(
     widthDp: Int,
 ) {
     fun color(res: Int) = ContextCompat.getColor(context, res)
-    val count = widgetLogCardCount(widthDp)
-    val shown = items.take(count)
-    // The cards share the row evenly, so with fewer items each one is wider.
-    val showAccount = widgetLogCardWidthDp(widthDp, shown.size) >= WIDGET_LOG_CARD_ACCOUNT_MIN_WIDTH_DP
+    val shown = items.take(widgetLogCardCount(widthDp))
     views.removeAllViews(R.id.ap_logs_cards)
     views.setViewVisibility(R.id.ap_logs_cards, if (shown.isEmpty()) View.GONE else View.VISIBLE)
     views.setViewVisibility(R.id.ap_logs_empty, if (shown.isEmpty()) View.VISIBLE else View.GONE)
     views.setTextColor(R.id.ap_logs_empty, color(palette.secondary))
     // A tap anywhere in the row that is not a card opens the log screen.
     views.setOnClickPendingIntent(R.id.ap_logs, activityPendingIntent(context, WidgetIntents.openLogs(context)))
-    shown.forEach { views.addView(R.id.ap_logs_cards, buildLogCardViews(context, widgetLogCard(context, it), palette, showAccount)) }
+    shown.forEach { views.addView(R.id.ap_logs_cards, buildLogCardViews(context, widgetLogCard(context, it), palette)) }
 }
 
-internal fun buildLogCardViews(context: Context, card: WidgetLogCard, palette: WidgetPalette, showAccount: Boolean = true): RemoteViews {
+internal fun buildLogCardViews(context: Context, card: WidgetLogCard, palette: WidgetPalette): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_log_card)
     fun color(res: Int) = ContextCompat.getColor(context, res)
     views.setInt(
@@ -128,10 +118,9 @@ internal fun buildLogCardViews(context: Context, card: WidgetLogCard, palette: W
     views.setTextColor(R.id.ap_log_card_title, color(palette.onSurface))
     views.setTextViewText(R.id.ap_log_card_summary, card.summary)
     views.setTextColor(R.id.ap_log_card_summary, color(palette.secondary))
-    val account = card.account.takeIf { showAccount && !it.isNullOrEmpty() }
-    views.setViewVisibility(R.id.ap_log_card_account, if (account == null) View.GONE else View.VISIBLE)
-    if (account != null) {
-        views.setTextViewText(R.id.ap_log_card_account, account)
+    views.setViewVisibility(R.id.ap_log_card_account, if (card.account.isNullOrEmpty()) View.GONE else View.VISIBLE)
+    if (!card.account.isNullOrEmpty()) {
+        views.setTextViewText(R.id.ap_log_card_account, card.account)
         views.setTextColor(R.id.ap_log_card_account, color(palette.secondary))
     }
     views.setOnClickPendingIntent(R.id.ap_log_card, activityPendingIntent(context, WidgetIntents.openLogEntry(context, card.id)))
