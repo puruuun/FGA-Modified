@@ -617,7 +617,11 @@ class ScriptManager @Inject constructor(
                 launcherResponseHandler.handle(effectiveResp)
 
                 if (effectiveResp !is ScriptLauncherResponse.Cancel) {
-                    CaptureAutoStart.onScriptStart(context, prefsCore, preferences.gameServer)
+                    CaptureAutoStart.onScriptStart(
+                        context, prefsCore, preferences.gameServer,
+                        battle = effectiveResp is ScriptLauncherResponse.Battle ||
+                            effectiveResp is ScriptLauncherResponse.WeeklyRoute,
+                    )
                     delay(500.milliseconds)
                     runEntryPoint(
                         screenshotService = screenshotService,

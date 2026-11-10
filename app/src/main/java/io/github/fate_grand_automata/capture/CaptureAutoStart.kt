@@ -10,15 +10,20 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 
 /** Script-start fallback when service auto start did not bring up the VPN. */
 object CaptureAutoStart {
-    /** Called just before a script runs. Never blocks or fails the script. */
-    fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer) {
+    /**
+     * Called just before a script runs. Never blocks or fails the script.
+     *
+     * [battle] is true for battle scripts only. Other scripts (summon, lottery, gift box, enhancement ...) leave the
+     * outside-change period open and start no run session, so their changes are recorded like manual play.
+     */
+    fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer, battle: Boolean = true) {
         CaptureTracker.discardRun()
         CaptureTracker.init(context)
-        CaptureTracker.outsideScriptStart()
+        if (battle) CaptureTracker.outsideScriptStart()
         if (!CaptureController.isSupported) return
         val readiness = captureReadiness(context, prefs)
         if (server != GameServer.Kr && (server != GameServer.Jp.Original || !readiness.jpReady)) return
-        CaptureTracker.startRun()
+        if (battle) CaptureTracker.startRun()
         if (!prefs.captureTrackerEnabled.get() || !CaptureConsent.agreed(prefs.captureConsentVersion.get()) ||
             CaptureTracker.running.value) return
         runCatching {
