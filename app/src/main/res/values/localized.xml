@@ -1252,6 +1252,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_service_stop">Stop</string>
     <string name="widget_ap_name">Account info</string>
     <string name="widget_ap_no_data">No account data</string>
+    <string name="widget_ap_logs_name">Account info + recent logs</string>
+    <string name="widget_logs_empty">No logs</string>
+    <string name="widget_preview_log_title">Battle</string>
+    <string name="widget_preview_log_summary">3 runs · avg 5.0 turns</string>
     <string name="widget_ap_full">AP full</string>
     <string name="widget_ap_value">%1$d / %2$d</string>
     <string name="widget_ap_full_at">Full %1$s</string>

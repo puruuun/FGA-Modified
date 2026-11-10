@@ -148,6 +148,28 @@ class WidgetScreenshotTest(private val light: Boolean) {
     @Test fun pickerAccount4x1() = shootLayout("picker_account_4x1", R.layout.widget_picker_account, DpSize(272.dp, 72.dp))
     @Test fun allMinHeightLogService() = shootAp("all_phone_4x1_min_height_log_service", DpSize(300.dp, 40.dp), threeAccounts, allStyle.copy(showLogButton = true))
 
+    // Issue #304: account info + recent logs, at a 3x2 and a 4x2 phone width and a tablet, one-account and all-accounts top rows.
+    private val logItems get() = listOf(
+        io.github.fate_grand_automata.capture.CaptureLogItem(outside = io.github.fate_grand_automata.capture.outsideFixture("live", 1_793_754_000_000), inProgress = true),
+        io.github.fate_grand_automata.capture.CaptureLogItem(battle = io.github.fate_grand_automata.battlelog.battleLogFixture("a").copy(accountName = "칼데아_마스터")),
+        io.github.fate_grand_automata.capture.CaptureLogItem(outside = io.github.fate_grand_automata.capture.outsideFixture("closed", 1_793_750_000_000)),
+        io.github.fate_grand_automata.capture.CaptureLogItem(battle = io.github.fate_grand_automata.battlelog.battleLogFixture("b", extras = true).copy(accountName = "두 번째")),
+        io.github.fate_grand_automata.capture.CaptureLogItem(battle = io.github.fate_grand_automata.battlelog.battleLogFixture("c").copy(accountName = "세 번째")),
+        io.github.fate_grand_automata.capture.CaptureLogItem(battle = io.github.fate_grand_automata.battlelog.battleLogFixture("d").copy(accountName = "네 번째")),
+        io.github.fate_grand_automata.capture.CaptureLogItem(battle = io.github.fate_grand_automata.battlelog.battleLogFixture("e").copy(accountName = "다섯")),
+    ).map { it }
+    private val oneStyle get() = settings.copy(showLogButton = false)
+    @Test fun logs3x2One() = shootAp("logs_phone_3x2_one", DpSize(220.dp, 128.dp), several, oneStyle, logs = logItems.take(2))
+    @Test fun logs4x2One() = shootAp("logs_phone_4x2_one", DpSize(272.dp, 128.dp), several, oneStyle, logs = logItems.take(3))
+    @Test fun logsTabletOne() = shootAp("logs_tablet_one", DpSize(560.dp, 128.dp), several, oneStyle, logs = logItems.take(6))
+    @Test fun logs3x2All() = shootAp("logs_phone_3x2_all", DpSize(220.dp, 128.dp), threeAccounts, allStyle, logs = logItems.take(2))
+    @Test fun logs4x2All() = shootAp("logs_phone_4x2_all", DpSize(272.dp, 128.dp), threeAccounts, allStyle, logs = logItems.take(3))
+    @Test fun logsTabletAll() = shootAp("logs_tablet_all", DpSize(560.dp, 128.dp), threeAccounts, allStyle.copy(showServer = true), logs = logItems)
+    @Test fun logsEmpty4x2() = shootAp("logs_phone_4x2_empty", DpSize(272.dp, 128.dp), several, oneStyle, logs = emptyList())
+    @Test fun logs4x2HalfOpacity() = shootAp("logs_phone_4x2_opacity50", DpSize(272.dp, 128.dp), several, half.copy(showLogButton = false), backdrop = true, logs = logItems.take(3))
+    @Test fun logs4x2LogKey() = shootAp("logs_phone_4x2_log_key", DpSize(300.dp, 128.dp), several, settings.copy(showLogButton = true), logs = logItems.take(3))
+    @Test fun pickerAccountLogs() = shootLayout("picker_account_logs_3x2", R.layout.widget_picker_account_logs, DpSize(220.dp, 128.dp))
+
     private fun shootLayout(name: String, layout: Int, size: DpSize) {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         val density = context.resources.displayMetrics.density
@@ -169,13 +191,13 @@ class WidgetScreenshotTest(private val light: Boolean) {
     private fun shootAp(
         name: String, size: DpSize, state: ApWidgetState, settings: WidgetSettings = this.settings,
         started: Boolean = false, backdrop: Boolean = false,
-        collecting: Boolean = false,
+        collecting: Boolean = false, logs: List<io.github.fate_grand_automata.capture.CaptureLogItem>? = null,
     ) {
         RuntimeEnvironment.setQualifiers("ko-w480dp-h900dp-notnight-xhdpi")
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Seoul"))
         android.provider.Settings.System.putString(context.contentResolver, android.provider.Settings.System.TIME_12_24, "12")
         val views = buildApWidgetViews(context, 1, state, settings, started, size.width.value.toInt(), now = now,
-            collecting = collecting, logAvailable = settings.showLogButton, heightDp = size.height.value.toInt())
+            collecting = collecting, logAvailable = settings.showLogButton, heightDp = size.height.value.toInt(), logs = logs)
         val density = context.resources.displayMetrics.density
         val parent = android.appwidget.AppWidgetHostView(context)
         parent.addView(views.apply(context, parent))

@@ -35,6 +35,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Logs : Route
 
+    /** The log screen with one entry already selected (a widget card tap). */
+    @Serializable
+    data class LogEntry(val entryId: String) : Route
+
     @Serializable
     data class AccountDashboard(val userId: String) : Route
 

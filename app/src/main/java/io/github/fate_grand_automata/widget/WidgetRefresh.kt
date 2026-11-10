@@ -40,8 +40,13 @@ object WidgetRefresh {
         for (id in ids) widget.update(context, glance.getGlanceIdBy(id))
     }
 
-    internal fun hasApWidget(context: Context): Boolean = AppWidgetManager.getInstance(context)
-        .getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)).isNotEmpty()
+    /** Either AP widget: the plain one or the one with recent logs. Both share the refresh path. */
+    internal fun hasApWidget(context: Context): Boolean = AppWidgetManager.getInstance(context).let { manager ->
+        manager.getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)).isNotEmpty() || hasLogsWidget(context)
+    }
+
+    internal fun hasLogsWidget(context: Context): Boolean = AppWidgetManager.getInstance(context)
+        .getAppWidgetIds(ComponentName(context, ApWidgetLogsReceiver::class.java)).isNotEmpty()
 
     suspend fun updatePlaced(context: Context) {
         updates.update { it + 1 }

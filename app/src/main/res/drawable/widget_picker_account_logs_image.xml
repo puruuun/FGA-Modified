@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static picker preview of the account info + recent logs widget, for launchers that ignore previewLayout. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_background" />
+    <item
+        android:bottom="76dp"
+        android:left="16dp"
+        android:right="96dp"
+        android:top="56dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:endColor="@color/widget_bar_end"
+                android:startColor="@color/widget_bar_start" />
+            <corners android:radius="3dp" />
+        </shape>
+    </item>
+    <item
+        android:bottom="76dp"
+        android:left="190dp"
+        android:right="12dp"
+        android:top="16dp"
+        android:drawable="@drawable/widget_tile_background" />
+    <item
+        android:bottom="14dp"
+        android:left="12dp"
+        android:right="128dp"
+        android:top="140dp"
+        android:drawable="@drawable/widget_log_card_background" />
+    <item
+        android:bottom="14dp"
+        android:left="128dp"
+        android:right="12dp"
+        android:top="140dp"
+        android:drawable="@drawable/widget_log_card_background" />
+</layer-list>

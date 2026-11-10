@@ -42,7 +42,7 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
-fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
+fun LogScreen(viewModel: LogViewModel = hiltViewModel(), initialSelectedId: String? = null) {
     val entries by viewModel.entries.collectAsState()
     val outsideEntries by viewModel.outsideEntries.collectAsState()
     val openEntries by viewModel.openOutsideEntries.collectAsState()
@@ -63,7 +63,7 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,
         outsideEntries = outsideEntries, openOutsideEntries = openEntries,
         retention = LogRetentionPrefsCore.normalize(retention), onRetention = viewModel::setRetention,
-        loadBattles = viewModel::battlesOf)
+        loadBattles = viewModel::battlesOf, initialSelectedId = initialSelectedId)
 }
 
 @Composable
@@ -77,8 +77,9 @@ fun LogScreenContent(
     retention: Int = LogRetentionPrefsCore.DEFAULT,
     onRetention: (Int) -> Unit = {},
     loadBattles: (suspend (String) -> List<BattleGains>?)? = null,
+    initialSelectedId: String? = null,
 ) {
-    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedId by rememberSaveable { mutableStateOf(initialSelectedId) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
     var resource by rememberSaveable { mutableStateOf<String?>(null) }
     var profile by rememberSaveable { mutableStateOf<String?>(null) }
@@ -243,8 +244,7 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
 
 @Composable
 private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
-    val summary = listOfNotNull(stringResource(R.string.battle_log_card_runs, entry.timesRan, entry.averageTurnsPerRun),
-        if (entry.gains != null) stringResource(R.string.capture_gains_tracked) else null, entry.reasonText.takeIf { it.isNotBlank() }).joinToString(" · ")
+    val summary = battleLogSummary(LocalContext.current, entry)
     LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick,
         checked = checked, collected = entry.gains != null)
 }

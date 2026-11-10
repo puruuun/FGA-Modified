@@ -1182,6 +1182,10 @@
     <string name="widget_service_stop">중지</string>
     <string name="widget_ap_name">계정 정보</string>
     <string name="widget_ap_no_data">계정 데이터 없음</string>
+    <string name="widget_ap_logs_name">계정 정보 + 최근 로그</string>
+    <string name="widget_logs_empty">로그 없음</string>
+    <string name="widget_preview_log_title">전투</string>
+    <string name="widget_preview_log_summary">3회 · 평균 5.0턴</string>
     <string name="widget_ap_full">AP 가득 참</string>
     <string name="widget_ap_value">%1$d / %2$d</string>
     <string name="widget_ap_full_at">완충 %1$s</string>

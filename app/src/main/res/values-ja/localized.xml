@@ -940,6 +940,10 @@
     <string name="widget_service_stop">停止</string>
     <string name="widget_ap_name">アカウント情報</string>
     <string name="widget_ap_no_data">アカウントデータなし</string>
+    <string name="widget_ap_logs_name">アカウント情報 + 最近のログ</string>
+    <string name="widget_logs_empty">ログなし</string>
+    <string name="widget_preview_log_title">戦闘</string>
+    <string name="widget_preview_log_summary">3回 · 平均 5.0ターン</string>
     <string name="widget_ap_full">AP全回復</string>
     <string name="widget_ap_value">%1$d / %2$d</string>
     <string name="widget_ap_full_at">全回復 %1$s</string>

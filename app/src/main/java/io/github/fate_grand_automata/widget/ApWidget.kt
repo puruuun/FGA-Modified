@@ -27,7 +27,10 @@ suspend fun loadApWidgetState(context: Context, now: Long = System.currentTimeMi
  * Plain AppWidgetProvider: its component name is what placed widgets are bound to, so it stays
  * `ApWidgetReceiver` even though the rendering no longer goes through Glance.
  */
-class ApWidgetReceiver : AppWidgetProvider() {
+open class ApWidgetReceiver : AppWidgetProvider() {
+    /** The account info + recent logs widget overrides this; everything else is shared. */
+    protected open val withLogs: Boolean = false
+
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         ApWidgetRefresh.schedule(context)
@@ -49,7 +52,8 @@ class ApWidgetReceiver : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        ApWidgetRefresh.cancel(context)
+        // The other AP widget kind may still be placed and needs the periodic refresh.
+        if (!WidgetRefresh.hasApWidget(context)) ApWidgetRefresh.cancel(context)
     }
 
     /** Loading the summaries touches disk, so it runs off the receiver's main thread. */
@@ -58,10 +62,18 @@ class ApWidgetReceiver : AppWidgetProvider() {
         val app = context.applicationContext
         WidgetRefresh.scope.launch {
             try {
-                ApWidgetRenderer.update(app, manager, ids)
+                ApWidgetRenderer.update(app, manager, ids, withLogs)
             } finally {
                 pending?.finish()
             }
         }
     }
+}
+
+/**
+ * "계정 정보 + 최근 로그": the AP widget's top row with a row of recent-log cards under it. Its own component, so
+ * placed widgets keep their kind; it shares the AP widget's refresh path.
+ */
+class ApWidgetLogsReceiver : ApWidgetReceiver() {
+    override val withLogs: Boolean = true
 }

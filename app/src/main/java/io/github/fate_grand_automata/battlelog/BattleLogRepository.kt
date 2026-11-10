@@ -27,10 +27,13 @@ import javax.inject.Singleton
 class BattleLogRepository internal constructor(
     private val storage: BattleLogStorage,
     private val retention: () -> Int = { LogRetentionPrefsCore.DEFAULT },
+    /** Told after the index changed on disk; the AP + logs widget redraws from it. Failures are ignored. */
+    private val onChanged: () -> Unit = {},
 ) {
     @Inject
     constructor(@ApplicationContext context: Context) : this(FileBattleLogStorage(context.filesDir),
-        { LogRetentionPrefsCore.normalize(LogRetentionPrefsCore.fromContext(context).limit.get()) })
+        { LogRetentionPrefsCore.normalize(LogRetentionPrefsCore.fromContext(context).limit.get()) },
+        { io.github.fate_grand_automata.widget.ApWidgetRefresh.onLogsChanged(context) })
 
     internal constructor(directory: File, retention: () -> Int = { LogRetentionPrefsCore.DEFAULT }) :
         this(FileBattleLogStorage(directory), retention)
@@ -77,6 +80,7 @@ class BattleLogRepository internal constructor(
                     val next = transform(state.value)
                     storage.writeIndex(next)
                     state.value = next
+                    guard("notify the widget", Unit) { onChanged() }
                     guard("sweep battle details", Unit) { storage.sweepDetails(next.mapTo(HashSet()) { it.id }) }
                 }
             }

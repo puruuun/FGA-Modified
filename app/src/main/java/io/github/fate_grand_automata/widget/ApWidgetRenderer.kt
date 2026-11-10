@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.CaptureLogItem
 import io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -32,18 +33,29 @@ object ApWidgetRenderer {
     /** Replaced in tests. */
     internal var loader: suspend (Context) -> ApWidgetState = { loadApWidgetState(it) }
 
-    /** Redraws every placed AP widget. The one entry point for boot, app start, saves, settings and the worker. */
+    /** Replaced in tests. An empty list is "로그 없음". */
+    internal var logsLoader: suspend (Context) -> List<CaptureLogItem> = { loadWidgetLogItems(it) }
+
+    /** Redraws every placed AP widget, with or without logs. The one entry point for boot, app start, saves, settings and the worker. */
     suspend fun updateAll(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
-        val ids = manager.getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java))
-        update(context, manager, ids)
+        update(context, manager, manager.getAppWidgetIds(ComponentName(context, ApWidgetReceiver::class.java)))
+        updateLogsWidgets(context)
     }
 
-    suspend fun update(context: Context, manager: AppWidgetManager, ids: IntArray) {
+    /** Redraws only the account info + recent logs widgets. */
+    suspend fun updateLogsWidgets(context: Context) {
+        val manager = AppWidgetManager.getInstance(context)
+        update(context, manager, manager.getAppWidgetIds(ComponentName(context, ApWidgetLogsReceiver::class.java)), withLogs = true)
+    }
+
+    suspend fun update(context: Context, manager: AppWidgetManager, ids: IntArray, withLogs: Boolean = false) {
         if (ids.isEmpty()) return
         val state = runCatching { loader(context) }.onFailure { Timber.w(it, "AP widget load failed") }
             .getOrDefault(ApWidgetState.NoData)
         val settings = loadWidgetSettings(context)
+        // A failed read is the same as no logs: the widget never crashes on it.
+        val logs = if (withLogs) runCatching { logsLoader(context) }.onFailure { Timber.w(it, "Widget logs load failed") }.getOrDefault(emptyList()) else null
         val started = ScriptRunnerService.serviceStarted.value
         for (id in ids) {
             runCatching {
@@ -52,6 +64,7 @@ object ApWidgetRenderer {
                     buildApWidgetViews(
                         context, id, state, settings, started, widthDp(context, manager, id), ApWidgetShown.get(context, id),
                         heightDp = chooseWidgetHeightDp(manager.getAppWidgetOptions(id), isLandscape(context)),
+                        logs = logs,
                     ),
                 )
             }.onFailure { Timber.w(it, "AP widget %d update failed", id) }
@@ -63,9 +76,11 @@ object ApWidgetRenderer {
         val state = runCatching { loader(context) }.getOrDefault(ApWidgetState.NoData) as? ApWidgetState.Data ?: return
         val index = ApWidgetShown.step(state.models, ApWidgetShown.get(context, appWidgetId), direction)
         ApWidgetShown.set(context, appWidgetId, state.models[index].accountId)
-        val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
+        val manager = AppWidgetManager.getInstance(context)
+        val withLogs = manager.getAppWidgetInfo(appWidgetId)?.provider?.className == ApWidgetLogsReceiver::class.java.name
+        val views = RemoteViews(context.packageName, if (withLogs) R.layout.widget_ap_logs_root else R.layout.widget_ap_root)
         views.setDisplayedChild(R.id.ap_flipper, index)
-        runCatching { AppWidgetManager.getInstance(context).partiallyUpdateAppWidget(appWidgetId, views) }
+        runCatching { manager.partiallyUpdateAppWidget(appWidgetId, views) }
             .onFailure { Timber.w(it, "AP widget %d step failed", appWidgetId) }
     }
 
@@ -123,22 +138,33 @@ fun buildApWidgetViews(
     collecting: Boolean = CaptureTracker.running.value,
     logAvailable: Boolean = widgetLogButtonAvailable(context, settings),
     heightDp: Int = 74,
+    /** Non-null for the account info + recent logs widget: the newest log items, possibly none. */
+    logs: List<CaptureLogItem>? = null,
 ): RemoteViews {
-    val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
+    val views = RemoteViews(context.packageName, if (logs != null) R.layout.widget_ap_logs_root else R.layout.widget_ap_root)
     val palette = widgetPalette(settings.theme)
     fun color(res: Int) = ContextCompat.getColor(context, res)
 
-    views.setInt(R.id.ap_root, "setBackgroundResource", widgetCardRes(settings))
+    // With logs the outer view carries the card and the top row sits on it; the top row gets the height the log row leaves.
+    val topHeightDp = if (logs != null) (heightDp - WIDGET_LOGS_ROW_HEIGHT_DP).coerceAtLeast(40) else heightDp
+    if (logs != null) {
+        views.setInt(R.id.ap_logs_outer, "setBackgroundResource", widgetCardRes(settings))
+        views.setInt(R.id.ap_root, "setBackgroundResource", 0)
+    } else {
+        views.setInt(R.id.ap_root, "setBackgroundResource", widgetCardRes(settings))
+    }
     val showLog = widgetLogTileVisible(logAvailable, widthDp, AP_LOG_TILE_MIN_WIDTH_DP)
     val allAccounts = settings.displayStyle == WidgetDisplayStyle.AllAccounts
     val density = context.resources.displayMetrics.density
-    views.setViewPadding(R.id.ap_root, (8 * density).toInt(), (8 * density).toInt(), (22 * density).toInt(), (8 * density).toInt())
+    // The log row below already has its own top spacing, so the top row keeps less at the bottom.
+    val bottomPad = ((if (logs != null) 4 else 8) * density).toInt()
+    views.setViewPadding(R.id.ap_root, (8 * density).toInt(), (8 * density).toInt(), (22 * density).toInt(), bottomPad)
     views.setViewVisibility(R.id.ap_log_label, View.VISIBLE)
     views.setViewVisibility(R.id.ap_tile_label, View.VISIBLE)
-    if (allAccounts && state is ApWidgetState.Data && heightDp < 74) {
-        val vertical = if (heightDp < 56) 0 else (2 * density).toInt()
+    if (allAccounts && state is ApWidgetState.Data && topHeightDp < 74) {
+        val vertical = if (topHeightDp < 56) 0 else (2 * density).toInt()
         views.setViewPadding(R.id.ap_root, (8 * density).toInt(), vertical, (22 * density).toInt(), vertical)
-        if (heightDp < 56) {
+        if (topHeightDp < 56) {
             views.setViewVisibility(R.id.ap_log_label, View.GONE)
             views.setViewVisibility(R.id.ap_tile_label, View.GONE)
         }
@@ -162,7 +188,7 @@ fun buildApWidgetViews(
                 val cells = allAccountsCellCount(widthDp, showLog, settings.showServiceButton, state.models.size)
                 addAllAccountsRow(
                     context, views, state.models, palette, cells, settings.showServer, now,
-                    heightDp = heightDp,
+                    heightDp = topHeightDp,
                 )
             } else {
                 views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
@@ -205,6 +231,9 @@ fun buildApWidgetViews(
     views.setTextViewText(R.id.ap_tile_label, context.getString(model.labelRes))
     views.setTextColor(R.id.ap_tile_label, color(if (serviceStarted) palette.on else palette.secondary))
     views.setOnClickPendingIntent(R.id.ap_tile, tilePendingIntent(context, model.action))
+    if (logs != null) {
+        addLogsRow(context, views, logs, palette, widthDp)
+    }
     return views
 }
 
@@ -220,7 +249,7 @@ internal fun tilePendingIntent(context: Context, action: ServiceWidgetAction): P
 internal fun openAccountPendingIntent(context: Context, accountId: String): PendingIntent =
     PendingIntent.getActivity(context, 0, WidgetIntents.openAccount(context, accountId), immutableFlags())
 
-private fun activityPendingIntent(context: Context, intent: Intent): PendingIntent =
+internal fun activityPendingIntent(context: Context, intent: Intent): PendingIntent =
     PendingIntent.getActivity(context, 0, intent, immutableFlags())
 
 private fun immutableFlags() =

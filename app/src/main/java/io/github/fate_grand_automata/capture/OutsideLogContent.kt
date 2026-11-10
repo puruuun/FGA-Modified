@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
@@ -46,11 +47,11 @@ private fun periodTime(entry: OutsideLogEntry): String {
 
 @Composable
 internal fun OutsideLogCard(entry: OutsideLogEntry, selected: Boolean, onClick: () -> Unit, inProgress: Boolean = false, checked: Boolean? = null) {
-    val sources = entry.period.sources.map { sourceName(it.source) }.joinToString(" · ")
+    val summary = outsideLogSummary(LocalContext.current, entry, inProgress)
     LogCardFrame(
         "outside:${entry.id}", stringResource(R.string.capture_outside_title), entry.accountName,
         periodTime(entry),
-        (if (inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") + sources,
+        summary,
         selected, onClick, outside = true, checked = checked)
 }
 
@@ -85,20 +86,7 @@ internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: 
 }
 
 @Composable
-private fun sourceName(source: ChangeSource): String {
-    val label = stringResource(when (source.group) {
-        ChangeSource.Group.GiftBox -> R.string.capture_source_gift_box
-        ChangeSource.Group.Shop -> R.string.capture_source_shop
-        ChangeSource.Group.Summon -> R.string.capture_source_summon
-        ChangeSource.Group.Lottery -> R.string.capture_source_lottery
-        ChangeSource.Group.Enhancement -> R.string.capture_source_enhancement
-        ChangeSource.Group.ApRecovery -> R.string.capture_source_ap_recovery
-        ChangeSource.Group.ManualQuest -> R.string.capture_source_manual_quest
-        ChangeSource.Group.Missions -> R.string.capture_source_missions
-        ChangeSource.Group.Other -> R.string.capture_source_other
-    })
-    return if (source.group == ChangeSource.Group.Other) "$label · ${source.path.orEmpty()}" else label
-}
+private fun sourceName(source: ChangeSource): String = outsideSourceLabel(LocalContext.current, source)
 
 @Composable
 private fun OutsideDelta(delta: AccountDelta, names: GameNameMap, fruitUsed: Map<Long, Long>) {

@@ -36,13 +36,28 @@ object OutsideLogRepository {
     }
 
     @Synchronized
-    internal fun add(entry: OutsideLogEntry) { runCatching { checkNotNull(store).add(entry) }.onFailure { warn(it) } }
+    internal fun add(entry: OutsideLogEntry) { runCatching { checkNotNull(store).add(entry) }.onSuccess { changed() }.onFailure { warn(it) } }
     @Synchronized
-    fun delete(id: String) { runCatching { store?.delete(id) }.onFailure { warn(it) } }
+    fun delete(id: String) { runCatching { store?.delete(id) }.onSuccess { changed() }.onFailure { warn(it) } }
     @Synchronized
-    fun clear() { runCatching { store?.clear() }.onFailure { warn(it) } }
+    fun clear() { runCatching { store?.clear() }.onSuccess { changed() }.onFailure { warn(it) } }
     @Synchronized
-    fun trim() { runCatching { store?.trim() }.onFailure { warn(it) } }
+    fun trim() { runCatching { store?.trim() }.onSuccess { changed() }.onFailure { warn(it) } }
+
+    /** Told after every successful add, delete, clear or trim; the AP + logs widget redraws from it. A failing listener is ignored. */
+    @Volatile var changeListener: (() -> Unit)? = null
+    private fun changed() { runCatching { changeListener?.invoke() } }
+
+    /** The entries the app already holds in memory, or null when the store has not been initialized in this process. */
+    @Synchronized
+    internal fun loadedEntries(): List<OutsideLogEntry>? = if (store != null) state.value else null
+
+    /** Read-only look at the stored file for a widget that woke the process: never moves, rewrites or deletes anything. */
+    internal fun readStored(filesDirectory: File): List<OutsideLogEntry> {
+        val file = File(filesDirectory, "outside-log.json")
+        if (!file.isFile) return emptyList()
+        return Json { ignoreUnknownKeys = true }.decodeFromString<List<OutsideLogEntry>>(file.readText()).sortedByDescending { it.endedAt }
+    }
 
     private fun warn(error: Throwable) { Timber.w("Capture: outside log I/O failed: %s", error.javaClass.simpleName) }
 }

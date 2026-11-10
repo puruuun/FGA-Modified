@@ -89,6 +89,17 @@ fun FgaApp(
         }
     }
 
+    // Widget log tap: the log screen on top of home, with the tapped entry selected (or none for the row).
+    val widgetLog = vm.widgetRequests.logPending
+    LaunchedEffect(widgetLog) {
+        val request = vm.widgetRequests.takeLog() ?: return@LaunchedEffect
+        if (!vm.prefs.isOnboardingRequired()) {
+            backStack.clear()
+            backStack.add(Route.Home)
+            backStack.add(if (request.entryId != null) Route.LogEntry(request.entryId) else Route.Logs)
+        }
+    }
+
     FgaScreen {
         AppUpdateDialog(vm)
         CompositionLocalProvider(LocalNavigateBack provides navigateBack) {
@@ -200,6 +211,9 @@ fun FgaApp(
                             openLogs = { backStack.add(Route.Logs) },
                             openFriends = { backStack.add(Route.FriendManager(key.userId)) },
                         )
+                    }
+                    entry<Route.LogEntry> { key ->
+                        LogScreen(initialSelectedId = key.entryId)
                     }
                     entry<Route.Logs> {
                         LogScreen()

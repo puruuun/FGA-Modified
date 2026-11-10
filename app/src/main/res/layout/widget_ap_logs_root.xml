@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Account info + recent logs: the AP widget's own layout (included, so its views, ids and adapter stay top-level
+  in this RemoteViews) with a row of recent-log cards under it. The outer view carries the card background.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ap_logs_outer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_dark_0"
+    android:orientation="vertical">
+
+    <include
+        layout="@layout/widget_ap_root"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <FrameLayout
+        android:id="@+id/ap_logs"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:id="@+id/ap_logs_cards"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" />
+
+        <TextView
+            android:id="@+id/ap_logs_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|start"
+            android:maxLines="1"
+            android:paddingStart="6dp"
+            android:text="@string/widget_logs_empty"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>
