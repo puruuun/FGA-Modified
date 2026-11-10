@@ -86,6 +86,21 @@ class WidgetLaunchRequests {
 }
 
 @Composable
+fun WidgetStartNavigationEffect(
+    requests: WidgetLaunchRequests,
+    onboardingRequired: Boolean,
+    serviceStarted: () -> Boolean,
+    showMain: () -> Unit,
+) {
+    val pending = requests.startPending
+    LaunchedEffect(pending) {
+        if (pending) {
+            if (onboardingRequired || serviceStarted()) requests.takeStart() else showMain()
+        }
+    }
+}
+
+@Composable
 fun WidgetCaptureNavigationEffect(requests: WidgetLaunchRequests, onboardingRequired: Boolean, showMain: () -> Unit) {
     val pending = requests.captureStartPending
     LaunchedEffect(pending) {

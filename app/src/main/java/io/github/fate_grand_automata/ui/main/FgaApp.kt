@@ -19,10 +19,12 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.ui.FgaScreen
 import io.github.fate_grand_automata.ui.LocalNavigateBack
 import io.github.fate_grand_automata.ui.battle_config_item.BattleConfigDestination
@@ -45,6 +47,8 @@ import io.github.fate_grand_automata.ui.skill_maker.SkillMakerActivity
 import io.github.fate_grand_automata.ui.spam.SpamScreen
 import io.github.fate_grand_automata.ui.spam.SpamScreenViewModel
 import io.github.fate_grand_automata.widget.WidgetCaptureNavigationEffect
+import io.github.fate_grand_automata.widget.WidgetLaunchRequests
+import io.github.fate_grand_automata.widget.WidgetStartNavigationEffect
 
 @Composable
 fun FgaApp(
@@ -70,23 +74,8 @@ fun FgaApp(
             { backStack.removeLastOrNull() }
         } else null
 
-    // A widget start tap that arrives before onboarding is done must not start the service later.
-    LaunchedEffect(Unit) { if (vm.prefs.isOnboardingRequired()) vm.widgetRequests.takeStart() }
-
-    WidgetCaptureNavigationEffect(vm.widgetRequests, vm.prefs.isOnboardingRequired()) {
-        backStack.clear()
-        backStack.add(Route.Home)
-    }
-
-    // Account widget tap: open that account's dashboard once, on top of the home screen.
-    val widgetAccount = vm.widgetRequests.accountPending
-    LaunchedEffect(widgetAccount) {
-        val id = vm.widgetRequests.takeAccount() ?: return@LaunchedEffect
-        if (!vm.prefs.isOnboardingRequired()) {
-            backStack.clear()
-            backStack.add(Route.Home)
-            backStack.add(Route.AccountDashboard(id))
-        }
+    WidgetNavigationEffects(vm.widgetRequests, vm.prefs.isOnboardingRequired(), backStack) {
+        ScriptRunnerService.serviceStarted.value
     }
 
     FgaScreen {
@@ -278,6 +267,35 @@ fun FgaApp(
                     }
                 }
             )
+        }
+    }
+}
+
+/** Widget requests must navigate even when MainScreen is not composed. */
+@Composable
+internal fun WidgetNavigationEffects(
+    requests: WidgetLaunchRequests,
+    onboardingRequired: Boolean,
+    backStack: MutableList<NavKey>,
+    serviceStarted: () -> Boolean,
+) {
+    val showMain = {
+        if (backStack.lastOrNull() != Route.Home) {
+            backStack.clear()
+            backStack.add(Route.Home)
+        }
+    }
+    WidgetStartNavigationEffect(requests, onboardingRequired, serviceStarted, showMain)
+    WidgetCaptureNavigationEffect(requests, onboardingRequired, showMain)
+
+    // Account widget tap: open that account's dashboard once, on top of the home screen.
+    val widgetAccount = requests.accountPending
+    LaunchedEffect(widgetAccount) {
+        val id = requests.takeAccount() ?: return@LaunchedEffect
+        if (!onboardingRequired) {
+            backStack.clear()
+            backStack.add(Route.Home)
+            backStack.add(Route.AccountDashboard(id))
         }
     }
 }
