@@ -41,6 +41,15 @@ class FriendTopStreamTest {
     private fun full(text: String) = Json.parseToJsonElement(text).jsonObject
     private fun streamed(text: String) = FriendTopStream.parse(text.byteInputStream())
 
+    @Test fun streamedSlotsPreserveGrandAndDiagnosticFields() {
+        val text = body(friends = 3, bigRows = 0).replace("\"lv\":90", "\"grandSvt\":1,\"lv\":90")
+        assertSame(text)
+        val reduced = streamed(text)
+        assertTrue(FriendRoster.fromFriendTop(reduced)!!.friends.values.flatMap { it.slots }.all { it.grand })
+        assertEquals(full(text)["cache"]!!.jsonObject["updated"]!!.jsonObject["otherUserGame"],
+            reduced["cache"]!!.jsonObject["updated"]!!.jsonObject["otherUserGame"])
+    }
+
     private fun assertSame(text: String) {
         val a = full(text)
         val b = streamed(text)

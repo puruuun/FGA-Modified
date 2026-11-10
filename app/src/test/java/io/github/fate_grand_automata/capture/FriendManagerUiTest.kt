@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import androidx.compose.ui.test.*
+import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.AnnotatedString
@@ -105,6 +106,42 @@ class FriendManagerUiTest {
     private fun rows(count: Int) {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("friends-row").fetchSemanticsNodes().size == count }
         compose.onAllNodesWithTag("friends-row").assertCountEquals(count)
+    }
+
+    @Test fun grandBadgeSwitchChipAndResetWorkWithoutAServerGate() {
+        val base = syntheticRoster()
+        val roster = base.copy(friends = base.friends.mapValues { (id, friend) ->
+            friend.copy(slots = friend.slots.map { it.copy(grand = id == "2" && it.classId == 3) })
+        })
+        show(roster); rows(5)
+        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(1)
+        compose.onNodeWithTag("friends-grand-badge", useUnmergedTree = true).assertTextEquals("관위").assertIsDisplayed()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/friend-manager/FriendGrandBadge_ko.png")
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-grand-only").assertIsOff().performScrollTo().performClick().assertIsOn()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/friend-manager/FriendGrandFilter_ko.png")
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(1)
+        compose.onNodeWithTag("friends-grand-badge", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNode(hasText("관위 서번트만") and isSelected()).performClick()
+        rows(5)
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-grand-only").performScrollTo().performClick()
+        compose.onNodeWithText("초기화").performClick()
+        compose.onNodeWithTag("friends-grand-only").performScrollTo().assertIsOff()
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(5)
+        compose.onNode(hasText("관위 서번트만") and isSelected()).assertDoesNotExist()
+    }
+
+    @Test fun krWithoutGrandKeepsRowsAndSwitchCanShowAnEmptyList() {
+        show(); rows(5)
+        compose.onAllNodesWithTag("friends-grand-badge", useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-grand-only").assertIsOff().performScrollTo().performClick()
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(0)
+        compose.onNodeWithText("조건에 맞는 서포터가 없습니다").assertExists()
     }
 
     @Test fun emptyStateExplainsHowToFillTheList() {

@@ -210,6 +210,7 @@ object CaptureTracker {
         synchronized(lock) {
             val previousCurrent = stored.currentId
             val now = System.currentTimeMillis() / 1000
+            stored.recordFriendFields(target, body, now)
             val rosterId = stored.friendTarget(target, body)
             val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, now)
             if (rosterChanged) { _rosterRevision.value += 1; publish(); scheduleSave(rosterId) }

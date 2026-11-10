@@ -125,13 +125,14 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
     var servant by rememberSaveable { mutableStateOf<Long?>(null) }
     var ce by rememberSaveable { mutableStateOf<Long?>(null) }
     var maxLb by rememberSaveable { mutableStateOf(false) }
+    var grandOnly by rememberSaveable { mutableStateOf(false) }
     var login by rememberSaveable { mutableStateOf(FriendLogin.All) }
     var loginAmount by rememberSaveable { mutableIntStateOf(FRIEND_INACTIVE_DEFAULT) }
     var loginUnit by rememberSaveable { mutableStateOf(LoginUnit.Days) }
     var sheet by rememberSaveable { mutableStateOf(false) }
-    val filter = FriendFilter(event, servant, ce, maxLb, login, loginAmount, loginUnit)
+    val filter = FriendFilter(event, servant, ce, maxLb, login, loginAmount, loginUnit, grandOnly)
     val change: (FriendFilter) -> Unit = { event = it.event; servant = it.servantId; ce = it.ceId; maxLb = it.maxLimitBreak; login = it.login
-        loginAmount = it.loginAmount; loginUnit = it.loginUnit }
+        loginAmount = it.loginAmount; loginUnit = it.loginUnit; grandOnly = it.grandOnly }
     var shown by remember { mutableStateOf(emptyList<FriendRow>()) }
     var servantCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
     var ceCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
@@ -154,6 +155,7 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
                 servant?.let { RemovableFilter(names.servants[it] ?: "#$it") { servant = null } }
                 ce?.let { RemovableFilter(names.equips[it] ?: "#$it") { ce = null } }
                 if (maxLb) RemovableFilter(stringResource(R.string.friends_max_lb)) { maxLb = false }
+                if (grandOnly) RemovableFilter(stringResource(R.string.friends_grand_only)) { grandOnly = false }
                 if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, loginAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
             }
             if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
@@ -209,6 +211,10 @@ internal fun FriendFilterSheet(filter: FriendFilter, servantCounts: Map<Long, In
                 Text(stringResource(R.string.friends2_ce), style = MaterialTheme.typography.titleSmall)
                 OutlinedButton(onClick = { picker = "ce" }, modifier = Modifier.fillMaxWidth().testTag("friends-ce")) {
                     Text(filter.ceId?.let { names.equips[it] ?: "#$it" } ?: stringResource(R.string.friends_all_ces))
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.friends_grand_only), Modifier.weight(1f))
+                    Switch(filter.grandOnly, { onChange(filter.copy(grandOnly = it)) }, Modifier.testTag("friends-grand-only"))
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.friends_max_lb), Modifier.weight(1f))
@@ -315,8 +321,16 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
         // Every cell is at most two lines, so a row never grows beyond two lines.
         Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 8.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(COLUMN_WEIGHTS[0]).padding(end = 2.dp)) {
-                Text(names.servants[slot.svtId] ?: "#${slot.svtId}", style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(names.servants[slot.svtId] ?: "#${slot.svtId}", Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (slot.grand) Text(stringResource(R.string.friends_grand),
+                        Modifier.testTag("friends-grand-badge")
+                            .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall)
+                            .padding(horizontal = 4.dp, vertical = 1.dp),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1, softWrap = false)
+                }
                 Text(stringResource(R.string.friends2_name_line, slot.lv, slot.np, friend.name), style = MaterialTheme.typography.labelSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

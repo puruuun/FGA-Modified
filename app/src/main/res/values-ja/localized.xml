@@ -873,6 +873,8 @@
     <string name="icon_prefetch_ready">アイコン%1$d個を準備しました</string>
     <string name="icon_prefetch_failed">アイコン%1$d個を準備しました、%2$d個失敗</string>
     <string name="icon_prefetch_lists_failed">アイコン一覧を取得できませんでした</string>
+    <string name="friends_grand">グランド</string>
+    <string name="friends_grand_only">グランドサーヴァントのみ</string>
     <string name="friends_title">フレンド管理</string>
     <string name="friends_empty">フレンド一覧がまだありません。ログ収集をオンにしてゲームを起動し、メインメニューを開いた後、メニュー › フレンド＆フォローを一度開いてください。</string>
     <string name="friends_deck_main">通常編成</string>

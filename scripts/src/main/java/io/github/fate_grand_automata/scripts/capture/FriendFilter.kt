@@ -36,6 +36,7 @@ data class FriendFilter(
     /** Used with [FriendLogin.Inactive]: not logged in for at least this many [loginUnit]s. */
     val loginAmount: Int = FRIEND_INACTIVE_DEFAULT,
     val loginUnit: LoginUnit = LoginUnit.Days,
+    val grandOnly: Boolean = false,
 )
 
 object FriendList {
@@ -57,6 +58,7 @@ object FriendList {
 
     /** Newest login first, then friend, deck and class. */
     fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.event)
+        .filter { !filter.grandOnly || it.slot.grand }
         .filter { filter.servantId == null || it.slot.svtId == filter.servantId }
         .filter { filter.ceId == null || it.slot.hasCe(filter.ceId) }
         .filter { !filter.maxLimitBreak || it.slot.hasCeAtLimit(MAX_LIMIT_COUNT) }
