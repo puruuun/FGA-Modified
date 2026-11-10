@@ -65,13 +65,17 @@ class FriendGrandUiTest {
         compose.onNodeWithTag("friends-login-inactive").performScrollTo().performClick()
         val bounds = compose.onNodeWithTag("friends-filter-panel").fetchSemanticsNode().boundsInRoot
         assertEquals(0f, bounds.top, 1f)
-        assertEquals(width * compose.density.density, bounds.width, 2f)
+        // Full width on phones; at most 640 dp and centred on wide screens, like the old bottom sheet (owner, 2026-11-10).
+        val density = compose.density.density
+        val expected = minOf(width, 640) * density
+        assertEquals(expected, bounds.width, 2f)
+        assertEquals((width * density - expected) / 2, bounds.left, 2f)
         compose.onNodeWithTag("friends-login-amount").performScrollTo().assertTextEquals("3")
-        if (width >= 720) {
-            val left = compose.onNodeWithTag("friends-name").fetchSemanticsNode().boundsInRoot
-            val right = compose.onNodeWithTag("friends-ce").fetchSemanticsNode().boundsInRoot
-            assertTrue(right.left > left.right)
-        }
+        // One column at every width (owner, 2026-11-10): the CE section sits below the name field, not beside it.
+        val name = compose.onNodeWithTag("friends-name").fetchSemanticsNode().boundsInRoot
+        val ce = compose.onNodeWithTag("friends-ce").fetchSemanticsNode().boundsInRoot
+        assertTrue(ce.top > name.bottom)
+        assertEquals(name.left, ce.left, 2f)
     }) { FriendManagerContent(grandTestRoster(), friendTestNames(), FRIEND_NOW) }
 
     @Test fun panel360() = panel(360, 1000)
