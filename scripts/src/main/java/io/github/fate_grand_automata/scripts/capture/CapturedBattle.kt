@@ -39,7 +39,9 @@ data class CapturedBattle(val drops: Map<Long, Long>?, val bond: List<CapturedBo
             val new = updated.rows("userSvtCollection").associateBy { it.number("svtId") }
             val setup = previousState?.tables?.get("battle")?.lastOrNull().obj()
                 ?.get("battleInfo").obj()?.get("myDeck").obj()?.rows("svts").orEmpty()
-            val userSvts = previousState?.tables?.get("userSvt").orEmpty().mapNotNull { it.obj() } + success.rows("oldUserSvt")
+            val userSvts = (previousState?.tables?.get("userSvt").orEmpty().mapNotNull { it.obj() } +
+                success.rows("oldUserSvt") + previousState?.tables?.get("userSvtStorage").orEmpty().mapNotNull { it.obj() })
+                .filter { (it.number("svtId") ?: 0) > 0 }
             // KR result svts contains only own servants, in deck order; id is a battle-local id.
             // Setup has initPos, svtId and isFollowerSvt. Never interpret result.id as svtId.
             val deck = success["myDeck"].obj()?.get("svts") as? JsonArray
@@ -48,7 +50,7 @@ data class CapturedBattle(val drops: Map<Long, Long>?, val bond: List<CapturedBo
                 val row = element.obj()
                 val setupRow = setup.firstOrNull { it.number("id") == row.number("id") &&
                     row.number("userSvtId") != null && it.number("userSvtId") == row.number("userSvtId") && !it.isSupport() }
-                val id = row.number("svtId") ?: setupRow.number("svtId") ?: userSvts.firstOrNull {
+                val id = row.number("svtId")?.takeIf { it > 0 } ?: setupRow.number("svtId")?.takeIf { it > 0 } ?: userSvts.firstOrNull {
                     row.number("userSvtId") != null && it.number("id") == row.number("userSvtId")
                 }.number("svtId")
                 val before = old[id]

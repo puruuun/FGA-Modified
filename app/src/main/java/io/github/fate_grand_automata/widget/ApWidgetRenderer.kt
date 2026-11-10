@@ -8,14 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
-import android.util.SizeF
 import android.os.Build
+import android.util.SizeF
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -47,7 +49,10 @@ object ApWidgetRenderer {
             runCatching {
                 manager.updateAppWidget(
                     id,
-                    buildApWidgetViews(context, id, state, settings, started, widthDp(context, manager, id), ApWidgetShown.get(context, id)),
+                    buildApWidgetViews(
+                        context, id, state, settings, started, widthDp(context, manager, id), ApWidgetShown.get(context, id),
+                        heightDp = chooseWidgetHeightDp(manager.getAppWidgetOptions(id), isLandscape(context)),
+                    ),
                 )
             }.onFailure { Timber.w(it, "AP widget %d update failed", id) }
         }
@@ -90,6 +95,20 @@ fun chooseWidgetWidthDp(options: Bundle, landscape: Boolean): Int {
     return width.takeIf { it > 0 } ?: ApWidgetRenderer.DEFAULT_WIDTH_DP
 }
 
+/** Height paired with the current orientation's width, or the provider's 40 dp minimum. */
+@Suppress("DEPRECATION")
+fun chooseWidgetHeightDp(options: Bundle, landscape: Boolean): Int {
+    val sizes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        runCatching { options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES) }.getOrNull()
+    } else null
+    val valid = sizes?.filter { it.width > 0 && it.height > 0 }
+    val size = if (landscape) valid?.maxByOrNull { it.width } else valid?.minByOrNull { it.width }
+    val min = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+    val max = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+    val height = size?.height?.toInt() ?: (if (landscape) min.takeIf { it > 0 } ?: max else max.takeIf { it > 0 } ?: min)
+    return height.takeIf { it > 0 } ?: 40
+}
+
 /** The complete widget: card, account stack (or "no data"), and the start/stop tile. */
 fun buildApWidgetViews(
     context: Context,
@@ -103,6 +122,7 @@ fun buildApWidgetViews(
     now: Long = System.currentTimeMillis() / 1000,
     collecting: Boolean = CaptureTracker.running.value,
     logAvailable: Boolean = widgetLogButtonAvailable(context, settings),
+    heightDp: Int = 74,
 ): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_root)
     val palette = widgetPalette(settings.theme)
@@ -110,6 +130,22 @@ fun buildApWidgetViews(
 
     views.setInt(R.id.ap_root, "setBackgroundResource", widgetCardRes(settings))
     val showLog = widgetLogTileVisible(logAvailable, widthDp, AP_LOG_TILE_MIN_WIDTH_DP)
+    val allAccounts = settings.displayStyle == WidgetDisplayStyle.AllAccounts
+    val density = context.resources.displayMetrics.density
+    views.setViewPadding(R.id.ap_root, (8 * density).toInt(), (8 * density).toInt(), (22 * density).toInt(), (8 * density).toInt())
+    views.setViewVisibility(R.id.ap_compact_age, View.GONE)
+    views.setViewVisibility(R.id.ap_log_label, View.VISIBLE)
+    views.setViewVisibility(R.id.ap_tile_label, View.VISIBLE)
+    views.setTextViewTextSize(R.id.ap_compact_age, TypedValue.COMPLEX_UNIT_SP, 9f)
+    if (allAccounts && state is ApWidgetState.Data && heightDp < 74) {
+        val vertical = if (heightDp < 56) 0 else (2 * density).toInt()
+        views.setViewPadding(R.id.ap_root, (8 * density).toInt(), vertical, (22 * density).toInt(), vertical)
+        if (heightDp < 56) {
+            views.setViewVisibility(R.id.ap_log_label, View.GONE)
+            views.setViewVisibility(R.id.ap_tile_label, View.GONE)
+            views.setTextViewTextSize(R.id.ap_compact_age, TypedValue.COMPLEX_UNIT_SP, 7f)
+        }
+    }
     views.setViewVisibility(R.id.ap_log_tile, if (showLog) View.VISIBLE else View.GONE)
     if (showLog) {
         views.setInt(R.id.ap_log_tile, "setBackgroundResource", if (collecting) R.drawable.widget_log_tile_on else palette.tileBackground)
@@ -123,12 +159,25 @@ fun buildApWidgetViews(
 
     when (state) {
         is ApWidgetState.Data -> {
-            views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
             views.setViewVisibility(R.id.ap_no_data, View.GONE)
-            val index = ApWidgetShown.indexOf(state.models, shownAccountId)
-            addApFlipper(context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat(), showLog), index, now)
-            // The up/down buttons only make sense with more than one account.
-            val several = state.models.size > 1
+            if (allAccounts) {
+                views.setViewVisibility(R.id.ap_flipper, View.GONE)
+                val cells = allAccountsCellCount(widthDp, showLog, settings.showServiceButton, state.models.size)
+                addAllAccountsRow(
+                    context, views, state.models, palette, cells, settings.showServer, now,
+                    heightDp = heightDp, compactAge = compactAllAccountsAge(widthDp, showLog, settings.showServiceButton),
+                )
+            } else {
+                views.setViewVisibility(R.id.ap_flipper, View.VISIBLE)
+                views.setViewVisibility(R.id.ap_all, View.GONE)
+                val index = ApWidgetShown.indexOf(state.models, shownAccountId)
+                addApFlipper(
+                    context, views, appWidgetId, state.models, palette, apWidgetFields(widthDp.toFloat(), showLog), index, now,
+                    showServer = settings.showServer,
+                )
+            }
+            // The up/down buttons only make sense with more than one account, and only in the stack style.
+            val several = state.models.size > 1 && !allAccounts
             views.setViewVisibility(R.id.ap_nav, if (several) View.VISIBLE else View.GONE)
             if (several) {
                 views.setInt(R.id.ap_nav_up_icon, "setColorFilter", color(palette.secondary))
@@ -139,6 +188,7 @@ fun buildApWidgetViews(
         }
         ApWidgetState.NoData -> {
             views.setViewVisibility(R.id.ap_flipper, View.GONE)
+            views.setViewVisibility(R.id.ap_all, View.GONE)
             views.setViewVisibility(R.id.ap_nav, View.GONE)
             views.setViewVisibility(R.id.ap_no_data, View.VISIBLE)
             views.setTextColor(R.id.ap_no_data, color(palette.secondary))
@@ -149,6 +199,7 @@ fun buildApWidgetViews(
     // The start/stop tile, same look as the Glance tile of the 1x1 widget.
     val model = serviceWidgetModel(serviceStarted)
     val accent = if (serviceStarted) palette.on else palette.accent
+    views.setViewVisibility(R.id.ap_tile, if (settings.showServiceButton) View.VISIBLE else View.GONE)
     views.setInt(R.id.ap_tile, "setBackgroundResource", palette.tileBackground)
     views.setInt(R.id.ap_tile_circle, "setBackgroundResource", if (serviceStarted) palette.toggleCircleOn else palette.toggleCircle)
     views.setImageViewResource(R.id.ap_tile_icon, model.iconRes)
@@ -167,6 +218,10 @@ internal fun tilePendingIntent(context: Context, action: ServiceWidgetAction): P
         context, 0, Intent(context, StopServiceReceiver::class.java), immutableFlags(),
     )
 }
+
+/** Tap on one account of the all-accounts row; the per-account data URI keeps the PendingIntents apart. */
+internal fun openAccountPendingIntent(context: Context, accountId: String): PendingIntent =
+    PendingIntent.getActivity(context, 0, WidgetIntents.openAccount(context, accountId), immutableFlags())
 
 private fun activityPendingIntent(context: Context, intent: Intent): PendingIntent =
     PendingIntent.getActivity(context, 0, intent, immutableFlags())

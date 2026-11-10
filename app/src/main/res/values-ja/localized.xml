@@ -959,6 +959,11 @@
     <string name="widget_settings_theme_dark">ダークテーマ</string>
     <string name="widget_settings_theme_light">ライトテーマ</string>
     <string name="widget_settings_transparency">背景の透明度</string>
+    <string name="widget_settings_display_style">表示方式</string>
+    <string name="widget_settings_display_one">アカウントを1つずつ（上下で切り替え）</string>
+    <string name="widget_settings_display_all">すべてのアカウントを1行に</string>
+    <string name="widget_settings_show_server">名前の横にサーバー（KR/JP）を表示</string>
+    <string name="widget_settings_show_service_button">サービス開始/停止ボタンを表示</string>
     <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
     <string name="support_picker_download">画像を取得</string>
     <!-- Log screen profile filter -->

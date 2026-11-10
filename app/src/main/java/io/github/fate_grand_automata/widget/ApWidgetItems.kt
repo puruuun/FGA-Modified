@@ -23,6 +23,7 @@ data class ApItemContent(
     val progress: Int,
     /** Merged into the tap template, so the tap opens this account's dashboard. */
     val fillIn: Intent,
+    val server: String = "",
 )
 
 fun apItemContent(context: Context, model: ApWidgetModel, now: Long = System.currentTimeMillis() / 1000) = ApItemContent(
@@ -31,6 +32,7 @@ fun apItemContent(context: Context, model: ApWidgetModel, now: Long = System.cur
     texts = apWidgetTexts(context, model, now),
     progress = (model.fraction * AP_BAR_MAX).roundToInt().coerceIn(0, AP_BAR_MAX),
     fillIn = WidgetIntents.openAccountFillIn(model.accountId),
+    server = model.server,
 )
 
 /** Order is the model order, which is the tracker's order: current account first, then latest update. */
@@ -38,7 +40,7 @@ fun apItemContents(context: Context, models: List<ApWidgetModel>, now: Long = Sy
     models.map { apItemContent(context, it, now) }
 
 /** One account card. Text colours and the bar follow the theme. */
-fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPalette, fields: ApWidgetFields): RemoteViews {
+fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPalette, fields: ApWidgetFields, showServer: Boolean = false): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_ap_item)
     fun color(res: Int) = ContextCompat.getColor(context, res)
     views.setTextViewText(R.id.ap_item_name, content.texts.name)
@@ -49,6 +51,12 @@ fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPa
     views.setTextColor(R.id.ap_item_age, color(palette.secondary))
     views.setTextColor(R.id.ap_item_ap, color(palette.onSurface))
     views.setTextColor(R.id.ap_item_full, color(palette.fullAt))
+    val badge = serverBadgeText(showServer, content.server)
+    views.setViewVisibility(R.id.ap_item_server, if (badge != null) View.VISIBLE else View.GONE)
+    if (badge != null) {
+        views.setTextViewText(R.id.ap_item_server, badge)
+        views.setTextColor(R.id.ap_item_server, color(palette.secondary))
+    }
     views.setTextViewTextSize(R.id.ap_item_ap, TypedValue.COMPLEX_UNIT_SP, fields.apTextSize.toFloat())
     views.setTextViewTextSize(R.id.ap_item_full, TypedValue.COMPLEX_UNIT_SP, fields.fullTextSize.toFloat())
     // Two bars with their own track colour; setProgressDrawable cannot be sent through RemoteViews.
@@ -74,11 +82,12 @@ fun addApFlipper(
     fields: ApWidgetFields,
     displayedIndex: Int = 0,
     now: Long = System.currentTimeMillis() / 1000,
+    showServer: Boolean = false,
 ) {
     val items = RemoteViewsCompat.RemoteCollectionItems.Builder()
         .setHasStableIds(true)
         .setViewTypeCount(1)
-    apItemContents(context, models, now).forEach { items.addItem(it.itemId, buildApItemViews(context, it, palette, fields)) }
+    apItemContents(context, models, now).forEach { items.addItem(it.itemId, buildApItemViews(context, it, palette, fields, showServer)) }
     RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.ap_flipper, items.build())
     views.setDisplayedChild(R.id.ap_flipper, displayedIndex.coerceIn(0, (models.size - 1).coerceAtLeast(0)))
     views.setPendingIntentTemplate(R.id.ap_flipper, openAccountTemplate(context))

@@ -102,7 +102,7 @@ fun ServiceToggleTile(
 ) {
     val context = LocalContext.current
     val model = if (capture) serviceWidgetModel(started).copy(
-        iconRes = R.drawable.ic_widget_log,
+        iconRes = R.drawable.ic_key,
         descriptionRes = if (started) R.string.capture_main_stop else R.string.capture_main_start,
     ) else serviceWidgetModel(started)
     val palette = widgetPalette(settings.theme)

@@ -1201,6 +1201,11 @@
     <string name="widget_settings_theme_dark">어두운 테마</string>
     <string name="widget_settings_theme_light">밝은 테마</string>
     <string name="widget_settings_transparency">배경 투명도</string>
+    <string name="widget_settings_display_style">표시 방식</string>
+    <string name="widget_settings_display_one">계정 하나씩 (위/아래로 전환)</string>
+    <string name="widget_settings_display_all">모든 계정을 한 줄로</string>
+    <string name="widget_settings_show_server">이름 옆에 서버(KR/JP) 표시</string>
+    <string name="widget_settings_show_service_button">서비스 시작/중지 버튼 표시</string>
     <string name="widget_settings_show_log_button">로그 수집 버튼 표시</string>
     <string name="support_picker_download">이미지 받기</string>
     <!-- Log screen profile filter -->

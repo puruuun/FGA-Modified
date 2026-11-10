@@ -27,6 +27,32 @@
             android:inAnimation="@animator/widget_fade_in"
             android:outAnimation="@animator/widget_fade_out" />
 
+        <!-- All-accounts style: the cells are added at run time, the data age sits right of them. -->
+        <LinearLayout
+            android:id="@+id/ap_all"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/ap_all_cells"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal" />
+
+            <TextView
+                android:id="@+id/ap_all_age"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/ap_no_data"
             android:layout_width="match_parent"
@@ -77,66 +103,90 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/ap_log_tile"
-        android:layout_width="40dp"
+        android:id="@+id/ap_controls"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/widget_tile_background"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <FrameLayout
-            android:id="@+id/ap_log_circle"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="@drawable/widget_toggle_circle">
-            <ImageView
-                android:id="@+id/ap_log_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_widget_log" />
-        </FrameLayout>
-        <TextView
-            android:id="@+id/ap_log_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/ap_tile"
-        android:layout_width="40dp"
-        android:layout_height="match_parent"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/widget_tile_background"
         android:gravity="center"
         android:orientation="vertical">
 
-        <FrameLayout
-            android:id="@+id/ap_tile_circle"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="@drawable/widget_toggle_circle"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/ap_tile_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_play" />
-        </FrameLayout>
-
         <TextView
-            android:id="@+id/ap_tile_label"
+            android:id="@+id/ap_compact_age"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="9sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/ap_log_tile"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/widget_tile_background"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:id="@+id/ap_log_circle"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/widget_toggle_circle">
+                    <ImageView
+                        android:id="@+id/ap_log_icon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_key" />
+                </FrameLayout>
+                <TextView
+                    android:id="@+id/ap_log_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ap_tile"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/widget_tile_background"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:id="@+id/ap_tile_circle"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/widget_toggle_circle"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/ap_tile_icon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_play" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/ap_tile_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

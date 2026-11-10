@@ -14,6 +14,9 @@ suspend fun observeWidgetSettingChanges(prefs: PrefsCore, onChanged: () -> Unit)
         prefs.widgetTheme.asFlow().drop(1),
         prefs.widgetBackgroundTransparency.asFlow().drop(1),
         prefs.widgetShowLogButton.asFlow().drop(1),
+        prefs.widgetDisplayStyle.asFlow().drop(1),
+        prefs.widgetShowServiceButton.asFlow().drop(1),
+        prefs.widgetShowServer.asFlow().drop(1),
         prefs.captureTrackerEnabled.asFlow().drop(1),
     ).collect { onChanged() }
 }

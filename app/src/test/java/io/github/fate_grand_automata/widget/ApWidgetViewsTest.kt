@@ -178,6 +178,23 @@ class ApWidgetViewsTest {
         assertEquals(ApWidgetRenderer.DEFAULT_WIDTH_DP, chooseWidgetWidthDp(Bundle(), landscape = true))
     }
 
+    @Test fun heightUsesTheSameSizeAsTheCurrentWidth() {
+        assertEquals(74, chooseWidgetHeightDp(lawnchair(), landscape = true))
+        assertEquals(188, chooseWidgetHeightDp(lawnchair(), landscape = false))
+        val legacy = lawnchair().apply { remove(AppWidgetManager.OPTION_APPWIDGET_SIZES) }
+        assertEquals(74, chooseWidgetHeightDp(legacy, landscape = true))
+        assertEquals(188, chooseWidgetHeightDp(legacy, landscape = false))
+        assertEquals(40, chooseWidgetHeightDp(Bundle(), landscape = false))
+        val onlyMin = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40) }
+        assertEquals(40, chooseWidgetHeightDp(onlyMin, landscape = false))
+        val onlyMax = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 65) }
+        assertEquals(65, chooseWidgetHeightDp(onlyMax, landscape = true))
+        val invalid = Bundle().apply {
+            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(android.util.SizeF(272f, 0f)))
+        }
+        assertEquals(40, chooseWidgetHeightDp(invalid, landscape = false))
+    }
+
     @Test fun theCurrentConfigurationDecidesTheOrientation() {
         val manager = AppWidgetManager.getInstance(context)
         val id = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
@@ -321,7 +338,7 @@ class ApWidgetViewsTest {
         ApWidgetRenderer.loader = { data(3) }
         ApWidgetRenderer.updateAll(context)
         val hostView = shadow.getViewFor(id)
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        idleUntil { hostView.findViewById<View>(R.id.ap_flipper)?.visibility == View.VISIBLE }
         // The shadow host reapplies the views; adapter contents are checked where the views are applied fresh.
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_flipper).visibility)
         assertEquals(View.GONE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
@@ -329,8 +346,18 @@ class ApWidgetViewsTest {
         // A later refresh with no data replaces the stack with the message.
         ApWidgetRenderer.loader = { ApWidgetState.NoData }
         ApWidgetRenderer.updateAll(context)
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        idleUntil { hostView.findViewById<View>(R.id.ap_no_data)?.visibility == View.VISIBLE }
         assertEquals(View.VISIBLE, hostView.findViewById<View>(R.id.ap_no_data).visibility)
+    }
+
+    /** The shadow host applies the views on the main looper; wait for it instead of assuming one idle is enough. */
+    private fun idleUntil(condition: () -> Boolean) {
+        val end = System.currentTimeMillis() + 3000
+        do {
+            shadowOf(android.os.Looper.getMainLooper()).idle()
+            if (condition()) return
+            Thread.sleep(10)
+        } while (System.currentTimeMillis() < end)
     }
 
     @Test fun noPlacedWidgetLoadsNothing() = runBlocking {

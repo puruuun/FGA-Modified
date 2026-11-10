@@ -56,6 +56,26 @@ class WidgetSettingsUpdatesTest {
         job.cancelAndJoin()
     }
 
+    @Test fun changingTheDisplayStyleOrTheNewButtonsRequestsAWidgetUpdate() = runBlocking {
+        val prefs = prefs("widget_updates_style")
+        val updates = AtomicInteger()
+        val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+            observeWidgetSettingChanges(prefs) { updates.incrementAndGet() }
+        }
+        Thread.sleep(300)
+        assertEquals(0, updates.get())
+        prefs.widgetDisplayStyle.set(io.github.fate_grand_automata.prefs.core.WidgetDisplayStyle.AllAccounts)
+        waitFor(updates, 1)
+        assertEquals(1, updates.get())
+        prefs.widgetShowServiceButton.set(false)
+        waitFor(updates, 2)
+        assertEquals(2, updates.get())
+        prefs.widgetShowServer.set(true)
+        waitFor(updates, 3)
+        assertEquals(3, updates.get())
+        job.cancelAndJoin()
+    }
+
     @Test fun startIsIdempotentAndTheRetainedJobStaysActive() {
         val prefs = prefs("widget_observer")
         val updates = AtomicInteger()
