@@ -1,9 +1,6 @@
 package io.github.fate_grand_automata.capture
 
-import android.content.ContentValues
 import android.content.Context
-import android.os.Environment
-import android.provider.MediaStore
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.SingleUseCa
 import java.io.File
@@ -16,11 +13,12 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 
 /**
- * Holds the leaf key and the public CA certificate under `filesDir/capture/`. The CA private key is
+ * Holds the leaf key and the public CA certificate under `filesDir/capture/` (app-private). The exported copy goes to `<FGA folder>/capture/`. The CA private key is
  * never stored: [SingleUseCa] signs one leaf and drops it.
  */
 object CertStore {
-    const val DOWNLOAD_NAME = "fga-capture-ca.cer"
+    const val EXPORT_NAME = "fga-capture-ca.crt"
+    const val EXPORT_MIME = "application/x-x509-ca-cert"
     private const val LEAF = "leaf.p12"
     private const val CA = "ca.cer"
     // The file lives in app-private storage; the password only keeps the keystore format happy.
@@ -66,33 +64,57 @@ object CertStore {
     fun pem(cert: X509Certificate): String = "-----BEGIN CERTIFICATE-----\n" +
         Base64.getMimeEncoder(64, byteArrayOf(10)).encodeToString(cert.encoded) + "\n-----END CERTIFICATE-----\n"
 
-    /** Makes a new CA and leaf, replacing any earlier ones, and writes the CA to Download. */
-    fun create(ctx: Context) {
+    /** A new CA and leaf held in memory. Nothing replaces the stored ones until [commit]. */
+    class Pending(internal val leaf: ByteArray, val caDer: ByteArray)
+
+    fun prepare(): Pending {
         val issued = SingleUseCa.issue(CaptureNames.GAME_HOST)
-        val dir = directory(ctx)
-        val ks = KeyStore.getInstance("PKCS12")
-        ks.load(null, null)
+        val ks = KeyStore.getInstance("PKCS12").apply { load(null, null) }
         ks.setKeyEntry("leaf", issued.leafKey, PASSWORD, issued.chain.toTypedArray())
-        File(dir, LEAF).outputStream().use { ks.store(it, PASSWORD) }
-        File(dir, CA).writeBytes(issued.caCert.encoded)
-        export(ctx)
+        val leaf = java.io.ByteArrayOutputStream().also { ks.store(it, PASSWORD) }.toByteArray()
+        return Pending(leaf, issued.caCert.encoded)
     }
 
-    /** Writes the CA certificate to `Download/fga-capture-ca.cer`. */
-    fun export(ctx: Context) {
-        val der = File(directory(ctx), CA).readBytes()
-        val resolver = ctx.contentResolver
-        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-        runCatching {
-            resolver.delete(collection, "${MediaStore.MediaColumns.DISPLAY_NAME}=?", arrayOf(DOWNLOAD_NAME))
+    /** Replaces the stored CA and leaf together. On a failure the earlier pair is restored. */
+    @Synchronized
+    fun commit(ctx: Context, pending: Pending) {
+        val dir = directory(ctx)
+        val leaf = File(dir, LEAF)
+        val ca = File(dir, CA)
+        val oldLeaf = leaf.takeIf { it.isFile }?.readBytes()
+        val oldCa = ca.takeIf { it.isFile }?.readBytes()
+        try {
+            leaf.writeBytes(pending.leaf)
+            ca.writeBytes(pending.caDer)
+        } catch (e: Exception) {
+            oldLeaf?.let { runCatching { leaf.writeBytes(it) } } ?: leaf.delete()
+            oldCa?.let { runCatching { ca.writeBytes(it) } } ?: ca.delete()
+            throw e
         }
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, DOWNLOAD_NAME)
-            put(MediaStore.MediaColumns.MIME_TYPE, "application/x-x509-ca-cert")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        }
-        val uri = resolver.insert(collection, values) ?: error("MediaStore insert failed")
-        resolver.openOutputStream(uri)!!.use { it.write(der) }
+    }
+
+    /** The stored CA in DER form, or null when none was created yet. */
+    fun caBytes(ctx: Context): ByteArray? = File(directory(ctx), CA).takeIf { it.isFile }?.readBytes()
+
+    /** Saves the CA to `<FGA folder>/capture/fga-capture-ca.crt` (three layers, see [CaptureFileSaver]). */
+    fun save(folder: CaptureFolder?, der: ByteArray, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): SaveOutcome =
+        CaptureFileSaver.save(
+            folder, EXPORT_NAME, CaptureFileSaver.timestamped(EXPORT_NAME, now), EXPORT_MIME, der,
+        )
+
+    /** Saves the existing CA again. The CA itself is never touched. Null when there is none. */
+    fun export(ctx: Context, folder: CaptureFolder? = CaptureFolders.open(ctx)): SaveOutcome? =
+        caBytes(ctx)?.let { save(folder, it) }
+
+    /**
+     * Makes a new CA and leaf and saves the CA. The stored pair is replaced only once the export
+     * succeeded; for [SaveOutcome.NeedsDialog] the caller commits [pending] after the user saved the file.
+     */
+    fun createAndExport(ctx: Context, folder: CaptureFolder? = CaptureFolders.open(ctx)): Pair<Pending, SaveOutcome> {
+        val pending = prepare()
+        val outcome = save(folder, pending.caDer)
+        if (outcome is SaveOutcome.Saved) commit(ctx, pending)
+        return pending to outcome
     }
 
     private fun ownCertificate(ctx: Context): X509Certificate? = runCatching {

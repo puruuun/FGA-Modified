@@ -52,9 +52,10 @@ class ChaldeaExportActionTest {
     @Test fun successWaitsForUserWithoutLaunchingOrToasting() {
         installFakeChaldea(context)
         ShadowToast.reset()
-        flow(ChaldeaExportStore.Result.Written("sample.json"))
+        flow(ChaldeaExportStore.Result.Written("sample.json", "FGA/capture"))
         compose.onNodeWithText("저장했습니다. Chaldea에서 이 파일을 선택하세요",substring=true).assertExists()
         compose.onNodeWithText("sample.json",substring=true).assertExists()
+        compose.onNodeWithText("FGA/capture/sample.json",substring=true).assertExists()
         compose.onNodeWithText("HTTPS 스니핑",substring=true).assertExists()
         compose.onNodeWithText("Chaldea로 이동").assertExists()
         assertNull(shadowOf(context as android.app.Application).nextStartedActivity)
@@ -73,9 +74,9 @@ class ChaldeaExportActionTest {
     @Test fun openButtonLaunchesChaldeaThenCloses() = launches("cc.narumi.chaldea")
     @Test fun openButtonSupportsFdroid() = launches("cc.narumi.chaldea.fdroid")
     @Test fun noInstalledChaldeaHidesOpenButtonAndShowsNote() {
-        flow(ChaldeaExportStore.Result.Written("sample.json"))
+        flow(ChaldeaExportStore.Result.Written("sample.json", "FGA/capture"))
         compose.onNodeWithText("Chaldea로 이동").assertDoesNotExist()
-        compose.onNodeWithText(context.getString(R.string.capture_chaldea_not_installed,"sample.json"),substring=true).assertExists()
+        compose.onNodeWithText(context.getString(R.string.capture_chaldea_not_installed,"FGA/capture/sample.json"),substring=true).assertExists()
         compose.onNodeWithText("저장했습니다.",substring=true).assertExists()
         compose.onNodeWithText(context.getString(android.R.string.ok)).performClick()
         compose.onNodeWithText("sample.json",substring=true).assertDoesNotExist()

@@ -1,13 +1,6 @@
 package io.github.fate_grand_automata.capture
 
-import android.content.ContentUris
-import android.content.ContentValues
 import android.content.Context
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
-import androidx.annotation.RequiresApi
 import io.github.fate_grand_automata.scripts.capture.ChaldeaExport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -15,94 +8,85 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
-/** Serializes exports and deletion from both screens. No account contents enter logs. */
+/**
+ * Serializes exports and deletion from both screens. Files live in `<FGA folder>/capture/`.
+ * No account contents enter logs. Older exports in Download/FGA are left alone.
+ */
 object ChaldeaExportStore {
     private val lock = Mutex()
-    private val path = "${Environment.DIRECTORY_DOWNLOADS}/FGA/"
+    private const val MIME = "application/json"
 
     sealed interface Result {
         data object NoSnapshot : Result
         data object Failed : Result
-        data class Written(val name: String) : Result
+        /** [folder] is the folder shown to the user, for example `FGA/capture`. */
+        data class Written(val name: String, val folder: String? = null) : Result {
+            val path get() = folder?.let { "$it/$name" } ?: name
+        }
+        /** The capture folder was unusable: the UI opens the system save dialog for these bytes. */
+        class NeedsSaveDialog(val name: String, val bytes: ByteArray) : Result
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    suspend fun export(context: Context, userId: String? = null): Result = withContext(Dispatchers.IO) {
+    suspend fun export(
+        context: Context,
+        userId: String? = null,
+        folder: CaptureFolder? = null,
+    ): Result = withContext(Dispatchers.IO) {
         lock.withLock {
-            val resolver = context.contentResolver
-            var created: Uri? = null
             try {
                 CaptureTracker.init(context)
                 val (id, state) = CaptureTracker.snapshot(userId) ?: return@withLock Result.NoSnapshot
-                val name = ChaldeaFiles.name(id, LocalDateTime.now())
-                val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, name)
-                    put(MediaStore.Downloads.MIME_TYPE, "application/json")
-                    put(MediaStore.Downloads.RELATIVE_PATH, path)
-                    put(MediaStore.Downloads.IS_PENDING, 1)
-                }))
-                created = uri
-                checkNotNull(resolver.openOutputStream(uri, "w")).bufferedWriter(Charsets.UTF_8).use { ChaldeaExport.write(state, it) }
-                // Delete previous entries only after the new body was fully written. Restore the
-                // requested name before publishing, since a same-minute insert may get a suffix.
-                val old = ownedExports(context).filter { ContentUris.parseId(it.uri) != ContentUris.parseId(uri) }
-                val obsoleteNames = ChaldeaFiles.toDelete(old.map { it.name } + name, name).toSet()
-                old.filter { it.name in obsoleteNames || it.name == name }.forEach {
-                    check(resolver.delete(it.uri, null, null) == 1)
-                }
-                check(resolver.update(uri, ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, name)
-                    put(MediaStore.Downloads.IS_PENDING, 0)
-                }, null, null) == 1)
-                checkNotNull(resolver.query(uri, arrayOf(MediaStore.Downloads.DISPLAY_NAME), null, null, null)).use {
-                    check(it.moveToFirst() && it.getString(0) == name)
-                }
-                Result.Written(name)
+                val bytes = java.io.ByteArrayOutputStream().also { out ->
+                    out.bufferedWriter(Charsets.UTF_8).use { ChaldeaExport.write(state, it) }
+                }.toByteArray()
+                saveExport(folder ?: CaptureFolders.open(context), id, bytes, LocalDateTime.now())
             } catch (_: Exception) {
-                created?.let { runCatching { resolver.delete(it, null, null) } }
                 Result.Failed
             }
         }
     }
 
-    suspend fun deleteTrackerData(context: Context): Boolean = withContext(Dispatchers.IO) {
+    /** Three-layer save, then keeps only the newest export per account. */
+    internal fun saveExport(folder: CaptureFolder?, id: String, bytes: ByteArray, now: LocalDateTime): Result =
+        when (val outcome = CaptureFileSaver.save(
+            folder, ChaldeaFiles.name(id, now), ChaldeaFiles.fallbackName(id, now), MIME, bytes,
+        )) {
+            is SaveOutcome.NeedsDialog -> Result.NeedsSaveDialog(outcome.name, outcome.bytes)
+            is SaveOutcome.Saved -> {
+                // Account files: only the newest per account stays. A failed cleanup undoes this export.
+                val obsolete = ChaldeaFiles.toDelete(folder!!.names(), outcome.name)
+                if (obsolete.all { folder.delete(it) }) Result.Written(outcome.name, outcome.folder)
+                else { runCatching { folder.delete(outcome.name) }; Result.Failed }
+            }
+        }
+
+    /** The system save dialog wrote the file: report the real name the user chose. */
+    fun picked(context: Context, uri: android.net.Uri, request: Result.NeedsSaveDialog): Result =
+        CaptureFileSaver.writePicked(context, uri, request.bytes)?.let { Result.Written(it) } ?: Result.Failed
+
+    suspend fun deleteTrackerData(context: Context, folder: CaptureFolder? = null): Boolean = withContext(Dispatchers.IO) {
         lock.withLock {
             runCatching {
                 CaptureTracker.delete()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ownedExports(context).forEach { check(context.contentResolver.delete(it.uri, null, null) == 1) }
-                }
+                ownedExports(context, folder).let { (dir, names) -> names.forEach { check(dir!!.delete(it)) } }
             }.isSuccess
         }
     }
 
-    suspend fun deleteAccount(context: Context, userId: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteAccount(context: Context, userId: String, folder: CaptureFolder? = null): Boolean = withContext(Dispatchers.IO) {
         lock.withLock {
             runCatching {
                 CaptureTracker.delete(userId)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ownedExports(context).filter { ChaldeaFiles.accountId(it.name) == userId }.forEach {
-                        check(context.contentResolver.delete(it.uri, null, null) == 1)
-                    }
+                ownedExports(context, folder).let { (dir, names) ->
+                    names.filter { ChaldeaFiles.accountId(it) == userId }.forEach { check(dir!!.delete(it)) }
                 }
             }.isSuccess
         }
     }
 
-    private data class Entry(val uri: Uri, val name: String)
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun ownedExports(context: Context): List<Entry> {
-        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-        val columns = arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DISPLAY_NAME)
-        val selection = "${MediaStore.Downloads.RELATIVE_PATH} = ? AND ${MediaStore.Downloads.OWNER_PACKAGE_NAME} = ?"
-        return buildList {
-            checkNotNull(context.contentResolver.query(collection, columns, selection, arrayOf(path, context.packageName), null)).use { cursor ->
-                while (cursor.moveToNext()) {
-                    val name = cursor.getString(1)
-                    if (ChaldeaFiles.isExport(name)) add(Entry(ContentUris.withAppendedId(collection, cursor.getLong(0)), name))
-                }
-            }
-        }
+    /** An unset or unusable folder holds nothing of ours to delete. */
+    private fun ownedExports(context: Context, folder: CaptureFolder?): Pair<CaptureFolder?, List<String>> {
+        val dir = folder ?: CaptureFolders.open(context)
+        return dir to (dir?.names().orEmpty().filter(ChaldeaFiles::isExport))
     }
 }

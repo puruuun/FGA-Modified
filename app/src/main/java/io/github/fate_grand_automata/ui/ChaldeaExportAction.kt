@@ -2,6 +2,10 @@ package io.github.fate_grand_automata.ui
 
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
@@ -32,21 +36,39 @@ fun rememberChaldeaExport(userId: String? = null): () -> Unit {
 fun rememberChaldeaAccountExport(): (String?) -> Unit {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return {}
     val context = LocalContext.current
-    return rememberChaldeaAccountExportAction { userId -> ChaldeaExportStore.export(context, userId) }
+    return rememberChaldeaAccountExportAction(
+        picked = { uri, request -> ChaldeaExportStore.picked(context, uri, request) },
+    ) { userId -> ChaldeaExportStore.export(context, userId) }
 }
 
 @Composable
-internal fun rememberChaldeaAccountExportAction(export: suspend (String?) -> ChaldeaExportStore.Result): (String?) -> Unit {
+internal fun rememberChaldeaAccountExportAction(
+    picked: (android.net.Uri, ChaldeaExportStore.Result.NeedsSaveDialog) -> ChaldeaExportStore.Result = { _, _ -> ChaldeaExportStore.Result.Failed },
+    export: suspend (String?) -> ChaldeaExportStore.Result,
+): (String?) -> Unit {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<ChaldeaExportStore.Result?>(null) }
+    var request by remember { mutableStateOf<ChaldeaExportStore.Result.NeedsSaveDialog?>(null) }
+    // Last layer: the capture folder was unusable, so the user picks where the file goes.
+    val saveDialog = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val pending = request
+        request = null
+        if (pending != null && uri != null) {
+            scope.launch { result = withContext(Dispatchers.IO) { picked(uri, pending) } }
+        }
+    }
     result?.let { ChaldeaExportResultDialog(it) { result = null } }
     return { userId ->
         if (!busy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             busy = true
             scope.launch {
                 try {
-                    result = export(userId)
+                    val r = export(userId)
+                    if (r is ChaldeaExportStore.Result.NeedsSaveDialog) {
+                        request = r
+                        saveDialog.launch(r.name)
+                    } else result = r
                 } finally { busy = false }
             }
         }
@@ -63,14 +85,14 @@ internal fun ChaldeaExportResultDialog(result: ChaldeaExportStore.Result, onDism
     }
     val message = when (result) {
         ChaldeaExportStore.Result.NoSnapshot -> stringResource(R.string.capture_no_snapshot)
-        ChaldeaExportStore.Result.Failed -> stringResource(R.string.capture_chaldea_failed)
+        ChaldeaExportStore.Result.Failed, is ChaldeaExportStore.Result.NeedsSaveDialog -> stringResource(R.string.capture_chaldea_failed)
         is ChaldeaExportStore.Result.Written -> buildString {
             append(stringResource(R.string.capture_chaldea_saved))
             append("\n\n")
-            append(stringResource(R.string.capture_chaldea_guide, result.name))
+            append(stringResource(R.string.capture_chaldea_guide, result.path, result.name))
             if (launchIntents.isEmpty()) {
                 append("\n\n")
-                append(stringResource(R.string.capture_chaldea_not_installed, result.name))
+                append(stringResource(R.string.capture_chaldea_not_installed, result.path))
             }
         }
     }

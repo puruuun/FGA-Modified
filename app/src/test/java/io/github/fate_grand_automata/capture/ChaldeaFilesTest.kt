@@ -69,4 +69,13 @@ class ChaldeaFilesTest {
         assertTrue(ChaldeaFiles.isExport(jp))
         assertEquals("kr-test", ChaldeaFiles.accountId("chaldea-account-kr-test-20261104-0904.json"))
     }
+
+    @Test fun fallbackNameAddsSecondsAndIsStillOwnedAndNewest() {
+        val fallback = ChaldeaFiles.fallbackName("7001", LocalDateTime.of(2026, 11, 4, 9, 1, 7))
+        assertEquals("chaldea-account-7001-20261104-0901-07.json", fallback)
+        assertEquals("7001", ChaldeaFiles.accountId(fallback))
+        assertTrue(ChaldeaFiles.isExport(fallback))
+        // Same minute: the second-stamped name sorts after the fixed one, so the fixed one is cleaned up.
+        assertEquals(listOf(old), ChaldeaFiles.toDelete(listOf(old, fallback)))
+    }
 }

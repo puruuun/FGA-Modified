@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.ui.more
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -53,5 +55,31 @@ class GainsTrackerScreenshotTest {
             enabled = true, certExists = true, certInstalled = true, running = true,
             accounts = listOf(CaptureAccount("7001", "Master", summary, summary.lastUpdateTime)), currentId = "7001",
         ),
+    )
+
+    private fun certShot(name: String, state: GainsTrackerUiState, confirm: Boolean = false) = composeRule.shoot(
+        folder = "capture-folder", name = name, widthDp = 360, heightDp = 800, locale = "ko",
+        beforeCapture = {
+            if (confirm) composeRule.onNodeWithText(
+                androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+                    .getString(io.github.fate_grand_automata.R.string.capture_cert_create_new),
+            ).performClick()
+        },
+    ) {
+        GainsTrackerContent(
+            state = state, onEnabled = {}, onStopWithService = {}, onCreateCertificate = {},
+            onOpenSecuritySettings = {}, onStart = {}, onStop = {}, onDelete = {},
+        )
+    }
+
+    @Test fun certificateMissing() = certShot("CertMissing", GainsTrackerUiState(enabled = true))
+
+    @Test fun certificatePresent() = certShot(
+        "CertPresent",
+        GainsTrackerUiState(enabled = true, certExists = true, certSavedPath = "FGA/capture/fga-capture-ca.crt"),
+    )
+
+    @Test fun newCertificateConfirmation() = certShot(
+        "NewCertConfirm", GainsTrackerUiState(enabled = true, certExists = true), confirm = true,
     )
 }

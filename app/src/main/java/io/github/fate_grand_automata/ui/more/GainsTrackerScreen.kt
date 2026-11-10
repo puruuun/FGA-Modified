@@ -41,7 +41,9 @@ import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.CaptureEnableAction
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.CaptureFileSaver
 import io.github.fate_grand_automata.capture.CertStore
+import io.github.fate_grand_automata.capture.SaveOutcome
 import io.github.fate_grand_automata.capture.ChaldeaExportStore
 import io.github.fate_grand_automata.capture.jpGameInstalled
 import io.github.fate_grand_automata.capture.JpRootPreference
@@ -76,7 +78,12 @@ data class GainsTrackerUiState(
     val stopReason: CaptureStopReason? = null,
     val accounts: List<CaptureAccount> = emptyList(),
     val currentId: String? = null,
+    /** Real folder and file name of the last certificate save, for example `FGA/capture/fga-capture-ca.crt`. */
+    val certSavedPath: String? = null,
 )
+
+/** The system save dialog for the certificate; [pending] is committed only after the user saved it. */
+class CertSaveRequest(val name: String, val bytes: ByteArray, val pending: CertStore.Pending?)
 
 @HiltViewModel
 class GainsTrackerViewModel @Inject constructor(
@@ -91,6 +98,8 @@ class GainsTrackerViewModel @Inject constructor(
     fun setJpRoot(enabled: Boolean) { viewModelScope.launch { jpSettings.setEnabled(enabled) } }
     fun refreshJpRoot() { viewModelScope.launch { jpSettings.refresh() } }
     private val cert = MutableStateFlow(false to false)
+    private val savedPath = MutableStateFlow<String?>(null)
+    val saveRequest = MutableStateFlow<CertSaveRequest?>(null)
     private val clock = MutableStateFlow(System.currentTimeMillis() / 1000)
 
     init {
@@ -103,10 +112,10 @@ class GainsTrackerViewModel @Inject constructor(
         prefsCore.captureStopWithService.asFlow(),
         cert,
         combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
-        combine(CaptureTracker.accounts, clock) { _, now -> now },
-    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), now ->
+        combine(CaptureTracker.accounts, clock, savedPath) { _, now, path -> now to path },
+    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), (now, path) ->
         GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason,
-            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value)
+            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value, path)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -115,10 +124,56 @@ class GainsTrackerViewModel @Inject constructor(
         }
     }
 
-    fun createCertificate(): Boolean {
-        val ok = runCatching { CertStore.create(context) }.isSuccess
+    private fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+
+    private fun report(outcome: SaveOutcome?, pending: CertStore.Pending?) {
+        when (outcome) {
+            is SaveOutcome.Saved -> {
+                savedPath.value = outcome.path
+                toast(context.getString(R.string.capture_cert_exported, outcome.path))
+            }
+            is SaveOutcome.NeedsDialog -> saveRequest.value = CertSaveRequest(outcome.name, outcome.bytes, pending)
+            null -> toast(context.getString(R.string.capture_cert_failed))
+        }
         refreshCertificate()
-        return ok
+    }
+
+    /** Saves the existing CA again. The CA is not replaced. */
+    fun exportCertificate() {
+        viewModelScope.launch {
+            val outcome = withContext(Dispatchers.IO) { runCatching { CertStore.export(context) }.getOrNull() }
+            report(outcome, null)
+        }
+    }
+
+    /** Makes a new CA. It replaces the stored one only after the export succeeded. */
+    fun createCertificate() {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { CertStore.createAndExport(context) }.getOrNull() }
+            report(result?.second, result?.first)
+        }
+    }
+
+    /** The user chose a place in the system save dialog; a null [uri] means they cancelled. */
+    fun certificatePicked(uri: android.net.Uri?) {
+        val request = saveRequest.value ?: return
+        saveRequest.value = null
+        viewModelScope.launch {
+            val name = uri?.let { withContext(Dispatchers.IO) { CaptureFileSaver.writePicked(context, it, request.bytes) } }
+            if (name == null) {
+                if (uri != null) toast(context.getString(R.string.capture_cert_failed))
+                return@launch
+            }
+            val pending = request.pending
+            val committed = pending == null || withContext(Dispatchers.IO) {
+                runCatching { CertStore.commit(context, pending) }.isSuccess
+            }
+            if (committed) {
+                savedPath.value = name
+                toast(context.getString(R.string.capture_cert_exported, name))
+            } else toast(context.getString(R.string.capture_cert_failed))
+            refreshCertificate()
+        }
     }
 
     /** Moves the summary clock so AP keeps recovering on screen while no response arrives. */
@@ -170,6 +225,13 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         }
     }
 
+    val saveRequest by vm.saveRequest.collectAsStateWithLifecycle()
+    val saveDialog = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(CertStore.EXPORT_MIME),
+    ) { vm.certificatePicked(it) }
+    // Last layer of the save: the capture folder was unusable, so the user picks the place.
+    LaunchedEffect(saveRequest) { saveRequest?.let { saveDialog.launch(it.name) } }
+
     GainsTrackerContent(
         state = state,
         onEnabled = {
@@ -181,15 +243,8 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         },
         onReviewConsent = { agreement(true) {} },
         onStopWithService = { stopWithService = it },
-        onCreateCertificate = {
-            val ok = vm.createCertificate()
-            Toast.makeText(
-                context,
-                if (ok) context.getString(R.string.capture_cert_exported, "Download/fga-capture-ca.cer")
-                else context.getString(R.string.capture_cert_failed),
-                Toast.LENGTH_LONG
-            ).show()
-        },
+        onCreateCertificate = vm::createCertificate,
+        onExportCertificate = vm::exportCertificate,
         onOpenSecuritySettings = {
             runCatching { context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         },
@@ -220,6 +275,7 @@ fun GainsTrackerContent(
     onStop: () -> Unit,
     onDelete: () -> Unit,
     onReviewConsent: () -> Unit = {},
+    onExportCertificate: () -> Unit = {},
     onRenameAccount: (String, String) -> Unit = { _, _ -> },
     onDeleteAccount: (String) -> Unit = {},
     jpState: JpRootState = JpRootState(),
@@ -236,7 +292,7 @@ fun GainsTrackerContent(
         text = { Text(stringResource(R.string.capture_cert_recreate_message)) },
         confirmButton = {
             TextButton(onClick = { confirmRecreate = false; onCreateCertificate() }) {
-                Text(stringResource(R.string.capture_cert_create))
+                Text(stringResource(R.string.capture_cert_create_new))
             }
         },
         dismissButton = { TextButton(onClick = { confirmRecreate = false }) { Text(stringResource(android.R.string.cancel)) } },
@@ -290,9 +346,25 @@ fun GainsTrackerContent(
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { if (state.certExists) confirmRecreate = true else onCreateCertificate() }) {
-                                Text(stringResource(R.string.capture_cert_create))
+                        state.certSavedPath?.let {
+                            Text(
+                                stringResource(R.string.capture_cert_exported, it),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        androidx.compose.foundation.layout.FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (state.certExists) {
+                                // An existing CA is saved again; a new one is a separate, confirmed action.
+                                Button(onClick = onExportCertificate) { Text(stringResource(R.string.capture_cert_export)) }
+                                OutlinedButton(onClick = { confirmRecreate = true }) {
+                                    Text(stringResource(R.string.capture_cert_create_new))
+                                }
+                            } else {
+                                Button(onClick = onCreateCertificate) { Text(stringResource(R.string.capture_cert_create)) }
                             }
                             OutlinedButton(onClick = { showGuide = true }) { Text(stringResource(R.string.capture_guide_button)) }
                         }
