@@ -1148,6 +1148,14 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_items">Item inventory</string>
     <string name="dashboard_mystics">Mystic codes</string>
     <string name="dashboard_recent">Recent activity</string>
+    <string name="dashboard_formation_support">Support formation</string>
+    <string name="dashboard_formation_grand">Grand formation</string>
+    <string name="dashboard_formation_main">Regular</string>
+    <string name="dashboard_formation_event">Event</string>
+    <string name="dashboard_formation_deck">Deck %1$d</string>
+    <string name="dashboard_formation_seat">Seat %1$d</string>
+    <string name="dashboard_formation_none">No formation data</string>
+    <string name="dashboard_formation_updated">Data as of %1$s</string>
     <string name="dashboard_level">Master level</string>
     <string name="dashboard_exp">EXP</string>
     <string name="dashboard_cost">Party cost limit</string>

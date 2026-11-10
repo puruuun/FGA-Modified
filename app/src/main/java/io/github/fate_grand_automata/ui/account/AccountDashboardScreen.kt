@@ -100,6 +100,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (!data.inventory.isNullOrEmpty()) add(4)
                     if (!data.equips.isNullOrEmpty()) add(5)
                     if (battle != null || outside != null) add(6)
+                    add(7)
+                    if (data.formations?.grand?.isNotEmpty() == true) add(8)
                 }
                 val target = remember { BringIntoViewRequester() }
                 LaunchedEffect(initialSection) {
@@ -118,6 +120,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                                 4 -> Inventory(data.inventory!!, names)
                                 5 -> MysticCodes(data.equips!!, names)
                                 6 -> Recent(battle, outside, names, openLogs)
+                                7 -> SupportFormation(data.formations, names, data.lastUpdateTime)
+                                8 -> GrandFormation(data.formations!!.grand, names, data.lastUpdateTime)
                             }
                         }
                     }
@@ -126,7 +130,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                 // measure independently: no card inherits its neighbour's height.
                 val page = Modifier.fillMaxSize().testTag("dashboard-page").verticalScroll(rememberScrollState()).padding(16.dp)
                 if (maxWidth >= 840.dp) Row(page, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(listOf(0, 1, 2, 5, 6), listOf(3, 4)).forEachIndexed { index, stack ->
+                    listOf(listOf(0, 1, 2, 5, 6), listOf(3, 4, 7, 8)).forEachIndexed { index, stack ->
                         Column(Modifier.weight(1f).testTag("dashboard-stack:$index"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             stack.filter { it in sections }.forEach { sectionContent(it) }
                         }
@@ -142,7 +146,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
 @Composable
 private fun DashboardSection(section: Int, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
     val titles = listOf(R.string.dashboard_profile, R.string.dashboard_resources, R.string.dashboard_storage,
-        R.string.dashboard_servants, R.string.dashboard_items, R.string.dashboard_mystics, R.string.dashboard_recent)
+        R.string.dashboard_servants, R.string.dashboard_items, R.string.dashboard_mystics, R.string.dashboard_recent,
+        R.string.dashboard_formation_support, R.string.dashboard_formation_grand)
     Card(modifier.testTag("dashboard-section:$section")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(titles[section]), style = MaterialTheme.typography.titleMedium)
@@ -151,7 +156,7 @@ private fun DashboardSection(section: Int, modifier: Modifier, content: @Composa
     }
 }
 
-private fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(seconds * 1000))
+internal fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(seconds * 1000))
 
 @Composable private fun Field(label: Int, value: String) {
     Text("${stringResource(label)}: $value", style = MaterialTheme.typography.bodyMedium)

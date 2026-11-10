@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.AccountState
+import io.github.fate_grand_automata.scripts.capture.OwnFormations
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import io.github.fate_grand_automata.util.grouped
@@ -79,6 +80,8 @@ data class DashboardData(
     val storage: DashboardStorage?, val servants: List<DashboardServant>?,
     val inventory: List<DashboardItem>?, val equips: List<DashboardEquip>?,
     val teapots: DashboardTeapots? = null,
+    /** The owner's own support and Grand formations; null when the stored state has none or cannot be read. */
+    val formations: OwnFormations? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -149,7 +152,8 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
         DashboardEquip(id, row.number("lv"), id == game?.number("userEquipId"))
     }?.sortedWith(compareByDescending<DashboardEquip> { it.level ?: -1L }.thenBy { it.id })
     val split = game?.number("freeStone")?.let { free -> game.number("chargeStone")?.let { free to it } }
-    return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots)
+    return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
+        OwnFormations.from(state))
 }
 
 internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {

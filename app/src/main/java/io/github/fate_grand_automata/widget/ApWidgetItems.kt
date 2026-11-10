@@ -63,6 +63,8 @@ fun buildApItemViews(context: Context, content: ApItemContent, palette: WidgetPa
     views.setViewVisibility(R.id.ap_item_bar_dark, if (palette.light) View.GONE else View.VISIBLE)
     views.setViewVisibility(R.id.ap_item_bar_light, if (palette.light) View.VISIBLE else View.GONE)
     views.setProgressBar(if (palette.light) R.id.ap_item_bar_light else R.id.ap_item_bar_dark, AP_BAR_MAX, content.progress, false)
+    // This full-card container is inside the RemoteViews root: Android installs a click listener
+    // instead of only tagging the item root for AdapterViewAnimator's item-click fallback.
     views.setOnClickFillInIntent(R.id.ap_item_root, content.fillIn)
     return views
 }
