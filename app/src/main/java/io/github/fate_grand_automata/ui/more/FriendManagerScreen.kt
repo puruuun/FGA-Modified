@@ -464,7 +464,7 @@ private fun FriendTableRow(row: FriendRow, names: GameNameMap, now: Long) {
 
 /** One CE: its name (up to [nameLines] lines, tag and level on the first line's baseline), then the max tag and the level right after it on the same baseline. */
 @Composable
-private fun CeLine(name: String, limitCount: Int, lv: Int, nameLines: Int = 1) {
+internal fun CeLine(name: String, limitCount: Int, lv: Int, nameLines: Int = 1) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("friends-ce-line")) {
         Text(name, Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
             maxLines = nameLines, overflow = TextOverflow.Ellipsis)
@@ -486,7 +486,7 @@ private fun loginText(parts: Pair<AgoUnit, Long>): String = stringResource(when 
 }, parts.second.toInt())
 
 @Composable
-private fun classLabel(classId: Int): String = stringResource(when (classId) {
+internal fun classLabel(classId: Int): String = stringResource(when (classId) {
     1 -> R.string.p_support_class_saber
     2 -> R.string.p_support_class_archer
     3 -> R.string.p_support_class_lancer

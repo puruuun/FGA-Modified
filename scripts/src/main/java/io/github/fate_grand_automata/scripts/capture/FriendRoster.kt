@@ -198,7 +198,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
         }
 
         /** The message field is never read. Empty slots (svtId 0) are dropped. */
-        private fun slot(row: JsonObject): FriendSlot? {
+        internal fun slot(row: JsonObject): FriendSlot? {
             val svtId = row.long("svtId") ?: return null
             if (svtId == 0L) return null
             val appends = MutableList<Int?>(5) { null }
@@ -227,7 +227,7 @@ data class FriendRoster(val updatedAt: Long = 0, val friends: Map<String, Friend
             )
         }
 
-        private fun grandSlot(row: JsonObject): FriendGrandSlot? {
+        internal fun grandSlot(row: JsonObject): FriendGrandSlot? {
             val support = slot(row) ?: return null
             fun ce(key: String): FriendCe {
                 val value = row[key] as? JsonObject

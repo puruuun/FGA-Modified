@@ -1078,6 +1078,14 @@
     <string name="dashboard_items">아이템 보유 현황</string>
     <string name="dashboard_mystics">마술예장</string>
     <string name="dashboard_recent">최근 활동</string>
+    <string name="dashboard_formation_support">서포트 편성</string>
+    <string name="dashboard_formation_grand">관위 편성</string>
+    <string name="dashboard_formation_main">일반</string>
+    <string name="dashboard_formation_event">이벤트</string>
+    <string name="dashboard_formation_deck">편성 %1$d</string>
+    <string name="dashboard_formation_seat">자리 %1$d</string>
+    <string name="dashboard_formation_none">편성 정보 없음</string>
+    <string name="dashboard_formation_updated">데이터 기준 %1$s</string>
     <string name="dashboard_level">마스터 레벨</string>
     <string name="dashboard_exp">경험치</string>
     <string name="dashboard_cost">파티 코스트 상한</string>
