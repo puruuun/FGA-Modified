@@ -1214,6 +1214,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends2_last_login">Last login</string>
     <string name="friends2_reset">Reset</string>
     <string name="friends2_show_slots">Show %1$d slots</string>
+    <string name="friends2_result_count">%1$d slots</string>
+    <string name="friends2_close">Close</string>
+    <string name="friends2_ce_selected_count">%1$d CEs selected</string>
     <string name="friends2_search">Search servant names or classes</string>
     <string name="friends2_bond_bonus">Bond bonus</string>
     <string name="friends2_name">Name</string>

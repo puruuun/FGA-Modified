@@ -901,6 +901,9 @@
     <string name="friends2_last_login">最終ログイン</string>
     <string name="friends2_reset">リセット</string>
     <string name="friends2_show_slots">%1$d枠を表示</string>
+    <string name="friends2_result_count">結果 %1$d枠</string>
+    <string name="friends2_close">閉じる</string>
+    <string name="friends2_ce_selected_count">礼装 %1$d件を選択</string>
     <string name="friends2_search">サーヴァント名・クラスを検索</string>
     <string name="friends2_bond_bonus">絆ボーナス</string>
     <string name="friends2_name">名前</string>

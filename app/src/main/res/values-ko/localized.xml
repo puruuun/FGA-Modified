@@ -1144,6 +1144,9 @@
     <string name="friends2_last_login">최종 로그인</string>
     <string name="friends2_reset">초기화</string>
     <string name="friends2_show_slots">%1$d칸 보기</string>
+    <string name="friends2_result_count">결과 %1$d칸</string>
+    <string name="friends2_close">닫기</string>
+    <string name="friends2_ce_selected_count">예장 %1$d개 선택</string>
     <string name="friends2_search">서번트 이름 또는 클래스 검색</string>
     <string name="friends2_bond_bonus">인연 보너스</string>
     <string name="friends2_name">이름</string>

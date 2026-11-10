@@ -48,7 +48,8 @@ class FriendGrandUiTest {
         awaitRows(5)
         compose.onNodeWithTag("friends-filter").performClick()
         compose.onNodeWithTag("friends-deck-grand").performClick()
-        compose.onNodeWithTag("friends-apply").performClick()
+        // Wide windows apply every change at once and close with 닫기; narrow ones apply with "N칸 보기".
+        compose.onNodeWithTag(if (width >= 600) "friends-close" else "friends-apply").performClick()
         awaitRows(3)
         compose.onNodeWithText("인연: NP 차지", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("인연: 기본 효과", useUnmergedTree = true).assertIsDisplayed()
@@ -64,22 +65,31 @@ class FriendGrandUiTest {
         compose.onNodeWithTag("friends-filter").performClick()
         compose.onNodeWithTag("friends-login-inactive").performScrollTo().performClick()
         val bounds = compose.onNodeWithTag("friends-filter-panel").fetchSemanticsNode().boundsInRoot
-        assertEquals(0f, bounds.top, 1f)
-        // Full width on phones; at most 640 dp and centred on wide screens, like the old bottom sheet (owner, 2026-11-10).
         val density = compose.density.density
-        val expected = minOf(width, 640) * density
-        assertEquals(expected, bounds.width, 2f)
-        assertEquals((width * density - expected) / 2, bounds.left, 2f)
+        if (width >= 600) {
+            // Wide windows: a 360 dp side panel on the right at full height; the list stays visible on the left.
+            assertEquals(360 * density, bounds.width, 2f)
+            assertEquals(width * density, bounds.right, 2f)
+            assertEquals(0f, bounds.top, 1f)
+            assertEquals(height * density, bounds.bottom, 2f)
+            val list = compose.onNodeWithTag("friends-list").fetchSemanticsNode().boundsInRoot
+            assertTrue(list.right <= bounds.left + 1f)
+        } else {
+            assertEquals(0f, bounds.top, 1f)
+            // Full width on phones.
+            assertEquals(width * density, bounds.width, 2f)
+        }
         compose.onNodeWithTag("friends-login-amount").performScrollTo().assertTextEquals("3")
         // One column at every width (owner, 2026-11-10): the CE section sits below the name field, not beside it.
-        val name = compose.onNodeWithTag("friends-name").fetchSemanticsNode().boundsInRoot
-        val ce = compose.onNodeWithTag("friends-ce").fetchSemanticsNode().boundsInRoot
-        assertTrue(ce.top > name.bottom)
-        assertEquals(name.left, ce.left, 2f)
+        val name = compose.onNodeWithTag("friends-name").fetchSemanticsNode()
+        val ce = compose.onNodeWithTag("friends-ce").fetchSemanticsNode()
+        assertTrue(ce.positionInRoot.y >= name.positionInRoot.y + name.size.height)
+        assertEquals(name.positionInRoot.x, ce.positionInRoot.x, 2f)
     }) { FriendManagerContent(grandTestRoster(), friendTestNames(), FRIEND_NOW) }
 
     @Test fun panel360() = panel(360, 1000)
     @Test fun panel1280() = panel(1280, 800)
+    @Test fun panel800x360() = panel(800, 360)
 
     private fun appends(width: Int, height: Int) = compose.shoot("friend-grand", "NormalAppends", width, height, locale = "ko", beforeCapture = {
         awaitRows(5)
