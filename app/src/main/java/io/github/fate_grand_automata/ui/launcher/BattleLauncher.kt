@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.GameServer
@@ -378,8 +379,16 @@ fun battleLauncher(
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
-                QuestItemCheckbox(useStormPod, questItemsEnabled, stringResource(R.string.p_use_storm_pod)) { useStormPod = it }
-                QuestItemCheckbox(useTeapot, questItemsEnabled, stringResource(R.string.p_use_teapot)) { useTeapot = it }
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    QuestItemCheckbox(
+                        useStormPod, questItemsEnabled, stringResource(R.string.p_use_storm_pod),
+                        modifier = Modifier.weight(1f), maxLines = 1
+                    ) { useStormPod = it }
+                    QuestItemCheckbox(
+                        useTeapot, questItemsEnabled, stringResource(R.string.p_use_teapot),
+                        modifier = Modifier.weight(1f), maxLines = 1
+                    ) { useTeapot = it }
+                }
                 Text(
                     stringResource(when {
                         !questItemsSupported -> R.string.p_quest_item_usage_servers
@@ -557,13 +566,26 @@ private fun LauncherFolderRow(
 }
 
 @Composable
-private fun QuestItemCheckbox(checked: Boolean, enabled: Boolean, text: String, onChange: (Boolean) -> Unit) {
+private fun QuestItemCheckbox(
+    checked: Boolean,
+    enabled: Boolean,
+    text: String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    maxLines: Int = Int.MAX_VALUE,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onChange(!checked) }
+        modifier = modifier.clickable(enabled = enabled) { onChange(!checked) }
     ) {
         Checkbox(checked = checked, enabled = enabled, onCheckedChange = onChange, modifier = Modifier.padding(end = 5.dp))
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.alpha(if (enabled) 1f else 0.5f))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.alpha(if (enabled) 1f else 0.5f),
+            maxLines = maxLines,
+            overflow = if (maxLines == 1) TextOverflow.Ellipsis else TextOverflow.Clip
+        )
     }
 }
 
