@@ -1289,6 +1289,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_friend_name">Friend name</string>
     <string name="friends_servant_level">Servant level</string>
     <string name="friends_level_min">%1$d or higher</string>
+    <string name="friends_level_max">%1$d or lower</string>
+    <string name="friends_level_dir_min">At least</string>
+    <string name="friends_level_dir_max">At most</string>
     <string name="friends_ce_limit">CE limit break</string>
     <string name="friends_bond_np">Bond: NP charge</string>
     <string name="friends_bond_base">Bond: Base effect</string>

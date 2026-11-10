@@ -130,15 +130,16 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
     var ceLimit by rememberSaveable { mutableStateOf(FriendCeLimit.All) }
     var friendName by rememberSaveable { mutableStateOf("") }
     var minLevel by rememberSaveable { mutableIntStateOf(0) }
+    var levelAtMost by rememberSaveable { mutableStateOf(false) }
     var login by rememberSaveable { mutableStateOf(FriendLogin.All) }
     var loginAmount by rememberSaveable { mutableIntStateOf(FRIEND_INACTIVE_DEFAULT) }
     var loginUnit by rememberSaveable { mutableStateOf(LoginUnit.Days) }
     var panel by rememberSaveable { mutableStateOf(false) }
-    val filter = FriendFilter(formation, servant, ces.toSet(), ceLimit, login, loginAmount, loginUnit, friendName, minLevel)
+    val filter = FriendFilter(formation, servant, ces.toSet(), ceLimit, login, loginAmount, loginUnit, friendName, minLevel, levelAtMost)
     val change: (FriendFilter) -> Unit = {
         formation = it.formation; servant = it.servantId; ces = ArrayList(it.ceIds); ceLimit = it.ceLimit
         login = it.login; loginAmount = it.inactiveAmount; loginUnit = it.loginUnit
-        friendName = it.friendName; minLevel = it.minLevel
+        friendName = it.friendName; minLevel = it.minLevel; levelAtMost = it.levelAtMost
     }
     var shown by remember { mutableStateOf(emptyList<FriendRow>()) }
     var servantCounts by remember { mutableStateOf(emptyMap<Long, Int>()) }
@@ -165,7 +166,7 @@ private fun FriendListBody(roster: FriendRoster, names: GameNameMap, now: Long, 
                         ces.forEach { id -> RemovableFilter(names.equips[id] ?: "#$id") { ces = ArrayList(ces - id) } }
                         if (ceLimit != FriendCeLimit.All) RemovableFilter(stringResource(ceLimit.label())) { ceLimit = FriendCeLimit.All }
                         if (friendName.isNotEmpty()) RemovableFilter(friendName) { friendName = "" }
-                        if (minLevel > 0) RemovableFilter(stringResource(R.string.friends_level_min, minLevel)) { minLevel = 0 }
+                        if (minLevel > 0) RemovableFilter(stringResource(if (levelAtMost) R.string.friends_level_max else R.string.friends_level_min, minLevel)) { minLevel = 0 }
                         if (login == FriendLogin.Inactive) RemovableFilter(stringResource(R.string.friends2_login_chip, filter.inactiveAmount, stringResource(loginUnit.label()))) { login = FriendLogin.All }
                     }
                     if (shown.isEmpty()) Text(stringResource(R.string.friends_no_match), Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
@@ -258,9 +259,17 @@ internal fun FriendFilterPanel(filter: FriendFilter, servantCounts: Map<Long, In
                                 }
                                 Text(stringResource(R.string.friends_servant_level), style = MaterialTheme.typography.titleSmall)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(false, true).forEach { atMost ->
+                                        FilterChip(selected = filter.levelAtMost == atMost, onClick = { onChange(filter.copy(levelAtMost = atMost)) },
+                                            modifier = Modifier.testTag(if (atMost) "friends-level-at-most" else "friends-level-at-least"),
+                                            label = { Text(stringResource(if (atMost) R.string.friends_level_dir_max else R.string.friends_level_dir_min)) })
+                                    }
+                                }
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf(0, 80, 90, 100, 120).forEach { level ->
                                         FilterChip(selected = filter.minLevel == level, onClick = { onChange(filter.copy(minLevel = level)) },
-                                            label = { Text(if (level == 0) stringResource(R.string.friends_filter_all) else stringResource(R.string.friends_level_min, level)) })
+                                            modifier = Modifier.testTag("friends-level-$level"),
+                                            label = { Text(if (level == 0) stringResource(R.string.friends_filter_all) else level.toString()) })
                                     }
                                 }
                             }

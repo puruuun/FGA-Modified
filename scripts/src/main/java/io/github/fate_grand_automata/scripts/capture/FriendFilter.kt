@@ -46,7 +46,9 @@ data class FriendFilter(
     val loginAmount: Int = FRIEND_INACTIVE_DEFAULT,
     val loginUnit: LoginUnit = LoginUnit.Days,
     val friendName: String = "",
+    /** 0 means any level; otherwise the threshold for [levelAtMost] (false: at least, true: at most). */
     val minLevel: Int = 0,
+    val levelAtMost: Boolean = false,
 ) {
     val inactiveAmount get() = loginAmount.coerceIn(FRIEND_INACTIVE_MIN, FRIEND_INACTIVE_MAX)
 }
@@ -80,7 +82,7 @@ object FriendList {
     fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.formation)
         .filter { it.friend.name.contains(filter.friendName, ignoreCase = true) }
         .filter { filter.servantId == null || it.slot.svtId == filter.servantId }
-        .filter { it.slot.lv >= filter.minLevel }
+        .filter { filter.minLevel <= 0 || if (filter.levelAtMost) it.slot.lv <= filter.minLevel else it.slot.lv >= filter.minLevel }
         .filter { row ->
             val candidates = row.ces.filter { filter.ceIds.isEmpty() || it.id in filter.ceIds }
             (filter.ceIds.isEmpty() || candidates.isNotEmpty()) && when (filter.ceLimit) {

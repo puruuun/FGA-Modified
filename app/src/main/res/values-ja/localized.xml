@@ -977,6 +977,9 @@
     <string name="friends_friend_name">フレンド名</string>
     <string name="friends_servant_level">サーヴァントレベル</string>
     <string name="friends_level_min">%1$d以上</string>
+    <string name="friends_level_max">%1$d以下</string>
+    <string name="friends_level_dir_min">以上</string>
+    <string name="friends_level_dir_max">以下</string>
     <string name="friends_ce_limit">概念礼装の限界突破</string>
     <string name="friends_bond_np">絆: NPチャージ</string>
     <string name="friends_bond_base">絆: 通常効果</string>

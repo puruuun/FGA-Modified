@@ -241,6 +241,25 @@ class FriendManagerUiTest {
         rows(5)
     }
 
+    @Test fun levelDirectionChoosesAtLeastOrAtMostAndShowsTheChip() {
+        show(); rows(5) // every sample slot is Lv90
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-level-100").performScrollTo().performClick()
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(0)
+        compose.onNodeWithText("100 이상").assertExists()
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-level-at-most").performScrollTo().performClick()
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(5)
+        compose.onNodeWithText("100 이하").assertExists()
+        compose.onNodeWithTag("friends-filter").performClick()
+        compose.onNodeWithTag("friends-level-80").performScrollTo().performClick()
+        compose.onNodeWithTag("friends-apply").performClick()
+        rows(0)
+        compose.onNodeWithText("80 이하").assertExists()
+    }
+
     @Test fun amountButtonsStopAtZeroAndNinetyNine() {
         show(); rows(5)
         compose.onNodeWithTag("friends-filter").performClick()

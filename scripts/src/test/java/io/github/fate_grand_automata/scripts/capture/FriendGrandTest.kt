@@ -147,6 +147,20 @@ class FriendGrandTest {
         assertTrue(selected(FriendFilter(minLevel = 100)).isEmpty())
     }
 
+    @Test fun levelAtMostUsesInclusiveUpperThresholdsInEveryFormation() {
+        for (formation in FriendFormation.entries) for (level in listOf(0, 80, 90, 100, 120)) {
+            val rows = FriendList.rows(roster, formation)
+            val expected = rows.filter { level == 0 || it.slot.lv <= level }.map { it.slot.svtId }.toSet()
+            assertEquals(expected, selected(FriendFilter(formation = formation, minLevel = level, levelAtMost = true)).toSet())
+        }
+        // "all" ignores the direction; at-most is inclusive of the exact level and excludes higher ones.
+        assertEquals(selected(FriendFilter()), selected(FriendFilter(levelAtMost = true)))
+        assertEquals(setOf(502L, 503L), selected(FriendFilter(minLevel = 80, levelAtMost = true)).toSet())
+        assertEquals(setOf(500L, 502L, 503L), selected(FriendFilter(minLevel = 90, levelAtMost = true)).toSet())
+        assertEquals(setOf(502L), selected(FriendFilter(minLevel = 79, levelAtMost = true)).toSet())
+        assertTrue(selected(FriendFilter(minLevel = 78, levelAtMost = true)).isEmpty())
+    }
+
     @Test fun clampingIncludesZeroAndNinetyNineAndCombinedFilters() {
         for ((stored, clamped) in listOf(-20 to 0, 0 to 0, 99 to 99, 999 to 99)) {
             val filter = FriendFilter(login = FriendLogin.Inactive, loginAmount = stored)

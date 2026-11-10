@@ -1219,6 +1219,9 @@
     <string name="friends_friend_name">친구 이름</string>
     <string name="friends_servant_level">서번트 레벨</string>
     <string name="friends_level_min">%1$d 이상</string>
+    <string name="friends_level_max">%1$d 이하</string>
+    <string name="friends_level_dir_min">이상</string>
+    <string name="friends_level_dir_max">이하</string>
     <string name="friends_ce_limit">예장 돌파</string>
     <string name="friends_bond_np">인연: NP 차지</string>
     <string name="friends_bond_base">인연: 기본 효과</string>
