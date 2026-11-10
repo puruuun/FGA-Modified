@@ -1244,4 +1244,10 @@
     <string name="friends_class_caster">캐스터</string>
     <string name="friends_class_assassin">어새신</string>
     <string name="friends_class_berserker">버서커</string>
+    <string name="friends_servants_selected_count">서번트 %1$d기 선택</string>
+    <string name="friends_picker_done">완료</string>
+    <string name="friends_skill_ten">10</string>
+    <string name="friends_skill_not_ten">10 아님</string>
+    <string name="friends_skill_slot">스킬%1$d</string>
+    <string name="friends_append_slot">어펜드%1$d</string>
 </resources>

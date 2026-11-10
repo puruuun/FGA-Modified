@@ -186,6 +186,7 @@ class FriendManagerUiTest {
         compose.onNodeWithTag("friends-search").performSemanticsAction(SemanticsActions.SetText) { it(AnnotatedString("세이버")) }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("(세이버) 샘플 세이버 (2)").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("(세이버) 샘플 세이버 (2)").performClick()
+        compose.onNodeWithTag("friends-picker-done").performClick()
         compose.onNodeWithTag("friends-ce").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 예장 하나 (2)").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("샘플 예장 하나 (2)").performClick()

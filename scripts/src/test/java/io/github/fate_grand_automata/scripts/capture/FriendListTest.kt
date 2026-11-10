@@ -31,9 +31,9 @@ class FriendListTest {
     }
 
     @Test fun servantAndCeFilters() {
-        assertEquals(listOf("1:500", "2:500", "4:500"), ids(FriendFilter(servantId = 500)))
+        assertEquals(listOf("1:500", "2:500", "4:500"), ids(FriendFilter(servantIds = setOf(500))))
         assertEquals(listOf("1:600", "3:600"), ids(FriendFilter(ceIds = setOf(9001))))
-        assertEquals(listOf("3:600"), ids(FriendFilter(servantId = 600, ceIds = setOf(9001), ceLimit = FriendCeLimit.Max)))
+        assertEquals(listOf("3:600"), ids(FriendFilter(servantIds = setOf(600), ceIds = setOf(9001), ceLimit = FriendCeLimit.Max)))
     }
 
     @Test fun maxLimitBreakNeedsALimitBrokenCe() {

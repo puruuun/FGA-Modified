@@ -1314,4 +1314,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="friends_class_caster">Caster</string>
     <string name="friends_class_assassin">Assassin</string>
     <string name="friends_class_berserker">Berserker</string>
+    <string name="friends_servants_selected_count">%1$d servants selected</string>
+    <string name="friends_picker_done">Done</string>
+    <string name="friends_skill_ten">10</string>
+    <string name="friends_skill_not_ten">Not 10</string>
+    <string name="friends_skill_slot">Skill%1$d</string>
+    <string name="friends_append_slot">Append%1$d</string>
 </resources>

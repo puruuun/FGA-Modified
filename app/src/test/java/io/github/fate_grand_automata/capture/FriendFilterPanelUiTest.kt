@@ -166,6 +166,7 @@ class FriendFilterPanelUiTest {
         compose.onNodeWithTag("friends-servant").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("(세이버) 샘플 세이버 (2)").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("(세이버) 샘플 세이버 (2)").performClick()
+        compose.onNodeWithTag("friends-picker-done").performClick()
         rows(2)
         compose.onNode(inPanel(hasText("샘플 세이버") and isSelected())).assertIsDisplayed()
         compose.onNodeWithTag("friends-ce").performScrollTo().performClick()

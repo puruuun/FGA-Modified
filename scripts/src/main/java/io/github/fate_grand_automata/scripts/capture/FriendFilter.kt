@@ -36,9 +36,19 @@ data class FriendRow(val friend: Friend, val slot: FriendSlot, val event: Boolea
 enum class FriendFormation { Main, Event, Grand }
 enum class FriendCeLimit { All, Max, NotMax }
 
+enum class FriendSkillLevel {
+    All, Ten, NotTen;
+
+    fun matches(level: Int?): Boolean = when (this) {
+        All -> true
+        Ten -> level == 10
+        NotTen -> level != 10
+    }
+}
+
 data class FriendFilter(
     val formation: FriendFormation = FriendFormation.Main,
-    val servantId: Long? = null,
+    val servantIds: Set<Long> = emptySet(),
     val ceIds: Set<Long> = emptySet(),
     val ceLimit: FriendCeLimit = FriendCeLimit.All,
     val login: FriendLogin = FriendLogin.All,
@@ -49,6 +59,9 @@ data class FriendFilter(
     /** 0 means any level; otherwise the threshold for [levelAtMost] (false: at least, true: at most). */
     val minLevel: Int = 0,
     val levelAtMost: Boolean = false,
+    /** Zero-based skill/append slots; unset entries impose no condition. */
+    val skillLevels: List<FriendSkillLevel> = List(3) { FriendSkillLevel.All },
+    val appendLevels: List<FriendSkillLevel> = List(5) { FriendSkillLevel.All },
 ) {
     val inactiveAmount get() = loginAmount.coerceIn(FRIEND_INACTIVE_MIN, FRIEND_INACTIVE_MAX)
 }
@@ -81,7 +94,9 @@ object FriendList {
     /** Newest login first, then friend and deck/class (Grand seat for the Grand formation). */
     fun select(roster: FriendRoster, filter: FriendFilter, now: Long): List<FriendRow> = rows(roster, filter.formation)
         .filter { it.friend.name.contains(filter.friendName, ignoreCase = true) }
-        .filter { filter.servantId == null || it.slot.svtId == filter.servantId }
+        .filter { filter.servantIds.isEmpty() || it.slot.svtId in filter.servantIds }
+        .filter { row -> (0..2).all { (filter.skillLevels.getOrNull(it) ?: FriendSkillLevel.All).matches(row.slot.skills.getOrNull(it)) } }
+        .filter { row -> (0..4).all { (filter.appendLevels.getOrNull(it) ?: FriendSkillLevel.All).matches(row.slot.appends.getOrNull(it)) } }
         .filter { filter.minLevel <= 0 || if (filter.levelAtMost) it.slot.lv <= filter.minLevel else it.slot.lv >= filter.minLevel }
         .filter { row ->
             val candidates = row.ces.filter { filter.ceIds.isEmpty() || it.id in filter.ceIds }

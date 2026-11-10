@@ -1002,4 +1002,10 @@
     <string name="friends_class_caster">キャスター</string>
     <string name="friends_class_assassin">アサシン</string>
     <string name="friends_class_berserker">バーサーカー</string>
+    <string name="friends_servants_selected_count">サーヴァント %1$d騎を選択</string>
+    <string name="friends_picker_done">完了</string>
+    <string name="friends_skill_ten">10</string>
+    <string name="friends_skill_not_ten">10以外</string>
+    <string name="friends_skill_slot">スキル%1$d</string>
+    <string name="friends_append_slot">アペンド%1$d</string>
 </resources>
