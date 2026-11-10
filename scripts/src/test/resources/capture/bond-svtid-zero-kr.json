@@ -1,0 +1,33 @@
+{
+  "state": {
+    "battle": [{"battleInfo": {"myDeck": {"svts": [
+      {"id": 11, "userSvtId": 10010011001, "svtId": 0, "isFollowerSvt": false, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 1},
+      {"id": 12, "userSvtId": 99990011002, "svtId": 0, "isFollowerSvt": true, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 2},
+      {"id": 13, "userSvtId": 10010011003, "svtId": 0, "isFollowerSvt": false, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 3}
+    ]}}}],
+    "userSvt": [
+      {"id": 10010011001, "svtId": 901},
+      {"id": 99990011002, "svtId": 902},
+      {"id": 10010011003, "svtId": 903}
+    ]
+  },
+  "body": {
+    "response": [{"success": {
+      "myDeck": {"svts": [
+        {"id": 11, "userSvtId": 10010011001, "svtId": 0, "isFollowerSvt": false, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 1},
+        {"id": 12, "userSvtId": 99990011002, "svtId": 0, "isFollowerSvt": true, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 2},
+        {"id": 13, "userSvtId": 10010011003, "svtId": 0, "isFollowerSvt": false, "followerType": 0, "npcFollowerSvtId": 0, "initPos": 3}
+      ]},
+      "oldUserSvtCollection": [
+        {"svtId": 901, "friendship": 100, "friendshipRank": 9, "friendshipExceedCount": 0},
+        {"svtId": 902, "friendship": 500, "friendshipRank": 9, "friendshipExceedCount": 0},
+        {"svtId": 903, "friendship": 200, "friendshipRank": 11, "friendshipExceedCount": 2}
+      ]
+    }}],
+    "cache": {"updated": {"userSvtCollection": [
+      {"svtId": 901, "friendship": 300, "friendshipRank": 10, "friendshipExceedCount": 0},
+      {"svtId": 902, "friendship": 570, "friendshipRank": 10, "friendshipExceedCount": 0},
+      {"svtId": 903, "friendship": 250, "friendshipRank": 12, "friendshipExceedCount": 2}
+    ]}}
+  }
+}

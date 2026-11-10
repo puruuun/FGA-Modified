@@ -83,13 +83,15 @@ data class BattleGains(
             val deck = (success["myDeck"].obj()?.get("svts") as? JsonArray)?.takeIf { it.isNotEmpty() } ?: return null
             val setup = previousState?.tables?.get("battle")?.lastOrNull().obj()
                 ?.get("battleInfo").obj()?.get("myDeck").obj()?.rows("svts").orEmpty()
-            val userSvts = previousState?.tables?.get("userSvt").orEmpty().mapNotNull { it.obj() } + success.rows("oldUserSvt")
+            val userSvts = (previousState?.tables?.get("userSvt").orEmpty().mapNotNull { it.obj() } +
+                success.rows("oldUserSvt") + previousState?.tables?.get("userSvtStorage").orEmpty().mapNotNull { it.obj() })
+                .filter { (it.number("svtId") ?: 0) > 0 }
             val ids = deck.mapNotNull { element ->
                 val row = element.obj()
                 if (row.isSupport()) return@mapNotNull null
                 val setupRow = setup.firstOrNull { it.number("id") == row.number("id") &&
                     row.number("userSvtId") != null && it.number("userSvtId") == row.number("userSvtId") && !it.isSupport() }
-                row.number("svtId") ?: setupRow.number("svtId") ?: userSvts.firstOrNull {
+                row.number("svtId")?.takeIf { it > 0 } ?: setupRow.number("svtId")?.takeIf { it > 0 } ?: userSvts.firstOrNull {
                     row.number("userSvtId") != null && it.number("id") == row.number("userSvtId")
                 }.number("svtId")
             }.toSet()
