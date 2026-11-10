@@ -81,9 +81,6 @@ object CaptureTracker {
         warn = { Timber.w("Capture: unreadable outside period") })
     val openOutsideEntries = outside.openEntries
 
-    /** The open periods, or none while the outside sessions are not loaded in this process (a widget wake-up). */
-    fun openOutsideEntriesIfLoaded(): List<OutsideLogEntry> = synchronized(lock) { if (initialized) outside.openEntries.value else emptyList() }
-
     /** Serialize live and stored deletion with response handling and period closure. */
     fun deleteOutsideEntry(id: String) = synchronized(lock) {
         outsideWork { outside.deleteEntry(id) }
@@ -125,9 +122,6 @@ object CaptureTracker {
         }
         initialized = true
         indexLoaded = true
-        // The AP + logs widget redraws when a log entry is written or deleted, or an open period changes.
-        OutsideLogRepository.changeListener = { ApWidgetRefresh.onLogsChanged(context) }
-        ApWidgetRefresh.watchOpenPeriods(context, outside.openEntries)
         publish()
         // Read the current account in the background so that the first response does not wait for the disk.
         if (stored.currentId != null) io.execute { synchronized(lock) { runCatching { stored.state } } }
