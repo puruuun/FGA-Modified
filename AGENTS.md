@@ -80,6 +80,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - checks that the tests cover the requirements and the failure and guard cases;
     - looks for missed edge cases and effects outside the stated scope;
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
+    - for capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
   - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
   - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on different models (for example Codex and Gemini). Both must pass.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
@@ -88,6 +89,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
   - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a different model from the planner (by the agent order above) reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
   - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.
+- Automation first, log tracking second (owner decision, 2026-11-11). Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test
