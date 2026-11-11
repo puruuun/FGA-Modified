@@ -59,7 +59,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   1. **Codex** (`gpt-6.1-sol`, via `build/orchestration/codex-run.sh`): first choice while it has usage, above all for hard implementation.
   2. **Gemini** through the Antigravity CLI `agy` (via `build/orchestration/gemini-run.sh`), when Codex is at its usage limit or when the planner judges Gemini the better fit for the task:
      - **Gemini 3.8 Flash, always `high`** (`gemini-3.8-flash-high`): the default Gemini worker (owner decision, 2026-11-11). Use it first for ordinary implementation, for first-pass verification and QA, and for code research.
-     - **Gemini 4 Argon** (`gemini-4-argon-medium` by default, `gemini-4-argon-high` for hard tasks): second-pass verification and review, design review, and implementation that is too hard for Flash.
+     - **Gemini 4 Argon, `medium`** (`gemini-4-argon-medium`): second-pass verification and review, design review, and implementation that is too hard for Flash. Use `gemini-4-argon-high` only in special cases: the same task keeps failing at `medium`, or the task is exceptionally hard (owner decision, 2026-11-11). Say why when `high` is used.
      - Usual pattern for a task with some difficulty: Flash implements, a fresh Flash run does the first verification, and Argon does the second verification and review.
   3. **Sonnet 5.5 (medium)**: only when both Codex and Gemini are out of usage. It shares the planner's own usage, so it is the last resort.
 - Gemini runs go through `gemini-run.sh`, not through the `gemini` subagent: the subagent relays through a Claude model and uses the planner's usage.
