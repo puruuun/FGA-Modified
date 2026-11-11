@@ -3,7 +3,10 @@ package io.github.fate_grand_automata.capture
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.provider.DocumentsContract
+import java.io.FileNotFoundException
 
 /** Single-document and tree-document grants may refer to the very same file. */
 internal fun sameDocument(first: Uri?, second: Uri?): Boolean {
@@ -39,12 +42,29 @@ internal class PickedChaldeaFiles(
 
     private fun entries(id: String) = prefs.getStringSet(id, emptySet()).orEmpty().toSet()
 
+    /** A refused delete can also mean the user already removed the document in another app. */
+    private fun missing(uri: Uri, deleteReportedMissing: Boolean): Boolean = try {
+        val columns = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+        val cursor = if (Build.VERSION.SDK_INT >= 26) {
+            context.contentResolver.query(uri, columns, Bundle.EMPTY, null)
+        } else context.contentResolver.query(uri, columns, null, null, null)
+        // DocumentsProvider turns queryDocument's FileNotFoundException into a null cursor.
+        cursor?.use { !it.moveToFirst() } ?: deleteReportedMissing
+    } catch (_: FileNotFoundException) {
+        true
+    } catch (_: Exception) {
+        // Permission loss and provider errors do not prove the file is gone.
+        false
+    }
+
     fun delete(accountId: String? = null, keep: Uri? = null): Boolean {
         var success = true
         for (id in prefs.all.keys.filter { accountId == null || it == accountId }) {
             val remaining = entries(id).toMutableSet()
             for (value in remaining.toList().filter { !sameDocument(Uri.parse(it), keep) }) {
-                if (runCatching { remove(Uri.parse(value)) }.getOrDefault(false)) remaining.remove(value)
+                val uri = Uri.parse(value)
+                val removed = runCatching { remove(uri) }
+                if (removed.getOrDefault(false) || missing(uri, removed.exceptionOrNull() is FileNotFoundException)) remaining.remove(value)
                 else success = false
             }
             if (!prefs.edit().putStringSet(id, remaining).commit()) success = false

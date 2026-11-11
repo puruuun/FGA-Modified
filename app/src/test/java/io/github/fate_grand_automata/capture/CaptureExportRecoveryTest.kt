@@ -3,6 +3,8 @@ package io.github.fate_grand_automata.capture
 import android.Manifest
 import android.app.Application
 import android.content.Context
+import android.content.ContentResolver
+import android.content.ContextWrapper
 import android.content.pm.ProviderInfo
 import android.database.MatrixCursor
 import android.net.Uri
@@ -35,6 +37,7 @@ class ExportTestProvider : DocumentsProvider() {
     var stuck = setOf<String>()
     var pathAvailable = true
     var accessible = true
+    var missingQueryThrows = false
     fun uri(id: String) = DocumentsContract.buildDocumentUriUsingTree(
         DocumentsContract.buildTreeDocumentUri(AUTHORITY, "root"), id,
     )
@@ -46,6 +49,7 @@ class ExportTestProvider : DocumentsProvider() {
     override fun queryRoots(projection: Array<out String>?) = MatrixCursor(arrayOf("root_id"))
     override fun queryDocument(documentId: String, projection: Array<out String>?): MatrixCursor {
         if (!accessible) throw SecurityException("revoked")
+        if (missingQueryThrows && documentId !in files) throw FileNotFoundException(documentId)
         val columns = projection ?: arrayOf("document_id", "_display_name", "mime_type", "flags")
         return MatrixCursor(columns).apply {
             if (documentId in files || documentId in listOf("root", "parent")) addRow(columns.map {
@@ -66,6 +70,7 @@ class ExportTestProvider : DocumentsProvider() {
         ParcelFileDescriptor.open(files.getValue(documentId), ParcelFileDescriptor.parseMode(mode))
     override fun deleteDocument(documentId: String) {
         if (documentId in stuck || !accessible) throw FileNotFoundException("permission gone")
+        if (documentId !in files) throw FileNotFoundException(documentId)
         check(files.remove(documentId)?.delete() != false)
     }
     override fun findDocumentPath(parentDocumentId: String?, childDocumentId: String): DocumentsContract.Path {
@@ -188,6 +193,109 @@ class CaptureExportRecoveryTest {
     }
 
     private fun request(id: String) = ChaldeaExportStore.Result.NeedsSaveDialog("requested.json", "new-$id".toByteArray(), id)
+
+    private fun tracked(id: String) = context.getSharedPreferences("capture-picked-exports", Context.MODE_PRIVATE)
+        .getStringSet(id, emptySet()).orEmpty().toSet()
+
+    private fun removeOutsideFga(uri: Uri) {
+        assertTrue(provider.files.remove(DocumentsContract.getDocumentId(uri))!!.delete())
+    }
+
+    private fun snapshot() {
+        CaptureTracker.onGameResponse("https://yfgo-game.netmarble.com/login/top", """{"response":[{"nid":"login","resCode":"00","success":{}}],"cache":{"replaced":{"userGame":[{"userId":7001,"name":"Synthetic"}]}}}""".toByteArray(), null)
+        assertNotNull(CaptureTracker.snapshot("7001"))
+    }
+
+    @Test fun externallyDeletedPickedFileDoesNotWarnOnNextFolderExport() = runBlocking {
+        snapshot()
+        val old = provider.add("old")
+        ChaldeaExportStore.picked(context, old, request("7001"))
+        removeOutsideFga(old)
+        val saved = ChaldeaExportStore.export(context, "7001", providerFolder()) as ChaldeaExportStore.Result.Written
+        assertFalse(saved.cleanupFailed)
+        assertTrue(tracked("7001").isEmpty())
+    }
+
+    @Test fun externallyDeletedPickedFileDoesNotWarnOnNextPickedExport() = runBlocking {
+        val old = provider.add("old")
+        ChaldeaExportStore.picked(context, old, request("7001"))
+        removeOutsideFga(old)
+        provider.missingQueryThrows = true
+        val latest = provider.add("latest")
+        val saved = ChaldeaExportStore.picked(context, latest, request("7001")) as ChaldeaExportStore.Result.Written
+        assertFalse(saved.cleanupFailed)
+        assertEquals(setOf(latest.toString()), tracked("7001"))
+    }
+
+    @Test fun externallyDeletedPickedFileDoesNotFailAccountDeletion() = runBlocking {
+        val old = provider.add("old")
+        ChaldeaExportStore.picked(context, old, request("7001"))
+        val other = provider.add("other")
+        ChaldeaExportStore.picked(context, other, request("7002"))
+        removeOutsideFga(old)
+        assertTrue(ChaldeaExportStore.deleteAccount(context, "7001"))
+        assertTrue(tracked("7001").isEmpty())
+        assertEquals(setOf(other.toString()), tracked("7002"))
+        assertTrue(provider.files.getValue("other").exists())
+    }
+
+    @Test fun externallyDeletedPickedFilesDoNotFailDeleteAll() = runBlocking {
+        for (id in listOf("7001", "7002")) {
+            val uri = provider.add(id)
+            ChaldeaExportStore.picked(context, uri, request(id))
+            removeOutsideFga(uri)
+        }
+        provider.missingQueryThrows = true
+        assertTrue(ChaldeaExportStore.deleteTrackerData(context))
+        assertTrue(tracked("7001").isEmpty())
+        assertTrue(tracked("7002").isEmpty())
+    }
+
+    @Test fun falseDeleteResultForMissingDocumentClearsTracking() {
+        val uri = provider.add("old")
+        PickedChaldeaFiles(context).remember("7001", uri)
+        removeOutsideFga(uri)
+        assertTrue(PickedChaldeaFiles(context, remove = { false }).delete("7001"))
+        assertTrue(tracked("7001").isEmpty())
+    }
+
+    @Test fun falseDeleteResultForExistingDocumentKeepsTracking() {
+        val uri = provider.add("old")
+        PickedChaldeaFiles(context).remember("7001", uri)
+        assertFalse(PickedChaldeaFiles(context, remove = { false }).delete("7001"))
+        assertEquals(setOf(uri.toString()), tracked("7001"))
+        assertTrue(provider.files.getValue("old").exists())
+    }
+
+    @Test fun revokedPickedPermissionKeepsTrackingAndReportsBothDeleteActions() = runBlocking {
+        val uri = provider.add("old")
+        PickedChaldeaFiles(context).remember("7001", uri)
+        provider.accessible = false
+        assertFalse(ChaldeaExportStore.deleteAccount(context, "7001"))
+        assertFalse(ChaldeaExportStore.deleteTrackerData(context))
+        assertEquals(setOf(uri.toString()), tracked("7001"))
+        assertTrue(provider.files.getValue("old").exists())
+    }
+
+    @Test fun refusedPersistablePermissionStillSavesAndTracksPickedExport() = runBlocking {
+        val uri = provider.add("latest")
+        val resolver = object : ContentResolver(context) {
+            var attempts = 0
+            override fun takePersistableUriPermission(uri: Uri, modeFlags: Int) {
+                attempts++
+                throw SecurityException("not persistable")
+            }
+        }
+        val noPersist = object : ContextWrapper(context) {
+            override fun getContentResolver() = resolver
+        }
+        shadowOf(resolver).registerOutputStream(uri, provider.files.getValue("latest").outputStream())
+        val saved = ChaldeaExportStore.picked(noPersist, uri, request("7001")) as ChaldeaExportStore.Result.Written
+        assertFalse(saved.cleanupFailed)
+        assertEquals(3, resolver.attempts)
+        assertEquals("new-7001", provider.files.getValue("latest").readText())
+        assertEquals(setOf(uri.toString()), tracked("7001"))
+    }
 
     private fun providerFolder() = object : CaptureFolder {
         override val label = "Chosen tree/capture"
