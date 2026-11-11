@@ -78,6 +78,8 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - checks that the tests cover the requirements and the failure and guard cases;
     - looks for missed edge cases and effects outside the stated scope;
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
+  - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
+  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on different models (for example Codex and Gemini). Both must pass.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
 - Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
