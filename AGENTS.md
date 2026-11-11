@@ -66,7 +66,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - build, signing and versioning;
     - upstream syncs.
   - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
-  - **Who verifies:** a different model from the implementer: Codex-implemented work is verified by Sonnet 5.5 (medium), Sonnet-implemented work by Codex. If the other model is unavailable, the planner does a full line-by-line review and says so in the PR record.
+  - **Who verifies:** a separate agent run with a fresh context, on the same model order as implementation (Codex first, Sonnet 5.5 medium as the fallback). It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
   - **What the verifier does:**
     - compares the diff with every requirement in the issue;
     - checks that the tests cover the requirements and the failure and guard cases;
