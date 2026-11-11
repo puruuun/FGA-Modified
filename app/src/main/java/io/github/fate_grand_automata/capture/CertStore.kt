@@ -26,7 +26,8 @@ object CertStore {
 
     fun directory(ctx: Context) = File(ctx.filesDir, "capture").apply { mkdirs() }
 
-    fun exists(ctx: Context) = File(directory(ctx), LEAF).isFile && File(directory(ctx), CA).isFile
+    @Synchronized
+    fun exists(ctx: Context) = pairFiles(ctx).recover()
 
     fun existsJp(ctx: Context) = File(directory(ctx), "leaf-jp.p12").isFile && File(directory(ctx), "ca-jp.cer").isFile
 
@@ -75,26 +76,26 @@ object CertStore {
         return Pending(leaf, issued.caCert.encoded)
     }
 
-    /** Replaces the stored CA and leaf together. On a failure the earlier pair is restored. */
-    @Synchronized
-    fun commit(ctx: Context, pending: Pending) {
-        val dir = directory(ctx)
-        val leaf = File(dir, LEAF)
-        val ca = File(dir, CA)
-        val oldLeaf = leaf.takeIf { it.isFile }?.readBytes()
-        val oldCa = ca.takeIf { it.isFile }?.readBytes()
-        try {
-            leaf.writeBytes(pending.leaf)
-            ca.writeBytes(pending.caDer)
-        } catch (e: Exception) {
-            oldLeaf?.let { runCatching { leaf.writeBytes(it) } } ?: leaf.delete()
-            oldCa?.let { runCatching { ca.writeBytes(it) } } ?: ca.delete()
-            throw e
-        }
-    }
+    private fun pairFiles(ctx: Context) = CertificatePairFiles(directory(ctx), ::validPair)
 
-    /** The stored CA in DER form, or null when none was created yet. */
-    fun caBytes(ctx: Context): ByteArray? = File(directory(ctx), CA).takeIf { it.isFile }?.readBytes()
+    private fun validPair(leaf: File, ca: File): Boolean = runCatching {
+        val ks = KeyStore.getInstance("PKCS12")
+        leaf.inputStream().use { ks.load(it, PASSWORD) }
+        val cert = ca.inputStream().use { CertificateFactory.getInstance("X.509").generateCertificate(it) as X509Certificate }
+        val chain = ks.getCertificateChain("leaf")
+        check(chain.size >= 2 && chain.last().encoded.contentEquals(cert.encoded))
+        (chain.first() as X509Certificate).verify(cert.publicKey)
+        true
+    }.getOrDefault(false)
+
+    /** Backups stay complete until both same-directory temporary files have been renamed. */
+    @Synchronized
+    fun commit(ctx: Context, pending: Pending) = pairFiles(ctx).commit(pending.leaf, pending.caDer)
+
+    /** A recovered, matching CA/leaf pair only; never expose half a transaction. */
+    @Synchronized
+    fun caBytes(ctx: Context): ByteArray? =
+        if (pairFiles(ctx).recover()) File(directory(ctx), CA).readBytes() else null
 
     /** Saves the CA to `<FGA folder>/capture/fga-capture-ca.crt` (three layers, see [CaptureFileSaver]). */
     fun save(folder: CaptureFolder?, der: ByteArray, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): SaveOutcome =
@@ -118,7 +119,7 @@ object CertStore {
     }
 
     private fun ownCertificate(ctx: Context): X509Certificate? = runCatching {
-        File(directory(ctx), CA).inputStream().use {
+        (caBytes(ctx) ?: return null).inputStream().use {
             CertificateFactory.getInstance("X.509").generateCertificate(it) as X509Certificate
         }
     }.getOrNull()
@@ -133,7 +134,9 @@ object CertStore {
         }.getOrDefault(false)
     }
 
+    @Synchronized
     fun serverContext(ctx: Context): SSLContext {
+        check(pairFiles(ctx).recover()) { "No complete certificate pair" }
         val ks = KeyStore.getInstance("PKCS12")
         File(directory(ctx), LEAF).inputStream().use { ks.load(it, PASSWORD) }
         val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())

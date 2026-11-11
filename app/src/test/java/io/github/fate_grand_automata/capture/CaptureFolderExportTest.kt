@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.capture
 
 import android.content.Context
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -40,6 +42,11 @@ private class FakeFolder : CaptureFolder {
         files.remove(name)
         return true
     }
+    override fun rename(from: String, to: String): Boolean {
+        val bytes = files.remove(from) ?: return false
+        files[to] = bytes
+        return true
+    }
     override fun create(name: String, mime: String): String? {
         if (refuseCreate) return null
         val actual = renameOnCreate?.invoke(name) ?: name
@@ -64,7 +71,9 @@ class CaptureFolderExportTest {
     private val now = LocalDateTime.of(2026, 11, 11, 2, 34, 5)
 
     private fun leaf() = File(CertStore.directory(context), "leaf.p12")
-    private fun clear() { leaf().delete(); File(CertStore.directory(context), "ca.cer").delete() }
+    private fun clear() {
+        listOf("leaf.p12", "ca.cer", "leaf.p12.tmp", "ca.cer.tmp", "leaf.p12.bak", "ca.cer.bak").forEach { File(CertStore.directory(context), it).delete() }
+    }
 
     // ---- layers of the save ----
 
@@ -120,6 +129,17 @@ class CaptureFolderExportTest {
         val folder = FakeFolder().apply { failWrite = true }
         assertTrue(CertStore.save(folder, byteArrayOf(1), now) is SaveOutcome.NeedsDialog)
         assertTrue(folder.names().isEmpty())
+    }
+
+    @Test fun failedRetryWriteLeavesExistingExportUntouchedBeforeDialogCancellation() = runBlocking {
+        val folder = FakeFolder().apply {
+            files["chaldea-account-7001-20261111-0234.json"] = byteArrayOf(9)
+            failWrite = true
+        }
+        val pending = ChaldeaExportStore.saveExport(folder, "7001", byteArrayOf(1), now) as ChaldeaExportStore.Result.NeedsSaveDialog
+        assertNull(ChaldeaExportStore.picked(context, null, pending))
+        assertEquals(listOf("chaldea-account-7001-20261111-0234.json"), folder.names())
+        assertArrayEquals(byteArrayOf(9), folder.files.values.single())
     }
 
     @Test fun unsetOrUnusableFolderOpensTheSaveDialog() {
@@ -210,10 +230,12 @@ class CaptureFolderExportTest {
             stuck = setOf("chaldea-account-7001-20261111-0234.json")
         }
         val result = ChaldeaExportStore.saveExport(blocked, "7001", byteArrayOf(1), now)
-        // The fixed file cannot be replaced; the second-stamped file is written, then the older one cannot be
-        // cleaned up, so the export is undone rather than leaving two account files.
-        assertEquals(ChaldeaExportStore.Result.Failed, result)
-        assertEquals(listOf("chaldea-account-7001-20261111-0234.json"), blocked.names())
+        assertEquals(ChaldeaExportStore.Result.Written("chaldea-account-7001-20261111-0234-05.json", "FGA/capture", cleanupFailed = true), result)
+        assertArrayEquals(byteArrayOf(1), blocked.files["chaldea-account-7001-20261111-0234-05.json"])
+        assertEquals(2, blocked.names().size)
+        blocked.failWrite = true
+        assertTrue(ChaldeaExportStore.saveExport(blocked, "7001", byteArrayOf(2), now.plusSeconds(1)) is ChaldeaExportStore.Result.NeedsSaveDialog)
+        assertArrayEquals(byteArrayOf(0), blocked.files["chaldea-account-7001-20261111-0234.json"])
 
         val none = ChaldeaExportStore.saveExport(null, "7001", byteArrayOf(1), now)
         assertTrue(none is ChaldeaExportStore.Result.NeedsSaveDialog)
@@ -270,6 +292,19 @@ class CaptureFolderExportTest {
         content(GainsTrackerUiState(certExists = false), { created++ }, {})
         compose.onNodeWithText(context.getString(R.string.capture_cert_create)).performClick()
         assertEquals(1, created)
+    }
+
+    @Test fun runningVpnBlocksNewCaButAllowsReExport() {
+        content(GainsTrackerUiState(certExists = true, running = true), {}, {})
+        compose.onNodeWithText(context.getString(R.string.capture_cert_create_new)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.capture_cert_export)).assertIsEnabled()
+        compose.onNodeWithText(context.getString(R.string.capture_cert_stop_first)).assertExists()
+    }
+
+    @Test fun savingDisablesBothCertificateButtons() {
+        content(GainsTrackerUiState(certExists = true, certSaving = true), {}, {})
+        compose.onNodeWithText(context.getString(R.string.capture_cert_create_new)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.capture_cert_export)).assertIsNotEnabled()
     }
 
     @Test fun savedPathIsShown() {

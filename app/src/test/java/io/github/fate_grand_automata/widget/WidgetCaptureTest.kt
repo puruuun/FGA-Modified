@@ -108,9 +108,7 @@ class WidgetCaptureTest {
         shadowOf(context.packageManager).installPackage(android.content.pm.PackageInfo().apply {
             packageName = io.github.fate_grand_automata.capture.CaptureVpnService.GAME_PACKAGE
         })
-        val dir = io.github.fate_grand_automata.capture.CertStore.directory(context)
-        java.io.File(dir, "leaf.p12").writeText("synthetic")
-        java.io.File(dir, "ca.cer").writeText("synthetic")
+        io.github.fate_grand_automata.capture.CertStore.apply { commit(context, prepare()) }
         org.robolectric.shadows.ShadowVpnService.setPrepareResult(null)
         ToggleCaptureReceiver().onReceive(context, Intent())
         val started = shadowOf(context as android.app.Application).nextStartedService

@@ -1254,4 +1254,6 @@
     <string name="capture_log_source">출처</string>
     <string name="capture_log_all_sources">전체</string>
     <string name="capture_source_script">스크립트</string>
+    <string name="capture_cert_stop_first">"새 인증서를 만들려면 먼저 로그 수집 VPN을 중지하세요."</string>
+    <string name="capture_selected_location">"선택한 위치"</string>
 </resources>

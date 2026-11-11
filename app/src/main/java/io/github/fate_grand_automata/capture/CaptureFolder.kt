@@ -2,6 +2,10 @@ package io.github.fate_grand_automata.capture
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
+import io.github.fate_grand_automata.R
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import io.github.fate_grand_automata.prefs.core.PrefMaker
@@ -20,6 +24,8 @@ interface CaptureFolder {
     /** Creates an empty file and returns the name the provider really gave it, or null on refusal. */
     fun create(name: String, mime: String): String?
     fun open(name: String): OutputStream?
+    fun rename(from: String, to: String): Boolean
+    fun documentUri(name: String): Uri? = null
 }
 
 /** The capture subfolder of the SAF tree the user picked at onboarding. */
@@ -29,14 +35,26 @@ class DocumentCaptureFolder(
     rootName: String?,
 ) : CaptureFolder {
     override val label = "${rootName ?: "FGA"}/${CaptureFolders.DIRECTORY}"
-    override fun names() = dir.listFiles().filter { it.isFile }.mapNotNull { it.name }
-    override fun delete(name: String) = dir.findFile(name)?.delete() ?: true
+    override fun names(): List<String> {
+        check(dir.canRead() && dir.canWrite()) { "Capture folder permission lost" }
+        return dir.listFiles().filter { it.isFile }.mapNotNull { it.name }
+    }
+    override fun delete(name: String): Boolean {
+        check(dir.canRead() && dir.canWrite()) { "Capture folder permission lost" }
+        return dir.findFile(name)?.delete() ?: true
+    }
     override fun create(name: String, mime: String) = dir.createFile(mime, name)?.name
+    override fun documentUri(name: String) = dir.findFile(name)?.uri
     override fun open(name: String) = dir.findFile(name)?.let(openStream)
+    override fun rename(from: String, to: String) = dir.findFile(from)?.let { it.renameTo(to) && it.name == to } ?: false
 }
 
 object CaptureFolders {
     const val DIRECTORY = "capture"
+
+    fun configured(context: Context): Boolean = PrefsCore(
+        PrefMaker(context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)), context,
+    ).dirRoot.get().isNotBlank()
 
     /** Null when the FGA folder is unset, its permission was lost, or `capture` cannot be created. */
     fun open(context: Context): CaptureFolder? = runCatching {
@@ -86,15 +104,27 @@ object CaptureFileSaver {
         bytes: ByteArray,
     ): SaveOutcome {
         if (folder != null) {
-            for ((index, name) in listOf(fixedName, fallbackName).distinct().withIndex()) {
-                if (attempt(folder, name, mime, bytes)) return SaveOutcome.Saved(name, folder.label, fallback = index > 0)
+            val existing = runCatching { fixedName in folder.names() }.getOrNull()
+            if (existing == true) {
+                // Write the retry fully before touching the previous export. A failed write or a
+                // cancelled layer-3 dialog must not destroy the file that was already there.
+                if (fallbackName != fixedName && attempt(folder, fallbackName, mime, bytes)) {
+                    val replaced = runCatching {
+                        folder.delete(fixedName) && folder.rename(fallbackName, fixedName)
+                    }.getOrDefault(false)
+                    return SaveOutcome.Saved(if (replaced) fixedName else fallbackName, folder.label, fallback = !replaced)
+                }
+            } else if (existing == false) {
+                for ((index, name) in listOf(fixedName, fallbackName).distinct().withIndex()) {
+                    if (attempt(folder, name, mime, bytes)) return SaveOutcome.Saved(name, folder.label, fallback = index > 0)
+                }
             }
         }
         return SaveOutcome.NeedsDialog(fixedName, mime, bytes)
     }
 
     private fun attempt(folder: CaptureFolder, name: String, mime: String, bytes: ByteArray): Boolean = runCatching {
-        if (name in folder.names() && !folder.delete(name)) return false
+        if (name in folder.names()) return false
         val actual = folder.create(name, mime) ?: return false
         if (actual != name) {
             // The provider renamed it (for example by appending an extension): do not leave that copy behind.
@@ -111,9 +141,39 @@ object CaptureFileSaver {
         true
     }.getOrDefault(false)
 
-    /** Writes the bytes to a file the user picked in the system save dialog. Returns its real name. */
-    fun writePicked(context: Context, uri: Uri, bytes: ByteArray): String? = runCatching {
+    data class Picked(val name: String, val folder: String) {
+        val path get() = "$folder/$name"
+    }
+
+    /** Writes only after a non-null dialog result; cancellation has no filesystem effects. */
+    fun writePicked(context: Context, uri: Uri, bytes: ByteArray): Picked? = runCatching {
         (context.contentResolver.openOutputStream(uri, "wt") ?: return null).use { it.write(bytes) }
-        DocumentFile.fromSingleUri(context, uri)?.name ?: uri.lastPathSegment
+        pickedLocation(context, uri)
     }.getOrNull()
+
+    private fun displayName(context: Context, uri: Uri): String? = runCatching {
+        val cursor = if (Build.VERSION.SDK_INT >= 26) {
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), android.os.Bundle.EMPTY, null)
+        } else context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) it.getString(0)?.takeIf(String::isNotBlank) else null
+        }
+    }.getOrNull()
+
+    /** Providers can expose an ancestor path or a tree name; opaque document IDs are not folder names. */
+    internal fun pickedLocation(context: Context, uri: Uri): Picked {
+        val name = displayName(context, uri) ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file"
+        val parent = if (Build.VERSION.SDK_INT >= 26) runCatching {
+            val path = DocumentsContract.findDocumentPath(context.contentResolver, uri)?.path.orEmpty()
+            path.dropLast(1).lastOrNull()?.let {
+                val parentUri = if (DocumentsContract.isTreeUri(uri)) DocumentsContract.buildDocumentUriUsingTree(uri, it)
+                    else DocumentsContract.buildDocumentUri(uri.authority!!, it)
+                displayName(context, parentUri)
+            }
+        }.getOrNull() else null
+        val tree = if (DocumentsContract.isTreeUri(uri)) runCatching {
+            displayName(context, DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri)))
+        }.getOrNull() else null
+        return Picked(name, parent ?: tree ?: context.getString(R.string.capture_selected_location))
+    }
 }

@@ -71,6 +71,7 @@ class CaptureVpnService : VpnService() {
             Handler(Looper.getMainLooper()).post { Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show() }
         }
         try {
+            check(CertificateSaveGuard.beginVpn()) { "Certificate save in progress" }
             val jpEnabled = prefs.captureJpRoot.get()
             val contexts = captureServerContexts(
                 if (CertStore.exists(this)) CertStore.serverContext(this) else null,
@@ -212,6 +213,7 @@ class CaptureVpnService : VpnService() {
         tun = null
         proxy?.stop()
         proxy = null
+        CertificateSaveGuard.endVpn()
         CaptureTracker.setRunning(false, reason)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

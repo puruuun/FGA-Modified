@@ -29,7 +29,6 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowVpnService
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -56,8 +55,7 @@ class WidgetCaptureMainFlowTest {
         CaptureTracker.setRunning(false)
         shadowOf(context.packageManager).installPackage(PackageInfo().apply { packageName = CaptureVpnService.GAME_PACKAGE })
         if (certificate) {
-            File(CertStore.directory(context), "leaf.p12").writeText("synthetic")
-            File(CertStore.directory(context), "ca.cer").writeText("synthetic")
+            CertStore.commit(context, CertStore.prepare())
         }
         val prefs = PrefsCore(PrefMaker(context.getSharedPreferences("widget_flow", Context.MODE_PRIVATE)), context).apply {
             captureTrackerEnabled.set(true)

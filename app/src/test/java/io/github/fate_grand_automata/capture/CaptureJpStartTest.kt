@@ -45,8 +45,12 @@ class CaptureJpStartTest {
     }
 
     private fun install(name: String) = shadowOf(context.packageManager).installPackage(PackageInfo().apply { packageName = name })
-    // Existence checks only. These synthetic files contain no certificate or private key.
+    // KR readiness validates the pair; JP fixtures here only exercise its separate presence check.
     private fun certificate(jp: Boolean) {
+        if (!jp) {
+            CertStore.commit(context, CertStore.prepare())
+            return
+        }
         val dir = CertStore.directory(context)
         File(dir, if (jp) "leaf-jp.p12" else "leaf.p12").writeText("synthetic")
         File(dir, if (jp) "ca-jp.cer" else "ca.cer").writeText("synthetic")

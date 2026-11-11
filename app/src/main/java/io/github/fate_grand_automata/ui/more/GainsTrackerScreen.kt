@@ -42,6 +42,7 @@ import io.github.fate_grand_automata.capture.CaptureEnableAction
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CaptureFileSaver
+import io.github.fate_grand_automata.capture.CertificateSaveGuard
 import io.github.fate_grand_automata.capture.CertStore
 import io.github.fate_grand_automata.capture.SaveOutcome
 import io.github.fate_grand_automata.capture.ChaldeaExportStore
@@ -80,6 +81,7 @@ data class GainsTrackerUiState(
     val currentId: String? = null,
     /** Real folder and file name of the last certificate save, for example `FGA/capture/fga-capture-ca.crt`. */
     val certSavedPath: String? = null,
+    val certSaving: Boolean = false,
 )
 
 /** The system save dialog for the certificate; [pending] is committed only after the user saved it. */
@@ -91,6 +93,23 @@ class GainsTrackerViewModel @Inject constructor(
     val prefsCore: PrefsCore,
 ) : ViewModel() {
     private val context = app.applicationContext
+    @Volatile private var ownsCertificateSave = false
+    private var certificateJob: kotlinx.coroutines.Job? = null
+
+    @Synchronized
+    private fun finishCertificateSave() {
+        if (ownsCertificateSave) {
+            ownsCertificateSave = false
+            CertificateSaveGuard.finish()
+        }
+    }
+
+    override fun onCleared() {
+        saveRequest.value = null
+        // IO may still be writing when the scope is cancelled. Keep the VPN guard until it returns.
+        if (certificateJob?.isCompleted != false) finishCertificateSave()
+        super.onCleared()
+    }
     val jpSettings = JpRootSettings(RootCaInjector(context), prefsCore.captureJpRoot.get()) {
         prefsCore.captureJpRoot.set(it)
     }
@@ -112,10 +131,10 @@ class GainsTrackerViewModel @Inject constructor(
         prefsCore.captureStopWithService.asFlow(),
         cert,
         combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
-        combine(CaptureTracker.accounts, clock, savedPath) { _, now, path -> now to path },
-    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), (now, path) ->
+        combine(CaptureTracker.accounts, clock, savedPath, CertificateSaveGuard.saving) { _, now, path, busy -> Triple(now, path, busy) },
+    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), (now, path, busy) ->
         GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason,
-            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value, path)
+            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value, path, busy)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -140,40 +159,50 @@ class GainsTrackerViewModel @Inject constructor(
 
     /** Saves the existing CA again. The CA is not replaced. */
     fun exportCertificate() {
-        viewModelScope.launch {
-            val outcome = withContext(Dispatchers.IO) { runCatching { CertStore.export(context) }.getOrNull() }
-            report(outcome, null)
-        }
+        if (!CertificateSaveGuard.begin(false, CaptureTracker.running.value)) return
+        ownsCertificateSave = true
+        certificateJob = viewModelScope.launch {
+            try {
+                val outcome = withContext(Dispatchers.IO) { runCatching { CertStore.export(context) }.getOrNull() }
+                report(outcome, null)
+            } finally { if (saveRequest.value == null) finishCertificateSave() }
+        }.also { job -> job.invokeOnCompletion { if (saveRequest.value == null) finishCertificateSave() } }
     }
 
     /** Makes a new CA. It replaces the stored one only after the export succeeded. */
     fun createCertificate() {
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) { runCatching { CertStore.createAndExport(context) }.getOrNull() }
-            report(result?.second, result?.first)
-        }
+        if (!CertificateSaveGuard.begin(true, CaptureTracker.running.value)) return
+        ownsCertificateSave = true
+        certificateJob = viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) { runCatching { CertStore.createAndExport(context) }.getOrNull() }
+                report(result?.second, result?.first)
+            } finally { if (saveRequest.value == null) finishCertificateSave() }
+        }.also { job -> job.invokeOnCompletion { if (saveRequest.value == null) finishCertificateSave() } }
     }
 
     /** The user chose a place in the system save dialog; a null [uri] means they cancelled. */
     fun certificatePicked(uri: android.net.Uri?) {
         val request = saveRequest.value ?: return
         saveRequest.value = null
-        viewModelScope.launch {
-            val name = uri?.let { withContext(Dispatchers.IO) { CaptureFileSaver.writePicked(context, it, request.bytes) } }
-            if (name == null) {
-                if (uri != null) toast(context.getString(R.string.capture_cert_failed))
-                return@launch
-            }
-            val pending = request.pending
-            val committed = pending == null || withContext(Dispatchers.IO) {
-                runCatching { CertStore.commit(context, pending) }.isSuccess
-            }
-            if (committed) {
-                savedPath.value = name
-                toast(context.getString(R.string.capture_cert_exported, name))
-            } else toast(context.getString(R.string.capture_cert_failed))
-            refreshCertificate()
-        }
+        certificateJob = viewModelScope.launch {
+            try {
+                val saved = uri?.let { withContext(Dispatchers.IO) { CaptureFileSaver.writePicked(context, it, request.bytes) } }
+                if (saved == null) {
+                    if (uri != null) toast(context.getString(R.string.capture_cert_failed))
+                    return@launch
+                }
+                val pending = request.pending
+                val committed = pending == null || withContext(Dispatchers.IO) {
+                    runCatching { CertStore.commit(context, pending) }.isSuccess
+                }
+                if (committed) {
+                    savedPath.value = saved.path
+                    toast(context.getString(R.string.capture_cert_exported, saved.path))
+                } else toast(context.getString(R.string.capture_cert_failed))
+                refreshCertificate()
+            } finally { finishCertificateSave() }
+        }.also { job -> job.invokeOnCompletion { finishCertificateSave() } }
     }
 
     /** Moves the summary clock so AP keeps recovering on screen while no response arrives. */
@@ -291,7 +320,7 @@ fun GainsTrackerContent(
         title = { Text(stringResource(R.string.capture_cert_recreate_title)) },
         text = { Text(stringResource(R.string.capture_cert_recreate_message)) },
         confirmButton = {
-            TextButton(onClick = { confirmRecreate = false; onCreateCertificate() }) {
+            TextButton(onClick = { confirmRecreate = false; onCreateCertificate() }, enabled = !state.running && !state.certSaving) {
                 Text(stringResource(R.string.capture_cert_create_new))
             }
         },
@@ -346,6 +375,7 @@ fun GainsTrackerContent(
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                         )
+                        if (state.running) Text(stringResource(R.string.capture_cert_stop_first), style = MaterialTheme.typography.bodySmall)
                         state.certSavedPath?.let {
                             Text(
                                 stringResource(R.string.capture_cert_exported, it),
@@ -359,12 +389,12 @@ fun GainsTrackerContent(
                         ) {
                             if (state.certExists) {
                                 // An existing CA is saved again; a new one is a separate, confirmed action.
-                                Button(onClick = onExportCertificate) { Text(stringResource(R.string.capture_cert_export)) }
-                                OutlinedButton(onClick = { confirmRecreate = true }) {
+                                Button(onClick = onExportCertificate, enabled = !state.certSaving) { Text(stringResource(R.string.capture_cert_export)) }
+                                OutlinedButton(onClick = { confirmRecreate = true }, enabled = !state.running && !state.certSaving) {
                                     Text(stringResource(R.string.capture_cert_create_new))
                                 }
                             } else {
-                                Button(onClick = onCreateCertificate) { Text(stringResource(R.string.capture_cert_create)) }
+                                Button(onClick = onCreateCertificate, enabled = !state.running && !state.certSaving) { Text(stringResource(R.string.capture_cert_create)) }
                             }
                             OutlinedButton(onClick = { showGuide = true }) { Text(stringResource(R.string.capture_guide_button)) }
                         }
@@ -399,7 +429,7 @@ fun GainsTrackerContent(
                             color = MaterialTheme.colorScheme.error,
                         )
                         if (state.running) OutlinedButton(onClick = onStop) { Text(stringResource(R.string.capture_vpn_stop)) }
-                        else Button(onClick = onStart, enabled = state.enabled && state.certExists) {
+                        else Button(onClick = onStart, enabled = state.enabled && state.certExists && !state.certSaving) {
                             Text(stringResource(R.string.capture_vpn_start))
                         }
                     }

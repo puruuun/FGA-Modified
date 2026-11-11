@@ -43,7 +43,7 @@ fun rememberChaldeaAccountExport(): (String?) -> Unit {
 
 @Composable
 internal fun rememberChaldeaAccountExportAction(
-    picked: (android.net.Uri, ChaldeaExportStore.Result.NeedsSaveDialog) -> ChaldeaExportStore.Result = { _, _ -> ChaldeaExportStore.Result.Failed },
+    picked: suspend (android.net.Uri?, ChaldeaExportStore.Result.NeedsSaveDialog) -> ChaldeaExportStore.Result? = { _, _ -> ChaldeaExportStore.Result.Failed },
     export: suspend (String?) -> ChaldeaExportStore.Result,
 ): (String?) -> Unit {
     val scope = rememberCoroutineScope()
@@ -54,9 +54,12 @@ internal fun rememberChaldeaAccountExportAction(
     val saveDialog = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val pending = request
         request = null
-        if (pending != null && uri != null) {
-            scope.launch { result = withContext(Dispatchers.IO) { picked(uri, pending) } }
-        }
+        if (pending != null) {
+            scope.launch {
+                try { result = withContext(Dispatchers.IO) { picked(uri, pending) } }
+                finally { busy = false }
+            }
+        } else busy = false
     }
     result?.let { ChaldeaExportResultDialog(it) { result = null } }
     return { userId ->
@@ -69,7 +72,7 @@ internal fun rememberChaldeaAccountExportAction(
                         request = r
                         saveDialog.launch(r.name)
                     } else result = r
-                } finally { busy = false }
+                } finally { if (request == null) busy = false }
             }
         }
     }
@@ -90,6 +93,10 @@ internal fun ChaldeaExportResultDialog(result: ChaldeaExportStore.Result, onDism
             append(stringResource(R.string.capture_chaldea_saved))
             append("\n\n")
             append(stringResource(R.string.capture_chaldea_guide, result.path, result.name))
+            if (result.cleanupFailed) {
+                append("\n\n")
+                append(stringResource(R.string.capture_chaldea_delete_failed))
+            }
             if (launchIntents.isEmpty()) {
                 append("\n\n")
                 append(stringResource(R.string.capture_chaldea_not_installed, result.path))

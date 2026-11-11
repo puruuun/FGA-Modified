@@ -1012,4 +1012,6 @@
     <string name="capture_log_source">出所</string>
     <string name="capture_log_all_sources">すべての出所</string>
     <string name="capture_source_script">スクリプト</string>
+    <string name="capture_cert_stop_first">"新しい証明書を作る前にログ収集VPNを停止してください。"</string>
+    <string name="capture_selected_location">"選択した場所"</string>
 </resources>
