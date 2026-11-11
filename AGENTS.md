@@ -56,11 +56,13 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
 - Agent models and order (owner decision, 2026-11-11; replaces the 2026-10-30 order). The planner chooses the agent and model for each task by its difficulty and risk, within this order of usage pools:
-  1. **Codex** (`gpt-6.1-sol`, via `build/orchestration/codex-run.sh`): first choice.
+  1. **Codex** (`gpt-6.1-sol`, via `build/orchestration/codex-run.sh`): first choice while it has usage, above all for hard implementation.
   2. **Gemini** through the Antigravity CLI `agy` (via `build/orchestration/gemini-run.sh`), when Codex is at its usage limit or when the planner judges Gemini the better fit for the task:
-     - **Gemini 3.8 Flash: always `high`** (`gemini-3.8-flash-high`). For simple, well-bounded tasks and code research.
-     - **Gemini 4 Argon: `medium` by default** (`gemini-4-argon-medium`), **`high` for hard tasks** (`gemini-4-argon-high`).
+     - **Gemini 3.8 Flash, always `high`** (`gemini-3.8-flash-high`): the default Gemini worker (owner decision, 2026-11-11). Use it first for ordinary implementation, for first-pass verification and QA, and for code research.
+     - **Gemini 4 Argon** (`gemini-4-argon-medium` by default, `gemini-4-argon-high` for hard tasks): second-pass verification and review, design review, and implementation that is too hard for Flash.
+     - Usual pattern for a task with some difficulty: Flash implements, a fresh Flash run does the first verification, and Argon does the second verification and review.
   3. **Sonnet 5.5 (medium)**: only when both Codex and Gemini are out of usage. It shares the planner's own usage, so it is the last resort.
+- Gemini runs go through `gemini-run.sh`, not through the `gemini` subagent: the subagent relays through a Claude model and uses the planner's usage.
 - The same order applies to verification agents, design reviews and research agents. A Gemini agent used only for reading (review, research) runs with the read-only settings (`~/.claude/agents/gemini-readonly.settings.json`); a Gemini implementer runs with the implementer settings and only inside its own worktree.
 - Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
