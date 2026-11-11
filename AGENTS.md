@@ -74,6 +74,10 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
+- Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
+  - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
+  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a different model reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
+  - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test
