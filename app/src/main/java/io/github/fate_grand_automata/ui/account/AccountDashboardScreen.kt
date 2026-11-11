@@ -65,14 +65,14 @@ fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: (
     val export = rememberChaldeaAccountExport()
     AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside,
         userId = userId, exportAccount = export, friendCount = version.friendCount, openFriends = openFriends,
-        server = version.server)
+        server = version.server, loading = version.loading)
 }
 
 @Composable
 internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, displayName: String?,
     openSettings: () -> Unit, openLogs: () -> Unit, battle: BattleLogEntry? = null, outside: OutsideLogEntry? = null,
     initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}, friendCount: Int? = null,
-    openFriends: (String) -> Unit = {}, server: String = "KR") {
+    openFriends: (String) -> Unit = {}, server: String = "KR", loading: Boolean = false) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
@@ -93,7 +93,11 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     Icon(Icons.Default.Settings, stringResource(R.string.capture_title))
                 }
             }
-            if (data == null) Text(stringResource(R.string.dashboard_no_data), Modifier.padding(16.dp))
+            if (loading && data == null) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(Modifier.testTag("dashboard-loading"))
+                }
+            } else if (data == null) Text(stringResource(R.string.dashboard_no_data), Modifier.padding(16.dp))
             else BoxWithConstraints(Modifier.weight(1f)) {
                 val sections = buildList<Int> {
                     if (data.profile.isNotEmpty()) add(0)

@@ -42,6 +42,39 @@ class AccountState(
     val tables: Map<String, JsonArray> get() = TablesView(rawTables)
     val loginResponse: JsonArray get() = parseArray(rawLoginResponse)
 
+    /** Counts the top-level JSON objects in [table] without building a JsonElement tree. */
+    fun objectCount(table: String): Int? {
+        val raw = rawTables[table] ?: return null
+        val start = raw.indexOf('[')
+        if (start < 0) return null
+        var depth = 0
+        var inString = false
+        var escape = false
+        var count = 0
+        for (i in (start + 1) until raw.length) {
+            val c = raw[i]
+            if (inString) {
+                if (escape) escape = false
+                else if (c == '\\') escape = true
+                else if (c == '"') inString = false
+            } else {
+                when (c) {
+                    '"' -> inString = true
+                    '{' -> {
+                        if (depth == 0) count++
+                        depth++
+                    }
+                    '[' -> depth++
+                    '}', ']' -> {
+                        if (depth == 0 && c == ']') return count
+                        depth--
+                    }
+                }
+            }
+        }
+        return count
+    }
+
     fun copy(
         tables: Map<String, JsonArray>? = null,
         loginResponse: JsonArray? = null,

@@ -16,12 +16,13 @@ class CaptureBattleFeedTest {
     }
     @AfterTest fun clean() = reset()
     private val feed = CaptureBattleFeed()
-    private fun send(path: String, json: String) = CaptureTracker.onGameResponse(path, json.toByteArray(), null)
-    private fun login(id: Int) = send("/login/top", """{"response":[{"nid":"login","resCode":"00"}],
-        "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Fictional"}]}}}""")
-    private fun result(id: Int, num: Int) = send("/battle/result", """{"response":[{"success":{
+    private fun send(path: String, json: String, host: String = "yfgo-game.netmarble.com") =
+        CaptureTracker.onGameResponse("https://$host$path", json.toByteArray(), null)
+    private fun login(id: Int, host: String = "yfgo-game.netmarble.com") = send("/login/top", """{"response":[{"nid":"login","resCode":"00"}],
+        "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Fictional"}]}}}""", host)
+    private fun result(id: Int, num: Int, host: String = "yfgo-game.netmarble.com") = send("/battle/result", """{"response":[{"success":{
         "resultDropInfos":[{"type":2,"objectId":6516,"num":$num}]}}],
-        "cache":{"updated":{"userItem":[{"userId":$id,"itemId":6516,"num":$num}]}}}""")
+        "cache":{"updated":{"userItem":[{"userId":$id,"itemId":6516,"num":$num}]}}}""", host)
 
     @Test fun `first result after token belongs only to the script account`() {
         login(7001); CaptureTracker.setRunning(true); CaptureTracker.startRun()
@@ -91,5 +92,28 @@ class CaptureBattleFeedTest {
         assertTrue(feed.isCollecting()); assertFalse(feed.isStarting())
         CaptureTracker.setRunning(false)
         assertFalse(feed.isCollecting())
+    }
+
+    @Test fun `krScriptFeedReceivesKrResultsWhileJpIsMostRecentAndReverse`() {
+        login(7001, "yfgo-game.netmarble.com")
+        login(7002, "game.fate-go.jp")
+        assertEquals("7002", CaptureTracker.currentId.value)
+        CaptureTracker.setRunning(true)
+
+        CaptureTracker.startRun("KR")
+        val krToken = feed.battleToken()
+        result(7002, 99, "game.fate-go.jp")
+        assertNull(feed.awaitBattle(krToken, Duration.ZERO))
+        result(7001, 5, "yfgo-game.netmarble.com")
+        assertEquals(mapOf(6516L to 5L), feed.awaitBattle(krToken, Duration.ZERO)!!.drops)
+
+        login(7001, "yfgo-game.netmarble.com")
+        assertEquals("7001", CaptureTracker.currentId.value)
+        CaptureTracker.startRun("JP")
+        val jpToken = feed.battleToken()
+        result(7001, 88, "yfgo-game.netmarble.com")
+        assertNull(feed.awaitBattle(jpToken, Duration.ZERO))
+        result(7002, 7, "game.fate-go.jp")
+        assertEquals(mapOf(6516L to 7L), feed.awaitBattle(jpToken, Duration.ZERO)!!.drops)
     }
 }

@@ -86,8 +86,22 @@ data class DashboardData(
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
 
-internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardData {
-    fun rows(table: String) = state.tables[table]?.mapNotNull { it as? JsonObject }
+/** Short-lived table cache for a single dashboard build so large tables are parsed at most once. */
+internal class DashboardStateTables(val state: AccountState) {
+    private val parsed = mutableMapOf<String, List<JsonObject>?>()
+    fun rows(table: String): List<JsonObject>? =
+        if (table in parsed) parsed[table]
+        else state.tables[table]?.mapNotNull { it as? JsonObject }.also { parsed[table] = it }
+    fun count(table: String): Int? =
+        if (table in parsed) parsed[table]?.size else state.objectCount(table)
+}
+
+internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardData =
+    dashboardData(DashboardStateTables(state), names)
+
+internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap): DashboardData {
+    val state = tables.state
+    fun rows(table: String) = tables.rows(table)
     val game = rows("userGame")?.firstOrNull()
     val tbl = rows("tblUserGame")?.firstOrNull()
     // Explicit allowlist: birthday/message and unrelated capture fields cannot reach the UI.
@@ -116,7 +130,7 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
     val kinds = if (classified) svts?.groupingBy { storedKind(it.number("svtId"), names) }?.eachCount() else null
     val storage = DashboardStorage(svts?.size,
         kinds?.getOrDefault(StoredKind.Servant, 0), kinds?.getOrDefault(StoredKind.Equip, 0), kinds?.getOrDefault(StoredKind.Other, 0),
-        game?.number("svtKeep"), game?.number("svtEquipKeep"), rows("userCommandCode")?.size, rows("userSvtStorage")?.size)
+        game?.number("svtKeep"), game?.number("svtEquipKeep"), tables.count("userCommandCode"), tables.count("userSvtStorage"))
         .takeIf { svts != null || it.commandCodes != null || it.secondStorage != null }
     // The collection also holds CEs and other rows; without servant metadata they cannot be told apart, so the section is hidden.
     // Keep all per-copy stats together. When several copies exist, use the highest-level copy,
@@ -153,7 +167,7 @@ internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardDa
     }?.sortedWith(compareByDescending<DashboardEquip> { it.level ?: -1L }.thenBy { it.id })
     val split = game?.number("freeStone")?.let { free -> game.number("chargeStone")?.let { free to it } }
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
-        OwnFormations.from(state))
+        OwnFormations.from(state, game))
 }
 
 internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {
@@ -176,6 +190,15 @@ internal class DashboardProjectionCache(private val project: (AccountState, Game
     suspend fun get(state: AccountState?, names: GameNameMap): DashboardData? = withContext(Dispatchers.Default) {
         if (previous !== state || previousNames !== names) {
             projection = state?.let { project(it, names) }
+            previous = state
+            previousNames = names
+        }
+        projection
+    }
+    suspend fun getTables(tables: DashboardStateTables?, names: GameNameMap): DashboardData? = withContext(Dispatchers.Default) {
+        val state = tables?.state
+        if (previous !== state || previousNames !== names) {
+            projection = tables?.let { dashboardData(it, names) }
             previous = state
             previousNames = names
         }

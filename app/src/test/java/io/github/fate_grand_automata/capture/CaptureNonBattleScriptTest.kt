@@ -74,12 +74,21 @@ class CaptureNonBattleScriptTest {
     }
 
     @Test @Config(qualifiers = "ja") fun officialJpNonBattleMarksOnlyScriptTimeChanges() {
+        val jpHost = "https://game.fate-go.jp/"
+        CaptureTracker.onGameResponse(jpHost + "login/top", outsideLogin("fictionalJp").toString().toByteArray(), null)
         CaptureAutoStart.onScriptStart(context, prefs, GameServer.Jp.Original, battle = false)
+        CaptureTracker.onGameResponse(jpHost + "gacha/draw",
+            outsideFriendPointSummon(9800, includeCards = false, id = "fictionalJp").toString().toByteArray(), null)
+        // A KR response while the JP script runs is not marked as script-made.
         summon(9800)
-        assertTrue(open.single().period.sources.single().source.script)
+        val jpEntry = open.single { it.accountId == "fictionalJp" }
+        val krEntry = open.single { it.accountId == "fictionalA" }
+        assertTrue(jpEntry.period.sources.single().source.script)
+        assertFalse(krEntry.period.sources.single().source.script)
         CaptureAutoStart.onScriptEnd()
-        summon(9600)
-        val sources = open.single().period.sources
+        CaptureTracker.onGameResponse(jpHost + "gacha/draw",
+            outsideFriendPointSummon(9600, includeCards = false, id = "fictionalJp").toString().toByteArray(), null)
+        val sources = open.single { it.accountId == "fictionalJp" }.period.sources
         assertEquals(listOf(true, false), sources.map { it.source.script })
         assertEquals(listOf(-200L, -200L), sources.map { it.delta.friendPoint })
     }

@@ -123,8 +123,17 @@ object CaptureTracker {
         initialized = true
         indexLoaded = true
         publish()
-        // Read the current account in the background so that the first response does not wait for the disk.
-        if (stored.currentId != null) io.execute { synchronized(lock) { runCatching { stored.state } } }
+        // Read the current accounts in the background so that the first response does not wait for the disk.
+        if (stored.currentId != null || stored.currentServers.isNotEmpty()) {
+            io.execute {
+                synchronized(lock) {
+                    runCatching {
+                        stored.state
+                        stored.currentServers.keys.forEach(stored::state)
+                    }
+                }
+            }
+        }
         if (stored.hasUnsaved) io.execute { save() }
     }
 
@@ -153,7 +162,7 @@ object CaptureTracker {
     /** The friend roster of [userId], read from disk for this call only. */
     fun loadRoster(userId: String): FriendRoster? = synchronized(lock) { if (userId in stored) stored else null }?.roster(userId)
 
-    private fun runState() = runSession.accountId?.let(stored::stateOf)
+    private fun runState() = runSession.accountId?.let(stored::stateOf) ?: runSession.expectedServer?.let(stored::state)
 
     private fun publish() {
         _currentId.value = stored.currentId
@@ -186,7 +195,7 @@ object CaptureTracker {
         guardedCapture(CaptureNames.path(target), payload.size) { handleGameResponse(target, payload, contentEncoding) }
 
     private fun handleGameResponse(target: String, payload: ByteArray, contentEncoding: String?) {
-        if (CaptureNames.isAccountPath(target)) return
+        if (CaptureNames.isAccountPath(target) || CaptureNames.server(target) == null) return
         val path = CaptureNames.path(target)
         var login: AccountState.LoginRead? = null
         val body = try {
@@ -203,29 +212,39 @@ object CaptureTracker {
         } catch (_: Exception) { null } ?: return
         synchronized(lock) {
             val previousCurrent = stored.currentId
+            val previousServers = stored.currentServers
             val now = System.currentTimeMillis() / 1000
             stored.recordFriendFields(target, body, now)
             val rosterId = stored.friendTarget(target, body)
             val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, now)
-            if (rosterChanged) { _rosterRevision.value += 1; publish(); scheduleSave(rosterId) }
+            if (rosterChanged) _rosterRevision.value += 1
+            if (rosterId != null && (rosterChanged || stored.isUnsaved(rosterId) || stored.currentServers != previousServers)) {
+                publish()
+                scheduleSave(rosterId)
+            }
             val response = (login?.let { read -> stored.apply(target, body, now, loadPrevious = !read.replacesAccount) { read.reducer(it, now) } }
                 ?: stored.apply(target, body, now)) ?: return
             runSession.collect(target, body, response.previous, response.next, response.id)
-            if (path == "battle/result" && runSession.collectingFor(response.id)) {
+            if (path == "battle/result" && runSession.collectingFor(response.id) &&
+                (runSession.expectedServer == null || CaptureNames.server(target) == runSession.expectedServer)) {
                 battleInbox.add(CapturedBattle.parse(body, response.previous))
             }
             outsideWork { outside.collect(target, response) }
             publish()
-            if (response.next !== response.previous || stored.currentId != previousCurrent) scheduleSave(response.id)
+            if (response.next !== response.previous || stored.currentId != previousCurrent ||
+                stored.currentServers != previousServers || stored.isUnsaved(response.id)) {
+                scheduleSave(response.id)
+            }
         }
     }
 
-    fun outsideScriptStart(battle: Boolean = true) = synchronized(lock) { outsideWork { outside.scriptStart(battle) } }
+    fun outsideScriptStart(battle: Boolean = true, server: String = "KR") =
+        synchronized(lock) { outsideWork { outside.scriptStart(battle, server) } }
     fun serviceStop() = synchronized(lock) { outsideWork { outside.serviceStop() } }
-    fun startRun() = synchronized(lock) {
+    fun startRun(server: String = "KR") = synchronized(lock) {
         battleInbox.clear()
-        outsideWork { outside.scriptStart() }
-        runSession.start(_running.value, stored.state, stored.currentId)
+        outsideWork { outside.scriptStart(battle = true, server = server) }
+        runSession.start(_running.value, stored.state(server), stored.currentId(server), server)
     }
     fun endRunCollection() = synchronized(lock) {
         outside.scriptEnd()

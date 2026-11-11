@@ -76,6 +76,7 @@ internal class CaptureOutsideSession(
     // Battle scripts pause outside recording; every script marks changes made during its lifetime.
     private var scriptActive = false
     private var scriptMade = false
+    private var scriptServer: String? = null
 
     fun load(captureDirectory: File) {
         directory = File(captureDirectory, "accounts")
@@ -99,19 +100,27 @@ internal class CaptureOutsideSession(
         if (!value) closeAll()
     }
 
-    fun scriptStart(battle: Boolean = true) {
+    fun scriptStart(battle: Boolean = true, server: String = "KR") {
+        scriptServer = server
         scriptMade = true
         scriptActive = battle
-        if (battle) closeAll()
+        if (battle) closeServer(server)
     }
-    fun scriptEnd() { scriptActive = false; scriptMade = false }
+    fun scriptEnd() {
+        scriptActive = false
+        scriptMade = false
+        scriptServer = null
+    }
     fun serviceStop() { scriptEnd(); closeAll() }
 
     fun collect(target: String, response: CaptureAccounts.Response) {
         if (!running) return
-        // Switch by the routed response, even if its holdings did not change.
-        periods.keys.filter { it != response.id }.toList().forEach(::close)
-        if (scriptActive) return
+        val server = CaptureNames.server(target) ?: accounts.serverOf(response.id)
+        // Switch by the routed response within the same server, even if its holdings did not change.
+        periods.keys.filter { it != response.id && (server == null || accounts.serverOf(it) == server) }
+            .toList().forEach(::close)
+        val matchesScript = scriptServer == null || server == scriptServer
+        if (scriptActive && matchesScript) return
         if (CaptureNames.classify(target) == CaptureNames.ApiPath.Login) {
             checkpoint(response)
             return
@@ -124,7 +133,7 @@ internal class CaptureOutsideSession(
         val time = now()
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
-            period = previous.period.add(ChangeSource.of(target).copy(script = scriptMade), delta, time),
+            period = previous.period.add(ChangeSource.of(target).copy(script = scriptMade && matchesScript), delta, time),
             resourceBaseline = response.next!!.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = response.next.lastUpdateTime,
         )
@@ -159,6 +168,9 @@ internal class CaptureOutsideSession(
     }
 
     private fun closeAll() { periods.keys.toList().forEach(::close) }
+    private fun closeServer(server: String) {
+        periods.keys.filter { (accounts.serverOf(it) ?: server) == server }.toList().forEach(::close)
+    }
     private fun close(id: String) {
         val pending = periods[id] ?: return
         val period = pending.period.copy(endedAt = maxOf(pending.period.endedAt, now()))

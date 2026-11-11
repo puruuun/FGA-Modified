@@ -33,13 +33,18 @@ class CaptureTrackerTest {
 
     @AfterTest fun clean() = reset()
 
-    private fun feed(path: String, body: String) = CaptureTracker.onGameResponse(path, body.toByteArray(), null)
+    private fun feed(path: String, body: String) = CaptureTracker.onGameResponse(
+        if (path.startsWith("https://")) path else "https://yfgo-game.netmarble.com$path",
+        body.toByteArray(), null,
+    )
 
-    private fun login(id: Int = 1) = feed("/login/top", """{"response":[{"nid":"login","resCode":"00","success":{}}],
+    private fun login(id: Int = 1, host: String = "yfgo-game.netmarble.com") = feed("https://$host/login/top",
+        """{"response":[{"nid":"login","resCode":"00","success":{}}],
         "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Master $id","exp":100}],
         "userItem":[{"itemId":100,"num":5}],"userSvtCollection":[{"svtId":10,"friendship":200}]}}}""")
 
-    private fun battle(id: Int = 1) = feed("/battle/result", """{"response":[{"success":{"phaseClearQp":1000}}],
+    private fun battle(id: Int = 1, host: String = "yfgo-game.netmarble.com", qp: Int = 1000) =
+        feed("https://$host/battle/result", """{"response":[{"success":{"phaseClearQp":$qp}}],
         "cache":{"updated":{"userGame":[{"userId":$id,"exp":250}],
         "userSvtCollection":[{"svtId":10,"friendship":500}]}}}""")
 
@@ -146,5 +151,54 @@ class CaptureTrackerTest {
         CaptureTracker.rename("7001", "Later")
         assertEquals("Farming", entry.accountName)
         assertEquals("Later", CaptureTracker.summary()!!.masterName)
+    }
+
+    @Test fun krScriptCollectsKrBattleResultsWhileJpIsMostRecentAndReverse() {
+        login(7001, "yfgo-game.netmarble.com")
+        login(7002, "game.fate-go.jp")
+        assertEquals("7002", CaptureTracker.currentId.value)
+        CaptureTracker.setRunning(true)
+
+        // Start a KR run while JP (7002) is the global current account.
+        CaptureTracker.startRun("KR")
+        battle(7002, "game.fate-go.jp", qp = 9000)
+        battle(7001, "yfgo-game.netmarble.com", qp = 1200)
+        val krEntry = CaptureTracker.finishRun(io.github.fate_grand_automata.battlelog.battleLogFixture())
+        assertEquals("7001", krEntry.accountId)
+        assertEquals(1, krEntry.gains!!.capturedBattles)
+        assertEquals(1200, krEntry.gains!!.qp)
+
+        // Reverse: make KR most recent, then start a JP run.
+        login(7001, "yfgo-game.netmarble.com")
+        assertEquals("7001", CaptureTracker.currentId.value)
+        CaptureTracker.startRun("JP")
+        battle(7001, "yfgo-game.netmarble.com", qp = 8000)
+        battle(7002, "game.fate-go.jp", qp = 3400)
+        val jpEntry = CaptureTracker.finishRun(io.github.fate_grand_automata.battlelog.battleLogFixture())
+        assertEquals("7002", jpEntry.accountId)
+        assertEquals(1, jpEntry.gains!!.capturedBattles)
+        assertEquals(3400, jpEntry.gains!!.qp)
+    }
+
+    @Test fun accountlessRunBindsOnlyToExpectedServerResponse() {
+        CaptureTracker.setRunning(true)
+        CaptureTracker.startRun("JP")
+        battle(7001, "yfgo-game.netmarble.com", qp = 5000)
+        battle(7002, "game.fate-go.jp", qp = 2500)
+        val entry = CaptureTracker.finishRun(io.github.fate_grand_automata.battlelog.battleLogFixture())
+        assertEquals("7002", entry.accountId)
+        assertEquals(1, entry.gains!!.capturedBattles)
+        assertEquals(2500, entry.gains!!.qp)
+    }
+
+    @Test fun unknownHostResponseIsDroppedCompletely() {
+        login(7001, "yfgo-game.netmarble.com")
+        val before = CaptureTracker.snapshot("7001")?.second
+        CaptureTracker.onGameResponse("https://example.com/login/top",
+            """{"response":[{"nid":"login","resCode":"00"}],"cache":{"replaced":{"userGame":[{"userId":7002,"name":"Other"}]}}}""".toByteArray(), null)
+        CaptureTracker.onGameResponse("https://example.com/item/use",
+            """{"cache":{"updated":{"userItem":[{"userId":7001,"itemId":100,"num":1}]}}}""".toByteArray(), null)
+        assertEquals(setOf("7001"), CaptureTracker.accounts.value.map { it.id }.toSet())
+        assertSame(before, CaptureTracker.snapshot("7001")?.second)
     }
 }

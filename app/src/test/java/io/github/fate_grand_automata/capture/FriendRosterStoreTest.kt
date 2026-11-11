@@ -8,6 +8,7 @@ import kotlin.test.*
 /** Synthetic fixtures only. Exercises the real filesystem and tracker-facing storage rules. */
 class FriendRosterStoreTest {
     @TempDir lateinit var directory: File
+    private fun kr(path: String) = "https://yfgo-game.netmarble.com/$path"
     private fun body(text: String) = Json.parseToJsonElement(text).jsonObject
     private fun login(id: Int) = body("""{"response":[{"nid":"login","resCode":"00"}],
         "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Master $id"}]}}}""")
@@ -20,9 +21,9 @@ class FriendRosterStoreTest {
 
     @Test fun rosterIsSavedBesideTheAccountAndLoadedBack() {
         val store = store()
-        store.apply("login/top", login(7001), 10)
-        assertTrue(store.applyFriends("7001", "friend/top", top(), 20))
-        assertFalse(store.applyFriends("7001", "friend/top", top(), 21)) // identical: nothing to save
+        store.apply(kr("login/top"), login(7001), 10)
+        assertTrue(store.applyFriends("7001", kr("friend/top"), top(), 20))
+        assertFalse(store.applyFriends("7001", kr("friend/top"), top(), 21)) // identical: nothing to save
         store.save("7001")
         assertTrue(rosterFile("7001").isFile)
         assertFalse(rosterFile("7001").readText().contains("PRIVATE-MESSAGE"))
@@ -32,15 +33,15 @@ class FriendRosterStoreTest {
 
     @Test fun noRosterWithoutAnAccountState() {
         val store = store()
-        assertFalse(store.applyFriends("7001", "friend/top", top(), 20))
+        assertFalse(store.applyFriends("7001", kr("friend/top"), top(), 20))
         assertTrue(store.rosters.isEmpty())
     }
 
     @Test fun deletingAnAccountOrAllDataRemovesTheRoster() {
         val store = store()
         for (id in listOf(7001, 7002)) {
-            store.apply("login/top", login(id), 10)
-            store.applyFriends(id.toString(), "friend/top", top(id), 20)
+            store.apply(kr("login/top"), login(id), 10)
+            store.applyFriends(id.toString(), kr("friend/top"), top(id), 20)
         }
         store.save()
         store.delete("7001")
@@ -54,9 +55,9 @@ class FriendRosterStoreTest {
 
     @Test fun rosterNeverEntersTheAccountState() {
         val store = store()
-        store.apply("login/top", login(7001), 10)
-        store.apply("friend/top", top(), 20)
-        store.applyFriends("7001", "friend/top", top(), 20)
+        store.apply(kr("login/top"), login(7001), 10)
+        store.apply(kr("friend/top"), top(), 20)
+        store.applyFriends("7001", kr("friend/top"), top(), 20)
         store.save()
         assertFalse(File(directory, "accounts/7001/account-state.json").readText().contains("otherUserGame"))
         assertFalse(File(directory, "accounts/7001/account-state.json").readText().contains("Friend"))
@@ -64,7 +65,7 @@ class FriendRosterStoreTest {
 
     @Test fun oldSavedStateIsRewrittenWithoutOtherPlayersTables() {
         val first = store()
-        first.apply("login/top", login(7001), 10)
+        first.apply(kr("login/top"), login(7001), 10)
         first.save()
         val file = File(directory, "accounts/7001/account-state.json")
         val old = Json.parseToJsonElement(file.readText()).jsonObject.let { state ->
@@ -82,10 +83,10 @@ class FriendRosterStoreTest {
 
     @Test fun malformedBodyKeepsTheStoredRoster() {
         val store = store()
-        store.apply("login/top", login(7001), 10)
-        store.applyFriends("7001", "friend/top", top(), 20)
+        store.apply(kr("login/top"), login(7001), 10)
+        store.applyFriends("7001", kr("friend/top"), top(), 20)
         val before = store.rosters.getValue("7001")
-        assertFalse(store.applyFriends("7001", "friend/top", body("""{"cache":{"updated":{"otherUserGame":"x"}}}"""), 30))
+        assertFalse(store.applyFriends("7001", kr("friend/top"), body("""{"cache":{"updated":{"otherUserGame":"x"}}}"""), 30))
         assertEquals(before, store.rosters.getValue("7001"))
     }
 

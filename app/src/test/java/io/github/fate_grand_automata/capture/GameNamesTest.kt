@@ -20,9 +20,9 @@ class GameNamesTest {
         assertEquals("CE #9", names.equip(9))
         assertEquals("CE #9", names.drop(3, 9))
         assertEquals("Servant #10", names.drop(1, 10))
-        assertEquals(4, calls) // Three KR lists and one missing JP item.
+        assertEquals(7, calls) // Three KR lists, three JP fallback lists for missing ids, and one missing JP item.
         GameNames(directory, downloader) { 2000 }.resolve(listOf(run))
-        assertEquals(4, calls)
+        assertEquals(7, calls)
     }
 
     @Test fun downloadsOnlyPublicKrExportsAndStoresOnlyNames() = runBlocking {
@@ -55,10 +55,10 @@ class GameNamesTest {
         assertEquals("황금색 과일", cache.resolve(listOf(run)).item(100))
         time += 86_399_999
         cache.resolve(listOf(run))
-        assertEquals(4, calls)
+        assertEquals(7, calls)
         time++
         assertEquals("황금색 과일", cache.resolve(listOf(run)).item(100))
-        assertEquals(8, calls)
+        assertEquals(14, calls)
     }
 
     @Test fun knownIdsDoNotTriggerDailyRefresh() = runBlocking {

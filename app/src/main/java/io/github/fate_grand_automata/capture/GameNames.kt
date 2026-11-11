@@ -41,18 +41,42 @@ class GameNames(
     private val download: (String) -> String = ::downloadPublicList,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
+    private data class CachedMetadata(val lastModified: Long, val length: Long, val data: Map<Long, AtlasBasic>)
+    private data class JpNeed(
+        val items: Boolean = false,
+        val servants: Boolean = false,
+        val equips: Boolean = false,
+        val mystics: Boolean = false,
+    ) {
+        val any get() = items || servants || equips || mystics
+        companion object {
+            val All = JpNeed(items = true, servants = true, equips = true, mystics = true)
+        }
+    }
+
     private val mutex = Mutex()
     private var loaded: GameNameMap? = null
+    private var hasMysticNames = false
+    private val metadataCache = mutableMapOf<String, CachedMetadata>()
 
     suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false,
-        hasJpAccount: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
+        hasJpAccount: Boolean = false, cardIds: Collection<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
             val kr = resolveKr(runs, outsideItemIds)
             val names = if (includeCards) kr.copy(
                 svtData = metadata("basic_svt"), commandCodeData = metadata("basic_command_code"),
             ) else kr
-            jpFallback.merge(withJpLists(names, hasJpAccount, includeCards),
-                runs.flatMap { it.items }.filter { it.type == 2 }.map { it.objectId } + outsideItemIds)
+            val drops = runs.flatMap { it.items }
+            val itemIds = drops.filter { it.type == 2 }.map { it.objectId } + outsideItemIds
+            val servantIds = drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys }
+            val equipIds = drops.filter { it.type == 3 }.map { it.objectId }
+            val missingCards = includeCards && cardIds.any { it !in names.svtData }
+            val need = if (hasJpAccount) JpNeed.All else JpNeed(
+                items = itemIds.any { it !in names.items },
+                servants = servantIds.any { it !in names.servants } || missingCards,
+                equips = equipIds.any { it !in names.equips } || missingCards,
+            )
+            jpFallback.merge(withJpLists(names, need, includeCards), itemIds)
         }
     }
 
@@ -63,38 +87,54 @@ class GameNames(
         servantIds: Collection<Long> = emptyList(), equipIds: Collection<Long> = emptyList()): GameNameMap {
         val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
         val drops = runs.flatMap { it.items }
-        val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds)
+        var icons = cached.itemIcons
+        val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds) {
+            icons = it
+        }
         // Older installs can have today's names/attempt without an icon map. Its retry budget is independent.
         if (!File(directory, "item_icons.json").isFile) {
             runCatching {
                 if (!canAttempt("item_icons")) return@runCatching
                 val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
                 check(parseNames(body).isNotEmpty())
-                saveIcons(body)
+                icons = saveIcons(body)
                 saveMetadata("nice_item", parseBasic(body))
             }
+        } else if (icons.isEmpty()) {
+            icons = read("item_icons")
         }
         val servants = refresh("basic_servant", cached.servants,
             drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys } + servantIds)
         val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId } + equipIds)
-        return GameNameMap(items, servants, equips, read("item_icons")).also { loaded = it }
+        return GameNameMap(items, servants, equips, icons).also { loaded = it }
     }
 
     /** Servant and CE names for the friend manager; ids missing from the cache follow the usual daily refresh. */
     suspend fun friends(servantIds: Collection<Long>, equipIds: Collection<Long>, hasJpAccount: Boolean = false): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
             val kr = resolveKr(emptyList(), servantIds = servantIds, equipIds = equipIds)
-            withJpLists(kr.copy(servantData = metadata("basic_servant")), hasJpAccount)
+                .copy(servantData = metadata("basic_servant"))
+            val need = if (hasJpAccount) JpNeed.All else JpNeed(
+                servants = servantIds.any { it !in kr.servants || it !in kr.servantData },
+                equips = equipIds.any { it !in kr.equips },
+            )
+            withJpLists(kr, need)
         }
     }
 
     /** Metadata has an independent migration budget when a legacy name-only cache exists. */
-    suspend fun dashboard(states: Collection<AccountState> = emptyList(), hasJpAccount: Boolean = false): GameNameMap {
+    suspend fun dashboard(states: Collection<AccountState> = emptyList(), hasJpAccount: Boolean = false): GameNameMap =
+        dashboardTables(states.map(::DashboardStateTables), hasJpAccount)
+
+    internal suspend fun dashboardTables(states: Collection<DashboardStateTables>, hasJpAccount: Boolean = false): GameNameMap {
         return withContext(Dispatchers.IO) { mutex.withLock {
             val names = resolveKr(emptyList())
-            refresh("basic_mystic_code", read("basic_mystic_code"), emptyList())
-            fun ids(table: String, field: String) = states.flatMap { it.tables[table].orEmpty() }
-                .mapNotNull { (it as? JsonObject)?.number(field) }.toSet()
+            val mysticFile = File(directory, "basic_mystic_code.json")
+            if (!hasMysticNames || !mysticFile.isFile) {
+                hasMysticNames = refresh("basic_mystic_code", read("basic_mystic_code"), emptyList()).isNotEmpty()
+            }
+            fun ids(table: String, field: String) = states.flatMap { it.rows(table).orEmpty() }
+                .mapNotNull { it.number(field) }.toSet()
             val required = mutableMapOf("nice_item" to ids("userItem", "itemId"),
                 "basic_servant" to ids("userSvtCollection", "svtId"),
                 "basic_equip" to emptySet(), "basic_mystic_code" to ids("userEquip", "equipId"))
@@ -110,17 +150,24 @@ class GameNames(
                 equips = names.equips + equips.mapValues { it.value.name ?: "#${it.key}" },
                 itemIcons = names.itemIcons + items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap(),
                 servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
-            jpFallback.merge(withJpLists(kr, hasJpAccount), required["nice_item"].orEmpty())
+            val allSvtIds = required["basic_servant"].orEmpty() + required["basic_equip"].orEmpty()
+            val need = if (hasJpAccount) JpNeed.All else JpNeed(
+                items = required["nice_item"].orEmpty().any { it !in kr.items && it !in kr.itemData },
+                servants = allSvtIds.any { it !in kr.servantData && it !in kr.equipData },
+                equips = allSvtIds.any { it !in kr.servantData && it !in kr.equipData },
+                mystics = required["basic_mystic_code"].orEmpty().any { it !in kr.mysticData },
+            )
+            jpFallback.merge(withJpLists(kr, need), required["nice_item"].orEmpty())
         } }
     }
 
     /** JP exports have their own files and budgets. Never feed the merged result back into loaded. */
-    private fun withJpLists(kr: GameNameMap, hasJpAccount: Boolean, includeCards: Boolean = false): GameNameMap {
-        if (!hasJpAccount) return kr
-        val items = metadata("nice_item", server = "JP").filterKeys { it !in kr.items && it !in kr.itemData }
-        val servants = metadata("basic_servant", server = "JP").filterKeys { it !in kr.servants && it !in kr.servantData }
-        val equips = metadata("basic_equip", server = "JP").filterKeys { it !in kr.equips && it !in kr.equipData }
-        val mystics = metadata("basic_mystic_code", server = "JP")
+    private fun withJpLists(kr: GameNameMap, need: JpNeed, includeCards: Boolean = false): GameNameMap {
+        if (!need.any) return kr
+        val items = if (need.items) metadata("nice_item", server = "JP").filterKeys { it !in kr.items && it !in kr.itemData } else emptyMap()
+        val servants = if (need.servants) metadata("basic_servant", server = "JP").filterKeys { it !in kr.servants && it !in kr.servantData } else emptyMap()
+        val equips = if (need.equips) metadata("basic_equip", server = "JP").filterKeys { it !in kr.equips && it !in kr.equipData } else emptyMap()
+        val mystics = if (need.mystics) metadata("basic_mystic_code", server = "JP") else emptyMap()
         fun names(rows: Map<Long, AtlasBasic>) = rows.mapNotNull { (id, row) ->
             row.name?.takeIf { it.isNotBlank() }?.let { id to it }
         }.toMap()
@@ -140,7 +187,12 @@ class GameNames(
     private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
         val cache = if (server == "JP") "jp_$list" else list
         val file = File(directory, "${cache}_details.json")
-        val cached = runCatching { Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id } }.getOrDefault(emptyMap())
+        val memory = metadataCache[cache]?.takeIf { file.isFile && file.lastModified() == it.lastModified && file.length() == it.length }?.data
+        val cached = memory ?: runCatching {
+            val data = Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id }
+            if (file.isFile) metadataCache[cache] = CachedMetadata(file.lastModified(), file.length(), data)
+            data
+        }.getOrDefault(emptyMap())
         // Card exports refresh by age, including when an unknown id is absent from Atlas.
         val current = if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
         if (cached.isNotEmpty() && current) return cached
@@ -150,14 +202,17 @@ class GameNames(
             val parsed = parseBasic(body)
             check(parsed.isNotEmpty())
             saveMetadata(cache, parsed)
-            parsed.associateBy { it.id }
         }.getOrDefault(cached)
     }
 
-    private fun saveMetadata(list: String, rows: List<AtlasBasic>) {
-        writeCaptureFile(File(directory, "${list}_details.json"), Json.encodeToString(rows))
+    private fun saveMetadata(list: String, rows: List<AtlasBasic>): Map<Long, AtlasBasic> {
+        val file = File(directory, "${list}_details.json")
+        writeCaptureFile(file, Json.encodeToString(rows))
         File(directory, "${list}_details.attempt").writeText(now().toString())
         File(directory, "${list}_details.fetched").writeText(now().toString())
+        val map = rows.associateBy { it.id }
+        metadataCache[list] = CachedMetadata(file.lastModified(), file.length(), map)
+        return map
     }
 
     private fun isStale(list: String): Boolean {
@@ -180,10 +235,14 @@ class GameNames(
         return true
     }
 
-    private fun saveIcons(body: String) = writeCaptureFile(File(directory, "item_icons.json"),
-        JsonObject(parseIcons(body).mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
+    private fun saveIcons(body: String): Map<Long, String> {
+        val icons = parseIcons(body)
+        writeCaptureFile(File(directory, "item_icons.json"),
+            JsonObject(icons.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
+        return icons
+    }
 
-    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>): Map<Long, String> {
+    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, onIcons: (Map<Long, String>) -> Unit = {}): Map<Long, String> {
         if (cache.isNotEmpty() && ids.all { it in cache }) return cache
         return runCatching {
             if (!canAttempt(list)) return cache
@@ -193,10 +252,11 @@ class GameNames(
                 File(directory, "item_icons.attempt").writeText(now().toString())
             }
             val body = download("https://api.atlasacademy.io/export/KR/$list.json")
-            val names = parseNames(body)
+            val basic = parseBasic(body)
+            val names = basic.mapNotNull { row -> row.name?.takeIf { it.isNotBlank() }?.let { row.id to it } }.toMap()
             check(names.isNotEmpty())
-            if (list == "nice_item") saveIcons(body)
-            saveMetadata(list, parseBasic(body))
+            if (list == "nice_item") onIcons(saveIcons(body))
+            saveMetadata(list, basic)
             val target = File(directory, "$list.json")
             val tmp = File(directory, "$list.tmp")
             tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())

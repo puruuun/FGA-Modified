@@ -20,7 +20,7 @@ class CaptureOutsideSessionTest {
     @BeforeTest fun setup() {
         accounts = CaptureAccounts().apply {
             load(directory)
-            apply("login/top", outsideLogin(), 1)
+            apply("https://yfgo-game.netmarble.com/login/top", outsideLogin(), 1)
             save()
         }
         logs = OutsideLogStore(File(directory, "written"))
@@ -31,7 +31,8 @@ class CaptureOutsideSessionTest {
         response(path, outsideFruit(id, num))
     }
     private fun response(path: String, body: JsonObject) {
-        session.collect(path, assertNotNull(accounts.apply(path, body, time)))
+        val url = if (path.startsWith("https://")) path else "https://yfgo-game.netmarble.com/$path"
+        session.collect(url, assertNotNull(accounts.apply(url, body, time)))
     }
     private val pending get() = File(directory, "accounts/fictionalA/outside-period.json")
 
@@ -350,5 +351,42 @@ class CaptureOutsideSessionTest {
         assertEquals(1, saved.map { it.id }.distinct().size)
         assertEquals(1, logs.entries.size)
         assertFalse(pending.exists())
+    }
+
+    @Test fun otherServerResponseDoesNotCloseOpenPeriodAndScriptAppliesOnlyToItsServer() {
+        val jpLogin = "https://game.fate-go.jp/login/top"
+        val jpItem = "https://game.fate-go.jp/item/recover"
+        val krItem = "https://yfgo-game.netmarble.com/item/recover"
+        response(jpLogin, outsideLogin("fictionalJp"))
+        // Open both a KR period and a JP period simultaneously.
+        response(krItem, outsideFruit("fictionalA", 8))
+        response(jpItem, outsideFruit("fictionalJp", 7))
+        assertEquals(setOf("fictionalA", "fictionalJp"), session.openEntries.value.map { it.accountId }.toSet())
+        assertTrue(logs.entries.isEmpty())
+
+        // Non-battle KR script marks only KR changes as script-made, leaving JP changes unmarked and open.
+        session.scriptStart(battle = false, server = "KR")
+        response(krItem, outsideFruit("fictionalA", 6))
+        response(jpItem, outsideFruit("fictionalJp", 5))
+        session.scriptEnd()
+        val byAccount = session.openEntries.value.associateBy { it.accountId }
+        assertTrue(byAccount.getValue("fictionalA").period.sources.any { it.source.script })
+        assertTrue(byAccount.getValue("fictionalJp").period.sources.none { it.source.script })
+
+        // Starting a KR battle script closes only the KR period; JP stays open and continues recording manual changes.
+        time = 30
+        session.scriptStart(battle = true, server = "KR")
+        assertEquals(listOf("fictionalA"), logs.entries.map { it.accountId })
+        assertEquals(listOf("fictionalJp"), session.openEntries.value.map { it.accountId })
+        response(krItem, outsideFruit("fictionalA", 4)) // paused on KR
+        response(jpItem, outsideFruit("fictionalJp", 3)) // still recorded on JP
+        assertEquals(listOf("fictionalJp"), session.openEntries.value.map { it.accountId })
+        assertEquals(-7L, session.openEntries.value.single().period.total.items[100])
+        session.scriptEnd()
+
+        // Switching accounts within JP closes the old JP period.
+        time = 40
+        response(jpLogin, outsideLogin("fictionalJp2"))
+        assertEquals(listOf("fictionalJp", "fictionalA"), logs.entries.map { it.accountId })
     }
 }

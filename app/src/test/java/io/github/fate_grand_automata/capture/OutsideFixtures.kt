@@ -17,13 +17,13 @@ internal fun outsideLogin(id: String = "fictionalA", fruit: Long = 10, svts: Str
 """).jsonObject
 
 /** Synthetic KR gacha/draw assumption: cache.updated userGame holdings and new userSvt instance rows. */
-internal fun outsideFriendPointSummon(friendPoint: Long = 9800, includeCards: Boolean = true) = Json.parseToJsonElement("""
+internal fun outsideFriendPointSummon(friendPoint: Long = 9800, includeCards: Boolean = true, id: String = "fictionalA") = Json.parseToJsonElement("""
     {"response":[{"nid":"gacha","resCode":"00"}],"cache":{"updated":{
-      "userGame":[{"userId":"fictionalA","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10}],
-      "tblUserGame":[{"userId":"fictionalA","friendPoint":$friendPoint,"createdAt":5,"flag":0}]
+      "userGame":[{"userId":"$id","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10}],
+      "tblUserGame":[{"userId":"$id","friendPoint":$friendPoint,"createdAt":5,"flag":0}]
       ${if (includeCards) """, "userSvt":[
-        {"userId":"fictionalA","id":1002,"svtId":100100,"lv":1},
-        {"userId":"fictionalA","id":1003,"svtId":9700010,"lv":1}
+        {"userId":"$id","id":1002,"svtId":100100,"lv":1},
+        {"userId":"$id","id":1003,"svtId":9700010,"lv":1}
       ]""" else ""}
     }}}
 """).jsonObject

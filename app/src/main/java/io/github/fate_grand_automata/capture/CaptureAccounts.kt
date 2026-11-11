@@ -35,10 +35,14 @@ internal interface DiskRunner {
 /**
  * App-private account storage. All calls are serialized by CaptureTracker, including disk writes.
  *
- * Issue #258: only the current account's [AccountState] stays resident, plus states that still wait to be saved.
- * Every account keeps a small index entry (metadata, [AccountSummary], friend count), which is also persisted as
- * `summary.json` so that starting up and the AP widget never parse an account state. Other states and all friend
- * rosters are read from disk when needed and dropped afterwards. Without a directory (tests) everything stays resident.
+ * Issue #258: only the current account's [AccountState] (and each server's current account) stays resident, plus states
+ * that still wait to be saved. Every account keeps a small index entry (metadata, [AccountSummary], friend count),
+ * which is also persisted as `summary.json` so that starting up and the AP widget never parse an account state. Other
+ * states and all friend rosters are read from disk when needed and dropped afterwards. Without a directory (tests)
+ * everything stays resident.
+ *
+ * Note: storage folders are keyed by `userId` only (`accounts/<userId>/`), so if two accounts on different servers ever
+ * shared the exact same numeric `userId`, they would share one folder.
  */
 internal class CaptureAccounts(
     private val warn: (String) -> Unit = {},
@@ -63,12 +67,24 @@ internal class CaptureAccounts(
     private val resident = mutableMapOf<String, AccountState>()
     private val dirty = mutableSetOf<String>()
     private val sideDirty = mutableSetOf<String>()
+    private val currentByServer = mutableMapOf<String, String>()
     var currentId: String? = null
         private set
     private var directory: File? = null
 
     /** The current account's state, read from disk the first time it is needed. */
     val state: AccountState? get() = currentId?.let(::stateOf)
+
+    /** The last current account of [server], if it exists and is still labelled with [server]. */
+    fun currentId(server: String): String? = currentByServer[server]?.takeIf { index[it]?.metadata?.server == server }
+
+    /** The state of [server]'s current account, read from disk the first time it is needed. */
+    fun state(server: String): AccountState? = currentId(server)?.let(::stateOf)
+
+    fun serverOf(id: String): String? = index[id]?.metadata?.server
+    val currentServers: Map<String, String> get() = currentByServer.toMap()
+    fun isUnsaved(id: String): Boolean = id in dirty || id in sideDirty
+    private fun isCurrent(id: String): Boolean = id == currentId || id in currentByServer.values
 
     val ids: Set<String> get() = index.keys
     operator fun contains(id: String) = id in index
@@ -95,6 +111,13 @@ internal class CaptureAccounts(
         }
         if (first || currentId == null) {
             currentId = runCatching { File(directory, "current").readText().takeIf { it in index } }.getOrNull() ?: newestId()
+        }
+        for (server in KNOWN_SERVERS) {
+            if (first || server !in currentByServer) {
+                runCatching { File(directory, "current-$server").readText() }.getOrNull()
+                    ?.takeIf { index[it]?.metadata?.server == server }
+                    ?.let { currentByServer[server] = it }
+            }
         }
         if (migrateLegacy) {
             migrate(File(captureDirectory, STATE_FILE))
@@ -126,12 +149,12 @@ internal class CaptureAccounts(
         disk.run { file.inputStream().buffered().use(AccountState::fromStreamChecked) }
     }.onFailure { warn("saved account state is unreadable") }.getOrNull()
 
-    /** Resident state, or a transient copy from disk (kept only for the current account). */
+    /** Resident state, or a transient copy from disk (kept only for current accounts). */
     fun stateOf(id: String): AccountState? {
         resident[id]?.let { return it }
         if (id !in index) return null
         val loaded = readState(id) ?: return null
-        if (id == currentId) resident[id] = loaded
+        if (isCurrent(id)) resident[id] = loaded
         return loaded
     }
 
@@ -154,6 +177,7 @@ internal class CaptureAccounts(
     /** Local schema diagnostics only. Never copies a row value, except numeric Grand flag and bond-effect counts. */
     fun recordFriendFields(target: String, body: JsonObject, now: Long) {
         val root = directory?.parentFile ?: return
+        val server = CaptureNames.server(target) ?: return
         runCatching {
             val updated = (body["cache"] as? JsonObject)?.get("updated") as? JsonObject ?: return
             val source: String
@@ -192,7 +216,7 @@ internal class CaptureAccounts(
                 }
             } }
             val diagnostic = buildJsonObject {
-                put("server", CaptureNames.server(target) ?: "unknown")
+                put("server", server)
                 put("source", source)
                 put("time", now)
                 putJsonArray("friendFields") { rows.firstOrNull()?.keys?.sorted()?.forEach { add(it) } }
@@ -210,13 +234,34 @@ internal class CaptureAccounts(
 
     /** Feeds a friend list or support list response for [id]; returns true when the roster changed. */
     fun applyFriends(id: String, target: String, body: JsonObject, now: Long): Boolean {
+        val server = CaptureNames.server(target) ?: return false
         val entry = index[id] ?: return false
         val ownId = AccountRouting.bodyUserId(target, body)
         if (ownId == AccountRouting.CONFLICT) return false
         val path = CaptureNames.path(target)
-        if (path == "friend/top") {
-            if (AccountRouting.friendOwner(body) != id || (ownId != null && ownId != id)) return false
-        } else if (ownId?.let { it != id } ?: (id != currentId)) return false
+        val identified = when (path) {
+            "friend/top" -> {
+                if (AccountRouting.friendOwner(body) != id || (ownId != null && ownId != id)) return false
+                true
+            }
+            "follower/list", "battle/result" -> {
+                if (ownId != null) {
+                    if (ownId != id) return false
+                    true
+                } else {
+                    if (id != currentId(server)) return false
+                    false
+                }
+            }
+            else -> return false
+        }
+        if (identified) {
+            if (entry.metadata.server != server) {
+                entry.metadata = entry.metadata.copy(server = server)
+                sideDirty += id
+            }
+            currentByServer.entries.removeAll { it.key != server && it.value == id }
+        }
         // A support list can only change a roster that exists, and only when it names a friend.
         if (path != "friend/top" && (entry.stored.friendCount == null || !FriendRoster.hasFollowerInfo(body))) return false
         val previous = if (entry.stored.friendCount == null) null else roster(id)
@@ -230,14 +275,17 @@ internal class CaptureAccounts(
     }
 
     /** Roster routing never changes the current account, including a non-current friend/top owner. */
-    fun friendTarget(target: String, body: JsonObject): String? = when (CaptureNames.path(target)) {
-        "friend/top" -> AccountRouting.friendOwner(body)?.takeIf { owner ->
-            val own = AccountRouting.bodyUserId(target, body)
-            owner in index && (own == null || own == owner)
+    fun friendTarget(target: String, body: JsonObject): String? {
+        val server = CaptureNames.server(target) ?: return null
+        return when (CaptureNames.path(target)) {
+            "friend/top" -> AccountRouting.friendOwner(body)?.takeIf { owner ->
+                val own = AccountRouting.bodyUserId(target, body)
+                owner in index && (own == null || own == owner)
+            }
+            "follower/list", "battle/result" -> AccountRouting.userId(target, body, currentId(server))
+                ?.takeIf { it != AccountRouting.CONFLICT && it in index }
+            else -> null
         }
-        "follower/list", "battle/result" -> AccountRouting.userId(target, body, currentId)
-            ?.takeIf { it != AccountRouting.CONFLICT && it in index }
-        else -> null
     }
 
     /**
@@ -251,8 +299,14 @@ internal class CaptureAccounts(
         // A friend list can belong to a saved, non-current account. It must not move the marker
         // or reduce an unverified response into the current account's state.
         if (CaptureNames.path(target) == "friend/top") return null
-        val id = AccountRouting.userId(target, body, currentId) ?: return null
-        if (id == AccountRouting.CONFLICT || !safeId(id)) {
+        val server = CaptureNames.server(target) ?: return null
+        val ownId = AccountRouting.bodyUserId(target, body)
+        if (ownId == AccountRouting.CONFLICT) {
+            warn("conflicting or invalid account routing; response dropped")
+            return null
+        }
+        val id = ownId ?: currentId(server) ?: return null
+        if (!safeId(id)) {
             warn("conflicting or invalid account routing; response dropped")
             return null
         }
@@ -262,28 +316,32 @@ internal class CaptureAccounts(
         if (next != null && next !== previous) {
             resident[id] = next
             dirty += id
-            touch(id, next, now)
+            touch(id, next, now, server.takeIf { ownId != null })
         }
-        if (next != null) CaptureNames.server(target)?.let { server ->
+        // Only a response that identifies the account by id may set or correct its server label.
+        if (next != null && ownId != null) {
             val entry = index[id]!!
             if (entry.metadata.server != server) {
                 entry.metadata = entry.metadata.copy(server = server)
                 sideDirty += id
             }
+            currentByServer.entries.removeAll { it.key != server && it.value == id }
+            if (currentId(server) == null) currentByServer[server] = id
         }
-        if (next != null && (next !== previous || CaptureNames.classify(target) == CaptureNames.ApiPath.Login)) {
+        if (next != null && (next !== previous || (ownId != null && CaptureNames.classify(target) == CaptureNames.ApiPath.Login))) {
             currentId = id
+            currentByServer[server] = id
         }
         trim()
         return Response(id, previous, next)
     }
 
     /** Refreshes the index entry after the state of [id] changed. */
-    private fun touch(id: String, state: AccountState, now: Long) {
+    private fun touch(id: String, state: AccountState, now: Long, server: String? = null) {
         val old = index[id]
         val keep = old?.stored
         val stored = storedFor(id, state, now, null).copy(friendCount = keep?.friendCount, friendUpdatedAt = keep?.friendUpdatedAt ?: 0)
-        if (old == null) index[id] = Entry(Metadata(), stored) else old.stored = stored
+        if (old == null) index[id] = Entry(Metadata(server = server ?: "KR"), stored) else old.stored = stored
         sideDirty += id
     }
 
@@ -328,6 +386,7 @@ internal class CaptureAccounts(
         dirty.remove(id)
         sideDirty.remove(id)
         memoryRosters.remove(id)
+        currentByServer.entries.removeAll { it.value == id }
         if (currentId == id) currentId = newestId()
         save()
     }
@@ -339,6 +398,7 @@ internal class CaptureAccounts(
         dirty.clear()
         sideDirty.clear()
         memoryRosters.clear()
+        currentByServer.clear()
         currentId = null
     }
 
@@ -362,14 +422,22 @@ internal class CaptureAccounts(
         disk.run {
             currentId?.let { if (it !in dirty) atomicWriteStream(File(root, "current")) { out -> out.write(it.toByteArray()) } }
                 ?: File(root, "current").delete()
+            for (server in KNOWN_SERVERS) {
+                val id = currentId(server)
+                if (id != null) {
+                    if (id !in dirty) atomicWriteStream(File(root, "current-$server")) { out -> out.write(id.toByteArray()) }
+                } else {
+                    File(root, "current-$server").delete()
+                }
+            }
         }
         trim()
     }
 
-    /** Only the current account and states that still wait for a save stay resident. */
+    /** Only the current accounts and states that still wait for a save stay resident. */
     private fun trim() {
         if (directory == null) return
-        resident.keys.retainAll { it == currentId || it in dirty }
+        resident.keys.retainAll { isCurrent(it) || it in dirty }
     }
 
     private fun newestId() = index.entries.sortedWith(
@@ -413,6 +481,7 @@ internal class CaptureAccounts(
         const val STATE_FILE = "account-state.json"
         const val ROSTER_FILE = "friends.json"
         const val SUMMARY_FILE = "summary.json"
+        val KNOWN_SERVERS = listOf("KR", "JP")
         val metadataJson = Json { encodeDefaults = true }
     }
 }

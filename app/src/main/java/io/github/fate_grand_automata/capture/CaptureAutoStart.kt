@@ -17,13 +17,18 @@ object CaptureAutoStart {
      * outside-change period open and start no run session; their recorded sources are marked as script-made.
      */
     fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer, battle: Boolean = true) {
+        val serverCode = when (server) {
+            GameServer.Kr -> "KR"
+            GameServer.Jp.Original -> "JP"
+            else -> null
+        }
         CaptureTracker.discardRun()
         CaptureTracker.init(context)
-        CaptureTracker.outsideScriptStart(battle)
+        if (serverCode != null) CaptureTracker.outsideScriptStart(battle, serverCode)
         if (!CaptureController.isSupported) return
         val readiness = captureReadiness(context, prefs)
         if (server != GameServer.Kr && (server != GameServer.Jp.Original || !readiness.jpReady)) return
-        if (battle) CaptureTracker.startRun()
+        if (battle && serverCode != null) CaptureTracker.startRun(serverCode)
         if (!prefs.captureTrackerEnabled.get() || !CaptureConsent.agreed(prefs.captureConsentVersion.get()) ||
             CaptureTracker.running.value) return
         runCatching {

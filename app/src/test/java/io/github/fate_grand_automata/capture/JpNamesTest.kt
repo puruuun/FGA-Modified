@@ -26,17 +26,52 @@ class JpNamesTest {
     }
 
     @Test fun krOnlyAccountKeepsExistingResultsAndNeverReadsOrDownloadsJpLists() = runBlocking {
+        val krState = dashboardState(
+            "userGame" to """[{"userId":7001,"name":"합성 KR 계정"}]""",
+            "userItem" to """[{"itemId":100,"num":5}]""",
+            "userSvt" to """[{"svtId":10},{"svtId":30}]""",
+            "userSvtCollection" to """[{"svtId":10,"status":2,"maxLv":90}]""",
+            "userEquip" to """[{"equipId":1,"lv":10}]""",
+        )
         val urls = mutableListOf<String>()
         val download: (String) -> String = { urls += it; JpNamesFixture.download(it) }
         val cache = GameNames(directory, download) { 1000 }
-        val kr = cache.dashboard(listOf(JpNamesFixture.state), hasJpAccount("KR"))
-        assertEquals(cache.dashboard(listOf(JpNamesFixture.state)), kr)
+        val kr = cache.dashboard(listOf(krState), hasJpAccount("KR"))
+        assertEquals(cache.dashboard(listOf(krState)), kr)
         assertTrue(urls.all { "/export/KR/" in it })
-        assertEquals(listOf(10L), dashboardData(JpNamesFixture.state, kr).servants!!.map { it.id })
+        assertEquals(listOf(10L), dashboardData(krState, kr).servants!!.map { it.id })
         cache.dashboard(hasJpAccount = true) // Leave JP files on disk, as after deleting a JP account.
         urls.clear()
-        assertEquals(kr, cache.dashboard(listOf(JpNamesFixture.state), hasJpAccount = false))
+        assertEquals(kr, cache.dashboard(listOf(krState), hasJpAccount = false))
         assertTrue(urls.isEmpty())
+    }
+
+    @Test fun missingJpIdsFallBackToJpListsEvenWhenAccountIsLabelledKrOrNoJpAccountExists() = runBlocking {
+        val cache = GameNames(directory, JpNamesFixture::download) { 1000 }
+        // Dashboard: state has JP-only servant 20 and CE 40, while hasJpAccount is false (wrong label or no JP account).
+        val dashboardNames = cache.dashboard(listOf(JpNamesFixture.state), hasJpAccount = false)
+        assertEquals("日本の騎士", dashboardNames.servant(20))
+        assertEquals("日本の礼装", dashboardNames.equip(40))
+        assertEquals(listOf(10L, 20L), dashboardData(JpNamesFixture.state, dashboardNames).servants!!.map { it.id })
+
+        // Friends: JP-only servant 20 and CE 40 resolve even when hasJpAccount is false.
+        val friendNames = GameNames(File(directory, "friends"), JpNamesFixture::download) { 1000 }
+            .friends(listOf(10, 20), listOf(30, 40), hasJpAccount = false)
+        assertEquals("한국 기사", friendNames.servant(10))
+        assertEquals("日本の騎士", friendNames.servant(20))
+        assertEquals("한국 예장", friendNames.equip(30))
+        assertEquals("日本の礼装", friendNames.equip(40))
+
+        // Log resolve: JP-only servant 20, CE 40, and item 200 resolve even when hasJpAccount is false.
+        val run = RunGains(items = listOf(GainedItem(1, 20, 1), GainedItem(3, 40, 1), GainedItem(2, 200, 1)),
+            bond = mapOf(20L to 1))
+        val logNames = GameNames(File(directory, "logs"), JpNamesFixture::download) { 1000 }
+            .resolve(listOf(run), includeCards = true, hasJpAccount = false, cardIds = listOf(20, 40))
+        assertEquals("日本の騎士", logNames.servant(20))
+        assertEquals("日本の礼装", logNames.equip(40))
+        assertEquals("日本の素材", logNames.item(200))
+        assertEquals("日本の騎士", logNames.svtData[20]?.name)
+        assertEquals("日本の礼装", logNames.svtData[40]?.name)
     }
 
     @Test fun storedJpAccountAddsJapaneseNamesFacesTypesAndKeepsKrEntries() = runBlocking {

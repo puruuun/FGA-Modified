@@ -85,7 +85,8 @@ class CaptureJpStartTest {
         if (ready) certificate(true)
         CaptureTracker.setRunning(true)
         CaptureAutoStart.onScriptStart(context, prefs, server)
-        CaptureTracker.onGameResponse("https://game.fate-go.jp/battle/result", """{
+        val host = if (server == GameServer.Kr) "yfgo-game.netmarble.com" else "game.fate-go.jp"
+        CaptureTracker.onGameResponse("https://$host/battle/result", """{
             "cache":{"updated":{"userGame":[{"userId":7002}]}},
             "response":[{"success":{"phaseClearQp":1000}}]}""".toByteArray(), null)
         return CaptureTracker.finishRun()?.capturedBattles

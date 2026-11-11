@@ -28,7 +28,7 @@ class JpItemFallbackTest {
         }) { 1000 }.resolve(run(id))
         assertEquals("維新まんじゅう", names.item(id))
         assertEquals(icon, names.itemIcons[id])
-        assertEquals(listOf("https://api.atlasacademy.io/nice/JP/item/$id"), urls.filter { it.contains("/JP/") })
+        assertEquals(listOf("https://api.atlasacademy.io/nice/JP/item/$id"), urls.filter { it.contains("/nice/JP/") })
         val row = Json.parseToJsonElement(cacheFile.readText()).jsonObject.getValue("$id").jsonObject
         assertEquals(setOf("name", "icon"), row.keys)
         assertEquals("維新まんじゅう", row.getValue("name").jsonPrimitive.content)
@@ -56,7 +56,7 @@ class JpItemFallbackTest {
         var kr = krBody
         var jpCalls = 0
         val cache = GameNames(directory, { url ->
-            if (url.contains("/JP/")) { jpCalls++; jpBody } else kr
+            if (url.contains("/nice/JP/")) { jpCalls++; jpBody } else kr
         }) { time }
         assertEquals("維新まんじゅう", cache.resolve(run(id)).item(id))
         kr = """[{"id":$id,"name":"한국어","icon":"$krIcon"}]"""
@@ -72,7 +72,7 @@ class JpItemFallbackTest {
     }
 
     @Test fun successfulJpCacheIsReusedAcrossRestartsAndDays() = runBlocking {
-        GameNames(directory, { if (it.contains("/JP/")) jpBody else krBody }) { 1000 }.resolve(run(id))
+        GameNames(directory, { if (it.contains("/nice/JP/")) jpBody else krBody }) { 1000 }.resolve(run(id))
         val urls = mutableListOf<String>()
         val cache = GameNames(directory, { url -> urls += url; krBody }) { 1000 + 3 * 86_400_000L }
         assertEquals("維新まんじゅう", cache.resolve(run(id)).item(id))
@@ -135,7 +135,7 @@ class JpItemFallbackTest {
     @Test fun onlyPositiveItemIdsFromItemDropsAndOutsideLogEnterFixedUrl() = runBlocking {
         val calls = mutableListOf<String>()
         val names = GameNames(directory, { url ->
-            if (url.contains("/JP/")) { calls += url; jpBody } else krBody
+            if (url.contains("/nice/JP/")) { calls += url; jpBody } else krBody
         }).resolve(listOf(RunGains(items = listOf(GainedItem(1, 501, 1), GainedItem(3, 502, 1),
             GainedItem(99, 503, 1), GainedItem(2, 0, 1), GainedItem(2, -1, 1), GainedItem(2, id, 1)))),
             listOf(id, 504, Long.MAX_VALUE, 0, -1))
@@ -149,9 +149,9 @@ class JpItemFallbackTest {
             {"itemId":$id,"num":1},{"itemId":0,"num":1},{"itemId":-3,"num":1},{"itemId":100,"num":2}]""")
         val names = GameNames(directory, { url ->
             calls += url
-            if (url.contains("/JP/")) jpBody else krBody
+            if (url.contains("/nice/JP/")) jpBody else krBody
         }).dashboard(listOf(state))
-        assertEquals(listOf("https://api.atlasacademy.io/nice/JP/item/$id"), calls.filter { it.contains("/JP/") })
+        assertEquals(listOf("https://api.atlasacademy.io/nice/JP/item/$id"), calls.filter { it.contains("/nice/JP/") })
         assertEquals("維新まんじゅう", names.item(id))
         assertEquals(icon, names.itemIcons[id])
         assertFalse(cacheFile.readText().contains("private-account"))

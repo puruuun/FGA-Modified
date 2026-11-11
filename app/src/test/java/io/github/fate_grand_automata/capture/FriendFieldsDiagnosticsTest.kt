@@ -45,7 +45,7 @@ class FriendFieldsDiagnosticsTest {
 
     @Test fun followersOverwriteTheFileAndCountAllSlotsWithoutCopyingValues() {
         val store = CaptureAccounts().apply { load(directory) }
-        store.recordFriendFields("friend/top", top, 42)
+        store.recordFriendFields("https://yfgo-game.netmarble.com/friend/top", top, 42)
         val followers = body("""{"cache":{"updated":{"userFollower":[{"followerInfo":[$row]},
             {"followerInfo":[{"userId":"another-private-id","userSvtLeaderHash":[{"grandSvt":0},{"grandSvt":"invalid"},{}]}]}]}}}""")
         for (path in listOf("follower/list", "battle/result")) {
@@ -64,7 +64,7 @@ class FriendFieldsDiagnosticsTest {
         val mapped = JsonObject(original + ("userSvtGrandHash" to JsonObject(
             original["userSvtGrandHash"]!!.jsonArray.mapIndexed { index, value -> index.toString() to value }.toMap())))
         val store = CaptureAccounts().apply { load(directory) }
-        store.recordFriendFields("friend/top", body("""{"cache":{"updated":{"otherUserGame":[$mapped]}}}"""), 42)
+        store.recordFriendFields("https://yfgo-game.netmarble.com/friend/top", body("""{"cache":{"updated":{"otherUserGame":[$mapped]}}}"""), 42)
         val result = body(file.readText())
         assertEquals(listOf("grandGraphId", "script", "svtId"), result["grandFields"]!!.jsonArray.map { it.jsonPrimitive.content })
         assertEquals(listOf("equipTarget2SkillChange", "privateKey"), result["grandScriptKeys"]!!.jsonArray.map { it.jsonPrimitive.content })
@@ -74,7 +74,7 @@ class FriendFieldsDiagnosticsTest {
 
     @Test fun missingGrandAndEmptyRowsHaveEmptySchemaAndZeroCounts() {
         val store = CaptureAccounts().apply { load(directory) }
-        store.recordFriendFields("friend/top", body("""{"cache":{"updated":{"otherUserGame":[]}}}"""), 1)
+        store.recordFriendFields("https://yfgo-game.netmarble.com/friend/top", body("""{"cache":{"updated":{"otherUserGame":[]}}}"""), 1)
         val result = body(file.readText())
         assertEquals(JsonArray(emptyList()), result["friendFields"])
         assertEquals(JsonArray(emptyList()), result["slotFields"])
@@ -82,7 +82,7 @@ class FriendFieldsDiagnosticsTest {
         assertEquals(JsonArray(emptyList()), result["grandFields"])
         assertEquals(JsonArray(emptyList()), result["grandScriptKeys"])
         assertEquals(body("{}"), result["bondEffectValues"])
-        store.recordFriendFields("battle/result", body("""{"cache":{"updated":{"userItem":[]}}}"""), 2)
+        store.recordFriendFields("https://yfgo-game.netmarble.com/battle/result", body("""{"cache":{"updated":{"userItem":[]}}}"""), 2)
         assertEquals(result, body(file.readText()))
     }
 
@@ -92,12 +92,12 @@ class FriendFieldsDiagnosticsTest {
         File(directory, "diagnostics").writeText("blocked")
         val login = body("""{"response":[{"nid":"login","resCode":"00"}],
             "cache":{"replaced":{"userGame":[{"userId":7001,"name":"Owner"}]}}}""")
-        store.apply("login/top", login, 1)
+        store.apply("https://yfgo-game.netmarble.com/login/top", login, 1)
         val response = body("""{"cache":{"replaced":{"tblFriend":[{"userId":7001,"friendId":11},{"userId":12,"friendId":7001}]},
             "updated":{"otherUserGame":[{"userId":11,"userSvtLeaderHash":[{"svtId":500,"grandSvt":1}]}]}}}""")
-        store.recordFriendFields("friend/top", response, 2)
+        store.recordFriendFields("https://yfgo-game.netmarble.com/friend/top", response, 2)
         assertEquals(listOf("writing friend field diagnostics failed"), warnings)
-        assertTrue(store.applyFriends("7001", "friend/top", response, 2))
+        assertTrue(store.applyFriends("7001", "https://yfgo-game.netmarble.com/friend/top", response, 2))
         store.save()
         assertTrue(File(directory, "accounts/7001/friends.json").isFile)
         assertTrue(CaptureAccounts().apply { load(directory) }.roster("7001")!!.friends.getValue("11").slots.single().grand)

@@ -12,14 +12,17 @@ internal class CaptureRunSession {
     private var run: RunGains? = null
     private var endState: AccountState? = null
     private var questId: Long? = null
+    var expectedServer: String? = null
+        private set
     var accountId: String? = null
         private set
 
     fun collectingFor(id: String) = scriptActive && running && accountId == id
 
-    fun start(vpnRunning: Boolean, state: AccountState?, currentId: String? = null) {
+    fun start(vpnRunning: Boolean, state: AccountState?, currentId: String? = null, server: String? = null) {
         discard()
         scriptActive = true
+        expectedServer = server
         accountId = currentId
         setRunning(vpnRunning, state)
     }
@@ -32,6 +35,8 @@ internal class CaptureRunSession {
 
     fun collect(target: String, body: JsonObject, previous: AccountState?, next: AccountState?, routedId: String? = null) {
         if (!scriptActive || !running) return
+        val server = io.github.fate_grand_automata.scripts.capture.CaptureNames.server(target)
+        if (expectedServer != null && server != expectedServer) return
         if (accountId == null) accountId = routedId
         if (accountId != routedId) return
         val path = io.github.fate_grand_automata.scripts.capture.CaptureNames.path(target)
@@ -68,6 +73,7 @@ internal class CaptureRunSession {
         run = null
         endState = null
         questId = null
+        expectedServer = null
         accountId = null
     }
 }

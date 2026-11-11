@@ -80,7 +80,7 @@ class CaptureGatingUiTest {
         val store = context.getSharedPreferences("gating-main", Context.MODE_PRIVATE).also { it.edit().clear().commit() }
         val prefs = PrefsCore(PrefMaker(store), context)
         CaptureTracker.init(context)
-        CaptureTracker.onGameResponse("/login/top", """{"response":[{"nid":"login","resCode":"00"}],
+        CaptureTracker.onGameResponse("https://yfgo-game.netmarble.com/login/top", """{"response":[{"nid":"login","resCode":"00"}],
             "cache":{"replaced":{"userGame":[{"userId":7001,"name":"Fictional","actMax":100}]}}}""".toByteArray(), null)
         assertTrue(CaptureTracker.accounts.value.isNotEmpty())
         compose.setContent { FGATheme {
@@ -99,7 +99,7 @@ class CaptureGatingUiTest {
         val store = context.getSharedPreferences("gating-main", Context.MODE_PRIVATE).also { it.edit().clear().commit() }
         val prefs = PrefsCore(PrefMaker(store), context).apply { captureTrackerEnabled.set(true) }
         CaptureTracker.init(context)
-        CaptureTracker.onGameResponse("/login/top", """{"response":[{"nid":"login","resCode":"00"}],
+        CaptureTracker.onGameResponse("https://yfgo-game.netmarble.com/login/top", """{"response":[{"nid":"login","resCode":"00"}],
             "cache":{"replaced":{"userGame":[{"userId":7001,"name":"Fictional","actMax":100}]}}}""".toByteArray(), null)
         compose.setContent { FGATheme {
             val capture = rememberCaptureMain(prefs) {}

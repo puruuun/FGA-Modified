@@ -228,4 +228,54 @@ class DashboardDataTest {
         assertEquals(listOf(2L,1L,3L), data.equips!!.map { it.id })
         assertTrue(data.equips!!.first().equipped); assertNull(data.equips!!.last().level)
     }
+
+    @Test fun largeStateDashboardParsesTablesOnceAndCountsStorageWithoutFullTrees() = kotlinx.coroutines.runBlocking {
+        val dir = java.nio.file.Files.createTempDirectory("dashboard-perf").toFile()
+        try {
+            val padding = "x".repeat(320)
+            val rawTables = buildMap {
+                put("userGame", """[{"userId":"7001","name":"Synthetic","lv":150,"actMax":144,"actRecoverAt":1800003600,"qp":900000000,"stone":120,"freeStone":100,"chargeStone":20,"mana":5000,"rarePri":25,"svtKeep":700,"svtEquipKeep":700}]""")
+                put("tblUserGame", """[{"userId":"7001","friendPoint":250000,"createdAt":1500000000}]""")
+                put("userItem", (1..180).joinToString(",", "[", "]") { """{"userId":"7001","itemId":${100 + it},"num":${it * 3},"pad":"$padding"}""" })
+                put("userSvt", (1..600).joinToString(",", "[", "]") { """{"userId":"7001","id":${10_000 + it},"svtId":${if (it % 2 == 0) 10 else 30},"lv":90,"treasureDeviceLv1":5,"skillLv1":10,"skillLv2":10,"skillLv3":10,"pad":"$padding"}""" })
+                put("userSvtCollection", (1..300).joinToString(",", "[", "]") { """{"userId":"7001","svtId":${if (it == 1) 10 else 100_000 + it},"status":2,"maxLv":90,"friendshipRank":10,"friendship":1000000,"pad":"$padding"}""" })
+                put("userSvtStorage", (1..200).joinToString(",", "[", "]") { """{"userId":"7001","id":${20_000 + it},"svtId":10,"lv":1,"pad":"$padding"}""" })
+                put("userEquip", (1..30).joinToString(",", "[", "]") { """{"userId":"7001","id":$it,"equipId":1,"lv":10}""" })
+                put("userCommandCode", (1..50).joinToString(",", "[", "]") { """{"userId":"7001","id":$it,"commandCodeId":$it}""" })
+                repeat(50) { table ->
+                    put("other_$table", (1..30).joinToString(",", "[", "]") { """{"id":$it,"pad":"$padding"}""" })
+                }
+            }
+            val state = AccountState(rawTables, "[]", snapshotTime = 1000, lastUpdateTime = 1000)
+            assertEquals(200, state.objectCount("userSvtStorage"))
+            assertEquals(600, state.objectCount("userSvt"))
+            assertEquals(300, state.objectCount("userSvtCollection"))
+
+            val cache = GameNames(dir, JpNamesFixture::download) { 1000 }
+            // Warm the disk cache once, then measure warm dashboard loads.
+            cache.dashboard(emptyList(), hasJpAccount = false)
+
+            // Measure old path (separate table parses + readingstorage array as JsonObject list) vs new path.
+            val oldStart = System.nanoTime()
+            val oldAtlas = cache.dashboard(listOf(state), hasJpAccount = false)
+            val oldData = dashboardData(state, oldAtlas)
+            val oldMs = (System.nanoTime() - oldStart) / 1_000_000.0
+
+            val t0 = System.nanoTime()
+            val tables = DashboardStateTables(state)
+            val atlas = cache.dashboardTables(listOf(tables), hasJpAccount = false)
+            val t1 = System.nanoTime()
+            val data = dashboardData(tables, atlas)
+            val t2 = System.nanoTime()
+
+            assertEquals(oldData, data)
+            assertEquals(600, data.storage!!.total)
+            assertEquals(200, data.storage!!.secondStorage)
+            val namesMs = (t1 - t0) / 1_000_000.0
+            val projectMs = (t2 - t1) / 1_000_000.0
+            println("Dashboard large-state timing: separate=${"%.2f".format(oldMs)}ms, shared(names=${"%.2f".format(namesMs)}ms, projection=${"%.2f".format(projectMs)}ms)")
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
 }

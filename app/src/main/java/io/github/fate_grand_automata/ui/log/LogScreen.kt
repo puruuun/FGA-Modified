@@ -54,10 +54,16 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     LaunchedEffect(entries, outsideEntries, openEntries, accounts) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CaptureTracker.init(context) }
         val gains = entries.mapNotNull { it.gains }
-        val itemIds = (outsideEntries + openEntries).flatMap { it.period.sources.flatMap { source -> source.delta.items.keys } }
-        if (gains.isNotEmpty() || outsideEntries.isNotEmpty() || openEntries.isNotEmpty()) names = cache.resolve(
-            gains, itemIds + iconItemIds, includeCards = outsideEntries.isNotEmpty() || openEntries.isNotEmpty(),
-            hasJpAccount = CaptureTracker.accounts.value.any { it.server == "JP" },
+        val allOutside = outsideEntries + openEntries
+        val itemIds = allOutside.flatMap { it.period.sources.flatMap { source -> source.delta.items.keys } }
+        val cardIds = allOutside.flatMap {
+            it.period.total.svts.keys + it.period.sources.flatMap { source -> source.delta.svts.keys }
+        }.toSet()
+        val logAccounts = (entries.mapNotNull { it.accountId } + allOutside.map { it.accountId }).toSet()
+        if (gains.isNotEmpty() || allOutside.isNotEmpty()) names = cache.resolve(
+            gains, itemIds + iconItemIds, includeCards = allOutside.isNotEmpty(),
+            hasJpAccount = CaptureTracker.accounts.value.any { it.id in logAccounts && it.server == "JP" },
+            cardIds = cardIds,
         )
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,

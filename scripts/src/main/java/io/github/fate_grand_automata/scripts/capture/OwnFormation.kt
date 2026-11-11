@@ -22,14 +22,14 @@ data class OwnFormations(
         private fun classOrder(classId: Int) = if (classId in 1..8) classId else 0
 
         /** Never throws: unreadable tables and rows are skipped, and a failure returns null. */
-        fun from(state: AccountState): OwnFormations? = runCatching {
-            val game = rows(state, "userGame").firstOrNull()
+        fun from(state: AccountState, game: JsonObject? = null): OwnFormations? = runCatching {
+            val userGame = game ?: rows(state, "userGame").firstOrNull()
             val slots = rows(state, "userSvtLeader").mapNotNull { row ->
                 runCatching { FriendRoster.slot(row) }.getOrNull()?.takeIf { it.deckId != 0L }
             }.distinctBy { it.deckId to it.classId }
             val byDeck = slots.groupBy { it.deckId }
-            val mainIds = game?.longs("fixMainSupportDeckIds").orEmpty()
-            val eventIds = game?.longs("fixEventSupportDeckIds").orEmpty()
+            val mainIds = userGame?.longs("fixMainSupportDeckIds").orEmpty()
+            val eventIds = userGame?.longs("fixEventSupportDeckIds").orEmpty()
             fun decks(ids: List<Long>) = ids.mapIndexedNotNull { position, id ->
                 byDeck[id]?.let { OwnDeck(id, position + 1, it.sortedBy { slot -> classOrder(slot.classId) }) }
             }

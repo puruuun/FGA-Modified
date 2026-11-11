@@ -41,6 +41,83 @@ class DashboardRound7UiTest {
         compose.onNodeWithText("JP").assertIsDisplayed()
         compose.onNodeWithText("KR").assertDoesNotExist()
     }
+
+    @Test fun loadingStateShowsIndicatorThenDataAndEmptyStateOnlyWithoutData() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val noDataText = context.getString(io.github.fate_grand_automata.R.string.dashboard_no_data)
+        val loading = androidx.compose.runtime.mutableStateOf(true)
+        val currentData = androidx.compose.runtime.mutableStateOf<DashboardData?>(null)
+        compose.setContent {
+            FGATheme {
+                CompositionLocalProvider(LocalNavigateBack provides {}) {
+                    fixture.Icons {
+                        AccountDashboardContent(currentData.value, fixture.names, "Alias", {}, {}, loading = loading.value)
+                    }
+                }
+            }
+        }
+        // While loading is true, the progress indicator is shown and "no stored data" is absent.
+        compose.onNodeWithTag("dashboard-loading").assertIsDisplayed()
+        compose.onNodeWithText(noDataText).assertDoesNotExist()
+
+        // Once data arrives and loading finishes, the dashboard sections render without flashing "no stored data".
+        compose.runOnIdle {
+            currentData.value = fixture.data
+            loading.value = false
+        }
+        compose.onNodeWithTag("dashboard-loading").assertDoesNotExist()
+        compose.onNodeWithText(noDataText).assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-section:0").assertExists()
+
+        // An account that genuinely has no stored data shows "no stored data" after loading finishes.
+        compose.runOnIdle {
+            currentData.value = null
+            loading.value = false
+        }
+        compose.onNodeWithTag("dashboard-loading").assertDoesNotExist()
+        compose.onNodeWithText(noDataText).assertIsDisplayed()
+    }
+
+    @Test fun viewModelStartsInLoadingStateAndResolvesAccountOrEmptyState() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val noDataText = context.getString(io.github.fate_grand_automata.R.string.dashboard_no_data)
+        CaptureTracker.init(context)
+        CaptureTracker.delete()
+        try {
+            CaptureTracker.onGameResponse(
+                "https://yfgo-game.netmarble.com/login/top",
+                """{"response":[{"nid":"login","resCode":"00"}],"cache":{"replaced":{"userGame":[{"userId":7001,"name":"Stored Master","lv":120}]}}}""".toByteArray(),
+                null,
+            )
+            val repo = io.github.fate_grand_automata.battlelog.BattleLogRepository(context)
+            val namesCache = GameNames(java.io.File(context.filesDir, "capture/names-test"), JpNamesFixture::download) { 1000 }
+            val vm = AccountDashboardViewModel(repo, context, namesCache)
+            assertTrue(vm.account("7001").value.loading)
+
+            val shownId = androidx.compose.runtime.mutableStateOf("7001")
+            compose.setContent {
+                FGATheme {
+                    CompositionLocalProvider(LocalNavigateBack provides {}) {
+                        fixture.Icons {
+                            AccountDashboardScreen(shownId.value, {}, {}, vm = vm)
+                        }
+                    }
+                }
+            }
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("Stored Master", substring = true).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithText(noDataText).assertDoesNotExist()
+
+            // Switch to an account id with no stored data: shows "no stored data" once its load finishes.
+            compose.runOnIdle { shownId.value = "missing-account" }
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText(noDataText).fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            CaptureTracker.delete()
+        }
+    }
     private fun layout(width: Int) {
         RuntimeEnvironment.setQualifiers("en-w${width}dp-h800dp-hdpi")
         // A short profile beside a tall collection exposes row-pairing regressions.

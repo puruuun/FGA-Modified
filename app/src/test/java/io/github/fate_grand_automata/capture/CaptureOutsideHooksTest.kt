@@ -16,7 +16,10 @@ import org.junit.Assert.*
 @Config(sdk = [32])
 class CaptureOutsideHooksTest {
     private val context get() = ApplicationProvider.getApplicationContext<android.content.Context>()
-    private fun feed(path: String, body: String) = CaptureTracker.onGameResponse(path, body.toByteArray(), null)
+    private fun feed(path: String, body: String) = CaptureTracker.onGameResponse(
+        if (path.startsWith("https://")) path else "https://yfgo-game.netmarble.com/$path",
+        body.toByteArray(), null,
+    )
     private fun fruit(num: Long) = feed("item/recover", outsideFruit(num = num).toString())
 
     @Before fun setup() {
