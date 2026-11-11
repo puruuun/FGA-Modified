@@ -54,9 +54,15 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ## Agent team
 
-- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex, or the Sonnet fallback below) implements, tests and opens the PR.
-- Implementer order (owner decision, 2026-10-30): **Codex first; Sonnet 5.5 at medium effort is the fallback.** When Codex is unavailable (usage limit or not reachable), the planner hands the work to Sonnet 5.5 (medium), which continues from where Codex stopped on the same branch. No other model is used.
-- The fallback follows the same rules as Codex: same branch and PR flow, same commit identity, no device work unless the planner assigns it. The planner tells the owner when a task moved to Sonnet and why, and switches back to Codex for new work once its limit is refilled.
+- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
+- Agent models and order (owner decision, 2026-11-11; replaces the 2026-10-30 order). The planner chooses the agent and model for each task by its difficulty and risk, within this order of usage pools:
+  1. **Codex** (`gpt-6.1-sol`, via `build/orchestration/codex-run.sh`): first choice.
+  2. **Gemini** through the Antigravity CLI `agy` (via `build/orchestration/gemini-run.sh`), when Codex is at its usage limit or when the planner judges Gemini the better fit for the task:
+     - **Gemini 3.8 Flash: always `high`** (`gemini-3.8-flash-high`). For simple, well-bounded tasks and code research.
+     - **Gemini 4 Argon: `medium` by default** (`gemini-4-argon-medium`), **`high` for hard tasks** (`gemini-4-argon-high`).
+  3. **Sonnet 5.5 (medium)**: only when both Codex and Gemini are out of usage. It shares the planner's own usage, so it is the last resort.
+- The same order applies to verification agents, design reviews and research agents. A Gemini agent used only for reading (review, research) runs with the read-only settings (`~/.claude/agents/gemini-readonly.settings.json`); a Gemini implementer runs with the implementer settings and only inside its own worktree.
+- Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
   - **Risky changes:**
     - automation logic, screen reading, taps, coordinates or templates (`scripts/`, `libautomata/`, `app/` runner and imaging);
@@ -66,7 +72,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - build, signing and versioning;
     - upstream syncs.
   - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
-  - **Who verifies:** a separate agent run with a fresh context, on the same model order as implementation (Codex first, Sonnet 5.5 medium as the fallback). It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
+  - **Who verifies:** a separate agent run with a fresh context, on the same agent order as implementation (Codex, then Gemini, then Sonnet). It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
   - **What the verifier does:**
     - compares the diff with every requirement in the issue;
     - checks that the tests cover the requirements and the failure and guard cases;
@@ -76,7 +82,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
 - Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
   - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
-  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a different model reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
+  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a different model from the planner (by the agent order above) reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
   - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
