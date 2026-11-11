@@ -57,6 +57,23 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. The implementing agent (Codex, or the Sonnet fallback below) implements, tests and opens the PR.
 - Implementer order (owner decision, 2026-10-30): **Codex first; Sonnet 5.5 at medium effort is the fallback.** When Codex is unavailable (usage limit or not reachable), the planner hands the work to Sonnet 5.5 (medium), which continues from where Codex stopped on the same branch. No other model is used.
 - The fallback follows the same rules as Codex: same branch and PR flow, same commit identity, no device work unless the planner assigns it. The planner tells the owner when a task moved to Sonnet and why, and switches back to Codex for new work once its limit is refilled.
+- Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
+  - **Risky changes:**
+    - automation logic, screen reading, taps, coordinates or templates (`scripts/`, `libautomata/`, `app/` runner and imaging);
+    - capture, logging and stored-data formats (including migrations of saved files);
+    - file storage and export, certificates and security;
+    - services, permissions and the manifest;
+    - build, signing and versioning;
+    - upstream syncs.
+  - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
+  - **Who verifies:** a different model from the implementer: Codex-implemented work is verified by Sonnet 5.5 (medium), Sonnet-implemented work by Codex. If the other model is unavailable, the planner does a full line-by-line review and says so in the PR record.
+  - **What the verifier does:**
+    - compares the diff with every requirement in the issue;
+    - checks that the tests cover the requirements and the failure and guard cases;
+    - looks for missed edge cases and effects outside the stated scope;
+    - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
+  - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
+  - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
 ## Build & test
