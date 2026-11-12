@@ -42,8 +42,8 @@ import java.util.concurrent.Executors
  * scheduler: each hook is one volatile read and a queue add, and does nothing while the switch is off.
  *
  * While the switch is off the app does not touch Shizuku, no scheduler exists and no thread runs. Turning it on
- * (or starting the process with it on) enables the Shizuku provider, registers the Shizuku listeners and the
- * resume callback, and creates the scheduler.
+ * (or starting the process with it on) registers the Shizuku listeners and the resume callback and creates the
+ * scheduler. The Shizuku provider itself is always enabled in the manifest (it only receives the binder, passively).
  */
 /** What the capture and script code tells the sync. Every call must return at once. */
 internal interface ChaldeaSyncHooks {
@@ -68,6 +68,13 @@ object ChaldeaSyncManager {
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
     private var resultsJob: Job? = null
+
+    /**
+     * The settings collector. flow-preferences listens through a weakly held SharedPreferences listener, so a
+     * collector nobody references can be collected and runtime changes would stop arriving. Kept for the process.
+     */
+    private var settingsScope: CoroutineScope? = null
+    private var settingsJob: Job? = null
 
     private val _shizuku = MutableStateFlow(ShizukuState.NotRunning)
     val shizukuState: StateFlow<ShizukuState> = _shizuku.asStateFlow()
@@ -119,8 +126,12 @@ object ChaldeaSyncManager {
         app = application
         prefs = prefsCore
         client = ChaldeaSyncClient(application)
+        // Undo the runtime "disabled" state an earlier beta left on the provider. No Shizuku API is involved.
+        ShizukuProviderReset.resetToDefault(application)
         // The settings flows are plain preference listeners: no timer, thread or Shizuku call.
-        CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
+        val settings = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        settingsScope = settings
+        settingsJob = settings.launch {
             combine(
                 prefsCore.chaldeaSyncEnabled.asFlow(),
                 prefsCore.captureTrackerEnabled.asFlow(),
@@ -182,7 +193,6 @@ object ChaldeaSyncManager {
             }
         }
         if (change == 1) {
-            ShizukuProviderSwitch.setEnabled(application, true)
             runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
             runCatching { Shizuku.addBinderDeadListener(binderDead) }
             runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
@@ -195,7 +205,6 @@ object ChaldeaSyncManager {
             runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
             runCatching { Shizuku.removeBinderDeadListener(binderDead) }
             runCatching { Shizuku.removeRequestPermissionResultListener(permissionResult) }
-            ShizukuProviderSwitch.setEnabled(application, false)
         }
         // Also covers log collection or consent changing while the sync switch stays on.
         scheduler?.onSettingsChanged()

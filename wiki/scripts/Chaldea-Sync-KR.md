@@ -2,7 +2,7 @@
 
 **로그 수집으로 모은 계정 데이터를 Chaldea의 `userdata.json`에 자동으로 써 넣습니다. Chaldea에서 수동으로 "가져오기"를 하지 않아도 됩니다.** 1단계에서는 아이템 계열만 반영합니다.
 
-Shizuku로 Chaldea의 데이터 폴더(`/sdcard/Android/data/cc.narumi.chaldea/files/user/`)를 읽고 씁니다. KR 서버와 공식 JP 서버의 계정을 지원하며, **로그 수집**이 켜져 있어야 합니다. 기본값은 꺼짐입니다. 꺼져 있으면 FGA는 Shizuku를 건드리지 않고 아무것도 하지 않습니다.
+Shizuku로 Chaldea의 데이터 폴더(`/sdcard/Android/data/cc.narumi.chaldea/files/user/`)를 읽고 씁니다. KR 서버와 공식 JP 서버의 계정을 지원하며, **로그 수집**이 켜져 있어야 합니다. 기본값은 꺼짐입니다. 꺼져 있으면 FGA는 Shizuku 기능을 호출하지 않고(권한 요청, 연결, 서비스 실행 모두 하지 않음) 아무것도 하지 않습니다. Shizuku가 보내는 연결 정보를 받는 구성 요소(Provider)는 앱 설치 때부터 항상 켜져 있으며, 받기만 할 뿐 아무 동작도 하지 않습니다.
 
 ## 준비
 

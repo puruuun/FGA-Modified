@@ -25,16 +25,27 @@ import java.io.File
 import java.io.OutputStream
 import kotlin.coroutines.resume
 
-/** Enables or disables the Shizuku provider component. While the sync switch is off the app does not touch Shizuku. */
-object ShizukuProviderSwitch {
+/**
+ * The Shizuku provider is always enabled in the manifest: Shizuku hands its binder over only when the app's process
+ * starts (or the Shizuku server starts), so a provider that is enabled later would get nothing until a restart. An
+ * earlier beta disabled the component at runtime, and that state survives updates, so [resetToDefault] puts it back
+ * to the manifest value once at startup. It is the only package-manager call left; it does not touch the Shizuku API.
+ */
+object ShizukuProviderReset {
     private fun component(context: Context) = ComponentName(context, "rikka.shizuku.ShizukuProvider")
 
-    fun isEnabled(context: Context): Boolean = context.packageManager.getComponentEnabledSetting(component(context)) ==
-        PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-
-    fun setEnabled(context: Context, enabled: Boolean) {
-        val state = if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        context.packageManager.setComponentEnabledSetting(component(context), state, PackageManager.DONT_KILL_APP)
+    /** Returns true when the component had a leftover runtime state that was reset. Never throws. */
+    fun resetToDefault(context: Context): Boolean = try {
+        val pm = context.packageManager
+        val component = component(context)
+        if (pm.getComponentEnabledSetting(component) != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+            pm.setComponentEnabledSetting(component, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP)
+            true
+        } else {
+            false
+        }
+    } catch (t: Throwable) {
+        false
     }
 }
 
@@ -75,13 +86,7 @@ object ShizukuStateReader {
  * poll and per write, and closes it right after, so the shell process lives only as long as it is needed.
  */
 class ChaldeaSyncClient(private val context: Context) {
-    private val args by lazy {
-        Shizuku.UserServiceArgs(ComponentName(context.packageName, ChaldeaSyncService::class.java.name))
-            .tag(TAG)
-            .daemon(false)
-            .debuggable(BuildConfig.DEBUG)
-            .version(BuildConfig.VERSION_CODE)
-    }
+    private val args by lazy { userServiceArgs(context.packageName, BuildConfig.DEBUG, BuildConfig.VERSION_CODE) }
 
     class Session internal constructor(private val service: IChaldeaSyncService, private val release: () -> Unit) : ChaldeaSyncSession {
         override suspend fun state(): ChaldeaStateResult = withContext(Dispatchers.IO) { ChaldeaStateResult.fromJson(service.state()) }
@@ -181,5 +186,16 @@ class ChaldeaSyncClient(private val context: Context) {
 
     companion object {
         const val TAG = "chaldea-sync"
+
+        /** Shizuku refuses to add a user service without a process name suffix (IllegalArgumentException). */
+        const val PROCESS_SUFFIX = "chaldea_sync"
+
+        internal fun userServiceArgs(packageName: String, debuggable: Boolean, versionCode: Int): Shizuku.UserServiceArgs =
+            Shizuku.UserServiceArgs(ComponentName(packageName, ChaldeaSyncService::class.java.name))
+                .processNameSuffix(PROCESS_SUFFIX)
+                .tag(TAG)
+                .daemon(false)
+                .debuggable(debuggable)
+                .version(versionCode)
     }
 }

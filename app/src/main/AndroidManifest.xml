@@ -149,12 +149,12 @@
             </intent-filter>
         </receiver>
 
-        <!-- Off until the Chaldea sync switch is on; the app enables it with DONT_KILL_APP (see ShizukuProviderSwitch). -->
+        <!-- Always enabled: Shizuku sends its binder only when the app process starts or the Shizuku server starts.
+             Receiving it is passive; the app calls no Shizuku API while the Chaldea sync switch is off. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
             android:multiprocess="false"
-            android:enabled="false"
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
     </application>
