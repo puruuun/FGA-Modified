@@ -12,6 +12,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPatch
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncResult
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuFacts
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import kotlinx.coroutines.CompletableDeferred
@@ -20,6 +21,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import rikka.shizuku.Shizuku
+import java.io.File
 import java.io.OutputStream
 import kotlin.coroutines.resume
 
@@ -81,19 +83,16 @@ class ChaldeaSyncClient(private val context: Context) {
             .version(BuildConfig.VERSION_CODE)
     }
 
-    /** Result of [Session.prepare]. [backupMatches] is true only when the stored bytes equal what was announced. */
-    class PrepareOutcome(val result: ChaldeaSyncResult, val received: ChaldeaBackupReceiver.Received?, val backupMatches: Boolean)
+    class Session internal constructor(private val service: IChaldeaSyncService, private val release: () -> Unit) : ChaldeaSyncSession {
+        override suspend fun state(): ChaldeaStateResult = withContext(Dispatchers.IO) { ChaldeaStateResult.fromJson(service.state()) }
 
-    class Session internal constructor(private val service: IChaldeaSyncService, private val release: () -> Unit) {
-        suspend fun state(): ChaldeaStateResult = withContext(Dispatchers.IO) { ChaldeaStateResult.fromJson(service.state()) }
-
-        suspend fun forceStop(): ChaldeaStateResult = withContext(Dispatchers.IO) { ChaldeaStateResult.fromJson(service.forceStop()) }
+        override suspend fun forceStop(): ChaldeaStateResult = withContext(Dispatchers.IO) { ChaldeaStateResult.fromJson(service.forceStop()) }
 
         /**
          * Streams the base file into [sink]. The pipe is read on a dedicated thread that starts before the binder
          * call, so the service never blocks on a full pipe. [sink] is flushed but not closed.
          */
-        suspend fun prepare(sink: OutputStream): PrepareOutcome = withContext(Dispatchers.IO) {
+        override suspend fun prepare(sink: OutputStream): ChaldeaSyncSession.PrepareOutcome = withContext(Dispatchers.IO) {
             val pipe = ParcelFileDescriptor.createPipe()
             val readSide = pipe[0]
             val writeSide = pipe[1]
@@ -114,16 +113,33 @@ class ChaldeaSyncClient(private val context: Context) {
             }
             val result = ChaldeaSyncResult.fromJson(text)
             val got = received.await().getOrNull()
-            PrepareOutcome(result, got, got != null && ChaldeaBackupReceiver.matches(got, result))
+            ChaldeaSyncSession.PrepareOutcome(result, got, got != null && ChaldeaBackupReceiver.matches(got, result))
         }
 
-        suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult =
+        override suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult =
             withContext(Dispatchers.IO) {
                 ChaldeaSyncResult.fromJson(service.commit(patch.toJson(), expectedSha256, allowCreate, expectedPackage))
             }
 
+        override suspend fun restore(backup: File, sha256: String, packageName: String): ChaldeaSyncResult =
+            withContext(Dispatchers.IO) {
+                val pipe = ParcelFileDescriptor.createPipe()
+                val feeder = Thread({
+                    runCatching {
+                        ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { out -> backup.inputStream().use { it.copyTo(out) } }
+                    }
+                }, "ChaldeaRestoreFeeder")
+                feeder.start()
+                val text = try {
+                    service.restore(pipe[0], sha256, packageName)
+                } finally {
+                    runCatching { pipe[0].close() }
+                }
+                ChaldeaSyncResult.fromJson(text)
+            }
+
         /** Unbinds and tells the service to exit. Safe to call twice. */
-        fun close() = release()
+        override fun close() = release()
     }
 
     /** Binds the service; null when it does not connect within [timeoutMs]. Always [Session.close] the result. */

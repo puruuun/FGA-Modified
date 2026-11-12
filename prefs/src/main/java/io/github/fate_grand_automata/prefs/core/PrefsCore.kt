@@ -68,6 +68,11 @@ class PrefsCore @Inject constructor(
     val captureStopWithService = maker.bool("capture_stop_with_service", false)
     val captureJpRoot = maker.bool("capture_jp_root", false)
 
+    /** Chaldea direct sync (stage 1): writes captured account data into Chaldea through Shizuku. Off until opted in. */
+    val chaldeaSyncEnabled = maker.bool("chaldea_sync_enabled", false)
+    /** Minutes in the background before Chaldea is closed to sync: 10, 30, 60, or 0 for never. */
+    val chaldeaSyncCloseMinutes = maker.int("chaldea_sync_close_minutes", 30)
+
     /** Home-screen widget look. The widgets read the same keys straight from the preference file. */
     val widgetTheme = maker.enum("widget_theme", WidgetTheme.Dark)
     val widgetShowLogButton = maker.bool("widget_show_log_button", true)

@@ -28,6 +28,8 @@ class AutomataApplication : Application() {
         OpenCVLoader.initLocal()
 
         WidgetRefresh.requestUpdate(this)
+        // Reaches the sync hooks (no Context there) and starts the sync only when its switch is on.
+        io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager.init(this, prefsCore)
         WidgetSettingsObserver.start(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
 
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }

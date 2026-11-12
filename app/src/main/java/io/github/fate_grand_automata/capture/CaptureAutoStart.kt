@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.GameServer
 
@@ -21,6 +22,8 @@ object CaptureAutoStart {
      * outside-change period open and start no run session; their recorded sources are marked as script-made.
      */
     fun onScriptStart(context: Context, prefs: PrefsCore, server: GameServer, battle: Boolean = true) {
+        // First, in its own guard and before any early return: tells the Chaldea sync that a script runs.
+        captureSafely("chaldeaSyncScriptStart") { ChaldeaSyncManager.onScriptStart() }
         captureSafely("onScriptStart") {
             try {
                 onStartStepHook?.invoke()
@@ -65,6 +68,7 @@ object CaptureAutoStart {
     }
 
     fun onScriptEnd() {
+        captureSafely("chaldeaSyncScriptEnd") { ChaldeaSyncManager.onScriptEnd() }
         captureSafely("onScriptEnd") {
             CaptureTracker.endRunCollection()
         }

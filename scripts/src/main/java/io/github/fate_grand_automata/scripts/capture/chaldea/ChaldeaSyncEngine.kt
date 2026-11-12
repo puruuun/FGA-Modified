@@ -101,6 +101,22 @@ class ChaldeaSyncEngine(
         )
     }
 
+    /**
+     * Recovery after an interrupted write (amendment K): puts [backup], the base FGA stored before `commit`, back into
+     * both existing files. Refuses when Chaldea may be running or the bytes are not the announced ones.
+     */
+    fun restoreFromBackup(backup: ByteArray, expectedSha256: String): ChaldeaSyncResult = lock.withLock {
+        notRunningFailure()?.let { return fail(it) }
+        if (sha256Hex(backup) != expectedSha256) return fail(ChaldeaSyncCode.FileChanged)
+        if (!files.exists(JSON)) return fail(ChaldeaSyncCode.NotFound)
+        val allRestored = listOf(JSON, BAK).filter { files.exists(it) }.map { restore(it, backup) }.all { it }
+        if (allRestored) {
+            ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = packageName, size = backup.size.toLong(), sha256 = expectedSha256)
+        } else {
+            ChaldeaSyncResult(ChaldeaSyncCode.RestoreFailed, packageName = packageName)
+        }
+    }
+
     private fun restore(name: String, original: ByteArray): Boolean = try {
         files.overwrite(name, original)
         files.read(name).contentEquals(original)

@@ -47,6 +47,18 @@ class CaptureAccountsLazyTest {
         assertEquals(2, store.accounts(100).first { it.id == "7001" }.summary.goldenApples)
     }
 
+    @Test fun saveReportsOnlyTheAccountsWhoseStateWasWritten() {
+        val store = store()
+        store.apply(kr("login/top"), login(7001), 10)
+        store.apply(jp("login/top"), login(7002), 20)
+        assertEquals(setOf("7001", "7002"), store.save().toSet())
+        assertEquals(emptyList(), store.save(), "nothing is unsaved any more")
+        store.apply(kr("item/use"), item(7001, 2), 30)
+        assertEquals(listOf("7001"), store.save(), "only the account that changed")
+        store.rename("7002", "Other")
+        assertEquals(emptyList(), store.save("7002"), "a rename writes metadata, not the state the sync reads")
+    }
+
     @Test fun everyPerServerCurrentAccountStaysResidentAfterSave() {
         val store = store()
         store.apply(kr("login/top"), login(7001), 10)

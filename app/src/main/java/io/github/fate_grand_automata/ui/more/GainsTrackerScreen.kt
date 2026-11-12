@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ import io.github.fate_grand_automata.capture.CertificateSaveGuard
 import io.github.fate_grand_automata.capture.CertStore
 import io.github.fate_grand_automata.capture.SaveOutcome
 import io.github.fate_grand_automata.capture.ChaldeaExportStore
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
 import io.github.fate_grand_automata.capture.jpGameInstalled
 import io.github.fate_grand_automata.capture.JpRootPreference
 import io.github.fate_grand_automata.capture.JpRootSettings
@@ -61,6 +63,7 @@ import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.remember
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -272,6 +275,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         if (it.resultCode == android.app.Activity.RESULT_OK && enabled &&
             CaptureConsent.agreed(vm.prefsCore.captureConsentVersion.get())) CaptureController.start(context)
     }
+    val chaldeaUi by remember { chaldeaSyncUi(vm.prefsCore) }.collectAsStateWithLifecycle(ChaldeaSyncUi())
     // Re-read CA presence after returning from system settings or another app.
     LifecycleResumeEffect(Unit) {
         vm.refreshCertificate()
@@ -321,7 +325,31 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         jpState = jpState,
         jpInstalled = jpGameInstalled(context),
         onJpRoot = vm::setJpRoot,
+        extraItems = {
+            chaldeaSyncItems(
+                ui = chaldeaUi,
+                onEnabled = { on ->
+                    vm.prefsCore.chaldeaSyncEnabled.set(on)
+                    if (on) ChaldeaSyncManager.requestPermissionIfNeeded()
+                },
+                onCloseMinutes = { vm.prefsCore.chaldeaSyncCloseMinutes.set(it) },
+                syncNow = ChaldeaSyncManager::syncNow,
+            )
+        },
     )
+}
+
+/** Combines the switch, the Shizuku state and the scheduler status into what the section shows. */
+private fun chaldeaSyncUi(prefs: PrefsCore): Flow<ChaldeaSyncUi> = combine(
+    combine(prefs.chaldeaSyncEnabled.asFlow(), prefs.chaldeaSyncCloseMinutes.asFlow()) { on, minutes -> on to minutes },
+    combine(prefs.captureTrackerEnabled.asFlow(), prefs.captureConsentVersion.asFlow()) { tracker, consent ->
+        tracker && CaptureConsent.agreed(consent)
+    },
+    ChaldeaSyncManager.shizukuState,
+    ChaldeaSyncManager.status,
+    ChaldeaSyncManager.scriptRunning,
+) { (on, minutes), logging, shizuku, status, script ->
+    ChaldeaSyncUi(on, logging, minutes, shizuku, status, script)
 }
 
 @Composable
@@ -341,6 +369,7 @@ fun GainsTrackerContent(
     jpState: JpRootState = JpRootState(),
     jpInstalled: Boolean = false,
     onJpRoot: (Boolean) -> Unit = {},
+    extraItems: LazyListScope.() -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -479,6 +508,7 @@ fun GainsTrackerContent(
                         androidx.compose.material3.Switch(checked = state.stopWithService, onCheckedChange = onStopWithService)
                     }
                 }
+                extraItems()
                 item { PreferenceGroupHeader(stringResource(R.string.capture_account_header)) }
                 captureAccountCards(state.accounts, state.currentId, onRenameAccount, onDeleteAccount)
                 item {

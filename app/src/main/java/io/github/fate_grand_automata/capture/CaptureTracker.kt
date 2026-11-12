@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.capture
 
 import android.content.Context
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
 import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.scripts.capture.AccountState
@@ -192,6 +193,12 @@ object CaptureTracker {
         stored.currentId?.let { id -> stored.summary(id, now)?.copy(masterName = stored.displayName(id)!!) }
     }
 
+    /** Server code ("KR" / "JP") of a stored account; for the Chaldea sync. */
+    fun serverOf(userId: String): String? = synchronized(lock) { stored.serverOf(userId) }
+
+    /** Current account id of [server]; for the Chaldea sync. */
+    fun currentIdOf(server: String): String? = synchronized(lock) { stored.currentId(server) }
+
     fun accountSummaries(now: Long): List<CaptureAccount> = synchronized(lock) { stored.accounts(now) }
 
     /**
@@ -328,6 +335,7 @@ object CaptureTracker {
         stored.clear()
         resetDropped()
         publish()
+        captureSafely("chaldeaSyncDeletedAll") { ChaldeaSyncManager.onAccountDeleted(null) }
     }
 
     fun rename(userId: String, name: String) = synchronized(lock) {
@@ -342,6 +350,7 @@ object CaptureTracker {
         outside.delete(userId)
         stored.delete(userId)
         publish()
+        captureSafely("chaldeaSyncDeleted") { ChaldeaSyncManager.onAccountDeleted(userId) }
     }
 
     private fun scheduleSave(userId: String) {
@@ -358,7 +367,11 @@ object CaptureTracker {
     private fun save(userId: String? = null) = synchronized(lock) {
         if (userId != null) pendingSaves.remove(userId)
         runCatching { stored.save(userId) }
-            .onSuccess { widgetContext?.let { context -> runCatching { ApWidgetRefresh.onAccountSaved(context, userId) } } }
+            .onSuccess { written ->
+                widgetContext?.let { context -> runCatching { ApWidgetRefresh.onAccountSaved(context, userId) } }
+                // Non-blocking: a queue add and a wake-up. Only accounts whose state was really written.
+                if (written.isNotEmpty()) captureSafely("chaldeaSyncSaved") { ChaldeaSyncManager.onAccountsSaved(written) }
+            }
             .onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
         Unit
     }

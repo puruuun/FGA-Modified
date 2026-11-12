@@ -68,6 +68,8 @@ data class ChaldeaSyncResult(
     val regionMismatch: Boolean = false,
     /** Whether userdata.json.bak was written too. */
     val bakWritten: Boolean = false,
+    /** Both Chaldea packages have a userdata.json; [packageName] is the newest one. */
+    val bothPackages: Boolean = false,
 ) {
     val ok get() = code == ChaldeaSyncCode.Ok
 
@@ -86,6 +88,7 @@ data class ChaldeaSyncResult(
         put("tookOver", tookOver)
         put("regionMismatch", regionMismatch)
         put("bakWritten", bakWritten)
+        put("bothPackages", bothPackages)
     }.toString()
 
     companion object {
@@ -106,6 +109,7 @@ data class ChaldeaSyncResult(
                 itemCount = i("items"), mysticCodeCount = i("mysticCodes"), boardCount = i("boards"),
                 created = b("created"), tookOver = b("tookOver"), regionMismatch = b("regionMismatch"),
                 bakWritten = b("bakWritten"),
+                bothPackages = b("bothPackages"),
             )
         } catch (e: Exception) {
             ChaldeaSyncResult(ChaldeaSyncCode.ServiceError)

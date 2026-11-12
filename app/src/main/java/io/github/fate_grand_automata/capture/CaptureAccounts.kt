@@ -402,14 +402,17 @@ internal class CaptureAccounts(
         currentId = null
     }
 
-    fun save(userId: String? = null) {
-        val root = directory ?: return
+    /** @return the accounts whose state file was written by this call (not those that only had metadata written) */
+    fun save(userId: String? = null): List<String> {
+        val root = directory ?: return emptyList()
+        val written = mutableListOf<String>()
         for (id in (dirty + sideDirty).filter { userId == null || userId == it }) {
             val entry = index[id] ?: continue
             val folder = File(root, id)
             if (id in dirty) {
                 val state = resident[id] ?: continue
                 disk.run { atomicWriteStream(File(folder, STATE_FILE)) { state.writeTo(it) } }
+                written += id
             }
             disk.run {
                 atomicWriteStream(File(folder, "account.json")) { it.write(metadataJson.encodeToString(entry.metadata).toByteArray()) }
@@ -432,6 +435,7 @@ internal class CaptureAccounts(
             }
         }
         trim()
+        return written
     }
 
     /** Only the current accounts and states that still wait for a save stay resident. */

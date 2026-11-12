@@ -9,6 +9,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncEngine
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncResult
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaUserdataEditor
 import io.github.fate_grand_automata.scripts.capture.chaldea.JavaChaldeaFileAccess
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -55,6 +56,8 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         },
     )
 
+    private fun bothExist() = ChaldeaPackages.all.all { File(userDir(it), ChaldeaSyncEngine.JSON).isFile }
+
     private fun readState(pkg: String): ChaldeaRunState {
         val pid = run("pidof", pkg)
         if (pid.exit == null) return ChaldeaRunState.Unknown
@@ -97,7 +100,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         try {
             val pkg = choosePackage()
             val prepared = engine(pkg).prepare()
-            result = prepared.result
+            result = prepared.result.copy(bothPackages = bothExist())
             val bytes = prepared.baseBytes
             if (bytes != null && backupFd != null) {
                 // The app reads the other end on its own thread, started before this call.
@@ -119,6 +122,23 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         return (result ?: ChaldeaSyncResult(ChaldeaSyncCode.ServiceError)).toJson()
     }
 
+    override fun restore(backupFd: ParcelFileDescriptor?, expectedSha256: String?, expectedPackage: String?): String = try {
+        val pkg = choosePackage()
+        val bytes = backupFd?.let { fd ->
+            ParcelFileDescriptor.AutoCloseInputStream(fd).use { it.readBytes() }
+        }
+        val r = if (bytes == null || expectedSha256 == null || bytes.size > ChaldeaUserdataEditor.MAX_FILE_BYTES) {
+            ChaldeaSyncResult(ChaldeaSyncCode.BadPatch, packageName = pkg)
+        } else if (expectedPackage != pkg) {
+            ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)
+        } else {
+            engine(pkg).restoreFromBackup(bytes, expectedSha256)
+        }
+        r.toJson()
+    } catch (t: Throwable) {
+        ChaldeaSyncResult(ChaldeaSyncCode.ServiceError).toJson()
+    }
+
     override fun commit(patchJson: String?, expectedSha256: String?, allowCreate: Boolean, expectedPackage: String?): String = try {
         val pkg = choosePackage()
         val r = if (patchJson == null || expectedSha256 == null) {
@@ -127,7 +147,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
             // The newest-file rule now points to another package than prepare backed up.
             ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)
         } else {
-            engine(pkg).commit(patchJson, expectedSha256, allowCreate)
+            engine(pkg).commit(patchJson, expectedSha256, allowCreate).copy(bothPackages = bothExist())
         }
         r.toJson()
     } catch (t: Throwable) {
