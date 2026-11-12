@@ -1045,7 +1045,7 @@
     <string name="chaldea_sync_access_root">"権限: ルート"</string>
     <string name="chaldea_sync_access_shizuku">"権限: Shizuku"</string>
     <string name="chaldea_sync_root_hint">"ルート化した端末では、MagiskまたはKernelSUでFGAにルート権限を許可することもできます。"</string>
-    <string name="chaldea_sync_status_cannot_bind">"Shizukuのサービスに接続できません。再試行します。"</string>
+    <string name="chaldea_sync_status_cannot_bind">"Chaldea同期サービスに接続できません。再試行します。"</string>
     <string name="chaldea_sync_status_state_unknown">"Chaldeaの状態を判定できません。待機します。"</string>
     <string name="chaldea_sync_status_started_during">"反映中にChaldeaが起動しました。後でもう一度反映します。"</string>
     <string name="chaldea_sync_status_not_found">"Chaldeaのデータファイルが見つかりません。Chaldeaを一度起動してください。"</string>

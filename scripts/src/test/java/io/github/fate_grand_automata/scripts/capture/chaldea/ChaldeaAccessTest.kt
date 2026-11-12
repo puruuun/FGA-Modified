@@ -192,6 +192,85 @@ class ChaldeaAccessTest {
         assertEquals(ProbeKind.Silent, f.policy.onScriptEnd()?.kind)
     }
 
+    @Test fun twoBindFailuresInARowAfterGrantedEndInUnavailableWithNoFurtherSilentProbe() {
+        val f = Fx(false)
+        f.policy.onProbeResult(f.policy.onUserTurnedOn()!!, RootState.Granted)
+
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unchecked, f.policy.state)
+        val firstReprobe = f.policy.onRound()
+        assertEquals(ProbeKind.Silent, firstReprobe?.kind)
+        f.policy.onProbeResult(firstReprobe!!, RootState.Granted)
+        assertEquals(RootState.Granted, f.policy.state)
+
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unavailable, f.policy.state)
+        assertNull(f.policy.onRound(), "no more silent re-probes after 2 failures in a row")
+        assertNull(f.policy.onSettingsOn(), "remains Unavailable for this process")
+        assertTrue(f.stored, "stored flag stays untouched without an interactive refusal")
+    }
+
+    @Test fun aSuccessfulRootBindResetsTheBindFailureCount() {
+        val f = Fx(false)
+        f.policy.onProbeResult(f.policy.onUserTurnedOn()!!, RootState.Granted)
+
+        // First bind failure -> silent re-probe succeeds -> root session opens -> count resets.
+        f.policy.onRootBindFailed()
+        f.policy.onProbeResult(f.policy.onRound()!!, RootState.Granted)
+        f.policy.onRootBindSucceeded()
+
+        // Next failure is failure #1 again, so it still gets a silent re-probe instead of capping.
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unchecked, f.policy.state)
+        val reprobe = f.policy.onRound()
+        assertEquals(ProbeKind.Silent, reprobe?.kind)
+        f.policy.onProbeResult(reprobe!!, RootState.Granted)
+
+        // Second consecutive failure after that re-probe hits the cap.
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unavailable, f.policy.state)
+        assertNull(f.policy.onRound())
+    }
+
+    @Test fun anInteractiveGrantedProbeReenablesRootAfterTheBindFailureCap() {
+        val f = Fx(false)
+        f.policy.onProbeResult(f.policy.onUserTurnedOn()!!, RootState.Granted)
+        f.policy.onRootBindFailed()
+        f.policy.onProbeResult(f.policy.onRound()!!, RootState.Granted)
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unavailable, f.policy.state)
+        assertNull(f.policy.onRound())
+
+        val syncNow = f.policy.onSyncNow()
+        assertEquals(ProbeKind.Interactive, syncNow?.kind)
+        assertTrue(f.policy.onProbeResult(syncNow!!, RootState.Granted))
+        assertEquals(RootState.Granted, f.policy.state)
+
+        // Failure count was reset by the interactive grant, so one failure re-probes again.
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unchecked, f.policy.state)
+        assertEquals(ProbeKind.Silent, f.policy.onRound()?.kind)
+    }
+
+    @Test fun switchOffAndOnResetsTheBindFailureCap() {
+        val f = Fx(false)
+        f.policy.onProbeResult(f.policy.onUserTurnedOn()!!, RootState.Granted)
+        f.policy.onRootBindFailed()
+        f.policy.onProbeResult(f.policy.onRound()!!, RootState.Granted)
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unavailable, f.policy.state)
+
+        f.policy.onSwitchedOff()
+        assertEquals(RootState.Unchecked, f.policy.state)
+        val onAgain = f.policy.onSettingsOn()
+        assertEquals(ProbeKind.Silent, onAgain?.kind)
+        f.policy.onProbeResult(onAgain!!, RootState.Granted)
+
+        f.policy.onRootBindFailed()
+        assertEquals(RootState.Unchecked, f.policy.state)
+        assertEquals(ProbeKind.Silent, f.policy.onRound()?.kind)
+    }
+
     @Test fun shizukuPermissionIsNotRequestedWhenRootIsGranted() {
         val f = Fx(false)
         val requester = ShizukuPermissionRequester().also { it.arm() }

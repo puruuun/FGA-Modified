@@ -207,7 +207,7 @@ private fun ChaldeaSyncNow(ui: ChaldeaSyncUi, syncNow: suspend (ChaldeaRunState?
         }
         Button(
             onClick = { run(null) },
-            enabled = ui.enabled && ui.loggingOn && ui.access.ready && !ui.scriptRunning && !busy,
+            enabled = ui.enabled && ui.loggingOn && (ui.access.ready || ui.access.root != RootState.Granted) && !ui.scriptRunning && !busy,
         ) { Text(stringResource(R.string.chaldea_sync_now)) }
     }
 }

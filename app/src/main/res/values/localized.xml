@@ -1357,7 +1357,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_access_root">"Access: root"</string>
     <string name="chaldea_sync_access_shizuku">"Access: Shizuku"</string>
     <string name="chaldea_sync_root_hint">"On a rooted device, you can also allow root for FGA in Magisk or KernelSU."</string>
-    <string name="chaldea_sync_status_cannot_bind">"Cannot reach the Shizuku service. Will try again."</string>
+    <string name="chaldea_sync_status_cannot_bind">"Cannot reach the Chaldea sync service. Will try again."</string>
     <string name="chaldea_sync_status_state_unknown">"Cannot determine Chaldea's state. Waiting."</string>
     <string name="chaldea_sync_status_started_during">"Chaldea started during the sync. It will sync again later."</string>
     <string name="chaldea_sync_status_not_found">"Chaldea's data file was not found. Open Chaldea once."</string>

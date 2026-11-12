@@ -52,6 +52,7 @@ class RootProbePolicy(
     private var on = false
     private var wanted: ProbeKind? = null
     private var reprobeAfterBindFailure = false
+    private var bindFailures = 0
 
     val state: RootState get() = synchronized(lock) { _state }
 
@@ -94,12 +95,25 @@ class RootProbePolicy(
         }
     }
 
-    /** The root service could not be bound: forget the state so the next round probes again. */
+    /** The root service could not be bound: forget the state so the next round probes again, up to two in a row. */
     fun onRootBindFailed() = synchronized(lock) {
         if (_state == RootState.Granted) {
-            _state = RootState.Unchecked
-            reprobeAfterBindFailure = true
+            bindFailures++
+            if (bindFailures >= MAX_BIND_FAILURES) {
+                // Stop silent re-probes for this process until switched off/on or an interactive probe grants root.
+                _state = RootState.Unavailable
+                reprobeAfterBindFailure = false
+            } else {
+                _state = RootState.Unchecked
+                reprobeAfterBindFailure = true
+            }
         }
+    }
+
+    /** A root service session was opened: reset the consecutive bind-failure count. */
+    fun onRootBindSucceeded() = synchronized(lock) {
+        bindFailures = 0
+        reprobeAfterBindFailure = false
     }
 
     fun onScriptStart() = synchronized(lock) { scriptRunning = true }
@@ -118,6 +132,7 @@ class RootProbePolicy(
         running = false
         wanted = null
         reprobeAfterBindFailure = false
+        bindFailures = 0
         _state = RootState.Unchecked
     }
 
@@ -128,6 +143,10 @@ class RootProbePolicy(
         val granted = result == RootState.Granted
         if (granted) {
             setStoredFlag(true)
+            if (ticket.kind == ProbeKind.Interactive) {
+                bindFailures = 0
+                reprobeAfterBindFailure = false
+            }
         } else if (ticket.kind == ProbeKind.Interactive) {
             setStoredFlag(false)
         }
@@ -135,6 +154,10 @@ class RootProbePolicy(
         val changed = next != _state
         _state = next
         changed
+    }
+
+    private companion object {
+        const val MAX_BIND_FAILURES = 2
     }
 
     private fun want(kind: ProbeKind): ProbeTicket? {
