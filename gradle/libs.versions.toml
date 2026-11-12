@@ -41,6 +41,7 @@ reorderable_version = "3.1.0"
 tesseract4android_version = "4.9.0"
 
 timber_version = "5.0.1"
+shizuku_version = "13.1.5"
 
 compose_bom_version = "2026.08.00"
 
@@ -136,6 +137,10 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil_version" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil_version" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil_version" }
+
+# Debug-only Shizuku spike
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku_version" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku_version" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp_version" }
