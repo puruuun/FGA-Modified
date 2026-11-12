@@ -221,6 +221,22 @@ Chaldea의 수동 가져오기가 서번트에 대해 하는 일(동작 요약, 
 
 - 뒤로 보낸 직후 `userdata.json`, `.bak`, `settings.json`이 함께 다시 저장됐다.
 
+### 11.3.1 "화면에 보임" 판별 (태블릿 Android 16, 2026-11-12, adb shell 읽기 전용)
+소유자가 화면을 만들고 플래너가 `dumpsys activity activities`와 `dumpsys window windows`를 읽었다. 다섯 상황 모두 Chaldea 프로세스는 같은 pid로 살아 있었다.
+
+| 상황 | 화면 전체 맨 위 앱(`ResumedActivity`) | Chaldea 작업 `visible=` (`mode`) | Chaldea 창 `isVisible` | 맞는 판정 |
+|---|---|---|---|---|
+| 1. 분할 화면, FGO 쪽 터치 | FGO | true (multi-window) | true | 보임 |
+| 2. 분할 화면, Chaldea 쪽 터치 | Chaldea | true (multi-window) | true | 보임 |
+| 3. 떠 있는 창, 뒤의 FGO 터치 | FGO | true (freeform) | true | 보임 |
+| 4. 홈으로 보냄 | 런처 | false (fullscreen) | false | 뒤에 있음 |
+| 5. Chaldea 전체 화면에서 화면 끔(잠김) | Chaldea | true (`visibleRequested=false`) | false | 보임(기다림) |
+
+- **맨 위 앱만 보면 1·3번을 "뒤에 있음"으로 잘못 판단한다.** 창 `isVisible`만 보면 5번을 잘못 판단한다.
+- **작업의 `visible=` 값은 다섯 상황 모두 맞았다.** 규칙: 다음 중 하나라도 참이면 "보임"으로 보고 닫지 않는다. Chaldea 작업 `visible=true`, Chaldea 창 `isVisible=true`, 화면 전체 맨 위 앱이 Chaldea. 셋 다 거짓일 때만 "뒤에 있음"으로 보고 30분을 잰다.
+- 화면이 꺼져 있을 때(`dumpsys power`의 `mWakefulness=Asleep`)에는 위 규칙으로 "보임"이면 기다린다. 이미 뒤에 있던 Chaldea는 화면이 꺼져 있어도 시간을 계속 잰다.
+- MuMu(Android 15)는 1·4번에 해당하는 상황만 확인했다(§11.3). Shizuku UserService에서도 같은 명령을 shell 권한으로 실행하므로 결과가 같을 것으로 보지만, 시험 빌드에서 다시 확인한다.
+
 ### 11.4 Chaldea 동작 (소스)
 - **불러오기** (`lib/models/db.dart:174-246`): JSON이 깨졌거나 비었거나 파일이 없으면 깨진 파일을 `userdata.json.<시각>.back`으로 남기고 `.bak`을 읽는다. **올바른 JSON이지만 모양이 틀리면(예: `{}`) 예외 없이 기본 빈 사용자로 읽고, 시작 직후 저장(`db.dart:141-149`)으로 본 파일과 `.bak`을 모두 덮어쓴다.** 그래서 쓰기 전 모양 검증과 FGA 쪽 백업이 필수다.
 - **저장** (`db.dart:263-272`, `98-105`, `283-324`, `lib/app/chaldea.dart:139-144`): 임시 파일 없이 본 파일과 `.bak`에 차례로 직접 쓴다. 변경 후 10초, 10초 주기 확인, 뒤로 가거나 숨겨질 때, 시작 직후에 저장한다. 계정 데이터는 이 파일에만 있다(Hive·SQLite 아님).
