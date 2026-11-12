@@ -56,9 +56,13 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
 - Agent models (owner decision, 2026-11-13; replaces the 2026-11-12 order). Codex is not used.
-  - **Gemini (first choice):** the default implementer, and also a verifier or reviewer when a different model helps. The planner starts it as a subagent (see "Gemini runs" below): `gemini-4-argon-high` for implementation, `gemini-4-hydrogen-high` for light work and checks (it replaces Gemini 3.8 Flash, owner 2026-11-13).
-  - **Sonnet 5.5 (medium, Claude subagent):** takes over when a task is very hard (the planner says so before it starts, for example concurrency, binder/IPC or data-safety cores), or when Gemini's work on a task is sent back twice by review, verification or device QA. Sonnet then continues on the same branch. It is also the usual verifier for Gemini's work, because the planner can run it directly.
+  - Tiers, by capability and cost (owner, 2026-11-13): **Gemini 4 Argon** is the strongest and much the most expensive; **Gemini 4 Hydrogen** and **Sonnet 5.5** are the same tier; **Haiku 5.5** is one tier lower and cheap.
+  - **Gemini first:** Gemini is the default implementer, and also a verifier or reviewer when a different model helps. The planner runs it itself (see "Gemini runs" below) with two models only:
+    - `gemini-4-hydrogen-high`: the normal choice for implementation, fixes and checks;
+    - `gemini-4-argon-medium`: only for hard tasks, or when a different model from the other agents is wanted (for example a verifier that should differ from the implementer).
+  - **Sonnet 5.5 (medium, Claude subagent):** same tier as Hydrogen. Use it when Gemini's work on a task is sent back twice by review, verification or device QA (Sonnet continues on the same branch), and as the usual verifier of Gemini's work.
   - **Haiku 5.5 (medium, Claude subagent):** light or simple work, such as small edits, lookups and mechanical checks, and a second model next to Sonnet or Gemini, for example as the second verifier.
+  - When Gemini's usage limit is reached, the planner does not switch to Sonnet automatically: it picks Sonnet, Haiku, or waiting for the limit by the task's difficulty and risk.
   - Claude subagents are started with the Agent tool at **medium** effort. The planner picks the agent for each task by its difficulty and risk, and tells the owner which agent and model did each task, and why when it was not the usual choice.
 - Gemini runs (owner decision, 2026-11-13; replaces the owner-run Antigravity hand-off of the same day):
   - The planner files the issue, creates the branch and its own worktree from the latest base, and writes the prompt to `build/orchestration/prompts/` (and, if useful, as an untracked `TASK-<issue>.md` at the worktree root, never committed).
