@@ -82,6 +82,8 @@ data class GainsTrackerUiState(
     /** Real folder and file name of the last certificate save, for example `FGA/capture/fga-capture-ca.crt`. */
     val certSavedPath: String? = null,
     val certSaving: Boolean = false,
+    val droppedCount: Int = 0,
+    val lastDroppedPath: String? = null,
 )
 
 /** The system save dialog for the certificate; [pending] is committed only after the user saved it. */
@@ -126,15 +128,44 @@ class GainsTrackerViewModel @Inject constructor(
         refreshCertificate()
     }
 
+    private data class VpnStatus(
+        val running: Boolean,
+        val tlsFailures: Int,
+        val stopReason: CaptureStopReason?,
+        val droppedCount: Int,
+        val lastDroppedPath: String?,
+    )
+
     val state: StateFlow<GainsTrackerUiState> = combine(
         prefsCore.captureTrackerEnabled.asFlow(),
         prefsCore.captureStopWithService.asFlow(),
         cert,
-        combine(CaptureTracker.running, CaptureTracker.tlsFailures, CaptureTracker.stopReason) { a, b, c -> Triple(a, b, c) },
+        combine(
+            CaptureTracker.running,
+            CaptureTracker.tlsFailures,
+            CaptureTracker.stopReason,
+            CaptureTracker.droppedCount,
+            CaptureTracker.lastDroppedPath,
+        ) { running, failures, reason, dropped, lastPath ->
+            VpnStatus(running, failures, reason, dropped, lastPath)
+        },
         combine(CaptureTracker.accounts, clock, savedPath, CertificateSaveGuard.saving) { _, now, path, busy -> Triple(now, path, busy) },
-    ) { enabled, stopWithService, (exists, installed), (running, failures, reason), (now, path, busy) ->
-        GainsTrackerUiState(enabled, stopWithService, exists, installed, running, failures, reason,
-            CaptureTracker.accountSummaries(now), CaptureTracker.currentId.value, path, busy)
+    ) { enabled, stopWithService, (exists, installed), vpn, (now, path, busy) ->
+        GainsTrackerUiState(
+            enabled = enabled,
+            stopWithService = stopWithService,
+            certExists = exists,
+            certInstalled = installed,
+            running = vpn.running,
+            tlsFailures = vpn.tlsFailures,
+            stopReason = vpn.stopReason,
+            accounts = CaptureTracker.accountSummaries(now),
+            currentId = CaptureTracker.currentId.value,
+            certSavedPath = path,
+            certSaving = busy,
+            droppedCount = vpn.droppedCount,
+            lastDroppedPath = vpn.lastDroppedPath,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
     fun refreshCertificate() {
@@ -425,6 +456,11 @@ fun GainsTrackerContent(
                         }
                         if (state.running && state.tlsFailures > 0) Text(
                             stringResource(R.string.capture_tls_warning, state.tlsFailures),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        if (state.running && state.droppedCount > 0 && state.lastDroppedPath != null) Text(
+                            stringResource(R.string.capture_dropped_warning, state.droppedCount, state.lastDroppedPath),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )

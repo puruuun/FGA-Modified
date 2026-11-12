@@ -28,6 +28,20 @@ import java.util.concurrent.TimeUnit
 /** Why the capture VPN is not running; shown on the settings screen. */
 enum class CaptureStopReason { User, Service, Revoked, Error, Unsupported }
 
+/** Reason why a response was dropped and not recorded. */
+enum class CaptureDropReason {
+    TooLarge,
+    OutOfMemory,
+    HandlerFailure,
+}
+
+data class DroppedResponse(
+    val time: Long,
+    val path: String,
+    val size: Long,
+    val reason: CaptureDropReason,
+)
+
 /** Process-wide holder. Proxy responses, disk writes and account deletion share one lock. */
 object CaptureTracker {
     @Volatile var starting = false
@@ -47,6 +61,43 @@ object CaptureTracker {
     val tlsFailures: StateFlow<Int> = _tlsFailures.asStateFlow()
     private val _stopReason = MutableStateFlow<CaptureStopReason?>(null)
     val stopReason: StateFlow<CaptureStopReason?> = _stopReason.asStateFlow()
+
+    private val _droppedTotal = MutableStateFlow(0)
+    val droppedCount: StateFlow<Int> = _droppedTotal.asStateFlow()
+    private val _lastDroppedPath = MutableStateFlow<String?>(null)
+    val lastDroppedPath: StateFlow<String?> = _lastDroppedPath.asStateFlow()
+    private val _droppedCounts = MutableStateFlow<Map<CaptureDropReason, Int>>(emptyMap())
+    val droppedCounts: StateFlow<Map<CaptureDropReason, Int>> = _droppedCounts.asStateFlow()
+    private val _droppedRecent = MutableStateFlow<List<DroppedResponse>>(emptyList())
+    val droppedEntries: StateFlow<List<DroppedResponse>> = _droppedRecent.asStateFlow()
+    private val droppedQueue = ArrayDeque<DroppedResponse>()
+    private val droppedCountsMap = mutableMapOf<CaptureDropReason, Int>()
+
+    fun droppedCount(reason: CaptureDropReason): Int = synchronized(lock) {
+        droppedCountsMap[reason] ?: 0
+    }
+
+    fun recordDroppedResponse(path: String, size: Long, reason: CaptureDropReason) = synchronized(lock) {
+        val cleanPath = CaptureNames.path(path).ifEmpty { CaptureNames.stripQuery(path).trimStart('/') }
+        val now = System.currentTimeMillis() / 1000
+        val entry = DroppedResponse(now, cleanPath, size, reason)
+        droppedQueue.addLast(entry)
+        while (droppedQueue.size > 10) droppedQueue.removeFirst()
+        droppedCountsMap[reason] = (droppedCountsMap[reason] ?: 0) + 1
+        _droppedTotal.value += 1
+        _lastDroppedPath.value = cleanPath
+        _droppedRecent.value = droppedQueue.toList()
+        _droppedCounts.value = droppedCountsMap.toMap()
+    }
+
+    private fun resetDropped() {
+        droppedQueue.clear()
+        droppedCountsMap.clear()
+        _droppedTotal.value = 0
+        _lastDroppedPath.value = null
+        _droppedRecent.value = emptyList()
+        _droppedCounts.value = emptyMap()
+    }
 
     private fun lowPriority(name: String) = ThreadFactory { r ->
         Thread({
@@ -182,6 +233,7 @@ object CaptureTracker {
         if (running) {
             _stopReason.value = null
             _tlsFailures.value = 0
+            resetDropped()
         } else {
             _stopReason.value = reason
             flush()
@@ -274,6 +326,7 @@ object CaptureTracker {
         pendingSaves.clear()
         outside.clear()
         stored.clear()
+        resetDropped()
         publish()
     }
 
@@ -320,5 +373,6 @@ internal fun guardedCapture(path: String, encodedSize: Int, block: () -> Unit) {
         block()
     } catch (t: Throwable) {
         Timber.w("Capture: handling %s (%d bytes) failed: %s", path, encodedSize, t.javaClass.simpleName)
+        CaptureTracker.recordDroppedResponse(path, encodedSize.toLong(), CaptureDropReason.HandlerFailure)
     }
 }

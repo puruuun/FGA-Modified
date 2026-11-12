@@ -2,14 +2,51 @@ package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.CapturedBattle
 import io.github.fate_grand_automata.scripts.capture.ICaptureFeed
+import timber.log.Timber
 import javax.inject.Inject
 import kotlin.time.Duration
 
 class CaptureBattleFeed @Inject constructor() : ICaptureFeed {
-    override fun isCollecting() = CaptureTracker.running.value
-    override fun isStarting() = CaptureTracker.starting
-    override fun battleToken() = CaptureTracker.battleInbox.token()
-    override fun awaitBattle(token: Long, timeout: Duration) = CaptureTracker.battleInbox.await(token, timeout)
+    internal var runningProvider: () -> Boolean = { CaptureTracker.running.value }
+    internal var startingProvider: () -> Boolean = { CaptureTracker.starting }
+    internal var tokenProvider: () -> Long = { CaptureTracker.battleInbox.token() }
+    internal var awaitProvider: (Long, Duration) -> CapturedBattle? = { token, timeout ->
+        CaptureTracker.battleInbox.await(token, timeout)
+    }
+
+    override fun isCollecting(): Boolean = try {
+        captureSafely("feedIsCollecting", default = false) { runningProvider() }
+    } catch (_: Throwable) {
+        false
+    }
+
+    override fun isStarting(): Boolean = try {
+        captureSafely("feedIsStarting", default = false) { startingProvider() }
+    } catch (_: Throwable) {
+        false
+    }
+
+    override fun battleToken(): Long = try {
+        captureSafely("feedBattleToken", default = 0L) { tokenProvider() }
+    } catch (_: Throwable) {
+        0L
+    }
+
+    override fun awaitBattle(token: Long, timeout: Duration): CapturedBattle? = try {
+        try {
+            awaitProvider(token, timeout)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            null
+        }
+    } catch (t: Throwable) {
+        if (t is InterruptedException) {
+            Thread.currentThread().interrupt()
+        } else {
+            Timber.w("Capture: feedAwaitBattle failed: %s", t.javaClass.simpleName)
+        }
+        null
+    }
 }
 
 /** Receives only this script account's results, under the tracker's routing lock.

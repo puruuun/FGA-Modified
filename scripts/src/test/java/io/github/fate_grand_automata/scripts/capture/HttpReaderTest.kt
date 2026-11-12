@@ -110,4 +110,140 @@ class HttpReaderTest {
         assertTrue(CaptureNames.isAccountPath("/NetmarbleUserDataService/x"))
         assertFalse(CaptureNames.isAccountPath("/battle/result"))
     }
+
+    @Test
+    fun outOfMemoryWhileWritingDropsCaptureAndForwardsWireBytesForFixedLength() {
+        val oomOnWrite = {
+            object : ByteArrayOutputStream() {
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    throw OutOfMemoryError("synthetic OOM")
+                }
+            }
+        }
+        val msg = bytes("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello")
+        val r = HttpReader(ByteArrayInputStream(msg), bufferFactory = oomOnWrite)
+        val out = ByteArrayOutputStream()
+        val head = r.readHead()!!
+        out.write(head.raw)
+        val body = r.copyBody(head, out, isResponse = true, requestMethod = "GET")
+
+        assertContentEquals(msg, out.toByteArray())
+        assertNull(body.payload)
+        assertEquals(DropReason.OutOfMemory, body.dropped)
+    }
+
+    @Test
+    fun outOfMemoryWhileWritingDropsCaptureAndForwardsWireBytesForChunked() {
+        val oomOnWrite = {
+            object : ByteArrayOutputStream() {
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    throw OutOfMemoryError("synthetic OOM")
+                }
+            }
+        }
+        val chunkedMsg = bytes(
+            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n" +
+                "4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
+        )
+        val r = HttpReader(ByteArrayInputStream(chunkedMsg), bufferFactory = oomOnWrite)
+        val out = ByteArrayOutputStream()
+        val head = r.readHead()!!
+        out.write(head.raw)
+        val body = r.copyBody(head, out, isResponse = true, requestMethod = "GET")
+
+        assertContentEquals(chunkedMsg, out.toByteArray())
+        assertNull(body.payload)
+        assertEquals(DropReason.OutOfMemory, body.dropped)
+    }
+
+    @Test
+    fun outOfMemoryWhileWritingDropsCaptureAndForwardsWireBytesForUntilClose() {
+        val oomOnWrite = {
+            object : ByteArrayOutputStream() {
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    throw OutOfMemoryError("synthetic OOM")
+                }
+            }
+        }
+        val untilCloseMsg = bytes("HTTP/1.1 200 OK\r\n\r\nstreamed data until disconnect")
+        val r = HttpReader(ByteArrayInputStream(untilCloseMsg), bufferFactory = oomOnWrite)
+        val out = ByteArrayOutputStream()
+        val head = r.readHead()!!
+        out.write(head.raw)
+        val body = r.copyBody(head, out, isResponse = true)
+
+        assertContentEquals(untilCloseMsg, out.toByteArray())
+        assertTrue(body.untilClose)
+        assertNull(body.payload)
+        assertEquals(DropReason.OutOfMemory, body.dropped)
+    }
+
+    @Test
+    fun outOfMemoryInToByteArrayReportsDroppedAndPreservesForwarding() {
+        val oomOnToByteArray = {
+            object : ByteArrayOutputStream() {
+                override fun toByteArray(): ByteArray = throw OutOfMemoryError("synthetic toByteArray OOM")
+            }
+        }
+        val msg = bytes("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\ntest")
+        val r = HttpReader(ByteArrayInputStream(msg), bufferFactory = oomOnToByteArray)
+        val out = ByteArrayOutputStream()
+        val head = r.readHead()!!
+        out.write(head.raw)
+        val body = r.copyBody(head, out, isResponse = true)
+
+        assertContentEquals(msg, out.toByteArray())
+        assertNull(body.payload)
+        assertEquals(DropReason.OutOfMemory, body.dropped)
+    }
+
+    @Test
+    fun readerSurvivesOutOfMemoryAndNextMessageOnSameReaderSucceeds() {
+        var failFirst = true
+        val factory = {
+            if (failFirst) {
+                failFirst = false
+                object : ByteArrayOutputStream() {
+                    override fun write(b: ByteArray, off: Int, len: Int) {
+                        throw OutOfMemoryError("synthetic OOM")
+                    }
+                }
+            } else {
+                ByteArrayOutputStream()
+            }
+        }
+        val msg1 = bytes("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nfirst")
+        val msg2 = bytes("HTTP/1.1 200 OK\r\nContent-Length: 6\r\n\r\nsecond")
+        val r = HttpReader(ByteArrayInputStream(msg1 + msg2), bufferFactory = factory)
+
+        val out1 = ByteArrayOutputStream()
+        val head1 = r.readHead()!!
+        out1.write(head1.raw)
+        val body1 = r.copyBody(head1, out1, isResponse = true)
+        assertContentEquals(msg1, out1.toByteArray())
+        assertNull(body1.payload)
+        assertEquals(DropReason.OutOfMemory, body1.dropped)
+
+        val out2 = ByteArrayOutputStream()
+        val head2 = r.readHead()!!
+        out2.write(head2.raw)
+        val body2 = r.copyBody(head2, out2, isResponse = true)
+        assertContentEquals(msg2, out2.toByteArray())
+        assertEquals("second", String(body2.payload!!))
+        assertNull(body2.dropped)
+    }
+
+    @Test
+    fun overflowAboveMaxCaptureReportsTooLarge() {
+        val msg = bytes("HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n0123456789")
+        val r = HttpReader(ByteArrayInputStream(msg), maxCapture = 5)
+        val out = ByteArrayOutputStream()
+        val head = r.readHead()!!
+        out.write(head.raw)
+        val body = r.copyBody(head, out, isResponse = true)
+
+        assertContentEquals(msg, out.toByteArray())
+        assertNull(body.payload)
+        assertEquals(DropReason.TooLarge, body.dropped)
+    }
 }

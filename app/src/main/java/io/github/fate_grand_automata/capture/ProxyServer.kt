@@ -34,6 +34,8 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
     @Volatile
     private var running = false
 
+    internal var handleHookForTesting: ((Socket) -> Unit)? = null
+
     fun start(preferredPort: Int = 8899): Int {
         val s = try {
             ServerSocket().apply {
@@ -74,6 +76,7 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
 
     private fun handle(client: Socket) {
         try {
+            handleHookForTesting?.invoke(client)
             client.soTimeout = 60_000
             val head = HttpReader(client.getInputStream()).readHead() ?: return
             if (head.method != "CONNECT") {
@@ -92,6 +95,8 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
             }
         } catch (e: Exception) {
             if (running) Timber.d("Capture: connection error %s", e.javaClass.simpleName)
+        } catch (e: OutOfMemoryError) {
+            Timber.w("Capture: out of memory in connection handler")
         } finally {
             live -= client
             runCatching { client.close() }
@@ -117,8 +122,8 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
     }
 
     private fun pump(from: InputStream, to: OutputStream, a: Socket, b: Socket) {
-        val buf = ByteArray(16 * 1024)
         try {
+            val buf = ByteArray(16 * 1024)
             while (true) {
                 val n = from.read(buf)
                 if (n < 0) break
@@ -126,6 +131,10 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
                 to.flush()
             }
         } catch (_: IOException) {
+        } catch (e: OutOfMemoryError) {
+            Timber.w("Capture: out of memory in tunnel pump")
+        } catch (e: Throwable) {
+            Timber.d("Capture: tunnel pump error %s", e.javaClass.simpleName)
         } finally {
             runCatching { a.close() }
             runCatching { b.close() }
@@ -203,6 +212,13 @@ class ProxyServer(sslContexts: Map<String, SSLContext>) {
                 Timber.d("Capture: %s account path %d", req.method, resp.status)
             } else {
                 Timber.d("Capture: %s %s %d %d", req.method, path, resp.status, total)
+                body.dropped?.let { dropReason ->
+                    val reason = when (dropReason) {
+                        io.github.fate_grand_automata.scripts.capture.DropReason.TooLarge -> CaptureDropReason.TooLarge
+                        io.github.fate_grand_automata.scripts.capture.DropReason.OutOfMemory -> CaptureDropReason.OutOfMemory
+                    }
+                    CaptureTracker.recordDroppedResponse(path, total, reason)
+                }
                 val payload = body.payload
                 if (resp.status in 200..299 && payload != null && payload.isNotEmpty()) {
                     val target = "https://$host/${CaptureNames.path(path)}"

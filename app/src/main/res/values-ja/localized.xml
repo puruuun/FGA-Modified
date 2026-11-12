@@ -710,6 +710,7 @@
     <string name="capture_stop_revoked">"他のVPNに切り替わったか、権限が取り消されたため停止しました。"</string>
     <string name="capture_stop_error">"開始できませんでした。証明書とVPN権限を確認してください。"</string>
     <string name="capture_tls_warning">"ゲームが証明書を %d 回拒否しました。Wi-Fi証明書ではなくCA証明書としてインストールしてください。"</string>
+    <string name="capture_dropped_warning">"応答 %1$d 件を記録できませんでした (最新: %2$s)。"</string>
     <string name="capture_account_header">"アカウント"</string>
     <string name="capture_account_current">"最終プレイ"</string>
     <string name="capture_account_rename">"名前を変更"</string>

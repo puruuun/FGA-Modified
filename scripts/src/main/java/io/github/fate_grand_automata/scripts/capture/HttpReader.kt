@@ -30,16 +30,31 @@ class HttpHead(val raw: ByteArray) {
 }
 
 /**
- * @param rawBytes bytes consumed from the wire for this body (including chunk framing).
- * @param payload the body without chunk framing, or null when it exceeded the capture limit.
- * @param untilClose the body was delimited by connection close, so the connection cannot be reused.
+ * Reason why response body capture was dropped.
  */
-class BodyResult(val rawBytes: Long, val payload: ByteArray?, val untilClose: Boolean)
+enum class DropReason { TooLarge, OutOfMemory }
+
+/**
+ * @param rawBytes bytes consumed from the wire for this body (including chunk framing).
+ * @param payload the body without chunk framing, or null when it exceeded the capture limit or ran out of memory.
+ * @param untilClose the body was delimited by connection close, so the connection cannot be reused.
+ * @param dropped the reason why capture was dropped, or null when capture succeeded or was not requested.
+ */
+class BodyResult(
+    val rawBytes: Long,
+    val payload: ByteArray?,
+    val untilClose: Boolean,
+    val dropped: DropReason? = null,
+)
 
 /**
  * Reads HTTP/1.1 messages and tees every consumed byte to an output stream unchanged.
  */
-class HttpReader(input: InputStream, private val maxCapture: Int = 32 * 1024 * 1024) {
+class HttpReader(
+    input: InputStream,
+    private val maxCapture: Int = 32 * 1024 * 1024,
+    private val bufferFactory: () -> ByteArrayOutputStream = { ByteArrayOutputStream() },
+) {
     private val input = BufferedInputStream(input, 16 * 1024)
 
     /** Returns null on a clean EOF before the first byte of a message. */
@@ -78,45 +93,76 @@ class HttpReader(input: InputStream, private val maxCapture: Int = 32 * 1024 * 1
         requestMethod: String? = null,
         captureBody: Boolean = true,
     ): BodyResult {
-        capturing = captureBody
         if (isResponse) {
             val s = head.status
             if (requestMethod.equals("HEAD", true) || s in 100..199 || s == 204 || s == 304) {
                 return BodyResult(0, ByteArray(0), false)
             }
         }
+        val sink = BodySink(captureBody)
         val te = head.header("Transfer-Encoding")
         val cl = head.header("Content-Length")?.toLongOrNull()
         return when {
-            te != null && te.contains("chunked", ignoreCase = true) -> copyChunked(out)
-            cl != null -> copyFixed(cl, out)
-            isResponse -> copyUntilClose(out)
+            te != null && te.contains("chunked", ignoreCase = true) -> copyChunked(out, sink)
+            cl != null -> copyFixed(cl, out, sink)
+            isResponse -> copyUntilClose(out, sink)
             else -> BodyResult(0, ByteArray(0), false)
         }
     }
 
-    private var capturing = true
+    private inner class BodySink(private val capturing: Boolean) {
+        private var cap: ByteArrayOutputStream? = if (capturing) {
+            try {
+                bufferFactory()
+            } catch (_: OutOfMemoryError) {
+                null
+            }
+        } else null
 
-    private fun capture() = ByteArrayOutputStream()
+        var dropped: DropReason? = if (capturing && cap == null) DropReason.OutOfMemory else null
+            private set
 
-    private fun add(cap: ByteArrayOutputStream, state: BooleanArray, b: ByteArray, n: Int) {
-        if (!capturing || state[0]) return
-        if (cap.size() + n > maxCapture) {
-            state[0] = true
-            cap.reset()
-        } else {
-            cap.write(b, 0, n)
+        fun add(b: ByteArray, n: Int) {
+            if (!capturing || dropped != null) return
+            val c = cap ?: return
+            if (c.size() + n > maxCapture) {
+                dropped = DropReason.TooLarge
+                c.reset()
+                cap = null
+                return
+            }
+            try {
+                c.write(b, 0, n)
+            } catch (_: OutOfMemoryError) {
+                dropped = DropReason.OutOfMemory
+                runCatching { c.reset() }
+                cap = null
+            }
+        }
+
+        fun finish(rawBytes: Long, untilClose: Boolean): BodyResult {
+            if (!capturing) {
+                return BodyResult(rawBytes, null, untilClose, null)
+            }
+            val d = dropped
+            if (d != null) {
+                return BodyResult(rawBytes, null, untilClose, d)
+            }
+            val c = cap
+            val payload = try {
+                c?.toByteArray()
+            } catch (_: OutOfMemoryError) {
+                runCatching { c?.reset() }
+                cap = null
+                return BodyResult(rawBytes, null, untilClose, DropReason.OutOfMemory)
+            }
+            return BodyResult(rawBytes, payload, untilClose, null)
         }
     }
 
-    private fun result(cap: ByteArrayOutputStream, overflow: BooleanArray, raw: Long, untilClose: Boolean) =
-        BodyResult(raw, if (!capturing || overflow[0]) null else cap.toByteArray(), untilClose)
-
-    private fun copyFixed(length: Long, out: OutputStream): BodyResult {
-        val cap = capture()
-        val overflow = BooleanArray(1)
-        copyExact(length, out) { b, n -> add(cap, overflow, b, n) }
-        return result(cap, overflow, length, false)
+    private fun copyFixed(length: Long, out: OutputStream, sink: BodySink): BodyResult {
+        copyExact(length, out) { b, n -> sink.add(b, n) }
+        return sink.finish(length, false)
     }
 
     private fun copyExact(length: Long, out: OutputStream, sink: (ByteArray, Int) -> Unit) {
@@ -132,24 +178,20 @@ class HttpReader(input: InputStream, private val maxCapture: Int = 32 * 1024 * 1
         }
     }
 
-    private fun copyUntilClose(out: OutputStream): BodyResult {
-        val cap = capture()
-        val overflow = BooleanArray(1)
+    private fun copyUntilClose(out: OutputStream, sink: BodySink): BodyResult {
         val buf = ByteArray(8192)
         var total = 0L
         while (true) {
             val n = input.read(buf)
             if (n < 0) break
             out.write(buf, 0, n)
-            add(cap, overflow, buf, n)
+            sink.add(buf, n)
             total += n
         }
-        return result(cap, overflow, total, true)
+        return sink.finish(total, true)
     }
 
-    private fun copyChunked(out: OutputStream): BodyResult {
-        val cap = capture()
-        val overflow = BooleanArray(1)
+    private fun copyChunked(out: OutputStream, sink: BodySink): BodyResult {
         var raw = 0L
         while (true) {
             val line = readLineRaw()
@@ -167,13 +209,13 @@ class HttpReader(input: InputStream, private val maxCapture: Int = 32 * 1024 * 1
                 }
                 break
             }
-            copyExact(size, out) { b, n -> add(cap, overflow, b, n) }
+            copyExact(size, out) { b, n -> sink.add(b, n) }
             raw += size
             val crlf = readLineRaw()
             out.write(crlf)
             raw += crlf.size
         }
-        return result(cap, overflow, raw, false)
+        return sink.finish(raw, false)
     }
 
     /** One line including its terminator. */

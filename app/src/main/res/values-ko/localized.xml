@@ -954,6 +954,7 @@
     <string name="capture_stop_revoked">"다른 VPN이 대신하거나 권한이 취소되어 중지됐습니다."</string>
     <string name="capture_stop_error">"시작하지 못했습니다. 인증서와 VPN 권한을 확인해 주세요."</string>
     <string name="capture_tls_warning">"게임이 인증서를 %d번 거부했습니다. Wi-Fi 인증서가 아니라 CA 인증서로 설치해 주세요."</string>
+    <string name="capture_dropped_warning">"응답 %1$d개를 기록하지 못했습니다(마지막: %2$s)."</string>
     <string name="capture_account_header">"계정"</string>
     <string name="capture_account_current">"최근 플레이"</string>
     <string name="capture_account_rename">"이름 변경"</string>

@@ -1024,6 +1024,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_stop_revoked">"Stopped because another VPN took over or the permission was removed."</string>
     <string name="capture_stop_error">"Could not start. Check the certificate and the VPN permission."</string>
     <string name="capture_tls_warning">"The game refused the certificate %d times. Install it as a CA certificate, not a Wi-Fi certificate."</string>
+    <string name="capture_dropped_warning">"%1$d response(s) could not be recorded (last: %2$s)."</string>
     <string name="capture_account_header">"Account"</string>
     <string name="capture_account_current">"Last played"</string>
     <string name="capture_account_rename">"Rename"</string>

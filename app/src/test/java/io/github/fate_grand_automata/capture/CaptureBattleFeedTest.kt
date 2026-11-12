@@ -116,4 +116,28 @@ class CaptureBattleFeedTest {
         result(7002, 7, "game.fate-go.jp")
         assertEquals(mapOf(6516L to 7L), feed.awaitBattle(jpToken, Duration.ZERO)!!.drops)
     }
+
+    @Test fun `safe defaults returned when tracker throws`() {
+        val failingFeed = CaptureBattleFeed().apply {
+            runningProvider = { throw OutOfMemoryError("synthetic OOM") }
+            startingProvider = { throw IllegalStateException("synthetic error") }
+            tokenProvider = { throw OutOfMemoryError("synthetic OOM") }
+            awaitProvider = { _, _ -> throw RuntimeException("synthetic error") }
+        }
+        assertFalse(failingFeed.isCollecting())
+        assertFalse(failingFeed.isStarting())
+        assertEquals(0L, failingFeed.battleToken())
+        assertNull(failingFeed.awaitBattle(1L, Duration.ZERO))
+    }
+
+    @Test fun `interrupted awaitBattle restores interrupt flag and returns null`() {
+        val interruptedFeed = CaptureBattleFeed().apply {
+            awaitProvider = { _, _ -> throw InterruptedException("synthetic interruption") }
+        }
+        Thread.interrupted() // clear flag
+        val result = interruptedFeed.awaitBattle(1L, Duration.ZERO)
+        assertNull(result)
+        assertTrue(Thread.currentThread().isInterrupted)
+        Thread.interrupted() // clear flag
+    }
 }
