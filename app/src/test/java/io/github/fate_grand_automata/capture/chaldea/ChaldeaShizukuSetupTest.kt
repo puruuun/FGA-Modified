@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
-import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -55,6 +54,8 @@ class ChaldeaShizukuSetupTest {
         assertFalse(ShizukuProviderReset.resetToDefault(context))
     }
 
+    @org.junit.Before fun reset() = ChaldeaSyncManager.resetForTest()
+
     @Test fun withTheSwitchOffInitStartsNoSchedulerAndNoShizukuState() {
         val store = context.getSharedPreferences("chaldea-shizuku-setup-test", Context.MODE_PRIVATE)
         store.edit().clear().commit()
@@ -63,6 +64,6 @@ class ChaldeaShizukuSetupTest {
         ChaldeaSyncManager.init(context, prefs)
         Thread.sleep(300)
         assertNull(ChaldeaSyncManager.hooks)
-        assertEquals(ShizukuState.NotRunning, ChaldeaSyncManager.shizukuState.value)
+        assertFalse(ChaldeaSyncManager.isOn)
     }
 }

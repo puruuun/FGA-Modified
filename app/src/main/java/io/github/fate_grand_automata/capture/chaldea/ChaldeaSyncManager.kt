@@ -64,6 +64,9 @@ object ChaldeaSyncManager {
     private var prefs: PrefsCore? = null
     private var client: ChaldeaSyncClient? = null
     @Volatile private var enabledNow = false
+
+    /** Whether the sync is currently switched on in this process (tests and diagnostics). */
+    internal val isOn: Boolean get() = enabledNow
     private val lock = Any()
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
@@ -72,6 +75,9 @@ object ChaldeaSyncManager {
     /**
      * The settings collector. flow-preferences listens through a weakly held SharedPreferences listener, so a
      * collector nobody references can be collected and runtime changes would stop arriving. Kept for the process.
+     *
+     * The fields are only written, never read, so R8 deletes them from a minified build and the collector is
+     * collected after all (seen on the device with the beta APK). A keep rule in app/proguard-rules.pro stops R8 from removing them.
      */
     private var settingsScope: CoroutineScope? = null
     private var settingsJob: Job? = null
@@ -118,6 +124,19 @@ object ChaldeaSyncManager {
         override fun onActivityStopped(activity: Activity) {}
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
         override fun onActivityDestroyed(activity: Activity) {}
+    }
+
+    /** Tests only: forgets everything [init] set up so the next test can start from a clean process state. */
+    internal fun resetForTest() {
+        settingsJob?.cancel()
+        settingsJob = null
+        settingsScope = null
+        app = null
+        prefs = null
+        client = null
+        enabledNow = false
+        scheduler = null
+        hooks = null
     }
 
     /** Called from Application.onCreate. Cheap; starts nothing while the switch is off. */

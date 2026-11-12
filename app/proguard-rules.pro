@@ -30,3 +30,10 @@
 -keep class io.github.fate_grand_automata.capture.chaldea.IChaldeaSyncService$Stub { *; }
 -keep class io.github.fate_grand_automata.capture.chaldea.IChaldeaSyncService$Stub$Proxy { *; }
 -keep class io.github.fate_grand_automata.scripts.capture.chaldea.** { *; }
+
+# The Chaldea sync keeps its settings collector in write-only fields so it stays reachable. R8 would delete them,
+# and the collector (held only through a weak SharedPreferences listener) would be garbage collected (#358).
+-keepclassmembers class io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager {
+    private kotlinx.coroutines.CoroutineScope settingsScope;
+    private kotlinx.coroutines.Job settingsJob;
+}
