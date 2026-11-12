@@ -87,7 +87,13 @@ private class Fx(val ts: TestScope, val tmp: File) {
             return ChaldeaSyncSession.PrepareOutcome(result, ChaldeaBackupReceiver.Received(bundle.size.toLong(), bundleSha), backupMatches)
         }
 
-        override suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult {
+        override suspend fun commit(
+            patch: ChaldeaPatch,
+            expectedSha256: String,
+            allowCreate: Boolean,
+            expectedPackage: String,
+            expectedBundleSha256: String,
+        ): ChaldeaSyncResult {
             log += "commit"
             commits += patch to allowCreate
             if (commitDelay > 0) delay(commitDelay)

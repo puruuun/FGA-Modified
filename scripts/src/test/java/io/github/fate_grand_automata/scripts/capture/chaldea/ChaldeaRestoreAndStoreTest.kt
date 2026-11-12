@@ -72,6 +72,42 @@ class ChaldeaRestoreAndStoreTest {
         assertEquals(16L * 1024 * 1024, ChaldeaUserdataEditor.MAX_FILE_BYTES)
     }
 
+    @Test fun splitRejectsAWrongMagicEvenWhenTheRestIsWellFormed() {
+        val good = bundle()
+        val bad = good.copyOf().also { it[0] = 'X'.code.toByte() }
+        assertTrue(ChaldeaBackupBundle.split(good.inputStream(), File(dir, "ok")))
+        assertFalse(ChaldeaBackupBundle.split(bad.inputStream(), File(dir, "bad")))
+        assertFalse(File(dir, "bad/userdata.json").exists(), "nothing is written for a wrong magic")
+        assertNull(ChaldeaBackupBundle.decode(bad))
+    }
+
+    // ---- commit re-checks both files (review S-1) ----
+
+    private fun userJson() = """{"id":"u1","name":"N","region":"kr","lastImportId":"123456789","items":{"100":1}}"""
+    private fun fileText() = """{"version":4,"curUserKey":1,"users":[${userJson()}]}"""
+    private val patch = ChaldeaPatch("123456789", ChaldeaServer.Kr, "Nick", null, mapOf(100L to 5L), null, null)
+
+    @Test fun commitAbortsWhenTheOtherFileChangedAfterPrepare() {
+        File(dir, "userdata.json").writeText(fileText())
+        File(dir, "userdata.json.bak").writeText("old bak")
+        val e = engine()
+        val prep = e.prepare()
+        File(dir, "userdata.json.bak").writeText("changed by someone else")
+        val r = e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256)
+        assertEquals(ChaldeaSyncCode.FileChanged, r.code)
+        assertEquals("changed by someone else", File(dir, "userdata.json.bak").readText(), "nothing was written")
+        assertEquals(fileText(), File(dir, "userdata.json").readText())
+    }
+
+    @Test fun commitWritesWhenBothFilesAreAsPrepareSawThem() {
+        File(dir, "userdata.json").writeText(fileText())
+        File(dir, "userdata.json.bak").writeText("old bak")
+        val e = engine()
+        val prep = e.prepare()
+        assertEquals(ChaldeaSyncCode.Ok, e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256).code)
+        assertTrue(File(dir, "userdata.json").readText().contains(""""100":5"""))
+    }
+
     // ---- restore ----
 
     @Test fun restoreGivesEachFileItsOwnOriginalAndLeavesTheIntactOneAlone() {

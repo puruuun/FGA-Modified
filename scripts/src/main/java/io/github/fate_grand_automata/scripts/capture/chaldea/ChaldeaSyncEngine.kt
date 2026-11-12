@@ -49,7 +49,12 @@ class ChaldeaSyncEngine(
      * Re-reads and re-hashes the base, edits it, and writes `userdata.json` and then `userdata.json.bak` in place.
      * On any write or verify failure each file is put back to its own original bytes.
      */
-    fun commit(patchJson: String, expectedSha256: String, allowCreate: Boolean): ChaldeaSyncResult = lock.withLock {
+    fun commit(
+        patchJson: String,
+        expectedSha256: String,
+        allowCreate: Boolean,
+        expectedBundleSha256: String? = null,
+    ): ChaldeaSyncResult = lock.withLock {
         notRunningFailure()?.let { return fail(it) }
         val patch = ChaldeaPatch.fromJson(patchJson) ?: return fail(ChaldeaSyncCode.BadPatch)
         val loaded = when (val load = load()) {
@@ -58,6 +63,12 @@ class ChaldeaSyncEngine(
         }
         val baseHash = sha256Hex(loaded.base)
         if (baseHash != expectedSha256) return fail(ChaldeaSyncCode.FileChanged)
+        // The other file too: FGA's backup holds what `prepare` saw of both, so both must still be that.
+        if (expectedBundleSha256 != null &&
+            sha256Hex(ChaldeaBackupBundle.encode(loaded.json, loaded.bak)) != expectedBundleSha256
+        ) {
+            return fail(ChaldeaSyncCode.FileChanged)
+        }
         // In place only: a missing userdata.json (base came from .bak) cannot be written without creating it.
         if (loaded.json == null) return fail(ChaldeaSyncCode.NotFound)
 

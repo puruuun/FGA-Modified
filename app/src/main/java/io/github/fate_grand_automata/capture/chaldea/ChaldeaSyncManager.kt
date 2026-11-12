@@ -63,7 +63,7 @@ object ChaldeaSyncManager {
     private var app: Application? = null
     private var prefs: PrefsCore? = null
     private var client: ChaldeaSyncClient? = null
-    private var enabledNow = false
+    @Volatile private var enabledNow = false
     private val lock = Any()
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
@@ -165,26 +165,37 @@ object ChaldeaSyncManager {
 
     private fun apply(syncOn: Boolean) {
         val application = app ?: return
-        synchronized(lock) {
-            if (syncOn && !enabledNow) {
-                enabledNow = true
-                ShizukuProviderSwitch.setEnabled(application, true)
-                runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
-                runCatching { Shizuku.addBinderDeadListener(binderDead) }
-                runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
-                application.registerActivityLifecycleCallbacks(resumeCallback)
-                runCatching { ShizukuProvider.requestBinderForNonProviderProcess(application) }
-                refreshShizuku()
-                if (scheduler == null) createScheduler(application)
-            } else if (!syncOn && enabledNow) {
-                enabledNow = false
-                permission.disarm()
-                application.unregisterActivityLifecycleCallbacks(resumeCallback)
-                runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
-                runCatching { Shizuku.removeBinderDeadListener(binderDead) }
-                runCatching { Shizuku.removeRequestPermissionResultListener(permissionResult) }
-                ShizukuProviderSwitch.setEnabled(application, false)
+        // Only the flags are changed under the lock. The package-manager and Shizuku binder calls below run outside
+        // it, so the main thread (the resume callback takes the same lock) never waits on a binder call.
+        val change = synchronized(lock) {
+            when {
+                syncOn && !enabledNow -> {
+                    enabledNow = true
+                    1
+                }
+                !syncOn && enabledNow -> {
+                    enabledNow = false
+                    permission.disarm()
+                    2
+                }
+                else -> 0
             }
+        }
+        if (change == 1) {
+            ShizukuProviderSwitch.setEnabled(application, true)
+            runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
+            runCatching { Shizuku.addBinderDeadListener(binderDead) }
+            runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
+            application.registerActivityLifecycleCallbacks(resumeCallback)
+            runCatching { ShizukuProvider.requestBinderForNonProviderProcess(application) }
+            refreshShizuku()
+            synchronized(lock) { if (scheduler == null) createScheduler(application) }
+        } else if (change == 2) {
+            application.unregisterActivityLifecycleCallbacks(resumeCallback)
+            runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
+            runCatching { Shizuku.removeBinderDeadListener(binderDead) }
+            runCatching { Shizuku.removeRequestPermissionResultListener(permissionResult) }
+            ShizukuProviderSwitch.setEnabled(application, false)
         }
         // Also covers log collection or consent changing while the sync switch stays on.
         scheduler?.onSettingsChanged()

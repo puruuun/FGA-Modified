@@ -17,7 +17,13 @@ interface ChaldeaSyncSession {
 
     /** Streams the base file into [sink] (flushed, not closed). */
     suspend fun prepare(sink: OutputStream): PrepareOutcome
-    suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult
+    suspend fun commit(
+        patch: ChaldeaPatch,
+        expectedSha256: String,
+        allowCreate: Boolean,
+        expectedPackage: String,
+        expectedBundleSha256: String,
+    ): ChaldeaSyncResult
 
     /**
      * Puts the files of the backup bundle in [bundle] (whose SHA-256 must be [sha256]) back into the Chaldea files of

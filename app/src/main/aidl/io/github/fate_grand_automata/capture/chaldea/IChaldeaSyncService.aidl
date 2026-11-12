@@ -17,7 +17,7 @@ interface IChaldeaSyncService {
     String prepare(in ParcelFileDescriptor backupFd) = 3;
 
     // Edits and writes both files in place; see ChaldeaSyncEngine.
-    String commit(String patchJson, String expectedSha256, boolean allowCreate, String expectedPackage) = 4;
+    String commit(String patchJson, String expectedSha256, boolean allowCreate, String expectedPackage, String expectedBundleSha256) = 4;
 
     // Puts the stored base bytes (streamed through backupFd, SHA-256 expectedSha256) back into both files.
     String restore(in ParcelFileDescriptor backupFd, String expectedSha256, String expectedPackage) = 5;

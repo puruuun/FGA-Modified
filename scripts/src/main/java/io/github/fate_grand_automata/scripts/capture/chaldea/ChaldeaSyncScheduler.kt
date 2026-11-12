@@ -536,6 +536,11 @@ class ChaldeaSyncScheduler(
         return out
     }
 
+    /**
+     * Counts a failed recovery. After [Timing.maxRecoveryFailures] of them recovery gives up and, deliberately, every
+     * sync stays blocked (nothing is written over a file whose state is unknown) until the switch is toggled or "sync
+     * now" is pressed. The backup it points at is kept.
+     */
     private fun recoveryFailed(code: ChaldeaSyncCode, status: ChaldeaSyncStatus = ChaldeaSyncStatus.RecoveryBlocked(code)) {
         synchronized(lock) {
             recoveryFailures++
@@ -561,30 +566,71 @@ class ChaldeaSyncScheduler(
     private suspend fun recoverInflight(session: ChaldeaSyncSession): Boolean {
         val inflight = store.readInflight() ?: return true
         val temp = backups.incoming()
-        val outcome = try {
-            FileOutputStream(temp).use { session.prepare(it) }
-        } catch (e: IOException) {
+        val curDir = backups.currentCheckDir()
+        try {
+            val outcome = try {
+                FileOutputStream(temp).use { session.prepare(it) }
+            } catch (e: IOException) {
+                recoveryFailed(ChaldeaSyncCode.Unreadable)
+                return false
+            }
+            val r = outcome.result
+            val damaged = r.code in setOf(
+                ChaldeaSyncCode.InvalidJson, ChaldeaSyncCode.NotObject, ChaldeaSyncCode.MissingUsers,
+                ChaldeaSyncCode.UnknownVersion, ChaldeaSyncCode.UnexpectedShape,
+            ) || (r.ok && r.base == ChaldeaBaseSource.Bak)
+            if (!r.ok && !damaged) {
+                // Chaldea running or unknown: wait, this is not a failure. Anything else is counted and shown.
+                if (r.code != ChaldeaSyncCode.ChaldeaRunning && r.code != ChaldeaSyncCode.StateUnknown) recoveryFailed(r.code)
+                return false
+            }
+            if (!damaged) {
+                // userdata.json is valid, but the interrupted write also covers .bak (written second): it must be
+                // its own original or the new userdata.json. Anything else (cut short, empty) means interrupted.
+                val consistent = bakConsistent(inflight, outcome, temp, curDir)
+                if (consistent == null) {
+                    recoveryFailed(ChaldeaSyncCode.Unreadable)
+                    return false
+                }
+                if (consistent) {
+                    // The write finished; the account is synced again to be sure.
+                    recoveryDone()
+                    backups.release(inflight.packageName)
+                    return true
+                }
+            }
+            return restoreFromBundle(session, inflight)
+        } finally {
             temp.delete()
-            recoveryFailed(ChaldeaSyncCode.Unreadable)
-            return false
+            curDir.deleteRecursively()
         }
-        temp.delete()
-        val r = outcome.result
-        val damaged = r.code in setOf(
-            ChaldeaSyncCode.InvalidJson, ChaldeaSyncCode.NotObject, ChaldeaSyncCode.MissingUsers,
-            ChaldeaSyncCode.UnknownVersion, ChaldeaSyncCode.UnexpectedShape,
-        ) || (r.ok && r.base == ChaldeaBaseSource.Bak)
-        if (!r.ok && !damaged) {
-            // Chaldea running or unknown: wait, this is not a failure. Anything else is counted and shown.
-            if (r.code != ChaldeaSyncCode.ChaldeaRunning && r.code != ChaldeaSyncCode.StateUnknown) recoveryFailed(r.code)
-            return false
+    }
+
+    /** @return null when the current files or the backup cannot be read, so nothing can be judged */
+    private fun bakConsistent(
+        inflight: ChaldeaSyncStore.Inflight,
+        outcome: ChaldeaSyncSession.PrepareOutcome,
+        currentBundle: File,
+        curDir: File,
+    ): Boolean? {
+        val orig = File(inflight.backupPath)
+        if (!orig.isDirectory) return null
+        val origBak = File(orig, ChaldeaBackupBundle.BAK)
+        if (!origBak.isFile) return true // there was no .bak: the write never touched one
+        if (!outcome.backupMatches) return null
+        val split = try {
+            currentBundle.inputStream().use { ChaldeaBackupBundle.split(it, curDir) }
+        } catch (e: IOException) {
+            false
         }
-        if (!damaged) {
-            // userdata.json is valid. If it is not the original it holds a finished write; it is synced again.
-            recoveryDone()
-            backups.release(inflight.packageName)
-            return true
-        }
+        if (!split) return null
+        val curBak = File(curDir, ChaldeaBackupBundle.BAK)
+        val curJson = File(curDir, ChaldeaBackupBundle.JSON)
+        if (!curBak.isFile) return false
+        return backups.sameContent(curBak, origBak) || backups.sameContent(curBak, curJson)
+    }
+
+    private suspend fun restoreFromBundle(session: ChaldeaSyncSession, inflight: ChaldeaSyncStore.Inflight): Boolean {
         val folder = File(inflight.backupPath)
         val scratch = backups.restoreScratch()
         val restored = try {
@@ -650,7 +696,7 @@ class ChaldeaSyncScheduler(
         }
         // From here the commit finishes even if a script starts or the switch is turned off.
         return withContext(NonCancellable) {
-            val r = session.commit(t.patch, baseSha, t.allowCreate, pkg)
+            val r = session.commit(t.patch, baseSha, t.allowCreate, pkg, bundleSha)
             when (r.code) {
                 ChaldeaSyncCode.Ok -> {
                     val after = runCatching { session.state().state }.getOrDefault(ChaldeaRunState.Unknown)

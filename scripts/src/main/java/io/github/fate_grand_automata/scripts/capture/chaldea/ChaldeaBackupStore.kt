@@ -18,6 +18,43 @@ class ChaldeaBackupStore(private val root: File, private val keep: Int = 3) {
     /** Scratch file for the bundle sent back to the service when restoring. */
     fun restoreScratch(): File = File(root, "restore.tmp").also { root.mkdirs() }
 
+    /** Scratch folder for splitting the bundle of the files as they are now (recovery check). */
+    fun currentCheckDir(): File = File(root, "current-check").also {
+        it.deleteRecursively()
+        root.mkdirs()
+    }
+
+    /** True when both files have the same bytes. Streams, so nothing large is held. */
+    fun sameContent(a: File, b: File): Boolean = try {
+        if (a.length() != b.length()) false else FileInputStream(a).use { x ->
+            FileInputStream(b).use { y ->
+                val bx = ByteArray(64 * 1024)
+                val by = ByteArray(64 * 1024)
+                var same = true
+                while (same) {
+                    val n = fill(x, bx)
+                    val m = fill(y, by)
+                    if (n != m || !bx.copyOf(n).contentEquals(by.copyOf(m))) same = false
+                    if (n < bx.size) break
+                }
+                same
+            }
+        }
+    } catch (e: IOException) {
+        false
+    }
+
+    /** Reads until [buf] is full or the stream ends (InputStream.readNBytes needs a newer Android). */
+    private fun fill(input: java.io.InputStream, buf: ByteArray): Int {
+        var total = 0
+        while (total < buf.size) {
+            val n = input.read(buf, total, buf.size - total)
+            if (n < 0) break
+            total += n
+        }
+        return total
+    }
+
     fun packageDir(pkg: String) = File(root, pkg)
     fun firstOriginal(pkg: String) = File(packageDir(pkg), FIRST)
     fun inflightDir(pkg: String) = File(packageDir(pkg), INFLIGHT)

@@ -116,9 +116,15 @@ class ChaldeaSyncClient(private val context: Context) {
             ChaldeaSyncSession.PrepareOutcome(result, got, got != null && ChaldeaBackupReceiver.matches(got, result))
         }
 
-        override suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult =
+        override suspend fun commit(
+            patch: ChaldeaPatch,
+            expectedSha256: String,
+            allowCreate: Boolean,
+            expectedPackage: String,
+            expectedBundleSha256: String,
+        ): ChaldeaSyncResult =
             withContext(Dispatchers.IO) {
-                ChaldeaSyncResult.fromJson(service.commit(patch.toJson(), expectedSha256, allowCreate, expectedPackage))
+                ChaldeaSyncResult.fromJson(service.commit(patch.toJson(), expectedSha256, allowCreate, expectedPackage, expectedBundleSha256))
             }
 
         override suspend fun restore(bundle: File, sha256: String, packageName: String): ChaldeaSyncResult =

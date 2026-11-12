@@ -139,7 +139,13 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         ChaldeaSyncResult(ChaldeaSyncCode.ServiceError).toJson()
     }
 
-    override fun commit(patchJson: String?, expectedSha256: String?, allowCreate: Boolean, expectedPackage: String?): String = try {
+    override fun commit(
+        patchJson: String?,
+        expectedSha256: String?,
+        allowCreate: Boolean,
+        expectedPackage: String?,
+        expectedBundleSha256: String?,
+    ): String = try {
         val pkg = choosePackage()
         val r = if (patchJson == null || expectedSha256 == null) {
             ChaldeaSyncResult(ChaldeaSyncCode.BadPatch, packageName = pkg)
@@ -147,7 +153,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
             // The newest-file rule now points to another package than prepare backed up.
             ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)
         } else {
-            engine(pkg).commit(patchJson, expectedSha256, allowCreate).copy(bothPackages = bothExist())
+            engine(pkg).commit(patchJson, expectedSha256, allowCreate, expectedBundleSha256).copy(bothPackages = bothExist())
         }
         r.toJson()
     } catch (t: Throwable) {
