@@ -66,7 +66,7 @@ class ChaldeaRecoveryTest {
         val env = object : ChaldeaSyncEnv {
             override fun enabled() = true
             override fun closeMinutes() = 30
-            override fun shizukuState() = ShizukuState.Ready
+            override fun access() = ChaldeaAccess(RootState.Unchecked, ShizukuState.Ready)
             override suspend fun openSession(): ChaldeaSyncSession = EngineSession(chaldea, restoreFails).also { sessions += it }
         }
         val source = object : ChaldeaAccountSource {

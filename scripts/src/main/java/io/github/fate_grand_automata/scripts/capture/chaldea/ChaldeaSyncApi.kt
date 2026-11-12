@@ -42,9 +42,11 @@ interface ChaldeaSyncEnv {
 
     /** Minutes in the background before Chaldea is closed: 10, 30, 60, or 0 for never. */
     fun closeMinutes(): Int
-    fun shizukuState(): ShizukuState
 
-    /** Binds the service; null when it cannot be reached. */
+    /** How the files are reached now: root wins over Shizuku. */
+    fun access(): ChaldeaAccess
+
+    /** Binds the service over the current access mode; null when it cannot be reached. */
     suspend fun openSession(): ChaldeaSyncSession?
 }
 
@@ -78,6 +80,7 @@ sealed interface ChaldeaSyncStatus {
     data object NoAccess : ChaldeaSyncStatus
     data object UnknownVersion : ChaldeaSyncStatus
     data object FileUnreadable : ChaldeaSyncStatus
+    data object OwnerChanged : ChaldeaSyncStatus
     data object BackupFailed : ChaldeaSyncStatus
     data object AccountNotIdentified : ChaldeaSyncStatus
     data object FailedRestored : ChaldeaSyncStatus
@@ -90,7 +93,7 @@ sealed interface ChaldeaSyncStatus {
     /** Failures that stay shown until the next success or a switch toggle. */
     val persistent: Boolean
         get() = when (this) {
-            is FileNotFound, is NoAccess, is UnknownVersion, is FileUnreadable, is BackupFailed, is AccountNotIdentified,
+            is FileNotFound, is NoAccess, is UnknownVersion, is FileUnreadable, is OwnerChanged, is BackupFailed, is AccountNotIdentified,
             is FailedRestored, is RestoreFailed, is Failed, is RecoveryBlocked -> true
             else -> false
         }

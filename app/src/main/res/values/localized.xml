@@ -1354,6 +1354,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_shizuku_needs_permission">"Shizuku has not allowed FGA yet. Allow it in the Shizuku request."</string>
     <string name="chaldea_sync_shizuku_denied">"Shizuku denied FGA. Allow it in the Shizuku app."</string>
     <string name="chaldea_sync_shizuku_outdated">"Shizuku is too old. Update it."</string>
+    <string name="chaldea_sync_access_root">"Access: root"</string>
+    <string name="chaldea_sync_access_shizuku">"Access: Shizuku"</string>
+    <string name="chaldea_sync_root_hint">"On a rooted device, you can also allow root for FGA in Magisk or KernelSU."</string>
     <string name="chaldea_sync_status_cannot_bind">"Cannot reach the Shizuku service. Will try again."</string>
     <string name="chaldea_sync_status_state_unknown">"Cannot determine Chaldea's state. Waiting."</string>
     <string name="chaldea_sync_status_started_during">"Chaldea started during the sync. It will sync again later."</string>
@@ -1366,5 +1369,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_restored">"The sync failed and Chaldea's data was restored."</string>
     <string name="chaldea_sync_status_restore_failed">"Restore failed: backup at %s"</string>
     <string name="chaldea_sync_status_failed">"The sync failed (%s)."</string>
+    <string name="chaldea_sync_status_owner_changed">"The owner or permissions of the Chaldea files changed and could not be restored. The backup is kept."</string>
     <string name="chaldea_sync_status_recovery_blocked">"A sync that was interrupted earlier could not be checked (%s). Nothing is written until this is resolved; the backup is kept."</string>
 </resources>

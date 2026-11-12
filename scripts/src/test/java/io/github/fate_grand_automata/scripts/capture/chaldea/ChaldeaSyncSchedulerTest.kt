@@ -27,6 +27,7 @@ private class Fx(val ts: TestScope, val tmp: File) {
     var enabled = true
     var closeMinutes = 30
     var shizuku = ShizukuState.Ready
+    var root = RootState.Unchecked
     var openThrows = false
     var clockOffset = 0L
     var wall = 1000L
@@ -115,7 +116,7 @@ private class Fx(val ts: TestScope, val tmp: File) {
     val env = object : ChaldeaSyncEnv {
         override fun enabled() = enabled
         override fun closeMinutes() = closeMinutes
-        override fun shizukuState() = shizuku
+        override fun access() = ChaldeaAccess(root, shizuku)
         override suspend fun openSession(): ChaldeaSyncSession {
             if (openThrows) {
                 openThrows = false
@@ -449,9 +450,56 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(ChaldeaSyncStatus.ShizukuUnavailable(ShizukuState.NotRunning), sch.status.value)
         assertTrue("a" in store.read().pending)
         shizuku = ShizukuState.Ready
-        sch.onShizukuChanged()
+        sch.onAccessChanged()
         advance(1_000)
         assertEquals(1, commits.size)
+    }
+
+    @Test fun syncRunsInRootModeWhileShizukuIsNotInstalled() = fx {
+        account("a")
+        shizuku = ShizukuState.NotInstalled
+        root = RootState.Granted
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(2 * MIN)
+        assertEquals(1, commits.size)
+        assertTrue(kr is ChaldeaSyncStatus.Synced)
+    }
+
+    @Test fun fallsBackToShizukuWhenRootIsUnavailable() = fx {
+        account("a")
+        shizuku = ShizukuState.Ready
+        root = RootState.Unavailable
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(2 * MIN)
+        assertEquals(1, commits.size)
+        assertTrue(kr is ChaldeaSyncStatus.Synced)
+    }
+
+    @Test fun neitherRootNorShizukuKeepsPendingAndReportsShizukuState() = fx {
+        account("a")
+        shizuku = ShizukuState.NotInstalled
+        root = RootState.Unavailable
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(10 * MIN)
+        assertEquals(0, opened)
+        assertEquals(ChaldeaSyncStatus.ShizukuUnavailable(ShizukuState.NotInstalled), sch.status.value)
+        root = RootState.Granted
+        sch.onAccessChanged()
+        advance(1_000)
+        assertEquals(1, commits.size, "a root state change wakes the scheduler like a Shizuku change")
+    }
+
+    @Test fun ownerChangedIsAPersistentFailure() = fx {
+        account("a")
+        commitResult = { ChaldeaSyncResult(ChaldeaSyncCode.OwnerChanged, packageName = PKG) }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(2 * MIN)
+        assertEquals(ChaldeaSyncStatus.OwnerChanged, kr)
+        assertTrue(ChaldeaSyncStatus.OwnerChanged.persistent)
     }
 
     @Test fun deletingAnAccountRemovesItFromPending() = fx {
@@ -736,7 +784,7 @@ class ChaldeaSyncSchedulerTest {
                     sch.onScriptStart()
                     sch.onScriptEnd()
                     sch.onForeground()
-                    sch.onShizukuChanged()
+                    sch.onAccessChanged()
                 }
                 done.countDown()
             }

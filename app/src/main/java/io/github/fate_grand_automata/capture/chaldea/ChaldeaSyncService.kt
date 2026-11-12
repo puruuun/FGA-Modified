@@ -1,7 +1,10 @@
 package io.github.fate_grand_automata.capture.chaldea
 
 import android.os.ParcelFileDescriptor
+import android.system.Os
 import androidx.annotation.Keep
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaFileOwner
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaOwnership
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPackages
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaStateParser
@@ -70,6 +73,46 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
     private fun engine(pkg: String) =
         ChaldeaSyncEngine(JavaChaldeaFileAccess(userDir(pkg)), pkg, { readState(pkg) }, lock)
 
+    /** Owner, group and mode of each Chaldea file that exists now. A file that cannot be stat'ed is left out. */
+    private fun owners(pkg: String): Map<String, ChaldeaFileOwner> = buildMap {
+        for (name in listOf(ChaldeaSyncEngine.JSON, ChaldeaSyncEngine.BAK)) {
+            val f = File(userDir(pkg), name)
+            if (!f.isFile) continue
+            try {
+                val st = Os.stat(f.path)
+                put(name, ChaldeaFileOwner(st.st_uid, st.st_gid, st.st_mode))
+            } catch (_: Throwable) {
+            }
+        }
+    }
+
+    /**
+     * Runs a write and checks afterwards that each Chaldea file still has its owner, group and mode (issue #362, R4):
+     * a root write must not leave a file Chaldea itself can no longer read. A difference is set back with chown and
+     * chmod; if that fails, the result becomes [ChaldeaSyncCode.OwnerChanged]. In Shizuku mode the shell cannot chown,
+     * so nothing differs there.
+     */
+    private fun guardOwnership(pkg: String, write: () -> ChaldeaSyncResult): ChaldeaSyncResult = lock.withLock {
+        val before = owners(pkg)
+        val result = try {
+            write()
+        } catch (t: Throwable) {
+            ChaldeaSyncResult(ChaldeaSyncCode.ServiceError)
+        }
+        val changed = ChaldeaOwnership.changed(before, owners(pkg))
+        if (changed.isEmpty()) return@withLock result
+        for (name in changed) {
+            val original = before.getValue(name)
+            val path = File(userDir(pkg), name).path
+            try {
+                Os.chown(path, original.uid, original.gid)
+                Os.chmod(path, original.mode and 0xFFF)
+            } catch (_: Throwable) {
+            }
+        }
+        if (ChaldeaOwnership.changed(before, owners(pkg)).isEmpty()) result else ChaldeaSyncResult(ChaldeaSyncCode.OwnerChanged, packageName = pkg)
+    }
+
     override fun destroy() {
         // Wait for a running write and its verify or restore; then exit.
         lock.withLock { exitProcess(0) }
@@ -132,7 +175,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         } else if (expectedPackage != pkg) {
             ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)
         } else {
-            engine(pkg).restoreFromBackup(bytes, expectedSha256)
+            guardOwnership(pkg) { engine(pkg).restoreFromBackup(bytes, expectedSha256) }
         }
         r.toJson()
     } catch (t: Throwable) {
@@ -153,7 +196,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
             // The newest-file rule now points to another package than prepare backed up.
             ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)
         } else {
-            engine(pkg).commit(patchJson, expectedSha256, allowCreate, expectedBundleSha256).copy(bothPackages = bothExist())
+            guardOwnership(pkg) { engine(pkg).commit(patchJson, expectedSha256, allowCreate, expectedBundleSha256).copy(bothPackages = bothExist()) }
         }
         r.toJson()
     } catch (t: Throwable) {

@@ -6,8 +6,11 @@ import android.os.Bundle
 import android.os.SystemClock
 import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.ProcessRootShell
 import io.github.fate_grand_automata.capture.captureSafely
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccess
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccessMode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccountSource
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaBackupStore
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
@@ -18,9 +21,14 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSchedule
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStore
+import io.github.fate_grand_automata.scripts.capture.chaldea.ProbeTicket
+import io.github.fate_grand_automata.scripts.capture.chaldea.RootProbe
+import io.github.fate_grand_automata.scripts.capture.chaldea.RootProbePolicy
+import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuPermissionRequester
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -30,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import timber.log.Timber
@@ -63,6 +72,10 @@ object ChaldeaSyncManager {
     private var app: Application? = null
     private var prefs: PrefsCore? = null
     private var client: ChaldeaSyncClient? = null
+    private var rootClient: ChaldeaRootClient? = null
+
+    /** Decides the root probes and keeps the in-process root state (issue #362). Created in [init]. */
+    @Volatile private var rootPolicy: RootProbePolicy? = null
     @Volatile private var enabledNow = false
 
     /** Whether the sync is currently switched on in this process (tests and diagnostics). */
@@ -84,6 +97,22 @@ object ChaldeaSyncManager {
 
     private val _shizuku = MutableStateFlow(ShizukuState.NotRunning)
     val shizukuState: StateFlow<ShizukuState> = _shizuku.asStateFlow()
+    private val _access = MutableStateFlow(ChaldeaAccess(RootState.Unchecked, ShizukuState.NotRunning))
+
+    /** Root and Shizuku together: what the settings screen and the scheduler read. */
+    val access: StateFlow<ChaldeaAccess> = _access.asStateFlow()
+
+    /** Runs su -c id; replaced in tests. Blocking: only call it off the main thread. */
+    internal var probeRunner: () -> RootState = {
+        try {
+            val out = ProcessRootShell().run(listOf("su", "-c", "id"), "", 5)
+            RootProbe.parse(out.exitCode, out.lines, out.timedOut)
+        } catch (t: Throwable) {
+            // No su binary: the process cannot even start.
+            RootState.Unavailable
+        }
+    }
+    private val probeScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     private val _status = MutableStateFlow<ChaldeaSyncStatus>(ChaldeaSyncStatus.Idle)
     val status: StateFlow<ChaldeaSyncStatus> = _status.asStateFlow()
     private val _results = MutableStateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>>(emptyMap())
@@ -134,6 +163,9 @@ object ChaldeaSyncManager {
         app = null
         prefs = null
         client = null
+        rootClient = null
+        rootPolicy = null
+        _access.value = ChaldeaAccess(RootState.Unchecked, ShizukuState.NotRunning)
         enabledNow = false
         scheduler = null
         hooks = null
@@ -145,6 +177,11 @@ object ChaldeaSyncManager {
         app = application
         prefs = prefsCore
         client = ChaldeaSyncClient(application)
+        rootClient = ChaldeaRootClient(application)
+        rootPolicy = RootProbePolicy(
+            storedFlag = { prefsCore.chaldeaSyncRootGranted.get() },
+            setStoredFlag = { prefsCore.chaldeaSyncRootGranted.set(it) },
+        )
         // Undo the runtime "disabled" state an earlier beta left on the provider. No Shizuku API is involved.
         ShizukuProviderReset.resetToDefault(application)
         // The settings flows are plain preference listeners: no timer, thread or Shizuku call.
@@ -168,8 +205,22 @@ object ChaldeaSyncManager {
         }
 
         override fun closeMinutes(): Int = prefs?.chaldeaSyncCloseMinutes?.get()?.takeIf { it in listOf(0, 10, 30, 60) } ?: 30
-        override fun shizukuState(): ShizukuState = _shizuku.value
-        override suspend fun openSession(): ChaldeaSyncSession? = client?.open()
+        override fun access(): ChaldeaAccess {
+            // The next round after a failed root bind probes again, silently (never while a script runs).
+            startProbe(rootPolicy?.onRound())
+            return currentAccess()
+        }
+
+        override suspend fun openSession(): ChaldeaSyncSession? = when (currentAccess().mode) {
+            ChaldeaAccessMode.Root -> rootClient?.open() ?: run {
+                // Forget the root state: the next round probes again and, without root, falls back to Shizuku.
+                rootPolicy?.onRootBindFailed()
+                publishAccess()
+                null
+            }
+            ChaldeaAccessMode.Shizuku -> client?.open()
+            null -> null
+        }
     }
 
     private fun accounts(application: Application): ChaldeaAccountSource = object : ChaldeaAccountSource {
@@ -212,6 +263,8 @@ object ChaldeaSyncManager {
             }
         }
         if (change == 1) {
+            // Silent, and only when root was granted before; waits for a running script to end.
+            startProbe(rootPolicy?.onSettingsOn())
             runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
             runCatching { Shizuku.addBinderDeadListener(binderDead) }
             runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
@@ -220,6 +273,9 @@ object ChaldeaSyncManager {
             refreshShizuku()
             synchronized(lock) { if (scheduler == null) createScheduler(application) }
         } else if (change == 2) {
+            rootPolicy?.onSwitchedOff()
+            publishAccess()
+            probeScope.launch { ChaldeaRootClient.closeShell() }
             application.unregisterActivityLifecycleCallbacks(resumeCallback)
             runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
             runCatching { Shizuku.removeBinderDeadListener(binderDead) }
@@ -257,13 +313,18 @@ object ChaldeaSyncManager {
         val state = captureShizuku(application)
         val changed = _shizuku.value != state
         _shizuku.value = state
-        if (changed) scheduler?.onShizukuChanged()
+        publishAccess()
+        if (changed) scheduler?.onAccessChanged()
         requestPermissionIfWanted()
     }
 
     /** Shows the Shizuku permission dialog when the user asked for the sync and Shizuku needs it. */
     private fun requestPermissionIfWanted() {
-        val ask = synchronized(lock) { permission.shouldRequest(_shizuku.value) }
+        // Not while root is Granted, nor while a root probe may still make the dialog unnecessary.
+        val policy = rootPolicy
+        val ask = synchronized(lock) {
+            if (policy != null) policy.shouldRequestShizukuPermission(permission, _shizuku.value) else permission.shouldRequest(_shizuku.value)
+        }
         if (ask) runCatching { Shizuku.requestPermission(PERMISSION_REQUEST_CODE) }
     }
 
@@ -280,11 +341,39 @@ object ChaldeaSyncManager {
      */
     fun onUserTurnedOn() {
         synchronized(lock) { permission.arm() }
+        // The Magisk / KernelSU dialog may appear; the Shizuku dialog waits for this probe.
+        startProbe(rootPolicy?.onUserTurnedOn())
         if (enabledNow) refreshShizuku()
     }
 
-    suspend fun syncNow(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome =
-        scheduler?.syncNow(confirmed) ?: ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
+    suspend fun syncNow(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome {
+        // Root is not Granted yet in this process: ask now (interactive), and use the answer for this sync.
+        rootPolicy?.onSyncNow()?.let { ticket ->
+            finishProbe(ticket, withContext(Dispatchers.IO) { probeRunner() })
+        }
+        return scheduler?.syncNow(confirmed) ?: ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
+    }
+
+    private fun currentAccess() = ChaldeaAccess(rootPolicy?.state ?: RootState.Unchecked, _shizuku.value)
+
+    private fun publishAccess() {
+        _access.value = currentAccess()
+    }
+
+    /** Runs the probe the policy allowed, on a background thread. */
+    private fun startProbe(ticket: ProbeTicket?) {
+        if (ticket == null) return
+        probeScope.launch { captureSafely("chaldeaRootProbe") { finishProbe(ticket, probeRunner()) } }
+    }
+
+    private fun finishProbe(ticket: ProbeTicket, result: RootState) {
+        val policy = rootPolicy ?: return
+        val changed = policy.onProbeResult(ticket, result)
+        publishAccess()
+        if (changed) scheduler?.onAccessChanged()
+        // The Shizuku dialog was held back while the probe ran.
+        if (result != RootState.Granted) refreshShizuku()
+    }
 
     // ---- hooks (non-blocking; callers wrap them in captureSafely) ----
 
@@ -297,10 +386,13 @@ object ChaldeaSyncManager {
     }
 
     fun onScriptStart() {
+        rootPolicy?.onScriptStart()
         hooks?.onScriptStart()
     }
 
     fun onScriptEnd() {
+        // A root probe that waited for the script starts now, off this thread.
+        startProbe(rootPolicy?.onScriptEnd())
         hooks?.onScriptEnd()
     }
 }

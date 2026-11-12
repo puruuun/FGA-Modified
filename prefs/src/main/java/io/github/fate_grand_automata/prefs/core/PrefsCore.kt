@@ -72,6 +72,8 @@ class PrefsCore @Inject constructor(
     val chaldeaSyncEnabled = maker.bool("chaldea_sync_enabled", false)
     /** Minutes in the background before Chaldea is closed to sync: 10, 30, 60, or 0 for never. */
     val chaldeaSyncCloseMinutes = maker.int("chaldea_sync_close_minutes", 30)
+    /** Root was granted to FGA before, so a silent root check at start is allowed (issue #362). */
+    val chaldeaSyncRootGranted = maker.bool("chaldea_sync_root_granted", false)
 
     /** Home-screen widget look. The widgets read the same keys straight from the preference file. */
     val widgetTheme = maker.enum("widget_theme", WidgetTheme.Dark)

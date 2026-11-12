@@ -23,10 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccess
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccessMode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaServer
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncNowOutcome
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
+import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
@@ -38,7 +41,8 @@ data class ChaldeaSyncUi(
     /** Log collection (tracker switch and consent) is on, so a sync can run. */
     val loggingOn: Boolean = false,
     val closeMinutes: Int = 30,
-    val shizuku: ShizukuState = ShizukuState.NotRunning,
+    /** Root and Shizuku together; root wins when both are available. */
+    val access: ChaldeaAccess = ChaldeaAccess(RootState.Unchecked, ShizukuState.NotRunning),
     /** What the scheduler is doing now: waiting, working, or a problem that is not about one account. */
     val status: ChaldeaSyncStatus = ChaldeaSyncStatus.Idle,
     val scriptRunning: Boolean = false,
@@ -49,7 +53,8 @@ data class ChaldeaSyncUi(
 internal val chaldeaCloseChoices = listOf(10, 30, 60, 0)
 
 /**
- * The status lines. Shizuku problems come first because nothing else can happen until they are fixed. Otherwise
+ * The status lines. Access problems come first because nothing else can happen until they are fixed. Then one line
+ * says which access is used (root, or Shizuku). Otherwise
  * there is one line per server that has a result (a single line, without the server name, when only one has), then
  * what the scheduler is doing now when that is not the idle state.
  */
@@ -57,15 +62,22 @@ internal val chaldeaCloseChoices = listOf(10, 30, 60, 0)
 fun chaldeaStatusLines(ui: ChaldeaSyncUi): List<String> {
     if (!ui.enabled) return listOf(stringResource(R.string.chaldea_sync_status_off))
     if (!ui.loggingOn) return listOf(stringResource(R.string.chaldea_sync_needs_logging))
-    when (ui.shizuku) {
-        ShizukuState.NotInstalled -> return listOf(stringResource(R.string.chaldea_sync_shizuku_not_installed))
-        ShizukuState.NotRunning -> return listOf(stringResource(R.string.chaldea_sync_shizuku_not_running))
-        ShizukuState.NeedsPermission -> return listOf(stringResource(R.string.chaldea_sync_shizuku_needs_permission))
-        ShizukuState.Denied -> return listOf(stringResource(R.string.chaldea_sync_shizuku_denied))
-        ShizukuState.Outdated -> return listOf(stringResource(R.string.chaldea_sync_shizuku_outdated))
-        ShizukuState.Ready -> {}
-    }
     val lines = ArrayList<String>()
+    when (ui.access.mode) {
+        ChaldeaAccessMode.Root -> lines += stringResource(R.string.chaldea_sync_access_root)
+        ChaldeaAccessMode.Shizuku -> lines += stringResource(R.string.chaldea_sync_access_shizuku)
+        null -> {
+            val shizukuLine = when (ui.access.shizuku) {
+                ShizukuState.NotInstalled -> R.string.chaldea_sync_shizuku_not_installed
+                ShizukuState.NotRunning -> R.string.chaldea_sync_shizuku_not_running
+                ShizukuState.NeedsPermission -> R.string.chaldea_sync_shizuku_needs_permission
+                ShizukuState.Denied -> R.string.chaldea_sync_shizuku_denied
+                ShizukuState.Outdated -> R.string.chaldea_sync_shizuku_outdated
+                ShizukuState.Ready -> R.string.chaldea_sync_shizuku_not_running
+            }
+            return listOf(stringResource(shizukuLine), stringResource(R.string.chaldea_sync_root_hint))
+        }
+    }
     val servers = ui.results.keys.sortedBy { it.ordinal }
     for (server in servers) {
         val text = chaldeaStatusText(ui.results.getValue(server))
@@ -107,6 +119,7 @@ private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s =
     ChaldeaSyncStatus.NoAccess -> stringResource(R.string.chaldea_sync_status_no_access)
     ChaldeaSyncStatus.UnknownVersion -> stringResource(R.string.chaldea_sync_status_unknown_version)
     ChaldeaSyncStatus.FileUnreadable -> stringResource(R.string.chaldea_sync_status_unreadable)
+    ChaldeaSyncStatus.OwnerChanged -> stringResource(R.string.chaldea_sync_status_owner_changed)
     ChaldeaSyncStatus.BackupFailed -> stringResource(R.string.chaldea_sync_status_backup_failed)
     ChaldeaSyncStatus.AccountNotIdentified -> stringResource(R.string.chaldea_sync_status_not_identified)
     ChaldeaSyncStatus.FailedRestored -> stringResource(R.string.chaldea_sync_status_restored)
@@ -194,7 +207,7 @@ private fun ChaldeaSyncNow(ui: ChaldeaSyncUi, syncNow: suspend (ChaldeaRunState?
         }
         Button(
             onClick = { run(null) },
-            enabled = ui.enabled && ui.loggingOn && ui.shizuku == ShizukuState.Ready && !ui.scriptRunning && !busy,
+            enabled = ui.enabled && ui.loggingOn && ui.access.ready && !ui.scriptRunning && !busy,
         ) { Text(stringResource(R.string.chaldea_sync_now)) }
     }
 }

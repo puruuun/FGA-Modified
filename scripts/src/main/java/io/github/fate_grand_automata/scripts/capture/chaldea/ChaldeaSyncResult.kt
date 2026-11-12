@@ -30,6 +30,9 @@ enum class ChaldeaSyncCode {
     NoMatchingUser,
     UnexpectedShape,
     ServiceError,
+
+    /** A write left a Chaldea file with another owner or mode and it could not be set back (root mode). */
+    OwnerChanged,
 }
 
 fun ChaldeaRefusal.toCode(): ChaldeaSyncCode = when (this) {

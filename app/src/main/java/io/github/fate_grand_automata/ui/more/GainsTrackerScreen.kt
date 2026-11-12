@@ -339,17 +339,17 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     )
 }
 
-/** Combines the switch, the Shizuku state and the scheduler status into what the section shows. */
+/** Combines the switch, the root and Shizuku access and the scheduler status into what the section shows. */
 private fun chaldeaSyncUi(prefs: PrefsCore): Flow<ChaldeaSyncUi> = combine(
     combine(prefs.chaldeaSyncEnabled.asFlow(), prefs.chaldeaSyncCloseMinutes.asFlow()) { on, minutes -> on to minutes },
     combine(prefs.captureTrackerEnabled.asFlow(), prefs.captureConsentVersion.asFlow()) { tracker, consent ->
         tracker && CaptureConsent.agreed(consent)
     },
-    ChaldeaSyncManager.shizukuState,
+    ChaldeaSyncManager.access,
     combine(ChaldeaSyncManager.status, ChaldeaSyncManager.serverResults) { status, results -> status to results },
     ChaldeaSyncManager.scriptRunning,
-) { (on, minutes), logging, shizuku, (status, results), script ->
-    ChaldeaSyncUi(on, logging, minutes, shizuku, status, script, results)
+) { (on, minutes), logging, access, (status, results), script ->
+    ChaldeaSyncUi(on, logging, minutes, access, status, script, results)
 }
 
 @Composable

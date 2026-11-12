@@ -42,6 +42,7 @@ tesseract4android_version = "4.9.0"
 
 timber_version = "5.0.1"
 shizuku_version = "13.1.5"
+libsu_version = "6.0.0"
 
 compose_bom_version = "2026.08.00"
 
@@ -125,6 +126,8 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber_versi
 
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku_version" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku_version" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu_version" }
+libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu_version" }
 
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose_bom_version" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }

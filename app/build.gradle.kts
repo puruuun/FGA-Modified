@@ -481,6 +481,9 @@ dependencies {
     // Chaldea sync: Shizuku API and provider (the provider is disabled in the manifest until the switch is on).
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+    // Chaldea sync over root (issue #362): libsu's RootService runs the same sync service as uid 0.
+    implementation(libs.libsu.core)
+    implementation(libs.libsu.service)
 
     testImplementation(platform(libs.junit.bom)) {
         because("kotlin-test comes with conflicting junit versions")

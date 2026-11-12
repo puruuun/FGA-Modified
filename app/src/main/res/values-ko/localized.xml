@@ -1284,6 +1284,9 @@
     <string name="chaldea_sync_shizuku_needs_permission">"Shizuku가 아직 FGA를 허용하지 않았습니다. Shizuku 요청에서 허용하세요."</string>
     <string name="chaldea_sync_shizuku_denied">"Shizuku가 FGA를 거부했습니다. Shizuku 앱에서 허용하세요."</string>
     <string name="chaldea_sync_shizuku_outdated">"Shizuku 버전이 너무 낮습니다. 업데이트하세요."</string>
+    <string name="chaldea_sync_access_root">"권한: 루트"</string>
+    <string name="chaldea_sync_access_shizuku">"권한: Shizuku"</string>
+    <string name="chaldea_sync_root_hint">"루트 기기라면 Magisk나 KernelSU에서 FGA에 루트 권한을 허용해도 됩니다."</string>
     <string name="chaldea_sync_status_cannot_bind">"Shizuku 서비스에 연결할 수 없습니다. 다시 시도합니다."</string>
     <string name="chaldea_sync_status_state_unknown">"Chaldea 상태를 알 수 없습니다. 기다립니다."</string>
     <string name="chaldea_sync_status_started_during">"반영 중에 Chaldea가 켜졌습니다. 나중에 다시 반영합니다."</string>
@@ -1296,5 +1299,6 @@
     <string name="chaldea_sync_status_restored">"반영에 실패해 Chaldea 데이터를 원래대로 되돌렸습니다."</string>
     <string name="chaldea_sync_status_restore_failed">"복원 실패: 백업 위치 %s"</string>
     <string name="chaldea_sync_status_failed">"반영에 실패했습니다(%s)."</string>
+    <string name="chaldea_sync_status_owner_changed">"Chaldea 파일의 소유자나 권한이 바뀌어 되돌리지 못했습니다. 백업은 남아 있습니다."</string>
     <string name="chaldea_sync_status_recovery_blocked">"이전에 중단된 반영을 확인하지 못했습니다(%s). 해결될 때까지 아무것도 쓰지 않으며 백업은 보존됩니다."</string>
 </resources>

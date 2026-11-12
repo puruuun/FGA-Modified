@@ -40,6 +40,8 @@ dependencyResolutionManagement {
         maven("https://jitpack.io") {
             content {
                 includeGroup("cz.adaptech.tesseract4android")
+                // libsu (root service for the Chaldea sync) is published on JitPack only
+                includeGroup("com.github.topjohnwu.libsu")
             }
         }
     }

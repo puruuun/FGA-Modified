@@ -1042,6 +1042,9 @@
     <string name="chaldea_sync_shizuku_needs_permission">"ShizukuがまだFGAを許可していません。Shizukuの確認で許可してください。"</string>
     <string name="chaldea_sync_shizuku_denied">"ShizukuがFGAを拒否しました。Shizukuアプリで許可してください。"</string>
     <string name="chaldea_sync_shizuku_outdated">"Shizukuのバージョンが古すぎます。更新してください。"</string>
+    <string name="chaldea_sync_access_root">"権限: ルート"</string>
+    <string name="chaldea_sync_access_shizuku">"権限: Shizuku"</string>
+    <string name="chaldea_sync_root_hint">"ルート化した端末では、MagiskまたはKernelSUでFGAにルート権限を許可することもできます。"</string>
     <string name="chaldea_sync_status_cannot_bind">"Shizukuのサービスに接続できません。再試行します。"</string>
     <string name="chaldea_sync_status_state_unknown">"Chaldeaの状態を判定できません。待機します。"</string>
     <string name="chaldea_sync_status_started_during">"反映中にChaldeaが起動しました。後でもう一度反映します。"</string>
@@ -1054,5 +1057,6 @@
     <string name="chaldea_sync_status_restored">"反映に失敗したためChaldeaのデータを元に戻しました。"</string>
     <string name="chaldea_sync_status_restore_failed">"復元に失敗: バックアップの場所 %s"</string>
     <string name="chaldea_sync_status_failed">"反映に失敗しました（%s）。"</string>
+    <string name="chaldea_sync_status_owner_changed">"Chaldeaのファイルの所有者または権限が変わり、元に戻せませんでした。バックアップは残っています。"</string>
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
 </resources>

@@ -67,7 +67,7 @@ class ChaldeaSyncScheduler(
         data object ScriptEnd : Event
         data object Foreground : Event
         data object Settings : Event
-        data object ShizukuChanged : Event
+        data object AccessChanged : Event
     }
 
     private enum class Phase { Idle, Quiet, Grace, Waiting, Writing }
@@ -171,8 +171,8 @@ class ChaldeaSyncScheduler(
     /** The switch, log collection or consent changed (also called once at process start). */
     fun onSettingsChanged() = post(Event.Settings)
 
-    /** The Shizuku state changed (binder arrived or died, permission result, resume). */
-    fun onShizukuChanged() = post(Event.ShizukuChanged)
+    /** The access changed (Shizuku binder arrived or died, permission result, resume, or the root state). */
+    fun onAccessChanged() = post(Event.AccessChanged)
 
     private fun post(e: Event) {
         events.add(e)
@@ -256,9 +256,9 @@ class ChaldeaSyncScheduler(
                     if (hasWork()) scheduleAttempt(0, Phase.Quiet)
                 }
             }
-            Event.ShizukuChanged -> {
+            Event.AccessChanged -> {
                 if (!active) return
-                if (env.shizukuState() == ShizukuState.Ready && hasWork() && !scriptActive()) {
+                if (env.access().ready && hasWork() && !scriptActive()) {
                     val idle = synchronized(lock) { phase == Phase.Idle }
                     if (idle) scheduleAttempt(0, Phase.Quiet)
                 }
@@ -378,8 +378,8 @@ class ChaldeaSyncScheduler(
             currentCoroutineContext().ensureActive()
             if (!env.enabled()) return
             if (scriptActive()) return setTransient(ChaldeaSyncStatus.WaitingScript)
-            val shizuku = env.shizukuState()
-            if (shizuku != ShizukuState.Ready) return setResult(ChaldeaSyncStatus.ShizukuUnavailable(shizuku))
+            val access = env.access()
+            if (!access.ready) return setResult(ChaldeaSyncStatus.ShizukuUnavailable(access.shizuku))
             val gensNow = synchronized(lock) { pending.associateWith { saveGen[it] ?: 0L } }
             if (resolved == null || gensNow != resolvedGens) {
                 resolved = resolveTargets(null, false)
@@ -764,6 +764,7 @@ class ChaldeaSyncScheduler(
             ChaldeaSyncCode.NotFound -> setServerResult(t.server, ChaldeaSyncStatus.FileNotFound)
             ChaldeaSyncCode.NoAccess -> setServerResult(t.server, ChaldeaSyncStatus.NoAccess)
             ChaldeaSyncCode.UnknownVersion -> setServerResult(t.server, ChaldeaSyncStatus.UnknownVersion)
+            ChaldeaSyncCode.OwnerChanged -> setServerResult(t.server, ChaldeaSyncStatus.OwnerChanged)
             ChaldeaSyncCode.Unreadable, ChaldeaSyncCode.InvalidJson, ChaldeaSyncCode.NotObject,
             ChaldeaSyncCode.MissingUsers, ChaldeaSyncCode.UnexpectedShape -> setServerResult(t.server, ChaldeaSyncStatus.FileUnreadable)
             else -> setServerResult(t.server, ChaldeaSyncStatus.Failed(code))
@@ -805,9 +806,9 @@ class ChaldeaSyncScheduler(
     private suspend fun manualSync(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome {
         if (!env.enabled()) return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
         if (scriptActive()) return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.WaitingScript)
-        val shizuku = env.shizukuState()
-        if (shizuku != ShizukuState.Ready) {
-            val s = ChaldeaSyncStatus.ShizukuUnavailable(shizuku)
+        val access = env.access()
+        if (!access.ready) {
+            val s = ChaldeaSyncStatus.ShizukuUnavailable(access.shizuku)
             setResult(s)
             return ChaldeaSyncNowOutcome.Unavailable(s)
         }
