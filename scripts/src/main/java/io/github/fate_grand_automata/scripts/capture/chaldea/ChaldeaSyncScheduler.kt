@@ -18,7 +18,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Decides when captured account data is written into Chaldea (issue #355).
@@ -53,10 +55,13 @@ class ChaldeaSyncScheduler(
         /** Two observations further apart than the poll interval plus this restart the background count. */
         val gapMs: Long = 180_000,
         val scriptStaleMs: Long = 6 * 3_600_000L,
+        /** After this many failed recovery attempts of an interrupted write, nothing more is tried until a toggle. */
+        val maxRecoveryFailures: Int = 3,
     )
 
     private sealed interface Event {
-        data class Saved(val ids: Collection<String>) : Event
+        /** The ids themselves are in [savedIds]: bursts of saves share one queued event. */
+        data object Saved : Event
         data class Deleted(val id: String?) : Event
         data object ScriptStart : Event
         data object ScriptEnd : Event
@@ -67,10 +72,18 @@ class ChaldeaSyncScheduler(
 
     private enum class Phase { Idle, Quiet, Grace, Waiting, Writing }
     private enum class Pass { Done, Retry, Abort }
-    private class Target(val id: String, val patch: ChaldeaPatch, val hash: String, val allowCreate: Boolean)
+    private class Target(
+        val id: String, val server: ChaldeaServer, val patch: ChaldeaPatch, val hash: String,
+        val allowCreate: Boolean, val gen: Long,
+    )
 
     private val _status = MutableStateFlow<ChaldeaSyncStatus>(ChaldeaSyncStatus.Idle)
     val status: StateFlow<ChaldeaSyncStatus> = _status.asStateFlow()
+
+    private val _results = MutableStateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>>(emptyMap())
+
+    /** The last result of each server, kept apart so that one server's success never hides the other's failure. */
+    val serverResults: StateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>> = _results.asStateFlow()
 
     private val _scriptRunning = MutableStateFlow(false)
 
@@ -78,6 +91,11 @@ class ChaldeaSyncScheduler(
     val scriptRunningState: StateFlow<Boolean> = _scriptRunning.asStateFlow()
 
     private val events = ConcurrentLinkedQueue<Event>()
+    private val savedIds = ConcurrentHashMap.newKeySet<String>()
+    private val savedPosted = AtomicBoolean(false)
+
+    /** Events waiting for the consumer; for tests. */
+    internal fun queuedEventCount(): Int = events.size
     private val wake = Channel<Unit>(Channel.CONFLATED)
 
     /** Guards the small state below. Never held across a suspension, a binder call or file work. */
@@ -89,6 +107,15 @@ class ChaldeaSyncScheduler(
     private var attemptJob: Job? = null
     private var generation = 0
     private var phase = Phase.Idle
+
+    /** Bumped for an account every time it is saved; a write only settles the account when it did not change. */
+    private val saveGen = HashMap<String, Long>()
+
+    /** A save arrived while an attempt was running: one more attempt follows when it ends normally. */
+    private var savedDuringAttempt = false
+    private var recoveryFailures = 0
+    private var recoveryGaveUp = false
+    private var lastRecoveryCode: ChaldeaSyncCode? = null
 
     @Volatile private var active = false
     @Volatile private var scriptRunning = false
@@ -116,7 +143,8 @@ class ChaldeaSyncScheduler(
     /** Called after accounts were actually written to disk. */
     fun onAccountSaved(ids: Collection<String>) {
         if (!active || ids.isEmpty()) return
-        post(Event.Saved(ids.toList()))
+        savedIds.addAll(ids)
+        if (savedPosted.compareAndSet(false, true)) post(Event.Saved)
     }
 
     /** [id] null means every account was deleted. */
@@ -165,16 +193,35 @@ class ChaldeaSyncScheduler(
 
     private suspend fun handle(e: Event) {
         when (e) {
-            is Event.Saved -> {
-                if (!active) return
-                synchronized(lock) { pending += e.ids }
+            Event.Saved -> {
+                savedPosted.set(false)
+                val ids = savedIds.toList()
+                savedIds.removeAll(ids.toSet())
+                if (!active || ids.isEmpty()) return
+                synchronized(lock) {
+                    pending += ids
+                    ids.forEach { saveGen.merge(it, 1L, Long::plus) }
+                }
                 persistPending()
                 if (scriptActive()) return setTransient(ChaldeaSyncStatus.WaitingScript)
-                val idle = synchronized(lock) { phase == Phase.Idle || phase == Phase.Quiet || phase == Phase.Grace }
+                val idle = synchronized(lock) {
+                    val quiet = phase == Phase.Idle || phase == Phase.Quiet || phase == Phase.Grace
+                    if (!quiet) savedDuringAttempt = true
+                    quiet
+                }
                 if (idle) scheduleAttempt(timing.quietMs, Phase.Quiet)
             }
             is Event.Deleted -> {
-                synchronized(lock) { if (e.id == null) pending.clear() else pending -= e.id }
+                synchronized(lock) {
+                    if (e.id == null) {
+                        pending.clear()
+                        saveGen.clear()
+                    } else {
+                        pending -= e.id
+                        saveGen.remove(e.id)
+                    }
+                }
+                if (e.id == null) savedIds.clear() else savedIds.remove(e.id)
                 runCatching { store.update { d -> if (e.id == null) d.copy(pending = emptySet(), syncedPatchHash = emptyMap()) else d.copy(pending = d.pending - e.id, syncedPatchHash = d.syncedPatchHash - e.id) } }
             }
             Event.ScriptStart -> {
@@ -198,10 +245,10 @@ class ChaldeaSyncScheduler(
                         lastObservation = null
                     }
                     runCatching { store.update { it.copy(backgroundSince = null, lastObservation = null) } }
-                    _status.value = ChaldeaSyncStatus.Idle
+                    resetStatuses()
                 } else if (!active) {
                     active = true
-                    _status.value = ChaldeaSyncStatus.Idle
+                    resetStatuses()
                     restore()
                     if (hasWork()) scheduleAttempt(0, Phase.Quiet)
                 } else {
@@ -219,7 +266,19 @@ class ChaldeaSyncScheduler(
         }
     }
 
-    private fun hasWork(): Boolean = synchronized(lock) { pending.isNotEmpty() } || store.readInflight() != null
+    private fun hasWork(): Boolean =
+        synchronized(lock) { pending.isNotEmpty() } || (store.readInflight() != null && !synchronized(lock) { recoveryGaveUp })
+
+    /** A switch toggle clears every status and the recovery retry count. */
+    private fun resetStatuses() {
+        synchronized(lock) {
+            recoveryFailures = 0
+            recoveryGaveUp = false
+            lastRecoveryCode = null
+        }
+        _results.value = emptyMap()
+        _status.value = ChaldeaSyncStatus.Idle
+    }
 
     private fun restore() {
         val d = store.read()
@@ -259,9 +318,12 @@ class ChaldeaSyncScheduler(
             val gen = ++generation
             phase = first
             attemptJob = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                var normal = false
+                var again = false
                 try {
                     if (initialDelay > 0) delay(initialDelay)
                     runAttempt(gen)
+                    normal = true
                 } catch (c: CancellationException) {
                     throw c
                 } catch (t: Throwable) {
@@ -272,8 +334,12 @@ class ChaldeaSyncScheduler(
                         if (gen == generation) {
                             phase = Phase.Idle
                             attemptJob = null
+                            again = normal && savedDuringAttempt && active
+                            savedDuringAttempt = false
                         }
                     }
+                    // A save that came in while this attempt ran must not wait for the next trigger.
+                    if (again) scheduleAttempt(timing.quietMs, Phase.Quiet)
                 }
             }.also { it.start() }
         }
@@ -287,6 +353,12 @@ class ChaldeaSyncScheduler(
         _status.value = s
     }
 
+    /** The result of the account of [server]; replaced only by that server's next result. */
+    private fun setServerResult(server: ChaldeaServer, s: ChaldeaSyncStatus) {
+        _results.value = _results.value + (server to s)
+        if (s is ChaldeaSyncStatus.Synced && _status.value.persistent) _status.value = ChaldeaSyncStatus.Idle
+    }
+
     /** Waiting statuses never hide a persistent failure. */
     private fun setTransient(s: ChaldeaSyncStatus) {
         if (!_status.value.persistent) _status.value = s
@@ -298,14 +370,28 @@ class ChaldeaSyncScheduler(
 
     private suspend fun runAttempt(gen: Int) {
         var waitStart: Long? = null
+        // The patch is built and compared once, and again only when an account was saved since or right before a
+        // write: waiting polls must not parse the account tables every minute.
+        var resolved: List<Target>? = null
+        var resolvedGens: Map<String, Long> = emptyMap()
         while (true) {
             currentCoroutineContext().ensureActive()
             if (!env.enabled()) return
             if (scriptActive()) return setTransient(ChaldeaSyncStatus.WaitingScript)
             val shizuku = env.shizukuState()
             if (shizuku != ShizukuState.Ready) return setResult(ChaldeaSyncStatus.ShizukuUnavailable(shizuku))
-            val targets = resolveTargets(null, false)
-            if (targets.isEmpty() && store.readInflight() == null) return
+            val gensNow = synchronized(lock) { pending.associateWith { saveGen[it] ?: 0L } }
+            if (resolved == null || gensNow != resolvedGens) {
+                resolved = resolveTargets(null, false)
+                resolvedGens = synchronized(lock) { pending.associateWith { saveGen[it] ?: 0L } }
+                synchronized(lock) { savedDuringAttempt = false }
+            }
+            val targets = resolved
+            val inflight = store.readInflight() != null
+            if (inflight && synchronized(lock) { recoveryGaveUp }) {
+                return setResult(ChaldeaSyncStatus.RecoveryBlocked(lastRecoveryCode ?: ChaldeaSyncCode.ServiceError))
+            }
+            if (targets.isEmpty() && !inflight) return
             setPhase(gen, Phase.Waiting)
             val now0 = clock()
             val start = waitStart ?: now0.also { waitStart = it }
@@ -409,11 +495,16 @@ class ChaldeaSyncScheduler(
             }
         }
         setPhase(gen, Phase.Waiting)
-        return if (retry) Step(false, interval) else Step(true)
+        // An account that was saved during its own write stays pending: poll again and write the newer patch.
+        val left = synchronized(lock) { pending.isNotEmpty() }
+        return if (retry || left) Step(false, interval) else Step(true)
     }
 
-    private fun settle(id: String) {
-        synchronized(lock) { pending -= id }
+    private fun genOf(id: String): Long = synchronized(lock) { saveGen[id] ?: 0L }
+
+    /** Removes [id] from pending unless it was saved again since [gen] was read. */
+    private fun settleIf(id: String, gen: Long) {
+        synchronized(lock) { if ((saveGen[id] ?: 0L) == gen) pending -= id }
         persistPending()
     }
 
@@ -423,28 +514,50 @@ class ChaldeaSyncScheduler(
         val current = accounts.currentIds()
         val out = ArrayList<Target>()
         for (id in source) {
+            val gen = genOf(id)
             val loaded = accounts.load(id)
             if (loaded == null) {
-                settle(id)
+                settleIf(id, gen)
                 continue
             }
             val patch = ChaldeaPatch.from(loaded.state, loaded.server)
             if (patch.friendCode == null) {
-                setResult(ChaldeaSyncStatus.AccountNotIdentified)
-                settle(id)
+                setServerResult(loaded.server, ChaldeaSyncStatus.AccountNotIdentified)
+                settleIf(id, gen)
                 continue
             }
             val hash = patch.hash()
             if (!ignoreHash && synced[id] == hash) {
-                settle(id)
+                settleIf(id, gen)
                 continue
             }
-            out += Target(id, patch, hash, allowCreate = current[loaded.server] == id)
+            out += Target(id, loaded.server, patch, hash, allowCreate = current[loaded.server] == id, gen = gen)
         }
         return out
     }
 
-    /** Re-applies the stored base when the last write was interrupted. @return false when the attempt must stop. */
+    private fun recoveryFailed(code: ChaldeaSyncCode, status: ChaldeaSyncStatus = ChaldeaSyncStatus.RecoveryBlocked(code)) {
+        synchronized(lock) {
+            recoveryFailures++
+            lastRecoveryCode = code
+            if (recoveryFailures >= timing.maxRecoveryFailures) recoveryGaveUp = true
+        }
+        setResult(status)
+    }
+
+    private fun recoveryDone() {
+        store.clearInflight()
+        synchronized(lock) {
+            recoveryFailures = 0
+            recoveryGaveUp = false
+            lastRecoveryCode = null
+        }
+    }
+
+    /**
+     * Undoes or settles a write that was interrupted. The backup folder it points at is never deleted unless the
+     * files are known to be fine or were restored. @return false when the attempt must stop.
+     */
     private suspend fun recoverInflight(session: ChaldeaSyncSession): Boolean {
         val inflight = store.readInflight() ?: return true
         val temp = backups.incoming()
@@ -452,7 +565,7 @@ class ChaldeaSyncScheduler(
             FileOutputStream(temp).use { session.prepare(it) }
         } catch (e: IOException) {
             temp.delete()
-            setResult(ChaldeaSyncStatus.BackupFailed)
+            recoveryFailed(ChaldeaSyncCode.Unreadable)
             return false
         }
         temp.delete()
@@ -462,26 +575,35 @@ class ChaldeaSyncScheduler(
             ChaldeaSyncCode.UnknownVersion, ChaldeaSyncCode.UnexpectedShape,
         ) || (r.ok && r.base == ChaldeaBaseSource.Bak)
         if (!r.ok && !damaged) {
-            // Running or unknown: try again on a later poll. Anything else cannot be judged now.
+            // Chaldea running or unknown: wait, this is not a failure. Anything else is counted and shown.
+            if (r.code != ChaldeaSyncCode.ChaldeaRunning && r.code != ChaldeaSyncCode.StateUnknown) recoveryFailed(r.code)
             return false
         }
         if (!damaged) {
             // userdata.json is valid. If it is not the original it holds a finished write; it is synced again.
-            store.clearInflight()
+            recoveryDone()
             backups.release(inflight.packageName)
             return true
         }
-        val file = File(inflight.backupPath)
-        val restored = if (file.isFile && backups.verify(file, file.length(), inflight.baseSha256)) {
-            withContext(NonCancellable) { session.restore(file, inflight.baseSha256, inflight.packageName) }
-        } else null
+        val folder = File(inflight.backupPath)
+        val scratch = backups.restoreScratch()
+        val restored = try {
+            val rec = backups.bundleOf(folder, scratch)
+            if (folder.isDirectory && rec.sha256 == inflight.bundleSha256 && rec.size == inflight.bundleSize) {
+                withContext(NonCancellable) { session.restore(scratch, rec.sha256, inflight.packageName) }
+            } else null
+        } catch (e: IOException) {
+            null
+        } finally {
+            scratch.delete()
+        }
         return if (restored != null && restored.ok) {
-            store.clearInflight()
+            recoveryDone()
             backups.release(inflight.packageName)
             setResult(ChaldeaSyncStatus.FailedRestored)
             true
         } else {
-            setResult(ChaldeaSyncStatus.RestoreFailed(inflight.backupPath))
+            recoveryFailed(restored?.code ?: ChaldeaSyncCode.Unreadable, ChaldeaSyncStatus.RestoreFailed(inflight.backupPath))
             false
         }
     }
@@ -492,40 +614,43 @@ class ChaldeaSyncScheduler(
             FileOutputStream(incoming).use { session.prepare(it) }
         } catch (e: IOException) {
             incoming.delete()
-            setResult(ChaldeaSyncStatus.BackupFailed)
+            setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
             return Pass.Abort
         }
         val prepared = outcome.result
         if (!prepared.ok) {
             incoming.delete()
-            return afterFailure(t.id, prepared.code)
+            return afterFailure(t, prepared.code)
         }
-        val size = prepared.size
-        val sha = prepared.sha256
+        val baseSha = prepared.sha256
+        val bundleSize = prepared.bundleSize
+        val bundleSha = prepared.bundleSha256
         val pkg = prepared.packageName
-        if (!outcome.backupMatches || size == null || sha == null || pkg == null || !backups.verify(incoming, size, sha)) {
+        if (!outcome.backupMatches || baseSha == null || bundleSize == null || bundleSha == null || pkg == null ||
+            !backups.verify(incoming, bundleSize, bundleSha)
+        ) {
             incoming.delete()
-            setResult(ChaldeaSyncStatus.BackupFailed)
+            setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
             return Pass.Abort
         }
-        val skipRotating = store.read().lastWritten[pkg] == sha
-        val backupFile = try {
+        val skipRotating = store.read().lastWritten[pkg] == baseSha
+        val backupFolder = try {
             backups.adopt(pkg, incoming, skipRotating, wallClock())
         } catch (e: IOException) {
             incoming.delete()
-            setResult(ChaldeaSyncStatus.BackupFailed)
+            setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
             return Pass.Abort
         }
         try {
-            store.writeInflight(ChaldeaSyncStore.Inflight(pkg, backupFile.path, sha, wallClock()))
+            store.writeInflight(ChaldeaSyncStore.Inflight(pkg, backupFolder.path, baseSha, bundleSize, bundleSha, wallClock()))
         } catch (e: IOException) {
             backups.release(pkg)
-            setResult(ChaldeaSyncStatus.BackupFailed)
+            setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
             return Pass.Abort
         }
         // From here the commit finishes even if a script starts or the switch is turned off.
         return withContext(NonCancellable) {
-            val r = session.commit(t.patch, sha, t.allowCreate, pkg)
+            val r = session.commit(t.patch, baseSha, t.allowCreate, pkg)
             when (r.code) {
                 ChaldeaSyncCode.Ok -> {
                     val after = runCatching { session.state().state }.getOrDefault(ChaldeaRunState.Unknown)
@@ -534,14 +659,21 @@ class ChaldeaSyncScheduler(
                         setResult(ChaldeaSyncStatus.ChaldeaStartedDuring)
                         Pass.Retry
                     } else {
-                        runCatching { store.update { it.copy(syncedPatchHash = it.syncedPatchHash + (t.id to t.hash), lastWritten = it.lastWritten + (pkg to (r.sha256 ?: ""))) } }
-                        settle(t.id)
-                        val both = r.bothPackages
-                        setResult(
+                        runCatching {
+                            store.update {
+                                it.copy(
+                                    syncedPatchHash = it.syncedPatchHash + (t.id to t.hash),
+                                    lastWritten = it.lastWritten + (pkg to (r.sha256 ?: "")),
+                                )
+                            }
+                        }
+                        settleIf(t.id, t.gen)
+                        setServerResult(
+                            t.server,
                             ChaldeaSyncStatus.Synced(
                                 wallClock(), r.itemCount, r.mysticCodeCount, r.boardCount,
                                 created = r.created, regionMismatch = r.regionMismatch,
-                                packageName = r.packageName, bothPackages = both,
+                                packageName = r.packageName, bothPackages = r.bothPackages,
                             ),
                         )
                         Pass.Done
@@ -549,19 +681,19 @@ class ChaldeaSyncScheduler(
                 }
                 ChaldeaSyncCode.Restored -> {
                     finishWrite(pkg)
-                    setResult(ChaldeaSyncStatus.FailedRestored)
-                    settle(t.id)
+                    setServerResult(t.server, ChaldeaSyncStatus.FailedRestored)
+                    settleIf(t.id, t.gen)
                     Pass.Done
                 }
                 ChaldeaSyncCode.RestoreFailed -> {
                     // The in-flight record stays: the next attempt tries the restore again.
-                    setResult(ChaldeaSyncStatus.RestoreFailed(backupFile.path))
-                    settle(t.id)
+                    setServerResult(t.server, ChaldeaSyncStatus.RestoreFailed(backupFolder.path))
+                    settleIf(t.id, t.gen)
                     Pass.Abort
                 }
                 else -> {
                     finishWrite(pkg)
-                    afterFailure(t.id, r.code)
+                    afterFailure(t, r.code)
                 }
             }
         }
@@ -573,7 +705,7 @@ class ChaldeaSyncScheduler(
     }
 
     /** Maps a refusal to a status; says whether the account stays pending. */
-    private fun afterFailure(id: String, code: ChaldeaSyncCode): Pass {
+    private fun afterFailure(t: Target, code: ChaldeaSyncCode): Pass {
         when (code) {
             ChaldeaSyncCode.ChaldeaRunning -> return Pass.Retry
             ChaldeaSyncCode.StateUnknown -> {
@@ -582,15 +714,15 @@ class ChaldeaSyncScheduler(
             }
             ChaldeaSyncCode.FileChanged -> return Pass.Retry
             ChaldeaSyncCode.NoMatchingUser -> {}
-            ChaldeaSyncCode.AccountNotIdentified -> setResult(ChaldeaSyncStatus.AccountNotIdentified)
-            ChaldeaSyncCode.NotFound -> setResult(ChaldeaSyncStatus.FileNotFound)
-            ChaldeaSyncCode.NoAccess -> setResult(ChaldeaSyncStatus.NoAccess)
-            ChaldeaSyncCode.UnknownVersion -> setResult(ChaldeaSyncStatus.UnknownVersion)
+            ChaldeaSyncCode.AccountNotIdentified -> setServerResult(t.server, ChaldeaSyncStatus.AccountNotIdentified)
+            ChaldeaSyncCode.NotFound -> setServerResult(t.server, ChaldeaSyncStatus.FileNotFound)
+            ChaldeaSyncCode.NoAccess -> setServerResult(t.server, ChaldeaSyncStatus.NoAccess)
+            ChaldeaSyncCode.UnknownVersion -> setServerResult(t.server, ChaldeaSyncStatus.UnknownVersion)
             ChaldeaSyncCode.Unreadable, ChaldeaSyncCode.InvalidJson, ChaldeaSyncCode.NotObject,
-            ChaldeaSyncCode.MissingUsers, ChaldeaSyncCode.UnexpectedShape -> setResult(ChaldeaSyncStatus.FileUnreadable)
-            else -> setResult(ChaldeaSyncStatus.Failed(code))
+            ChaldeaSyncCode.MissingUsers, ChaldeaSyncCode.UnexpectedShape -> setServerResult(t.server, ChaldeaSyncStatus.FileUnreadable)
+            else -> setServerResult(t.server, ChaldeaSyncStatus.Failed(code))
         }
-        settle(id)
+        settleIf(t.id, t.gen)
         return Pass.Done
     }
 
@@ -633,8 +765,13 @@ class ChaldeaSyncScheduler(
             setResult(s)
             return ChaldeaSyncNowOutcome.Unavailable(s)
         }
+        // A manual sync is the user's own action: it also gets a fresh start on a blocked recovery.
+        synchronized(lock) {
+            recoveryFailures = 0
+            recoveryGaveUp = false
+        }
         val targets = resolveTargets(accounts.currentIds().values.toList(), true)
-        if (targets.isEmpty()) return ChaldeaSyncNowOutcome.Done
+        if (targets.isEmpty() && store.readInflight() == null) return ChaldeaSyncNowOutcome.Done
         val session = env.openSession() ?: return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.CannotBind).also { setResult(it.status) }
         try {
             val state = session.state().state

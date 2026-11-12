@@ -81,4 +81,53 @@ class ChaldeaSyncHooksTest {
         CaptureAutoStart.onScriptStart(context, prefs, GameServer.Kr)
         CaptureAutoStart.onScriptEnd()
     }
+
+    private fun feedLogin(id: Int) = CaptureTracker.onGameResponse(
+        "https://yfgo-game.netmarble.com/login/top",
+        """{"response":[{"nid":"login","resCode":"00","success":{}}],
+        "cache":{"replaced":{"userGame":[{"userId":$id,"name":"Master $id","friendCode":"123","exp":100}],
+        "userItem":[{"itemId":100,"num":5}]}}}""".toByteArray(),
+        null,
+    )
+
+    /** Starts and stops the VPN state, which flushes the unsaved accounts on the save thread. */
+    private fun flushSaves() {
+        CaptureTracker.setRunning(true)
+        CaptureTracker.setRunning(false)
+    }
+
+    @Test fun aThrowingSaveHookDoesNotPropagateOutOfTheSave() {
+        ChaldeaSyncManager.hooks = Throwing()
+        // The save runs on a future that swallows exceptions, so the guard is checked on the call itself.
+        CaptureTracker.notifyChaldeaSync(listOf("7001"))
+        ChaldeaSyncManager.hooks = object : ChaldeaSyncHooks {
+            override fun onAccountsSaved(ids: Collection<String>) = throw OutOfMemoryError("synthetic")
+            override fun onAccountDeleted(id: String?) {}
+            override fun onScriptStart() {}
+            override fun onScriptEnd() {}
+        }
+        CaptureTracker.notifyChaldeaSync(listOf("7001"))
+    }
+
+    @Test fun theSaveHookGetsOnlyTheAccountsThatWereWritten() {
+        CaptureTracker.init(context)
+        val ids = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val first = java.util.concurrent.CountDownLatch(1)
+        ChaldeaSyncManager.hooks = object : ChaldeaSyncHooks {
+            override fun onAccountsSaved(ids2: Collection<String>) {
+                ids += ids2
+                first.countDown()
+            }
+            override fun onAccountDeleted(id: String?) {}
+            override fun onScriptStart() {}
+            override fun onScriptEnd() {}
+        }
+        feedLogin(7001)
+        flushSaves()
+        assertTrue(first.await(10, java.util.concurrent.TimeUnit.SECONDS))
+        assertEquals(listOf("7001"), ids.toList())
+        flushSaves() // nothing is unsaved now
+        Thread.sleep(500)
+        assertEquals(listOf("7001"), ids.toList(), "a save that wrote no account state must not notify")
+    }
 }

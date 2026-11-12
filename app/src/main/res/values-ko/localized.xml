@@ -1296,4 +1296,5 @@
     <string name="chaldea_sync_status_restored">"반영에 실패해 Chaldea 데이터를 원래대로 되돌렸습니다."</string>
     <string name="chaldea_sync_status_restore_failed">"복원 실패: 백업 위치 %s"</string>
     <string name="chaldea_sync_status_failed">"반영에 실패했습니다(%s)."</string>
+    <string name="chaldea_sync_status_recovery_blocked">"이전에 중단된 반영을 확인하지 못했습니다(%s). 해결될 때까지 아무것도 쓰지 않으며 백업은 보존됩니다."</string>
 </resources>

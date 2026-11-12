@@ -18,6 +18,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSchedule
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStore
+import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuPermissionRequester
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -66,11 +67,17 @@ object ChaldeaSyncManager {
     private val lock = Any()
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
+    private var resultsJob: Job? = null
 
     private val _shizuku = MutableStateFlow(ShizukuState.NotRunning)
     val shizukuState: StateFlow<ShizukuState> = _shizuku.asStateFlow()
     private val _status = MutableStateFlow<ChaldeaSyncStatus>(ChaldeaSyncStatus.Idle)
     val status: StateFlow<ChaldeaSyncStatus> = _status.asStateFlow()
+    private val _results = MutableStateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>>(emptyMap())
+
+    /** The last result of each server (KR / JP). */
+    val serverResults: StateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>> = _results.asStateFlow()
+    private val permission = ShizukuPermissionRequester()
     private val _scriptRunning = MutableStateFlow(false)
     val scriptRunning: StateFlow<Boolean> = _scriptRunning.asStateFlow()
 
@@ -87,10 +94,14 @@ object ChaldeaSyncManager {
 
     private val binderReceived = Shizuku.OnBinderReceivedListener { refreshShizuku() }
     private val binderDead = Shizuku.OnBinderDeadListener { refreshShizuku() }
-    private val permissionResult = Shizuku.OnRequestPermissionResultListener { _, _ -> refreshShizuku() }
+    private val permissionResult = Shizuku.OnRequestPermissionResultListener { _, _ ->
+        synchronized(lock) { permission.released() }
+        refreshShizuku()
+    }
     private val resumeCallback = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityResumed(activity: Activity) {
             // The first permission request may never report back (seen on an emulator): look again on every resume.
+            synchronized(lock) { permission.released() }
             refreshShizuku()
             scheduler?.onForeground()
         }
@@ -167,6 +178,7 @@ object ChaldeaSyncManager {
                 if (scheduler == null) createScheduler(application)
             } else if (!syncOn && enabledNow) {
                 enabledNow = false
+                permission.disarm()
                 application.unregisterActivityLifecycleCallbacks(resumeCallback)
                 runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
                 runCatching { Shizuku.removeBinderDeadListener(binderDead) }
@@ -196,6 +208,7 @@ object ChaldeaSyncManager {
         }
         statusJob = scope.launch { s.status.collect { _status.value = it } }
         scriptJob = scope.launch { s.scriptRunningState.collect { _scriptRunning.value = it } }
+        resultsJob = scope.launch { s.serverResults.collect { _results.value = it } }
     }
 
     /** Re-reads the Shizuku state and wakes the scheduler. Safe to call at any time while the switch is on. */
@@ -206,6 +219,13 @@ object ChaldeaSyncManager {
         val changed = _shizuku.value != state
         _shizuku.value = state
         if (changed) scheduler?.onShizukuChanged()
+        requestPermissionIfWanted()
+    }
+
+    /** Shows the Shizuku permission dialog when the user asked for the sync and Shizuku needs it. */
+    private fun requestPermissionIfWanted() {
+        val ask = synchronized(lock) { permission.shouldRequest(_shizuku.value) }
+        if (ask) runCatching { Shizuku.requestPermission(PERMISSION_REQUEST_CODE) }
     }
 
     private fun captureShizuku(application: Application): ShizukuState = try {
@@ -215,13 +235,13 @@ object ChaldeaSyncManager {
         ShizukuState.NotRunning
     }
 
-    /** Asks Shizuku for permission when it is running and has not granted it. */
-    fun requestPermissionIfNeeded() {
-        if (!enabledNow) return
-        refreshShizuku()
-        if (_shizuku.value == ShizukuState.NeedsPermission || _shizuku.value == ShizukuState.Denied) {
-            runCatching { Shizuku.requestPermission(PERMISSION_REQUEST_CODE) }
-        }
+    /**
+     * The user turned the switch on. The preference flow may already have run [apply] or may not have yet, so the
+     * wish is recorded first and acted on from both places (see [ShizukuPermissionRequester]).
+     */
+    fun onUserTurnedOn() {
+        synchronized(lock) { permission.arm() }
+        if (enabledNow) refreshShizuku()
     }
 
     suspend fun syncNow(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome =

@@ -101,7 +101,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
             val pkg = choosePackage()
             val prepared = engine(pkg).prepare()
             result = prepared.result.copy(bothPackages = bothExist())
-            val bytes = prepared.baseBytes
+            val bytes = prepared.bundle
             if (bytes != null && backupFd != null) {
                 // The app reads the other end on its own thread, started before this call.
                 ParcelFileDescriptor.AutoCloseOutputStream(backupFd).use {
@@ -127,7 +127,7 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         val bytes = backupFd?.let { fd ->
             ParcelFileDescriptor.AutoCloseInputStream(fd).use { it.readBytes() }
         }
-        val r = if (bytes == null || expectedSha256 == null || bytes.size > ChaldeaUserdataEditor.MAX_FILE_BYTES) {
+        val r = if (bytes == null || expectedSha256 == null || bytes.size > 2 * ChaldeaUserdataEditor.MAX_FILE_BYTES + 64) {
             ChaldeaSyncResult(ChaldeaSyncCode.BadPatch, packageName = pkg)
         } else if (expectedPackage != pkg) {
             ChaldeaSyncResult(ChaldeaSyncCode.FileChanged, packageName = pkg)

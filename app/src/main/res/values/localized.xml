@@ -1366,4 +1366,5 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_restored">"The sync failed and Chaldea's data was restored."</string>
     <string name="chaldea_sync_status_restore_failed">"Restore failed: backup at %s"</string>
     <string name="chaldea_sync_status_failed">"The sync failed (%s)."</string>
+    <string name="chaldea_sync_status_recovery_blocked">"A sync that was interrupted earlier could not be checked (%s). Nothing is written until this is resolved; the backup is kept."</string>
 </resources>

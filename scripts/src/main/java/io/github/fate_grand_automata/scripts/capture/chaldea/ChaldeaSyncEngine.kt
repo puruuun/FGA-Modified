@@ -16,7 +16,8 @@ class ChaldeaSyncEngine(
     private val runState: () -> ChaldeaRunState,
     val lock: ReentrantLock = ReentrantLock(),
 ) {
-    class Prepared(val result: ChaldeaSyncResult, val baseBytes: ByteArray?)
+    /** [bundle] holds both files for the backup ([ChaldeaBackupBundle]); [baseBytes] is the one the edit starts from. */
+    class Prepared(val result: ChaldeaSyncResult, val baseBytes: ByteArray?, val bundle: ByteArray? = null)
 
     private class Loaded(val json: ByteArray?, val bak: ByteArray?, val base: ByteArray, val source: ChaldeaBaseSource)
     private sealed interface Load {
@@ -29,13 +30,18 @@ class ChaldeaSyncEngine(
         notRunningFailure()?.let { return Prepared(fail(it), null) }
         when (val load = load()) {
             is Load.Fail -> Prepared(fail(load.code), null)
-            is Load.Ok -> Prepared(
-                ChaldeaSyncResult(
-                    ChaldeaSyncCode.Ok, packageName = packageName, base = load.loaded.source,
-                    size = load.loaded.base.size.toLong(), sha256 = sha256Hex(load.loaded.base),
-                ),
-                load.loaded.base,
-            )
+            is Load.Ok -> {
+                val bundle = ChaldeaBackupBundle.encode(load.loaded.json, load.loaded.bak)
+                Prepared(
+                    ChaldeaSyncResult(
+                        ChaldeaSyncCode.Ok, packageName = packageName, base = load.loaded.source,
+                        size = load.loaded.base.size.toLong(), sha256 = sha256Hex(load.loaded.base),
+                        bundleSize = bundle.size.toLong(), bundleSha256 = sha256Hex(bundle),
+                    ),
+                    load.loaded.base,
+                    bundle,
+                )
+            }
         }
     }
 
@@ -102,16 +108,32 @@ class ChaldeaSyncEngine(
     }
 
     /**
-     * Recovery after an interrupted write (amendment K): puts [backup], the base FGA stored before `commit`, back into
-     * both existing files. Refuses when Chaldea may be running or the bytes are not the announced ones.
+     * Recovery after an interrupted write (amendments F, K): [bundle] is what `prepare` streamed before `commit`.
+     * Each file goes back to its own original bytes; a file that still equals its original is left alone, and a file
+     * that did not exist then is not touched. Refuses when Chaldea may be running or the bytes are not the announced
+     * ones. A file that has vanished is not created, so the restore fails.
      */
-    fun restoreFromBackup(backup: ByteArray, expectedSha256: String): ChaldeaSyncResult = lock.withLock {
+    fun restoreFromBackup(bundle: ByteArray, expectedBundleSha256: String): ChaldeaSyncResult = lock.withLock {
         notRunningFailure()?.let { return fail(it) }
-        if (sha256Hex(backup) != expectedSha256) return fail(ChaldeaSyncCode.FileChanged)
-        if (!files.exists(JSON)) return fail(ChaldeaSyncCode.NotFound)
-        val allRestored = listOf(JSON, BAK).filter { files.exists(it) }.map { restore(it, backup) }.all { it }
+        if (sha256Hex(bundle) != expectedBundleSha256) return fail(ChaldeaSyncCode.FileChanged)
+        val (json, bak) = ChaldeaBackupBundle.decode(bundle) ?: return fail(ChaldeaSyncCode.BadPatch)
+        var allRestored = true
+        for ((name, original) in listOf(JSON to json, BAK to bak)) {
+            if (original == null) continue
+            if (!files.exists(name)) {
+                allRestored = false
+                continue
+            }
+            val current = try {
+                files.read(name)
+            } catch (e: ChaldeaIoException) {
+                null
+            }
+            if (current != null && current.contentEquals(original)) continue
+            if (!restore(name, original)) allRestored = false
+        }
         if (allRestored) {
-            ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = packageName, size = backup.size.toLong(), sha256 = expectedSha256)
+            ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = packageName, size = bundle.size.toLong(), sha256 = expectedBundleSha256)
         } else {
             ChaldeaSyncResult(ChaldeaSyncCode.RestoreFailed, packageName = packageName)
         }

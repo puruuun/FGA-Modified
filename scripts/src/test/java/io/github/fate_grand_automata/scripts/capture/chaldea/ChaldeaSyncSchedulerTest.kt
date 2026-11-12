@@ -35,6 +35,9 @@ private class Fx(val ts: TestScope, val tmp: File) {
     var stateFn: (now: Long, call: Int) -> ChaldeaRunState = { _, _ -> ChaldeaRunState.NotRunning }
     var stateCalls = 0
     var base = "base-bytes".toByteArray()
+    var bak: ByteArray? = null
+    var loads = 0
+    val restoredBundles = mutableListOf<ByteArray>()
     var baseSource: ChaldeaBaseSource = ChaldeaBaseSource.UserdataJson
     var prepareCode = ChaldeaSyncCode.Ok
     var backupMatches = true
@@ -72,11 +75,16 @@ private class Fx(val ts: TestScope, val tmp: File) {
 
         override suspend fun prepare(sink: OutputStream): ChaldeaSyncSession.PrepareOutcome {
             log += "prepare"
-            sink.write(base)
+            val bundle = ChaldeaBackupBundle.encode(base, bak)
+            sink.write(bundle)
             sink.flush()
             val sha = sha256Hex(base)
-            val result = ChaldeaSyncResult(prepareCode, packageName = PKG, base = baseSource, size = base.size.toLong(), sha256 = sha)
-            return ChaldeaSyncSession.PrepareOutcome(result, ChaldeaBackupReceiver.Received(base.size.toLong(), sha), backupMatches)
+            val bundleSha = sha256Hex(bundle)
+            val result = ChaldeaSyncResult(
+                prepareCode, packageName = PKG, base = baseSource, size = base.size.toLong(), sha256 = sha,
+                bundleSize = bundle.size.toLong(), bundleSha256 = bundleSha,
+            )
+            return ChaldeaSyncSession.PrepareOutcome(result, ChaldeaBackupReceiver.Received(bundle.size.toLong(), bundleSha), backupMatches)
         }
 
         override suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult {
@@ -89,6 +97,7 @@ private class Fx(val ts: TestScope, val tmp: File) {
         override suspend fun restore(backup: File, sha256: String, packageName: String): ChaldeaSyncResult {
             log += "restore"
             restores++
+            restoredBundles += backup.readBytes()
             return ChaldeaSyncResult(restoreCode, packageName = packageName)
         }
 
@@ -113,7 +122,10 @@ private class Fx(val ts: TestScope, val tmp: File) {
     }
 
     val source = object : ChaldeaAccountSource {
-        override fun load(userId: String) = loaded[userId]
+        override fun load(userId: String): ChaldeaAccountSource.Loaded? {
+            loads++
+            return loaded[userId]
+        }
         override fun currentIds() = current.toMap()
     }
 
@@ -144,6 +156,9 @@ private class Fx(val ts: TestScope, val tmp: File) {
     }
 
     fun count(s: String) = log.count { it == s }
+
+    val kr get() = sch.serverResults.value[ChaldeaServer.Kr]
+    val jp get() = sch.serverResults.value[ChaldeaServer.Jp]
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -230,7 +245,7 @@ class ChaldeaSyncSchedulerTest {
         sch.onScriptStart()
         advance(10_000)
         assertEquals(hash("a"), store.read().syncedPatchHash["a"])
-        assertIs<ChaldeaSyncStatus.Synced>(sch.status.value)
+        assertIs<ChaldeaSyncStatus.Synced>(kr)
         assertEquals(opened, closed)
     }
 
@@ -500,7 +515,7 @@ class ChaldeaSyncSchedulerTest {
         sch.onAccountSaved(listOf("a"))
         advance(MIN + 1_000)
         assertEquals(0, count("commit"))
-        assertEquals(ChaldeaSyncStatus.AccountNotIdentified, sch.status.value)
+        assertEquals(ChaldeaSyncStatus.AccountNotIdentified, kr)
         assertFalse("a" in store.read().pending)
     }
 
@@ -539,16 +554,16 @@ class ChaldeaSyncSchedulerTest {
         }
         assertEquals(6, commits.size)
         val first = backups.firstOriginal(PKG)
-        assertEquals("orig-1", first.readText(), "the first original is never replaced")
+        assertEquals("orig-1", File(first, "userdata.json").readText(), "the first original is never replaced")
         val rotating = backups.rotating(PKG)
         assertEquals(3, rotating.size)
-        assertEquals(listOf("orig-6", "orig-5", "orig-4"), rotating.map { it.readText() })
+        assertEquals(listOf("orig-6", "orig-5", "orig-4"), rotating.map { File(it, "userdata.json").readText() })
         // The base now equals what FGA wrote last: no new rotating backup, so a user's own data is not buried.
         account("a", num = 99)
         sch.onAccountSaved(listOf("a"))
         advance(MIN + 1_000)
         assertEquals(7, commits.size)
-        assertEquals(listOf("orig-6", "orig-5", "orig-4"), backups.rotating(PKG).map { it.readText() })
+        assertEquals(listOf("orig-6", "orig-5", "orig-4"), backups.rotating(PKG).map { File(it, "userdata.json").readText() })
     }
 
     @Test fun backupThatDoesNotMatchMeansNoCommit() = fx {
@@ -558,7 +573,7 @@ class ChaldeaSyncSchedulerTest {
         sch.onAccountSaved(listOf("a"))
         advance(10 * MIN)
         assertEquals(0, count("commit"))
-        assertEquals(ChaldeaSyncStatus.BackupFailed, sch.status.value)
+        assertEquals(ChaldeaSyncStatus.BackupFailed, kr)
         assertTrue("a" in store.read().pending)
         assertNull(store.readInflight())
     }
@@ -570,7 +585,7 @@ class ChaldeaSyncSchedulerTest {
         sch.onAccountSaved(listOf("a"))
         advance(10 * MIN)
         assertEquals(0, count("commit"))
-        assertEquals(ChaldeaSyncStatus.BackupFailed, sch.status.value)
+        assertEquals(ChaldeaSyncStatus.BackupFailed, kr)
         assertTrue("a" in store.read().pending)
     }
 
@@ -581,14 +596,16 @@ class ChaldeaSyncSchedulerTest {
         sch.onAccountSaved(listOf("a"))
         advance(10 * MIN)
         assertEquals(0, count("commit"))
-        assertEquals(ChaldeaSyncStatus.FileNotFound, sch.status.value)
+        assertEquals(ChaldeaSyncStatus.FileNotFound, kr)
     }
 
     @Test fun inflightIsPersistedBeforeCommitAndRemovedAfterSuccess() = fx {
         account("a")
         var seen: ChaldeaSyncStore.Inflight? = null
+        var backedUp: String? = null
         commitResult = { n ->
             seen = store.readInflight()
+            backedUp = seen?.let { File(it.backupPath, "userdata.json").readText() }
             ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("w$n".toByteArray()))
         }
         start()
@@ -596,7 +613,7 @@ class ChaldeaSyncSchedulerTest {
         advance(MIN + 1_000)
         assertNotNull(seen)
         assertEquals(sha256Hex("base-bytes".toByteArray()), seen!!.baseSha256)
-        assertTrue(File(seen!!.backupPath).isFile || !File(seen!!.backupPath).exists())
+        assertEquals("base-bytes", backedUp, "the backup exists before the commit")
         assertNull(store.readInflight())
     }
 
@@ -606,7 +623,7 @@ class ChaldeaSyncSchedulerTest {
         start()
         sch.onAccountSaved(listOf("a"))
         advance(MIN + 1_000)
-        assertEquals(ChaldeaSyncStatus.FailedRestored, sch.status.value)
+        assertEquals(ChaldeaSyncStatus.FailedRestored, kr)
         assertNull(store.read().syncedPatchHash["a"])
         assertNull(store.readInflight())
     }
@@ -617,7 +634,7 @@ class ChaldeaSyncSchedulerTest {
         start()
         sch.onAccountSaved(listOf("a"))
         advance(MIN + 1_000)
-        val s = sch.status.value
+        val s = kr
         assertIs<ChaldeaSyncStatus.RestoreFailed>(s)
         assertTrue(s.backupPath.contains(PKG))
         assertNotNull(store.readInflight())
@@ -625,12 +642,14 @@ class ChaldeaSyncSchedulerTest {
 
     // ---- in-flight recovery ----
 
-    private fun Fx.inflight(bytes: ByteArray = "orig".toByteArray()): File {
-        val f = File(backups.packageDir(PKG), ChaldeaBackupStore.INFLIGHT)
-        f.parentFile.mkdirs()
-        f.writeBytes(bytes)
-        store.writeInflight(ChaldeaSyncStore.Inflight(PKG, f.path, sha256Hex(bytes), 1))
-        return f
+    private fun Fx.inflight(json: ByteArray = "orig".toByteArray(), bakBytes: ByteArray? = null): File {
+        val dir = backups.inflightDir(PKG)
+        dir.mkdirs()
+        File(dir, "userdata.json").writeBytes(json)
+        bakBytes?.let { File(dir, "userdata.json.bak").writeBytes(it) }
+        val bundle = ChaldeaBackupBundle.encode(json, bakBytes)
+        store.writeInflight(ChaldeaSyncStore.Inflight(PKG, dir.path, sha256Hex(json), bundle.size.toLong(), sha256Hex(bundle), 1))
+        return dir
     }
 
     @Test fun interruptedWriteWithDamagedFileIsRestoredFromTheBackup() = fx {
@@ -765,5 +784,150 @@ class ChaldeaSyncSchedulerTest {
         sch.onScriptStart()
         assertEquals(ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.WaitingScript), sch.syncNow(null))
         assertEquals(0, opened)
+    }
+
+    // ---- review round: S1, S2, S3, M1, M2, per-server results, coalescing ----
+
+    @Test fun aSaveDuringTheWriteKeepsTheAccountPendingAndTheNewerPatchIsWritten() = fx {
+        account("a", num = 1)
+        commitDelay = 5_000
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000) // the first commit is running
+        account("a", num = 2)
+        sch.onAccountSaved(listOf("a"))
+        advance(10_000) // the first commit is done
+        assertEquals(1, commits.size)
+        assertTrue("a" in store.read().pending, "the save that came during the write must not be wiped")
+        commitDelay = 0
+        advance(2 * MIN)
+        assertEquals(2, commits.size)
+        assertEquals(2L, commits[1].first.items!![100L])
+        assertFalse("a" in store.read().pending)
+        assertEquals(hash("a"), store.read().syncedPatchHash["a"])
+    }
+
+    @Test fun aSaveWhileWaitingForChaldeaIsWrittenOnceWhenItCloses() = fx {
+        account("a", num = 1)
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(5 * MIN)
+        account("a", num = 2)
+        sch.onAccountSaved(listOf("a"))
+        advance(2 * MIN)
+        stateFn = { _, _ -> ChaldeaRunState.NotRunning }
+        advance(6 * MIN)
+        assertEquals(1, commits.size)
+        assertEquals(2L, commits[0].first.items!![100L])
+    }
+
+    @Test fun waitingPollsDoNotLoadTheAccountAgain() = fx {
+        account("a")
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(60 * MIN)
+        assertTrue(opened > 10, "it kept polling")
+        assertEquals(1, loads, "the patch is built once while waiting")
+        account("a", num = 9)
+        sch.onAccountSaved(listOf("a"))
+        advance(6 * MIN)
+        assertEquals(2, loads, "and again after a save")
+    }
+
+    @Test fun anInterruptedWriteThatCannotBeCheckedShowsTheReasonAndStopsAfterThreeTries() = fx {
+        val dir = inflight()
+        prepareCode = ChaldeaSyncCode.TooLarge
+        account("a")
+        start()
+        advance(1_000)
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.TooLarge), sch.status.value)
+        sch.onForeground()
+        advance(1_000)
+        sch.onForeground()
+        advance(1_000)
+        assertEquals(3, count("prepare"))
+        sch.onForeground()
+        sch.onAccountSaved(listOf("a"))
+        advance(10 * MIN)
+        assertEquals(3, count("prepare"), "no fourth try")
+        assertEquals(0, count("commit"), "nothing is written over an unchecked file")
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.TooLarge), sch.status.value)
+        assertNotNull(store.readInflight())
+        assertTrue(File(dir, "userdata.json").isFile, "the backup is never deleted")
+        // A switch toggle starts over.
+        enabled = false
+        sch.onSettingsChanged()
+        advance(1_000)
+        enabled = true
+        prepareCode = ChaldeaSyncCode.Ok
+        sch.onSettingsChanged()
+        advance(10 * MIN)
+        assertTrue(count("prepare") > 3)
+    }
+
+    @Test fun crashRecoveryRestoresEachFileToItsOwnOriginal() = fx {
+        val origJson = "json-original".toByteArray()
+        val origBak = "bak-original-different".toByteArray()
+        inflight(origJson, origBak)
+        baseSource = ChaldeaBaseSource.Bak // userdata.json was cut short by the crash
+        start()
+        advance(1_000)
+        assertEquals(1, restores)
+        val (json, bak) = ChaldeaBackupBundle.decode(restoredBundles.single())!!
+        assertContentEquals(origJson, json)
+        assertContentEquals(origBak, bak, ".bak keeps its own original, not a copy of userdata.json")
+    }
+
+    @Test fun hooksDoNothingWhileTheSwitchIsOff() = fx {
+        enabled = false
+        start()
+        sch.onAccountSaved(listOf("a"))
+        sch.onScriptStart()
+        sch.onScriptEnd()
+        assertEquals(0, sch.queuedEventCount())
+        assertFalse(sch.scriptRunningState.value)
+    }
+
+    @Test fun burstsOfSavesShareOneQueuedEvent() = fx {
+        account("a")
+        start()
+        repeat(1_000) { sch.onAccountSaved(listOf("a")) }
+        assertEquals(1, sch.queuedEventCount())
+        advance(MIN + 1_000)
+        assertEquals(1, commits.size)
+    }
+
+    @Test fun oneServersSuccessDoesNotClearTheOthersFailure() = fx {
+        account("kr", code = "111", server = ChaldeaServer.Kr)
+        account("jp", code = "222", server = ChaldeaServer.Jp)
+        commitResult = { n ->
+            if (commits.last().first.server == ChaldeaServer.Kr) ChaldeaSyncResult(ChaldeaSyncCode.NotFound, packageName = PKG)
+            else ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("w$n".toByteArray()))
+        }
+        start()
+        sch.onAccountSaved(listOf("kr", "jp"))
+        advance(MIN + 1_000)
+        assertEquals(ChaldeaSyncStatus.FileNotFound, kr)
+        assertIs<ChaldeaSyncStatus.Synced>(jp)
+        // The JP account changes and syncs again: the KR failure stays until KR itself syncs.
+        account("jp", code = "222", num = 7, server = ChaldeaServer.Jp)
+        sch.onAccountSaved(listOf("jp"))
+        advance(MIN + 1_000)
+        assertEquals(ChaldeaSyncStatus.FileNotFound, kr)
+        assertIs<ChaldeaSyncStatus.Synced>(jp)
+    }
+
+    @Test fun serverResultsClearOnAToggle() = fx {
+        account("a", code = null)
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertEquals(ChaldeaSyncStatus.AccountNotIdentified, kr)
+        enabled = false
+        sch.onSettingsChanged()
+        advance(1_000)
+        assertNull(kr)
     }
 }

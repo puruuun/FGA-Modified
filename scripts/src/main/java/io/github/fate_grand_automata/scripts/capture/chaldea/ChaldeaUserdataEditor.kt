@@ -61,7 +61,7 @@ sealed interface ChaldeaBase {
  * its number literals. Never deletes a key.
  */
 object ChaldeaUserdataEditor {
-    const val MAX_FILE_BYTES = 64L * 1024 * 1024
+    const val MAX_FILE_BYTES = 16L * 1024 * 1024
 
     sealed interface Parsed {
         class Ok(val root: JsonObject) : Parsed

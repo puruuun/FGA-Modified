@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaServer
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncNowOutcome
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
@@ -38,62 +39,80 @@ data class ChaldeaSyncUi(
     val loggingOn: Boolean = false,
     val closeMinutes: Int = 30,
     val shizuku: ShizukuState = ShizukuState.NotRunning,
+    /** What the scheduler is doing now: waiting, working, or a problem that is not about one account. */
     val status: ChaldeaSyncStatus = ChaldeaSyncStatus.Idle,
     val scriptRunning: Boolean = false,
+    /** The last result of each server, kept apart so that one success does not hide the other's failure. */
+    val results: Map<ChaldeaServer, ChaldeaSyncStatus> = emptyMap(),
 )
 
 internal val chaldeaCloseChoices = listOf(10, 30, 60, 0)
 
-/** The one status line. Shizuku problems come first because nothing else can happen until they are fixed. */
+/**
+ * The status lines. Shizuku problems come first because nothing else can happen until they are fixed. Otherwise
+ * there is one line per server that has a result (a single line, without the server name, when only one has), then
+ * what the scheduler is doing now when that is not the idle state.
+ */
 @Composable
-fun chaldeaStatusText(ui: ChaldeaSyncUi): String {
-    if (!ui.enabled) return stringResource(R.string.chaldea_sync_status_off)
-    if (!ui.loggingOn) return stringResource(R.string.chaldea_sync_needs_logging)
+fun chaldeaStatusLines(ui: ChaldeaSyncUi): List<String> {
+    if (!ui.enabled) return listOf(stringResource(R.string.chaldea_sync_status_off))
+    if (!ui.loggingOn) return listOf(stringResource(R.string.chaldea_sync_needs_logging))
     when (ui.shizuku) {
-        ShizukuState.NotInstalled -> return stringResource(R.string.chaldea_sync_shizuku_not_installed)
-        ShizukuState.NotRunning -> return stringResource(R.string.chaldea_sync_shizuku_not_running)
-        ShizukuState.NeedsPermission -> return stringResource(R.string.chaldea_sync_shizuku_needs_permission)
-        ShizukuState.Denied -> return stringResource(R.string.chaldea_sync_shizuku_denied)
-        ShizukuState.Outdated -> return stringResource(R.string.chaldea_sync_shizuku_outdated)
+        ShizukuState.NotInstalled -> return listOf(stringResource(R.string.chaldea_sync_shizuku_not_installed))
+        ShizukuState.NotRunning -> return listOf(stringResource(R.string.chaldea_sync_shizuku_not_running))
+        ShizukuState.NeedsPermission -> return listOf(stringResource(R.string.chaldea_sync_shizuku_needs_permission))
+        ShizukuState.Denied -> return listOf(stringResource(R.string.chaldea_sync_shizuku_denied))
+        ShizukuState.Outdated -> return listOf(stringResource(R.string.chaldea_sync_shizuku_outdated))
         ShizukuState.Ready -> {}
     }
-    return when (val s = ui.status) {
-        ChaldeaSyncStatus.Idle -> stringResource(R.string.chaldea_sync_status_idle)
-        ChaldeaSyncStatus.Working -> stringResource(R.string.chaldea_sync_status_working)
-        is ChaldeaSyncStatus.Synced -> buildString {
-            append(
-                stringResource(
-                    R.string.chaldea_sync_status_synced,
-                    DateUtils.formatDateTime(
-                        androidx.compose.ui.platform.LocalContext.current, s.timeMs,
-                        DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_ALL,
-                    ),
-                    s.items, s.mysticCodes, s.boards,
-                ),
-            )
-            if (s.created) append(' ').append(stringResource(R.string.chaldea_sync_status_created))
-            if (s.regionMismatch) append(' ').append(stringResource(R.string.chaldea_sync_status_region))
-            if (s.bothPackages && s.packageName != null) append(' ').append(stringResource(R.string.chaldea_sync_status_package, s.packageName!!))
-        }
-        ChaldeaSyncStatus.WaitingScript -> stringResource(R.string.chaldea_sync_status_waiting_script)
-        ChaldeaSyncStatus.WaitingVisible -> stringResource(R.string.chaldea_sync_status_waiting_visible)
-        is ChaldeaSyncStatus.WaitingBackground ->
-            if (s.closeAfter > 0) stringResource(R.string.chaldea_sync_status_waiting_background, s.minutes, s.closeAfter)
-            else stringResource(R.string.chaldea_sync_status_waiting_background_never, s.minutes)
-        is ChaldeaSyncStatus.ShizukuUnavailable -> stringResource(R.string.chaldea_sync_shizuku_not_running)
-        ChaldeaSyncStatus.CannotBind -> stringResource(R.string.chaldea_sync_status_cannot_bind)
-        ChaldeaSyncStatus.StateUnknown -> stringResource(R.string.chaldea_sync_status_state_unknown)
-        ChaldeaSyncStatus.ChaldeaStartedDuring -> stringResource(R.string.chaldea_sync_status_started_during)
-        ChaldeaSyncStatus.FileNotFound -> stringResource(R.string.chaldea_sync_status_not_found)
-        ChaldeaSyncStatus.NoAccess -> stringResource(R.string.chaldea_sync_status_no_access)
-        ChaldeaSyncStatus.UnknownVersion -> stringResource(R.string.chaldea_sync_status_unknown_version)
-        ChaldeaSyncStatus.FileUnreadable -> stringResource(R.string.chaldea_sync_status_unreadable)
-        ChaldeaSyncStatus.BackupFailed -> stringResource(R.string.chaldea_sync_status_backup_failed)
-        ChaldeaSyncStatus.AccountNotIdentified -> stringResource(R.string.chaldea_sync_status_not_identified)
-        ChaldeaSyncStatus.FailedRestored -> stringResource(R.string.chaldea_sync_status_restored)
-        is ChaldeaSyncStatus.RestoreFailed -> stringResource(R.string.chaldea_sync_status_restore_failed, s.backupPath)
-        is ChaldeaSyncStatus.Failed -> stringResource(R.string.chaldea_sync_status_failed, s.code.name)
+    val lines = ArrayList<String>()
+    val servers = ui.results.keys.sortedBy { it.ordinal }
+    for (server in servers) {
+        val text = chaldeaStatusText(ui.results.getValue(server))
+        lines += if (servers.size > 1) "${server.label}: $text" else text
     }
+    if (ui.status != ChaldeaSyncStatus.Idle || lines.isEmpty()) lines += chaldeaStatusText(ui.status)
+    return lines
+}
+
+@Composable
+private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s = status) {
+    ChaldeaSyncStatus.Idle -> stringResource(R.string.chaldea_sync_status_idle)
+    ChaldeaSyncStatus.Working -> stringResource(R.string.chaldea_sync_status_working)
+    is ChaldeaSyncStatus.Synced -> buildString {
+        append(
+            stringResource(
+                R.string.chaldea_sync_status_synced,
+                DateUtils.formatDateTime(
+                    androidx.compose.ui.platform.LocalContext.current, s.timeMs,
+                    DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_ALL,
+                ),
+                s.items, s.mysticCodes, s.boards,
+            ),
+        )
+        if (s.created) append(' ').append(stringResource(R.string.chaldea_sync_status_created))
+        if (s.regionMismatch) append(' ').append(stringResource(R.string.chaldea_sync_status_region))
+        if (s.bothPackages && s.packageName != null) append(' ').append(stringResource(R.string.chaldea_sync_status_package, s.packageName!!))
+    }
+    ChaldeaSyncStatus.WaitingScript -> stringResource(R.string.chaldea_sync_status_waiting_script)
+    ChaldeaSyncStatus.WaitingVisible -> stringResource(R.string.chaldea_sync_status_waiting_visible)
+    is ChaldeaSyncStatus.WaitingBackground ->
+        if (s.closeAfter > 0) stringResource(R.string.chaldea_sync_status_waiting_background, s.minutes, s.closeAfter)
+        else stringResource(R.string.chaldea_sync_status_waiting_background_never, s.minutes)
+    is ChaldeaSyncStatus.ShizukuUnavailable -> stringResource(R.string.chaldea_sync_shizuku_not_running)
+    ChaldeaSyncStatus.CannotBind -> stringResource(R.string.chaldea_sync_status_cannot_bind)
+    ChaldeaSyncStatus.StateUnknown -> stringResource(R.string.chaldea_sync_status_state_unknown)
+    ChaldeaSyncStatus.ChaldeaStartedDuring -> stringResource(R.string.chaldea_sync_status_started_during)
+    ChaldeaSyncStatus.FileNotFound -> stringResource(R.string.chaldea_sync_status_not_found)
+    ChaldeaSyncStatus.NoAccess -> stringResource(R.string.chaldea_sync_status_no_access)
+    ChaldeaSyncStatus.UnknownVersion -> stringResource(R.string.chaldea_sync_status_unknown_version)
+    ChaldeaSyncStatus.FileUnreadable -> stringResource(R.string.chaldea_sync_status_unreadable)
+    ChaldeaSyncStatus.BackupFailed -> stringResource(R.string.chaldea_sync_status_backup_failed)
+    ChaldeaSyncStatus.AccountNotIdentified -> stringResource(R.string.chaldea_sync_status_not_identified)
+    ChaldeaSyncStatus.FailedRestored -> stringResource(R.string.chaldea_sync_status_restored)
+    is ChaldeaSyncStatus.RestoreFailed -> stringResource(R.string.chaldea_sync_status_restore_failed, s.backupPath)
+    is ChaldeaSyncStatus.Failed -> stringResource(R.string.chaldea_sync_status_failed, s.code.name)
+    is ChaldeaSyncStatus.RecoveryBlocked -> stringResource(R.string.chaldea_sync_status_recovery_blocked, s.code.name)
 }
 
 /** The section below the log collection settings. */
@@ -170,7 +189,9 @@ private fun ChaldeaSyncNow(ui: ChaldeaSyncUi, syncNow: suspend (ChaldeaRunState?
     }
 
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(chaldeaStatusText(ui), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        for (line in chaldeaStatusLines(ui)) {
+            Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Button(
             onClick = { run(null) },
             enabled = ui.enabled && ui.loggingOn && ui.shizuku == ShizukuState.Ready && !ui.scriptRunning && !busy,

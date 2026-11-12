@@ -330,7 +330,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
                 ui = chaldeaUi,
                 onEnabled = { on ->
                     vm.prefsCore.chaldeaSyncEnabled.set(on)
-                    if (on) ChaldeaSyncManager.requestPermissionIfNeeded()
+                    if (on) ChaldeaSyncManager.onUserTurnedOn()
                 },
                 onCloseMinutes = { vm.prefsCore.chaldeaSyncCloseMinutes.set(it) },
                 syncNow = ChaldeaSyncManager::syncNow,
@@ -346,10 +346,10 @@ private fun chaldeaSyncUi(prefs: PrefsCore): Flow<ChaldeaSyncUi> = combine(
         tracker && CaptureConsent.agreed(consent)
     },
     ChaldeaSyncManager.shizukuState,
-    ChaldeaSyncManager.status,
+    combine(ChaldeaSyncManager.status, ChaldeaSyncManager.serverResults) { status, results -> status to results },
     ChaldeaSyncManager.scriptRunning,
-) { (on, minutes), logging, shizuku, status, script ->
-    ChaldeaSyncUi(on, logging, minutes, shizuku, status, script)
+) { (on, minutes), logging, shizuku, (status, results), script ->
+    ChaldeaSyncUi(on, logging, minutes, shizuku, status, script, results)
 }
 
 @Composable

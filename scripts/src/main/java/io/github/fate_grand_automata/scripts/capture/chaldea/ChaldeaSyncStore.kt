@@ -5,7 +5,11 @@ import java.io.File
 
 /** What FGA persists between runs of the sync: a few hundred bytes in two small JSON files. */
 class ChaldeaSyncStore(private val dir: File) {
-    data class Inflight(val packageName: String, val backupPath: String, val baseSha256: String, val timeMs: Long)
+    /** [backupPath] is the folder holding both original files; [bundleSize]/[bundleSha256] describe their bundle. */
+    data class Inflight(
+        val packageName: String, val backupPath: String, val baseSha256: String,
+        val bundleSize: Long, val bundleSha256: String, val timeMs: Long,
+    )
 
     private val stateFile get() = File(dir, "state.json")
     private val inflightFile get() = File(dir, "inflight.json")
@@ -51,7 +55,8 @@ class ChaldeaSyncStore(private val dir: File) {
         val o = Json.parseToJsonElement(inflightFile.readText()).jsonObject
         Inflight(
             o["package"]!!.jsonPrimitive.content, o["backup"]!!.jsonPrimitive.content,
-            o["baseSha256"]!!.jsonPrimitive.content, o["time"]!!.jsonPrimitive.long,
+            o["baseSha256"]!!.jsonPrimitive.content, o["bundleSize"]!!.jsonPrimitive.long,
+            o["bundleSha256"]!!.jsonPrimitive.content, o["time"]!!.jsonPrimitive.long,
         )
     } catch (e: Exception) {
         null
@@ -63,6 +68,8 @@ class ChaldeaSyncStore(private val dir: File) {
             put("package", i.packageName)
             put("backup", i.backupPath)
             put("baseSha256", i.baseSha256)
+            put("bundleSize", i.bundleSize)
+            put("bundleSha256", i.bundleSha256)
             put("time", i.timeMs)
         }
         atomicWrite(inflightFile, o.toString())

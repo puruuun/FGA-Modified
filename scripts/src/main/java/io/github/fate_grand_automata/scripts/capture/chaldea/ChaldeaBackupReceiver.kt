@@ -28,5 +28,5 @@ object ChaldeaBackupReceiver {
 
     /** True when what arrived is exactly what `prepare` announced. */
     fun matches(received: Received, prepared: ChaldeaSyncResult): Boolean =
-        prepared.ok && received.size == prepared.size && received.sha256 == prepared.sha256
+        prepared.ok && received.size == prepared.bundleSize && received.sha256 == prepared.bundleSha256
 }

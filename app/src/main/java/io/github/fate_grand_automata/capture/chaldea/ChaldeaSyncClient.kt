@@ -121,12 +121,12 @@ class ChaldeaSyncClient(private val context: Context) {
                 ChaldeaSyncResult.fromJson(service.commit(patch.toJson(), expectedSha256, allowCreate, expectedPackage))
             }
 
-        override suspend fun restore(backup: File, sha256: String, packageName: String): ChaldeaSyncResult =
+        override suspend fun restore(bundle: File, sha256: String, packageName: String): ChaldeaSyncResult =
             withContext(Dispatchers.IO) {
                 val pipe = ParcelFileDescriptor.createPipe()
                 val feeder = Thread({
                     runCatching {
-                        ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { out -> backup.inputStream().use { it.copyTo(out) } }
+                        ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { out -> bundle.inputStream().use { it.copyTo(out) } }
                     }
                 }, "ChaldeaRestoreFeeder")
                 feeder.start()

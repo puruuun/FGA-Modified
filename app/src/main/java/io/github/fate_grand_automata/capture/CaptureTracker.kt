@@ -353,6 +353,11 @@ object CaptureTracker {
         captureSafely("chaldeaSyncDeleted") { ChaldeaSyncManager.onAccountDeleted(userId) }
     }
 
+    /** Tells the Chaldea sync which accounts were written. Never throws and never blocks: a queue add and a wake-up. */
+    internal fun notifyChaldeaSync(written: List<String>) {
+        captureSafely("chaldeaSyncSaved") { ChaldeaSyncManager.onAccountsSaved(written) }
+    }
+
     private fun scheduleSave(userId: String) {
         pendingSaves.remove(userId)?.cancel(false)
         pendingSaves[userId] = io.schedule({ save(userId) }, SAVE_DELAY_SECONDS, TimeUnit.SECONDS)
@@ -370,7 +375,7 @@ object CaptureTracker {
             .onSuccess { written ->
                 widgetContext?.let { context -> runCatching { ApWidgetRefresh.onAccountSaved(context, userId) } }
                 // Non-blocking: a queue add and a wake-up. Only accounts whose state was really written.
-                if (written.isNotEmpty()) captureSafely("chaldeaSyncSaved") { ChaldeaSyncManager.onAccountsSaved(written) }
+                if (written.isNotEmpty()) notifyChaldeaSync(written)
             }
             .onFailure { Timber.w("Capture: saving the account state failed: %s", it.javaClass.simpleName) }
         Unit

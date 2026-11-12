@@ -1054,4 +1054,5 @@
     <string name="chaldea_sync_status_restored">"反映に失敗したためChaldeaのデータを元に戻しました。"</string>
     <string name="chaldea_sync_status_restore_failed">"復元に失敗: バックアップの場所 %s"</string>
     <string name="chaldea_sync_status_failed">"反映に失敗しました（%s）。"</string>
+    <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
 </resources>

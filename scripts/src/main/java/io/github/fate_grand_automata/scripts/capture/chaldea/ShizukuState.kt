@@ -21,3 +21,52 @@ data class ShizukuFacts(
         else -> ShizukuState.NeedsPermission
     }
 }
+
+/**
+ * Decides when to show the Shizuku permission dialog after the user turned the sync on (issue #355, review B1).
+ * The request must not be lost when the switch flips before the listeners exist, nor repeat while one is open.
+ */
+class ShizukuPermissionRequester(private val maxRequests: Int = 2) {
+    private var wanted = false
+    private var inFlight = false
+    private var requests = 0
+
+    /** The user turned the switch on. */
+    fun arm() {
+        wanted = true
+        inFlight = false
+        requests = 0
+    }
+
+    /** The switch was turned off. */
+    fun disarm() {
+        wanted = false
+        inFlight = false
+    }
+
+    /** The result listener fired or the screen was resumed: a new request may be shown if still needed. */
+    fun released() {
+        inFlight = false
+    }
+
+    /** @return true when the dialog should be requested now, for the Shizuku state just read */
+    fun shouldRequest(state: ShizukuState): Boolean {
+        if (!wanted) return false
+        return when (state) {
+            ShizukuState.NeedsPermission -> {
+                if (inFlight || requests >= maxRequests) false else {
+                    inFlight = true
+                    requests++
+                    true
+                }
+            }
+            // Not running yet: keep the wish and ask once the binder arrives (for example after a reboot).
+            ShizukuState.NotRunning, ShizukuState.NotInstalled -> false
+            ShizukuState.Ready, ShizukuState.Denied, ShizukuState.Outdated -> {
+                wanted = false
+                inFlight = false
+                false
+            }
+        }
+    }
+}

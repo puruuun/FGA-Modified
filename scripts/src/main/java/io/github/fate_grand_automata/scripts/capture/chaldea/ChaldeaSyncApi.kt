@@ -19,8 +19,11 @@ interface ChaldeaSyncSession {
     suspend fun prepare(sink: OutputStream): PrepareOutcome
     suspend fun commit(patch: ChaldeaPatch, expectedSha256: String, allowCreate: Boolean, expectedPackage: String): ChaldeaSyncResult
 
-    /** Puts [backup] (whose SHA-256 must be [sha256]) back into the Chaldea files of [packageName]. */
-    suspend fun restore(backup: File, sha256: String, packageName: String): ChaldeaSyncResult
+    /**
+     * Puts the files of the backup bundle in [bundle] (whose SHA-256 must be [sha256]) back into the Chaldea files of
+     * [packageName], each to its own original.
+     */
+    suspend fun restore(bundle: File, sha256: String, packageName: String): ChaldeaSyncResult
 
     /** Unbinds and lets the service exit. Safe to call twice. */
     fun close()
@@ -75,11 +78,14 @@ sealed interface ChaldeaSyncStatus {
     data class RestoreFailed(val backupPath: String) : ChaldeaSyncStatus
     data class Failed(val code: ChaldeaSyncCode) : ChaldeaSyncStatus
 
+    /** A write that was interrupted earlier could not be checked or undone; nothing is written until that is resolved. */
+    data class RecoveryBlocked(val code: ChaldeaSyncCode) : ChaldeaSyncStatus
+
     /** Failures that stay shown until the next success or a switch toggle. */
     val persistent: Boolean
         get() = when (this) {
             is FileNotFound, is NoAccess, is UnknownVersion, is FileUnreadable, is BackupFailed, is AccountNotIdentified,
-            is FailedRestored, is RestoreFailed, is Failed -> true
+            is FailedRestored, is RestoreFailed, is Failed, is RecoveryBlocked -> true
             else -> false
         }
 }

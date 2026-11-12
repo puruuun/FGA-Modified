@@ -58,6 +58,9 @@ data class ChaldeaSyncResult(
     /** Size and SHA-256 of the base bytes (prepare), or of the bytes written to the files (commit). */
     val size: Long? = null,
     val sha256: String? = null,
+    /** Prepare only: size and SHA-256 of the backup stream (both files), which FGA checks after receiving it. */
+    val bundleSize: Long? = null,
+    val bundleSha256: String? = null,
     /** Commit only: SHA-256 of the base the edit started from. */
     val baseSha256: String? = null,
     val itemCount: Int = 0,
@@ -81,6 +84,8 @@ data class ChaldeaSyncResult(
         size?.let { put("size", it) }
         sha256?.let { put("sha256", it) }
         baseSha256?.let { put("baseSha256", it) }
+        bundleSize?.let { put("bundleSize", it) }
+        bundleSha256?.let { put("bundleSha256", it) }
         put("items", itemCount)
         put("mysticCodes", mysticCodeCount)
         put("boards", boardCount)
@@ -106,6 +111,8 @@ data class ChaldeaSyncResult(
                 size = (o["size"] as? JsonPrimitive)?.longOrNull,
                 sha256 = s("sha256"),
                 baseSha256 = s("baseSha256"),
+                bundleSize = (o["bundleSize"] as? JsonPrimitive)?.longOrNull,
+                bundleSha256 = s("bundleSha256"),
                 itemCount = i("items"), mysticCodeCount = i("mysticCodes"), boardCount = i("boards"),
                 created = b("created"), tookOver = b("tookOver"), regionMismatch = b("regionMismatch"),
                 bakWritten = b("bakWritten"),
