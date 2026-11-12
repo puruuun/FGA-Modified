@@ -21,3 +21,12 @@
 -keep class io.github.fate_grand_automata.widget.ApWidgetNavReceiver { <init>(); }
 -keep class io.github.fate_grand_automata.widget.ToggleCaptureReceiver { <init>(); }
 -keep class io.github.fate_grand_automata.widget.WidgetRestoreReceiver { <init>(); }
+
+# Chaldea sync: Shizuku starts ChaldeaSyncService by class name in a separate shell-uid process that loads this
+# APK's dex. Keep the service, its AIDL stub, and the pure scripts classes it runs there (the state parser, the
+# file engine, the editor, the patch and result types) by name, so nothing it needs is renamed or merged away.
+-keep class io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncService { *; }
+-keep class io.github.fate_grand_automata.capture.chaldea.IChaldeaSyncService { *; }
+-keep class io.github.fate_grand_automata.capture.chaldea.IChaldeaSyncService$Stub { *; }
+-keep class io.github.fate_grand_automata.capture.chaldea.IChaldeaSyncService$Stub$Proxy { *; }
+-keep class io.github.fate_grand_automata.scripts.capture.chaldea.** { *; }

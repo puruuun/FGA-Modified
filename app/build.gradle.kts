@@ -311,6 +311,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        aidl = true
     }
 
     androidResources {
@@ -476,6 +477,10 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.core.remoteviews)
     implementation(libs.androidx.work.runtime)
+
+    // Chaldea sync: Shizuku API and provider (the provider is disabled in the manifest until the switch is on).
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     testImplementation(platform(libs.junit.bom)) {
         because("kotlin-test comes with conflicting junit versions")

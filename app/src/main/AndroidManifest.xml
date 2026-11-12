@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <queries>
+        <!-- Shizuku manager app: lets the Chaldea sync tell "not installed" from "not running". -->
+        <package android:name="moe.shizuku.privileged.api" />
         <package android:name="cc.narumi.chaldea" />
         <package android:name="cc.narumi.chaldea.fdroid" />
         <!-- Visibility for installed KR/JP VPN routing and the JP root CA switch. -->
@@ -146,6 +148,15 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Off until the Chaldea sync switch is on; the app enables it with DONT_KILL_APP (see ShizukuProviderSwitch). -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="false"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
     </application>
 
 </manifest>
