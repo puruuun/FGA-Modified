@@ -1,0 +1,342 @@
+package io.github.fate_grand_automata.scripts.capture.chaldea
+
+import io.github.fate_grand_automata.scripts.capture.AccountState
+import kotlinx.serialization.json.*
+import kotlin.test.*
+
+/** Entirely synthetic data. */
+class ChaldeaSyncLogicTest {
+    private fun state(vararg tables: Pair<String, String>) =
+        AccountState(mapOf(*tables), "[]", null, 1L, 2L)
+
+    private val game = """[{"friendCode":" 123,456 ","name":"Synth","genderType":2,"qp":900,"stone":5,"mana":7,"rarePri":8}]"""
+    private val fullState = state(
+        "userGame" to game,
+        "userItem" to """[{"itemId":100,"num":3},{"itemId":1,"num":1},{"itemId":6503,"num":383}]""",
+        "userEquip" to """[{"equipId":1,"lv":10},{"equipId":20,"lv":3}]""",
+        "userClassBoardSquare" to """[{"classBoardBaseId":5,"classBoardUnlockSquareIds":[1,2,2],"classBoardSquareIds":[2]}]""",
+    )
+
+    private fun patch(
+        code: String? = "123,456",
+        server: ChaldeaServer = ChaldeaServer.Kr,
+        items: Map<Long, Long>? = mapOf(100L to 3L),
+        mystic: Map<Long, Long>? = null,
+        boards: Map<Long, ChaldeaPatch.Board>? = null,
+        isGirl: Boolean? = true,
+        nickname: String? = "Synth",
+    ) = ChaldeaPatch(code, server, nickname, isGirl, items, mystic, boards)
+
+    private fun file(users: String, extra: String = ""","curUserKey":1""") =
+        """{"version":4,"appVer":"2.6.2"$extra,"users":$users,"other":{"a":1.0}}"""
+
+    private fun user(code: String?, region: String = "kr", items: String = "{}", extra: String = "") =
+        """{"id":"u-${code ?: "x"}","name":"N","region":"$region","lastImportId":${code?.let { "\"$it\"" } ?: "null"},"items":$items$extra}"""
+
+    private fun ok(r: ChaldeaEditResult) = r as ChaldeaEditResult.Success
+    private fun out(r: ChaldeaEditResult) = Json.parseToJsonElement(ok(r).output).jsonObject
+    private fun users(r: ChaldeaEditResult) = out(r)["users"]!!.jsonArray
+
+    // ---- patch builder ----
+
+    @Test fun builderReadsAllFourFieldsAndTrimsFriendCode() {
+        val p = ChaldeaPatch.from(fullState, ChaldeaServer.Kr)
+        assertEquals("123,456", p.friendCode)
+        assertEquals("Synth", p.nickname)
+        assertEquals(true, p.isGirl)
+        assertEquals(383L, p.items!![6503L])
+        assertEquals(mapOf(1L to 10L, 20L to 3L), p.mysticCodes)
+        assertEquals(ChaldeaPatch.Board(listOf(1L, 2L), listOf(2L)), p.classBoards!![5L])
+    }
+
+    @Test fun userGameCurrenciesOverrideUserItemRows() {
+        val items = ChaldeaPatch.from(fullState, ChaldeaServer.Kr).items!!
+        assertEquals(900L, items[1L]) // userItem said 1, userGame.qp wins
+        assertEquals(5L, items[2L])
+        assertEquals(7L, items[3L])
+        assertEquals(8L, items[18L])
+    }
+
+    @Test fun missingTablesLeaveFieldsOut() {
+        val p = ChaldeaPatch.from(state("userGame" to game), ChaldeaServer.Jp)
+        assertNull(p.mysticCodes)
+        assertNull(p.classBoards)
+        assertNotNull(p.items) // currencies only
+        val none = ChaldeaPatch.from(state("userEquip" to "[]"), ChaldeaServer.Jp)
+        assertNull(none.items)
+        assertNull(none.friendCode)
+        assertEquals(emptyMap(), none.mysticCodes)
+    }
+
+    @Test fun jsonKeysAreStringsAndSorted() {
+        val o = Json.parseToJsonElement(ChaldeaPatch.from(fullState, ChaldeaServer.Kr).toJson()).jsonObject
+        assertEquals(listOf("1", "2", "3", "18", "100", "6503"), o["items"]!!.jsonObject.keys.toList())
+        assertEquals(listOf("5"), o["classBoards"]!!.jsonObject.keys.toList())
+        assertEquals("kr", o["server"]!!.jsonPrimitive.content)
+    }
+
+    @Test fun blankFriendCodeAndMissingGenderAndNickname() {
+        val p = ChaldeaPatch.from(state("userGame" to """[{"friendCode":"  ","name":" "}]"""), ChaldeaServer.Kr)
+        assertNull(p.friendCode)
+        assertNull(p.isGirl)
+        assertNull(p.nickname)
+        assertEquals("KR account", p.userName)
+        assertEquals("Synth (JP)", patch(server = ChaldeaServer.Jp).userName)
+        assertEquals(false, ChaldeaPatch.from(state("userGame" to """[{"friendCode":"1","genderType":1}]"""), ChaldeaServer.Kr).isGirl)
+    }
+
+    @Test fun hashIsStableAndChangesWithContent() {
+        val a = ChaldeaPatch.from(fullState, ChaldeaServer.Kr)
+        assertEquals(a.hash(), ChaldeaPatch.from(fullState, ChaldeaServer.Kr).hash())
+        assertEquals(64, a.hash().length)
+        val reordered = state(
+            "userEquip" to """[{"equipId":20,"lv":3},{"equipId":1,"lv":10}]""",
+            "userGame" to game,
+            "userItem" to """[{"itemId":6503,"num":383},{"itemId":1,"num":1},{"itemId":100,"num":3}]""",
+            "userClassBoardSquare" to """[{"classBoardBaseId":5,"classBoardUnlockSquareIds":[1,2],"classBoardSquareIds":[2]}]""",
+        )
+        assertEquals(a.hash(), ChaldeaPatch.from(reordered, ChaldeaServer.Kr).hash())
+        assertNotEquals(a.hash(), a.copy(items = a.items!! + (100L to 4L)).hash())
+        assertNotEquals(a.hash(), a.copy(server = ChaldeaServer.Jp).hash())
+        assertEquals(a, ChaldeaPatch.fromJson(a.toJson()))
+        assertNull(ChaldeaPatch.fromJson("[]"))
+    }
+
+    // ---- matcher ----
+
+    private fun arr(s: String) = Json.parseToJsonElement(s).jsonArray
+
+    @Test fun exactFriendCodeMatchWinsAndFirstOfSeveral() {
+        val users = arr("[${user("111")},${user("123,456")},${user(" 123,456 ")}]")
+        assertEquals(ChaldeaUserMatcher.Match.Existing(1, false), ChaldeaUserMatcher.match(users, patch()))
+    }
+
+    @Test fun regionMismatchReported() {
+        val users = arr("[${user("123,456", region = "jp")}]")
+        assertEquals(ChaldeaUserMatcher.Match.Existing(0, true), ChaldeaUserMatcher.match(users, patch()))
+    }
+
+    private val defaultUser = """{"id":"d","name":"Gudako","region":"jp","items":{},"servants":{},"plans":[{"servants":{}},{}],"classBoards":{}}"""
+
+    @Test fun takeoverOfSingleUntouchedDefault() {
+        assertEquals(ChaldeaUserMatcher.Match.TakeOver(0), ChaldeaUserMatcher.match(arr("[$defaultUser]"), patch()))
+        assertEquals(ChaldeaUserMatcher.Match.TakeOver(0), ChaldeaUserMatcher.match(arr("""[{"id":"d"}]"""), patch()))
+    }
+
+    @Test fun takeoverBoundaries() {
+        fun m(u: String) = ChaldeaUserMatcher.match(arr("[$u]"), patch())
+        val create = ChaldeaUserMatcher.Match.Create
+        assertEquals(create, m(user(null, items = """{"1":2}""")))
+        assertEquals(create, m("""{"id":"d","plans":[{"servants":{"1":{}}}]}"""))
+        assertEquals(create, m("""{"id":"d","classBoards":{"5":{}}}"""))
+        assertEquals(create, m("""{"id":"d","lastImportId":"999"}"""))
+        assertEquals(create, m("""{"id":"d","name":"Renamed"}"""))
+        assertEquals(create, m("""{"id":"d","region":"kr"}"""))
+        assertEquals(create, m("""{"id":"d","summons":["a"]}"""))
+        assertEquals(create, m("""{"id":"d","dupServantMapping":{"1":2}}"""))
+        assertEquals(create, m("""{"id":"d","plans":"x"}"""))
+        assertEquals(create, ChaldeaUserMatcher.match(arr("[$defaultUser,$defaultUser]"), patch()))
+        assertEquals(create, ChaldeaUserMatcher.match(arr("[]"), patch()))
+    }
+
+    @Test fun noMatchAmongSeveralCreates() {
+        assertEquals(ChaldeaUserMatcher.Match.Create, ChaldeaUserMatcher.match(arr("[${user("1")},${user("2")}]"), patch()))
+    }
+
+    // ---- editor ----
+
+    @Test fun mergeKeepsExistingItemsAndOverwritesPatched() {
+        val text = file("[${user("123,456", items = """{"100":1,"999":5}""")}]")
+        val r = ChaldeaUserdataEditor.edit(text, patch(items = mapOf(100L to 3L, 101L to 9L)), allowCreate = false)
+        val items = users(r)[0].jsonObject["items"]!!.jsonObject
+        assertEquals(listOf("100", "999", "101"), items.keys.toList())
+        assertEquals(3, items["100"]!!.jsonPrimitive.int)
+        assertEquals(5, items["999"]!!.jsonPrimitive.int)
+        assertEquals(2, ok(r).itemCount)
+    }
+
+    @Test fun boardIsReplacedAsUnitOthersKept() {
+        val boards = """{"5":{"unlockedSquares":[1,2,3],"enhancedSquares":[9]},"6":{"unlockedSquares":[4],"enhancedSquares":[]}}"""
+        val text = file("[${user("123,456", extra = ""","classBoards":$boards""")}]")
+        val p = patch(boards = mapOf(5L to ChaldeaPatch.Board(listOf(1L), listOf(2L))))
+        val r = ChaldeaUserdataEditor.edit(text, p, false)
+        val b = users(r)[0].jsonObject["classBoards"]!!.jsonObject
+        assertEquals(arr("[1]"), b["5"]!!.jsonObject["unlockedSquares"])
+        assertEquals(arr("[2]"), b["5"]!!.jsonObject["enhancedSquares"])
+        assertEquals(Json.parseToJsonElement("""{"unlockedSquares":[4],"enhancedSquares":[]}"""), b["6"])
+    }
+
+    @Test fun unknownFieldsOtherUsersAndLiteralsRoundTrip() {
+        val other = """{"id":"o","lastImportId":"1","x":1.0,"big":12345678901234567890,"e":1e3,"s":"é \u00e9 \n \" \\","u":"\u30c6","nested":{"z":[1.50,null,true]},"items":{"1":2}}"""
+        val text = """{"version":4,"zz":[1.0,2e2],"curUserKey":0,"users":[$other,${user("123,456", extra = ""","futureField":{"k":1.0}""")}]}"""
+        val r = ChaldeaUserdataEditor.edit(text, patch(), false)
+        val output = ok(r).output
+        assertContains(output, "12345678901234567890")
+        assertContains(output, "\"x\":1.0")
+        assertContains(output, "\"e\":1e3")
+        assertContains(output, "1.50")
+        assertContains(output, "[1.0,2e2]")
+        val orig = Json.parseToJsonElement(text).jsonObject
+        val new = Json.parseToJsonElement(output).jsonObject
+        assertEquals(orig["users"]!!.jsonArray[0], new["users"]!!.jsonArray[0])
+        assertEquals(orig["zz"], new["zz"])
+        assertEquals(orig.keys.toList(), new.keys.toList())
+        assertEquals(orig["users"]!!.jsonArray[1].jsonObject["futureField"], new["users"]!!.jsonArray[1].jsonObject["futureField"])
+    }
+
+    @Test fun curUserKeyNeverChangedAndMayBeMissing() {
+        val withKey = ok(ChaldeaUserdataEditor.edit(file("[${user("1")}]"), patch(), true))
+        assertTrue(withKey.created)
+        assertEquals("1", out(ChaldeaUserdataEditor.edit(file("[${user("1")}]"), patch(), true))["curUserKey"]!!.jsonPrimitive.content)
+        val noKey = file("[${user("1")}]", extra = "")
+        val r = ChaldeaUserdataEditor.edit(noKey, patch(), true)
+        assertFalse(out(r).containsKey("curUserKey"))
+    }
+
+    @Test fun createsNewUserWithFieldsAndKeepsOthers() {
+        val text = file("[${user("1", items = """{"5":5}""")}]")
+        val r = ChaldeaUserdataEditor.edit(text, patch(mystic = mapOf(1L to 10L)), true) { "fixed-uuid" }
+        val s = ok(r)
+        assertTrue(s.created)
+        assertEquals(1, s.userIndex)
+        val list = users(r)
+        assertEquals(arr("[${user("1", items = """{"5":5}""")}]")[0], list[0])
+        val n = list[1].jsonObject
+        assertEquals("fixed-uuid", n["id"]!!.jsonPrimitive.content)
+        assertEquals("Synth (KR)", n["name"]!!.jsonPrimitive.content)
+        assertEquals("kr", n["region"]!!.jsonPrimitive.content)
+        assertEquals(true, n["isGirl"]!!.jsonPrimitive.boolean)
+        assertEquals("123,456", n["lastImportId"]!!.jsonPrimitive.content)
+        assertEquals(10, n["mysticCodes"]!!.jsonObject["1"]!!.jsonPrimitive.int)
+    }
+
+    @Test fun unknownGenderIsLeftOutOfNewUser() {
+        val r = ChaldeaUserdataEditor.edit(file("[${user("1")}]"), patch(isGirl = null), true)
+        assertFalse(users(r)[1].jsonObject.containsKey("isGirl"))
+    }
+
+    @Test fun emptyUsersArrayGetsNewUser() {
+        val r = ChaldeaUserdataEditor.edit(file("[]"), patch(), true)
+        assertTrue(ok(r).created)
+        assertEquals(1, users(r).size)
+    }
+
+    @Test fun takeoverSetsIdentityAndKeepsIdAndPlans() {
+        val r = ChaldeaUserdataEditor.edit(file("[$defaultUser]"), patch(), true)
+        assertTrue(ok(r).tookOverDefault)
+        val u = users(r)[0].jsonObject
+        assertEquals("d", u["id"]!!.jsonPrimitive.content)
+        assertEquals("Synth (KR)", u["name"]!!.jsonPrimitive.content)
+        assertEquals("kr", u["region"]!!.jsonPrimitive.content)
+        assertEquals("123,456", u["lastImportId"]!!.jsonPrimitive.content)
+        assertEquals(arr("""[{"servants":{}},{}]"""), u["plans"])
+    }
+
+    @Test fun nonCurrentAccountWithoutMatchIsRefusedAndMatchStillWorks() {
+        val text = file("[${user("1")}]")
+        assertEquals(ChaldeaEditResult.Refused(ChaldeaRefusal.NoMatchingUser), ChaldeaUserdataEditor.edit(text, patch(), false))
+        assertEquals(ChaldeaEditResult.Refused(ChaldeaRefusal.NoMatchingUser), ChaldeaUserdataEditor.edit(file("[$defaultUser]"), patch(), false))
+        assertFalse(ok(ChaldeaUserdataEditor.edit(file("[${user("123,456")}]"), patch(), false)).created)
+    }
+
+    @Test fun missingOrBlankFriendCodeWritesNothing() {
+        for (code in listOf(null, "", "  ")) {
+            assertEquals(
+                ChaldeaEditResult.Refused(ChaldeaRefusal.AccountNotIdentified),
+                ChaldeaUserdataEditor.edit(file("[${user("1")}]"), patch(code = code), true),
+            )
+        }
+    }
+
+    @Test fun regionMismatchSurfaces() {
+        val r = ChaldeaUserdataEditor.edit(file("[${user("123,456", region = "jp")}]"), patch(), false)
+        assertTrue(ok(r).regionMismatch)
+        assertEquals("jp", users(r)[0].jsonObject["region"]!!.jsonPrimitive.content)
+    }
+
+    @Test fun refusals() {
+        fun reason(text: String) = (ChaldeaUserdataEditor.edit(text, patch(), true) as ChaldeaEditResult.Refused).reason
+        assertEquals(ChaldeaRefusal.UnknownVersion, reason("""{"version":3,"users":[]}"""))
+        assertEquals(ChaldeaRefusal.UnknownVersion, reason("""{"version":"4","users":[]}"""))
+        assertEquals(ChaldeaRefusal.UnknownVersion, reason("""{"version":4.0,"users":[]}"""))
+        assertEquals(ChaldeaRefusal.UnknownVersion, reason("""{"users":[]}"""))
+        assertEquals(ChaldeaRefusal.NotObject, reason("[]"))
+        assertEquals(ChaldeaRefusal.MissingUsers, reason("""{"version":4}"""))
+        assertEquals(ChaldeaRefusal.MissingUsers, reason("""{"version":4,"users":{}}"""))
+        assertEquals(ChaldeaRefusal.InvalidJson, reason("""{"version":4,"users":["""))
+        assertEquals(ChaldeaRefusal.InvalidJson, reason(""))
+    }
+
+    @Test fun wrongTypeInPatchedFieldRefuses() {
+        val text = file("[${user("123,456", items = "[1]")}]")
+        assertEquals(ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape), ChaldeaUserdataEditor.edit(text, patch(), false))
+    }
+
+    // ---- verification ----
+
+    @Test fun verifyAcceptsGoodOutputAndRejectsTampering() {
+        val text = file("[${user("1")},${user("123,456", items = """{"7":7}""")}]")
+        val root = Json.parseToJsonElement(text).jsonObject
+        val good = ok(ChaldeaUserdataEditor.edit(text, patch(), false)).output
+        val m = ChaldeaUserMatcher.Match.Existing(1, false)
+        assertTrue(ChaldeaUserdataEditor.verify(root, good, patch(), m, 1))
+        // another user changed
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"id\":\"u-1\"", "\"id\":\"u-2\""), patch(), m, 1))
+        // curUserKey changed
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"curUserKey\":1", "\"curUserKey\":0"), patch(), m, 1))
+        // version changed
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"version\":4", "\"version\":5"), patch(), m, 1))
+        // patched value missing
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"100\":3", "\"100\":4"), patch(), m, 1))
+        // existing item deleted
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"7\":7,", ""), patch(), m, 1))
+        // user dropped, and unparseable output
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace(user("1"), ""), patch(), m, 1))
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.dropLast(3), patch(), m, 1))
+        // unrelated field of the target changed
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"name\":\"N\",\"region\":\"kr\",\"lastImportId\":\"123,456\"", "\"name\":\"M\",\"region\":\"kr\",\"lastImportId\":\"123,456\""), patch(), m, 1))
+    }
+
+    @Test fun verifyCreatedUserCountMustBePlusOne() {
+        val text = file("[${user("1")}]")
+        val root = Json.parseToJsonElement(text).jsonObject
+        val good = ok(ChaldeaUserdataEditor.edit(text, patch(), true)).output
+        assertTrue(ChaldeaUserdataEditor.verify(root, good, patch(), ChaldeaUserMatcher.Match.Create, 1))
+        assertFalse(ChaldeaUserdataEditor.verify(root, text, patch(), ChaldeaUserMatcher.Match.Create, 1))
+    }
+
+    // ---- base selection ----
+
+    private fun bytes(s: String) = s.toByteArray()
+    private val valid = file("[${user("1")}]")
+
+    @Test fun baseIsMainFileWhenValid() {
+        val b = ChaldeaUserdataEditor.selectBase(bytes(valid), bytes(file("[]"))) as ChaldeaBase.Selected
+        assertEquals(ChaldeaBaseSource.UserdataJson, b.source)
+        assertEquals(valid, b.text)
+    }
+
+    @Test fun truncatedEmptyOrMissingMainFallsBackToBak() {
+        for (main in listOf(bytes(valid.take(40)), ByteArray(0), null, byteArrayOf(-1, -2, 0))) {
+            val b = ChaldeaUserdataEditor.selectBase(main, bytes(valid)) as ChaldeaBase.Selected
+            assertEquals(ChaldeaBaseSource.Bak, b.source)
+        }
+    }
+
+    @Test fun bothInvalidIsRefused() {
+        val refused = ChaldeaBase.Refused(ChaldeaRefusal.Unreadable)
+        assertEquals(refused, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("{")))
+        assertEquals(refused, ChaldeaUserdataEditor.selectBase(null, null))
+        assertEquals(refused, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("""{"version":3,"users":[]}""")))
+    }
+
+    @Test fun validJsonWithWrongShapeIsNotReplacedByBak() {
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.UnknownVersion), ChaldeaUserdataEditor.selectBase(bytes("{}"), bytes(valid)))
+    }
+
+    @Test fun oversizedFilesAreRefused() {
+        val big = ByteArray((ChaldeaUserdataEditor.MAX_FILE_BYTES + 1).toInt())
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.TooLarge), ChaldeaUserdataEditor.selectBase(big, bytes(valid)))
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.TooLarge), ChaldeaUserdataEditor.selectBase(bytes(valid), big))
+    }
+}
