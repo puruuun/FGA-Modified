@@ -40,7 +40,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - each step in order: what is tapped, how long it waits, which screen region is read and how (template and threshold, OCR, colour, sample bank), and what each result leads to;
   - the safety guards and every end state (stop reasons), plus what changes against the current behaviour.
   - Write it in Korean, in the owner's terms. Start development (issue, agent prompt, branch) only after the owner approves the walkthrough or after the amendments they ask for.
-- For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use Codex as author, committer, or co-author unless the user requests it. Do not add `Co-Authored-By` trailers or "Generated with" lines for any AI agent (Codex, Claude, Copilot, …) to commits or PR descriptions; GitHub should show only `puruuun`. Preserve authorship on existing published commits.
+- For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use an AI agent as author, committer, or co-author unless the user requests it. Do not add `Co-Authored-By` trailers or "Generated with" lines for any AI agent (Codex, Claude, Copilot, …) to commits or PR descriptions; GitHub should show only `puruuun`. Preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
 - Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
 - After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
@@ -55,15 +55,11 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 ## Agent team
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
-- Agent models and order (owner decision, 2026-11-11; replaces the 2026-10-30 order). The planner chooses the agent and model for each task by its difficulty and risk, within this order of usage pools:
-  1. **Codex** (`gpt-6.1-sol`, via `build/orchestration/codex-run.sh`): first choice while it has usage, above all for hard implementation.
-  2. **Gemini** through the Antigravity CLI `agy` (via `build/orchestration/gemini-run.sh`), when Codex is at its usage limit or when the planner judges Gemini the better fit for the task:
-     - **Gemini 3.8 Flash, always `high`** (`gemini-3.8-flash-high`): the default Gemini worker (owner decision, 2026-11-11). Use it first for ordinary implementation, for first-pass verification and QA, and for code research.
-     - **Gemini 4 Argon, `medium`** (`gemini-4-argon-medium`): second-pass verification and review, design review, and implementation that is too hard for Flash. Use `gemini-4-argon-high` only in special cases: the same task keeps failing at `medium`, or the task is exceptionally hard (owner decision, 2026-11-11). Say why when `high` is used.
-     - Usual pattern for a task with some difficulty: Flash implements, a fresh Flash run does the first verification, and Argon does the second verification and review.
-  3. **Sonnet 5.5 (medium)**: after Codex and Gemini, not forbidden (owner decision, 2026-11-12). Prefer Codex and Gemini because Sonnet shares the planner's own usage. Use Sonnet when both are out of usage, and also when a task needs another model's view and the others were already used on it: for example a verification or QA run of work that Codex or Gemini implemented and verified.
-- Gemini runs go through `gemini-run.sh`, not through the `gemini` subagent: the subagent relays through a Claude model and uses the planner's usage.
-- The same order applies to verification agents, design reviews and research agents. A Gemini agent used only for reading (review, research) runs with the read-only settings (`~/.claude/agents/gemini-readonly.settings.json`); a Gemini implementer runs with the implementer settings and only inside its own worktree.
+- Agent models (owner decision, 2026-11-12; replaces the 2026-11-11 order). Codex and Gemini are no longer used. Every agent is a Claude subagent that the planner starts with the Agent tool, at **medium** effort:
+  - **Sonnet 5.5 (medium):** the default worker. Use it for implementation, verification, design review and research.
+  - **Haiku 5.5 (medium):** cheaper and somewhat less capable than Sonnet. Use it first for light or simple work, such as small edits, simple research or lookups, and mechanical checks. Also use it alongside Sonnet when a task benefits from a second, different model, for example as the second verifier.
+  - The planner picks the model for each task by its difficulty and risk. It tells the owner which model did each task, and why when it was not the usual choice.
+- The same choice applies to implementers, verification agents, design reviews and research agents. An agent that only reads (review, research) is told not to change files. An implementer works only inside its own worktree.
 - Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
   - **Risky changes:**
@@ -74,7 +70,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - build, signing and versioning;
     - upstream syncs.
   - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
-  - **Who verifies:** a separate agent run with a fresh context, on the same agent order as implementation (Codex, then Gemini, then Sonnet). It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
+  - **Who verifies:** a separate agent run with a fresh context, usually Sonnet. It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
   - **What the verifier does:**
     - compares the diff with every requirement in the issue;
     - checks that the tests cover the requirements and the failure and guard cases;
@@ -82,12 +78,12 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
     - for capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
   - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
-  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on different models (for example Codex and Gemini). Both must pass.
+  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on different models (Sonnet and Haiku). Both must pass.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
 - Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
   - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
-  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a different model from the planner (by the agent order above) reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
+  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a subagent with a fresh context (usually Sonnet) reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
   - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.
 - Automation first, log tracking second (owner decision, 2026-11-11). Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
