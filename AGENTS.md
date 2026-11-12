@@ -55,10 +55,16 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 ## Agent team
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
-- Agent models (owner decision, 2026-11-12; replaces the 2026-11-11 order). Codex and Gemini are no longer used. Every agent is a Claude subagent that the planner starts with the Agent tool, at **medium** effort:
-  - **Sonnet 5.5 (medium):** the default worker. Use it for implementation, verification, design review and research.
-  - **Haiku 5.5 (medium):** cheaper and somewhat less capable than Sonnet. Use it first for light or simple work, such as small edits, simple research or lookups, and mechanical checks. Also use it alongside Sonnet when a task benefits from a second, different model, for example as the second verifier.
-  - The planner picks the model for each task by its difficulty and risk. It tells the owner which model did each task, and why when it was not the usual choice.
+- Agent models (owner decision, 2026-11-13; replaces the 2026-11-12 order). Codex is not used.
+  - **Gemini (owner-run, first choice):** the default implementer, and also a verifier or reviewer when a different model helps. The planner never calls Gemini itself; it writes a prompt file and the owner runs it in Antigravity (see "Gemini hand-off" below). The planner names which Gemini model to pick: the strongest one for implementation, a light one for simple checks.
+  - **Sonnet 5.5 (medium, Claude subagent):** takes over when a task is very hard (the planner says so before it starts, for example concurrency, binder/IPC or data-safety cores), or when Gemini's work on a task is sent back twice by review, verification or device QA. Sonnet then continues on the same branch. It is also the usual verifier for Gemini's work, because the planner can run it directly.
+  - **Haiku 5.5 (medium, Claude subagent):** light or simple work, such as small edits, lookups and mechanical checks, and a second model next to Sonnet or Gemini, for example as the second verifier.
+  - Claude subagents are started with the Agent tool at **medium** effort. The planner picks the agent for each task by its difficulty and risk, and tells the owner which agent and model did each task, and why when it was not the usual choice.
+- Gemini hand-off (owner decision, 2026-11-13):
+  - The planner files the issue, creates the branch and its own worktree from the latest base, and writes the prompt to `build/orchestration/prompts/` and as an untracked `TASK-<issue>.md` at the worktree root, never committed.
+  - The prompt is self-contained: the issue, the requirements, the files to touch, the rules from this file (identity, no AI trailers, full unit tests before pushing, PR in English with `Closes #N`, no adb or device work), and what the final report must hold (in Korean: commits, PR link, tests run with counts, anything left open).
+  - The planner gives the owner the worktree path and a one-line instruction to paste into Antigravity. The owner pastes Gemini's final report back into the planner's conversation; the planner then reviews, verifies and merges as usual.
+  - A Gemini verification prompt is read-only and asks for the same evidence table as any verifier.
 - The same choice applies to implementers, verification agents, design reviews and research agents. An agent that only reads (review, research) is told not to change files. An implementer works only inside its own worktree.
 - Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
@@ -70,7 +76,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - build, signing and versioning;
     - upstream syncs.
   - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
-  - **Who verifies:** a separate agent run with a fresh context, usually Sonnet. It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
+  - **Who verifies:** a separate agent run with a fresh context, preferably a different model from the implementer: usually Sonnet for Gemini's work, and Gemini or Haiku for Sonnet's work. It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
   - **What the verifier does:**
     - compares the diff with every requirement in the issue;
     - checks that the tests cover the requirements and the failure and guard cases;
@@ -78,7 +84,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
     - for capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
   - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
-  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on different models (Sonnet and Haiku). Both must pass.
+  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on two different models from Sonnet, Haiku and Gemini, chosen so that at least one differs from the implementer. Both must pass.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
 - Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
