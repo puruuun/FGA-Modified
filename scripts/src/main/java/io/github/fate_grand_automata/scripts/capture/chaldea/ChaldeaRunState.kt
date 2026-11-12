@@ -9,7 +9,7 @@ enum class ChaldeaRunState { NotRunning, Visible, Background, Unknown }
 class ChaldeaActivityScan(
     /** A `topResumedActivity` / `ResumedActivity` line names the package. */
     val topResumed: Boolean,
-    /** One entry per task line of the package: its `visible=` value, or null when the line has none. */
+    /** One entry per task record (`* Task{...}`) of the package: its `visible=` value, or null when the record has none. */
     val taskVisible: List<Boolean?>,
     /** The dump had a recognisable shape (at least one task or activity record line anywhere). */
     val recognised: Boolean,
@@ -30,6 +30,7 @@ object ChaldeaStateParser {
     private fun pkgRegex(pkg: String) = Regex("""(?<![\w.])""" + Regex.escape(pkg) + """(?![\w.])""")
     private val visibleRegex = Regex("""(?<![\w])visible=(true|false)""")
     private val isVisibleRegex = Regex("""(?<![\w])isVisible=(true|false)""")
+    private val taskRecord = Regex("""^\s*\* Task\{""")
     private val windowHeader = Regex("""^\s*Window #\d+ Window\{""")
 
     fun scanActivities(lines: Sequence<String>, pkg: String): ChaldeaActivityScan {
@@ -42,7 +43,9 @@ object ChaldeaStateParser {
             if (!line.contains(pkg)) continue
             if (!re.containsMatchIn(line)) continue
             if (line.contains("ResumedActivity") && line.contains("ActivityRecord{")) top = true
-            if (line.contains("Task{")) {
+            // Only task records count. Reference lines (`task=Task{..}`, `(fullscreen) Task{..}`) carry no
+            // `visible=` field and are ignored; a record without `visible=` still gives null (Unknown).
+            if (taskRecord.containsMatchIn(line)) {
                 tasks += visibleRegex.find(line)?.groupValues?.get(1)?.toBooleanStrict()
             }
         }

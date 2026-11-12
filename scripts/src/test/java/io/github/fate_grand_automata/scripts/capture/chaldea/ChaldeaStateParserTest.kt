@@ -21,6 +21,9 @@ class ChaldeaStateParserTest {
         val v = chaldeaVisible?.let { "visible=$it visibleRequested=$it " } ?: ""
         appendLine("  * Task{bb22 #9 type=standard A=10061:$who U=0 ${v}mode=$mode translucent=false sz=1}")
         appendLine("    mActivityComponent=$who/.MainActivity")
+        // Real dumps also reference the task without a visible= field; these must not count as records.
+        appendLine("      rootOfTask=true task=Task{bb22 #9 type=standard A=10061:$who}")
+        appendLine("        (fullscreen) Task{bb22 #9 type=standard A=10061:$who}")
         if (extra.isNotEmpty()) appendLine(extra)
     }
 
@@ -108,6 +111,103 @@ class ChaldeaStateParserTest {
 
     @Test fun pidofNonZeroWithPidIsUnknown() {
         assertEquals(ChaldeaRunState.Unknown, parse(activity("x.y", "false", "fullscreen"), window("false"), exit = 3))
+    }
+
+    // ---- real MuMu dump (Android 15), trimmed; indentation as in the dump ----
+
+    private val mumuActivities = """
+        |ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+        |Display #0 (activities from top to bottom):
+        |  * Task{92bade7 #80 type=standard A=10062:io.github.fate_grand_automata.beta U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+        |    topResumedActivity=ActivityRecord{21319590 u0 io.github.fate_grand_automata.beta/io.github.fate_grand_automata.ui.main.MainActivity t80}
+        |      rootOfTask=true task=Task{92bade7 #80 type=standard A=10062:io.github.fate_grand_automata.beta}
+        |
+        |  * Task{38f8115 #84 type=standard A=10060:com.netmarble.fgok nonResizable U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        |      rootOfTask=true task=Task{38f8115 #84 type=standard A=10060:com.netmarble.fgok nonResizable}
+        |
+        |  * Task{d6486dc #83 type=standard I=cc.narumi.chaldea/.MainActivity U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        |    mLastPausedActivity: ActivityRecord{166252367 u0 cc.narumi.chaldea/.MainActivity t83}
+        |    * Hist  #0: ActivityRecord{166252367 u0 cc.narumi.chaldea/.MainActivity t83}
+        |      packageName=cc.narumi.chaldea processName=cc.narumi.chaldea
+        |      rootOfTask=true task=Task{d6486dc #83 type=standard I=cc.narumi.chaldea/.MainActivity}
+        |      mActivityComponent=cc.narumi.chaldea/.MainActivity
+        |
+        |  * Task{e426fa3 #1 type=home U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        |    * Task{18d10e8 #2 type=home I=app.lawnchair/.LawnchairLauncher U=0 rootTaskId=1 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        |        rootOfTask=true task=Task{18d10e8 #2 type=home I=app.lawnchair/.LawnchairLauncher}
+        |  Resumed activities in task display areas (from top to bottom):
+        |    Resumed: ActivityRecord{21319590 u0 io.github.fate_grand_automata.beta/io.github.fate_grand_automata.ui.main.MainActivity t80}
+        |
+        |  ResumedActivity: ActivityRecord{21319590 u0 io.github.fate_grand_automata.beta/io.github.fate_grand_automata.ui.main.MainActivity t80}
+        |
+        |ActivityTaskSupervisor state:
+        |  topDisplayFocusedRootTask=Task{92bade7 #80 type=standard A=10062:io.github.fate_grand_automata.beta}
+        |      * Task{92bade7 #80 type=standard A=10062:io.github.fate_grand_automata.beta U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+        |      * Task{d6486dc #83 type=standard I=cc.narumi.chaldea/.MainActivity U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        |        (fullscreen) Task{92bade7 #80 type=standard A=10062:io.github.fate_grand_automata.beta}
+        |        (fullscreen) Task{d6486dc #83 type=standard I=cc.narumi.chaldea/.MainActivity}
+        |        (fullscreen) Task{38f8115 #84 type=standard A=10060:com.netmarble.fgok nonResizable}
+    """.trimMargin() + "\n"
+
+    private val mumuWindows = """
+        |WINDOW MANAGER WINDOWS (dumpsys window windows)
+        |  Window #6 Window{923c3ec u0 io.github.fate_grand_automata.beta/io.github.fate_grand_automata.ui.main.MainActivity}:
+        |    mDisplayId=0 taskId=80
+        |    isVisible=true
+        |  Window #7 Window{a9e73a8 u0 com.netmarble.fgok/com.netmarble.fgok.lgoUnityActivity}:
+        |    mDisplayId=0 taskId=84
+        |    isVisible=false
+        |  Window #8 Window{9ea6f9c u0 cc.narumi.chaldea/cc.narumi.chaldea.MainActivity}:
+        |    mDisplayId=0 taskId=83 mSession=Session{409fc70 18110:u0a10061}
+        |    isOnScreen=false
+        |    isVisible=false
+        |  Window #9 Window{d5e9673 u0 app.lawnchair/app.lawnchair.LawnchairLauncher}:
+        |    mDisplayId=0 taskId=2
+        |    isVisible=false
+    """.trimMargin() + "\n"
+
+    private val mumuPid = "18110\n"
+    private val chaldeaTaskHeader = "I=cc.narumi.chaldea/.MainActivity U=0 visible=false visibleRequested=false"
+
+    @Test fun mumuBackgroundWithReferenceLinesIsBackground() =
+        assertEquals(ChaldeaRunState.Background, parse(mumuActivities, mumuWindows, pid = mumuPid))
+
+    @Test fun mumuChaldeaTopResumedIsVisible() {
+        val a = mumuActivities.replace(
+            "topResumedActivity=ActivityRecord{21319590 u0 io.github.fate_grand_automata.beta/io.github.fate_grand_automata.ui.main.MainActivity t80}",
+            "topResumedActivity=ActivityRecord{166252367 u0 cc.narumi.chaldea/.MainActivity t83}",
+        )
+        assertEquals(ChaldeaRunState.Visible, parse(a, mumuWindows, pid = mumuPid))
+    }
+
+    @Test fun mumuChaldeaTaskVisibleTrueIsVisible() {
+        val a = mumuActivities.replace(chaldeaTaskHeader, "I=cc.narumi.chaldea/.MainActivity U=0 visible=true visibleRequested=true")
+        assertEquals(ChaldeaRunState.Visible, parse(a, mumuWindows, pid = mumuPid))
+    }
+
+    @Test fun mumuTaskRecordWithoutVisibleIsUnknown() {
+        val a = mumuActivities.replace(chaldeaTaskHeader, "I=cc.narumi.chaldea/.MainActivity U=0")
+        assertEquals(ChaldeaRunState.Unknown, parse(a, mumuWindows, pid = mumuPid))
+    }
+
+    @Test fun onlyReferenceLinesAndNoRecordIsUnknown() {
+        val a = mumuActivities.lines()
+            .filterNot { it.contains("d6486dc") && it.trimStart().startsWith("* Task{") }
+            .joinToString("\n")
+        assertEquals(ChaldeaRunState.Unknown, parse(a, mumuWindows, pid = mumuPid))
+    }
+
+    @Test fun nestedAndSplitScreenRecordsCount() {
+        val a = """
+            |ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+            |  * Task{ca05488 #3 type=undefined U=0 visible=true visibleRequested=true mode=fullscreen translucent=true sz=2}
+            |    * Task{8d32ca0 #5 type=standard I=cc.narumi.chaldea/.MainActivity U=0 rootTaskId=3 visible=true visibleRequested=true mode=multi-window sz=1}
+            |        rootOfTask=true task=Task{8d32ca0 #5 type=standard I=cc.narumi.chaldea/.MainActivity}
+            |        (multi-window) Task{8d32ca0 #5 type=standard I=cc.narumi.chaldea/.MainActivity}
+        """.trimMargin() + "\n"
+        assertEquals(ChaldeaRunState.Visible, parse(a, mumuWindows, pid = mumuPid))
+        // Same nested record, not visible: Background.
+        assertEquals(ChaldeaRunState.Background, parse(a.replace("visible=true visibleRequested=true mode=multi-window", "visible=false visibleRequested=false mode=multi-window").replace("ca05488 #3 type=undefined U=0 visible=true visibleRequested=true", "ca05488 #3 type=undefined U=0 visible=false visibleRequested=false"), mumuWindows, pid = mumuPid))
     }
 
     // ---- poll after forceStop ----
