@@ -269,7 +269,28 @@ Chaldea의 수동 가져오기가 서번트에 대해 하는 일(동작 요약, 
 - 기존 파일에 내용만 덮어써 소유자·권한을 유지한다. 사용자 `id`(UUID), 다른 사용자, 계획, 모르는 칸은 그대로 둔다.
 - Chaldea "외부 저장소 사용" 설정이면 경로가 달라진다. 기본 경로에 파일이 없으면 쓰지 않는다.
 
-### 11.8 남은 확인
-- 실제 Shizuku UserService로 읽기·쓰기(시험 빌드, 기기에서 권한 허용 필요).
+### 11.8 Shizuku 시험 빌드 (MuMu Android 15, 2026-11-12)
+- 브랜치 `spike/shizuku-userservice`, 커밋 `465ccec3`. 병합하지 않는다. debug 빌드(`io.github.fate_grand_automata.test`)에만 Shizuku 13.1.5, `ShizukuProvider`, UserService, 시험 화면을 넣었다. 구현: Gemini 3.8 Flash high(Codex 사용량 한도).
+- Shizuku 13.6.0을 adb로 shell 권한으로 켰다(`libshizuku.so`). 첫 권한 요청에서는 결과가 오지 않았고, 다시 요청해 소유자가 허용한 뒤 허용됐다.
+- 시험 전 `userdata.json`과 `.bak`을 PC에 백업했다(SHA-256 앞자리 `da0b6a9e`, 831,894바이트).
+
+| 확인 | 결과 |
+|---|---|
+| UserService 실행 | uid 2000(shell)으로 실행됨. 연결 해제 시 `destroy()`로 프로세스가 끝남 |
+| Chaldea 꺼짐 판별 | `running=false` |
+| Chaldea 뒤에 있음 판별 | `running=true`, 맨 위 아님, 작업 `visible=false` (§11.3.1 규칙과 같음) |
+| 파일 읽기 | 두 파일 모두 크기·해시가 PC 백업과 같음. 소유자 uid 10061(`u0_a61`), gid 1078(`ext_data_rw`), 권한 0660. `version` 4, 사용자 1명(region `jp`) |
+| 바인더 전달 | `ParcelFileDescriptor` 파이프로 831,894바이트 전체, 500KB 조각 읽기도 성공 |
+| 같은 내용 다시 쓰기 | Chaldea가 꺼진 상태에서 본 파일과 `.bak`을 제자리에 다시 씀. 해시·크기·소유자·그룹·권한이 그대로, 수정 시각만 바뀜 |
+| 쓴 뒤 Chaldea 실행 | 정상으로 열림. 시작 직후 저장 후에도 해시가 같고 `.back` 손상 파일이 생기지 않음 |
+| 강제 종료 | 확인 창을 거쳐 `am force-stop` 성공, 프로세스 없어짐 |
+
+- 결론: Shizuku(shell)로 Chaldea 파일 읽기·제자리 쓰기·상태 판별·강제 종료가 모두 된다. 내용을 바꾼 쓰기는 이번 시험에서 하지 않았다(바뀐 값의 반영은 §6에서 adb로 확인).
+- 시험 후 MuMu에는 Shizuku 서버와 시험 앱이 남아 있다. Chaldea 데이터는 시험 전과 같다.
+
+### 11.9 남은 확인
+- 태블릿(Android 16)에서 Shizuku로 같은 시험. 태블릿에는 Shizuku가 설치돼 있지 않다.
+- 첫 권한 요청에서 결과가 오지 않은 원인(MuMu에서 한 번 발생). 실제 기능은 권한 결과를 다시 확인하는 흐름이 필요하다.
+- UserService 프로세스가 떠 있는 동안의 메모리.
 - KR 사용자에게 쓴 값의 반영.
 - 단계별 변환 결과를 같은 데이터의 Chaldea 수동 가져오기 결과와 칸별 비교.
