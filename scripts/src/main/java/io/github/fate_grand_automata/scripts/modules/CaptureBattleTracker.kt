@@ -12,7 +12,7 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/** One decision per script and one response wait per battle, shared by materials and bond. */
+/** One decision per script and one response wait per battle for bond. */
 @ScriptScope
 class CaptureBattleTracker @Inject constructor(
     api: IFgoAutomataApi,

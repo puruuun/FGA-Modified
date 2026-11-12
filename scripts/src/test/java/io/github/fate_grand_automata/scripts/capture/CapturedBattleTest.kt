@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.scripts.capture
 
-import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -66,13 +65,6 @@ class CapturedBattleTest {
         val unknown = CapturedBattle.parse(body("""{"myDeck":{"svts":[{"id":901}]}}"""), null)!!.bond!!.single()
         assertNull(unknown.svtId) // Battle-local id must never become a public servant id.
         assertNull(unknown.cap); assertNull(unknown.gained)
-    }
-
-    @Test fun `all materials have distinct public item ids`() {
-        assertEquals(MaterialEnum.entries.toSet(), MaterialItemIds.ids.keys)
-        assertEquals(MaterialEnum.entries.size, MaterialItemIds.ids.values.toSet().size)
-        assertEquals(6516L, MaterialItemIds.ids[MaterialEnum.Bone])
-        assertEquals(6207L, MaterialItemIds.ids[MaterialEnum.SkillGoldBerserker])
     }
 
     @Test fun `cap and ten plus rank ups stop only watched result slots`() {

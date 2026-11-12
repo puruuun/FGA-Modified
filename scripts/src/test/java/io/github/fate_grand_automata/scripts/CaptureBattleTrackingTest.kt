@@ -8,6 +8,8 @@ import io.github.fate_grand_automata.scripts.models.BondValue
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.modules.*
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
+import io.github.lib_automata.Match
+import io.github.lib_automata.Pattern
 import io.mockk.*
 import kotlin.test.*
 import kotlin.time.Duration
@@ -52,7 +54,7 @@ class CaptureBattleTrackingTest {
             every { api.prefs.selectedServerConfigPref.limitMats } answers { limit }
             every { api.prefs.selectedServerConfigPref.limitMats = any() } answers { limit = firstArg() }
             capture = CaptureBattleTracker(api, state, config, feed)
-            materials = MaterialsTracker(api, config, state, capture)
+            materials = MaterialsTracker(api, config, state)
             bonds = BondTracker(api, reader, state, config, capture = capture)
         }
         fun stop(action: () -> Unit) = assertFailsWith<AutoBattle.BattleExitException>(block = action).reason
@@ -102,35 +104,58 @@ class CaptureBattleTrackingTest {
         }
     }
 
-    @Test fun `captured materials skip templates sum only selected items and avoid duplicate drop screens`() {
-        checkCapturedMaterials(GameServer.Kr)
+    @Test fun `with capture enabled and captured drops material count comes from screen match`() {
+        checkScreenMaterialsWithCapture(GameServer.Kr)
     }
 
-    @Test fun `official JP uses captured drops without template matching`() {
-        checkCapturedMaterials(GameServer.Jp.Original)
+    @Test fun `official JP with capture enabled reads materials from screen match`() {
+        checkScreenMaterialsWithCapture(GameServer.Jp.Original)
     }
 
-    private fun checkCapturedMaterials(server: GameServer) {
+    private fun checkScreenMaterialsWithCapture(server: GameServer) {
         val f = Fixture(server); f.capture.start()
-        f.materials.parseMaterials(); f.materials.parseMaterials()
-        assertEquals(mapOf(MaterialEnum.Bone to 3, MaterialEnum.Proof to 2), f.materials.farmed)
-        verify(exactly = 0) { f.api.images.loadMaterial(any()) }
-        assertEquals(listOf(7L), f.feed.tokens)
-        f.feed.sequence = 8; f.capture.beginBattle()
+        assertTrue(f.capture.enabled)
+        assertNotNull(f.feed.response?.drops)
+
+        val bonePattern = mockk<Pattern>()
+        val proofPattern = mockk<Pattern>()
+        val match = Match(mockk(), 0.95)
+        every { f.api.images.loadMaterial(MaterialEnum.Bone) } returns bonePattern
+        every { f.api.images.loadMaterial(MaterialEnum.Proof) } returns proofPattern
+        every { with(f.api) { f.api.locations.scriptArea.findAll(bonePattern, any()) } } returns listOf(match)
+        every { with(f.api) { f.api.locations.scriptArea.findAll(proofPattern, any()) } } returns emptyList()
+
         f.materials.parseMaterials()
-        assertEquals(6, f.materials.farmed[MaterialEnum.Bone])
-        assertEquals(listOf(7L, 8L), f.feed.tokens)
+        // Screen match found 1 Bone and 0 Proofs. Captured drops (3 Bones, 2 Proofs) are ignored.
+        assertEquals(mapOf(MaterialEnum.Bone to 1), f.materials.farmed)
+        verify(exactly = 2) { f.api.images.loadMaterial(any()) }
+        assertTrue(f.feed.tokens.isEmpty())
     }
 
-    @Test fun `capture material limit counts cleared run and auto decrement consumes the same count`() {
-        val f = Fixture(); f.limiting = true; f.limit = 5; f.capture.start()
+    @Test fun `with capture enabled and no captured result material limit still reads screen and stops script`() {
+        val f = Fixture(); f.limiting = true; f.limit = 2; f.feed.response = null; f.capture.start()
+        assertTrue(f.capture.enabled)
+
+        val bonePattern = mockk<Pattern>()
+        val proofPattern = mockk<Pattern>()
+        val match = Match(mockk(), 0.95)
+        every { f.api.images.loadMaterial(MaterialEnum.Bone) } returns bonePattern
+        every { f.api.images.loadMaterial(MaterialEnum.Proof) } returns proofPattern
+        every { with(f.api) { f.api.locations.scriptArea.findAll(bonePattern, any()) } } returns listOf(match, match)
+        every { with(f.api) { f.api.locations.scriptArea.findAll(proofPattern, any()) } } returns emptyList()
+
         val reason = f.stop { f.materials.parseMaterials() } as AutoBattle.ExitReason.LimitMaterials
-        assertEquals(5, reason.count); assertEquals(1, f.state.runs)
+        assertEquals(2, reason.count); assertEquals(1, f.state.runs)
         f.materials.autoDecrement()
         assertEquals(1, f.limit); assertFalse(f.limiting)
-        val remaining = Fixture(); remaining.limiting = true; remaining.capture.start()
+        assertTrue(f.feed.tokens.isEmpty())
+
+        val remaining = Fixture(); remaining.limiting = true; remaining.feed.response = null; remaining.capture.start()
+        every { remaining.api.images.loadMaterial(MaterialEnum.Bone) } returns bonePattern
+        every { remaining.api.images.loadMaterial(MaterialEnum.Proof) } returns proofPattern
+        every { with(remaining.api) { remaining.api.locations.scriptArea.findAll(any(), any()) } } returns emptyList()
         remaining.materials.parseMaterials(); remaining.materials.autoDecrement()
-        assertEquals(5, remaining.limit); assertTrue(remaining.limiting)
+        assertEquals(10, remaining.limit); assertTrue(remaining.limiting)
     }
 
     @Test fun `outside capture mode materials still use template matching`() {
@@ -208,23 +233,24 @@ class CaptureBattleTrackingTest {
         verify { f.reader wasNot Called }
     }
 
-    @Test fun `ignored captured MAX continues and result checks share one wait with materials`() {
+    @Test fun `ignored captured MAX continues and single wait is reached from bond path`() {
         val f = Fixture()
         every { f.config.stopOnBondMax } returns true
         every { f.config.bondMaxIgnoredCharacters } returns setOf(2)
         f.feed.response = CapturedBattle(emptyMap(), listOf(CapturedBond(2, 901, 12, 12, 12, 0)))
         f.capture.start(); f.bonds.finishResult(); f.bonds.finishResult(); f.materials.parseMaterials()
         assertEquals(0, f.state.runs); assertEquals(listOf(7L), f.feed.tokens)
+        verify(exactly = 2) { f.api.images.loadMaterial(any()) }
     }
 
-    @Test fun `missing response never stops with or without stop conditions and does not fall back to OCR`() {
-        for ((material, bond) in listOf(false to false, true to false, false to true, true to true)) {
-            val f = Fixture(); f.limiting = material
+    @Test fun `missing response never stops bond and does not fall back to bond OCR`() {
+        for (bond in listOf(false, true)) {
+            val f = Fixture()
             every { f.config.stopOnBondMax } returns bond
             f.feed.response = null; f.capture.start()
             f.bonds.finishResult(); f.materials.parseMaterials(); f.bonds.finishResult()
             assertEquals(0, f.state.runs); assertTrue(f.materials.farmed.isEmpty())
-            verify(exactly = 0) { f.api.images.loadMaterial(any()) }
+            verify(atLeast = 2) { f.api.images.loadMaterial(any()) }
             verify { f.reader wasNot Called }
             assertEquals(listOf(7L), f.feed.tokens)
         }
