@@ -34,7 +34,11 @@ class JpNamesTest {
             "userEquip" to """[{"equipId":1,"lv":10}]""",
         )
         val urls = mutableListOf<String>()
-        val download: (String) -> String = { urls += it; JpNamesFixture.download(it) }
+        val download: (String) -> String = {
+            if (it == AtlasVersions.INFO_URL) error("offline")
+            urls += it
+            JpNamesFixture.download(it)
+        }
         val cache = GameNames(directory, download) { 1000 }
         val kr = cache.dashboard(listOf(krState), hasJpAccount("KR"))
         assertEquals(cache.dashboard(listOf(krState)), kr)
@@ -187,7 +191,11 @@ class JpNamesTest {
     @Test fun jpCachesRefreshAfterSevenDaysAndPersistAcrossInstances() = runBlocking {
         var time = 1000L
         val urls = mutableListOf<String>()
-        val download: (String) -> String = { urls += it; JpNamesFixture.download(it) }
+        val download: (String) -> String = {
+            if (it == AtlasVersions.INFO_URL) error("offline")
+            urls += it
+            JpNamesFixture.download(it)
+        }
         val first = GameNames(directory, download) { time }.dashboard(hasJpAccount = true)
         time += 7 * day - 1
         urls.clear()

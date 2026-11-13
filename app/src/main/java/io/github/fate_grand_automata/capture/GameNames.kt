@@ -115,6 +115,7 @@ class GameNames(
     }
 
     private val jpFallback = JpItemFallback(directory, download, now)
+    private val versions = AtlasVersions(directory, download, now)
 
     // Keep this cache KR-only, so JP results cannot suppress the existing KR refresh attempts.
     private fun resolveKr(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(),
@@ -129,10 +130,11 @@ class GameNames(
         if (!File(directory, "item_icons.json").isFile) {
             runCatching {
                 if (!canAttempt("item_icons")) return@runCatching
+                val regionHash = versions.current()?.get("KR")
                 val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
                 check(parseNames(body).isNotEmpty())
                 icons = saveIcons(body)
-                saveMetadata("nice_item", parseBasic(body))
+                saveMetadata("nice_item", parseBasic(body), regionHash)
             }
         } else if (icons.isEmpty()) {
             icons = read("item_icons")
@@ -164,7 +166,8 @@ class GameNames(
         return withContext(Dispatchers.IO) { mutex.withLock {
             val names = resolveKr(emptyList())
             val mysticFile = File(directory, "basic_mystic_code.json")
-            if (!hasMysticNames || !mysticFile.isFile) {
+            val krHash = versions.current()?.get("KR")
+            if (!hasMysticNames || !mysticFile.isFile || (krHash != null && readHash("basic_mystic_code") != krHash)) {
                 hasMysticNames = refresh("basic_mystic_code", read("basic_mystic_code"), emptyList()).isNotEmpty()
             }
             fun ids(table: String, field: String) = states.flatMap { it.rows(table).orEmpty() }
@@ -232,27 +235,39 @@ class GameNames(
     private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
         val cache = if (server == "JP") "jp_$list" else list
         val cached = cachedMetadata(list, server)
-        // Card exports refresh by age, including when an unknown id is absent from Atlas.
-        val current = if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
+        val regionHash = versions.current()?.get(server)
+        val current = if (regionHash != null) {
+            cached.isNotEmpty() && readHash(cache) == regionHash
+        } else {
+            // Card exports refresh by age, including when an unknown id is absent from Atlas.
+            if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
+        }
         if (cached.isNotEmpty() && current) return cached
+        val cooldownMs = if (regionHash != null) HOUR_MS else DAY_MS
         return runCatching {
-            if (!canAttempt("${cache}_details")) return cached
+            if (!canAttempt("${cache}_details", cooldownMs)) return cached
             val body = download("https://api.atlasacademy.io/export/$server/$list.json")
             val parsed = parseBasic(body)
             check(parsed.isNotEmpty())
-            saveMetadata(cache, parsed)
+            saveMetadata(cache, parsed, regionHash)
         }.getOrDefault(cached)
     }
 
-    private fun saveMetadata(list: String, rows: List<AtlasBasic>): Map<Long, AtlasBasic> {
+    private fun saveMetadata(list: String, rows: List<AtlasBasic>, regionHash: String?): Map<Long, AtlasBasic> {
         val file = File(directory, "${list}_details.json")
         writeCaptureFile(file, Json.encodeToString(rows))
+        val hashFile = File(directory, "${list}_details.hash")
+        if (regionHash != null) writeCaptureFile(hashFile, regionHash) else hashFile.delete()
         File(directory, "${list}_details.attempt").writeText(now().toString())
         File(directory, "${list}_details.fetched").writeText(now().toString())
         val map = rows.associateBy { it.id }
         metadataCache[list] = CachedMetadata(file.lastModified(), file.length(), map)
         return map
     }
+
+    private fun readHash(cache: String): String? = runCatching {
+        File(directory, "${cache}_details.hash").readText().trim().takeIf { it.isNotEmpty() }
+    }.getOrNull()
 
     private fun isStale(list: String): Boolean {
         val fetched = runCatching { File(directory, "${list}_details.fetched").readText().toLong() }.getOrNull() ?: return true
@@ -265,10 +280,10 @@ class GameNames(
         }.toMap()
     }.getOrDefault(emptyMap())
 
-    private fun canAttempt(list: String): Boolean {
+    private fun canAttempt(list: String, cooldownMs: Long = DAY_MS): Boolean {
         val attempt = File(directory, "$list.attempt")
         val last = runCatching { attempt.readText().toLong() }.getOrNull()
-        if (last != null && now() - last < DAY_MS) return false
+        if (last != null && now() - last < cooldownMs) return false
         directory.mkdirs()
         attempt.writeText(now().toString())
         return true
@@ -282,9 +297,16 @@ class GameNames(
     }
 
     private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, onIcons: (Map<Long, String>) -> Unit = {}): Map<Long, String> {
-        if (cache.isNotEmpty() && ids.all { it in cache }) return cache
+        val regionHash = versions.current()?.get("KR")
+        val current = if (regionHash != null) {
+            File(directory, "$list.json").isFile && cache.isNotEmpty() && readHash(list) == regionHash
+        } else {
+            cache.isNotEmpty() && ids.all { it in cache }
+        }
+        if (current) return cache
+        val cooldownMs = if (regionHash != null) HOUR_MS else DAY_MS
         return runCatching {
-            if (!canAttempt(list)) return cache
+            if (!canAttempt(list, cooldownMs)) return cache
             File(directory, "${list}_details.attempt").writeText(now().toString())
             // A names fetch also satisfies the icon attempt, even if that fetch fails.
             if (list == "nice_item") {
@@ -295,7 +317,7 @@ class GameNames(
             val names = basic.mapNotNull { row -> row.name?.takeIf { it.isNotBlank() }?.let { row.id to it } }.toMap()
             check(names.isNotEmpty())
             if (list == "nice_item") onIcons(saveIcons(body))
-            saveMetadata(list, basic)
+            saveMetadata(list, basic, regionHash)
             val target = File(directory, "$list.json")
             val tmp = File(directory, "$list.tmp")
             tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
@@ -305,6 +327,7 @@ class GameNames(
     }
 
     companion object {
+        private const val HOUR_MS = 3_600_000L
         private const val DAY_MS = 86_400_000L
         private const val METADATA_MAX_AGE_MS = 7 * DAY_MS
 

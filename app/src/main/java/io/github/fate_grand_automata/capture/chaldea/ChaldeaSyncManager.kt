@@ -71,6 +71,7 @@ internal interface ChaldeaSyncHooks {
 
 object ChaldeaSyncManager {
     private const val PERMISSION_REQUEST_CODE = 3551
+    private const val COLLECTION_REFRESH_INTERVAL_MS = 3_600_000L
 
     @Volatile private var scheduler: ChaldeaSyncScheduler? = null
 
@@ -93,13 +94,16 @@ object ChaldeaSyncManager {
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
     private var resultsJob: Job? = null
-    private var collectionJobStarted = false
+    private var collectionJobRunning = false
+    private var lastCollectionFinishedAt: Long? = null
+    private var collectionGen = 0
     private var collectionDownloadDeferred = false
     @Volatile internal var collectionJob: Job? = null
     @Volatile internal var applyCount: Int = 0
     internal val isCollectionDownloadDeferred: Boolean get() = synchronized(lock) { collectionDownloadDeferred }
     @Volatile private var scriptRunningNow = false
     @Volatile private var cachedGameNames: GameNames? = null
+    internal var collectionClock: () -> Long = SystemClock::elapsedRealtime
     internal var gameNamesFactory: (Application) -> GameNames = { GameNames(File(it.filesDir, "capture/names")) }
     internal var accountSourceFactory: ((Application) -> ChaldeaAccountSource)? = null
     internal var onSettingsChangedForTest: (() -> Unit)? = null
@@ -211,13 +215,16 @@ object ChaldeaSyncManager {
         probeRunner = defaultProbeRunner
         synchronized(lock) {
             permission.disarm()
-            collectionJobStarted = false
+            collectionJobRunning = false
+            lastCollectionFinishedAt = null
+            collectionGen++
             collectionDownloadDeferred = false
         }
         scriptRunningNow = false
         collectionJob = null
         applyCount = 0
         cachedGameNames = null
+        collectionClock = SystemClock::elapsedRealtime
         gameNamesFactory = { GameNames(File(it.filesDir, "capture/names")) }
         accountSourceFactory = null
         onSettingsChangedForTest = null
@@ -317,23 +324,29 @@ object ChaldeaSyncManager {
         }
 
     private fun startCollectionDownload(application: Application, fromScriptEnd: Boolean = false) {
-        val shouldLaunch = synchronized(lock) {
-            if (collectionJobStarted || !enabledNow) {
-                false
-            } else if (!fromScriptEnd && (scriptRunningNow || _scriptRunning.value)) {
-                collectionDownloadDeferred = true
-                false
-            } else {
-                collectionJobStarted = true
-                collectionDownloadDeferred = false
-                true
+        val (shouldLaunch, gen) = synchronized(lock) {
+            val lastFinished = lastCollectionFinishedAt
+            val tooSoon = lastFinished != null && collectionClock() - lastFinished in 0 until COLLECTION_REFRESH_INTERVAL_MS
+            when {
+                collectionJobRunning || !enabledNow || tooSoon -> false to collectionGen
+                !fromScriptEnd && (scriptRunningNow || _scriptRunning.value) -> {
+                    collectionDownloadDeferred = true
+                    false to collectionGen
+                }
+                else -> {
+                    collectionJobRunning = true
+                    collectionDownloadDeferred = false
+                    true to collectionGen
+                }
             }
         }
         if (!shouldLaunch) return
         collectionJob = probeScope.launch(Dispatchers.IO) {
             val deferredAgain = synchronized(lock) {
-                if (scriptRunningNow) {
-                    collectionJobStarted = false
+                if (gen != collectionGen) {
+                    true
+                } else if (scriptRunningNow) {
+                    collectionJobRunning = false
                     collectionDownloadDeferred = true
                     true
                 } else {
@@ -341,10 +354,19 @@ object ChaldeaSyncManager {
                 }
             }
             if (deferredAgain) return@launch
-            val updated = captureSafely("chaldeaCollectionLists", false) {
-                gameNamesFor(application).ensureChaldeaCollectionLists()
+            try {
+                val updated = captureSafely("chaldeaCollectionLists", false) {
+                    gameNamesFor(application).ensureChaldeaCollectionLists()
+                }
+                if (updated && enabledNow && synchronized(lock) { gen == collectionGen }) notifySettingsChanged()
+            } finally {
+                synchronized(lock) {
+                    if (gen == collectionGen) {
+                        collectionJobRunning = false
+                        lastCollectionFinishedAt = collectionClock()
+                    }
+                }
             }
-            if (updated && enabledNow) notifySettingsChanged()
         }
     }
 
@@ -510,6 +532,10 @@ object ChaldeaSyncManager {
 
     fun onAccountsSaved(ids: Collection<String>) {
         hooks?.onAccountsSaved(ids)
+        if (ids.isNotEmpty()) {
+            val application = synchronized(lock) { app }
+            if (application != null) startCollectionDownload(application)
+        }
     }
 
     fun onAccountDeleted(id: String?) {

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.GainedItem
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaCollectionNumbers
@@ -11,10 +12,12 @@ import kotlin.test.*
 class GameNamesTest {
     @TempDir lateinit var directory: File
     private val run = RunGains(items = listOf(GainedItem(2, 6510, 1), GainedItem(3, 9, 1)), bond = mapOf(10L to 1L))
+    private fun infoJson(kr: String, jp: String) =
+        """{"KR":{"hash":"$kr","timestamp":1},"JP":{"hash":"$jp","timestamp":2}}"""
 
     @Test fun failedDownloadsUseStableFallbacksAndAreThrottledAcrossInstances() = runBlocking {
         var calls = 0
-        val downloader: (String) -> String = { calls++; error("offline") }
+        val downloader: (String) -> String = { url -> if (url != AtlasVersions.INFO_URL) calls++; error("offline") }
         val names = GameNames(directory, downloader) { 1000 }.resolve(listOf(run))
         assertEquals("Item #6510", names.item(6510))
         assertEquals("Servant #10", names.servant(10))
@@ -29,6 +32,7 @@ class GameNamesTest {
     @Test fun downloadsOnlyPublicKrExportsAndStoresOnlyNames() = runBlocking {
         val urls = mutableListOf<String>()
         val names = GameNames(directory, { address ->
+            if (address == AtlasVersions.INFO_URL) error("offline")
             urls += address
             """[{"id":6510,"name":"증거","secret":"not-retained"},{"id":10,"name":"서번트"},{"id":9,"name":"예장"}]"""
         }) { 1000 }.resolve(listOf(run))
@@ -48,7 +52,8 @@ class GameNamesTest {
     @Test fun unknownIdRefreshesAfterOneDayAndFailureKeepsGoodCache() = runBlocking {
         var time = 1000L
         var calls = 0
-        val cache = GameNames(directory, {
+        val cache = GameNames(directory, { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
             calls++
             if (calls > 3) error("offline")
             """[{"id":100,"name":"황금색 과일"}]"""
@@ -65,7 +70,8 @@ class GameNamesTest {
     @Test fun knownIdsDoNotTriggerDailyRefresh() = runBlocking {
         var calls = 0
         var time = 1000L
-        val cache = GameNames(directory, {
+        val cache = GameNames(directory, { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
             calls++
             """[{"id":100,"name":"a"},{"id":101,"name":"b"},{"id":102,"name":"c"},{"id":104,"name":"d"}]"""
         }) { time }
@@ -86,7 +92,11 @@ class GameNamesTest {
         File(directory, "basic_equip.json").writeText("""{"9":"CE"}""")
         val urls = mutableListOf<String>()
         val icon = "https://static.atlasacademy.io/KR/Items/100.png"
-        val names = GameNames(directory, { urls += it; """[{"id":100,"name":"Fruit","icon":"$icon"}]""" }) { 1001 }.resolve(emptyList())
+        val names = GameNames(directory, { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
+            urls += url
+            """[{"id":100,"name":"Fruit","icon":"$icon"}]"""
+        }) { 1001 }.resolve(emptyList())
         assertEquals(listOf("https://api.atlasacademy.io/export/KR/nice_item.json"), urls)
         assertEquals(mapOf(100L to icon), names.itemIcons)
         assertEquals("1000", File(directory, "nice_item.attempt").readText())
@@ -97,7 +107,7 @@ class GameNamesTest {
         File(directory, "nice_item.attempt").writeText("1000")
         listOf("basic_servant", "basic_equip").forEach { File(directory, "$it.json").writeText("""{"1":"cached"}""") }
         var attempts = 0
-        val download: (String) -> String = { attempts++; error("offline") }
+        val download: (String) -> String = { url -> if (url != AtlasVersions.INFO_URL) attempts++; error("offline") }
         GameNames(directory, download) { 1001 }.resolve(emptyList())
         GameNames(directory, download) { 1002 }.resolve(emptyList())
         assertEquals(1, attempts)
@@ -170,6 +180,7 @@ class GameNamesTest {
         val urls = mutableListOf<String>()
         var time = 1000L
         val downloader: (String) -> String = { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
             urls += url
             when {
                 url.endsWith("/KR/basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
@@ -202,5 +213,213 @@ class GameNamesTest {
         urls.clear()
         assertFalse(names.ensureChaldeaCollectionLists())
         assertEquals(emptyList(), urls)
+    }
+
+    @Test fun versionModeSkipsRedownloadWhenJpHashMatchesEvenWithMissingIdAndRefreshesOnHashChange() = runBlocking {
+        var time = 1_000L
+        var jpHash = "jp1"
+        var hasNewServant = false
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", jpHash)
+                url.endsWith("/JP/basic_servant.json") -> if (hasNewServant) {
+                    """[{"id":100100,"name":"古いJP"},{"id":705500,"name":"新しいサーヴァント"}]"""
+                } else {
+                    """[{"id":100100,"name":"古いJP"}]"""
+                }
+                else -> """[{"id":100,"name":"ダミー"}]"""
+            }
+        }
+        val missingRun = listOf(RunGains(bond = mapOf(705500L to 1L)))
+        val first = GameNames(directory, downloader) { time }.resolve(missingRun, hasJpAccount = true)
+        assertEquals("Servant #705500", first.servant(705500))
+        assertEquals("jp1", File(directory, "jp_basic_servant_details.hash").readText())
+
+        // Even 2 days later, as long as JP hash is unchanged, JP list is NOT re-downloaded for missing 705500.
+        urls.clear()
+        time += 2 * 86_400_000L
+        val stillMissing = GameNames(directory, downloader) { time }.resolve(missingRun, hasJpAccount = true)
+        assertEquals("Servant #705500", stillMissing.servant(705500))
+        assertEquals(listOf(AtlasVersions.INFO_URL), urls)
+
+        // Once JP hash changes and 1 hour passes, JP list downloads once and 705500 resolves.
+        urls.clear()
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        jpHash = "jp2"
+        hasNewServant = true
+        val updated = GameNames(directory, downloader) { time }.resolve(missingRun, hasJpAccount = true)
+        assertEquals("新しいサーヴァント", updated.servant(705500))
+        assertEquals("jp2", File(directory, "jp_basic_servant_details.hash").readText())
+        assertTrue(urls.any { it.endsWith("/JP/basic_servant.json") })
+        assertTrue(urls.none { "/KR/" in it })
+    }
+
+    @Test fun versionModeFailedDownloadKeepsOldNamesAndRetriesAfterOneHour() = runBlocking {
+        var time = 1_000L
+        var jpHash = "jp1"
+        var failJpServant = false
+        var newName = false
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", jpHash)
+                url.endsWith("/JP/basic_servant.json") -> {
+                    if (failJpServant) error("offline")
+                    if (newName) """[{"id":100100,"name":"新しいJP"}]""" else """[{"id":100100,"name":"古いJP"}]"""
+                }
+                else -> """[{"id":100,"name":"ダミー"}]"""
+            }
+        }
+        val names1 = GameNames(directory, downloader) { time }.friends(listOf(100100), emptyList(), hasJpAccount = true)
+        assertEquals("古いJP", names1.servant(100100))
+
+        // Hash updates, but list download fails -> keeps old name and hash, throttled for 1 hour.
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        jpHash = "jp2"
+        failJpServant = true
+        urls.clear()
+        val names2 = GameNames(directory, downloader) { time }.friends(listOf(100100), emptyList(), hasJpAccount = true)
+        assertEquals("古いJP", names2.servant(100100))
+        assertEquals("jp1", File(directory, "jp_basic_servant_details.hash").readText())
+        assertEquals(1, urls.count { it.endsWith("/JP/basic_servant.json") })
+
+        // Within 1 hour: not retried.
+        time += AtlasVersions.CHECK_INTERVAL_MS - 1
+        urls.clear()
+        GameNames(directory, downloader) { time }.friends(listOf(100100), emptyList(), hasJpAccount = true)
+        assertTrue(urls.none { it.endsWith("/JP/basic_servant.json") })
+
+        // After 1 hour: retries and updates.
+        time += 1
+        failJpServant = false
+        newName = true
+        urls.clear()
+        val names3 = GameNames(directory, downloader) { time }.friends(listOf(100100), emptyList(), hasJpAccount = true)
+        assertEquals("新しいJP", names3.servant(100100))
+        assertEquals("jp2", File(directory, "jp_basic_servant_details.hash").readText())
+        assertEquals(1, urls.count { it.endsWith("/JP/basic_servant.json") })
+    }
+
+    @Test fun versionModeDoesNotRedownloadKrListForJpOnlyIdWhileKrHashUnchanged() = runBlocking {
+        var time = 1_000L
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", "jp1")
+                url.endsWith("/KR/basic_servant.json") -> """[{"id":10,"name":"한국 서번트"}]"""
+                url.endsWith("/JP/basic_servant.json") -> """[{"id":705500,"name":"JP専用"}]"""
+                else -> """[{"id":100,"name":"품목"}]"""
+            }
+        }
+        val jpRun = listOf(RunGains(bond = mapOf(705500L to 1L)))
+        val first = GameNames(directory, downloader) { time }.resolve(jpRun)
+        assertEquals("JP専用", first.servant(705500))
+
+        urls.clear()
+        time += 86_400_000L
+        GameNames(directory, downloader) { time }.resolve(jpRun)
+        time += 86_400_000L
+        GameNames(directory, downloader) { time }.resolve(jpRun)
+        assertTrue(urls.none { "/KR/" in it }, "KR lists must not re-download when KR hash is unchanged: $urls")
+    }
+
+    @Test fun versionModeDoesNotRedownloadKrNiceItemForMissingIdWhileKrHashUnchanged() = runBlocking {
+        var time = 1_000L
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", "jp1")
+                else -> """[{"id":100,"name":"과일"}]"""
+            }
+        }
+        val names = GameNames(directory, downloader) { time }
+        names.resolve(emptyList())
+        names.dashboard(emptyList())
+
+        urls.clear()
+        time += 86_400_000L
+        val missingRun = listOf(RunGains(items = listOf(GainedItem(2, 999999L, 1))))
+        names.resolve(missingRun)
+        val state = AccountState(mapOf("userItem" to """[{"itemId":999999,"num":1}]"""), "[]", null, 1L, 2L)
+        names.dashboard(listOf(state))
+        assertTrue(urls.none { it.endsWith("/KR/nice_item.json") }, "KR nice_item must not re-download when KR hash is unchanged: $urls")
+    }
+
+    @Test fun versionModeDownloadsOldInstallWithoutHashOnce() = runBlocking {
+        // Pre-populate cache files without any *_details.hash (old install).
+        File(directory, "nice_item.json").writeText("""{"100":"과일"}""")
+        File(directory, "nice_item_details.json").writeText("""[{"id":100,"name":"과일"}]""")
+        File(directory, "item_icons.json").writeText("""{"100":"https://static.atlasacademy.io/KR/Items/100.png"}""")
+        File(directory, "basic_servant.json").writeText("""{"10":"서번트"}""")
+        File(directory, "basic_servant_details.json").writeText("""[{"id":10,"name":"서번트"}]""")
+        File(directory, "basic_equip.json").writeText("""{"9":"예장"}""")
+        File(directory, "basic_equip_details.json").writeText("""[{"id":9,"name":"예장"}]""")
+        listOf("nice_item", "basic_servant", "basic_equip").forEach {
+            File(directory, "${it}_details.fetched").writeText("1000")
+            File(directory, "${it}_details.attempt").writeText("1000")
+        }
+
+        var time = 1_001L
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", "jp1")
+                else -> """[{"id":100,"name":"새 과일"},{"id":10,"name":"새 서번트"},{"id":9,"name":"새 예장"}]"""
+            }
+        }
+        val names = GameNames(directory, downloader) { time }
+        val resolved = names.resolve(listOf(RunGains(items = listOf(GainedItem(2, 100, 1), GainedItem(3, 9, 1)), bond = mapOf(10L to 1L))))
+        assertEquals("새 과일", resolved.item(100))
+        assertEquals(
+            setOf(
+                "https://api.atlasacademy.io/export/KR/nice_item.json",
+                "https://api.atlasacademy.io/export/KR/basic_servant.json",
+                "https://api.atlasacademy.io/export/KR/basic_equip.json",
+            ),
+            urls.filterNot { it == AtlasVersions.INFO_URL }.toSet(),
+        )
+        listOf("nice_item", "basic_servant", "basic_equip").forEach {
+            assertEquals("kr1", File(directory, "${it}_details.hash").readText())
+        }
+
+        // Next call after 1 hour with same hash does not re-download.
+        urls.clear()
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        names.resolve(listOf(RunGains(items = listOf(GainedItem(2, 100, 1), GainedItem(3, 9, 1)), bond = mapOf(10L to 1L))))
+        assertEquals(listOf(AtlasVersions.INFO_URL), urls)
+    }
+
+    @Test fun collectionNumbersNeverRequestsInfoOrLists() {
+        File(directory, "atlas_info.json").writeText("""{"checkedAt":1000,"attemptAt":1000,"kr":"kr1","jp":"jp1"}""")
+        File(directory, "basic_servant_details.json").writeText("""[{"id":100100,"collectionNo":1}]""")
+        val cache = GameNames(directory, { error("must never request network: $it") }) { 100L * 86_400_000L }
+        val numbers = cache.collectionNumbers()
+        assertEquals(mapOf(100100L to 1L), numbers.servants)
+    }
+
+    @Test fun fallbackDownloadClearsStaleHashFile() = runBlocking {
+        var time = 1_000L
+        var online = true
+        val cache = GameNames(directory, { url ->
+            if (url == AtlasVersions.INFO_URL) {
+                if (!online) error("offline") else infoJson("kr1", "jp1")
+            } else {
+                """[{"id":100100,"collectionNo":1}]"""
+            }
+        }) { time }
+        cache.ensureChaldeaCollectionLists()
+        assertEquals("kr1", File(directory, "basic_servant_details.hash").readText())
+
+        // 8 days later, /info is offline -> fallback refreshes and deletes stale hash files.
+        online = false
+        time += 8 * 86_400_000L
+        cache.ensureChaldeaCollectionLists()
+        assertFalse(File(directory, "basic_servant_details.hash").exists())
     }
 }

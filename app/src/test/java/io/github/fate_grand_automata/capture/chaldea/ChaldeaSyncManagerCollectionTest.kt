@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import io.github.fate_grand_automata.capture.AtlasVersions
 import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.prefs.core.PrefMaker
@@ -98,6 +99,7 @@ class ChaldeaSyncManagerCollectionTest {
         val done = CountDownLatch(6)
         ChaldeaSyncManager.gameNamesFactory = {
             GameNames(namesDir, download = { url ->
+                if (url == AtlasVersions.INFO_URL) error("offline")
                 urls += url
                 threads += Thread.currentThread()
                 done.countDown()
@@ -138,6 +140,7 @@ class ChaldeaSyncManagerCollectionTest {
         val done = CountDownLatch(6)
         ChaldeaSyncManager.gameNamesFactory = {
             GameNames(namesDir, download = { url ->
+                if (url == AtlasVersions.INFO_URL) error("offline")
                 urls += url
                 done.countDown()
                 when {
@@ -254,7 +257,8 @@ class ChaldeaSyncManagerCollectionTest {
         val downloadDone = CountDownLatch(6)
         val settingsCalls = AtomicInteger(0)
 
-        val names = GameNames(namesDir, download = { _ ->
+        val names = GameNames(namesDir, download = { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
             downloadDone.countDown()
             """[{"id":9300010,"collectionNo":0}]"""
         }) { 1_000L }
@@ -290,5 +294,183 @@ class ChaldeaSyncManagerCollectionTest {
 
         assertEquals(1, settingsCalls.get())
         assertEquals(1, openCalls.get())
+    }
+
+    @Test
+    fun collectionDownloadRunsAgainAfterOneHourFromAccountSavedHookAndNotBefore() {
+        var nowMs = 1_000L
+        var jpHash = "jp1"
+        var hasNewJpServant = false
+        val urls = CopyOnWriteArrayList<String>()
+        val firstDone = CountDownLatch(6)
+        val secondDone = CountDownLatch(3)
+        val settingsCalls = AtomicInteger(0)
+
+        ChaldeaSyncManager.collectionClock = { nowMs }
+        ChaldeaSyncManager.gameNamesFactory = {
+            GameNames(namesDir, download = { url ->
+                urls += url
+                when {
+                    url == AtlasVersions.INFO_URL ->
+                        """{"KR":{"hash":"kr1","timestamp":1},"JP":{"hash":"$jpHash","timestamp":2}}"""
+                    url.endsWith("/JP/basic_servant.json") -> {
+                        firstDone.countDown()
+                        if (hasNewJpServant) secondDone.countDown()
+                        if (hasNewJpServant) {
+                            """[{"id":200100,"collectionNo":12},{"id":705500,"collectionNo":400}]"""
+                        } else {
+                            """[{"id":200100,"collectionNo":12}]"""
+                        }
+                    }
+                    url.endsWith("basic_equip.json") -> {
+                        firstDone.countDown()
+                        if (hasNewJpServant && "/JP/" in url) secondDone.countDown()
+                        """[{"id":9300010,"collectionNo":11}]"""
+                    }
+                    url.endsWith("basic_command_code.json") -> {
+                        firstDone.countDown()
+                        if (hasNewJpServant && "/JP/" in url) secondDone.countDown()
+                        """[{"id":80001,"collectionNo":1}]"""
+                    }
+                    else -> {
+                        firstDone.countDown()
+                        """[{"id":100100,"collectionNo":1}]"""
+                    }
+                }
+            }) { nowMs }
+        }
+        ChaldeaSyncManager.onSettingsChangedForTest = { settingsCalls.incrementAndGet() }
+
+        ChaldeaSyncManager.init(app, prefsCore)
+        awaitUntil { ChaldeaSyncManager.applyCount >= 1 }
+
+        prefsCore.chaldeaSyncEnabled.set(true)
+        assertTrue(firstDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertEquals(2, settingsCalls.get())
+
+        // Just before 1 hour: onAccountsSaved does not launch another collection download.
+        nowMs += AtlasVersions.CHECK_INTERVAL_MS - 1
+        val firstJob = ChaldeaSyncManager.collectionJob
+        urls.clear()
+        ChaldeaSyncManager.onAccountsSaved(listOf("kr-1"))
+        assertTrue(ChaldeaSyncManager.collectionJob === firstJob)
+        assertTrue(urls.isEmpty())
+
+        // At 1 hour, with updated JP hash and new collection number: runs again and calls notifySettingsChanged.
+        nowMs += 1
+        jpHash = "jp2"
+        hasNewJpServant = true
+        ChaldeaSyncManager.onAccountsSaved(listOf("kr-1"))
+        assertTrue(secondDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertEquals(3, settingsCalls.get())
+        assertTrue(urls.any { it.endsWith("/JP/basic_servant.json") })
+        assertTrue(urls.none { "/KR/" in it })
+    }
+
+    @Test
+    fun accountSavedHookDefersCollectionDownloadDuringScriptUntilScriptEnd() {
+        var nowMs = 1_000L
+        var jpHash = "jp1"
+        val firstDone = CountDownLatch(6)
+        val secondDone = CountDownLatch(3)
+        val urls = CopyOnWriteArrayList<String>()
+
+        ChaldeaSyncManager.collectionClock = { nowMs }
+        ChaldeaSyncManager.gameNamesFactory = {
+            GameNames(namesDir, download = { url ->
+                urls += url
+                when {
+                    url == AtlasVersions.INFO_URL ->
+                        """{"KR":{"hash":"kr1","timestamp":1},"JP":{"hash":"$jpHash","timestamp":2}}"""
+                    url.endsWith("basic_equip.json") -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":9300010,"collectionNo":11}]"""
+                    }
+                    url.endsWith("basic_command_code.json") -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":80001,"collectionNo":1}]"""
+                    }
+                    else -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":100100,"collectionNo":1}]"""
+                    }
+                }
+            }) { nowMs }
+        }
+        ChaldeaSyncManager.init(app, prefsCore)
+        awaitUntil { ChaldeaSyncManager.applyCount >= 1 }
+
+        prefsCore.chaldeaSyncEnabled.set(true)
+        assertTrue(firstDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+
+        nowMs += AtlasVersions.CHECK_INTERVAL_MS
+        jpHash = "jp2"
+        urls.clear()
+        ChaldeaSyncManager.onScriptStart()
+        ChaldeaSyncManager.onAccountsSaved(listOf("kr-1"))
+        assertTrue(ChaldeaSyncManager.isCollectionDownloadDeferred)
+        assertTrue(urls.isEmpty(), "Must not download while a script runs")
+
+        ChaldeaSyncManager.onScriptEnd()
+        assertTrue(secondDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertFalse(ChaldeaSyncManager.isCollectionDownloadDeferred)
+    }
+
+    @Test
+    fun notifySettingsChangedNotCalledWhenSecondRunFindsUnchangedNumbers() {
+        var nowMs = 1_000L
+        var jpHash = "jp1"
+        val firstDone = CountDownLatch(6)
+        val secondDone = CountDownLatch(3)
+        val settingsCalls = AtomicInteger(0)
+
+        ChaldeaSyncManager.collectionClock = { nowMs }
+        ChaldeaSyncManager.gameNamesFactory = {
+            GameNames(namesDir, download = { url ->
+                when {
+                    url == AtlasVersions.INFO_URL ->
+                        """{"KR":{"hash":"kr1","timestamp":1},"JP":{"hash":"$jpHash","timestamp":2}}"""
+                    url.endsWith("basic_equip.json") -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":9300010,"collectionNo":11}]"""
+                    }
+                    url.endsWith("basic_command_code.json") -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":80001,"collectionNo":1}]"""
+                    }
+                    else -> {
+                        firstDone.countDown()
+                        if (jpHash == "jp2" && "/JP/" in url) secondDone.countDown()
+                        """[{"id":100100,"collectionNo":1}]"""
+                    }
+                }
+            }) { nowMs }
+        }
+        ChaldeaSyncManager.onSettingsChangedForTest = { settingsCalls.incrementAndGet() }
+
+        ChaldeaSyncManager.init(app, prefsCore)
+        awaitUntil { ChaldeaSyncManager.applyCount >= 1 }
+
+        prefsCore.chaldeaSyncEnabled.set(true)
+        assertTrue(firstDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertEquals(2, settingsCalls.get())
+
+        // After 1 hour, JP hash changes, but returned lists have identical collection numbers -> no extra notifySettingsChanged.
+        nowMs += AtlasVersions.CHECK_INTERVAL_MS
+        jpHash = "jp2"
+        ChaldeaSyncManager.onAccountsSaved(listOf("kr-1"))
+        assertTrue(secondDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertEquals(2, settingsCalls.get())
     }
 }
