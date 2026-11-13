@@ -1374,4 +1374,24 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_failed">"The sync failed (%s)."</string>
     <string name="chaldea_sync_status_owner_changed">"The owner or permissions of the Chaldea files changed and could not be restored. The backup is kept."</string>
     <string name="chaldea_sync_status_recovery_blocked">"A sync that was interrupted earlier could not be checked (%s). Nothing is written until this is resolved; the backup is kept."</string>
+    <!-- Dashboard account cards (#379) -->
+    <string name="dashboard_present_box_header">Present box (%1$d)</string>
+    <string name="dashboard_present_box_notice">Gifts received after the last login are shown after the next login.</string>
+    <string name="dashboard_present_box_empty">No gifts</string>
+    <string name="dashboard_party_formations">My party formations</string>
+    <string name="dashboard_party_name">Party %1$d</string>
+    <string name="dashboard_party_cost">Cost %1$d</string>
+    <string name="dashboard_party_back_line">Back line</string>
+    <string name="dashboard_party_support">Support</string>
+    <string name="dashboard_party_empty">Empty</string>
+    <string name="dashboard_costumes_header">Costumes (%1$d)</string>
+    <string name="dashboard_costumes_count">Costumes %1$d</string>
+    <string name="dashboard_command_code_collection">Command code collection</string>
+    <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>
+    <string name="dashboard_command_codes_owned_only">Command codes: %1$d owned</string>
+    <string name="dashboard_command_codes_owned_group">Owned</string>
+    <string name="p_app_theme">"Dark mode"</string>
+    <string name="p_app_theme_system">"Follow system"</string>
+    <string name="p_app_theme_light">"Light"</string>
+    <string name="p_app_theme_dark">"Dark"</string>
 </resources>

@@ -55,6 +55,7 @@ class PrefsCore @Inject constructor(
     val supportReaderDiagnostics = maker.bool("support_reader_diagnostics")
     val autoStartService = maker.bool("auto_start_service")
     val checkForUpdates = maker.bool("check_for_updates", true)
+    val appTheme = maker.enum("app_theme", AppTheme.System)
 
     val hideSQInAPResources = maker.bool("hide_sq_in_ap_resources", true)
     val weeklyRouteFeatureEnabled = maker.bool("weekly_route_feature_enabled", true)

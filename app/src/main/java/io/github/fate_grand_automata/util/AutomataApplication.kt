@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.util
 
 import android.app.Application
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
 import dagger.hilt.android.HiltAndroidApp
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.capture.deleteLegacyEventCache
@@ -19,11 +20,15 @@ import java.io.File
 @HiltAndroidApp
 class AutomataApplication : Application() {
     @Inject lateinit var prefsCore: PrefsCore
+    internal val appThemeObserver = AppThemeObserver()
 
     override fun onCreate() {
         super.onCreate()
 
         initLogging()
+
+        AppCompatDelegate.setDefaultNightMode(prefsCore.appTheme.get().nightMode())
+        appThemeObserver.start(prefsCore)
 
         OpenCVLoader.initLocal()
 
