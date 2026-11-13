@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -277,5 +278,167 @@ class DashboardNamesTest {
         assertEquals("JP jp2", updated.commandCodeData[599]?.name)
         assertEquals("KR SVT kr2", updated.svtData[9770400]?.name)
         assertEquals("JP SVT jp2", updated.svtData[9770500]?.name)
+    }
+
+    @Test fun summarizeClassBoardsExcludesBlankCountsStartAndSeparatesLocks() {
+        val raw = """[
+            {
+                "id": 1,
+                "name": "세이버 클래스 스코어",
+                "icon": "https://static.atlasacademy.io/KR/ClassIcons/board_1.png",
+                "extraField": "ignored",
+                "squares": [
+                    {"id": 1001, "flags": ["start"], "skill": {"id": 99}},
+                    {"id": 1002, "flags": []},
+                    {"id": 1003, "flags": ["blank"]},
+                    {"id": 1004, "flags": [], "lock": {"items": [{"item": {"id": 6501}, "amount": 1}]}},
+                    {"id": 1005, "flags": ["blank"], "lock": {"items": []}}
+                ]
+            },
+            {
+                "id": 2,
+                "name": "",
+                "icon": "http://untrusted.example.com/icon.png",
+                "squares": [
+                    {"id": 2001, "flags": ["start"]}
+                ]
+            }
+        ]"""
+        val summaries = GameNames.summarizeClassBoards(raw)
+        assertEquals(2, summaries.size)
+        assertEquals(
+            ClassBoardSummary(
+                id = 1L,
+                name = "세이버 클래스 스코어",
+                icon = "https://static.atlasacademy.io/KR/ClassIcons/board_1.png",
+                squareTotal = 2,
+                lockTotal = 1,
+                squareIds = setOf(1001L, 1002L),
+                lockIds = setOf(1004L),
+            ),
+            summaries[0],
+        )
+        assertEquals(
+            ClassBoardSummary(
+                id = 2L,
+                name = "#2",
+                icon = null,
+                squareTotal = 1,
+                lockTotal = 0,
+                squareIds = setOf(2001L),
+                lockIds = emptySet(),
+            ),
+            summaries[1],
+        )
+    }
+
+    @Test fun summarizeGachasKeepsFriendPointStoneChargeStoneAndFallbackName() {
+        val raw = """[
+            {"id": 1, "name": "프렌드 포인트 소환", "type": "friendPoint", "openedAt": 1600000000, "closedAt": 4102444799, "extra": 123},
+            {"id": 200, "name": "신규 픽업", "type": "stone", "openedAt": 1700000000, "closedAt": 1700864000},
+            {"id": 300, "name": "유료 확정 소환", "type": "chargeStone", "openedAt": 1704067200, "closedAt": 1704931200},
+            {"id": 400, "name": "", "type": "stone"}
+        ]"""
+        val summaries = GameNames.summarizeGachas(raw)
+        assertEquals(
+            listOf(
+                GachaSummary(1L, "프렌드 포인트 소환", "friendPoint", 1600000000L, 4102444799L),
+                GachaSummary(200L, "신규 픽업", "stone", 1700000000L, 1700864000L),
+                GachaSummary(300L, "유료 확정 소환", "chargeStone", 1704067200L, 1704931200L),
+                GachaSummary(400L, "#400", "stone", null, null),
+            ),
+            summaries,
+        )
+    }
+
+    @Test fun dashboardSummariesDownloadByRegionFollowHashesAndReadFromDiskWithoutInMemoryCache() = runBlocking {
+        var time = 1_000L
+        var krHash = "kr1"
+        var jpHash = "jp1"
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> """{"KR":{"hash":"$krHash","timestamp":1},"JP":{"hash":"$jpHash","timestamp":2}}"""
+                url.endsWith("/KR/nice_class_board.json") -> """[{"id":1,"name":"KR 보드 $krHash","squares":[{"id":10,"flags":["start"]}]}]"""
+                url.endsWith("/JP/nice_class_board.json") -> """[{"id":1,"name":"JP ボード $jpHash","squares":[{"id":10,"flags":["start"]}]}]"""
+                url.endsWith("/KR/nice_gacha.json") -> """[{"id":1,"name":"KR FP $krHash","type":"friendPoint"}]"""
+                url.endsWith("/JP/nice_gacha.json") -> """[{"id":1,"name":"JP FP $jpHash","type":"friendPoint"}]"""
+                else -> """[{"id":10,"name":"서번트","type":"normal"}]"""
+            }
+        }
+        val state = dashboardState(
+            "userClassBoardSquare" to """[{"classBoardBaseId":1,"classBoardSquareIds":[10],"classBoardUnlockSquareIds":[]}]""",
+            "userGacha" to """[{"gachaId":1,"num":5}]""",
+        )
+
+        // KR account fetches only KR summaries and never downloads JP exports.
+        val gameNames = GameNames(directory, downloader) { time }
+        val krFirst = gameNames.dashboard(listOf(state), hasJpAccount = false)
+        assertEquals(1, urls.count { it.endsWith("/KR/nice_class_board.json") })
+        assertEquals(1, urls.count { it.endsWith("/KR/nice_gacha.json") })
+        assertTrue(urls.none { "/JP/nice_class_board.json" in it || "/JP/nice_gacha.json" in it })
+        assertEquals("KR 보드 kr1", krFirst.classBoards[1]?.name)
+        assertEquals("KR FP kr1", krFirst.gachas[1]?.name)
+        assertEquals("kr1", File(directory, "nice_class_board_summary.hash").readText())
+        assertEquals("kr1", File(directory, "nice_gacha_summary.hash").readText())
+        assertFalse(File(directory, "jp_nice_class_board_summary.json").exists())
+
+        // Same instance reads summaries from disk when reloaded (not pinned in an in-memory cache).
+        val editedBoard = File(directory, "nice_class_board_summary.json").readText().replace("KR 보드 kr1", "디스크 수정 보드")
+        File(directory, "nice_class_board_summary.json").writeText(editedBoard)
+        urls.clear()
+        time += 2 * 86_400_000L
+        val krFromDisk = gameNames.dashboard(listOf(state), hasJpAccount = false)
+        assertEquals(listOf(AtlasVersions.INFO_URL), urls)
+        assertEquals("디스크 수정 보드", krFromDisk.classBoards[1]?.name)
+
+        // Opening JP account downloads JP summaries under jp_ prefixes; hash change refreshes after cooldown.
+        urls.clear()
+        val jpFirst = gameNames.dashboard(listOf(state), hasJpAccount = true)
+        assertEquals(1, urls.count { it.endsWith("/JP/nice_class_board.json") })
+        assertEquals(1, urls.count { it.endsWith("/JP/nice_gacha.json") })
+        assertEquals("JP ボード jp1", jpFirst.classBoards[1]?.name)
+        assertEquals("jp1", File(directory, "jp_nice_class_board_summary.hash").readText())
+
+        urls.clear()
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        krHash = "kr2"
+        val krUpdated = gameNames.dashboard(listOf(state), hasJpAccount = false)
+        assertEquals("KR 보드 kr2", krUpdated.classBoards[1]?.name)
+        assertEquals("KR FP kr2", krUpdated.gachas[1]?.name)
+    }
+
+    @Test fun dashboardSummariesSkipDownloadWhileScriptRunsAndRetryAfterStop() = runBlocking {
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url.endsWith("/KR/nice_class_board.json") -> """[{"id":1,"name":"세이버","squares":[{"id":1,"flags":["start"]}]}]"""
+                url.endsWith("/KR/nice_gacha.json") -> """[{"id":1,"name":"프포","type":"friendPoint"}]"""
+                else -> """[{"id":10,"name":"서번트","type":"normal"}]"""
+            }
+        }
+        val state = dashboardState(
+            "userClassBoardSquare" to """[{"classBoardBaseId":1,"classBoardSquareIds":[1],"classBoardUnlockSquareIds":[]}]""",
+            "userGacha" to """[{"gachaId":1,"num":5}]""",
+        )
+        try {
+            ChaldeaSyncManager.onScriptStart()
+            val duringRun = GameNames(directory, downloader) { 1_000L }.dashboard(listOf(state))
+            assertTrue(urls.isEmpty(), "No network requests while script is running, saw: $urls")
+            assertTrue(duringRun.classBoards.isEmpty())
+            assertTrue(duringRun.gachas.isEmpty())
+            assertFalse(File(directory, "nice_class_board_summary.attempt").exists())
+
+            ChaldeaSyncManager.onScriptEnd()
+            val afterRun = GameNames(directory, downloader) { 1_001L }.dashboard(listOf(state))
+            assertTrue(urls.any { it.endsWith("/KR/nice_class_board.json") })
+            assertTrue(urls.any { it.endsWith("/KR/nice_gacha.json") })
+            assertEquals("세이버", afterRun.classBoards[1]?.name)
+            assertEquals("프포", afterRun.gachas[1]?.name)
+        } finally {
+            ChaldeaSyncManager.resetForTest()
+        }
     }
 }

@@ -1397,6 +1397,19 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>
     <string name="dashboard_command_codes_owned_only">Command codes: %1$d owned</string>
     <string name="dashboard_command_codes_owned_group">Owned</string>
+    <!-- Dashboard account cards (#380) -->
+    <string name="dashboard_class_score">Class Score</string>
+    <string name="dashboard_class_score_squares_locks">Squares %1$d / %2$d · Locks %3$d / %4$d</string>
+    <string name="dashboard_class_score_counts_only">Squares %1$d · Locks %2$d</string>
+    <string name="dashboard_class_score_complete">Complete</string>
+    <string name="dashboard_last_login_notice">As of the last login</string>
+    <string name="dashboard_summon_history">Summon history</string>
+    <string name="dashboard_friend_point_summons">Friend point summons: %1$s</string>
+    <string name="dashboard_other_summons">Other summons</string>
+    <string name="dashboard_summon_count">%1$s pulls</string>
+    <string name="dashboard_summon_bonus_note">10-pull counts as 11.</string>
+    <string name="dashboard_recent_summon_log">Recent summon log</string>
+    <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"Dark mode"</string>
     <string name="p_app_theme_system">"Follow system"</string>
     <string name="p_app_theme_light">"Light"</string>

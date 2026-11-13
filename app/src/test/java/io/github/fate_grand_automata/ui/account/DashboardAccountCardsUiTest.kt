@@ -180,6 +180,12 @@ class DashboardAccountCardsUiTest {
             ),
             equips = listOf(DashboardEquip(id = 200L, level = 10L, equipped = true)),
             commandCodes = DashboardCommandCodes(ownedIds = listOf(501L), total = 1),
+            classBoards = listOf(DashboardClassBoard(1L, "세이버", null, acquired = 3, unlockedLocks = 1, squareTotal = 10, lockTotal = 2)),
+            summons = DashboardSummons(
+                friendPointTotal = 100L,
+                otherSummons = listOf(DashboardSummon(10L, "픽업", "stone", null, null, 11L)),
+                recentLog = listOf(DashboardSummonLog("2026-10-01", 10L, "픽업", 1)),
+            ),
         )
         content {
             AccountDashboardContent(
@@ -192,7 +198,7 @@ class DashboardAccountCardsUiTest {
             )
         }
 
-        val expectedOrder = listOf(0, 1, 2, 3, 4, 10, 7, 8, 5, 12, 6)
+        val expectedOrder = listOf(0, 1, 2, 3, 4, 10, 7, 8, 5, 12, 13, 14, 6)
         val tops = expectedOrder.map { section ->
             compose.onNodeWithTag("dashboard-section:$section").fetchSemanticsNode().positionInRoot.y
         }
@@ -202,5 +208,83 @@ class DashboardAccountCardsUiTest {
                 tops[i] < tops[i + 1],
             )
         }
+    }
+
+    @Test
+    fun classScoreAndSummonHistoryHiddenWhenMissing() {
+        val absent = fixture.data.copy(classBoards = null, summons = null)
+        content { AccountDashboardContent(absent, fixture.names, "Alias", {}, {}) }
+        compose.onNodeWithTag("dashboard-section:13").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-section:14").assertDoesNotExist()
+    }
+
+    @Test
+    fun classScoreShowsProgressCompleteBadgeAndUnknownFallback() {
+        val data = fixture.data.copy(
+            classBoards = listOf(
+                DashboardClassBoard(1L, "세이버 스코어", null, acquired = 10, unlockedLocks = 2, squareTotal = 10, lockTotal = 2),
+                DashboardClassBoard(2L, "아처 스코어", null, acquired = 3, unlockedLocks = 1, squareTotal = 10, lockTotal = 2),
+                DashboardClassBoard(99L, null, null, acquired = 4, unlockedLocks = 1, squareTotal = null, lockTotal = null),
+            ),
+        )
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
+        compose.onNodeWithTag("dashboard-class-score-notice").assertTextEquals("마지막 로그인 기준")
+        compose.onNodeWithText("세이버 스코어").performScrollTo().assertExists()
+        compose.onNodeWithText("사인 10 / 10 · 잠금 2 / 2").assertExists()
+        compose.onNodeWithTag("class-board-complete:1").assertExists()
+        compose.onNodeWithText("아처 스코어").performScrollTo().assertExists()
+        compose.onNodeWithText("사인 3 / 10 · 잠금 1 / 2").assertExists()
+        compose.onNodeWithTag("class-board-complete:2").assertDoesNotExist()
+        compose.onNodeWithText("#99").performScrollTo().assertExists()
+        compose.onNodeWithText("사인 4 · 잠금 1").assertExists()
+    }
+
+    @Test
+    fun summonHistoryShowsFriendPointOtherShowAllAndCollapsedRecentLog() {
+        val others = (1..12).map { index ->
+            DashboardSummon(
+                id = 100L + index,
+                name = if (index == 11) null else "픽업 $index",
+                type = "stone",
+                openedAt = null,
+                closedAt = null,
+                count = (20 - index).toLong(),
+            )
+        }
+        val data = fixture.data.copy(
+            summons = DashboardSummons(
+                friendPointTotal = 1234L,
+                otherSummons = others,
+                recentLog = listOf(
+                    DashboardSummonLog("2026-10-02", 101L, "픽업 1", 11),
+                    DashboardSummonLog("2026-10-01", 999L, null, 1),
+                ),
+            ),
+        )
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+
+        compose.onNodeWithText("소환 기록").performScrollTo().assertExists()
+        compose.onNodeWithTag("dashboard-summons-notice").assertTextEquals("마지막 로그인 기준")
+        compose.onNodeWithText("친구 포인트 소환 1,234회").assertExists()
+        compose.onNodeWithText("10회 소환은 11회로 계산됩니다.").assertExists()
+        compose.onNodeWithTag("dashboard-summons-others-toggle").assertTextEquals("전체 보기 (12)")
+        compose.onNodeWithText("픽업 12").assertDoesNotExist()
+
+        compose.onNodeWithTag("dashboard-summons-others-toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("dashboard-summons-others-toggle").assertTextEquals("접기")
+        compose.onNodeWithTag("dashboard-summons-others").performScrollToIndex(11)
+        compose.onNodeWithText("#111").assertExists()
+        compose.onNodeWithText("픽업 12").assertExists()
+
+        // Recent log starts collapsed and expands on tap.
+        compose.onNodeWithTag("dashboard-summons-log-toggle").assertTextEquals("+ 최근 소환 내역 (2)")
+        compose.onNodeWithTag("dashboard-summons-log").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-summons-log-toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("dashboard-summons-log-toggle").assertTextEquals("− 최근 소환 내역 (2)")
+        compose.onNodeWithTag("dashboard-summons-log").assertExists()
+        compose.onNodeWithText("2026-10-02").assertExists()
+        compose.onNodeWithText("#999").assertExists()
+        compose.onNodeWithText("×11").assertExists()
     }
 }

@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import kotlinx.serialization.json.*
+import java.util.TimeZone
 import kotlin.test.*
 
 internal fun dashboardState(vararg tables: Pair<String, String>) = AccountState(
@@ -391,5 +392,122 @@ class DashboardDataTest {
             GameNameMap(commandCodeData = mapOf(1001L to AtlasBasic(1001, "A"), 1002L to AtlasBasic(1002, "B"), 1003L to AtlasBasic(1003, "C"), 1004L to AtlasBasic(1004, "D"))),
         ).commandCodes!!
         assertEquals(DashboardCommandCodes(ownedIds = listOf(1002L, 1003L), total = 4), withList)
+    }
+
+    @Test fun classBoardsProjectMissingUnstartedLocksStartAndUnknownIds() {
+        assertNull(dashboardData(dashboardState(), GameNameMap()).classBoards)
+        assertEquals(emptyList(), dashboardData(dashboardState("userClassBoardSquare" to "[]"), GameNameMap()).classBoards)
+
+        val names = GameNameMap(
+            classBoards = mapOf(
+                1L to ClassBoardSummary(
+                    id = 1L,
+                    name = "세이버",
+                    icon = "https://static.atlasacademy.io/KR/ClassIcons/1.png",
+                    squareTotal = 2,
+                    lockTotal = 1,
+                    squareIds = setOf(101L, 102L),
+                    lockIds = setOf(103L),
+                ),
+                2L to ClassBoardSummary(
+                    id = 2L,
+                    name = "아처",
+                    icon = null,
+                    squareTotal = 3,
+                    lockTotal = 1,
+                    squareIds = setOf(201L, 202L, 203L),
+                    lockIds = setOf(204L),
+                ),
+            ),
+        )
+        // Lock square id 103 placed in classBoardSquareIds must NOT count toward acquired squares; start square 101 DOES count.
+        val state = dashboardState(
+            "userClassBoardSquare" to """[
+                {"classBoardBaseId":1,"classBoardSquareIds":[101,101,103,999],"classBoardUnlockSquareIds":[103]},
+                {"classBoardBaseId":9,"classBoardSquareIds":[901,902],"classBoardUnlockSquareIds":[903]}
+            ]""",
+        )
+        val withSummary = dashboardData(state, names).classBoards!!
+        assertEquals(
+            listOf(
+                DashboardClassBoard(1L, "세이버", "https://static.atlasacademy.io/KR/ClassIcons/1.png", acquired = 1, unlockedLocks = 1, squareTotal = 2, lockTotal = 1),
+                DashboardClassBoard(2L, "아처", null, acquired = 0, unlockedLocks = 0, squareTotal = 3, lockTotal = 1),
+                DashboardClassBoard(9L, null, null, acquired = 2, unlockedLocks = 1, squareTotal = null, lockTotal = null),
+            ),
+            withSummary,
+        )
+
+        val withoutSummary = dashboardData(state, GameNameMap()).classBoards!!
+        assertEquals(
+            listOf(
+                DashboardClassBoard(1L, null, null, acquired = 3, unlockedLocks = 1, squareTotal = null, lockTotal = null),
+                DashboardClassBoard(9L, null, null, acquired = 2, unlockedLocks = 1, squareTotal = null, lockTotal = null),
+            ),
+            withoutSummary,
+        )
+    }
+
+    @Test fun summonsProjectFriendPointOtherSortAndRecentLogByLocalDate() {
+        assertNull(dashboardData(dashboardState(), GameNameMap()).summons)
+
+        val seoul = TimeZone.getTimeZone("Asia/Seoul")
+        val names = GameNameMap(
+            gachas = mapOf(
+                1L to GachaSummary(1L, "일일 프렌드 포인트", "friendPoint", 1600000000L, 4102444799L),
+                2L to GachaSummary(2L, "이벤트 프렌드 포인트", "friendPoint", 1700000000L, 1700864000L),
+                10L to GachaSummary(10L, "오래된 픽업", "stone", 1700000000L, 1700864000L),
+                20L to GachaSummary(20L, "최신 픽업", "stone", 1710000000L, 1710864000L),
+                30L to GachaSummary(30L, "유료 확정", "chargeStone", 1705000000L, 1705864000L),
+            ),
+        )
+        // 1700006400 = 2023-11-15T09:00:00+09:00 in Asia/Seoul; 1700002800 = 2023-11-15T08:00:00+09:00
+        // 1700053200 = 2023-11-15T22:00:00+09:00; 1700089200 = 2023-11-16T08:00:00+09:00
+        val state = dashboardState(
+            "userGacha" to """[
+                {"gachaId":1,"num":500},
+                {"gachaId":2,"num":120},
+                {"gachaId":10,"num":11},
+                {"gachaId":20,"num":11},
+                {"gachaId":30,"num":11},
+                {"gachaId":40,"num":22},
+                {"gachaId":50,"num":11},
+                {"gachaId":60,"num":0}
+            ]""",
+            "userGachaDrawLog" to """[
+                {"gachaId":10,"drawAt":1700002800},
+                {"gachaId":10,"drawAt":1700053200},
+                {"gachaId":20,"drawAt":1700089200}
+            ]""",
+        )
+
+        val projected = dashboardData(state, names, seoul).summons!!
+        assertEquals(620L, projected.friendPointTotal)
+        assertEquals(
+            listOf(40L, 20L, 30L, 10L, 50L),
+            projected.otherSummons.map { it.id },
+        )
+        assertEquals(
+            listOf(
+                DashboardSummonLog("2023-11-16", 20L, "최신 픽업", 1),
+                DashboardSummonLog("2023-11-15", 10L, "오래된 픽업", 2),
+            ),
+            projected.recentLog,
+        )
+
+        // Without Atlas summary: only gacha 1 counts toward friend point total; log uses null names.
+        val noSummary = dashboardData(state, GameNameMap(), seoul).summons!!
+        assertEquals(500L, noSummary.friendPointTotal)
+        assertEquals(listOf(2L, 40L, 10L, 20L, 30L, 50L), noSummary.otherSummons.map { it.id })
+        assertEquals(null, noSummary.recentLog[0].name)
+
+        // Draw log only without userGacha -> friendPointTotal stays null.
+        val logOnly = dashboardData(
+            dashboardState("userGachaDrawLog" to """[{"gachaId":20,"drawAt":1700089200}]"""),
+            names,
+            seoul,
+        ).summons!!
+        assertNull(logOnly.friendPointTotal)
+        assertTrue(logOnly.otherSummons.isEmpty())
+        assertEquals(1, logOnly.recentLog.size)
     }
 }

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaCollectionNumbers
@@ -7,9 +8,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import kotlinx.serialization.encodeToString
 import java.io.File
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
@@ -25,6 +29,8 @@ data class GameNameMap(
     val itemData: Map<Long, AtlasBasic> = emptyMap(),
     val svtData: Map<Long, AtlasBasic> = emptyMap(),
     val commandCodeData: Map<Long, AtlasBasic> = emptyMap(),
+    val classBoards: Map<Long, ClassBoardSummary> = emptyMap(),
+    val gachas: Map<Long, GachaSummary> = emptyMap(),
 ) {
     fun item(id: Long) = items[id] ?: "Item #$id"
     fun servant(id: Long) = servants[id] ?: "Servant #$id"
@@ -40,9 +46,19 @@ data class GameNameMap(
 /** Downloads public lists and missing JP item names; only public item ids enter requests. */
 class GameNames(
     private val directory: File,
-    private val download: (String) -> String = ::downloadPublicList,
+    private val download: (String) -> String = DEFAULT_DOWNLOAD,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
+    private var isScriptRunning: () -> Boolean = { ChaldeaSyncManager.isScriptRunning }
+
+    internal constructor(
+        directory: File,
+        download: (String) -> String,
+        now: () -> Long,
+        isScriptRunning: () -> Boolean,
+    ) : this(directory, download, now) {
+        this.isScriptRunning = isScriptRunning
+    }
     private data class CachedMetadata(val lastModified: Long, val length: Long, val data: Map<Long, AtlasBasic>)
     private data class JpNeed(
         val items: Boolean = false,
@@ -120,29 +136,32 @@ class GameNames(
 
     // Keep this cache KR-only, so JP results cannot suppress the existing KR refresh attempts.
     private fun resolveKr(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(),
-        servantIds: Collection<Long> = emptyList(), equipIds: Collection<Long> = emptyList()): GameNameMap {
+        servantIds: Collection<Long> = emptyList(), equipIds: Collection<Long> = emptyList(),
+        allowDownload: Boolean = true): GameNameMap {
         val cached = loaded ?: GameNameMap(read("nice_item"), read("basic_servant"), read("basic_equip"), read("item_icons"))
         val drops = runs.flatMap { it.items }
         var icons = cached.itemIcons
-        val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds) {
+        val items = refresh("nice_item", cached.items, drops.filter { it.type == 2 }.map { it.objectId } + RunGains.FRUIT_IDS + outsideItemIds, allowDownload = allowDownload) {
             icons = it
         }
         // Older installs can have today's names/attempt without an icon map. Its retry budget is independent.
         if (!File(directory, "item_icons.json").isFile) {
-            runCatching {
-                if (!canAttempt("item_icons")) return@runCatching
-                val regionHash = versions.current()?.get("KR")
-                val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
-                check(parseNames(body).isNotEmpty())
-                icons = saveIcons(body)
-                saveMetadata("nice_item", parseBasic(body), regionHash)
+            if (allowDownload) {
+                runCatching {
+                    if (!canAttempt("item_icons")) return@runCatching
+                    val regionHash = versions.current()?.get("KR")
+                    val body = download("https://api.atlasacademy.io/export/KR/nice_item.json")
+                    check(parseNames(body).isNotEmpty())
+                    icons = saveIcons(body)
+                    saveMetadata("nice_item", parseBasic(body), regionHash)
+                }
             }
         } else if (icons.isEmpty()) {
             icons = read("item_icons")
         }
         val servants = refresh("basic_servant", cached.servants,
-            drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys } + servantIds)
-        val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId } + equipIds)
+            drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys } + servantIds, allowDownload = allowDownload)
+        val equips = refresh("basic_equip", cached.equips, drops.filter { it.type == 3 }.map { it.objectId } + equipIds, allowDownload = allowDownload)
         return GameNameMap(items, servants, equips, icons).also { loaded = it }
     }
 
@@ -165,11 +184,12 @@ class GameNames(
 
     internal suspend fun dashboardTables(states: Collection<DashboardStateTables>, hasJpAccount: Boolean = false): GameNameMap {
         return withContext(Dispatchers.IO) { mutex.withLock {
-            val names = resolveKr(emptyList())
+            val allowDownload = !isScriptRunning()
+            val names = resolveKr(emptyList(), allowDownload = allowDownload)
             val mysticFile = File(directory, "basic_mystic_code.json")
-            val krHash = versions.current()?.get("KR")
-            if (!hasMysticNames || !mysticFile.isFile || (krHash != null && readNamesHash("basic_mystic_code") != krHash)) {
-                hasMysticNames = refresh("basic_mystic_code", read("basic_mystic_code"), emptyList()).isNotEmpty()
+            val krHash = if (allowDownload) versions.current()?.get("KR") else null
+            if (allowDownload && (!hasMysticNames || !mysticFile.isFile || (krHash != null && readNamesHash("basic_mystic_code") != krHash))) {
+                hasMysticNames = refresh("basic_mystic_code", read("basic_mystic_code"), emptyList(), allowDownload = true).isNotEmpty()
             }
             fun ids(table: String, field: String) = states.flatMap { it.rows(table).orEmpty() }
                 .mapNotNull { it.number(field) }.toSet()
@@ -182,15 +202,15 @@ class GameNames(
             val required = mutableMapOf("nice_item" to ids("userItem", "itemId") + coinIds,
                 "basic_servant" to ids("userSvtCollection", "svtId"),
                 "basic_equip" to emptySet(), "basic_mystic_code" to ids("userEquip", "equipId"))
-            val items = metadata("nice_item", required["nice_item"].orEmpty())
-            val servants = metadata("basic_servant")
+            val items = metadata("nice_item", required["nice_item"].orEmpty(), allowDownload = allowDownload)
+            val servants = metadata("basic_servant", allowDownload = allowDownload)
             required["basic_equip"] = ids("userSvt", "svtId") - servants.keys
-            val equips = metadata("basic_equip")
-            val mystics = metadata("basic_mystic_code")
+            val equips = metadata("basic_equip", allowDownload = allowDownload)
+            val mystics = metadata("basic_mystic_code", allowDownload = allowDownload)
             val hasCommandCodeCollection = states.any { it.rows("userCommandCodeCollection") != null }
             val svtCards = cachedMetadata("basic_svt")
             val commandCodes = if (hasCommandCodeCollection) {
-                metadata("basic_command_code")
+                metadata("basic_command_code", allowDownload = allowDownload)
             } else {
                 cachedMetadata("basic_command_code")
             }
@@ -209,7 +229,8 @@ class GameNames(
                 equips = allSvtIds.any { it !in kr.servantData && it !in kr.equipData },
                 mystics = required["basic_mystic_code"].orEmpty().any { it !in kr.mysticData },
             )
-            val resolved = jpFallback.merge(withJpLists(kr, need), required["nice_item"].orEmpty())
+            val withJp = withJpLists(kr, need, allowDownload = allowDownload)
+            val resolved = if (allowDownload) jpFallback.merge(withJp, required["nice_item"].orEmpty()) else withJp
             val needSvtCards = states.any { state ->
                 state.rows("userPresentBox").orEmpty().any { row ->
                     row.number("giftType") == 1L && row.number("objectId")?.let { id ->
@@ -218,14 +239,14 @@ class GameNames(
                 }
             }
             val mergedSvtCards = if (needSvtCards) {
-                val krSvtCards = metadata("basic_svt")
-                if (hasJpAccount) metadata("basic_svt", server = "JP") + krSvtCards else krSvtCards
+                val krSvtCards = metadata("basic_svt", allowDownload = allowDownload)
+                if (hasJpAccount) metadata("basic_svt", server = "JP", allowDownload = allowDownload) + krSvtCards else krSvtCards
             } else {
                 if (hasJpAccount) cachedMetadata("basic_svt", "JP") + resolved.svtData else resolved.svtData
             }
             val mergedCommandCodes = if (hasJpAccount) {
                 val jpCommandCodes = if (hasCommandCodeCollection) {
-                    metadata("basic_command_code", server = "JP")
+                    metadata("basic_command_code", server = "JP", allowDownload = allowDownload)
                 } else {
                     cachedMetadata("basic_command_code", "JP")
                 }
@@ -233,18 +254,51 @@ class GameNames(
             } else {
                 resolved.commandCodeData
             }
-            if (!needSvtCards && !hasJpAccount) resolved
-            else resolved.copy(svtData = mergedSvtCards, commandCodeData = mergedCommandCodes)
+            val region = if (hasJpAccount) "JP" else "KR"
+            val hasClassBoards = states.any { it.rows("userClassBoardSquare") != null }
+            val hasSummons = states.any { it.rows("userGacha") != null || it.rows("userGachaDrawLog") != null }
+            val classBoards = if (hasClassBoards) {
+                fetchSummary(
+                    list = "nice_class_board",
+                    server = region,
+                    idOf = ClassBoardSummary::id,
+                    decode = { Json.decodeFromString<List<ClassBoardSummary>>(it) },
+                    encode = { Json.encodeToString(it) },
+                    parseStream = ::summarizeClassBoards,
+                    allowDownload = allowDownload,
+                )
+            } else {
+                emptyMap()
+            }
+            val gachas = if (hasSummons) {
+                fetchSummary(
+                    list = "nice_gacha",
+                    server = region,
+                    idOf = GachaSummary::id,
+                    decode = { Json.decodeFromString<List<GachaSummary>>(it) },
+                    encode = { Json.encodeToString(it) },
+                    parseStream = ::summarizeGachas,
+                    allowDownload = allowDownload,
+                )
+            } else {
+                emptyMap()
+            }
+            resolved.copy(
+                svtData = mergedSvtCards,
+                commandCodeData = mergedCommandCodes,
+                classBoards = classBoards,
+                gachas = gachas,
+            )
         } }
     }
 
     /** JP exports have their own files and budgets. Never feed the merged result back into loaded. */
-    private fun withJpLists(kr: GameNameMap, need: JpNeed, includeCards: Boolean = false): GameNameMap {
+    private fun withJpLists(kr: GameNameMap, need: JpNeed, includeCards: Boolean = false, allowDownload: Boolean = true): GameNameMap {
         if (!need.any) return kr
-        val items = if (need.items) metadata("nice_item", server = "JP").filterKeys { it !in kr.items && it !in kr.itemData } else emptyMap()
-        val servants = if (need.servants) metadata("basic_servant", server = "JP").filterKeys { it !in kr.servants && it !in kr.servantData } else emptyMap()
-        val equips = if (need.equips) metadata("basic_equip", server = "JP").filterKeys { it !in kr.equips && it !in kr.equipData } else emptyMap()
-        val mystics = if (need.mystics) metadata("basic_mystic_code", server = "JP") else emptyMap()
+        val items = if (need.items) metadata("nice_item", server = "JP", allowDownload = allowDownload).filterKeys { it !in kr.items && it !in kr.itemData } else emptyMap()
+        val servants = if (need.servants) metadata("basic_servant", server = "JP", allowDownload = allowDownload).filterKeys { it !in kr.servants && it !in kr.servantData } else emptyMap()
+        val equips = if (need.equips) metadata("basic_equip", server = "JP", allowDownload = allowDownload).filterKeys { it !in kr.equips && it !in kr.equipData } else emptyMap()
+        val mystics = if (need.mystics) metadata("basic_mystic_code", server = "JP", allowDownload = allowDownload) else emptyMap()
         fun names(rows: Map<Long, AtlasBasic>) = rows.mapNotNull { (id, row) ->
             row.name?.takeIf { it.isNotBlank() }?.let { id to it }
         }.toMap()
@@ -261,8 +315,11 @@ class GameNames(
         )
     }
 
+    private fun cachePrefix(list: String, server: String): String =
+        if (server == "JP") "jp_$list" else list
+
     private fun cachedMetadata(list: String, server: String = "KR"): Map<Long, AtlasBasic> {
-        val cache = if (server == "JP") "jp_$list" else list
+        val cache = cachePrefix(list, server)
         val file = File(directory, "${cache}_details.json")
         val memory = metadataCache[cache]?.takeIf { file.isFile && file.lastModified() == it.lastModified && file.length() == it.length }?.data
         return memory ?: runCatching {
@@ -272,39 +329,123 @@ class GameNames(
         }.getOrDefault(emptyMap())
     }
 
-    private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
-        val cache = if (server == "JP") "jp_$list" else list
+    private fun metadata(
+        list: String,
+        required: Set<Long> = emptySet(),
+        server: String = "KR",
+        allowDownload: Boolean = true,
+    ): Map<Long, AtlasBasic> {
+        val cache = cachePrefix(list, server)
+        val stem = "${cache}_details"
         val cached = cachedMetadata(list, server)
+        return fetchStem(
+            list = list,
+            server = server,
+            stem = stem,
+            cached = cached,
+            allowDownload = allowDownload,
+            currentWithoutHash = {
+                // Card exports refresh by age, including when an unknown id is absent from Atlas.
+                if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(stem)
+            },
+            parseStream = { stream -> parseBasic(stream.bufferedReader(Charsets.UTF_8).readText()) },
+            encode = { rows -> Json.encodeToString(rows) },
+            idOf = AtlasBasic::id,
+            onSaved = { file, map ->
+                metadataCache[cache] = CachedMetadata(file.lastModified(), file.length(), map)
+            },
+        )
+    }
+
+    /** Reads and refreshes a compact Atlas summary file without putting it in [metadataCache]. */
+    private fun <T> fetchSummary(
+        list: String,
+        server: String,
+        idOf: (T) -> Long,
+        decode: (String) -> List<T>,
+        encode: (List<T>) -> String,
+        parseStream: (InputStream) -> List<T>,
+        allowDownload: Boolean = !isScriptRunning(),
+    ): Map<Long, T> {
+        val stem = "${cachePrefix(list, server)}_summary"
+        val cached = runCatching {
+            decode(File(directory, "${stem}.json").readText()).associateBy(idOf)
+        }.getOrDefault(emptyMap())
+        return fetchStem(
+            list = list,
+            server = server,
+            stem = stem,
+            cached = cached,
+            allowDownload = allowDownload,
+            currentWithoutHash = { !isStale(stem) },
+            parseStream = parseStream,
+            encode = encode,
+            idOf = idOf,
+        )
+    }
+
+    private fun <T> fetchStem(
+        list: String,
+        server: String,
+        stem: String,
+        cached: Map<Long, T>,
+        allowDownload: Boolean,
+        currentWithoutHash: () -> Boolean,
+        parseStream: (InputStream) -> List<T>,
+        encode: (List<T>) -> String,
+        idOf: (T) -> Long,
+        onSaved: (File, Map<Long, T>) -> Unit = { _, _ -> },
+    ): Map<Long, T> {
+        if (!allowDownload) return cached
         val regionHash = versions.current()?.get(server)
         val current = if (regionHash != null) {
-            cached.isNotEmpty() && readHash(cache) == regionHash
+            cached.isNotEmpty() && readHashFile(File(directory, "${stem}.hash")) == regionHash
         } else {
-            // Card exports refresh by age, including when an unknown id is absent from Atlas.
-            if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
+            currentWithoutHash()
         }
         if (cached.isNotEmpty() && current) return cached
         val cooldownMs = if (regionHash != null) HOUR_MS else DAY_MS
         return runCatching {
-            if (!canAttempt("${cache}_details", cooldownMs)) return cached
-            val body = download("https://api.atlasacademy.io/export/$server/$list.json")
-            val parsed = parseBasic(body)
+            if (!canAttempt(stem, cooldownMs)) return cached
+            val parsed = downloadAndParse("https://api.atlasacademy.io/export/$server/$list.json", parseStream)
             check(parsed.isNotEmpty())
-            saveMetadata(cache, parsed, regionHash)
+            saveStem(stem, parsed, encode(parsed), regionHash, idOf, onSaved)
         }.getOrDefault(cached)
     }
 
-    private fun saveMetadata(list: String, rows: List<AtlasBasic>, regionHash: String?): Map<Long, AtlasBasic> {
-        val file = File(directory, "${list}_details.json")
-        writeCaptureFile(file, Json.encodeToString(rows))
-        if (regionHash != null) writeCaptureFile(File(directory, "${list}_details.hash"), regionHash)
-        File(directory, "${list}_details.attempt").writeText(now().toString())
-        File(directory, "${list}_details.fetched").writeText(now().toString())
-        val map = rows.associateBy { it.id }
-        metadataCache[list] = CachedMetadata(file.lastModified(), file.length(), map)
+    private fun <T> downloadAndParse(address: String, parseStream: (InputStream) -> List<T>): List<T> =
+        if (download === DEFAULT_DOWNLOAD) downloadPublicStream(address, parseStream)
+        else download(address).byteInputStream().use(parseStream)
+
+    private fun saveMetadata(list: String, rows: List<AtlasBasic>, regionHash: String?): Map<Long, AtlasBasic> =
+        saveStem(
+            stem = "${list}_details",
+            rows = rows,
+            encoded = Json.encodeToString(rows),
+            regionHash = regionHash,
+            idOf = AtlasBasic::id,
+            onSaved = { file, map ->
+                metadataCache[list] = CachedMetadata(file.lastModified(), file.length(), map)
+            },
+        )
+
+    private fun <T> saveStem(
+        stem: String,
+        rows: List<T>,
+        encoded: String,
+        regionHash: String?,
+        idOf: (T) -> Long,
+        onSaved: (File, Map<Long, T>) -> Unit = { _, _ -> },
+    ): Map<Long, T> {
+        val file = File(directory, "${stem}.json")
+        writeCaptureFile(file, encoded)
+        if (regionHash != null) writeCaptureFile(File(directory, "${stem}.hash"), regionHash)
+        File(directory, "${stem}.attempt").writeText(now().toString())
+        File(directory, "${stem}.fetched").writeText(now().toString())
+        val map = rows.associateBy(idOf)
+        onSaved(file, map)
         return map
     }
-
-    private fun readHash(cache: String): String? = readHashFile(File(directory, "${cache}_details.hash"))
 
     private fun namesHashFile(list: String): File = File(directory, "$list.json.hash")
 
@@ -314,8 +455,8 @@ class GameNames(
         file.readText().trim().takeIf { it.isNotEmpty() }
     }.getOrNull()
 
-    private fun isStale(list: String): Boolean {
-        val fetched = runCatching { File(directory, "${list}_details.fetched").readText().toLong() }.getOrNull() ?: return true
+    private fun isStale(stem: String): Boolean {
+        val fetched = runCatching { File(directory, "${stem}.fetched").readText().toLong() }.getOrNull() ?: return true
         return now() - fetched >= METADATA_MAX_AGE_MS
     }
 
@@ -341,7 +482,8 @@ class GameNames(
         return icons
     }
 
-    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, onIcons: (Map<Long, String>) -> Unit = {}): Map<Long, String> {
+    private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, allowDownload: Boolean = true, onIcons: (Map<Long, String>) -> Unit = {}): Map<Long, String> {
+        if (!allowDownload) return cache
         val regionHash = versions.current()?.get("KR")
         val current = if (regionHash != null) {
             File(directory, "$list.json").isFile && cache.isNotEmpty() && readNamesHash(list) == regionHash
@@ -408,17 +550,100 @@ class GameNames(
                 val icon = (row["icon"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
                 if (IconFileStore.isPublicIcon(icon)) id to icon else null
             }.toMap()
+
+        private val streamJson = Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
+
+        internal fun summarizeClassBoards(body: String): List<ClassBoardSummary> =
+            body.byteInputStream().use(::summarizeClassBoards)
+
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun summarizeClassBoards(stream: InputStream): List<ClassBoardSummary> =
+            streamJson.decodeToSequence<RawClassBoard>(stream, DecodeSequenceMode.ARRAY_WRAPPED)
+                .mapNotNull { raw ->
+                    val id = raw.id ?: return@mapNotNull null
+                    val squareIds = linkedSetOf<Long>()
+                    val lockIds = linkedSetOf<Long>()
+                    for (sq in raw.squares) {
+                        if ("blank" in sq.flags) continue
+                        val sqId = sq.id ?: continue
+                        if (sq.lock is JsonObject) {
+                            lockIds.add(sqId)
+                        } else {
+                            squareIds.add(sqId)
+                        }
+                    }
+                    ClassBoardSummary(
+                        id = id,
+                        name = raw.name?.takeIf { it.isNotBlank() } ?: "#$id",
+                        icon = raw.icon?.takeIf(IconFileStore::isPublicIcon),
+                        squareTotal = squareIds.size,
+                        lockTotal = lockIds.size,
+                        squareIds = squareIds,
+                        lockIds = lockIds,
+                    )
+                }
+                .toList()
+
+        internal fun summarizeGachas(body: String): List<GachaSummary> =
+            body.byteInputStream().use(::summarizeGachas)
+
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun summarizeGachas(stream: InputStream): List<GachaSummary> =
+            streamJson.decodeToSequence<RawGacha>(stream, DecodeSequenceMode.ARRAY_WRAPPED)
+                .mapNotNull { raw ->
+                    val id = raw.id ?: return@mapNotNull null
+                    GachaSummary(
+                        id = id,
+                        name = raw.name?.takeIf { it.isNotBlank() } ?: "#$id",
+                        type = raw.type,
+                        openedAt = raw.openedAt,
+                        closedAt = raw.closedAt,
+                    )
+                }
+                .toList()
     }
 }
 
-private fun downloadPublicList(address: String): String {
+@Serializable
+private data class RawClassBoardSquare(
+    val id: Long? = null,
+    val flags: List<String> = emptyList(),
+    val lock: JsonElement? = null,
+)
+
+@Serializable
+private data class RawClassBoard(
+    val id: Long? = null,
+    val name: String? = null,
+    val icon: String? = null,
+    val squares: List<RawClassBoardSquare> = emptyList(),
+)
+
+@Serializable
+private data class RawGacha(
+    val id: Long? = null,
+    val name: String? = null,
+    val type: String? = null,
+    val openedAt: Long? = null,
+    val closedAt: Long? = null,
+)
+
+private val DEFAULT_DOWNLOAD: (String) -> String = ::downloadPublicList
+
+private fun downloadPublicList(address: String): String =
+    downloadPublicStream(address) { it.bufferedReader(Charsets.UTF_8).readText() }
+
+private fun <T> downloadPublicStream(address: String, parse: (InputStream) -> T): T {
     val connection = URL(address).openConnection() as HttpURLConnection
     return try {
         connection.connectTimeout = 10_000
         connection.readTimeout = 15_000
         connection.instanceFollowRedirects = false
         check(connection.responseCode == 200)
-        connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        connection.inputStream.buffered().use(parse)
     } finally {
         connection.disconnect()
     }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.People
@@ -112,6 +113,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (data.formations?.grand?.isNotEmpty() == true) add(8)
                     if (!data.equips.isNullOrEmpty()) add(5)
                     if (data.commandCodes != null) add(12)
+                    if (!data.classBoards.isNullOrEmpty()) add(13)
+                    if (data.summons != null) add(14)
                     if (battle != null || outside != null) add(6)
                 }
                 val target = remember { BringIntoViewRequester() }
@@ -138,6 +141,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                                 8 -> GrandFormation(data.formations!!.grand, names)
                                 10 -> PresentBox(data.presentBox!!, names)
                                 12 -> CommandCodeCollection(data.commandCodes!!, names)
+                                13 -> ClassScore(data.classBoards!!)
+                                14 -> SummonHistory(data.summons!!)
                             }
                         }
                     }
@@ -167,6 +172,8 @@ private fun sectionTitle(section: Int, data: DashboardData): String = when (sect
             7 to R.string.dashboard_formation_support,
             8 to R.string.dashboard_formation_grand,
             12 to R.string.dashboard_command_code_collection,
+            13 to R.string.dashboard_class_score,
+            14 to R.string.dashboard_summon_history,
         )
         stringResource(titles.getValue(section))
     }
@@ -478,6 +485,191 @@ private fun InventoryGroup.label() = when (this) {
                 }
             }
         }
+    }
+}
+
+@Composable private fun ClassScore(boards: List<DashboardClassBoard>) {
+    Text(
+        stringResource(R.string.dashboard_last_login_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.testTag("dashboard-class-score-notice"),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (board in boards) {
+            Row(
+                Modifier.fillMaxWidth().testTag("class-board:${board.id}"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AtlasIcon("classBoards", board.id, board.icon, size = 40.dp)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        board.name?.takeIf { it.isNotBlank() } ?: "#${board.id}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val counts = if (board.squareTotal != null && board.lockTotal != null) {
+                        stringResource(
+                            R.string.dashboard_class_score_squares_locks,
+                            board.acquired,
+                            board.squareTotal,
+                            board.unlockedLocks,
+                            board.lockTotal,
+                        )
+                    } else {
+                        stringResource(
+                            R.string.dashboard_class_score_counts_only,
+                            board.acquired,
+                            board.unlockedLocks,
+                        )
+                    }
+                    Text(
+                        counts,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (board.isComplete) {
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.testTag("class-board-complete:${board.id}"),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                stringResource(R.string.dashboard_class_score_complete),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun SummonHistory(summons: DashboardSummons) {
+    Text(
+        stringResource(R.string.dashboard_last_login_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.testTag("dashboard-summons-notice"),
+    )
+    if (summons.friendPointTotal != null) {
+        Text(
+            stringResource(R.string.dashboard_friend_point_summons, summons.friendPointTotal.grouped()),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.testTag("dashboard-summons-fp"),
+        )
+    }
+    if (summons.otherSummons.isNotEmpty()) {
+        var expandedOthers by rememberSaveable { mutableStateOf(false) }
+        val shown = if (expandedOthers) summons.otherSummons else summons.otherSummons.take(10)
+        Text(stringResource(R.string.dashboard_other_summons), style = MaterialTheme.typography.labelLarge)
+        Text(
+            stringResource(R.string.dashboard_summon_bonus_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LazyColumn(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp, max = if (expandedOthers) 380.dp else 360.dp)
+                .testTag("dashboard-summons-others"),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            items(shown, key = { it.id }) { entry ->
+                Row(
+                    Modifier.fillMaxWidth().testTag("summon:${entry.id}"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            entry.name?.takeIf { it.isNotBlank() } ?: "#${entry.id}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        formatSummonPeriod(entry.openedAt, entry.closedAt)?.let { period ->
+                            Text(
+                                period,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.dashboard_summon_count, entry.count.grouped()),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+        if (expandedOthers || summons.otherSummons.size > 10) {
+            TextButton(onClick = { expandedOthers = !expandedOthers }, modifier = Modifier.testTag("dashboard-summons-others-toggle")) {
+                Text(if (expandedOthers) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, summons.otherSummons.size))
+            }
+        }
+    }
+    if (summons.recentLog.isNotEmpty()) {
+        var logExpanded by rememberSaveable { mutableStateOf(false) }
+        TextButton(onClick = { logExpanded = !logExpanded }, modifier = Modifier.testTag("dashboard-summons-log-toggle")) {
+            Text("${if (logExpanded) "−" else "+"} ${stringResource(R.string.dashboard_recent_summon_log)} (${summons.recentLog.size})")
+        }
+        if (logExpanded) {
+            LazyColumn(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp, max = 320.dp).testTag("dashboard-summons-log"),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(summons.recentLog, key = { "${it.date}:${it.gachaId}" }) { entry ->
+                    Row(
+                        Modifier.fillMaxWidth().testTag("summon-log:${entry.date}:${entry.gachaId}"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            entry.date,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            entry.name?.takeIf { it.isNotBlank() } ?: "#${entry.gachaId}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            stringResource(R.string.dashboard_summon_log_count, entry.count),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatSummonPeriod(openedAt: Long?, closedAt: Long?): String? {
+    val start = openedAt?.let { formatEpochDate(it) }
+    val end = closedAt?.let { formatEpochDate(it) }
+    return when {
+        start != null && end != null -> "$start ~ $end"
+        start != null -> "$start ~"
+        end != null -> "~ $end"
+        else -> null
     }
 }
 

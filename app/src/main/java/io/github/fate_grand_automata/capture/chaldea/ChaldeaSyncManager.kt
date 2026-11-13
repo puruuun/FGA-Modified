@@ -102,6 +102,7 @@ object ChaldeaSyncManager {
     @Volatile internal var applyCount: Int = 0
     internal val isCollectionDownloadDeferred: Boolean get() = synchronized(lock) { collectionDownloadDeferred }
     @Volatile private var scriptRunningNow = false
+    internal val isScriptRunning: Boolean get() = scriptRunningNow
     @Volatile private var cachedGameNames: GameNames? = null
     internal var collectionClock: () -> Long = SystemClock::elapsedRealtime
     internal var gameNamesFactory: (Application) -> GameNames = { GameNames(File(it.filesDir, "capture/names")) }

@@ -1086,6 +1086,19 @@
     <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>
     <string name="dashboard_command_codes_owned_only">所持 %1$d</string>
     <string name="dashboard_command_codes_owned_group">所持</string>
+    <!-- アカウントダッシュボード追加カード (#380) -->
+    <string name="dashboard_class_score">クラススコア</string>
+    <string name="dashboard_class_score_squares_locks">サイン %1$d / %2$d · ロック %3$d / %4$d</string>
+    <string name="dashboard_class_score_counts_only">サイン %1$d · ロック %2$d</string>
+    <string name="dashboard_class_score_complete">コンプリート</string>
+    <string name="dashboard_last_login_notice">最終ログイン時点</string>
+    <string name="dashboard_summon_history">召喚履歴</string>
+    <string name="dashboard_friend_point_summons">フレンドポイント召喚 %1$s回</string>
+    <string name="dashboard_other_summons">その他の召喚</string>
+    <string name="dashboard_summon_count">%1$s回</string>
+    <string name="dashboard_summon_bonus_note">10回召喚は11回として記録されます。</string>
+    <string name="dashboard_recent_summon_log">最近の召喚履歴</string>
+    <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"ダークモード"</string>
     <string name="p_app_theme_system">"システム設定に従う"</string>
     <string name="p_app_theme_light">"ライト"</string>

@@ -8,6 +8,10 @@ import io.github.fate_grand_automata.util.grouped
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /** Only public Atlas metadata. Never includes account fields. */
 @Serializable
@@ -15,6 +19,28 @@ data class AtlasBasic(
     val id: Long, val name: String? = null, val type: String? = null,
     val className: String? = null, val rarity: Long? = null, val collectionNo: Long? = null,
     val icon: String? = null,
+)
+
+/** Public Class Score summary cached per region. Never holds user state. */
+@Serializable
+data class ClassBoardSummary(
+    val id: Long,
+    val name: String,
+    val icon: String? = null,
+    val squareTotal: Int,
+    val lockTotal: Int,
+    val squareIds: Set<Long> = emptySet(),
+    val lockIds: Set<Long> = emptySet(),
+)
+
+/** Public summon banner summary cached per region. Never holds user state. */
+@Serializable
+data class GachaSummary(
+    val id: Long,
+    val name: String,
+    val type: String? = null,
+    val openedAt: Long? = null,
+    val closedAt: Long? = null,
 )
 
 /** "139/145" once a friend list was seen, the plain limit before that. */
@@ -75,6 +101,41 @@ data class DashboardStorage(val total: Int?, val servants: Int?, val equips: Int
 data class DashboardPresent(val giftType: Int, val objectId: Long, val count: Long)
 data class DashboardPresentBox(val totalCount: Int, val entries: List<DashboardPresent>)
 data class DashboardCommandCodes(val ownedIds: List<Long>, val total: Int?)
+data class DashboardClassBoard(
+    val id: Long,
+    val name: String?,
+    val icon: String?,
+    val acquired: Int,
+    val unlockedLocks: Int,
+    val squareTotal: Int?,
+    val lockTotal: Int?,
+) {
+    val isComplete: Boolean
+        get() = squareTotal != null && lockTotal != null &&
+            acquired == squareTotal && unlockedLocks == lockTotal
+}
+
+data class DashboardSummon(
+    val id: Long,
+    val name: String?,
+    val type: String?,
+    val openedAt: Long?,
+    val closedAt: Long?,
+    val count: Long,
+)
+
+data class DashboardSummonLog(
+    val date: String,
+    val gachaId: Long,
+    val name: String?,
+    val count: Int,
+)
+
+data class DashboardSummons(
+    val friendPointTotal: Long?,
+    val otherSummons: List<DashboardSummon>,
+    val recentLog: List<DashboardSummonLog>,
+)
 
 /** Version-specific projection built once on Dispatchers.Default, never during composition. */
 data class DashboardData(
@@ -87,6 +148,8 @@ data class DashboardData(
     val formations: OwnFormations? = null,
     val presentBox: DashboardPresentBox? = null,
     val commandCodes: DashboardCommandCodes? = null,
+    val classBoards: List<DashboardClassBoard>? = null,
+    val summons: DashboardSummons? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -102,9 +165,12 @@ internal class DashboardStateTables(val state: AccountState) {
 }
 
 internal fun dashboardData(state: AccountState, names: GameNameMap): DashboardData =
-    dashboardData(DashboardStateTables(state), names)
+    dashboardData(DashboardStateTables(state), names, TimeZone.getDefault())
 
-internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap): DashboardData {
+internal fun dashboardData(state: AccountState, names: GameNameMap, timeZone: TimeZone): DashboardData =
+    dashboardData(DashboardStateTables(state), names, timeZone)
+
+internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, timeZone: TimeZone = TimeZone.getDefault()): DashboardData {
     val state = tables.state
     fun rows(table: String) = tables.rows(table)
     val game = rows("userGame")?.firstOrNull()
@@ -187,8 +253,10 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap): Da
     val split = game?.number("freeStone")?.let { free -> game.number("chargeStone")?.let { free to it } }
     val presentBox = projectPresentBox(rows("userPresentBox"))
     val commandCodes = projectCommandCodes(rows("userCommandCodeCollection"), names)
+    val classBoards = projectClassBoards(rows("userClassBoardSquare"), names)
+    val summons = projectSummons(rows("userGacha"), rows("userGachaDrawLog"), names, timeZone)
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
-        OwnFormations.from(state, game), presentBox, commandCodes)
+        OwnFormations.from(state, game), presentBox, commandCodes, classBoards, summons)
 }
 
 private fun projectPresentBox(rows: List<JsonObject>?): DashboardPresentBox? {
@@ -224,6 +292,134 @@ private fun projectCommandCodes(rows: List<JsonObject>?, names: GameNameMap): Da
         )
     val total = names.commandCodeData.size.takeIf { it > 0 }
     return DashboardCommandCodes(ownedIds, total)
+}
+
+private fun projectClassBoards(rows: List<JsonObject>?, names: GameNameMap): List<DashboardClassBoard>? {
+    if (rows == null) return null
+    val userIds = linkedSetOf<Long>()
+    val userSquaresByBoard = linkedMapOf<Long, LinkedHashSet<Long>>()
+    val userLocksByBoard = linkedMapOf<Long, LinkedHashSet<Long>>()
+    for (row in rows) {
+        val id = row.number("classBoardBaseId") ?: continue
+        userIds.add(id)
+        val squares = userSquaresByBoard.getOrPut(id) { linkedSetOf() }
+        (row["classBoardSquareIds"] as? JsonArray).orEmpty().mapNotNullTo(squares) { (it as? JsonPrimitive)?.longOrNull }
+        val locks = userLocksByBoard.getOrPut(id) { linkedSetOf() }
+        (row["classBoardUnlockSquareIds"] as? JsonArray).orEmpty().mapNotNullTo(locks) { (it as? JsonPrimitive)?.longOrNull }
+    }
+    val summaries = names.classBoards
+    val allIds = (summaries.keys + userIds).sorted()
+    return allIds.map { id ->
+        val summary = summaries[id]
+        val userSquares = userSquaresByBoard[id].orEmpty()
+        val userLocks = userLocksByBoard[id].orEmpty()
+        if (summary != null) {
+            DashboardClassBoard(
+                id = id,
+                name = summary.name,
+                icon = summary.icon,
+                acquired = userSquares.count { it in summary.squareIds },
+                unlockedLocks = userLocks.count { it in summary.lockIds },
+                squareTotal = summary.squareTotal,
+                lockTotal = summary.lockTotal,
+            )
+        } else {
+            DashboardClassBoard(
+                id = id,
+                name = null,
+                icon = null,
+                acquired = userSquares.size,
+                unlockedLocks = userLocks.size,
+                squareTotal = null,
+                lockTotal = null,
+            )
+        }
+    }
+}
+
+internal fun formatEpochDate(seconds: Long, timeZone: TimeZone = TimeZone.getDefault()): String =
+    SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { this.timeZone = timeZone }.format(Date(seconds * 1000L))
+
+private data class SummonLogAccumulator(
+    val date: String,
+    val gachaId: Long,
+    var count: Int = 0,
+    var latestDrawAt: Long = Long.MIN_VALUE,
+)
+
+private fun projectSummons(
+    gachaRows: List<JsonObject>?,
+    drawLogRows: List<JsonObject>?,
+    names: GameNameMap,
+    timeZone: TimeZone,
+): DashboardSummons? {
+    if (gachaRows == null && drawLogRows == null) return null
+    val summaries = names.gachas
+    val hasSummary = summaries.isNotEmpty()
+    fun isFriendPoint(id: Long) = if (hasSummary) summaries[id]?.type == "friendPoint" else id == 1L
+
+    var friendPointTotal: Long? = null
+    val otherSummons = mutableListOf<DashboardSummon>()
+    if (gachaRows != null) {
+        val countsByGacha = linkedMapOf<Long, Long>()
+        for (row in gachaRows) {
+            val id = row.number("gachaId") ?: continue
+            val num = row.number("num")?.takeIf { it >= 0L } ?: continue
+            countsByGacha[id] = (countsByGacha[id] ?: 0L) + num
+        }
+        var fpTotal = 0L
+        for ((id, count) in countsByGacha) {
+            if (isFriendPoint(id)) {
+                fpTotal += count
+            } else if (count > 0L) {
+                val summary = summaries[id]
+                otherSummons += DashboardSummon(
+                    id = id,
+                    name = summary?.name,
+                    type = summary?.type,
+                    openedAt = summary?.openedAt,
+                    closedAt = summary?.closedAt,
+                    count = count,
+                )
+            }
+        }
+        friendPointTotal = fpTotal
+        otherSummons.sortWith(
+            compareByDescending<DashboardSummon> { it.count }
+                .thenByDescending { it.openedAt ?: Long.MIN_VALUE }
+                .thenBy { it.id }
+        )
+    }
+
+    val recentLog = if (drawLogRows == null) {
+        emptyList()
+    } else {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { this.timeZone = timeZone }
+        val grouped = linkedMapOf<Pair<String, Long>, SummonLogAccumulator>()
+        for (row in drawLogRows) {
+            val gachaId = row.number("gachaId") ?: continue
+            val drawAt = row.number("drawAt") ?: continue
+            val date = formatter.format(Date(drawAt * 1000L))
+            val acc = grouped.getOrPut(date to gachaId) { SummonLogAccumulator(date, gachaId) }
+            acc.count += 1
+            if (drawAt > acc.latestDrawAt) acc.latestDrawAt = drawAt
+        }
+        grouped.values
+            .sortedWith(
+                compareByDescending<SummonLogAccumulator> { it.date }
+                    .thenByDescending { it.latestDrawAt }
+                    .thenBy { it.gachaId }
+            )
+            .map { acc ->
+                DashboardSummonLog(
+                    date = acc.date,
+                    gachaId = acc.gachaId,
+                    name = summaries[acc.gachaId]?.name,
+                    count = acc.count,
+                )
+            }
+    }
+    return DashboardSummons(friendPointTotal, otherSummons, recentLog)
 }
 
 internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {
