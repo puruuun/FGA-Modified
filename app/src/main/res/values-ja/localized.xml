@@ -658,6 +658,7 @@
     <string name="portrait_class_pretender">プリテンダー</string>
     <string name="portrait_class_shielder">シールダー</string>
     <string name="portrait_class_beast">ビースト</string>
+    <string name="portrait_class_unbeast">アンビースト</string>
     <string name="grand_score_not_supported">このサーバーにはグランドスコアがないため、+16の条件を無視します。</string>
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
