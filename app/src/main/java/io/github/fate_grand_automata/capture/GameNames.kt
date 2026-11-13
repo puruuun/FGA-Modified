@@ -81,11 +81,12 @@ class GameNames(
     }.getOrDefault(ChaldeaCollectionNumbers.EMPTY)
 
     /** Ensures KR and JP servant, CE, and command-code lists are cached (respecting daily attempt limits). */
-    suspend fun ensureChaldeaCollectionLists(): Boolean = withContext(Dispatchers.IO) {
+    suspend fun ensureChaldeaCollectionLists(shouldStop: () -> Boolean = { false }): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {
             val before = collectionNumbers()
             for (list in listOf("basic_equip", "basic_command_code", "basic_servant")) {
                 for (server in listOf("KR", "JP")) {
+                    if (shouldStop()) return@withLock collectionNumbers() != before
                     metadata(list, server = server)
                 }
             }
@@ -167,7 +168,7 @@ class GameNames(
             val names = resolveKr(emptyList())
             val mysticFile = File(directory, "basic_mystic_code.json")
             val krHash = versions.current()?.get("KR")
-            if (!hasMysticNames || !mysticFile.isFile || (krHash != null && readHash("basic_mystic_code") != krHash)) {
+            if (!hasMysticNames || !mysticFile.isFile || (krHash != null && readNamesHash("basic_mystic_code") != krHash)) {
                 hasMysticNames = refresh("basic_mystic_code", read("basic_mystic_code"), emptyList()).isNotEmpty()
             }
             fun ids(table: String, field: String) = states.flatMap { it.rows(table).orEmpty() }
@@ -256,8 +257,7 @@ class GameNames(
     private fun saveMetadata(list: String, rows: List<AtlasBasic>, regionHash: String?): Map<Long, AtlasBasic> {
         val file = File(directory, "${list}_details.json")
         writeCaptureFile(file, Json.encodeToString(rows))
-        val hashFile = File(directory, "${list}_details.hash")
-        if (regionHash != null) writeCaptureFile(hashFile, regionHash) else hashFile.delete()
+        if (regionHash != null) writeCaptureFile(File(directory, "${list}_details.hash"), regionHash)
         File(directory, "${list}_details.attempt").writeText(now().toString())
         File(directory, "${list}_details.fetched").writeText(now().toString())
         val map = rows.associateBy { it.id }
@@ -265,8 +265,14 @@ class GameNames(
         return map
     }
 
-    private fun readHash(cache: String): String? = runCatching {
-        File(directory, "${cache}_details.hash").readText().trim().takeIf { it.isNotEmpty() }
+    private fun readHash(cache: String): String? = readHashFile(File(directory, "${cache}_details.hash"))
+
+    private fun namesHashFile(list: String): File = File(directory, "$list.json.hash")
+
+    private fun readNamesHash(list: String): String? = readHashFile(namesHashFile(list))
+
+    private fun readHashFile(file: File): String? = runCatching {
+        file.readText().trim().takeIf { it.isNotEmpty() }
     }.getOrNull()
 
     private fun isStale(list: String): Boolean {
@@ -299,7 +305,7 @@ class GameNames(
     private fun refresh(list: String, cache: Map<Long, String>, ids: List<Long>, onIcons: (Map<Long, String>) -> Unit = {}): Map<Long, String> {
         val regionHash = versions.current()?.get("KR")
         val current = if (regionHash != null) {
-            File(directory, "$list.json").isFile && cache.isNotEmpty() && readHash(list) == regionHash
+            File(directory, "$list.json").isFile && cache.isNotEmpty() && readNamesHash(list) == regionHash
         } else {
             cache.isNotEmpty() && ids.all { it in cache }
         }
@@ -320,8 +326,15 @@ class GameNames(
             saveMetadata(list, basic, regionHash)
             val target = File(directory, "$list.json")
             val tmp = File(directory, "$list.tmp")
-            tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
-            check(tmp.renameTo(target) || (target.delete() && tmp.renameTo(target)))
+            try {
+                tmp.writeText(JsonObject(names.mapKeys { it.key.toString() }.mapValues { JsonPrimitive(it.value) }).toString())
+                check(tmp.renameTo(target) || (target.delete() && tmp.renameTo(target)))
+            } finally {
+                tmp.delete()
+            }
+            if (regionHash != null) {
+                writeCaptureFile(namesHashFile(list), regionHash)
+            }
             names
         }.getOrDefault(cache)
     }

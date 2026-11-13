@@ -90,4 +90,32 @@ class AtlasVersionsTest {
         assertEquals(listOf(AtlasVersions.INFO_URL), urls)
         assertTrue(File(directory, "atlas_info.json").isFile)
     }
+
+    @Test fun failedRefreshKeepsSavedHashesAndCheckedAtWhileThrottlingForOneHour() {
+        var time = 1_000L
+        var online = true
+        val versions = AtlasVersions(directory, {
+            if (!online) error("offline")
+            """{"KR":{"hash":"kr1"},"JP":{"hash":"jp1"}}"""
+        }) { time }
+
+        assertEquals(mapOf("KR" to "kr1", "JP" to "jp1"), versions.current())
+        val initialState = File(directory, "atlas_info.json").readText()
+        assertTrue("\"kr\":\"kr1\"" in initialState)
+        assertTrue("\"jp\":\"jp1\"" in initialState)
+
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        online = false
+        assertNull(versions.current())
+        val afterFailState = File(directory, "atlas_info.json").readText()
+        assertTrue("\"kr\":\"kr1\"" in afterFailState)
+        assertTrue("\"jp\":\"jp1\"" in afterFailState)
+        assertTrue("\"checkedAt\":1000" in afterFailState)
+        assertTrue("\"attemptAt\":${1_000L + AtlasVersions.CHECK_INTERVAL_MS}" in afterFailState)
+
+        // Still throttled within the hour after the failed attempt.
+        time += 1_000L
+        online = true
+        assertNull(AtlasVersions(directory, { error("must stay throttled") }) { time }.current())
+    }
 }

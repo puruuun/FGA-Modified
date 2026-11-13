@@ -135,16 +135,18 @@ class AtlasSupportRepositoryTest {
         assertTrue(urls.isEmpty())
     }
 
-    @Test fun throttledAttemptWithoutCacheThrowsNetworkError() = runBlocking {
+    @Test fun failedAttemptWithoutCacheRetriesWithinOneHourAndRecovers() = runBlocking {
         var time = 1_000_000_000L
         var calls = 0
+        var fail = true
         val repo = AtlasSupportRepository(
             cache = cacheDir,
             versionSource = { mapOf("KR" to "kr1", "JP" to "jp1") },
             now = { time },
             fetcher = { _, _ ->
                 calls++
-                throw PortraitImportException(PortraitImportError.Network)
+                if (fail) throw PortraitImportException(PortraitImportError.Network)
+                catalogJson(100600, 90, "네로").toByteArray()
             },
         )
 
@@ -154,12 +156,20 @@ class AtlasSupportRepositoryTest {
         )
         assertEquals(1, calls)
 
-        time += hourMs - 1
+        // Second search within the hour still retries when there is no cache.
+        time += 60_000L
         assertEquals(
             PortraitImportError.Network,
             assertFailsWith<PortraitImportException> { repo.catalog(SupportCatalogKind.Servant, "KR") }.reason,
         )
-        assertEquals(1, calls)
+        assertEquals(2, calls)
+
+        // Recovery within the hour succeeds and records cache + hash.
+        time += 60_000L
+        fail = false
+        assertEquals("네로", repo.catalog(SupportCatalogKind.Servant, "KR").single().name)
+        assertEquals(3, calls)
+        assertEquals("kr1", File(cacheDir, "KR-servant.json.hash").readText())
     }
 
     @Test fun oldCacheWithoutRecordedHashDownloadsInVersionMode() = runBlocking {
@@ -243,12 +253,12 @@ class AtlasSupportRepositoryTest {
         assertEquals(setOf("old-name"), repo.servantNames("JP")[100600])
         assertEquals(5, calls.get())
 
-        // Past 1 day when network recovers: downloads new data and clears stale hash files.
+        // Past 1 day when network recovers: downloads new data and keeps existing hash files.
         fail = false
         assertEquals("new-cat", repo.catalog(SupportCatalogKind.Servant, "JP").single().name)
         assertEquals(setOf("new-name", "new-asc"), repo.servantNames("JP")[100600])
-        assertFalse(catalogHash.exists())
-        assertFalse(namesHash.exists())
+        assertEquals("stale", catalogHash.readText())
+        assertEquals("stale", namesHash.readText())
         assertTrue(catalogFile.isFile)
         assertTrue(namesFile.isFile)
     }

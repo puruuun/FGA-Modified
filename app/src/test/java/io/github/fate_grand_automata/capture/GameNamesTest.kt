@@ -386,6 +386,7 @@ class GameNamesTest {
         )
         listOf("nice_item", "basic_servant", "basic_equip").forEach {
             assertEquals("kr1", File(directory, "${it}_details.hash").readText())
+            assertEquals("kr1", File(directory, "$it.json.hash").readText())
         }
 
         // Next call after 1 hour with same hash does not re-download.
@@ -403,23 +404,113 @@ class GameNamesTest {
         assertEquals(mapOf(100100L to 1L), numbers.servants)
     }
 
-    @Test fun fallbackDownloadClearsStaleHashFile() = runBlocking {
+    @Test fun fallbackDownloadKeepsExistingHashFile() = runBlocking {
         var time = 1_000L
         var online = true
         val cache = GameNames(directory, { url ->
             if (url == AtlasVersions.INFO_URL) {
                 if (!online) error("offline") else infoJson("kr1", "jp1")
             } else {
-                """[{"id":100100,"collectionNo":1}]"""
+                """[{"id":100100,"name":"서번트","collectionNo":1}]"""
             }
         }) { time }
         cache.ensureChaldeaCollectionLists()
+        cache.resolve(listOf(RunGains(bond = mapOf(100100L to 1L))))
         assertEquals("kr1", File(directory, "basic_servant_details.hash").readText())
+        assertEquals("kr1", File(directory, "basic_servant.json.hash").readText())
 
-        // 8 days later, /info is offline -> fallback refreshes and deletes stale hash files.
+        // 8 days later, /info is offline -> fallback refreshes and keeps existing hash files.
         online = false
         time += 8 * 86_400_000L
         cache.ensureChaldeaCollectionLists()
-        assertFalse(File(directory, "basic_servant_details.hash").exists())
+        cache.resolve(listOf(RunGains(bond = mapOf(100100L to 1L, 999999L to 1L))))
+        assertEquals("kr1", File(directory, "basic_servant_details.hash").readText())
+        assertEquals("kr1", File(directory, "basic_servant.json.hash").readText())
+    }
+
+    @Test fun versionModeDownloadsKrNameMapAfterCollectionListsUpdatedDetailsHash() = runBlocking {
+        var time = 1_000L
+        var krHash = "kr1"
+        var hasNewServant = false
+        val urls = mutableListOf<String>()
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson(krHash, "jp1")
+                url.endsWith("/KR/basic_servant.json") -> if (hasNewServant) {
+                    """[{"id":10,"name":"구 서번트","collectionNo":1},{"id":99,"name":"새 한국 서번트","collectionNo":2}]"""
+                } else {
+                    """[{"id":10,"name":"구 서번트","collectionNo":1}]"""
+                }
+                url.endsWith("/KR/basic_equip.json") -> """[{"id":9,"name":"예장","collectionNo":11}]"""
+                url.endsWith("/KR/basic_command_code.json") -> """[{"id":80001,"name":"코드","collectionNo":1}]"""
+                else -> """[{"id":100,"name":"과일","collectionNo":1}]"""
+            }
+        }
+        val names = GameNames(directory, downloader) { time }
+        assertEquals("구 서번트", names.resolve(listOf(RunGains(bond = mapOf(10L to 1L)))).servant(10))
+        assertEquals("kr1", File(directory, "basic_servant_details.hash").readText())
+        assertEquals("kr1", File(directory, "basic_servant.json.hash").readText())
+
+        // Atlas updates KR; ensureChaldeaCollectionLists downloads details and writes basic_servant_details.hash = kr2.
+        time += AtlasVersions.CHECK_INTERVAL_MS
+        krHash = "kr2"
+        hasNewServant = true
+        urls.clear()
+        assertTrue(names.ensureChaldeaCollectionLists())
+        assertEquals("kr2", File(directory, "basic_servant_details.hash").readText())
+        assertEquals("kr1", File(directory, "basic_servant.json.hash").readText())
+
+        // Later resolve() sees basic_servant.json.hash != kr2, downloads the KR name map, and shows the KR name.
+        urls.clear()
+        val resolved = names.resolve(listOf(RunGains(bond = mapOf(99L to 1L))))
+        assertEquals("새 한국 서번트", resolved.servant(99))
+        assertEquals("kr2", File(directory, "basic_servant.json.hash").readText())
+        assertTrue(urls.any { it.endsWith("/KR/basic_servant.json") })
+    }
+
+    @Test fun failedNameMapWriteLeavesNoNewNameMapHash() = runBlocking {
+        // Blocking basic_servant.json with a non-empty directory makes rename/write fail.
+        File(directory, "basic_servant.json").apply {
+            mkdirs()
+            File(this, "blocker").writeText("keep")
+        }
+        val names = GameNames(directory, { url ->
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr1", "jp1")
+                url.endsWith("/KR/basic_servant.json") -> """[{"id":10,"name":"서번트"}]"""
+                else -> """[{"id":999,"name":"JP"}]"""
+            }
+        }) { 1_000L }
+
+        val first = names.resolve(listOf(RunGains(bond = mapOf(10L to 1L))))
+        assertEquals("Servant #10", first.servant(10))
+        assertFalse(File(directory, "basic_servant.json.hash").exists())
+
+        // Existing name-map hash is also preserved when a later write fails.
+        File(directory, "basic_servant.json.hash").writeText("kr0")
+        val second = GameNames(directory, { url ->
+            when {
+                url == AtlasVersions.INFO_URL -> infoJson("kr2", "jp1")
+                url.endsWith("/KR/basic_servant.json") -> """[{"id":10,"name":"서번트"}]"""
+                else -> """[{"id":999,"name":"JP"}]"""
+            }
+        }) { 1_000L + AtlasVersions.CHECK_INTERVAL_MS }.resolve(listOf(RunGains(bond = mapOf(10L to 1L))))
+        assertEquals("Servant #10", second.servant(10))
+        assertEquals("kr0", File(directory, "basic_servant.json.hash").readText())
+    }
+
+    @Test fun ensureChaldeaCollectionListsStopsEarlyWhenShouldStopBecomesTrue() = runBlocking {
+        var stop = false
+        val urls = mutableListOf<String>()
+        val names = GameNames(directory, { url ->
+            if (url == AtlasVersions.INFO_URL) error("offline")
+            urls += url
+            stop = true
+            """[{"id":9300010,"collectionNo":11}]"""
+        }) { 1_000L }
+
+        assertTrue(names.ensureChaldeaCollectionLists { stop })
+        assertEquals(listOf("https://api.atlasacademy.io/export/KR/basic_equip.json"), urls)
     }
 }

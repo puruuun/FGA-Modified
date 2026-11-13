@@ -354,18 +354,38 @@ object ChaldeaSyncManager {
                 }
             }
             if (deferredAgain) return@launch
+            var stoppedEarly = false
             try {
                 val updated = captureSafely("chaldeaCollectionLists", false) {
-                    gameNamesFor(application).ensureChaldeaCollectionLists()
+                    gameNamesFor(application).ensureChaldeaCollectionLists {
+                        synchronized(lock) {
+                            (scriptRunningNow || gen != collectionGen || !enabledNow).also {
+                                if (it) stoppedEarly = true
+                            }
+                        }
+                    }
                 }
                 if (updated && enabledNow && synchronized(lock) { gen == collectionGen }) notifySettingsChanged()
             } finally {
-                synchronized(lock) {
-                    if (gen == collectionGen) {
+                val resumeAfterEarlyStop = synchronized(lock) {
+                    if (gen != collectionGen) {
+                        false
+                    } else {
                         collectionJobRunning = false
-                        lastCollectionFinishedAt = collectionClock()
+                        if (stoppedEarly) {
+                            if (enabledNow && scriptRunningNow) {
+                                collectionDownloadDeferred = true
+                                false
+                            } else {
+                                enabledNow
+                            }
+                        } else {
+                            lastCollectionFinishedAt = collectionClock()
+                            false
+                        }
                     }
                 }
+                if (resumeAfterEarlyStop) startCollectionDownload(application, fromScriptEnd = true)
             }
         }
     }

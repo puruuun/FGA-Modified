@@ -473,4 +473,48 @@ class ChaldeaSyncManagerCollectionTest {
         runBlocking { ChaldeaSyncManager.collectionJob?.join() }
         assertEquals(2, settingsCalls.get())
     }
+
+    @Test
+    fun scriptStartingAfterFirstCollectionListStopsRemainingDownloadsAndResumesAtScriptEnd() {
+        val firstStarted = CountDownLatch(1)
+        val releaseFirst = CountDownLatch(1)
+        val allDone = CountDownLatch(6)
+        val urls = CopyOnWriteArrayList<String>()
+
+        ChaldeaSyncManager.collectionClock = { 1_000L }
+        ChaldeaSyncManager.gameNamesFactory = {
+            GameNames(namesDir, download = { url ->
+                if (url == AtlasVersions.INFO_URL) error("offline")
+                urls += url
+                if (urls.size == 1) {
+                    firstStarted.countDown()
+                    assertTrue(releaseFirst.await(5, TimeUnit.SECONDS))
+                }
+                allDone.countDown()
+                when {
+                    url.endsWith("basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
+                    url.endsWith("basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
+                    url.endsWith("basic_servant.json") -> """[{"id":100100,"collectionNo":1}]"""
+                    else -> "[]"
+                }
+            }) { 1_000L }
+        }
+        ChaldeaSyncManager.init(app, prefsCore)
+        awaitUntil { ChaldeaSyncManager.applyCount >= 1 }
+
+        prefsCore.chaldeaSyncEnabled.set(true)
+        assertTrue(firstStarted.await(5, TimeUnit.SECONDS))
+        ChaldeaSyncManager.onScriptStart()
+        releaseFirst.countDown()
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+
+        assertEquals(1, urls.size)
+        assertTrue(ChaldeaSyncManager.isCollectionDownloadDeferred)
+
+        ChaldeaSyncManager.onScriptEnd()
+        assertTrue(allDone.await(5, TimeUnit.SECONDS))
+        runBlocking { ChaldeaSyncManager.collectionJob?.join() }
+        assertEquals(6, urls.size)
+        assertFalse(ChaldeaSyncManager.isCollectionDownloadDeferred)
+    }
 }

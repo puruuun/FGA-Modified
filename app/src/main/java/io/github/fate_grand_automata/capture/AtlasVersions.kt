@@ -35,7 +35,7 @@ internal class AtlasVersions(
         if (saved.attemptAt != null && isRecent(currentTime, saved.attemptAt)) {
             return null
         }
-        saveState(State(attemptAt = currentTime))
+        saveState(saved.copy(attemptAt = currentTime))
         val parsed = runCatching { parseInfo(download(INFO_URL)) }.getOrNull() ?: return null
         saveState(
             State(

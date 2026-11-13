@@ -220,8 +220,6 @@ class AtlasSupportRepository internal constructor(
                     if (nowMs >= 0L) file.setLastModified(nowMs)
                     if (regionHash != null) {
                         writeSidecar(hashFile, regionHash)
-                    } else {
-                        hashFile.delete()
                     }
                 }
                 value

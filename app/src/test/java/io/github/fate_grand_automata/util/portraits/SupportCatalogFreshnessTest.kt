@@ -62,7 +62,7 @@ class SupportCatalogFreshnessTest {
         }
     }
 
-    @Test fun missingCacheDownloadsEvenIfHashFileMatchesAndRespectsHourlyThrottle() {
+    @Test fun missingCacheAlwaysDownloadsEvenWithinOneHour() {
         assertEquals(
             SupportCatalogAction.Download,
             SupportCatalogFreshness.decide(
@@ -76,7 +76,7 @@ class SupportCatalogFreshnessTest {
             ),
         )
         assertEquals(
-            SupportCatalogAction.Throttled,
+            SupportCatalogAction.Download,
             SupportCatalogFreshness.decide(
                 region = "KR",
                 hasCached = false,

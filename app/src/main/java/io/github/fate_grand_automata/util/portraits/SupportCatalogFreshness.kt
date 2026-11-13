@@ -26,7 +26,10 @@ internal object SupportCatalogFreshness {
         nowMs: Long,
     ): SupportCatalogAction {
         if (region in VERSIONED_REGIONS && regionHash != null) {
-            if (hasCached && recordedHash == regionHash) {
+            if (!hasCached) {
+                return SupportCatalogAction.Download
+            }
+            if (recordedHash == regionHash) {
                 return SupportCatalogAction.UseCache
             }
             if (lastAttemptMs != null && nowMs - lastAttemptMs in 0L until HOUR_MS) {
