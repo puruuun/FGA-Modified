@@ -1324,14 +1324,6 @@
     <string name="dashboard_present_box_header">선물함 (%1$d)</string>
     <string name="dashboard_present_box_notice">마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.</string>
     <string name="dashboard_present_box_empty">선물 없음</string>
-    <string name="dashboard_party_formations">내 파티 편성</string>
-    <string name="dashboard_party_name">파티 %1$d</string>
-    <string name="dashboard_party_cost">코스트 %1$d</string>
-    <string name="dashboard_party_back_line">후열</string>
-    <string name="dashboard_party_support">서포트</string>
-    <string name="dashboard_party_empty">빈칸</string>
-    <string name="dashboard_costumes_header">영의 (%1$d)</string>
-    <string name="dashboard_costumes_count">영의 %1$d개</string>
     <string name="dashboard_command_code_collection">커맨드 코드 도감</string>
     <string name="dashboard_command_codes_progress">보유 %1$d / 전체 %2$d</string>
     <string name="dashboard_command_codes_owned_only">보유 %1$d</string>

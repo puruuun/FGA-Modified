@@ -78,83 +78,46 @@ class DashboardAccountCardsUiTest {
     }
 
     @Test
-    fun costumesCardStartsAtFiveTogglesShowAllAndCollapse() {
-        val state = dashboardState(
-            "userSvtCollection" to (1..7).joinToString(",", "[", "]") { id ->
-                val ids = if (id == 1) "[-11,11,12]" else "[$id]"
-                """{"svtId":$id,"status":2,"costumeIds":$ids}"""
-            },
-        )
-        val data = dashboardData(state, fixture.names)
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
-
-        compose.onNodeWithText("영의 (7)").performScrollTo().assertExists()
-        compose.onNodeWithText("영의 2개").assertExists()
-        compose.onNodeWithTag("dashboard-costumes-list").performScrollToIndex(4)
-        compose.onNodeWithText("샘플 서번트 5").assertExists()
-        compose.onNodeWithText("샘플 서번트 6").assertDoesNotExist()
-
-        compose.onNodeWithTag("dashboard-costumes-toggle").performScrollTo().performClick()
-        compose.onNodeWithTag("dashboard-costumes-list").performScrollToIndex(6)
-        compose.onNodeWithText("샘플 서번트 7").assertExists()
-        compose.onNodeWithTag("dashboard-costumes-toggle").performScrollTo().performClick()
-        compose.onNodeWithText("샘플 서번트 7").assertDoesNotExist()
-    }
-
-    @Test
-    fun partyCardDisplaysSlotsAndSwitchesDecksOnTap() {
+    fun dashboardOmitsCostumeAndPartyCardsEvenWhenStateHasDecksAndCostumeIds() {
         val names = fixture.names.copy(
-            mysticData = mapOf(
-                200L to AtlasBasic(200L, "아틀라스원"),
-                300L to AtlasBasic(300L, "칼데아 전투복"),
-            ),
+            commandCodeData = mapOf(501L to AtlasBasic(501L, "하얀 그릇")),
+            mysticData = mapOf(200L to AtlasBasic(200L, "아틀라스원")),
         )
         val state = dashboardState(
+            "userSvtCollection" to """[
+                {"svtId":1,"status":2,"friendshipRank":10,"friendship":5000,"maxLv":90,"costumeIds":[-11,11,12]}
+            ]""",
             "userDeck" to """[
                 {"deckNo":1,"name":"주회 파티","cost":96,"deckInfo":{
                     "userEquipId":501,
                     "svts":[
-                        {"userSvtId":101,"userSvtEquipIds":[201],"isFollowerSvt":false,"initPos":1},
-                        {"userSvtId":102,"userSvtEquipIds":[0],"isFollowerSvt":false,"initPos":2},
-                        {"userSvtId":0,"userSvtEquipIds":[0],"isFollowerSvt":true,"initPos":3},
-                        {"userSvtId":0,"userSvtEquipIds":[0],"isFollowerSvt":false,"initPos":4},
-                        {"userSvtId":103,"userSvtEquipIds":[],"isFollowerSvt":false,"initPos":5},
-                        {"userSvtId":999999,"userSvtEquipIds":[],"isFollowerSvt":false,"initPos":6}
-                    ]
-                }},
-                {"deckNo":2,"name":"","cost":48,"deckInfo":{
-                    "userEquipId":502,
-                    "svts":[
-                        {"userSvtId":104,"userSvtEquipIds":[201],"isFollowerSvt":false,"initPos":1},
-                        {"userSvtId":0,"userSvtEquipIds":[],"isFollowerSvt":false,"initPos":2}
+                        {"userSvtId":101,"userSvtEquipIds":[201],"isFollowerSvt":false,"initPos":1}
                     ]
                 }}
             ]""",
             "userSvt" to """[
                 {"id":101,"svtId":1,"lv":90,"limitCount":4},
-                {"id":102,"svtId":2,"lv":80,"limitCount":4},
-                {"id":103,"svtId":3,"lv":70,"limitCount":3},
                 {"id":201,"svtId":9400010,"lv":100}
             ]""",
-            "userSvtStorage" to """[{"id":104,"svtId":4,"lv":100,"limitCount":4}]""",
-            "userEquip" to """[{"id":501,"equipId":200,"lv":10},{"id":502,"equipId":300,"lv":6}]""",
+            "userEquip" to """[{"id":501,"equipId":200,"lv":10}]""",
+            "userPresentBox" to """[{"giftType":2,"objectId":6510,"num":3}]""",
+            "userCommandCodeCollection" to """[{"commandCodeId":501,"status":2}]""",
         )
         val data = dashboardData(state, names)
         content { AccountDashboardContent(data, names, "Alias", {}, {}) }
 
-        compose.onNodeWithText("내 파티 편성").performScrollTo().assertExists()
-        compose.onNodeWithText("주회 파티 · 코스트 96").assertExists()
-        compose.onNodeWithText("후열").assertExists()
-        compose.onNodeWithText("서포트").assertExists()
-        compose.onAllNodesWithText("빈칸").assertCountEquals(2)
-        compose.onAllNodesWithText("예장 없음").assertCountEquals(2)
-        compose.onNode(hasAnyAncestor(hasTestTag("party-mystic")) and hasText("아틀라스원")).assertExists()
+        compose.onNodeWithText("서번트 도감").performScrollTo().assertExists()
+        compose.onNodeWithText("선물함 (1)").performScrollTo().assertExists()
+        compose.onNodeWithText("커맨드 코드 도감").performScrollTo().assertExists()
 
-        compose.onNodeWithText("파티 2").performScrollTo().performClick()
-        compose.onNodeWithText("파티 2 · 코스트 48").assertExists()
-        compose.onNodeWithText("샘플 서번트 4").assertExists()
-        compose.onNode(hasAnyAncestor(hasTestTag("party-mystic")) and hasText("칼데아 전투복")).assertExists()
-        compose.onNode(hasAnyAncestor(hasTestTag("party-mystic")) and hasText("아틀라스원")).assertDoesNotExist()
+        compose.onNodeWithText("영의", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("내 파티 편성", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("주회 파티", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-section:9").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-section:11").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-costumes-list").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-costumes-toggle").assertDoesNotExist()
+        compose.onNodeWithTag("party-decks").assertDoesNotExist()
     }
 
     @Test
@@ -209,16 +172,7 @@ class DashboardAccountCardsUiTest {
             mysticData = mapOf(200L to AtlasBasic(200L, "아틀라스원")),
         )
         val data = fixture.data.copy(
-            costumes = listOf(DashboardCostume(svtId = 1L, count = 2)),
             presentBox = DashboardPresentBox(totalCount = 1, entries = listOf(DashboardPresent(2, 6510L, 1L))),
-            parties = listOf(
-                DashboardParty(
-                    deckNo = 1,
-                    name = "파티 1",
-                    cost = 16,
-                    slots = listOf(DashboardPartySlot(DashboardPartySlot.Kind.Servant, svtId = 1L, lv = 90, limitCount = 4)),
-                ),
-            ),
             formations = OwnFormations(
                 main = listOf(OwnDeck(1L, 1, listOf(FriendSlot(deckId = 1L, classId = 0, svtId = 1L, lv = 90, np = 1)))),
                 event = emptyList(),
@@ -238,7 +192,7 @@ class DashboardAccountCardsUiTest {
             )
         }
 
-        val expectedOrder = listOf(0, 1, 2, 3, 9, 4, 10, 11, 7, 8, 5, 12, 6)
+        val expectedOrder = listOf(0, 1, 2, 3, 4, 10, 7, 8, 5, 12, 6)
         val tops = expectedOrder.map { section ->
             compose.onNodeWithTag("dashboard-section:$section").fetchSemanticsNode().positionInRoot.y
         }

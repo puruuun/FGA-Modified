@@ -5,7 +5,6 @@ import io.github.fate_grand_automata.scripts.capture.OwnFormations
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import io.github.fate_grand_automata.util.grouped
-import kotlin.math.abs
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,25 +74,6 @@ data class DashboardStorage(val total: Int?, val servants: Int?, val equips: Int
     val servantLimit: Long?, val equipLimit: Long?, val commandCodes: Int?, val secondStorage: Int?)
 data class DashboardPresent(val giftType: Int, val objectId: Long, val count: Long)
 data class DashboardPresentBox(val totalCount: Int, val entries: List<DashboardPresent>)
-data class DashboardPartyCe(val svtId: Long, val lv: Int?)
-data class DashboardPartyMystic(val equipId: Long, val lv: Int?)
-data class DashboardPartySlot(
-    val kind: Kind,
-    val svtId: Long = 0L,
-    val lv: Int? = null,
-    val limitCount: Int? = null,
-    val ce: DashboardPartyCe? = null,
-) {
-    enum class Kind { Servant, Support, Empty }
-}
-data class DashboardParty(
-    val deckNo: Int,
-    val name: String?,
-    val cost: Int?,
-    val slots: List<DashboardPartySlot>,
-    val mysticCode: DashboardPartyMystic? = null,
-)
-data class DashboardCostume(val svtId: Long, val count: Int)
 data class DashboardCommandCodes(val ownedIds: List<Long>, val total: Int?)
 
 /** Version-specific projection built once on Dispatchers.Default, never during composition. */
@@ -106,8 +86,6 @@ data class DashboardData(
     /** The owner's own support and Grand formations; null when the stored state has none or cannot be read. */
     val formations: OwnFormations? = null,
     val presentBox: DashboardPresentBox? = null,
-    val parties: List<DashboardParty>? = null,
-    val costumes: List<DashboardCostume>? = null,
     val commandCodes: DashboardCommandCodes? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
@@ -208,11 +186,9 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap): Da
     }?.sortedWith(compareByDescending<DashboardEquip> { it.level ?: -1L }.thenBy { it.id })
     val split = game?.number("freeStone")?.let { free -> game.number("chargeStone")?.let { free to it } }
     val presentBox = projectPresentBox(rows("userPresentBox"))
-    val parties = projectParties(rows("userDeck"), svts, { rows("userSvtStorage") }, equipRows)
-    val costumes = projectCostumes(collectionRows, names)
     val commandCodes = projectCommandCodes(rows("userCommandCodeCollection"), names)
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
-        OwnFormations.from(state, game), presentBox, parties, costumes, commandCodes)
+        OwnFormations.from(state, game), presentBox, commandCodes)
 }
 
 private fun projectPresentBox(rows: List<JsonObject>?): DashboardPresentBox? {
@@ -234,76 +210,6 @@ private fun projectPresentBox(rows: List<JsonObject>?): DashboardPresentBox? {
                 .thenBy { it.giftType }
         )
     return DashboardPresentBox(rows.size, entries)
-}
-
-private fun projectParties(
-    deckRows: List<JsonObject>?,
-    svtRows: List<JsonObject>?,
-    storageRows: () -> List<JsonObject>?,
-    equipRows: List<JsonObject>?,
-): List<DashboardParty>? {
-    if (deckRows.isNullOrEmpty()) return null
-    val svtInstances = buildMap<Long, JsonObject> {
-        storageRows().orEmpty().forEach { row -> row.number("id")?.let { put(it, row) } }
-        svtRows.orEmpty().forEach { row -> row.number("id")?.let { put(it, row) } }
-    }
-    val equipById = equipRows.orEmpty().mapNotNull { row -> row.number("id")?.let { it to row } }.toMap()
-    return deckRows.mapNotNull { deckRow ->
-        val deckNo = deckRow.number("deckNo")?.toInt() ?: return@mapNotNull null
-        val info = deckRow["deckInfo"] as? JsonObject ?: return@mapNotNull null
-        val name = deckRow.text("name")?.takeIf { it.isNotBlank() }
-        val cost = deckRow.number("cost")?.toInt()
-        val slotRows = (info["svts"] as? JsonArray).orEmpty()
-            .mapNotNull { it as? JsonObject }
-            .sortedBy { it.number("initPos") ?: Long.MAX_VALUE }
-        val slots = slotRows.map { slot ->
-            val ceId = (slot["userSvtEquipIds"] as? JsonArray).orEmpty()
-                .mapNotNull { (it as? JsonPrimitive)?.longOrNull }
-                .firstOrNull { it != 0L }
-            val ce = ceId?.let { svtInstances[it] }?.let { row ->
-                row.number("svtId")?.takeIf { it > 0L }?.let { DashboardPartyCe(it, row.number("lv")?.toInt()) }
-            }
-            val follower = (slot["isFollowerSvt"] as? JsonPrimitive)?.booleanOrNull == true
-            val userSvtId = slot.number("userSvtId") ?: 0L
-            when {
-                follower -> DashboardPartySlot(DashboardPartySlot.Kind.Support, ce = ce)
-                userSvtId <= 0L -> DashboardPartySlot(DashboardPartySlot.Kind.Empty, ce = ce)
-                else -> {
-                    val svtRow = svtInstances[userSvtId]
-                    val svtId = svtRow?.number("svtId")?.takeIf { it > 0L }
-                    if (svtId == null) DashboardPartySlot(DashboardPartySlot.Kind.Empty, ce = ce)
-                    else DashboardPartySlot(
-                        DashboardPartySlot.Kind.Servant,
-                        svtId = svtId,
-                        lv = svtRow.number("lv")?.toInt(),
-                        limitCount = svtRow.number("limitCount")?.toInt(),
-                        ce = ce,
-                    )
-                }
-            }
-        }
-        val mystic = info.number("userEquipId")?.takeIf { it > 0L }?.let { equipById[it] }?.let { row ->
-            row.number("equipId")?.takeIf { it > 0L }?.let { DashboardPartyMystic(it, row.number("lv")?.toInt()) }
-        }
-        DashboardParty(deckNo, name, cost, slots, mystic)
-    }.sortedBy { it.deckNo }.takeIf { it.isNotEmpty() }
-}
-
-private fun projectCostumes(collectionRows: List<JsonObject>?, names: GameNameMap): List<DashboardCostume>? {
-    if (collectionRows == null) return null
-    return collectionRows.mapNotNull { row ->
-        val svtId = row.number("svtId") ?: return@mapNotNull null
-        val count = (row["costumeIds"] as? JsonArray).orEmpty()
-            .mapNotNull { (it as? JsonPrimitive)?.longOrNull }
-            .map { abs(it) }
-            .distinct()
-            .size
-        if (count == 0) null else DashboardCostume(svtId, count)
-    }.sortedWith(
-        compareByDescending<DashboardCostume> { it.count }
-            .thenBy(nullsLast()) { names.servantData[it.svtId]?.collectionNo?.takeIf { no -> no > 0L } }
-            .thenBy { it.svtId }
-    ).takeIf { it.isNotEmpty() }
 }
 
 private fun projectCommandCodes(rows: List<JsonObject>?, names: GameNameMap): DashboardCommandCodes? {

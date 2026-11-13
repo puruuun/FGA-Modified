@@ -15,8 +15,6 @@ import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
-import io.github.fate_grand_automata.capture.DashboardParty
-import io.github.fate_grand_automata.capture.DashboardPartySlot
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.scripts.capture.*
 import io.github.fate_grand_automata.ui.more.classLabel
@@ -68,110 +66,6 @@ internal fun GrandFormation(grand: List<FriendGrandSlot>, names: GameNameMap) {
 @Composable
 private fun FormationNone() {
     Text(stringResource(R.string.dashboard_formation_none), modifier = Modifier.testTag("formation-none"))
-}
-
-/** 내 파티 편성: user decks with front/back line slots and equipped mystic code. */
-@Composable
-internal fun PartyFormations(parties: List<DashboardParty>, names: GameNameMap) {
-    if (parties.isEmpty()) return
-    var selectedDeckNo by rememberSaveable { mutableIntStateOf(parties.first().deckNo) }
-    val deck = parties.firstOrNull { it.deckNo == selectedDeckNo } ?: parties.first()
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("party-decks")) {
-        parties.forEach { option ->
-            val label = option.name ?: stringResource(R.string.dashboard_party_name, option.deckNo)
-            FilterChip(
-                selected = option.deckNo == deck.deckNo,
-                onClick = { selectedDeckNo = option.deckNo },
-                label = { Text(label) },
-            )
-        }
-    }
-    val deckName = deck.name ?: stringResource(R.string.dashboard_party_name, deck.deckNo)
-    val headerText = if (deck.cost != null) {
-        "$deckName · ${stringResource(R.string.dashboard_party_cost, deck.cost)}"
-    } else {
-        deckName
-    }
-    Text(headerText, style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("party-header"))
-    deck.slots.forEachIndexed { index, slot ->
-        if (index == 3) {
-            Text(
-                stringResource(R.string.dashboard_party_back_line),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp).testTag("party-back-line"),
-            )
-        }
-        PartySlotRow(slot, names)
-    }
-    deck.mysticCode?.let { mystic ->
-        val metadata = names.mysticData[mystic.equipId]
-        Row(
-            Modifier.fillMaxWidth().padding(top = 4.dp).testTag("party-mystic"),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AtlasIcon("mystics", mystic.equipId, metadata?.icon)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    metadata?.name ?: "#${mystic.equipId}",
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                mystic.lv?.let {
-                    Text(stringResource(R.string.dashboard_level_value, it), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PartySlotRow(slot: DashboardPartySlot, names: GameNameMap) {
-    if (slot.kind != DashboardPartySlot.Kind.Servant) {
-        Column(Modifier.fillMaxWidth().testTag("party-row")) {
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val label = stringResource(
-                    if (slot.kind == DashboardPartySlot.Kind.Support) R.string.dashboard_party_support
-                    else R.string.dashboard_party_empty,
-                )
-                Text(
-                    label,
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (slot.kind == DashboardPartySlot.Kind.Empty) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurface,
-                )
-                slot.ce?.let { ce ->
-                    Box(Modifier.weight(1f)) { FormationCe(ce.svtId, 0, ce.lv, names, showMax = false) }
-                }
-            }
-            HorizontalDivider()
-        }
-        return
-    }
-    val svtName = names.servants[slot.svtId] ?: names.servantData[slot.svtId]?.name ?: "#${slot.svtId}"
-    val detail = listOfNotNull(
-        slot.lv?.let { stringResource(R.string.friends2_level_compact, it) },
-        names.servantData[slot.svtId]?.className?.let { dashboardClass(it) },
-    ).joinToString(" · ")
-    ResponsiveSlotRow(
-        svtId = slot.svtId,
-        svtName = svtName,
-        detail = detail,
-        names = names,
-        rowTag = "party-row",
-        showMax = false,
-    ) { modifier ->
-        Column(modifier) {
-            FormationCe(slot.ce?.svtId ?: 0L, 0, slot.ce?.lv, names, showMax = false)
-        }
-    }
 }
 
 @Composable

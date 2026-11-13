@@ -106,10 +106,8 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (data.resources.isNotEmpty() || data.teapots != null || dashboardAp(data.game, now) != null || data.game?.number("carryOverActPoint") != null || (data.game?.number("commandSpellRecoverAt") ?: 0) > now) add(1)
                     if (data.storage != null) add(2)
                     if (!data.servants.isNullOrEmpty()) add(3)
-                    if (!data.costumes.isNullOrEmpty()) add(9)
                     if (!data.inventory.isNullOrEmpty()) add(4)
                     if (data.presentBox != null) add(10)
-                    if (!data.parties.isNullOrEmpty()) add(11)
                     add(7)
                     if (data.formations?.grand?.isNotEmpty() == true) add(8)
                     if (!data.equips.isNullOrEmpty()) add(5)
@@ -138,9 +136,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                                 6 -> Recent(battle, outside, names, openLogs)
                                 7 -> SupportFormation(data.formations, names)
                                 8 -> GrandFormation(data.formations!!.grand, names)
-                                9 -> Costumes(data.costumes!!, names)
                                 10 -> PresentBox(data.presentBox!!, names)
-                                11 -> PartyFormations(data.parties!!, names)
                                 12 -> CommandCodeCollection(data.commandCodes!!, names)
                             }
                         }
@@ -158,7 +154,6 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
 
 @Composable
 private fun sectionTitle(section: Int, data: DashboardData): String = when (section) {
-    9 -> stringResource(R.string.dashboard_costumes_header, data.costumes?.size ?: 0)
     10 -> stringResource(R.string.dashboard_present_box_header, data.presentBox?.totalCount ?: 0)
     else -> {
         val titles = mapOf(
@@ -171,7 +166,6 @@ private fun sectionTitle(section: Int, data: DashboardData): String = when (sect
             6 to R.string.dashboard_recent,
             7 to R.string.dashboard_formation_support,
             8 to R.string.dashboard_formation_grand,
-            11 to R.string.dashboard_party_formations,
             12 to R.string.dashboard_command_code_collection,
         )
         stringResource(titles.getValue(section))
@@ -376,41 +370,6 @@ private fun InventoryGroup.label() = when (this) {
     val parts = mutableListOf<String>()
     for (resource in resources.take(3)) parts += "${resourceName(resource.type, resource.id, names)} ${resource.count?.let(::signedOutsideCount) ?: "—"}"
     return parts.joinToString(" · ")
-}
-
-@Composable private fun Costumes(costumes: List<DashboardCostume>, names: GameNameMap) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    val shown = if (expanded) costumes else costumes.take(5)
-    LazyColumn(
-        Modifier.fillMaxWidth().heightIn(max = if (expanded) 560.dp else 280.dp).testTag("dashboard-costumes-list"),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(shown, key = { it.svtId }) { costume ->
-            val atlas = names.servantData[costume.svtId]
-            val name = names.servants[costume.svtId] ?: atlas?.name ?: "#${costume.svtId}"
-            Row(
-                Modifier.heightIn(min = 48.dp).testTag("dashboard-costume-row"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AtlasIcon("servants", costume.svtId, atlas?.icon)
-                Column(Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        stringResource(R.string.dashboard_costumes_count, costume.count),
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-    if (expanded || costumes.size > 5) {
-        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-costumes-toggle")) {
-            Text(if (expanded) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, costumes.size))
-        }
-    }
 }
 
 @Composable private fun PresentBox(presentBox: DashboardPresentBox, names: GameNameMap) {

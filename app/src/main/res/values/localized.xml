@@ -1393,14 +1393,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_present_box_header">Present box (%1$d)</string>
     <string name="dashboard_present_box_notice">Gifts received after the last login are shown after the next login.</string>
     <string name="dashboard_present_box_empty">No gifts</string>
-    <string name="dashboard_party_formations">My party formations</string>
-    <string name="dashboard_party_name">Party %1$d</string>
-    <string name="dashboard_party_cost">Cost %1$d</string>
-    <string name="dashboard_party_back_line">Back line</string>
-    <string name="dashboard_party_support">Support</string>
-    <string name="dashboard_party_empty">Empty</string>
-    <string name="dashboard_costumes_header">Costumes (%1$d)</string>
-    <string name="dashboard_costumes_count">Costumes %1$d</string>
     <string name="dashboard_command_code_collection">Command code collection</string>
     <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>
     <string name="dashboard_command_codes_owned_only">Command codes: %1$d owned</string>
