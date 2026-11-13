@@ -56,6 +56,8 @@ private class Fx(val ts: TestScope, val tmp: File) {
 
     val loaded = mutableMapOf<String, ChaldeaAccountSource.Loaded>()
     val current = mutableMapOf<ChaldeaServer, String>()
+    var numbers = ChaldeaCollectionNumbers.EMPTY
+    var collectionNumberCalls = 0
 
     val store = ChaldeaSyncStore(File(tmp, "sync"))
     val backups = ChaldeaBackupStore(File(tmp, "bk"))
@@ -134,6 +136,10 @@ private class Fx(val ts: TestScope, val tmp: File) {
             return loaded[userId]
         }
         override fun currentIds() = current.toMap()
+        override fun collectionNumbers(): ChaldeaCollectionNumbers {
+            collectionNumberCalls++
+            return numbers
+        }
     }
 
     val sch = ChaldeaSyncScheduler(
@@ -983,5 +989,95 @@ class ChaldeaSyncSchedulerTest {
         sch.onSettingsChanged()
         advance(1_000)
         assertNull(kr)
+    }
+
+    @Test fun schedulerReadsCollectionNumbersOncePerPassAndPublishesStage2Status() = fx {
+        numbers = ChaldeaCollectionNumbers(equips = mapOf(9300010L to 11L), commandCodes = mapOf(80001L to 1L))
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(
+                mapOf(
+                    "userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""",
+                    "userSvtCoin" to """[{"svtId":100100,"num":15},{"svtId":200100,"num":30}]""",
+                    "userSvtCollection" to """[{"svtId":9300010,"status":2}]""",
+                    "userSvt" to """[{"svtId":9300010,"lv":40,"limitCount":2}]""",
+                    "userCommandCodeCollection" to """[{"commandCodeId":80001,"status":2},{"commandCodeId":99999,"status":2}]""",
+                ),
+                "[]", null, 1L, 2L,
+            ),
+        )
+        loaded["jp"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Jp,
+            AccountState(mapOf("userGame" to """[{"friendCode":"222","name":"J","genderType":2}]"""), "[]", null, 1L, 2L),
+        )
+        current[ChaldeaServer.Kr] = "kr"
+        current[ChaldeaServer.Jp] = "jp"
+        commitResult = { n ->
+            val p = commits.last().first
+            ChaldeaSyncResult(
+                ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("w$n".toByteArray()),
+                itemCount = p.items?.size ?: 0,
+                coinCount = p.svtCoins?.size ?: 0,
+                ceCount = p.craftEssences?.size ?: 0,
+                ccCount = p.commandCodes?.size ?: 0,
+            )
+        }
+        start()
+        loads = 0
+        collectionNumberCalls = 0
+        sch.onAccountSaved(listOf("kr", "jp"))
+        advance(MIN + 1_000)
+
+        // Two passes (pre-check and write): one collectionNumbers() read per pass, not per account (loads = 4).
+        assertEquals(4, loads)
+        assertEquals(2, collectionNumberCalls)
+        assertEquals(2, commits.size)
+        val statusKr = assertIs<ChaldeaSyncStatus.Synced>(kr)
+        assertEquals(2, statusKr.coins)
+        assertEquals(1, statusKr.craftEssences)
+        assertEquals(1, statusKr.commandCodes)
+        assertEquals(1, statusKr.unmapped)
+    }
+
+    @Test fun settingsChangedAfterNumbersCachedResolvesPendingAccount() = fx {
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(
+                mapOf(
+                    "userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""",
+                    "userSvtCollection" to """[{"svtId":9300010,"status":2}]""",
+                    "userCommandCodeCollection" to """[{"commandCodeId":80001,"status":2}]""",
+                ),
+                "[]", null, 1L, 2L,
+            ),
+        )
+        current[ChaldeaServer.Kr] = "kr"
+        commitResult = { n ->
+            val p = commits.last().first
+            ChaldeaSyncResult(
+                ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("w$n".toByteArray()),
+                ceCount = p.craftEssences?.size ?: 0,
+                ccCount = p.commandCodes?.size ?: 0,
+            )
+        }
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+        // Account stays pending because Chaldea is visible.
+        assertEquals(0, commits.size)
+        assertEquals(ChaldeaSyncStatus.WaitingVisible, sch.status.value)
+
+        // Collection lists finish caching in the background and notify the scheduler.
+        numbers = ChaldeaCollectionNumbers(equips = mapOf(9300010L to 11L), commandCodes = mapOf(80001L to 1L))
+        stateFn = { _, _ -> ChaldeaRunState.NotRunning }
+        sch.onSettingsChanged()
+        advance(MIN + 1_000)
+
+        assertEquals(1, commits.size)
+        val synced = assertIs<ChaldeaSyncStatus.Synced>(kr)
+        assertEquals(1, synced.craftEssences)
+        assertEquals(1, synced.commandCodes)
+        assertEquals(0, synced.unmapped)
     }
 }

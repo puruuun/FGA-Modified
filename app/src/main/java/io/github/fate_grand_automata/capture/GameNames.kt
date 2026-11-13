@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.scripts.capture.AccountState
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaCollectionNumbers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -11,6 +12,7 @@ import kotlinx.serialization.encodeToString
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 data class GameNameMap(
     val items: Map<Long, String> = emptyMap(),
@@ -57,7 +59,38 @@ class GameNames(
     private val mutex = Mutex()
     private var loaded: GameNameMap? = null
     private var hasMysticNames = false
-    private val metadataCache = mutableMapOf<String, CachedMetadata>()
+    private val metadataCache = ConcurrentHashMap<String, CachedMetadata>()
+
+    /** Cache-only CE and command-code collection numbers from KR and JP details files; never downloads or throws. */
+    fun collectionNumbers(): ChaldeaCollectionNumbers = runCatching {
+        fun readCachedMap(list: String): Map<Long, Long> {
+            val out = LinkedHashMap<Long, Long>()
+            for (server in listOf("KR", "JP")) {
+                for ((id, basic) in cachedMetadata(list, server)) {
+                    val colNo = basic.collectionNo
+                    if (colNo != null && colNo > 0L) out[id] = colNo
+                }
+            }
+            return out
+        }
+        ChaldeaCollectionNumbers(
+            equips = readCachedMap("basic_equip"),
+            commandCodes = readCachedMap("basic_command_code"),
+        )
+    }.getOrDefault(ChaldeaCollectionNumbers.EMPTY)
+
+    /** Ensures KR and JP CE and command-code lists are cached (respecting daily attempt limits). */
+    suspend fun ensureChaldeaCollectionLists(): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val before = collectionNumbers()
+            for (list in listOf("basic_equip", "basic_command_code")) {
+                for (server in listOf("KR", "JP")) {
+                    metadata(list, server = server)
+                }
+            }
+            collectionNumbers() != before
+        }
+    }
 
     suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false,
         hasJpAccount: Boolean = false, cardIds: Collection<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
@@ -184,15 +217,20 @@ class GameNames(
         )
     }
 
-    private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
+    private fun cachedMetadata(list: String, server: String = "KR"): Map<Long, AtlasBasic> {
         val cache = if (server == "JP") "jp_$list" else list
         val file = File(directory, "${cache}_details.json")
         val memory = metadataCache[cache]?.takeIf { file.isFile && file.lastModified() == it.lastModified && file.length() == it.length }?.data
-        val cached = memory ?: runCatching {
+        return memory ?: runCatching {
             val data = Json.decodeFromString<List<AtlasBasic>>(file.readText()).associateBy { it.id }
             if (file.isFile) metadataCache[cache] = CachedMetadata(file.lastModified(), file.length(), data)
             data
         }.getOrDefault(emptyMap())
+    }
+
+    private fun metadata(list: String, required: Set<Long> = emptySet(), server: String = "KR"): Map<Long, AtlasBasic> {
+        val cache = if (server == "JP") "jp_$list" else list
+        val cached = cachedMetadata(list, server)
         // Card exports refresh by age, including when an unknown id is absent from Atlas.
         val current = if (server == "KR" && list == "nice_item") required.all { it in cached } else !isStale(cache)
         if (cached.isNotEmpty() && current) return cached

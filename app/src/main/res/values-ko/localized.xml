@@ -1271,7 +1271,8 @@
     <string name="chaldea_sync_status_off">"꺼져 있음."</string>
     <string name="chaldea_sync_status_idle">"아직 반영할 내용이 없습니다."</string>
     <string name="chaldea_sync_status_working">"반영 중..."</string>
-    <string name="chaldea_sync_status_synced">"마지막 반영 %1$s: 아이템 %2$d개, 마술예장 %3$d개, 클래스 보드 %4$d개."</string>
+    <string name="chaldea_sync_status_synced">"마지막 반영 %1$s: 아이템 %2$d개, 마술예장 %3$d개, 클래스 보드 %4$d개, 서번트 코인 %5$d개, 개념예장 %6$d개, 커맨드 코드 %7$d개."</string>
+    <string name="chaldea_sync_status_unmapped">"도감 번호를 몰라 건너뛴 항목 %1$d개 (다음 반영 때 다시 시도합니다)."</string>
     <string name="chaldea_sync_status_created">"Chaldea 사용자를 새로 만들었습니다."</string>
     <string name="chaldea_sync_status_region">"Chaldea 사용자의 지역이 게임 서버와 다릅니다(바꾸지 않음)."</string>
     <string name="chaldea_sync_status_package">"사용한 앱: %s."</string>

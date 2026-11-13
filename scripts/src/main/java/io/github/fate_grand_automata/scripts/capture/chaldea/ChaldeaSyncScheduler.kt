@@ -512,6 +512,7 @@ class ChaldeaSyncScheduler(
         val source = ids ?: synchronized(lock) { pending.toList() }
         val synced = store.read().syncedPatchHash
         val current = accounts.currentIds()
+        val numbers = accounts.collectionNumbers()
         val out = ArrayList<Target>()
         for (id in source) {
             val gen = genOf(id)
@@ -520,7 +521,7 @@ class ChaldeaSyncScheduler(
                 settleIf(id, gen)
                 continue
             }
-            val patch = ChaldeaPatch.from(loaded.state, loaded.server)
+            val patch = ChaldeaPatch.from(loaded.state, loaded.server, numbers)
             if (patch.friendCode == null) {
                 setServerResult(loaded.server, ChaldeaSyncStatus.AccountNotIdentified)
                 settleIf(id, gen)
@@ -717,9 +718,18 @@ class ChaldeaSyncScheduler(
                         setServerResult(
                             t.server,
                             ChaldeaSyncStatus.Synced(
-                                wallClock(), r.itemCount, r.mysticCodeCount, r.boardCount,
-                                created = r.created, regionMismatch = r.regionMismatch,
-                                packageName = r.packageName, bothPackages = r.bothPackages,
+                                wallClock(),
+                                r.itemCount,
+                                r.mysticCodeCount,
+                                r.boardCount,
+                                coins = r.coinCount,
+                                craftEssences = r.ceCount,
+                                commandCodes = r.ccCount,
+                                unmapped = t.patch.unmapped,
+                                created = r.created,
+                                regionMismatch = r.regionMismatch,
+                                packageName = r.packageName,
+                                bothPackages = r.bothPackages,
                             ),
                         )
                         Pass.Done

@@ -1029,7 +1029,8 @@
     <string name="chaldea_sync_status_off">"オフ。"</string>
     <string name="chaldea_sync_status_idle">"反映する内容はまだありません。"</string>
     <string name="chaldea_sync_status_working">"反映中..."</string>
-    <string name="chaldea_sync_status_synced">"最終反映 %1$s: アイテム%2$d件、魔術礼装%3$d件、クラスボード%4$d件。"</string>
+    <string name="chaldea_sync_status_synced">"最終反映 %1$s: アイテム%2$d件、魔術礼装%3$d件、クラスボード%4$d件、サーヴァントコイン%5$d件、概念礼装%6$d件、コマンドコード%7$d件。"</string>
+    <string name="chaldea_sync_status_unmapped">"図鑑番号が不明なため%1$d件を飛ばしました（次回の反映で再試行します）。"</string>
     <string name="chaldea_sync_status_created">"Chaldeaのユーザーを新しく作成しました。"</string>
     <string name="chaldea_sync_status_region">"Chaldeaユーザーの地域がゲームサーバーと異なります（変更していません）。"</string>
     <string name="chaldea_sync_status_package">"使用: %s。"</string>

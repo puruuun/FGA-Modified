@@ -339,4 +339,283 @@ class ChaldeaSyncLogicTest {
         assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.TooLarge), ChaldeaUserdataEditor.selectBase(big, bytes(valid)))
         assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.TooLarge), ChaldeaUserdataEditor.selectBase(bytes(valid), big))
     }
+
+    // ---- stage 2: coins, craft essences, command codes ----
+
+    private val stage2Numbers = ChaldeaCollectionNumbers(
+        equips = mapOf(9300010L to 11L, 9300020L to 22L, 9300030L to 33L),
+        commandCodes = mapOf(80001L to 1L, 80002L to 2L, 80003L to 3L),
+    )
+
+    @Test fun svtCoinsBuildWithCoinIdRuleAndNullWhenTableMissing() {
+        val withCoins = ChaldeaPatch.from(
+            state("userGame" to game, "userSvtCoin" to """[{"svtId":100100,"num":120},{"svtId":200300,"num":5}]"""),
+            ChaldeaServer.Kr,
+        )
+        assertEquals(mapOf(10010001L to 120L, 20030001L to 5L), withCoins.svtCoins)
+
+        val withoutCoins = ChaldeaPatch.from(state("userGame" to game), ChaldeaServer.Kr)
+        assertNull(withoutCoins.svtCoins)
+    }
+
+    @Test fun craftEssencesAggregateStatusAndMaxLvLimitCount() {
+        val st = state(
+            "userGame" to game,
+            // 100100 is a servant (not in equips, must be ignored, not counted as unmapped)
+            // 9300010 has 2 held copies; 9300020 has status 1 and no copy held; 9300030 has status 0 (skipped)
+            "userSvtCollection" to """[
+                {"svtId":100100,"status":2},
+                {"svtId":9300010,"status":2},
+                {"svtId":9300020,"status":1},
+                {"svtId":9300030,"status":0}
+            ]""",
+            "userSvt" to """[
+                {"svtId":100100,"lv":90,"limitCount":4},
+                {"svtId":9300010,"lv":50,"limitCount":1},
+                {"svtId":9300010,"lv":20,"limitCount":4}
+            ]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage2Numbers)
+        assertEquals(0, p.unmapped)
+        assertEquals(
+            mapOf(
+                11L to ChaldeaPatch.CeStatus(status = 2L, lv = 50L, limitCount = 4L),
+                22L to ChaldeaPatch.CeStatus(status = 1L, lv = null, limitCount = null),
+            ),
+            p.craftEssences,
+        )
+    }
+
+    @Test fun craftEssenceHeldWithoutCollectionRowGetsStatus2() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to "[]",
+            "userSvt" to """[{"svtId":9300030,"lv":15,"limitCount":2}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage2Numbers)
+        assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 15L, limitCount = 2L)), p.craftEssences)
+    }
+
+    @Test fun commandCodesCountCopiesDefaultStatusAndCountDistinctUnmapped() {
+        val st = state(
+            "userGame" to game,
+            "userCommandCodeCollection" to """[
+                {"commandCodeId":80001,"status":1},
+                {"commandCodeId":80002,"status":0},
+                {"commandCodeId":99991,"status":2}
+            ]""",
+            "userCommandCode" to """[
+                {"commandCodeId":80003},
+                {"commandCodeId":80003},
+                {"commandCodeId":99991},
+                {"commandCodeId":99992}
+            ]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage2Numbers)
+        assertEquals(
+            mapOf(
+                1L to ChaldeaPatch.CcStatus(status = 1L, count = 0L),
+                3L to ChaldeaPatch.CcStatus(status = 2L, count = 2L),
+            ),
+            p.commandCodes,
+        )
+        // 99991 appears in both collection and held table; 99992 appears once -> 2 distinct ids
+        assertEquals(2, p.unmapped)
+    }
+
+    @Test fun emptyNumbersOrMissingTablesLeaveStage2FieldsNullAndCountUnmapped() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":9300010,"status":2}]""",
+            "userSvt" to """[{"svtId":9300010,"lv":10,"limitCount":0}]""",
+            "userCommandCodeCollection" to """[{"commandCodeId":80001,"status":2}]""",
+            "userCommandCode" to """[{"commandCodeId":80001},{"commandCodeId":80002}]""",
+        )
+        val emptyMapPatch = ChaldeaPatch.from(st, ChaldeaServer.Kr, ChaldeaCollectionNumbers.EMPTY)
+        assertNull(emptyMapPatch.craftEssences)
+        assertNull(emptyMapPatch.commandCodes)
+        assertEquals(2, emptyMapPatch.unmapped)
+
+        val missingTables = ChaldeaPatch.from(state("userGame" to game), ChaldeaServer.Kr, stage2Numbers)
+        assertNull(missingTables.svtCoins)
+        assertNull(missingTables.craftEssences)
+        assertNull(missingTables.commandCodes)
+        assertEquals(0, missingTables.unmapped)
+    }
+
+    @Test fun stage2JsonRoundTripCanonicalAndBackwardCompatibleWithStage1Json() {
+        val p = ChaldeaPatch(
+            friendCode = "123,456",
+            server = ChaldeaServer.Kr,
+            nickname = "Synth",
+            isGirl = true,
+            items = mapOf(2L to 5L),
+            mysticCodes = null,
+            classBoards = null,
+            svtCoins = mapOf(20010001L to 30L, 10010001L to 10L),
+            craftEssences = mapOf(
+                22L to ChaldeaPatch.CeStatus(1L, null, null),
+                11L to ChaldeaPatch.CeStatus(2L, 50L, 4L),
+            ),
+            commandCodes = mapOf(
+                3L to ChaldeaPatch.CcStatus(2L, 2L),
+                1L to ChaldeaPatch.CcStatus(1L, 0L),
+            ),
+            unmapped = 4,
+        )
+        val json = p.toJson()
+        val obj = Json.parseToJsonElement(json).jsonObject
+        assertFalse("unmapped" in obj)
+        assertEquals(listOf("10010001", "20010001"), obj["svtCoins"]!!.jsonObject.keys.toList())
+        assertEquals(listOf("11", "22"), obj["craftEssences"]!!.jsonObject.keys.toList())
+        assertEquals(listOf("1", "3"), obj["commandCodes"]!!.jsonObject.keys.toList())
+
+        val decoded = ChaldeaPatch.fromJson(json)!!
+        assertEquals(p.copy(unmapped = 0), decoded)
+        assertEquals(p.hash(), p.copy(unmapped = 99).hash())
+        assertEquals(p.hash(), decoded.hash())
+        assertNotEquals(p.hash(), p.copy(svtCoins = mapOf(10010001L to 11L)).hash())
+        assertNotEquals(p.hash(), p.copy(craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(2L, 51L, 4L))).hash())
+        assertNotEquals(p.hash(), p.copy(commandCodes = mapOf(1L to ChaldeaPatch.CcStatus(2L, 1L))).hash())
+
+        val stage1Json = """{"friendCode":"123,456","server":"kr","items":{"1":100}}"""
+        val stage1Decoded = ChaldeaPatch.fromJson(stage1Json)!!
+        assertNull(stage1Decoded.svtCoins)
+        assertNull(stage1Decoded.craftEssences)
+        assertNull(stage1Decoded.commandCodes)
+    }
+
+    @Test fun editorMergesCoinsCesAndCommandCodesPerFieldPreservingOtherFields() {
+        val existingUser = user(
+            "123,456",
+            items = """{"7":7,"10010001":5}""",
+            extra = ""","itemsLeft":{"7":3},"plans":[1],"servants":{"100100":{"lv":90}},""" +
+                """"craftEssences":{"11":{"status":1,"lv":80,"limitCount":4,"fav":true},"99":{"status":2,"lv":100,"limitCount":4}},""" +
+                """"cmdCodes":{"1":{"status":1,"count":1,"note":"keep"},"9":{"status":2,"count":3}}""",
+        )
+        val p = ChaldeaPatch(
+            friendCode = "123,456",
+            server = ChaldeaServer.Kr,
+            nickname = "Synth",
+            isGirl = true,
+            items = mapOf(100L to 3L),
+            mysticCodes = null,
+            classBoards = null,
+            svtCoins = mapOf(10010001L to 12L, 20010001L to 40L),
+            craftEssences = mapOf(
+                11L to ChaldeaPatch.CeStatus(2L, null, null), // existing, null lv/limitCount keeps 80/4 and fav
+                22L to ChaldeaPatch.CeStatus(1L, null, null), // new entry with nulls gets defaults 1/0
+                33L to ChaldeaPatch.CeStatus(2L, 65L, 3L),    // new entry with explicit values
+            ),
+            commandCodes = mapOf(
+                1L to ChaldeaPatch.CcStatus(2L, 4L),          // existing keeps "note"
+                5L to ChaldeaPatch.CcStatus(1L, 0L),          // new
+            ),
+        )
+        val res = ok(ChaldeaUserdataEditor.edit(file("[$existingUser]"), p, false))
+        assertEquals(1, res.itemCount)
+        assertEquals(2, res.coinCount)
+        assertEquals(3, res.ceCount)
+        assertEquals(2, res.ccCount)
+
+        val u = users(res)[0].jsonObject
+        val items = u["items"]!!.jsonObject
+        assertEquals("7", items["7"]!!.jsonPrimitive.content)
+        assertEquals("3", items["100"]!!.jsonPrimitive.content)
+        assertEquals("12", items["10010001"]!!.jsonPrimitive.content)
+        assertEquals("40", items["20010001"]!!.jsonPrimitive.content)
+
+        val ces = u["craftEssences"]!!.jsonObject
+        assertEquals(
+            Json.parseToJsonElement("""{"status":2,"lv":80,"limitCount":4,"fav":true}"""),
+            ces["11"],
+        )
+        assertEquals(
+            Json.parseToJsonElement("""{"status":1,"lv":1,"limitCount":0}"""),
+            ces["22"],
+        )
+        assertEquals(
+            Json.parseToJsonElement("""{"status":2,"lv":65,"limitCount":3}"""),
+            ces["33"],
+        )
+        assertEquals(
+            Json.parseToJsonElement("""{"status":2,"lv":100,"limitCount":4}"""),
+            ces["99"],
+        )
+
+        val ccs = u["cmdCodes"]!!.jsonObject
+        assertEquals(
+            Json.parseToJsonElement("""{"status":2,"count":4,"note":"keep"}"""),
+            ccs["1"],
+        )
+        assertEquals(
+            Json.parseToJsonElement("""{"status":1,"count":0}"""),
+            ccs["5"],
+        )
+        assertEquals(
+            Json.parseToJsonElement("""{"status":2,"count":3}"""),
+            ccs["9"],
+        )
+
+        // Untouched fields remain unchanged
+        assertEquals(Json.parseToJsonElement("""{"7":3}"""), u["itemsLeft"])
+        assertEquals(Json.parseToJsonElement("[1]"), u["plans"])
+        assertEquals(Json.parseToJsonElement("""{"100100":{"lv":90}}"""), u["servants"])
+    }
+
+    @Test fun editorRefusesUnexpectedShapeInStage2FieldsAndEntries() {
+        val base = patch(items = null)
+        // svtCoins checks items shape
+        val badItems = file("[${user("123,456", items = "[]")}]")
+        assertEquals(
+            ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+            ChaldeaUserdataEditor.edit(badItems, base.copy(svtCoins = mapOf(10010001L to 1L)), false),
+        )
+        // craftEssences target not object
+        val badCes = file("[${user("123,456", extra = ""","craftEssences":[]""")}]")
+        assertEquals(
+            ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+            ChaldeaUserdataEditor.edit(badCes, base.copy(craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(1L, null, null))), false),
+        )
+        // craftEssences entry not object
+        val badCeEntry = file("[${user("123,456", extra = ""","craftEssences":{"11":123}""")}]")
+        assertEquals(
+            ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+            ChaldeaUserdataEditor.edit(badCeEntry, base.copy(craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(2L, 10L, 1L))), false),
+        )
+        // cmdCodes target not object
+        val badCcs = file("[${user("123,456", extra = ""","cmdCodes":"nope" """)}]")
+        assertEquals(
+            ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+            ChaldeaUserdataEditor.edit(badCcs, base.copy(commandCodes = mapOf(1L to ChaldeaPatch.CcStatus(2L, 1L))), false),
+        )
+        // cmdCodes entry not object
+        val badCcEntry = file("[${user("123,456", extra = ""","cmdCodes":{"1":[]}""")}]")
+        assertEquals(
+            ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+            ChaldeaUserdataEditor.edit(badCcEntry, base.copy(commandCodes = mapOf(1L to ChaldeaPatch.CcStatus(2L, 1L))), false),
+        )
+    }
+
+    @Test fun verifyDetectsTamperingInStage2Fields() {
+        val existingUser = user("123,456", extra = ""","craftEssences":{"11":{"status":1,"lv":20,"limitCount":1}}""")
+        val text = file("[$existingUser]")
+        val root = Json.parseToJsonElement(text).jsonObject
+        val p = patch(items = mapOf(100L to 3L)).copy(
+            svtCoins = mapOf(10010001L to 9L),
+            craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(2L, null, null)),
+            commandCodes = mapOf(5L to ChaldeaPatch.CcStatus(2L, 3L)),
+        )
+        val good = ok(ChaldeaUserdataEditor.edit(text, p, false)).output
+        val m = ChaldeaUserMatcher.Match.Existing(0, false)
+        assertTrue(ChaldeaUserdataEditor.verify(root, good, p, m, 0))
+        // coin tampered
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"10010001\":9", "\"10010001\":8"), p, m, 0))
+        // CE status tampered
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"11\":{\"status\":2", "\"11\":{\"status\":1"), p, m, 0))
+        // existing CE lv kept from before (20) tampered
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"lv\":20", "\"lv\":21"), p, m, 0))
+        // command code count tampered
+        assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"count\":3", "\"count\":2"), p, m, 0))
+    }
 }

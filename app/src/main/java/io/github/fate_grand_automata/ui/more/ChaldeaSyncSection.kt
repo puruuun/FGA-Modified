@@ -99,9 +99,10 @@ private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s =
                     androidx.compose.ui.platform.LocalContext.current, s.timeMs,
                     DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_ALL,
                 ),
-                s.items, s.mysticCodes, s.boards,
+                s.items, s.mysticCodes, s.boards, s.coins, s.craftEssences, s.commandCodes,
             ),
         )
+        if (s.unmapped > 0) append(' ').append(stringResource(R.string.chaldea_sync_status_unmapped, s.unmapped))
         if (s.created) append(' ').append(stringResource(R.string.chaldea_sync_status_created))
         if (s.regionMismatch) append(' ').append(stringResource(R.string.chaldea_sync_status_region))
         if (s.bothPackages && s.packageName != null) append(' ').append(stringResource(R.string.chaldea_sync_status_package, s.packageName!!))

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureTracker
+import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.capture.ProcessRootShell
 import io.github.fate_grand_automata.capture.RootShell
 import io.github.fate_grand_automata.capture.captureSafely
@@ -14,6 +15,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccess
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccessMode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccountSource
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaBackupStore
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaCollectionNumbers
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaServer
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncEnv
@@ -91,6 +93,11 @@ object ChaldeaSyncManager {
     private var statusJob: Job? = null
     private var scriptJob: Job? = null
     private var resultsJob: Job? = null
+    private var collectionJobStarted = false
+    private var collectionDownloadDeferred = false
+    @Volatile private var scriptRunningNow = false
+    @Volatile private var cachedGameNames: GameNames? = null
+    internal var gameNamesFactory: (Application) -> GameNames = { GameNames(File(it.filesDir, "capture/names")) }
 
     /**
      * The settings collector. flow-preferences listens through a weakly held SharedPreferences listener, so a
@@ -197,7 +204,14 @@ object ChaldeaSyncManager {
         shizukuStateReader = ShizukuStateReader::current
         probeShell = ProcessRootShell()
         probeRunner = defaultProbeRunner
-        synchronized(lock) { permission.disarm() }
+        synchronized(lock) {
+            permission.disarm()
+            collectionJobStarted = false
+            collectionDownloadDeferred = false
+        }
+        scriptRunningNow = false
+        cachedGameNames = null
+        gameNamesFactory = { GameNames(File(it.filesDir, "capture/names")) }
         _shizuku.value = ShizukuState.NotRunning
         _access.value = ChaldeaAccess(RootState.Unchecked, ShizukuState.NotRunning)
         _status.value = ChaldeaSyncStatus.Idle
@@ -284,6 +298,45 @@ object ChaldeaSyncManager {
                 CaptureTracker.currentIdOf("JP")?.let { put(ChaldeaServer.Jp, it) }
             }
         }
+
+        override fun collectionNumbers(): ChaldeaCollectionNumbers = gameNamesFor(application).collectionNumbers()
+    }
+
+    private fun gameNamesFor(application: Application): GameNames =
+        cachedGameNames ?: synchronized(lock) {
+            cachedGameNames ?: gameNamesFactory(application).also { cachedGameNames = it }
+        }
+
+    private fun startCollectionDownload(application: Application, fromScriptEnd: Boolean = false) {
+        val shouldLaunch = synchronized(lock) {
+            if (collectionJobStarted || !enabledNow) {
+                false
+            } else if (!fromScriptEnd && (scriptRunningNow || _scriptRunning.value)) {
+                collectionDownloadDeferred = true
+                false
+            } else {
+                collectionJobStarted = true
+                collectionDownloadDeferred = false
+                true
+            }
+        }
+        if (!shouldLaunch) return
+        probeScope.launch(Dispatchers.IO) {
+            val deferredAgain = synchronized(lock) {
+                if (scriptRunningNow) {
+                    collectionJobStarted = false
+                    collectionDownloadDeferred = true
+                    true
+                } else {
+                    false
+                }
+            }
+            if (deferredAgain) return@launch
+            val updated = captureSafely("chaldeaCollectionLists", false) {
+                gameNamesFor(application).ensureChaldeaCollectionLists()
+            }
+            if (updated && enabledNow) scheduler?.onSettingsChanged()
+        }
     }
 
     private fun apply(syncOn: Boolean) {
@@ -298,6 +351,7 @@ object ChaldeaSyncManager {
                 }
                 !syncOn && enabledNow -> {
                     enabledNow = false
+                    collectionDownloadDeferred = false
                     permission.disarm()
                     2
                 }
@@ -314,6 +368,7 @@ object ChaldeaSyncManager {
             runCatching { ShizukuProvider.requestBinderForNonProviderProcess(application) }
             refreshShizuku()
             synchronized(lock) { if (scheduler == null) createScheduler(application) }
+            startCollectionDownload(application)
         } else if (change == 2) {
             rootPolicy?.onSwitchedOff()
             publishAccess()
@@ -446,13 +501,21 @@ object ChaldeaSyncManager {
     }
 
     fun onScriptStart() {
+        synchronized(lock) { scriptRunningNow = true }
         rootPolicy?.onScriptStart()
         hooks?.onScriptStart()
     }
 
     fun onScriptEnd() {
+        val (application, deferred) = synchronized(lock) {
+            scriptRunningNow = false
+            app to collectionDownloadDeferred
+        }
         // A root probe that waited for the script starts now, off this thread.
         startProbe(rootPolicy?.onScriptEnd())
         hooks?.onScriptEnd()
+        if (application != null && deferred) {
+            startCollectionDownload(application, fromScriptEnd = true)
+        }
     }
 }

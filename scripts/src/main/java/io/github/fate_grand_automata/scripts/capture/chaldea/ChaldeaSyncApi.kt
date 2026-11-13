@@ -59,6 +59,9 @@ interface ChaldeaAccountSource {
 
     /** The current account of each server. */
     fun currentIds(): Map<ChaldeaServer, String>
+
+    /** Cached Atlas collection number mappings for CEs and command codes. */
+    fun collectionNumbers(): ChaldeaCollectionNumbers = ChaldeaCollectionNumbers.EMPTY
 }
 
 /** One-line result for the settings screen. Carries codes and counts only, never account data. */
@@ -66,8 +69,18 @@ sealed interface ChaldeaSyncStatus {
     data object Idle : ChaldeaSyncStatus
     data object Working : ChaldeaSyncStatus
     data class Synced(
-        val timeMs: Long, val items: Int, val mysticCodes: Int, val boards: Int,
-        val created: Boolean, val regionMismatch: Boolean, val packageName: String?, val bothPackages: Boolean,
+        val timeMs: Long,
+        val items: Int,
+        val mysticCodes: Int,
+        val boards: Int,
+        val coins: Int = 0,
+        val craftEssences: Int = 0,
+        val commandCodes: Int = 0,
+        val unmapped: Int = 0,
+        val created: Boolean,
+        val regionMismatch: Boolean,
+        val packageName: String?,
+        val bothPackages: Boolean,
     ) : ChaldeaSyncStatus
     data object WaitingScript : ChaldeaSyncStatus
     data object WaitingVisible : ChaldeaSyncStatus

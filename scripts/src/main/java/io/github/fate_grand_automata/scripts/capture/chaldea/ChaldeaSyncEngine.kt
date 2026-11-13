@@ -113,6 +113,7 @@ class ChaldeaSyncEngine(
             packageName = packageName, base = loaded.source,
             size = out.size.toLong(), sha256 = sha256Hex(out), baseSha256 = baseHash,
             itemCount = success.itemCount, mysticCodeCount = success.mysticCodeCount, boardCount = success.boardCount,
+            coinCount = success.coinCount, ceCount = success.ceCount, ccCount = success.ccCount,
             created = success.created, tookOver = success.tookOverDefault, regionMismatch = success.regionMismatch,
             bakWritten = loaded.bak != null,
         )

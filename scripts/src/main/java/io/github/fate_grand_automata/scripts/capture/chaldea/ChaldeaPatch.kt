@@ -10,10 +10,20 @@ enum class ChaldeaServer(val region: String, val label: String, val fallbackName
     Jp("jp", "JP", "JP account"),
 }
 
+/** Atlas id -> collectionNo maps used to map CEs and command codes when building a [ChaldeaPatch]. */
+data class ChaldeaCollectionNumbers(
+    val equips: Map<Long, Long>,
+    val commandCodes: Map<Long, Long>,
+) {
+    companion object {
+        val EMPTY = ChaldeaCollectionNumbers(emptyMap(), emptyMap())
+    }
+}
+
 /**
- * What FGA writes into one Chaldea user, built from the stored account tables (stage 1: items, mystic codes, class
- * boards, gender). A null map means the table was not in the state, so that Chaldea field is left alone.
- * Servant coins and `itemsLeft` are deliberately not part of stage 1.
+ * What FGA writes into one Chaldea user, built from the stored account tables (items, mystic codes, class boards,
+ * gender, servant coins, craft essences, command codes). A null map means the table (or required collection number
+ * list) was absent, so that Chaldea field is left alone. `itemsLeft` and servant growth are not touched.
  */
 data class ChaldeaPatch(
     /** Trimmed `userGame.friendCode`, or null when missing or blank (the account cannot be identified). */
@@ -25,8 +35,17 @@ data class ChaldeaPatch(
     val items: Map<Long, Long>?,
     val mysticCodes: Map<Long, Long>?,
     val classBoards: Map<Long, Board>?,
+    val svtCoins: Map<Long, Long>? = null,
+    val craftEssences: Map<Long, CeStatus>? = null,
+    val commandCodes: Map<Long, CcStatus>? = null,
+    /** Distinct CE/command-code ids skipped because their collectionNo was unknown (not serialized or hashed). */
+    val unmapped: Int = 0,
 ) {
     data class Board(val unlockedSquares: List<Long>, val enhancedSquares: List<Long>)
+
+    data class CeStatus(val status: Long, val lv: Long?, val limitCount: Long?)
+
+    data class CcStatus(val status: Long, val count: Long)
 
     /** Name of a Chaldea user created or taken over for this account. */
     val userName: String
@@ -45,6 +64,17 @@ data class ChaldeaPatch(
                 for ((id, board) in boards.toSortedMap()) put(id.toString(), boardJson(board))
             })
         }
+        svtCoins?.let { put("svtCoins", longMap(it)) }
+        craftEssences?.let { ces ->
+            put("craftEssences", buildJsonObject {
+                for ((colNo, ce) in ces.toSortedMap()) put(colNo.toString(), ceJson(ce))
+            })
+        }
+        commandCodes?.let { ccs ->
+            put("commandCodes", buildJsonObject {
+                for ((colNo, cc) in ccs.toSortedMap()) put(colNo.toString(), ccJson(cc))
+            })
+        }
     }.toString()
 
     /** Stable SHA-256 of [toJson], used to skip syncs when nothing relevant changed. */
@@ -60,11 +90,26 @@ data class ChaldeaPatch(
             put("enhancedSquares", JsonArray(board.enhancedSquares.map { JsonPrimitive(it) }))
         }
 
+        internal fun ceJson(ce: CeStatus) = buildJsonObject {
+            put("status", ce.status)
+            ce.lv?.let { put("lv", it) }
+            ce.limitCount?.let { put("limitCount", it) }
+        }
+
+        internal fun ccJson(cc: CcStatus) = buildJsonObject {
+            put("status", cc.status)
+            put("count", cc.count)
+        }
+
         // Chaldea's own import order: userItem rows first, then the userGame currencies override.
         private val currencyItems = listOf("qp" to 1L, "stone" to 2L, "mana" to 3L, "rarePri" to 18L)
 
         /** Parses only the tables it needs, one at a time, and keeps nothing. */
-        fun from(state: AccountState, server: ChaldeaServer): ChaldeaPatch {
+        fun from(
+            state: AccountState,
+            server: ChaldeaServer,
+            numbers: ChaldeaCollectionNumbers = ChaldeaCollectionNumbers.EMPTY,
+        ): ChaldeaPatch {
             val game = (rows(state, "userGame") ?: rows(state, "tblUserGame"))?.firstOrNull { it is JsonObject } as? JsonObject
             val friendCode = game?.get("friendCode").text()?.trim()?.takeIf { it.isNotEmpty() }
             val nickname = game?.get("name").text()?.trim()?.takeIf { it.isNotEmpty() }
@@ -102,7 +147,108 @@ data class ChaldeaPatch(
                 }
                 out
             }
-            return ChaldeaPatch(friendCode, server, nickname, gender?.let { it == 2L }, items, mystic, boards)
+            val svtCoins = rows(state, "userSvtCoin")?.let { rs ->
+                val out = LinkedHashMap<Long, Long>()
+                rs.forEach { row ->
+                    val o = row as? JsonObject ?: return@forEach
+                    val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    val num = (o["num"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    out[svtId * 100L + 1L] = num
+                }
+                out
+            }
+            val unmappedIds = LinkedHashSet<Long>()
+            val svtCollectionRows = rows(state, "userSvtCollection")
+            val svtRows = rows(state, "userSvt")
+            val craftEssences = if (numbers.equips.isEmpty() || (svtCollectionRows == null && svtRows == null)) {
+                null
+            } else {
+                val statusByCol = LinkedHashMap<Long, Long>()
+                svtCollectionRows?.forEach { row ->
+                    val o = row as? JsonObject ?: return@forEach
+                    val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    val colNo = numbers.equips[svtId] ?: return@forEach
+                    val status = (o["status"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    if (status != 1L && status != 2L) return@forEach
+                    if (colNo <= 0L) {
+                        unmappedIds += svtId
+                        return@forEach
+                    }
+                    statusByCol[colNo] = maxOf(statusByCol[colNo] ?: 0L, status)
+                }
+                val maxLv = LinkedHashMap<Long, Long>()
+                val maxLimit = LinkedHashMap<Long, Long>()
+                val heldCols = LinkedHashSet<Long>()
+                svtRows?.forEach { row ->
+                    val o = row as? JsonObject ?: return@forEach
+                    val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    val colNo = numbers.equips[svtId] ?: return@forEach
+                    if (colNo <= 0L) {
+                        unmappedIds += svtId
+                        return@forEach
+                    }
+                    heldCols += colNo
+                    (o["lv"] as? JsonPrimitive)?.longOrNull?.let { maxLv.merge(colNo, it, ::maxOf) }
+                    (o["limitCount"] as? JsonPrimitive)?.longOrNull?.let { maxLimit.merge(colNo, it, ::maxOf) }
+                }
+                val out = LinkedHashMap<Long, CeStatus>()
+                for (colNo in (statusByCol.keys + heldCols)) {
+                    out[colNo] = CeStatus(statusByCol[colNo] ?: 2L, maxLv[colNo], maxLimit[colNo])
+                }
+                out
+            }
+            val ccCollectionRows = rows(state, "userCommandCodeCollection")
+            val ccRows = rows(state, "userCommandCode")
+            val commandCodes = if (ccCollectionRows == null && ccRows == null) {
+                null
+            } else {
+                val statusByCol = LinkedHashMap<Long, Long>()
+                ccCollectionRows?.forEach { row ->
+                    val o = row as? JsonObject ?: return@forEach
+                    val ccId = (o["commandCodeId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    val status = (o["status"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    if (status != 1L && status != 2L) return@forEach
+                    val colNo = numbers.commandCodes[ccId]
+                    if (colNo == null || colNo <= 0L) {
+                        unmappedIds += ccId
+                        return@forEach
+                    }
+                    statusByCol[colNo] = maxOf(statusByCol[colNo] ?: 0L, status)
+                }
+                val countByCol = LinkedHashMap<Long, Long>()
+                ccRows?.forEach { row ->
+                    val o = row as? JsonObject ?: return@forEach
+                    val ccId = (o["commandCodeId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                    val colNo = numbers.commandCodes[ccId]
+                    if (colNo == null || colNo <= 0L) {
+                        unmappedIds += ccId
+                        return@forEach
+                    }
+                    countByCol[colNo] = (countByCol[colNo] ?: 0L) + 1L
+                }
+                if (numbers.commandCodes.isEmpty()) {
+                    null
+                } else {
+                    val out = LinkedHashMap<Long, CcStatus>()
+                    for (colNo in (statusByCol.keys + countByCol.keys)) {
+                        out[colNo] = CcStatus(statusByCol[colNo] ?: 2L, countByCol[colNo] ?: 0L)
+                    }
+                    out
+                }
+            }
+            return ChaldeaPatch(
+                friendCode,
+                server,
+                nickname,
+                gender?.let { it == 2L },
+                items,
+                mystic,
+                boards,
+                svtCoins,
+                craftEssences,
+                commandCodes,
+                unmappedIds.size,
+            )
         }
 
         /** Reads the text written by [toJson]; null when it has an unexpected shape. */
@@ -123,6 +269,22 @@ data class ChaldeaPatch(
                     classBoards = (o["classBoards"] as? JsonObject)?.entries?.associate { (k, v) ->
                         val b = v.jsonObject
                         k.toLong() to Board(ids(b["unlockedSquares"]), ids(b["enhancedSquares"]))
+                    },
+                    svtCoins = longs("svtCoins"),
+                    craftEssences = (o["craftEssences"] as? JsonObject)?.entries?.associate { (k, v) ->
+                        val c = v.jsonObject
+                        k.toLong() to CeStatus(
+                            status = (c["status"] as JsonPrimitive).long,
+                            lv = (c["lv"] as? JsonPrimitive)?.longOrNull,
+                            limitCount = (c["limitCount"] as? JsonPrimitive)?.longOrNull,
+                        )
+                    },
+                    commandCodes = (o["commandCodes"] as? JsonObject)?.entries?.associate { (k, v) ->
+                        val c = v.jsonObject
+                        k.toLong() to CcStatus(
+                            status = (c["status"] as JsonPrimitive).long,
+                            count = (c["count"] as JsonPrimitive).long,
+                        )
                     },
                 )
             }

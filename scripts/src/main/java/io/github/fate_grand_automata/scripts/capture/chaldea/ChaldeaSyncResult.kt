@@ -69,6 +69,9 @@ data class ChaldeaSyncResult(
     val itemCount: Int = 0,
     val mysticCodeCount: Int = 0,
     val boardCount: Int = 0,
+    val coinCount: Int = 0,
+    val ceCount: Int = 0,
+    val ccCount: Int = 0,
     val created: Boolean = false,
     val tookOver: Boolean = false,
     val regionMismatch: Boolean = false,
@@ -92,6 +95,9 @@ data class ChaldeaSyncResult(
         put("items", itemCount)
         put("mysticCodes", mysticCodeCount)
         put("boards", boardCount)
+        put("coins", coinCount)
+        put("craftEssences", ceCount)
+        put("commandCodes", ccCount)
         put("created", created)
         put("tookOver", tookOver)
         put("regionMismatch", regionMismatch)
@@ -117,6 +123,7 @@ data class ChaldeaSyncResult(
                 bundleSize = (o["bundleSize"] as? JsonPrimitive)?.longOrNull,
                 bundleSha256 = s("bundleSha256"),
                 itemCount = i("items"), mysticCodeCount = i("mysticCodes"), boardCount = i("boards"),
+                coinCount = i("coins"), ceCount = i("craftEssences"), ccCount = i("commandCodes"),
                 created = b("created"), tookOver = b("tookOver"), regionMismatch = b("regionMismatch"),
                 bakWritten = b("bakWritten"),
                 bothPackages = b("bothPackages"),

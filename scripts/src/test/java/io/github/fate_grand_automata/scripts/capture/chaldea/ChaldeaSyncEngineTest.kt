@@ -286,4 +286,51 @@ class ChaldeaSyncEngineTest {
         assertFalse(File(dir, "userdata.json").exists())
         assertEquals(ChaldeaIoException.Kind.NotFound, assertFailsWith<ChaldeaIoException> { JavaChaldeaFileAccess(dir).read("x") }.kind)
     }
+
+    @Test fun resultJsonRoundTripsStage2CountsAndReadsOldJsonWithZeroes() {
+        val r = ChaldeaSyncResult(
+            ChaldeaSyncCode.Ok,
+            packageName = "p",
+            itemCount = 4,
+            mysticCodeCount = 2,
+            boardCount = 1,
+            coinCount = 5,
+            ceCount = 6,
+            ccCount = 3,
+        )
+        assertEquals(r, ChaldeaSyncResult.fromJson(r.toJson()))
+        val oldJson = """{"code":"Ok","package":"p","items":4,"mysticCodes":2,"boards":1}"""
+        val decodedOld = ChaldeaSyncResult.fromJson(oldJson)
+        assertEquals(ChaldeaSyncCode.Ok, decodedOld.code)
+        assertEquals(4, decodedOld.itemCount)
+        assertEquals(0, decodedOld.coinCount)
+        assertEquals(0, decodedOld.ceCount)
+        assertEquals(0, decodedOld.ccCount)
+    }
+
+    @Test fun engineCommitFillsStage2CountsFromPatch() {
+        put("userdata.json", fileText())
+        val p = ChaldeaPatch(
+            friendCode = "111",
+            server = ChaldeaServer.Kr,
+            nickname = "Synth",
+            isGirl = true,
+            items = mapOf(100L to 3L),
+            mysticCodes = null,
+            classBoards = null,
+            svtCoins = mapOf(10010001L to 12L, 20010001L to 34L),
+            craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(2L, 50L, 4L)),
+            commandCodes = mapOf(
+                1L to ChaldeaPatch.CcStatus(2L, 1L),
+                2L to ChaldeaPatch.CcStatus(1L, 0L),
+                3L to ChaldeaPatch.CcStatus(2L, 2L),
+            ),
+        )
+        val r = commitAfterPrepare(engine(), p)
+        assertEquals(ChaldeaSyncCode.Ok, r.code)
+        assertEquals(1, r.itemCount)
+        assertEquals(2, r.coinCount)
+        assertEquals(1, r.ceCount)
+        assertEquals(3, r.ccCount)
+    }
 }

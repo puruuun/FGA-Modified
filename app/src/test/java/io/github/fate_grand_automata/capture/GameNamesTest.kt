@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.GainedItem
 import io.github.fate_grand_automata.scripts.capture.RunGains
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaCollectionNumbers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -136,5 +137,58 @@ class GameNamesTest {
         assertEquals("moonCancer", names.servantData[2]?.className)
         val offline = GameNames(directory, { error("must use cache") }) { 1001 }.friends(setOf(1, 2), setOf(90), hasJpAccount = true)
         assertEquals(names, offline)
+    }
+
+    @Test fun collectionNumbersIsCacheOnlyUnionSkippingZeroAndNullAndNeverThrows() {
+        val cache = GameNames(directory, { error("must never download") }) { 1000 }
+        assertEquals(ChaldeaCollectionNumbers.EMPTY, cache.collectionNumbers())
+
+        File(directory, "basic_equip_details.json").writeText(
+            """[{"id":9300010,"collectionNo":11},{"id":9300020,"collectionNo":0},{"id":9300030,"collectionNo":null}]""",
+        )
+        File(directory, "jp_basic_equip_details.json").writeText(
+            """[{"id":9300010,"collectionNo":11},{"id":9400010,"collectionNo":21}]""",
+        )
+        File(directory, "basic_command_code_details.json").writeText("not-json-at-all")
+        File(directory, "jp_basic_command_code_details.json").writeText(
+            """[{"id":80001,"collectionNo":1},{"id":80002,"collectionNo":0}]""",
+        )
+
+        val got = cache.collectionNumbers()
+        assertEquals(mapOf(9300010L to 11L, 9400010L to 21L), got.equips)
+        assertEquals(mapOf(80001L to 1L), got.commandCodes)
+    }
+
+    @Test fun ensureChaldeaCollectionListsDownloadsKrAndJpOncePerDayAndDetectsUpdates() = runBlocking {
+        val urls = mutableListOf<String>()
+        var time = 1000L
+        val downloader: (String) -> String = { url ->
+            urls += url
+            when {
+                url.endsWith("/KR/basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
+                url.endsWith("/JP/basic_equip.json") -> """[{"id":9400010,"collectionNo":21}]"""
+                url.endsWith("/KR/basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
+                url.endsWith("/JP/basic_command_code.json") -> """[{"id":80002,"collectionNo":2}]"""
+                else -> "[]"
+            }
+        }
+        val names = GameNames(directory, downloader) { time }
+        assertTrue(names.ensureChaldeaCollectionLists())
+        assertEquals(
+            setOf(
+                "https://api.atlasacademy.io/export/KR/basic_equip.json",
+                "https://api.atlasacademy.io/export/JP/basic_equip.json",
+                "https://api.atlasacademy.io/export/KR/basic_command_code.json",
+                "https://api.atlasacademy.io/export/JP/basic_command_code.json",
+            ),
+            urls.toSet(),
+        )
+        assertEquals(mapOf(9300010L to 11L, 9400010L to 21L), names.collectionNumbers().equips)
+        assertEquals(mapOf(80001L to 1L, 80002L to 2L), names.collectionNumbers().commandCodes)
+
+        // Second call immediately: cached and fresh -> no downloads, returns false
+        urls.clear()
+        assertFalse(names.ensureChaldeaCollectionLists())
+        assertEquals(emptyList(), urls)
     }
 }

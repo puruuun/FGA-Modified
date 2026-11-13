@@ -10,7 +10,9 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaAccess
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaServer
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncNowOutcome
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
 import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import io.github.fate_grand_automata.ui.FGATheme
@@ -145,5 +147,82 @@ class ChaldeaSyncSectionTest {
         val text = context.getString(R.string.chaldea_sync_status_cannot_bind)
         assertEquals("Chaldea同期サービスに接続できません。再試行します。", text)
         assertFalse(text.contains("Shizuku", ignoreCase = true))
+    }
+
+    @Test
+    fun syncedStatusShowsStage2CountsAndUnmappedOnlyWhenPositive() {
+        val synced = ChaldeaSyncStatus.Synced(
+            timeMs = 1_700_000_000_000L,
+            items = 10,
+            mysticCodes = 3,
+            boards = 2,
+            coins = 4,
+            craftEssences = 5,
+            commandCodes = 6,
+            unmapped = 0,
+            created = false,
+            regionMismatch = false,
+            packageName = null,
+            bothPackages = false,
+        )
+        render(
+            ChaldeaSyncUi(
+                enabled = true,
+                loggingOn = true,
+                access = ChaldeaAccess(RootState.Granted, ShizukuState.NotRunning),
+                results = mapOf(ChaldeaServer.Kr to synced),
+            ),
+        )
+        compose.onNodeWithText("4 servant coins, 5 craft essences, 6 command codes.", substring = true).assertExists()
+        compose.onNodeWithText("collection number is not known yet", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun syncedStatusAppendsUnmappedMessageWhenUnmappedPositive() {
+        val synced = ChaldeaSyncStatus.Synced(
+            timeMs = 1_700_000_000_000L,
+            items = 1,
+            mysticCodes = 2,
+            boards = 3,
+            coins = 4,
+            craftEssences = 5,
+            commandCodes = 6,
+            unmapped = 7,
+            created = false,
+            regionMismatch = false,
+            packageName = null,
+            bothPackages = false,
+        )
+        render(
+            ChaldeaSyncUi(
+                enabled = true,
+                loggingOn = true,
+                access = ChaldeaAccess(RootState.Granted, ShizukuState.NotRunning),
+                results = mapOf(ChaldeaServer.Kr to synced),
+            ),
+        )
+        compose.onNodeWithText(context.getString(R.string.chaldea_sync_status_unmapped, 7), substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "ko")
+    fun syncedStatusFormatsKoreanCountsAndUnmapped() {
+        val formatted = context.getString(R.string.chaldea_sync_status_synced, "T", 1, 2, 3, 4, 5, 6)
+        assertEquals("마지막 반영 T: 아이템 1개, 마술예장 2개, 클래스 보드 3개, 서번트 코인 4개, 개념예장 5개, 커맨드 코드 6개.", formatted)
+        assertEquals(
+            "도감 번호를 몰라 건너뛴 항목 8개 (다음 반영 때 다시 시도합니다).",
+            context.getString(R.string.chaldea_sync_status_unmapped, 8),
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "ja")
+    fun syncedStatusFormatsJapaneseCountsAndUnmappedPreservingStyle() {
+        val formatted = context.getString(R.string.chaldea_sync_status_synced, "T", 1, 2, 3, 4, 5, 6)
+        assertEquals("最終反映 T: アイテム1件、魔術礼装2件、クラスボード3件、サーヴァントコイン4件、概念礼装5件、コマンドコード6件。", formatted)
+        assertEquals(
+            "図鑑番号が不明なため8件を飛ばしました（次回の反映で再試行します）。",
+            context.getString(R.string.chaldea_sync_status_unmapped, 8),
+        )
     }
 }

@@ -39,6 +39,9 @@ sealed interface ChaldeaEditResult {
         val itemCount: Int,
         val mysticCodeCount: Int,
         val boardCount: Int,
+        val coinCount: Int,
+        val ceCount: Int,
+        val ccCount: Int,
         val created: Boolean,
         val tookOverDefault: Boolean,
         val regionMismatch: Boolean,
@@ -159,10 +162,17 @@ object ChaldeaUserdataEditor {
         val output = newRoot.toString()
         if (!verify(root, output, patch, match, index)) return refuse(ChaldeaRefusal.VerifyFailed)
         return ChaldeaEditResult.Success(
-            output, patch.items?.size ?: 0, patch.mysticCodes?.size ?: 0, patch.classBoards?.size ?: 0,
+            output,
+            patch.items?.size ?: 0,
+            patch.mysticCodes?.size ?: 0,
+            patch.classBoards?.size ?: 0,
+            patch.svtCoins?.size ?: 0,
+            patch.craftEssences?.size ?: 0,
+            patch.commandCodes?.size ?: 0,
             created = match == ChaldeaUserMatcher.Match.Create,
             tookOverDefault = match is ChaldeaUserMatcher.Match.TakeOver,
-            regionMismatch = regionMismatch, userIndex = index,
+            regionMismatch = regionMismatch,
+            userIndex = index,
         )
     }
 
@@ -185,15 +195,71 @@ object ChaldeaUserdataEditor {
             out[key] = JsonObject(LinkedHashMap(existing).also { it.putAll(add) })
             return true
         }
+        fun mergePerField(key: String, updates: Map<String, (existing: JsonObject?) -> Map<String, JsonElement>>?): Boolean {
+            if (updates == null) return true
+            val existing = when (val e = out[key]) {
+                null, is JsonNull -> emptyMap()
+                is JsonObject -> e
+                else -> return false
+            }
+            val merged = LinkedHashMap(existing)
+            for ((entryKey, fieldsFor) in updates) {
+                val entryObj = when (val entry = existing[entryKey]) {
+                    null, is JsonNull -> null
+                    is JsonObject -> entry
+                    else -> return false
+                }
+                val entryOut = if (entryObj != null) LinkedHashMap(entryObj) else LinkedHashMap()
+                entryOut.putAll(fieldsFor(entryObj))
+                merged[entryKey] = JsonObject(entryOut)
+            }
+            out[key] = JsonObject(merged)
+            return true
+        }
         if (!merge("items", itemsOf(patch))) return null
         if (!merge("mysticCodes", mysticOf(patch))) return null
         if (!merge("classBoards", boardsOf(patch))) return null
+        if (!mergePerField("craftEssences", ceUpdatesOf(patch))) return null
+        if (!mergePerField("cmdCodes", ccUpdatesOf(patch))) return null
         return JsonObject(out)
     }
 
-    private fun itemsOf(p: ChaldeaPatch) = p.items?.entries?.associate { it.key.toString() to JsonPrimitive(it.value) }
+    private fun itemsOf(p: ChaldeaPatch): Map<String, JsonElement>? {
+        if (p.items == null && p.svtCoins == null) return null
+        val out = LinkedHashMap<String, JsonElement>()
+        p.items?.forEach { (id, num) -> out[id.toString()] = JsonPrimitive(num) }
+        p.svtCoins?.forEach { (id, num) -> out[id.toString()] = JsonPrimitive(num) }
+        return out
+    }
+
     private fun mysticOf(p: ChaldeaPatch) = p.mysticCodes?.entries?.associate { it.key.toString() to JsonPrimitive(it.value) }
     private fun boardsOf(p: ChaldeaPatch) = p.classBoards?.entries?.associate { it.key.toString() to ChaldeaPatch.boardJson(it.value) }
+
+    private fun ceUpdatesOf(p: ChaldeaPatch): Map<String, (JsonObject?) -> Map<String, JsonElement>>? =
+        p.craftEssences?.entries?.associate { (colNo, ce) ->
+            colNo.toString() to { existing: JsonObject? ->
+                buildMap {
+                    put("status", JsonPrimitive(ce.status))
+                    if (existing == null) {
+                        put("lv", JsonPrimitive(ce.lv ?: 1L))
+                        put("limitCount", JsonPrimitive(ce.limitCount ?: 0L))
+                    } else {
+                        ce.lv?.let { put("lv", JsonPrimitive(it)) }
+                        ce.limitCount?.let { put("limitCount", JsonPrimitive(it)) }
+                    }
+                }
+            }
+        }
+
+    private fun ccUpdatesOf(p: ChaldeaPatch): Map<String, (JsonObject?) -> Map<String, JsonElement>>? =
+        p.commandCodes?.entries?.associate { (colNo, cc) ->
+            colNo.toString() to { _: JsonObject? ->
+                mapOf(
+                    "status" to JsonPrimitive(cc.status),
+                    "count" to JsonPrimitive(cc.count),
+                )
+            }
+        }
 
     /**
      * Re-parses [output] and checks it against [original]: same top level (so same `version` and `curUserKey`), user
@@ -241,9 +307,11 @@ object ChaldeaUserdataEditor {
         if (created && (target["id"] as? JsonPrimitive)?.contentOrNull.isNullOrBlank()) return false
         val maps = mapOf("items" to itemsOf(patch), "mysticCodes" to mysticOf(patch), "classBoards" to boardsOf(patch))
             .filterValues { it != null }
+        val perFieldMaps = mapOf("craftEssences" to ceUpdatesOf(patch), "cmdCodes" to ccUpdatesOf(patch))
+            .filterValues { it != null }
 
         for (key in before.keys) if (key !in target.keys) return false
-        for (key in setFields.keys + maps.keys) if (key !in target.keys) return false
+        for (key in setFields.keys + maps.keys + perFieldMaps.keys) if (key !in target.keys) return false
         for ((key, value) in target) {
             when {
                 key in setFields -> if (value != setFields[key]) return false
@@ -253,6 +321,25 @@ object ChaldeaUserdataEditor {
                     val now = value as? JsonObject ?: return false
                     if (now.keys != old.keys + add.keys) return false
                     for ((k, v) in now) if (v != (add[k] ?: old[k])) return false
+                }
+                key in perFieldMaps -> {
+                    val oldMap = (before[key] as? JsonObject) ?: JsonObject(emptyMap())
+                    val updates = perFieldMaps.getValue(key)!!
+                    val nowMap = value as? JsonObject ?: return false
+                    if (nowMap.keys != oldMap.keys + updates.keys) return false
+                    for ((entryKey, entryVal) in nowMap) {
+                        val fieldsFor = updates[entryKey]
+                        if (fieldsFor == null) {
+                            if (entryVal != oldMap[entryKey]) return false
+                        } else {
+                            val oldEntry = oldMap[entryKey] as? JsonObject
+                            val nowEntry = entryVal as? JsonObject ?: return false
+                            val expectedFields = fieldsFor(oldEntry)
+                            val base = oldEntry ?: JsonObject(emptyMap())
+                            if (nowEntry.keys != base.keys + expectedFields.keys) return false
+                            for ((fk, fv) in nowEntry) if (fv != (expectedFields[fk] ?: base[fk])) return false
+                        }
+                    }
                 }
                 key == "id" && created -> {}
                 else -> if (before[key] != value) return false
