@@ -1062,4 +1062,8 @@
     <string name="chaldea_sync_status_failed">"反映に失敗しました（%s）。"</string>
     <string name="chaldea_sync_status_owner_changed">"Chaldeaのファイルの所有者または権限が変わり、元に戻せませんでした。バックアップは残っています。"</string>
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
+    <string name="p_app_theme">"ダークモード"</string>
+    <string name="p_app_theme_system">"システム設定に従う"</string>
+    <string name="p_app_theme_light">"ライト"</string>
+    <string name="p_app_theme_dark">"ダーク"</string>
 </resources>

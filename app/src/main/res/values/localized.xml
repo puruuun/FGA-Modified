@@ -1374,4 +1374,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_failed">"The sync failed (%s)."</string>
     <string name="chaldea_sync_status_owner_changed">"The owner or permissions of the Chaldea files changed and could not be restored. The backup is kept."</string>
     <string name="chaldea_sync_status_recovery_blocked">"A sync that was interrupted earlier could not be checked (%s). Nothing is written until this is resolved; the backup is kept."</string>
+    <string name="p_app_theme">"Dark mode"</string>
+    <string name="p_app_theme_system">"Follow system"</string>
+    <string name="p_app_theme_light">"Light"</string>
+    <string name="p_app_theme_dark">"Dark"</string>
 </resources>
