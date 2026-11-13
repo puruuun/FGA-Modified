@@ -1334,6 +1334,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_close_title">"Close Chaldea when it stays in the background"</string>
     <string name="chaldea_sync_close_after">"After %d min"</string>
     <string name="chaldea_sync_close_never">"Never close"</string>
+    <string name="chaldea_sync_stop_title">"Stop session when FGO and Chaldea are not in use"</string>
     <string name="chaldea_sync_now">"Sync now"</string>
     <string name="chaldea_sync_confirm_background">"Chaldea is running in the background. Close it and sync now?"</string>
     <string name="chaldea_sync_confirm_visible">"Chaldea is open on screen. Close it and sync now?"</string>
@@ -1351,6 +1352,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_waiting_visible">"Waiting: Chaldea is open."</string>
     <string name="chaldea_sync_status_waiting_background">"Waiting: Chaldea has been in the background for %1$d min (closes after %2$d min)."</string>
     <string name="chaldea_sync_status_waiting_background_never">"Waiting: Chaldea has been in the background for %1$d min (it is never closed)."</string>
+    <string name="chaldea_sync_status_stopped">"Paused after %1$d min with neither FGO nor Chaldea in use. Resumes on the next save."</string>
     <string name="chaldea_sync_shizuku_not_installed">"Shizuku is not installed."</string>
     <string name="chaldea_sync_shizuku_not_running">"Shizuku is not running. The sync continues when it starts."</string>
     <string name="chaldea_sync_shizuku_needs_permission">"Shizuku has not allowed FGA yet. Allow it in the Shizuku request."</string>

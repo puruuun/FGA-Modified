@@ -35,6 +35,9 @@ interface ChaldeaSyncSession {
     suspend fun gameData(knownVersion: String?): ChaldeaGameDataResult =
         ChaldeaGameDataResult.Error(ChaldeaSyncCode.ServiceError.name)
 
+    /** True when either KR or official JP FGO is visible on screen. */
+    suspend fun gameVisible(): Boolean = false
+
     /** Unbinds and lets the service exit. Safe to call twice. */
     fun close()
 }
@@ -46,6 +49,12 @@ interface ChaldeaSyncEnv {
 
     /** Minutes in the background before Chaldea is closed: 10, 30, 60, or 0 for never. */
     fun closeMinutes(): Int
+
+    /** Minutes with neither FGO nor Chaldea on screen before auto-sync stops: 10, 30, or 60. */
+    fun stopMinutes(): Int = 10
+
+    /** True when the device screen is interactive. */
+    fun screenOn(): Boolean = true
 
     /** How the files are reached now: root wins over Shizuku. */
     fun access(): ChaldeaAccess
@@ -90,6 +99,7 @@ sealed interface ChaldeaSyncStatus {
     data object WaitingScript : ChaldeaSyncStatus
     data object WaitingVisible : ChaldeaSyncStatus
     data class WaitingBackground(val minutes: Int, val closeAfter: Int) : ChaldeaSyncStatus
+    data class Stopped(val minutes: Int) : ChaldeaSyncStatus
     data class ShizukuUnavailable(val state: ShizukuState) : ChaldeaSyncStatus
     data object CannotBind : ChaldeaSyncStatus
     data object StateUnknown : ChaldeaSyncStatus

@@ -224,6 +224,25 @@ class ChaldeaRestoreAndStoreTest {
         assertNull(store.readInflight())
     }
 
+    @Test fun storeDefaultsStoppedToFalseForLegacyJsonAndPersistsTrue() {
+        val storeDir = File(dir, "legacy-stopped")
+        storeDir.mkdirs()
+        File(storeDir, "state.json").writeText(
+            """{"pending":["kr1"],"backgroundSince":10,"lastObservation":20,"syncedPatchHash":{},"lastWritten":{}}""",
+        )
+        val store = ChaldeaSyncStore(storeDir)
+        val legacy = store.read()
+        assertFalse(legacy.stopped)
+        assertEquals(setOf("kr1"), legacy.pending)
+
+        store.update { it.copy(stopped = true) }
+        assertTrue(store.read().stopped)
+        assertEquals(setOf("kr1"), store.read().pending)
+
+        store.update { it.copy(stopped = false) }
+        assertFalse(store.read().stopped)
+    }
+
     @Test fun resultCarriesBothPackagesAndBundleFields() {
         val r = ChaldeaSyncResult(ChaldeaSyncCode.Ok, bothPackages = true, bundleSize = 9, bundleSha256 = "x")
         val back = ChaldeaSyncResult.fromJson(r.toJson())

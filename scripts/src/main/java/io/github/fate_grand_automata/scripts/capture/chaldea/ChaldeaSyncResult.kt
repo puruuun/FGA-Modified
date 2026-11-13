@@ -159,3 +159,30 @@ data class ChaldeaStateResult(val state: ChaldeaRunState, val packageName: Strin
         }
     }
 }
+
+/** Result of the service's gameState() call: whether KR or official JP FGO is visible on screen. */
+data class ChaldeaGameStateResult(val visible: Boolean, val packageName: String? = null) {
+    fun toJson(): String = buildJsonObject {
+        put("visible", visible)
+        if (visible && packageName != null) put("package", packageName)
+    }.toString()
+
+    companion object {
+        fun fromJson(text: String?): ChaldeaGameStateResult = try {
+            val o = Json.parseToJsonElement(text ?: "") as JsonObject
+            val visible = (o["visible"] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: false
+            val pkg = if (visible) (o["package"] as? JsonPrimitive)?.takeIf { it.isString }?.content else null
+            ChaldeaGameStateResult(visible, pkg)
+        } catch (e: Exception) {
+            ChaldeaGameStateResult(false, null)
+        }
+
+        /** Returns visible=true with the first package in [packages] whose state is [ChaldeaRunState.Visible]. */
+        fun firstVisible(packages: Iterable<String>, stateOf: (String) -> ChaldeaRunState): ChaldeaGameStateResult {
+            for (pkg in packages) {
+                if (stateOf(pkg) == ChaldeaRunState.Visible) return ChaldeaGameStateResult(true, pkg)
+            }
+            return ChaldeaGameStateResult(false, null)
+        }
+    }
+}

@@ -1022,6 +1022,7 @@
     <string name="chaldea_sync_close_title">"Chaldeaがバックグラウンドにあるとき終了する"</string>
     <string name="chaldea_sync_close_after">"%d分後"</string>
     <string name="chaldea_sync_close_never">"終了しない"</string>
+    <string name="chaldea_sync_stop_title">"FGOとChaldeaを使っていないときセッションを停止する"</string>
     <string name="chaldea_sync_now">"今すぐ反映"</string>
     <string name="chaldea_sync_confirm_background">"Chaldeaがバックグラウンドで動作中です。終了して今すぐ反映しますか？"</string>
     <string name="chaldea_sync_confirm_visible">"Chaldeaが画面に開いています。終了して今すぐ反映しますか？"</string>
@@ -1039,6 +1040,7 @@
     <string name="chaldea_sync_status_waiting_visible">"待機中: Chaldeaが開いています。"</string>
     <string name="chaldea_sync_status_waiting_background">"待機中: Chaldeaが%1$d分間バックグラウンドにあります（%2$d分後に終了）。"</string>
     <string name="chaldea_sync_status_waiting_background_never">"待機中: Chaldeaが%1$d分間バックグラウンドにあります（終了しません）。"</string>
+    <string name="chaldea_sync_status_stopped">"FGOとChaldeaが%1$d分間使われなかったため停止しました。次の保存時に再開します。"</string>
     <string name="chaldea_sync_shizuku_not_installed">"Shizukuがインストールされていません。"</string>
     <string name="chaldea_sync_shizuku_not_running">"Shizukuが起動していません。起動すると続きを反映します。"</string>
     <string name="chaldea_sync_shizuku_needs_permission">"ShizukuがまだFGAを許可していません。Shizukuの確認で許可してください。"</string>

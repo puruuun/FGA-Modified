@@ -41,6 +41,7 @@ data class ChaldeaSyncUi(
     /** Log collection (tracker switch and consent) is on, so a sync can run. */
     val loggingOn: Boolean = false,
     val closeMinutes: Int = 30,
+    val stopMinutes: Int = 10,
     /** Root and Shizuku together; root wins when both are available. */
     val access: ChaldeaAccess = ChaldeaAccess(RootState.Unchecked, ShizukuState.NotRunning),
     /** What the scheduler is doing now: waiting, working, or a problem that is not about one account. */
@@ -51,6 +52,7 @@ data class ChaldeaSyncUi(
 )
 
 internal val chaldeaCloseChoices = listOf(10, 30, 60, 0)
+internal val chaldeaStopChoices = listOf(10, 30, 60)
 
 /**
  * The status lines. Access problems come first because nothing else can happen until they are fixed. Then one line
@@ -112,6 +114,7 @@ private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s =
     is ChaldeaSyncStatus.WaitingBackground ->
         if (s.closeAfter > 0) stringResource(R.string.chaldea_sync_status_waiting_background, s.minutes, s.closeAfter)
         else stringResource(R.string.chaldea_sync_status_waiting_background_never, s.minutes)
+    is ChaldeaSyncStatus.Stopped -> stringResource(R.string.chaldea_sync_status_stopped, s.minutes)
     is ChaldeaSyncStatus.ShizukuUnavailable -> stringResource(R.string.chaldea_sync_shizuku_not_running)
     ChaldeaSyncStatus.CannotBind -> stringResource(R.string.chaldea_sync_status_cannot_bind)
     ChaldeaSyncStatus.StateUnknown -> stringResource(R.string.chaldea_sync_status_state_unknown)
@@ -135,6 +138,7 @@ fun LazyListScope.chaldeaSyncItems(
     ui: ChaldeaSyncUi,
     onEnabled: (Boolean) -> Unit,
     onCloseMinutes: (Int) -> Unit,
+    onStopMinutes: (Int) -> Unit,
     syncNow: suspend (ChaldeaRunState?) -> ChaldeaSyncNowOutcome,
 ) {
     item { PreferenceGroupHeader(stringResource(R.string.chaldea_sync_header)) }
@@ -159,6 +163,20 @@ fun LazyListScope.chaldeaSyncItems(
                                 else stringResource(R.string.chaldea_sync_close_after, minutes),
                             )
                         },
+                    )
+                }
+            }
+        }
+    }
+    item {
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.chaldea_sync_stop_title), style = MaterialTheme.typography.bodyMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (minutes in chaldeaStopChoices) {
+                    FilterChip(
+                        selected = ui.stopMinutes == minutes,
+                        onClick = { onStopMinutes(minutes) },
+                        label = { Text(stringResource(R.string.chaldea_sync_close_after, minutes)) },
                     )
                 }
             }

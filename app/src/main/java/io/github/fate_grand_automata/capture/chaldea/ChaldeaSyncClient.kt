@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaBackupReceiver
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataReader
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataResult
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPatch
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode
@@ -160,6 +161,17 @@ class ChaldeaSyncClient(private val context: Context) {
                     throw e
                 } catch (t: Throwable) {
                     ChaldeaGameDataResult.Error(ChaldeaSyncCode.ServiceError.name)
+                }
+            }
+
+        override suspend fun gameVisible(): Boolean =
+            withContext(Dispatchers.IO) {
+                try {
+                    ChaldeaGameStateResult.fromJson(service.gameState()).visible
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (t: Throwable) {
+                    false
                 }
             }
 

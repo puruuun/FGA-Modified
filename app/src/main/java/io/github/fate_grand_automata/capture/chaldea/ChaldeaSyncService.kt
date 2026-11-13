@@ -5,6 +5,8 @@ import android.system.Os
 import androidx.annotation.Keep
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaFileOwner
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataReader
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGamePackages
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaOwnership
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPackages
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
@@ -210,5 +212,11 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         ChaldeaGameDataReader.readResponseJson(JavaChaldeaFileAccess(dir), dir.isDirectory, knownVersion)
     } catch (t: Throwable) {
         ChaldeaGameDataReader.errorJson(ChaldeaSyncCode.ServiceError)
+    }
+
+    override fun gameState(): String = try {
+        ChaldeaGameStateResult.firstVisible(ChaldeaGamePackages.all, ::readState).toJson()
+    } catch (t: Throwable) {
+        ChaldeaGameStateResult(visible = false).toJson()
     }
 }

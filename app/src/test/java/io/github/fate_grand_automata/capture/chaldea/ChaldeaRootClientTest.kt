@@ -214,6 +214,7 @@ class ChaldeaRootClientTest {
             override fun commit(p: String?, s: String?, c: Boolean, pkg: String?, bs: String?) = "{}"
             override fun restore(backupFd: android.os.ParcelFileDescriptor?, s: String?, pkg: String?) = "{}"
             override fun gameData(knownVersion: String?) = fn(knownVersion)
+            override fun gameState() = """{"visible":false}"""
         }
 
         val loadedSession = ChaldeaSyncClient.Session(

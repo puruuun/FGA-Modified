@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.capture.chaldea
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.PowerManager
 import android.os.SystemClock
 import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureTracker
@@ -273,6 +274,12 @@ object ChaldeaSyncManager {
         }
 
         override fun closeMinutes(): Int = prefs?.chaldeaSyncCloseMinutes?.get()?.takeIf { it in listOf(0, 10, 30, 60) } ?: 30
+        override fun stopMinutes(): Int = prefs?.chaldeaSyncStopMinutes?.get()?.takeIf { it in listOf(10, 30, 60) } ?: 10
+        override fun screenOn(): Boolean {
+            val pm = app?.getSystemService(PowerManager::class.java) ?: return true
+            return pm.isInteractive
+        }
+
         override fun access(): ChaldeaAccess {
             // The next round after a failed root bind probes again, silently (never while a script runs).
             startProbe(rootPolicy?.onRound())

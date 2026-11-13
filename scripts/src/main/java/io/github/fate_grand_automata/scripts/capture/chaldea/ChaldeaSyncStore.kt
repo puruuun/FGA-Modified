@@ -36,6 +36,7 @@ class ChaldeaSyncStore(private val dir: File) {
         val syncedPatchHash: Map<String, String> = emptyMap(),
         /** SHA-256 of the bytes FGA wrote last, per Chaldea package. */
         val lastWritten: Map<String, String> = emptyMap(),
+        val stopped: Boolean = false,
     )
 
     @Synchronized fun read(): Data = try {
@@ -47,6 +48,7 @@ class ChaldeaSyncStore(private val dir: File) {
             lastObservation = (o["lastObservation"] as? JsonPrimitive)?.longOrNull,
             syncedPatchHash = strMap("synced"),
             lastWritten = strMap("written"),
+            stopped = (o["stopped"] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: false,
         )
     } catch (e: Exception) {
         Data()
@@ -60,6 +62,7 @@ class ChaldeaSyncStore(private val dir: File) {
             d.lastObservation?.let { put("lastObservation", it) }
             put("synced", JsonObject(d.syncedPatchHash.mapValues { JsonPrimitive(it.value) }))
             put("written", JsonObject(d.lastWritten.mapValues { JsonPrimitive(it.value) }))
+            put("stopped", d.stopped)
         }
         atomicWrite(stateFile, o.toString())
     }

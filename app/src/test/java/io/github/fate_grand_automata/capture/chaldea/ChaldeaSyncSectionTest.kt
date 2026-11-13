@@ -44,6 +44,7 @@ class ChaldeaSyncSectionTest {
                         ui = ui,
                         onEnabled = {},
                         onCloseMinutes = {},
+                        onStopMinutes = {},
                         syncNow = {
                             onSyncNow()
                             ChaldeaSyncNowOutcome.Done
@@ -248,5 +249,20 @@ class ChaldeaSyncSectionTest {
             ),
         )
         compose.onNodeWithText("Account data is too large to send to Chaldea. Not synced.", substring = true).assertExists()
+    }
+
+    @Test
+    fun stoppedStatusRendersMessageAndStopMinutesOption() {
+        render(
+            ChaldeaSyncUi(
+                enabled = true,
+                loggingOn = true,
+                stopMinutes = 30,
+                access = ChaldeaAccess(RootState.Granted, ShizukuState.NotRunning),
+                status = ChaldeaSyncStatus.Stopped(30),
+            ),
+        )
+        compose.onNodeWithText(context.getString(R.string.chaldea_sync_stop_title)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.chaldea_sync_status_stopped, 30), substring = true).assertExists()
     }
 }

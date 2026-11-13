@@ -73,6 +73,8 @@ class PrefsCore @Inject constructor(
     val chaldeaSyncEnabled = maker.bool("chaldea_sync_enabled", false)
     /** Minutes in the background before Chaldea is closed to sync: 10, 30, 60, or 0 for never. */
     val chaldeaSyncCloseMinutes = maker.int("chaldea_sync_close_minutes", 30)
+    /** Minutes without FGO or Chaldea on screen before auto-sync stops its session: 10, 30, or 60. */
+    val chaldeaSyncStopMinutes = maker.int("chaldea_sync_stop_minutes", 10)
     /** Root was granted to FGA before, so a silent root check at start is allowed (issue #362). */
     val chaldeaSyncRootGranted = maker.bool("chaldea_sync_root_granted", false)
 

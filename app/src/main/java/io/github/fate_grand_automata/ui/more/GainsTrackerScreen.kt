@@ -333,6 +333,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
                     if (on) ChaldeaSyncManager.onUserTurnedOn()
                 },
                 onCloseMinutes = { vm.prefsCore.chaldeaSyncCloseMinutes.set(it) },
+                onStopMinutes = { vm.prefsCore.chaldeaSyncStopMinutes.set(it) },
                 syncNow = ChaldeaSyncManager::syncNow,
             )
         },
@@ -341,15 +342,19 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
 
 /** Combines the switch, the root and Shizuku access and the scheduler status into what the section shows. */
 private fun chaldeaSyncUi(prefs: PrefsCore): Flow<ChaldeaSyncUi> = combine(
-    combine(prefs.chaldeaSyncEnabled.asFlow(), prefs.chaldeaSyncCloseMinutes.asFlow()) { on, minutes -> on to minutes },
+    combine(
+        prefs.chaldeaSyncEnabled.asFlow(),
+        prefs.chaldeaSyncCloseMinutes.asFlow(),
+        prefs.chaldeaSyncStopMinutes.asFlow(),
+    ) { on, closeMinutes, stopMinutes -> Triple(on, closeMinutes, stopMinutes) },
     combine(prefs.captureTrackerEnabled.asFlow(), prefs.captureConsentVersion.asFlow()) { tracker, consent ->
         tracker && CaptureConsent.agreed(consent)
     },
     ChaldeaSyncManager.access,
     combine(ChaldeaSyncManager.status, ChaldeaSyncManager.serverResults) { status, results -> status to results },
     ChaldeaSyncManager.scriptRunning,
-) { (on, minutes), logging, access, (status, results), script ->
-    ChaldeaSyncUi(on, logging, minutes, access, status, script, results)
+) { (on, closeMinutes, stopMinutes), logging, access, (status, results), script ->
+    ChaldeaSyncUi(on, logging, closeMinutes, stopMinutes, access, status, script, results)
 }
 
 @Composable

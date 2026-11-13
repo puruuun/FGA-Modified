@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * script runs; 15 s after a script ends the attempt starts; Chaldea is never touched while it is visible or its
  * state is unknown; in the background it is closed after the chosen minutes, with a re-check right before; state is
  * polled every minute for the first 10 minutes of waiting and every 5 minutes after that, binding the service only
- * for the poll.
+ * for the poll. When neither FGO nor Chaldea is active on screen for the configured stop minutes, one final pass
+ * runs and the session stops until a new save, script end, or switch toggle.
  */
 class ChaldeaSyncScheduler(
     private val scope: CoroutineScope,
@@ -104,6 +105,8 @@ class ChaldeaSyncScheduler(
     private var backgroundSince: Long? = null
     private var lastObservation: Long? = null
     private var lastInterval: Long = 0
+    private var lastActive: Long? = null
+    private var stopped = false
     private var attemptJob: Job? = null
     private var generation = 0
     private var phase = Phase.Idle
@@ -198,11 +201,21 @@ class ChaldeaSyncScheduler(
                 val ids = savedIds.toList()
                 savedIds.removeAll(ids.toSet())
                 if (!active || ids.isEmpty()) return
-                synchronized(lock) {
+                val now = clock()
+                val wasStopped = synchronized(lock) {
+                    lastActive = now
+                    val prev = stopped
+                    stopped = false
                     pending += ids
                     ids.forEach { saveGen.merge(it, 1L, Long::plus) }
+                    prev
                 }
-                persistPending()
+                if (wasStopped) {
+                    val snapshot = synchronized(lock) { pending.toSet() }
+                    runCatching { store.update { it.copy(pending = snapshot, stopped = false) } }
+                } else {
+                    persistPending()
+                }
                 if (scriptActive()) return setTransient(ChaldeaSyncStatus.WaitingScript)
                 val idle = synchronized(lock) {
                     val quiet = phase == Phase.Idle || phase == Phase.Quiet || phase == Phase.Grace
@@ -228,11 +241,20 @@ class ChaldeaSyncScheduler(
                 cancelAttempt()
                 if (hasWork()) setTransient(ChaldeaSyncStatus.WaitingScript)
             }
-            Event.ScriptEnd -> if (active && hasWork()) scheduleAttempt(timing.graceMs, Phase.Grace)
+            Event.ScriptEnd -> if (active) {
+                val now = clock()
+                val wasStopped = synchronized(lock) {
+                    lastActive = now
+                    stopped.also { stopped = false }
+                }
+                if (wasStopped) persistStopped(false)
+                if (hasWork()) scheduleAttempt(timing.graceMs, Phase.Grace)
+            }
             Event.Foreground -> if (env.enabled()) {
                 if (!active) return handle(Event.Settings)
                 restore()
-                if (hasWork()) scheduleAttempt(0, Phase.Quiet)
+                val isStopped = synchronized(lock) { stopped }
+                if (!isStopped && hasWork()) scheduleAttempt(0, Phase.Quiet)
             }
             Event.Settings -> {
                 val on = env.enabled()
@@ -243,24 +265,31 @@ class ChaldeaSyncScheduler(
                         pending.clear()
                         backgroundSince = null
                         lastObservation = null
+                        lastActive = null
+                        stopped = false
                     }
-                    runCatching { store.update { it.copy(backgroundSince = null, lastObservation = null) } }
+                    runCatching { store.update { it.copy(backgroundSince = null, lastObservation = null, stopped = false) } }
                     resetStatuses()
                 } else if (!active) {
                     active = true
                     resetStatuses()
                     restore()
-                    if (hasWork()) scheduleAttempt(0, Phase.Quiet)
+                    val isStopped = synchronized(lock) { stopped }
+                    if (!isStopped && hasWork()) {
+                        synchronized(lock) { lastActive = clock() }
+                        scheduleAttempt(0, Phase.Quiet)
+                    }
                 } else {
-                    // Another switch (log collection, consent, close minutes) changed: keep going.
-                    if (hasWork()) scheduleAttempt(0, Phase.Quiet)
+                    // Another switch (log collection, consent, close minutes) changed: keep going if not stopped.
+                    val isStopped = synchronized(lock) { stopped }
+                    if (!isStopped && hasWork()) scheduleAttempt(0, Phase.Quiet)
                 }
             }
             Event.AccessChanged -> {
                 if (!active) return
                 if (env.access().ready && hasWork() && !scriptActive()) {
-                    val idle = synchronized(lock) { phase == Phase.Idle }
-                    if (idle) scheduleAttempt(0, Phase.Quiet)
+                    val canStart = synchronized(lock) { !stopped && phase == Phase.Idle }
+                    if (canStart) scheduleAttempt(0, Phase.Quiet)
                 }
             }
         }
@@ -285,7 +314,8 @@ class ChaldeaSyncScheduler(
         val now = clock()
         synchronized(lock) {
             pending += d.pending
-            if (backgroundSince == null && d.backgroundSince != null && d.lastObservation != null &&
+            stopped = d.stopped
+            if (!d.stopped && backgroundSince == null && d.backgroundSince != null && d.lastObservation != null &&
                 d.backgroundSince <= now && d.lastObservation <= now &&
                 now - d.lastObservation <= timing.pollSlowMs + timing.gapMs
             ) {
@@ -299,6 +329,10 @@ class ChaldeaSyncScheduler(
     private fun persistPending() {
         val snapshot = synchronized(lock) { pending.toSet() }
         runCatching { store.update { it.copy(pending = snapshot) } }
+    }
+
+    private fun persistStopped(value: Boolean) {
+        runCatching { store.update { it.copy(stopped = value) } }
     }
 
     private fun persistBackground() {
@@ -334,7 +368,7 @@ class ChaldeaSyncScheduler(
                         if (gen == generation) {
                             phase = Phase.Idle
                             attemptJob = null
-                            again = normal && savedDuringAttempt && active
+                            again = normal && savedDuringAttempt && active && !stopped
                             savedDuringAttempt = false
                         }
                     }
@@ -436,17 +470,29 @@ class ChaldeaSyncScheduler(
     private suspend fun step(session: ChaldeaSyncSession, gen: Int, targets: List<Target>, interval: Long): Step {
         val state = session.state().state
         val now = clock()
+        val stopMin = env.stopMinutes()
+        val stopMs = stopMin * 60_000L
+        val isActiveNow = env.screenOn() && (state == ChaldeaRunState.Visible || session.gameVisible())
+        if (isActiveNow) {
+            synchronized(lock) { lastActive = now }
+        }
+        val last = synchronized(lock) { lastActive }
+        val inactive = last == null || now - last >= stopMs
+        if (inactive) {
+            return endSession(session, gen, state, interval, stopMin)
+        }
+        val boundedInterval = minOf(interval, maxOf(stopMs - (now - last), 1L))
         when (state) {
-            ChaldeaRunState.NotRunning -> return writePass(session, gen, interval)
+            ChaldeaRunState.NotRunning -> return writePass(session, gen, boundedInterval)
             ChaldeaRunState.Visible, ChaldeaRunState.Unknown -> {
                 resetBackground()
                 setTransient(if (state == ChaldeaRunState.Visible) ChaldeaSyncStatus.WaitingVisible else ChaldeaSyncStatus.StateUnknown)
-                return Step(false, interval)
+                return Step(false, boundedInterval)
             }
             ChaldeaRunState.Background -> {
                 val since = synchronized(lock) {
-                    val last = lastObservation
-                    val restart = backgroundSince == null || last == null || now - last > lastInterval + timing.gapMs
+                    val lastObs = lastObservation
+                    val restart = backgroundSince == null || lastObs == null || now - lastObs > lastInterval + timing.gapMs
                     if (restart) backgroundSince = now
                     backgroundSince!!
                 }
@@ -457,26 +503,71 @@ class ChaldeaSyncScheduler(
                 if (closeMs > 0 && elapsed >= closeMs) {
                     // Re-check right before closing: the user may have opened Chaldea again.
                     return when (session.state().state) {
-                        ChaldeaRunState.NotRunning -> writePass(session, gen, interval)
+                        ChaldeaRunState.NotRunning -> writePass(session, gen, boundedInterval)
                         ChaldeaRunState.Background -> {
-                            if (session.forceStop().state == ChaldeaRunState.NotRunning) writePass(session, gen, interval)
+                            if (session.forceStop().state == ChaldeaRunState.NotRunning) writePass(session, gen, boundedInterval)
                             else {
                                 setResult(ChaldeaSyncStatus.StateUnknown)
-                                Step(false, interval)
+                                Step(false, boundedInterval)
                             }
                         }
                         else -> {
                             resetBackground()
                             setTransient(ChaldeaSyncStatus.WaitingVisible)
-                            Step(false, interval)
+                            Step(false, boundedInterval)
                         }
                     }
                 }
                 setTransient(ChaldeaSyncStatus.WaitingBackground((elapsed / 60_000).toInt(), closeMin))
-                val wait = if (closeMs > 0) minOf(interval, closeMs - elapsed) else interval
+                val wait = if (closeMs > 0) minOf(boundedInterval, closeMs - elapsed) else boundedInterval
                 return Step(false, maxOf(wait, 1))
             }
         }
+    }
+
+    /** Session became inactive: run one final pass if allowed, then stop until a new trigger. */
+    private suspend fun endSession(
+        session: ChaldeaSyncSession,
+        gen: Int,
+        state: ChaldeaRunState,
+        interval: Long,
+        stopMin: Int,
+    ): Step {
+        val activeBefore = synchronized(lock) { lastActive }
+        when (state) {
+            ChaldeaRunState.NotRunning -> writePass(session, gen, interval)
+            ChaldeaRunState.Background -> if (env.closeMinutes() > 0) {
+                when (session.state().state) {
+                    ChaldeaRunState.NotRunning -> writePass(session, gen, interval)
+                    ChaldeaRunState.Background -> {
+                        if (session.forceStop().state == ChaldeaRunState.NotRunning) {
+                            writePass(session, gen, interval)
+                        }
+                    }
+                    else -> Unit
+                }
+            }
+            ChaldeaRunState.Visible, ChaldeaRunState.Unknown -> Unit
+        }
+        if (scriptActive()) {
+            setTransient(ChaldeaSyncStatus.WaitingScript)
+            return Step(true)
+        }
+        val reactivated = synchronized(lock) { savedDuringAttempt || lastActive != activeBefore }
+        if (reactivated) return Step(false, interval)
+        return stopSession(stopMin)
+    }
+
+    private fun stopSession(stopMin: Int): Step {
+        synchronized(lock) {
+            stopped = true
+            backgroundSince = null
+            lastObservation = null
+            savedDuringAttempt = false
+        }
+        runCatching { store.update { it.copy(backgroundSince = null, lastObservation = null, stopped = true) } }
+        setTransient(ChaldeaSyncStatus.Stopped(stopMin))
+        return Step(true)
     }
 
     /** Chaldea is not running: recover an interrupted write, then write every target in this one session. */

@@ -93,3 +93,10 @@ object ChaldeaPackages {
     fun choose(modified: Map<String, Long?>): String =
         all.filter { modified[it] != null }.maxByOrNull { modified.getValue(it)!! } ?: PLAY
 }
+
+/** FGO packages watched for activity alongside Chaldea (KR and official JP only). */
+object ChaldeaGamePackages {
+    const val KR = "com.netmarble.fgok"
+    const val JP = "com.aniplex.fategrandorder"
+    val all = listOf(KR, JP)
+}

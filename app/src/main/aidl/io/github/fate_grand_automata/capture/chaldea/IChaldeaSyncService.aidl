@@ -24,4 +24,7 @@ interface IChaldeaSyncService {
 
     // Reads Chaldea's game/version.json and game/servants.*.json; returns compact costume/transform JSON or {"unchanged": true} or {"error": "..."}.
     String gameData(String knownVersion) = 6;
+
+    // Checks whether KR or JP FGO is visible on screen; returns {"visible": true, "package": "..."} or {"visible": false}.
+    String gameState() = 7;
 }

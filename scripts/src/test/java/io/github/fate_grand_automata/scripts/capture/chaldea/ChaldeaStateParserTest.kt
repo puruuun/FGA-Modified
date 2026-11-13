@@ -263,4 +263,46 @@ class ChaldeaStateParserTest {
         assertEquals(ChaldeaPackages.PLAY, ChaldeaPackages.choose(mapOf(ChaldeaPackages.PLAY to 9L, ChaldeaPackages.FDROID to 5L)))
         assertEquals(ChaldeaPackages.PLAY, ChaldeaPackages.choose(emptyMap()))
     }
+
+    // ---- game state JSON & package combining ----
+
+    @Test fun gameStateJsonRoundTripsAndSurvivesGarbage() {
+        val visible = ChaldeaGameStateResult(visible = true, packageName = ChaldeaGamePackages.KR)
+        assertEquals(visible, ChaldeaGameStateResult.fromJson(visible.toJson()))
+
+        val notVisible = ChaldeaGameStateResult(visible = false)
+        assertEquals(notVisible, ChaldeaGameStateResult.fromJson(notVisible.toJson()))
+
+        assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("not json"))
+        assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("{}"))
+        assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("""{"visible":true,"package":""}""").copy(packageName = null).let {
+            ChaldeaGameStateResult.fromJson("""{"visible":false,"package":null}""")
+        })
+    }
+
+    @Test fun gameStateFirstVisibleChecksAllKnownPackagesAndShortCircuits() {
+        val checked = mutableListOf<String>()
+        val none = ChaldeaGameStateResult.firstVisible(ChaldeaGamePackages.all) { pkg ->
+            checked += pkg
+            ChaldeaRunState.Background
+        }
+        assertEquals(ChaldeaGameStateResult(visible = false), none)
+        assertEquals(ChaldeaGamePackages.all, checked)
+
+        checked.clear()
+        val krFirst = ChaldeaGameStateResult.firstVisible(ChaldeaGamePackages.all) { pkg ->
+            checked += pkg
+            if (pkg == ChaldeaGamePackages.KR) ChaldeaRunState.Visible else ChaldeaRunState.NotRunning
+        }
+        assertEquals(ChaldeaGameStateResult(visible = true, packageName = ChaldeaGamePackages.KR), krFirst)
+        assertEquals(listOf(ChaldeaGamePackages.KR), checked)
+
+        checked.clear()
+        val jpSecond = ChaldeaGameStateResult.firstVisible(ChaldeaGamePackages.all) { pkg ->
+            checked += pkg
+            if (pkg == ChaldeaGamePackages.JP) ChaldeaRunState.Visible else ChaldeaRunState.Unknown
+        }
+        assertEquals(ChaldeaGameStateResult(visible = true, packageName = ChaldeaGamePackages.JP), jpSecond)
+        assertEquals(listOf(ChaldeaGamePackages.KR, ChaldeaGamePackages.JP), checked)
+    }
 }
