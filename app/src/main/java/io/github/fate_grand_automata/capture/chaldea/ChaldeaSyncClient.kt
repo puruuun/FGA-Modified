@@ -8,6 +8,8 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaBackupReceiver
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataReader
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPatch
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaStateResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode
@@ -15,6 +17,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuFacts
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -147,6 +150,17 @@ class ChaldeaSyncClient(private val context: Context) {
                     runCatching { pipe[0].close() }
                 }
                 ChaldeaSyncResult.fromJson(text)
+            }
+
+        override suspend fun gameData(knownVersion: String?): ChaldeaGameDataResult =
+            withContext(Dispatchers.IO) {
+                try {
+                    ChaldeaGameDataReader.parseResponse(service.gameData(knownVersion))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (t: Throwable) {
+                    ChaldeaGameDataResult.Error(ChaldeaSyncCode.ServiceError.name)
+                }
             }
 
         /** Unbinds and tells the service to exit. Safe to call twice. */

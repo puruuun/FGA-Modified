@@ -1341,7 +1341,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_off">"Off."</string>
     <string name="chaldea_sync_status_idle">"Nothing to sync yet."</string>
     <string name="chaldea_sync_status_working">"Syncing..."</string>
-    <string name="chaldea_sync_status_synced">"Last sync %1$s: %2$d items, %3$d mystic codes, %4$d class boards, %5$d servant coins, %6$d craft essences, %7$d command codes."</string>
+    <string name="chaldea_sync_status_synced">"Last sync %1$s: %2$d items, %3$d mystic codes, %4$d class boards, %5$d servant coins, %6$d craft essences, %7$d command codes, %8$d servants."</string>
     <string name="chaldea_sync_status_unmapped">"%1$d command codes skipped because their collection number is not known yet (retried on the next sync)."</string>
     <string name="chaldea_sync_status_created">"A new Chaldea user was created."</string>
     <string name="chaldea_sync_status_region">"The Chaldea user's region differs from the game server (not changed)."</string>
@@ -1367,6 +1367,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_unreadable">"Chaldea file unreadable, not modified."</string>
     <string name="chaldea_sync_status_backup_failed">"Backup failed. Chaldea was not modified."</string>
     <string name="chaldea_sync_status_not_identified">"Account not identified (no friend code yet). Not synced."</string>
+    <string name="chaldea_sync_status_patch_too_large">"Account data is too large to send to Chaldea. Not synced."</string>
     <string name="chaldea_sync_status_restored">"The sync failed and Chaldea's data was restored."</string>
     <string name="chaldea_sync_status_restore_failed">"Restore failed: backup at %s"</string>
     <string name="chaldea_sync_status_failed">"The sync failed (%s)."</string>

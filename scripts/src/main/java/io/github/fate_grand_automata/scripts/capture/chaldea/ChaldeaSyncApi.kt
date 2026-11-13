@@ -31,6 +31,10 @@ interface ChaldeaSyncSession {
      */
     suspend fun restore(bundle: File, sha256: String, packageName: String): ChaldeaSyncResult
 
+    /** Reads Chaldea's cached game data (version + servant costumes/transforms), or returns an error result. */
+    suspend fun gameData(knownVersion: String?): ChaldeaGameDataResult =
+        ChaldeaGameDataResult.Error(ChaldeaSyncCode.ServiceError.name)
+
     /** Unbinds and lets the service exit. Safe to call twice. */
     fun close()
 }
@@ -81,6 +85,7 @@ sealed interface ChaldeaSyncStatus {
         val regionMismatch: Boolean,
         val packageName: String?,
         val bothPackages: Boolean,
+        val servants: Int = 0,
     ) : ChaldeaSyncStatus
     data object WaitingScript : ChaldeaSyncStatus
     data object WaitingVisible : ChaldeaSyncStatus
@@ -96,6 +101,7 @@ sealed interface ChaldeaSyncStatus {
     data object OwnerChanged : ChaldeaSyncStatus
     data object BackupFailed : ChaldeaSyncStatus
     data object AccountNotIdentified : ChaldeaSyncStatus
+    data object PatchTooLarge : ChaldeaSyncStatus
     data object FailedRestored : ChaldeaSyncStatus
     data class RestoreFailed(val backupPath: String) : ChaldeaSyncStatus
     data class Failed(val code: ChaldeaSyncCode) : ChaldeaSyncStatus
@@ -107,7 +113,7 @@ sealed interface ChaldeaSyncStatus {
     val persistent: Boolean
         get() = when (this) {
             is FileNotFound, is NoAccess, is UnknownVersion, is FileUnreadable, is OwnerChanged, is BackupFailed, is AccountNotIdentified,
-            is FailedRestored, is RestoreFailed, is Failed, is RecoveryBlocked -> true
+            is PatchTooLarge, is FailedRestored, is RestoreFailed, is Failed, is RecoveryBlocked -> true
             else -> false
         }
 }

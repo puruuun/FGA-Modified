@@ -744,5 +744,417 @@ class ChaldeaSyncLogicTest {
         assertNull(stage1.svtCoins)
         assertNull(stage1.craftEssences)
         assertNull(stage1.commandCodes)
+        assertNull(stage1.servants)
+    }
+
+    // ---- stage 3: R3 CE alignment, R2/R4 servants & costumes, R5 editor, R6 size, R7 result ----
+
+    @Test fun craftEssenceOwnedWithoutCopyUsesCollectionMaxWhileMetStaysNull() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[
+                {"svtId":9300010,"status":2,"maxLv":80,"maxLimitCount":4},
+                {"svtId":9300020,"status":1,"maxLv":80,"maxLimitCount":4},
+                {"svtId":9300030,"status":2,"maxLv":80,"maxLimitCount":4}
+            ]""",
+            "userSvt" to """[{"svtId":9300030,"lv":50,"limitCount":2}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage2Numbers)
+        assertEquals(
+            mapOf(
+                // Owned (2), no held copy -> uses maxLv/maxLimitCount
+                11L to ChaldeaPatch.CeStatus(status = 2L, lv = 80L, limitCount = 4L),
+                // Met (1), no held copy -> keeps null even when collection has maxLv/maxLimitCount
+                22L to ChaldeaPatch.CeStatus(status = 1L, lv = null, limitCount = null),
+                // Held copy wins over collection max
+                33L to ChaldeaPatch.CeStatus(status = 2L, lv = 50L, limitCount = 2L),
+            ),
+            p.craftEssences,
+        )
+    }
+
+    private val stage3Numbers = ChaldeaCollectionNumbers(
+        equips = mapOf(9300010L to 11L),
+        commandCodes = mapOf(80001L to 1L, 80002L to 2L),
+        servants = mapOf(
+            100100L to 2L,
+            800100L to 1L,
+            200100L to 11L,
+            300100L to 20L,
+            505600L to 401L,
+        ),
+    )
+
+    @Test fun servantsCopySelectionOrderStorageAndLockWithdrawnRules() {
+        // Order: lv desc -> skill sum desc -> createdAt asc -> id desc. Storage included.
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[
+                {"svtId":100100,"status":2,"friendshipRank":5,"friendshipExceedCount":0,"costumeIds":[]},
+                {"svtId":200100,"status":2,"friendshipRank":5,"friendshipExceedCount":0,"costumeIds":[]},
+                {"svtId":300100,"status":2,"friendshipRank":5,"friendshipExceedCount":0,"costumeIds":[]},
+                {"svtId":800100,"status":2,"friendshipRank":8,"friendshipExceedCount":3,"costumeIds":[]}
+            ]""",
+            "userSvt" to """[
+                {"id":10,"svtId":100100,"lv":90,"skillLv1":10,"skillLv2":1,"skillLv3":1,"createdAt":100,"status":1,"treasureDeviceLv1":1},
+                {"id":20,"svtId":100100,"lv":90,"skillLv1":5,"skillLv2":5,"skillLv3":5,"createdAt":200,"status":1,"treasureDeviceLv1":2},
+                {"id":30,"svtId":100100,"lv":90,"skillLv1":5,"skillLv2":5,"skillLv3":5,"createdAt":100,"status":1,"treasureDeviceLv1":3},
+                {"id":40,"svtId":200100,"lv":80,"skillLv1":10,"skillLv2":10,"skillLv3":10,"createdAt":50,"status":1,"isLock":0,"treasureDeviceLv1":2},
+                {"id":41,"svtId":200100,"lv":70,"skillLv1":10,"skillLv2":10,"skillLv3":10,"createdAt":50,"status":1,"isLock":1,"treasureDeviceLv1":1},
+                {"id":50,"svtId":300100,"lv":90,"skillLv1":10,"skillLv2":10,"skillLv3":10,"createdAt":50,"status":5,"treasureDeviceLv1":5},
+                {"id":51,"svtId":300100,"lv":80,"skillLv1":1,"skillLv2":1,"skillLv3":1,"createdAt":50,"status":1,"treasureDeviceLv1":1}
+            ]""",
+            "userSvtStorage" to """[
+                {"id":35,"svtId":100100,"lv":90,"skillLv1":5,"skillLv2":5,"skillLv3":5,"createdAt":100,"status":0,"isLock":1,"treasureDeviceLv1":5},
+                {"id":60,"svtId":800100,"lv":80,"skillLv1":10,"skillLv2":10,"skillLv3":10,"createdAt":1,"status":1,"treasureDeviceLv1":3}
+            ]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage3Numbers)
+        val svts = p.servants!!
+        // 100100 (colNo 2): tie on lv=90, skillSum=15, createdAt=100 -> largest id=35 in storage (isLock=1 overrides status=0)
+        assertEquals(5L, svts[2L]!!.npLv)
+        // 200100 (colNo 11): best copy id=40 has isLock=0 (overrides status bit 1) -> servant skipped even though id=41 is locked
+        assertFalse(11L in svts)
+        // 300100 (colNo 20): best copy id=50 is withdrawn (status & 4 != 0) -> servant skipped even though id=51 is valid
+        assertFalse(20L in svts)
+        // 800100 (colNo 1, Mash in storage): status bit 1 (no isLock field) -> locked, written; bondLimit = 5 + 3 clamped max(8,10)..16 = 10
+        assertEquals(3L, svts[1L]!!.npLv)
+        assertEquals(10L, svts[1L]!!.bondLimit)
+    }
+
+    @Test fun servantsFieldFormulasClampsFouAppendsGrandCmdCodesAndCmdCard() {
+        // Test Fou boundaries: adjustHp 0, 100, 150, 200, 300, 400 -> (0,0,0), (20,0,0), (20,25,0), (20,50,0), (20,50,10), (20,50,10)
+        val expectedFou = listOf(
+            0L to Triple(0L, 0L, 0L),
+            100L to Triple(20L, 0L, 0L),
+            150L to Triple(20L, 25L, 0L),
+            200L to Triple(20L, 50L, 0L),
+            300L to Triple(20L, 50L, 10L),
+            400L to Triple(20L, 50L, 10L),
+        )
+        for ((adj, triple) in expectedFou) {
+            val st = state(
+                "userGame" to game,
+                "userSvtCollection" to """[{"svtId":100100,"status":2,"friendshipRank":17,"friendshipExceedCount":10}]""",
+                "userSvt" to """[{"id":1,"svtId":100100,"lv":120,"limitCount":5,"exceedCount":-2,"skillLv1":0,"skillLv2":11,"skillLv3":5,"adjustHp":$adj,"adjustAtk":$adj,"status":1,"treasureDeviceLv1":5}]""",
+                "userSvtAppendPassiveSkill" to """[{"svtId":100100,"unlockNums":[100,101,104]}]""",
+                "userSvtAppendPassiveSkillLv" to """[{"userSvtId":1,"appendPassiveSkillNums":[101,103],"appendPassiveSkillLvs":[11,6]},{"userSvtId":999,"appendPassiveSkillNums":[100],"appendPassiveSkillLvs":[10]}]""",
+                "userSvtGrand" to """[{"userSvtId":1}]""",
+                "userCommandCode" to """[{"id":10,"commandCodeId":80001},{"id":11,"commandCodeId":99999}]""",
+                // 3-element list: [10 (-> cc 1), -1 (-> null), 11 (unmapped -> null)], slots 3 & 4 missing -> null
+                "userSvtCommandCode" to """[{"svtId":100100,"userCommandCodeIds":[10,-1,11]}]""",
+                // 3-element commandCardParam: [0, 39, 500, 600, ...] missing index -> 0, >500 clamped 25
+                "userSvtCommandCard" to """[{"svtId":100100,"commandCardParam":[0,39,500,600]}]""",
+            )
+            val s = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage3Numbers).servants!![2L]!!
+            assertEquals(true, s.favorite)
+            assertEquals(16L, s.bond)
+            assertEquals(16L, s.bondLimit) // 10+10 clamped to 16
+            assertEquals(4L, s.ascension) // 5 clamped to 4
+            assertEquals(0L, s.grail) // -2 clamped to 0
+            assertEquals(listOf(1L, 10L, 5L), s.skills)
+            assertEquals(triple.first, s.fouHp3)
+            assertEquals(triple.second, s.fouHp)
+            assertEquals(triple.third, s.fouHp5)
+            assertEquals(triple.first, s.fouAtk3)
+            assertEquals(triple.second, s.fouAtk)
+            assertEquals(triple.third, s.fouAtk5)
+            assertEquals(listOf(1L, 10L, 0L, 6L, 1L), s.appendSkills)
+            assertEquals(true, s.grandSvt)
+            assertNull(s.costumes) // no gameData -> null
+            assertEquals(listOf(1L, null, null, null, null), s.equipCmdCodes)
+            assertEquals(listOf(0L, 1L, 25L, 25L, 0L), s.cmdCardStrengthen)
+        }
+
+        // Mash bondLimit lower bound max(bond, 10), grandSvt false when table present without match, null when absent
+        val mashState = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":800100,"status":2,"friendshipRank":12,"friendshipExceedCount":3},{"svtId":100100,"status":2,"friendshipRank":3,"friendshipExceedCount":0}]""",
+            "userSvt" to """[{"id":1,"svtId":800100,"lv":80,"status":1},{"id":2,"svtId":100100,"lv":90,"status":1}]""",
+            "userSvtGrand" to """[{"userSvtId":999}]""",
+        )
+        val mashPatch = ChaldeaPatch.from(mashState, ChaldeaServer.Kr, stage3Numbers)
+        // Mash: 5 + 3 = 8, clamped max(bond=12, 10)..16 = 12
+        assertEquals(12L, mashPatch.servants!![1L]!!.bondLimit)
+        assertEquals(false, mashPatch.servants!![1L]!!.grandSvt)
+        assertNull(mashPatch.servants!![1L]!!.appendSkills) // both append tables absent -> null
+    }
+
+    @Test fun servantsCmdCodeAndCmdCardOnlyForSkippedServantAndNullConditions() {
+        // Unlocked servant copy skipped for growth, still gets equipCmdCodes & cmdCardStrengthen; unknown svtId skipped
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":100100,"status":2}]""",
+            "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":0}]""",
+            "userCommandCode" to """[{"id":10,"commandCodeId":80002}]""",
+            "userSvtCommandCode" to """[{"svtId":100100,"userCommandCodeIds":[10]},{"svtId":999999,"userCommandCodeIds":[10]}]""",
+            "userSvtCommandCard" to """[{"svtId":100100,"commandCardParam":[200]},{"svtId":999999,"commandCardParam":[200]}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage3Numbers)
+        val entry = p.servants!![2L]!!
+        assertNull(entry.favorite)
+        assertNull(entry.bond)
+        assertNull(entry.skills)
+        assertEquals(listOf(2L, null, null, null, null), entry.equipCmdCodes)
+        assertEquals(listOf(10L, 0L, 0L, 0L, 0L), entry.cmdCardStrengthen)
+        assertEquals(setOf(2L), p.servants!!.keys)
+
+        // Missing numbers.servants, missing userSvtCollection, or missing both card tables -> servants == null
+        assertNull(ChaldeaPatch.from(st, ChaldeaServer.Kr, stage2Numbers).servants)
+        assertNull(ChaldeaPatch.from(state("userGame" to game, "userSvt" to """[{"svtId":100100}]"""), ChaldeaServer.Kr, stage3Numbers).servants)
+        assertNull(ChaldeaPatch.from(state("userGame" to game, "userSvtCollection" to """[{"svtId":100100}]"""), ChaldeaServer.Kr, stage3Numbers).servants)
+    }
+
+    @Test fun servantsBigTablesAreParsedAtMostOncePerFromCall() {
+        val parseCounts = LinkedHashMap<String, Int>()
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":100100,"status":2,"friendshipRank":5}]""",
+            "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":1}]""",
+            "userSvtStorage" to """[{"id":2,"svtId":9300010,"lv":50,"limitCount":4}]""",
+            "userCommandCode" to """[{"id":10,"commandCodeId":80001}]""",
+            "userSvtCommandCode" to """[{"svtId":100100,"userCommandCodeIds":[10]}]""",
+        )
+        val reverseKeyByValue = st.rawTables.entries.associate { it.value to it.key }
+        val p = ChaldeaPatch.fromWithParser(st, ChaldeaServer.Kr, stage3Numbers) { raw ->
+            val tableName = reverseKeyByValue[raw] ?: "unknown"
+            parseCounts[tableName] = (parseCounts[tableName] ?: 0) + 1
+            Json.parseToJsonElement(raw)
+        }
+        assertNotNull(p.servants)
+        assertNotNull(p.craftEssences)
+        assertNotNull(p.commandCodes)
+        assertEquals(1, parseCounts["userSvtCollection"])
+        assertEquals(1, parseCounts["userSvt"])
+        assertEquals(1, parseCounts["userSvtStorage"])
+        assertEquals(1, parseCounts["userCommandCode"])
+    }
+
+    @Test fun servantsCostumesMappingAndTransformPartnerMergeOrder() {
+        val gd = ChaldeaGameData(
+            version = "v1",
+            costumes = mapOf(
+                505600L to mapOf(1L to 505630L, 99L to 505699L),
+                505700L to mapOf(2L to 505740L, 99L to 505799L),
+                100100L to mapOf(12L to 800140L),
+            ),
+            transforms = mapOf(505600L to 505700L, 100100L to 200100L),
+        )
+        // Case 1: full mapping, unknown costumeId 888 dropped, transform partner 505700 (not in numbers.servants!) has collection row -> merged;
+        // partner 200100 for 100100 has NO collection row -> ignored without failing.
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[
+                {"svtId":505600,"status":2,"costumeIds":[1,888]},
+                {"svtId":505700,"status":2,"costumeIds":[2,777]},
+                {"svtId":100100,"status":2,"costumeIds":[12]}
+            ]""",
+            "userSvt" to """[
+                {"id":1,"svtId":505600,"lv":90,"status":1},
+                {"id":2,"svtId":100100,"lv":90,"status":1}
+            ]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage3Numbers, gd)
+        assertEquals(mapOf(505740L to 1L, 505630L to 1L), p.servants!![401L]!!.costumes)
+        // Verify partner inserted before own in key order when serialized
+        val pJson = Json.parseToJsonElement(p.toJson()).jsonObject
+        assertEquals(
+            JsonObject(mapOf("505630" to JsonPrimitive(1), "505740" to JsonPrimitive(1))),
+            pJson["servants"]!!.jsonObject["401"]!!.jsonObject["costumes"]!!.jsonObject,
+        )
+        assertEquals(mapOf(800140L to 1L), p.servants!![2L]!!.costumes)
+
+        // Verify merge order explicitly when partner and own share a battleCharaId key
+        val sameBcGd = ChaldeaGameData(
+            version = "v2",
+            costumes = mapOf(505600L to mapOf(1L to 900L, 2L to 902L), 505700L to mapOf(3L to 901L)),
+            transforms = mapOf(505600L to 505700L),
+        )
+        val pOrder = ChaldeaPatch.from(
+            state(
+                "userGame" to game,
+                "userSvtCollection" to """[{"svtId":505600,"costumeIds":[1,2]},{"svtId":505700,"costumeIds":[3]}]""",
+                "userSvt" to """[{"id":1,"svtId":505600,"lv":90,"status":1}]""",
+            ),
+            ChaldeaServer.Jp,
+            stage3Numbers,
+            sameBcGd,
+        )
+        assertEquals(listOf(901L, 900L, 902L), pOrder.servants!![401L]!!.costumes!!.keys.toList())
+    }
+
+    @Test fun servantsRoundTripToJsonAndFromJson() {
+        val full = ChaldeaPatch(
+            friendCode = "123,456",
+            server = ChaldeaServer.Kr,
+            nickname = "Synth",
+            isGirl = true,
+            items = mapOf(1L to 100L),
+            mysticCodes = null,
+            classBoards = null,
+            servants = mapOf(
+                2L to ChaldeaPatch.SvtStatus(
+                    favorite = true,
+                    ascension = 4L,
+                    skills = listOf(10L, 10L, 10L),
+                    appendSkills = listOf(0L, 10L, 0L, 0L, 10L),
+                    costumes = mapOf(800150L to 1L, 800140L to 1L),
+                    grail = 5L,
+                    fouHp5 = 10L,
+                    fouAtk5 = 10L,
+                    fouHp = 50L,
+                    fouAtk = 50L,
+                    fouHp3 = 20L,
+                    fouAtk3 = 20L,
+                    bondLimit = 15L,
+                    npLv = 3L,
+                    bond = 12L,
+                    equipCmdCodes = listOf(null, 5L, null, null, 9L),
+                    cmdCardStrengthen = listOf(25L, 0L, 0L, 10L, 5L),
+                    grandSvt = true,
+                ),
+                1L to ChaldeaPatch.SvtStatus(equipCmdCodes = listOf(null, null, null, null, null)),
+            ),
+        )
+        val json = full.toJson()
+        assertEquals(full, ChaldeaPatch.fromJson(json))
+        // Canonical sorted servant keys & field keys
+        val svtsObj = Json.parseToJsonElement(json).jsonObject["servants"]!!.jsonObject
+        assertEquals(listOf("1", "2"), svtsObj.keys.toList())
+        assertEquals(listOf("equipCmdCodes"), svtsObj["1"]!!.jsonObject.keys.toList())
+        assertEquals(listOf("800140", "800150"), svtsObj["2"]!!.jsonObject["costumes"]!!.jsonObject.keys.toList())
+        assertNull(ChaldeaPatch.fromJson("""{"friendCode":"123,456","server":"kr","servants":"bad"}"""))
+    }
+
+    @Test fun editorMergesServantsPreservesPriorityAndDefaultsAndVerifiesStrictly() {
+        val otherUser = user("1", items = """{"5":5}""")
+        val existingSvt2 = """"2":{"cur":{"favorite":false,"ascension":1,"skills":[4,4,4],"appendSkills":[0,0,0,0,0],"costumes":{"999":1},"grail":0,"fouHp5":0,"fouAtk5":0,"fouHp":0,"fouAtk":0,"fouHp3":20,"fouAtk3":20,"bondLimit":10,"npLv":1,"extraCur":"keep"},"priority":5,"bond":3,"equipCmdCodes":[null,null,null,null,null],"cmdCardStrengthen":null,"grandSvt":false,"extraTop":"keep"}"""
+        val untouchedSvt9 = """"9":{"cur":{"favorite":true,"ascension":4,"skills":[10,10,10],"appendSkills":[0,0,0,0,0],"costumes":{},"grail":0,"fouHp5":0,"fouAtk5":0,"fouHp":0,"fouAtk":0,"fouHp3":20,"fouAtk3":20,"bondLimit":10,"npLv":5},"priority":2,"bond":10}"""
+        val existingMissingCur = """"3":{"priority":4,"bond":2}"""
+        val targetUser = user(
+            "123,456",
+            extra = ""","plans":[1,2],"dupServantMapping":{"1":[2]},"servants":{$existingSvt2,$existingMissingCur,$untouchedSvt9}""",
+        )
+        val text = file("[$otherUser,$targetUser]")
+        val root = Json.parseToJsonElement(text).jsonObject
+
+        val p = patch().copy(
+            servants = mapOf(
+                // Updates growth + replaces costumes on existing servant 2; priority & unknowns must remain untouched
+                2L to ChaldeaPatch.SvtStatus(favorite = true, ascension = 4L, costumes = mapOf(800140L to 1L), bond = 11L),
+                // Existing servant 3 with missing cur gets default cur + patched bond
+                3L to ChaldeaPatch.SvtStatus(npLv = 2L, bond = 7L),
+                // Brand new servant 10 with only npLv gets Chaldea defaults for everything else (incl. fouHp3/fouAtk3 = 20)
+                10L to ChaldeaPatch.SvtStatus(npLv = 3L),
+            ),
+        )
+        val res = ok(ChaldeaUserdataEditor.edit(text, p, false))
+        assertEquals(3, res.servantCount)
+        val m = ChaldeaUserMatcher.Match.Existing(1, false)
+        assertTrue(ChaldeaUserdataEditor.verify(root, res.output, p, m, 1))
+
+        val outTarget = Json.parseToJsonElement(res.output).jsonObject["users"]!!.jsonArray[1].jsonObject
+        val svt2 = outTarget["servants"]!!.jsonObject["2"]!!.jsonObject
+        assertEquals(5, svt2["priority"]!!.jsonPrimitive.int)
+        assertEquals("keep", svt2["extraTop"]!!.jsonPrimitive.content)
+        assertEquals("keep", svt2["cur"]!!.jsonObject["extraCur"]!!.jsonPrimitive.content)
+        assertEquals(JsonObject(mapOf("800140" to JsonPrimitive(1))), svt2["cur"]!!.jsonObject["costumes"]!!.jsonObject)
+
+        val svt10 = outTarget["servants"]!!.jsonObject["10"]!!.jsonObject
+        assertEquals(1, svt10["priority"]!!.jsonPrimitive.int)
+        assertEquals(0, svt10["bond"]!!.jsonPrimitive.int)
+        assertEquals(JsonNull, svt10["cmdCardStrengthen"])
+        assertEquals(false, svt10["grandSvt"]!!.jsonPrimitive.boolean)
+        assertEquals(20, svt10["cur"]!!.jsonObject["fouHp3"]!!.jsonPrimitive.int)
+        assertEquals(20, svt10["cur"]!!.jsonObject["fouAtk3"]!!.jsonPrimitive.int)
+        assertEquals(3, svt10["cur"]!!.jsonObject["npLv"]!!.jsonPrimitive.int)
+
+        // verify rejects any tampering
+        fun reject(tampered: String) {
+            assertNotEquals(res.output, tampered)
+            assertFalse(ChaldeaUserdataEditor.verify(root, tampered, p, m, 1))
+        }
+        reject(res.output.replace("\"priority\":5", "\"priority\":4"))
+        reject(res.output.replace("\"extraCur\":\"keep\"", "\"extraCur\":\"bad\""))
+        reject(res.output.replace("\"extraTop\":\"keep\"", "\"extraTop\":\"bad\""))
+        reject(res.output.replace("\"npLv\":5", "\"npLv\":4")) // unpatched servant 9
+        reject(res.output.replace("\"plans\":[1,2]", "\"plans\":[1,3]"))
+        reject(res.output.replace("\"dupServantMapping\":{\"1\":[2]}", "\"dupServantMapping\":{\"1\":[3]}"))
+        reject(res.output.replace("\"5\":5", "\"5\":6")) // other user
+        reject(res.output.replace("\"version\":4", "\"version\":5")) // top level
+
+        // Missing or null servants starts empty; unexpected shapes refuse with UnexpectedShape
+        val nullSvts = file("[${user("123,456", extra = ""","servants":null""")}]")
+        assertTrue(ChaldeaUserdataEditor.edit(nullSvts, patch().copy(servants = mapOf(10L to ChaldeaPatch.SvtStatus(npLv = 2L))), false) is ChaldeaEditResult.Success)
+        for (badExtra in listOf(
+            ""","servants":[]""",
+            ""","servants":{"2":[]}""",
+            ""","servants":{"2":{"cur":[]}}""",
+            ""","servants":{"2":{"cur":{"costumes":[]}}}""",
+        )) {
+            val bad = file("[${user("123,456", extra = badExtra)}]")
+            assertEquals(
+                ChaldeaEditResult.Refused(ChaldeaRefusal.UnexpectedShape),
+                ChaldeaUserdataEditor.edit(bad, patch().copy(servants = mapOf(2L to ChaldeaPatch.SvtStatus(bond = 1L))), false),
+            )
+        }
+    }
+
+    @Test fun realisticStage3PatchSizeFitsWellUnderBinderLimit() {
+        val svtNumbers = (1L..330L).associate { (100000L + it * 100L) to it }
+        val equipNumbers = (1L..1600L).associate { (9300000L + it) to it }
+        val items = (1L..1300L).associate { it to (it * 10L) }
+        val servants = svtNumbers.values.associateWith { colNo ->
+            ChaldeaPatch.SvtStatus(
+                favorite = true,
+                ascension = 4L,
+                skills = listOf(10L, 10L, 10L),
+                appendSkills = listOf(10L, 10L, 0L, 0L, 10L),
+                costumes = mapOf(800100L + colNo to 1L),
+                grail = 5L,
+                fouHp5 = 10L,
+                fouAtk5 = 10L,
+                fouHp = 50L,
+                fouAtk = 50L,
+                fouHp3 = 20L,
+                fouAtk3 = 20L,
+                bondLimit = 15L,
+                npLv = 5L,
+                bond = 15L,
+                equipCmdCodes = listOf(1L, 2L, 3L, null, null),
+                cmdCardStrengthen = listOf(25L, 25L, 25L, 25L, 25L),
+                grandSvt = colNo <= 7L,
+            )
+        }
+        val ces = equipNumbers.values.associateWith { colNo ->
+            ChaldeaPatch.CeStatus(status = 2L, lv = 100L, limitCount = 4L)
+        }
+        val realistic = ChaldeaPatch(
+            friendCode = "123,456,789",
+            server = ChaldeaServer.Kr,
+            nickname = "Master",
+            isGirl = false,
+            items = items,
+            mysticCodes = (1L..20L).associateWith { 10L },
+            classBoards = (1L..9L).associateWith { ChaldeaPatch.Board(listOf(1L, 2L, 3L), listOf(2L)) },
+            svtCoins = (1L..330L).associate { ((100000L + it * 100L) * 100L + 1L) to 120L },
+            craftEssences = ces,
+            commandCodes = (1L..150L).associateWith { ChaldeaPatch.CcStatus(2L, 1L) },
+            servants = servants,
+        )
+        val json = realistic.toJson()
+        val chars = json.length
+        val parcelBytes = chars * 2
+        println("R6_REALISTIC_SIZE chars=$chars parcelBytes=$parcelBytes")
+        assertTrue(chars < ChaldeaPatch.MAX_JSON_CHARS, "Expected chars ($chars) < ${ChaldeaPatch.MAX_JSON_CHARS}")
+    }
+
+    @Test fun syncResultSerializesServantsAndOldJsonDefaultsToZero() {
+        val r = ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = "cc.narumi.chaldea", itemCount = 3, servantCount = 42)
+        val parsed = ChaldeaSyncResult.fromJson(r.toJson())
+        assertEquals(42, parsed.servantCount)
+
+        val oldJson = """{"code":"Ok","items":3}"""
+        assertEquals(0, ChaldeaSyncResult.fromJson(oldJson).servantCount)
     }
 }

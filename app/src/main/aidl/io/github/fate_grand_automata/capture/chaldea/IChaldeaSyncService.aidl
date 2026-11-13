@@ -21,4 +21,7 @@ interface IChaldeaSyncService {
 
     // Puts the stored base bytes (streamed through backupFd, SHA-256 expectedSha256) back into both files.
     String restore(in ParcelFileDescriptor backupFd, String expectedSha256, String expectedPackage) = 5;
+
+    // Reads Chaldea's game/version.json and game/servants.*.json; returns compact costume/transform JSON or {"unchanged": true} or {"error": "..."}.
+    String gameData(String knownVersion) = 6;
 }

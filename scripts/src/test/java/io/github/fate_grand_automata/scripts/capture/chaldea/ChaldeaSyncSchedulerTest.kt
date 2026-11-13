@@ -47,6 +47,8 @@ private class Fx(val ts: TestScope, val tmp: File) {
         ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("written-$n".toByteArray()), itemCount = 2)
     }
     var restoreCode = ChaldeaSyncCode.Ok
+    var gameDataFn: (String?) -> ChaldeaGameDataResult = { ChaldeaGameDataResult.Error(ChaldeaSyncCode.NotFound.name) }
+    var gameDataCalls = 0
     val log = mutableListOf<String>()
     val openTimes = mutableListOf<Long>()
     val commits = mutableListOf<Pair<ChaldeaPatch, Boolean>>()
@@ -108,6 +110,12 @@ private class Fx(val ts: TestScope, val tmp: File) {
             restores++
             restoredBundles += backup.readBytes()
             return ChaldeaSyncResult(restoreCode, packageName = packageName)
+        }
+
+        override suspend fun gameData(knownVersion: String?): ChaldeaGameDataResult {
+            log += "gameData"
+            gameDataCalls++
+            return gameDataFn(knownVersion)
         }
 
         override fun close() {
@@ -1079,5 +1087,186 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(1, synced.craftEssences)
         assertEquals(1, synced.commandCodes)
         assertEquals(0, synced.unmapped)
+    }
+
+    @Test fun gameDataRunsBeforeResolveTargetsInWritePassAndRequeuesOnceOnlyWhenContentChanges() = fx {
+        numbers = ChaldeaCollectionNumbers(emptyMap(), emptyMap(), servants = mapOf(100100L to 2L))
+        val eventsLog = mutableListOf<String>()
+        val st = AccountState(
+            mapOf(
+                "userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""",
+                "userSvtCollection" to """[{"svtId":100100,"status":2,"costumeIds":[12]}]""",
+                "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":1}]""",
+            ),
+            "[]", null, 1L, 2L,
+        )
+        loaded["kr"] = ChaldeaAccountSource.Loaded(ChaldeaServer.Kr, st)
+        current[ChaldeaServer.Kr] = "kr"
+
+        val gd1 = ChaldeaGameData("v1", mapOf(100100L to mapOf(12L to 800140L)), emptyMap())
+        val gd1SameContentDiffVer = ChaldeaGameData("v2", gd1.costumes, gd1.transforms)
+        val gd2NewContent = ChaldeaGameData("v3", mapOf(100100L to mapOf(12L to 800150L)), emptyMap())
+
+        val instrumentedSource = object : ChaldeaAccountSource {
+            override fun load(userId: String): ChaldeaAccountSource.Loaded? {
+                eventsLog += "load"
+                return loaded[userId]
+            }
+            override fun currentIds() = current.toMap()
+            override fun collectionNumbers(): ChaldeaCollectionNumbers {
+                eventsLog += "numbers"
+                return numbers
+            }
+        }
+        val localSch = ChaldeaSyncScheduler(
+            ts.backgroundScope, env, instrumentedSource, store, backups,
+            clock = { ts.testScheduler.currentTime + clockOffset }, wallClock = { wall++ },
+        )
+        localSch.onSettingsChanged()
+        ts.runCurrent()
+
+        gameDataFn = { known ->
+            eventsLog += "gameData:${known ?: "null"}"
+            ChaldeaGameDataResult.Loaded(gd1)
+        }
+        commitResult = { n ->
+            val p = commits.last().first
+            ChaldeaSyncResult(
+                ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("w$n".toByteArray()),
+                servantCount = p.servants?.size ?: 0,
+            )
+        }
+
+        // First write pass: pre-check calls load+numbers without opening session; then writePass calls gameData BEFORE resolveTargets!
+        localSch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+        assertEquals(1, commits.size)
+        assertEquals(mapOf(800140L to 1L), commits.last().first.servants!![2L]!!.costumes)
+        val idxGameData = eventsLog.indexOf("gameData:null")
+        assertTrue(idxGameData >= 0)
+        assertTrue(eventsLog.drop(idxGameData + 1).contains("load"))
+        assertEquals(1, assertIs<ChaldeaSyncStatus.Synced>(localSch.serverResults.value[ChaldeaServer.Kr]).servants)
+
+        // New save triggers another pass; gameData returns Unchanged -> no extra re-queue / no loop
+        account("kr", num = 2) // still keeps userItem only -> update to same svt tables with new item
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(st.rawTables + ("userItem" to """[{"itemId":100,"num":2}]"""), "[]", null, 1L, 2L),
+        )
+        gameDataFn = { ChaldeaGameDataResult.Unchanged("v1") }
+        localSch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+        assertEquals(2, commits.size)
+        assertTrue(store.read().pending.isEmpty())
+
+        // Different version but identical content updates cached version silently and does not re-queue
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(st.rawTables + ("userItem" to """[{"itemId":100,"num":3}]"""), "[]", null, 1L, 2L),
+        )
+        gameDataFn = { ChaldeaGameDataResult.Loaded(gd1SameContentDiffVer) }
+        localSch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+        assertEquals("v2", store.readGameData()?.version)
+        assertTrue(store.read().pending.isEmpty())
+
+        // New content re-queues current account even when account wasn't already synced cleanly via manualSync or next pass
+        val krResult = localSch.syncNow(null)
+        assertEquals(ChaldeaSyncNowOutcome.Done, krResult)
+        gameDataFn = { known ->
+            eventsLog += "gameData:${known ?: "null"}"
+            ChaldeaGameDataResult.Loaded(gd2NewContent)
+        }
+        eventsLog.clear()
+        val res = localSch.syncNow(null)
+        assertEquals(ChaldeaSyncNowOutcome.Done, res)
+        assertEquals("gameData:v2", eventsLog.first { it.startsWith("gameData") })
+        assertTrue(eventsLog.indexOf("gameData:v2") < eventsLog.indexOf("load"))
+        assertEquals(mapOf(800150L to 1L), commits.last().first.servants!![2L]!!.costumes)
+        assertEquals("v3", store.readGameData()?.version)
+    }
+
+    @Test fun gameDataUpdatedInWritePassRequeuesSettledOtherCurrentAccount() = fx {
+        numbers = ChaldeaCollectionNumbers(emptyMap(), emptyMap(), servants = mapOf(100100L to 2L))
+        val stKr = AccountState(
+            mapOf(
+                "userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""",
+                "userSvtCollection" to """[{"svtId":100100,"status":2,"costumeIds":[12]}]""",
+                "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":1}]""",
+            ),
+            "[]", null, 1L, 2L,
+        )
+        val stJp = AccountState(
+            mapOf(
+                "userGame" to """[{"friendCode":"222","name":"J","genderType":2}]""",
+                "userSvtCollection" to """[{"svtId":100100,"status":2,"costumeIds":[12]}]""",
+                "userSvt" to """[{"id":2,"svtId":100100,"lv":90,"status":1}]""",
+            ),
+            "[]", null, 1L, 2L,
+        )
+        loaded["kr"] = ChaldeaAccountSource.Loaded(ChaldeaServer.Kr, stKr)
+        loaded["jp"] = ChaldeaAccountSource.Loaded(ChaldeaServer.Jp, stJp)
+        current[ChaldeaServer.Kr] = "kr"
+        current[ChaldeaServer.Jp] = "jp"
+
+        start()
+        // Initial sync without game data -> both accounts sync with costumes = null and settle
+        sch.onAccountSaved(listOf("kr", "jp"))
+        advance(MIN + 1_000)
+        assertEquals(2, commits.size)
+
+        // Only kr changes; during kr's writePass, Chaldea now has game data -> jp is also re-queued and synced in the same pass!
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(stKr.rawTables + ("userItem" to """[{"itemId":100,"num":9}]"""), "[]", null, 1L, 2L),
+        )
+        val gd = ChaldeaGameData("v1", mapOf(100100L to mapOf(12L to 800140L)), emptyMap())
+        gameDataFn = { ChaldeaGameDataResult.Loaded(gd) }
+        sch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+
+        assertEquals(4, commits.size) // +2 (kr + jp)
+        assertEquals(mapOf(800140L to 1L), commits[2].first.servants!![2L]!!.costumes)
+        assertEquals(mapOf(800140L to 1L), commits[3].first.servants!![2L]!!.costumes)
+        assertTrue(store.read().pending.isEmpty())
+
+        // Error on next pass leaves cache intact and re-queues nothing
+        gameDataFn = { ChaldeaGameDataResult.Error(ChaldeaSyncCode.ServiceError.name) }
+        sch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+        assertEquals(4, commits.size) // unchanged hash -> nothing committed
+    }
+
+    @Test fun patchExceedingBinderLimitRefusedBeforePrepareAndSettledWithoutStoringHash() = fx {
+        // Build an oversized patch (> 350,000 chars) via a large items map (~25,000 items * ~15 chars = ~375,000 chars)
+        val itemsJson = buildString {
+            append('[')
+            for (i in 1..28_000) {
+                if (i > 1) append(',')
+                append("""{"itemId":${10_000_000L + i},"num":${100_000_000L + i}}""")
+            }
+            append(']')
+        }
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(mapOf("userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""", "userItem" to itemsJson), "[]", null, 1L, 2L),
+        )
+        current[ChaldeaServer.Kr] = "kr"
+        assertTrue(ChaldeaPatch.from(loaded["kr"]!!.state, ChaldeaServer.Kr).toJson().length > ChaldeaPatch.MAX_JSON_CHARS)
+
+        start()
+        sch.onAccountSaved(listOf("kr"))
+        advance(MIN + 1_000)
+
+        assertEquals(ChaldeaSyncStatus.PatchTooLarge, kr)
+        assertFalse("prepare" in log, "prepare must not be called when patch exceeds size limit")
+        assertEquals(0, commits.size)
+        assertTrue(store.read().pending.isEmpty())
+        assertTrue(store.read().syncedPatchHash.isEmpty())
+
+        // Advancing further must not retry in a loop
+        val openedBefore = opened
+        advance(20 * MIN)
+        assertEquals(openedBefore, opened)
     }
 }

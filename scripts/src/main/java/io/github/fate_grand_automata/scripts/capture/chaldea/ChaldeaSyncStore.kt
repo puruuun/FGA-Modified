@@ -13,6 +13,19 @@ class ChaldeaSyncStore(private val dir: File) {
 
     private val stateFile get() = File(dir, "state.json")
     private val inflightFile get() = File(dir, "inflight.json")
+    private val gameDataFile get() = File(dir, "gamedata.json")
+
+    /** Lazy read of cached Chaldea costume/transform data; null if missing, corrupt or unreadable. */
+    @Synchronized
+    fun readGameData(): ChaldeaGameData? = runCatching {
+        val f = gameDataFile
+        if (!f.exists()) null else ChaldeaGameData.fromJson(f.readText())
+    }.getOrNull()
+
+    @Synchronized
+    fun writeGameData(data: ChaldeaGameData) {
+        atomicWrite(gameDataFile, data.toJson())
+    }
 
     data class Data(
         val pending: Set<String> = emptySet(),

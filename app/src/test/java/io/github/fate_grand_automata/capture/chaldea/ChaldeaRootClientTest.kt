@@ -204,6 +204,52 @@ class ChaldeaRootClientTest {
         assertEquals(0, unbinds)
     }
 
+    @Test
+    fun clientSessionGameDataHandlesLoadedUnchangedErrorAndRemoteExceptions() = runBlocking {
+        class FakeStub(private val fn: (String?) -> String) : IChaldeaSyncService.Stub() {
+            override fun destroy() {}
+            override fun state() = "{}"
+            override fun forceStop() = "{}"
+            override fun prepare(backupFd: android.os.ParcelFileDescriptor?) = "{}"
+            override fun commit(p: String?, s: String?, c: Boolean, pkg: String?, bs: String?) = "{}"
+            override fun restore(backupFd: android.os.ParcelFileDescriptor?, s: String?, pkg: String?) = "{}"
+            override fun gameData(knownVersion: String?) = fn(knownVersion)
+        }
+
+        val loadedSession = ChaldeaSyncClient.Session(
+            FakeStub { """{"version":"v1","costumes":{"100100":{"12":800140}},"transforms":{"505600":505700}}""" },
+        ) {}
+        val loaded = loadedSession.gameData(null)
+        assertEquals(
+            io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataResult.Loaded(
+                io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameData(
+                    version = "v1",
+                    costumes = mapOf(100100L to mapOf(12L to 800140L)),
+                    transforms = mapOf(505600L to 505700L),
+                ),
+            ),
+            loaded,
+        )
+
+        val unchangedSession = ChaldeaSyncClient.Session(
+            FakeStub { """{"version":"v1","unchanged":true}""" },
+        ) {}
+        assertEquals(
+            io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataResult.Unchanged("v1"),
+            unchangedSession.gameData("v1"),
+        )
+
+        val throwingSession = ChaldeaSyncClient.Session(
+            FakeStub { throw android.os.RemoteException("binder lost") },
+        ) {}
+        assertEquals(
+            io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataResult.Error(
+                io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode.ServiceError.name,
+            ),
+            throwingSession.gameData("v1"),
+        )
+    }
+
     private fun FakeSessionPlaceholder(): ChaldeaSyncClient.Session =
         ChaldeaSyncClient.Session(ChaldeaSyncService()) {}
 }

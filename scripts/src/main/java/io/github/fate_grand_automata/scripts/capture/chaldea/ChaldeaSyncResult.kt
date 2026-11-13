@@ -33,6 +33,9 @@ enum class ChaldeaSyncCode {
 
     /** A write left a Chaldea file with another owner or mode and it could not be set back (root mode). */
     OwnerChanged,
+
+    /** The serialized patch exceeds the safe binder size limit. */
+    PatchTooLarge,
 }
 
 fun ChaldeaRefusal.toCode(): ChaldeaSyncCode = when (this) {
@@ -79,6 +82,7 @@ data class ChaldeaSyncResult(
     val bakWritten: Boolean = false,
     /** Both Chaldea packages have a userdata.json; [packageName] is the newest one. */
     val bothPackages: Boolean = false,
+    val servantCount: Int = 0,
 ) {
     val ok get() = code == ChaldeaSyncCode.Ok
 
@@ -103,6 +107,7 @@ data class ChaldeaSyncResult(
         put("regionMismatch", regionMismatch)
         put("bakWritten", bakWritten)
         put("bothPackages", bothPackages)
+        put("servants", servantCount)
     }.toString()
 
     companion object {
@@ -127,6 +132,7 @@ data class ChaldeaSyncResult(
                 created = b("created"), tookOver = b("tookOver"), regionMismatch = b("regionMismatch"),
                 bakWritten = b("bakWritten"),
                 bothPackages = b("bothPackages"),
+                servantCount = i("servants"),
             )
         } catch (e: Exception) {
             ChaldeaSyncResult(ChaldeaSyncCode.ServiceError)

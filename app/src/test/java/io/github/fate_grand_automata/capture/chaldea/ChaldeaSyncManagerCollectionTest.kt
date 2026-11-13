@@ -95,7 +95,7 @@ class ChaldeaSyncManagerCollectionTest {
         val mainThread = Looper.getMainLooper().thread
         val urls = CopyOnWriteArrayList<String>()
         val threads = CopyOnWriteArrayList<Thread>()
-        val done = CountDownLatch(4)
+        val done = CountDownLatch(6)
         ChaldeaSyncManager.gameNamesFactory = {
             GameNames(namesDir, download = { url ->
                 urls += url
@@ -104,6 +104,7 @@ class ChaldeaSyncManagerCollectionTest {
                 when {
                     url.endsWith("basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
                     url.endsWith("basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
+                    url.endsWith("basic_servant.json") -> """[{"id":100100,"collectionNo":1}]"""
                     else -> "[]"
                 }
             }) { 1_000L }
@@ -116,7 +117,7 @@ class ChaldeaSyncManagerCollectionTest {
         assertTrue(done.await(5, TimeUnit.SECONDS))
         runBlocking { ChaldeaSyncManager.collectionJob?.join() }
         awaitUntil { ChaldeaSyncManager.applyCount > beforeOn && ChaldeaSyncManager.isOn }
-        assertEquals(4, urls.size)
+        assertEquals(6, urls.size)
         assertTrue(threads.all { it !== mainThread })
 
         // Toggling off and back on in the same process does not start a second background download.
@@ -128,13 +129,13 @@ class ChaldeaSyncManagerCollectionTest {
         prefsCore.chaldeaSyncEnabled.set(true)
         awaitUntil { ChaldeaSyncManager.applyCount > beforeSecondOn && ChaldeaSyncManager.isOn }
         runBlocking { ChaldeaSyncManager.collectionJob?.join() }
-        assertEquals(4, urls.size)
+        assertEquals(6, urls.size)
     }
 
     @Test
     fun switchOnDuringScriptDefersCollectionDownloadUntilScriptEnds() {
         val urls = CopyOnWriteArrayList<String>()
-        val done = CountDownLatch(4)
+        val done = CountDownLatch(6)
         ChaldeaSyncManager.gameNamesFactory = {
             GameNames(namesDir, download = { url ->
                 urls += url
@@ -142,6 +143,7 @@ class ChaldeaSyncManagerCollectionTest {
                 when {
                     url.endsWith("basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
                     url.endsWith("basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
+                    url.endsWith("basic_servant.json") -> """[{"id":100100,"collectionNo":1}]"""
                     else -> "[]"
                 }
             }) { 1_000L }
@@ -159,7 +161,7 @@ class ChaldeaSyncManagerCollectionTest {
         ChaldeaSyncManager.onScriptEnd()
         assertTrue(done.await(5, TimeUnit.SECONDS))
         runBlocking { ChaldeaSyncManager.collectionJob?.join() }
-        assertEquals(4, urls.size)
+        assertEquals(6, urls.size)
     }
 
     @Test
@@ -182,6 +184,7 @@ class ChaldeaSyncManagerCollectionTest {
             when {
                 url.endsWith("basic_equip.json") -> """[{"id":9300010,"collectionNo":11}]"""
                 url.endsWith("basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
+                url.endsWith("basic_servant.json") -> """[{"id":100100,"collectionNo":1}]"""
                 else -> "[]"
             }
         }) { 1_000L }
@@ -231,7 +234,11 @@ class ChaldeaSyncManagerCollectionTest {
         assertEquals(2, settingsCalls.get())
         assertEquals(2, openCalls.get())
         assertEquals(
-            ChaldeaCollectionNumbers(equips = mapOf(9300010L to 11L), commandCodes = mapOf(80001L to 1L)),
+            ChaldeaCollectionNumbers(
+                equips = mapOf(9300010L to 11L),
+                commandCodes = mapOf(80001L to 1L),
+                servants = mapOf(100100L to 1L),
+            ),
             seenNumbers.last(),
         )
     }
@@ -244,7 +251,7 @@ class ChaldeaSyncManagerCollectionTest {
 
         val openCalls = AtomicInteger(0)
         val firstOpen = CountDownLatch(1)
-        val downloadDone = CountDownLatch(4)
+        val downloadDone = CountDownLatch(6)
         val settingsCalls = AtomicInteger(0)
 
         val names = GameNames(namesDir, download = { _ ->

@@ -153,10 +153,17 @@ class GameNamesTest {
         File(directory, "jp_basic_command_code_details.json").writeText(
             """[{"id":80001,"collectionNo":1},{"id":80002,"collectionNo":0}]""",
         )
+        File(directory, "basic_servant_details.json").writeText(
+            """[{"id":100100,"collectionNo":1},{"id":100200,"collectionNo":0},{"id":100300,"collectionNo":null}]""",
+        )
+        File(directory, "jp_basic_servant_details.json").writeText(
+            """[{"id":100100,"collectionNo":1},{"id":200100,"collectionNo":12}]""",
+        )
 
         val got = cache.collectionNumbers()
         assertEquals(mapOf(9300010L to 11L, 9400010L to 21L), got.equips)
         assertEquals(mapOf(80001L to 1L), got.commandCodes)
+        assertEquals(mapOf(100100L to 1L, 200100L to 12L), got.servants)
     }
 
     @Test fun ensureChaldeaCollectionListsDownloadsKrAndJpOncePerDayAndDetectsUpdates() = runBlocking {
@@ -169,6 +176,8 @@ class GameNamesTest {
                 url.endsWith("/JP/basic_equip.json") -> """[{"id":9400010,"collectionNo":21}]"""
                 url.endsWith("/KR/basic_command_code.json") -> """[{"id":80001,"collectionNo":1}]"""
                 url.endsWith("/JP/basic_command_code.json") -> """[{"id":80002,"collectionNo":2}]"""
+                url.endsWith("/KR/basic_servant.json") -> """[{"id":100100,"collectionNo":1}]"""
+                url.endsWith("/JP/basic_servant.json") -> """[{"id":200100,"collectionNo":12}]"""
                 else -> "[]"
             }
         }
@@ -180,11 +189,14 @@ class GameNamesTest {
                 "https://api.atlasacademy.io/export/JP/basic_equip.json",
                 "https://api.atlasacademy.io/export/KR/basic_command_code.json",
                 "https://api.atlasacademy.io/export/JP/basic_command_code.json",
+                "https://api.atlasacademy.io/export/KR/basic_servant.json",
+                "https://api.atlasacademy.io/export/JP/basic_servant.json",
             ),
             urls.toSet(),
         )
         assertEquals(mapOf(9300010L to 11L, 9400010L to 21L), names.collectionNumbers().equips)
         assertEquals(mapOf(80001L to 1L, 80002L to 2L), names.collectionNumbers().commandCodes)
+        assertEquals(mapOf(100100L to 1L, 200100L to 12L), names.collectionNumbers().servants)
 
         // Second call immediately: cached and fresh -> no downloads, returns false
         urls.clear()

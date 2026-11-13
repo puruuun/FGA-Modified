@@ -74,7 +74,7 @@ class ChaldeaSyncScheduler(
     private enum class Pass { Done, Retry, Abort }
     private class Target(
         val id: String, val server: ChaldeaServer, val patch: ChaldeaPatch, val hash: String,
-        val allowCreate: Boolean, val gen: Long,
+        val jsonLength: Int, val allowCreate: Boolean, val gen: Long,
     )
 
     private val _status = MutableStateFlow<ChaldeaSyncStatus>(ChaldeaSyncStatus.Idle)
@@ -484,7 +484,8 @@ class ChaldeaSyncScheduler(
         resetBackground()
         setPhase(gen, Phase.Writing)
         if (!recoverInflight(session)) return Step(true)
-        val targets = resolveTargets(null, false)
+        val gameData = refreshGameData(session)
+        val targets = resolveTargets(null, false, gameData)
         var retry = false
         for (t in targets) {
             if (scriptActive()) return Step(true).also { setTransient(ChaldeaSyncStatus.WaitingScript) }
@@ -508,7 +509,36 @@ class ChaldeaSyncScheduler(
         persistPending()
     }
 
-    private fun resolveTargets(ids: Collection<String>?, ignoreHash: Boolean): List<Target> {
+    private suspend fun refreshGameData(session: ChaldeaSyncSession): ChaldeaGameData? {
+        val cached = store.readGameData()
+        return when (val result = session.gameData(cached?.version)) {
+            is ChaldeaGameDataResult.Loaded -> {
+                val newData = result.data
+                val contentChanged = cached == null || !newData.sameContentAs(cached)
+                if (contentChanged || newData.version != cached.version) {
+                    runCatching { store.writeGameData(newData) }
+                }
+                if (contentChanged) {
+                    val currentIds = accounts.currentIds().values
+                    if (currentIds.isNotEmpty()) {
+                        synchronized(lock) {
+                            pending += currentIds
+                            currentIds.forEach { saveGen.merge(it, 1L, Long::plus) }
+                        }
+                        persistPending()
+                    }
+                }
+                newData
+            }
+            is ChaldeaGameDataResult.Unchanged, is ChaldeaGameDataResult.Error -> cached
+        }
+    }
+
+    private fun resolveTargets(
+        ids: Collection<String>?,
+        ignoreHash: Boolean,
+        gameData: ChaldeaGameData? = store.readGameData(),
+    ): List<Target> {
         val source = ids ?: synchronized(lock) { pending.toList() }
         val synced = store.read().syncedPatchHash
         val current = accounts.currentIds()
@@ -521,18 +551,27 @@ class ChaldeaSyncScheduler(
                 settleIf(id, gen)
                 continue
             }
-            val patch = ChaldeaPatch.from(loaded.state, loaded.server, numbers)
+            val patch = ChaldeaPatch.from(loaded.state, loaded.server, numbers, gameData)
             if (patch.friendCode == null) {
                 setServerResult(loaded.server, ChaldeaSyncStatus.AccountNotIdentified)
                 settleIf(id, gen)
                 continue
             }
-            val hash = patch.hash()
+            val json = patch.toJson()
+            val hash = sha256Hex(json.toByteArray(Charsets.UTF_8))
             if (!ignoreHash && synced[id] == hash) {
                 settleIf(id, gen)
                 continue
             }
-            out += Target(id, loaded.server, patch, hash, allowCreate = current[loaded.server] == id, gen = gen)
+            out += Target(
+                id,
+                loaded.server,
+                patch,
+                hash,
+                json.length,
+                allowCreate = current[loaded.server] == id,
+                gen = gen,
+            )
         }
         return out
     }
@@ -656,6 +695,9 @@ class ChaldeaSyncScheduler(
     }
 
     private suspend fun writeOne(session: ChaldeaSyncSession, t: Target): Pass {
+        if (t.jsonLength > ChaldeaPatch.MAX_JSON_CHARS) {
+            return afterFailure(t, ChaldeaSyncCode.PatchTooLarge)
+        }
         val incoming = backups.incoming()
         val outcome = try {
             FileOutputStream(incoming).use { session.prepare(it) }
@@ -730,6 +772,7 @@ class ChaldeaSyncScheduler(
                                 regionMismatch = r.regionMismatch,
                                 packageName = r.packageName,
                                 bothPackages = r.bothPackages,
+                                servants = r.servantCount,
                             ),
                         )
                         Pass.Done
@@ -771,6 +814,7 @@ class ChaldeaSyncScheduler(
             ChaldeaSyncCode.FileChanged -> return Pass.Retry
             ChaldeaSyncCode.NoMatchingUser -> {}
             ChaldeaSyncCode.AccountNotIdentified -> setServerResult(t.server, ChaldeaSyncStatus.AccountNotIdentified)
+            ChaldeaSyncCode.PatchTooLarge -> setServerResult(t.server, ChaldeaSyncStatus.PatchTooLarge)
             ChaldeaSyncCode.NotFound -> setServerResult(t.server, ChaldeaSyncStatus.FileNotFound)
             ChaldeaSyncCode.NoAccess -> setServerResult(t.server, ChaldeaSyncStatus.NoAccess)
             ChaldeaSyncCode.UnknownVersion -> setServerResult(t.server, ChaldeaSyncStatus.UnknownVersion)
@@ -827,8 +871,8 @@ class ChaldeaSyncScheduler(
             recoveryFailures = 0
             recoveryGaveUp = false
         }
-        val targets = resolveTargets(accounts.currentIds().values.toList(), true)
-        if (targets.isEmpty() && store.readInflight() == null) return ChaldeaSyncNowOutcome.Done
+        val currentIds = accounts.currentIds().values.toList()
+        if (currentIds.isEmpty() && store.readInflight() == null) return ChaldeaSyncNowOutcome.Done
         val session = env.openSession() ?: return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.CannotBind).also { setResult(it.status) }
         try {
             val state = session.state().state
@@ -849,6 +893,8 @@ class ChaldeaSyncScheduler(
             }
             resetBackground()
             if (!recoverInflight(session)) return ChaldeaSyncNowOutcome.Done
+            val gameData = refreshGameData(session)
+            val targets = resolveTargets(accounts.currentIds().values.toList(), true, gameData)
             for (t in targets) if (writeOne(session, t) == Pass.Abort) break
             return ChaldeaSyncNowOutcome.Done
         } finally {

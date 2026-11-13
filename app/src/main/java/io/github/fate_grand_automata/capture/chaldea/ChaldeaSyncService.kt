@@ -4,6 +4,7 @@ import android.os.ParcelFileDescriptor
 import android.system.Os
 import androidx.annotation.Keep
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaFileOwner
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaGameDataReader
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaOwnership
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaPackages
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaRunState
@@ -201,5 +202,17 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         r.toJson()
     } catch (t: Throwable) {
         ChaldeaSyncResult(ChaldeaSyncCode.ServiceError).toJson()
+    }
+
+    override fun gameData(knownVersion: String?): String = try {
+        val pkg = choosePackage()
+        if (pkg == null) {
+            ChaldeaGameDataReader.errorJson(ChaldeaSyncCode.NotFound)
+        } else {
+            val dir = File(ChaldeaPackages.gameDir(pkg))
+            ChaldeaGameDataReader.readResponseJson(JavaChaldeaFileAccess(dir), dir.isDirectory, knownVersion)
+        }
+    } catch (t: Throwable) {
+        ChaldeaGameDataReader.errorJson(ChaldeaSyncCode.ServiceError)
     }
 }

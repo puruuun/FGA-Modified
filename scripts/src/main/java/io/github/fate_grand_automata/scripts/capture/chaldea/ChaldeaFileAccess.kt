@@ -84,6 +84,8 @@ object ChaldeaPackages {
 
     fun userDir(pkg: String) = "/sdcard/Android/data/$pkg/files/user"
 
+    fun gameDir(pkg: String) = "/sdcard/Android/data/$pkg/files/game"
+
     /**
      * @param modified last-modified time of each package's userdata.json, null when that package has no such file
      * @return the package with the newest file; the Play package when neither has one (ties go to Play)

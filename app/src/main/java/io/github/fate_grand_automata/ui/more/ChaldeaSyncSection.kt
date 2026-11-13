@@ -99,7 +99,7 @@ private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s =
                     androidx.compose.ui.platform.LocalContext.current, s.timeMs,
                     DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_ALL,
                 ),
-                s.items, s.mysticCodes, s.boards, s.coins, s.craftEssences, s.commandCodes,
+                s.items, s.mysticCodes, s.boards, s.coins, s.craftEssences, s.commandCodes, s.servants,
             ),
         )
         if (s.unmapped > 0) append(' ').append(stringResource(R.string.chaldea_sync_status_unmapped, s.unmapped))
@@ -123,6 +123,7 @@ private fun chaldeaStatusText(status: ChaldeaSyncStatus): String = when (val s =
     ChaldeaSyncStatus.OwnerChanged -> stringResource(R.string.chaldea_sync_status_owner_changed)
     ChaldeaSyncStatus.BackupFailed -> stringResource(R.string.chaldea_sync_status_backup_failed)
     ChaldeaSyncStatus.AccountNotIdentified -> stringResource(R.string.chaldea_sync_status_not_identified)
+    ChaldeaSyncStatus.PatchTooLarge -> stringResource(R.string.chaldea_sync_status_patch_too_large)
     ChaldeaSyncStatus.FailedRestored -> stringResource(R.string.chaldea_sync_status_restored)
     is ChaldeaSyncStatus.RestoreFailed -> stringResource(R.string.chaldea_sync_status_restore_failed, s.backupPath)
     is ChaldeaSyncStatus.Failed -> stringResource(R.string.chaldea_sync_status_failed, s.code.name)

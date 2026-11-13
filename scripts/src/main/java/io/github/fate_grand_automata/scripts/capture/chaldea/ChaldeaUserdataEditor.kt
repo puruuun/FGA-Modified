@@ -46,6 +46,7 @@ sealed interface ChaldeaEditResult {
         val tookOverDefault: Boolean,
         val regionMismatch: Boolean,
         val userIndex: Int,
+        val servantCount: Int = 0,
     ) : ChaldeaEditResult
 
     data class Refused(val reason: ChaldeaRefusal) : ChaldeaEditResult
@@ -173,7 +174,65 @@ object ChaldeaUserdataEditor {
             tookOverDefault = match is ChaldeaUserMatcher.Match.TakeOver,
             regionMismatch = regionMismatch,
             userIndex = index,
+            servantCount = patch.servants?.size ?: 0,
         )
+    }
+
+    private val defaultSvtTopFields: Map<String, JsonElement> = mapOf(
+        "priority" to JsonPrimitive(1),
+        "bond" to JsonPrimitive(0),
+        "equipCmdCodes" to JsonArray(List(5) { JsonNull }),
+        "cmdCardStrengthen" to JsonNull,
+        "grandSvt" to JsonPrimitive(false),
+    )
+
+    private val defaultSvtCurFields: Map<String, JsonElement> = mapOf(
+        "favorite" to JsonPrimitive(false),
+        "ascension" to JsonPrimitive(0),
+        "skills" to JsonArray(List(3) { JsonPrimitive(1) }),
+        "appendSkills" to JsonArray(List(5) { JsonPrimitive(0) }),
+        "costumes" to JsonObject(emptyMap()),
+        "grail" to JsonPrimitive(0),
+        "fouHp5" to JsonPrimitive(0),
+        "fouAtk5" to JsonPrimitive(0),
+        "fouHp" to JsonPrimitive(0),
+        "fouAtk" to JsonPrimitive(0),
+        "fouHp3" to JsonPrimitive(20),
+        "fouAtk3" to JsonPrimitive(20),
+        "bondLimit" to JsonPrimitive(10),
+        "npLv" to JsonPrimitive(1),
+    )
+
+    private fun svtPatchedTopFields(svt: ChaldeaPatch.SvtStatus): Map<String, JsonElement> = buildMap {
+        svt.bond?.let { put("bond", JsonPrimitive(it)) }
+        svt.equipCmdCodes?.let { list ->
+            put("equipCmdCodes", JsonArray(list.map { id -> id?.let(::JsonPrimitive) ?: JsonNull }))
+        }
+        svt.cmdCardStrengthen?.let { list ->
+            put("cmdCardStrengthen", JsonArray(list.map(::JsonPrimitive)))
+        }
+        svt.grandSvt?.let { put("grandSvt", JsonPrimitive(it)) }
+    }
+
+    private fun svtPatchedCurFields(svt: ChaldeaPatch.SvtStatus): Map<String, JsonElement> = buildMap {
+        svt.favorite?.let { put("favorite", JsonPrimitive(it)) }
+        svt.ascension?.let { put("ascension", JsonPrimitive(it)) }
+        svt.skills?.let { list -> put("skills", JsonArray(list.map(::JsonPrimitive))) }
+        svt.appendSkills?.let { list -> put("appendSkills", JsonArray(list.map(::JsonPrimitive))) }
+        svt.costumes?.let { map ->
+            put("costumes", buildJsonObject {
+                for ((k, v) in map.toSortedMap()) put(k.toString(), v)
+            })
+        }
+        svt.grail?.let { put("grail", JsonPrimitive(it)) }
+        svt.fouHp5?.let { put("fouHp5", JsonPrimitive(it)) }
+        svt.fouAtk5?.let { put("fouAtk5", JsonPrimitive(it)) }
+        svt.fouHp?.let { put("fouHp", JsonPrimitive(it)) }
+        svt.fouAtk?.let { put("fouAtk", JsonPrimitive(it)) }
+        svt.fouHp3?.let { put("fouHp3", JsonPrimitive(it)) }
+        svt.fouAtk3?.let { put("fouAtk3", JsonPrimitive(it)) }
+        svt.bondLimit?.let { put("bondLimit", JsonPrimitive(it)) }
+        svt.npLv?.let { put("npLv", JsonPrimitive(it)) }
     }
 
     /** Returns null when a field the patch writes has an unexpected type. */
@@ -216,11 +275,50 @@ object ChaldeaUserdataEditor {
             out[key] = JsonObject(merged)
             return true
         }
+        fun mergeServants(svts: Map<Long, ChaldeaPatch.SvtStatus>?): Boolean {
+            if (svts == null) return true
+            val existing = when (val e = out["servants"]) {
+                null, is JsonNull -> emptyMap()
+                is JsonObject -> e
+                else -> return false
+            }
+            val merged = LinkedHashMap(existing)
+            for ((colNo, svt) in svts) {
+                val entryKey = colNo.toString()
+                val oldEntry = when (val entry = existing[entryKey]) {
+                    null, is JsonNull -> null
+                    is JsonObject -> entry
+                    else -> return false
+                }
+                val oldCur = if (oldEntry == null) {
+                    null
+                } else {
+                    when (val cur = oldEntry["cur"]) {
+                        null, is JsonNull -> null
+                        is JsonObject -> cur
+                        else -> return false
+                    }
+                }
+                if (oldCur != null) {
+                    val oldCostumes = oldCur["costumes"]
+                    if (oldCostumes != null && oldCostumes !is JsonNull && oldCostumes !is JsonObject) return false
+                }
+                val curOut = if (oldCur != null) LinkedHashMap(oldCur) else LinkedHashMap(defaultSvtCurFields)
+                curOut.putAll(svtPatchedCurFields(svt))
+                val entryOut = if (oldEntry != null) LinkedHashMap(oldEntry) else LinkedHashMap(defaultSvtTopFields)
+                entryOut["cur"] = JsonObject(curOut)
+                entryOut.putAll(svtPatchedTopFields(svt))
+                merged[entryKey] = JsonObject(entryOut)
+            }
+            out["servants"] = JsonObject(merged)
+            return true
+        }
         if (!merge("items", itemsOf(patch))) return null
         if (!merge("mysticCodes", mysticOf(patch))) return null
         if (!merge("classBoards", boardsOf(patch))) return null
         if (!mergePerField("craftEssences", ceUpdatesOf(patch))) return null
         if (!mergePerField("cmdCodes", ccUpdatesOf(patch))) return null
+        if (!mergeServants(patch.servants)) return null
         return JsonObject(out)
     }
 
@@ -309,9 +407,11 @@ object ChaldeaUserdataEditor {
             .filterValues { it != null }
         val perFieldMaps = mapOf("craftEssences" to ceUpdatesOf(patch), "cmdCodes" to ccUpdatesOf(patch))
             .filterValues { it != null }
+        val svtPatches = patch.servants?.entries?.associate { it.key.toString() to it.value }
 
         for (key in before.keys) if (key !in target.keys) return false
         for (key in setFields.keys + maps.keys + perFieldMaps.keys) if (key !in target.keys) return false
+        if (svtPatches != null && "servants" !in target.keys) return false
         for ((key, value) in target) {
             when {
                 key in setFields -> if (value != setFields[key]) return false
@@ -338,6 +438,43 @@ object ChaldeaUserdataEditor {
                             val base = oldEntry ?: JsonObject(emptyMap())
                             if (nowEntry.keys != base.keys + expectedFields.keys) return false
                             for ((fk, fv) in nowEntry) if (fv != (expectedFields[fk] ?: base[fk])) return false
+                        }
+                    }
+                }
+                key == "servants" && svtPatches != null -> {
+                    val oldMap = (before["servants"] as? JsonObject) ?: JsonObject(emptyMap())
+                    val nowMap = value as? JsonObject ?: return false
+                    if (nowMap.keys != oldMap.keys + svtPatches.keys) return false
+                    for ((entryKey, entryVal) in nowMap) {
+                        val svtPatch = svtPatches[entryKey]
+                        if (svtPatch == null) {
+                            if (entryVal != oldMap[entryKey]) return false
+                        } else {
+                            val oldRaw = oldMap[entryKey]
+                            val isNewEntry = oldRaw == null || oldRaw is JsonNull
+                            val oldEntry = if (isNewEntry) null else oldRaw as? JsonObject ?: return false
+                            val nowEntry = entryVal as? JsonObject ?: return false
+                            val patchedTop = svtPatchedTopFields(svtPatch)
+                            val patchedCur = svtPatchedCurFields(svtPatch)
+                            val baseTop = oldEntry ?: defaultSvtTopFields
+                            if (nowEntry.keys != baseTop.keys + "cur" + patchedTop.keys) return false
+                            for ((fk, fv) in nowEntry) {
+                                when {
+                                    fk == "cur" -> {
+                                        val nowCur = fv as? JsonObject ?: return false
+                                        val oldCurRaw = oldEntry?.get("cur")
+                                        val useDefaultCur = oldCurRaw == null || oldCurRaw is JsonNull
+                                        val oldCur = if (useDefaultCur) null else oldCurRaw as? JsonObject ?: return false
+                                        val baseCur = oldCur ?: defaultSvtCurFields
+                                        if (nowCur.keys != baseCur.keys + patchedCur.keys) return false
+                                        for ((ck, cv) in nowCur) {
+                                            if (cv != (patchedCur[ck] ?: baseCur[ck])) return false
+                                        }
+                                    }
+                                    fk in patchedTop -> if (fv != patchedTop[fk]) return false
+                                    else -> if (fv != baseTop[fk]) return false
+                                }
+                            }
                         }
                     }
                 }

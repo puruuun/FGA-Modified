@@ -116,6 +116,7 @@ class ChaldeaSyncEngine(
             coinCount = success.coinCount, ceCount = success.ceCount, ccCount = success.ccCount,
             created = success.created, tookOver = success.tookOverDefault, regionMismatch = success.regionMismatch,
             bakWritten = loaded.bak != null,
+            servantCount = success.servantCount,
         )
     }
 

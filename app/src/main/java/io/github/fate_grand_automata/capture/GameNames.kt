@@ -61,7 +61,7 @@ class GameNames(
     private var hasMysticNames = false
     private val metadataCache = ConcurrentHashMap<String, CachedMetadata>()
 
-    /** Cache-only CE and command-code collection numbers from KR and JP details files; never downloads or throws. */
+    /** Cache-only servant, CE, and command-code collection numbers from KR and JP details files; never downloads or throws. */
     fun collectionNumbers(): ChaldeaCollectionNumbers = runCatching {
         fun readCachedMap(list: String): Map<Long, Long> {
             val out = LinkedHashMap<Long, Long>()
@@ -76,14 +76,15 @@ class GameNames(
         ChaldeaCollectionNumbers(
             equips = readCachedMap("basic_equip"),
             commandCodes = readCachedMap("basic_command_code"),
+            servants = readCachedMap("basic_servant"),
         )
     }.getOrDefault(ChaldeaCollectionNumbers.EMPTY)
 
-    /** Ensures KR and JP CE and command-code lists are cached (respecting daily attempt limits). */
+    /** Ensures KR and JP servant, CE, and command-code lists are cached (respecting daily attempt limits). */
     suspend fun ensureChaldeaCollectionLists(): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {
             val before = collectionNumbers()
-            for (list in listOf("basic_equip", "basic_command_code")) {
+            for (list in listOf("basic_equip", "basic_command_code", "basic_servant")) {
                 for (server in listOf("KR", "JP")) {
                     metadata(list, server = server)
                 }
