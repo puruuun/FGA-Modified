@@ -381,7 +381,9 @@ android {
         }
     }
     lint {
-        abortOnError = false
+        abortOnError = true
+        baseline = file("lint-baseline.xml")
+        error += "StringFormatCount"
         disable += "MissingTranslation"
     }
     // run tests in CI builds instad of debug

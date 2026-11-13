@@ -1,0 +1,3636 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.4.0" type="baseline" client="gradle" dependencies="false" name="AGP (9.4.0)" variant="all" version="9.4.0">
+
+    <issue
+        id="EmptySuperCall"
+        message="No need to call `super.onCleared`; the super method is defined to be empty"
+        errorLine1="        super.onCleared()"
+        errorLine2="              ~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GainsTrackerScreen.kt"
+            line="116"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `GAME_PACKAGE`"
+        errorLine1="    listOfNotNull(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE.takeIf { jpEnabled })"
+        errorLine2="                                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="9"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `JP_GAME_PACKAGE`"
+        errorLine1="    listOfNotNull(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE.takeIf { jpEnabled })"
+        errorLine2="                                                                    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="9"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `GAME_PACKAGE`"
+        errorLine1="    listOf(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE).filter { name ->"
+        errorLine2="                             ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="13"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `JP_GAME_PACKAGE`"
+        errorLine1="    listOf(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE).filter { name ->"
+        errorLine2="                                                             ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="13"
+            column="62"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `GAME_PACKAGE`"
+        errorLine1="        CaptureVpnService.GAME_PACKAGE in installed, CertStore.exists(context),"
+        errorLine2="                          ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="38"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `JP_GAME_PACKAGE`"
+        errorLine1="        CaptureVpnService.JP_GAME_PACKAGE in installed, prefs.captureJpRoot.get(), CertStore.existsJp(context),"
+        errorLine2="                          ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="39"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `JP_GAME_PACKAGE`"
+        errorLine1="    context.packageManager.getPackageInfo(CaptureVpnService.JP_GAME_PACKAGE, 0)"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/JpRootSettings.kt"
+            line="34"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 33 (current min is 24): `android.Manifest.permission#POST_NOTIFICATIONS`"
+        errorLine1="    val permissionState = rememberPermissionState(permission = POST_NOTIFICATIONS)"
+        errorLine2="                                                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/main/MainScreen.kt"
+            line="84"
+            column="64"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 24): `JP_GAME_PACKAGE`"
+        errorLine1="            &quot;if pidof ${CaptureVpnService.JP_GAME_PACKAGE} >/dev/null 2>&amp;1; then echo FGA_GAME_RUNNING; fi\n&quot;, 5)"
+        errorLine2="                                          ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/RootCaInjector.kt"
+            line="135"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="`&lt;io.github.fate_grand_automata.capture.CaptureVpnService>` requires API level 29 (current min is 24)"
+        errorLine1="        &lt;service"
+        errorLine2="        ^">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="52"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                        ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/battlelog/BattleLogStorage.kt"
+            line="117"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                       ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/battlelog/BattleLogStorage.kt"
+            line="117"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="              ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/battlelog/BattleLogStorage.kt"
+            line="117"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/battlelog/BattleLogStorage.kt"
+            line="117"
+            column="50"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/battlelog/BattleLogStorage.kt"
+            line="117"
+            column="82"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                        ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureAccounts.kt"
+            line="481"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                       ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureAccounts.kt"
+            line="481"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="              ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureAccounts.kt"
+            line="481"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureAccounts.kt"
+            line="481"
+            column="50"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureAccounts.kt"
+            line="481"
+            column="82"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.format.DateTimeFormatter#ofPattern`"
+        errorLine1="    private val stamp = DateTimeFormatter.ofPattern(&quot;yyyyMMdd-HHmm&quot;, Locale.ROOT)"
+        errorLine2="                                          ~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureFolder.kt"
+            line="85"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.LocalDateTime#format`"
+        errorLine1="        return &quot;$base-${time.format(stamp)}$ext&quot;"
+        errorLine2="                             ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureFolder.kt"
+            line="92"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="    listOfNotNull(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE.takeIf { jpEnabled })"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="9"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="    listOfNotNull(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE.takeIf { jpEnabled })"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="9"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="    listOf(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE).filter { name ->"
+        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="13"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="    listOf(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE).filter { name ->"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="13"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="        CaptureVpnService.GAME_PACKAGE in installed, CertStore.exists(context),"
+        errorLine2="        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="38"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="        CaptureVpnService.JP_GAME_PACKAGE in installed, prefs.captureJpRoot.get(), CertStore.existsJp(context),"
+        errorLine2="        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureRouting.kt"
+            line="39"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.util.Base64#getMimeEncoder`"
+        errorLine1="        Base64.getMimeEncoder(64, byteArrayOf(10)).encodeToString(cert.encoded) + &quot;\n-----END CERTIFICATE-----\n&quot;"
+        errorLine2="               ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertStore.kt"
+            line="66"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.util.Base64.Encoder#encodeToString`"
+        errorLine1="        Base64.getMimeEncoder(64, byteArrayOf(10)).encodeToString(cert.encoded) + &quot;\n-----END CERTIFICATE-----\n&quot;"
+        errorLine2="                                                   ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertStore.kt"
+            line="66"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.LocalDateTime#now`"
+        errorLine1="    fun save(folder: CaptureFolder?, der: ByteArray, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): SaveOutcome ="
+        errorLine2="                                                                                                            ~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertStore.kt"
+            line="101"
+            column="109"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                        ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                        ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                     ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                     ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="              ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="              ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                               ~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                               ~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CertificatePairFiles.kt"
+            line="17"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.LocalDateTime#now`"
+        errorLine1="                when (val result = saveExport(destination, id, bytes, LocalDateTime.now())) {"
+        errorLine2="                                                                                    ~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ChaldeaExportStore.kt"
+            line="43"
+            column="85"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.format.DateTimeFormatter#ofPattern`"
+        errorLine1="    private val timestamp = DateTimeFormatter.ofPattern(&quot;yyyyMMdd-HHmm&quot;, java.util.Locale.ROOT)"
+        errorLine2="                                              ~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ChaldeaFiles.kt"
+            line="10"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.LocalDateTime#format`"
+        errorLine1="    fun name(userId: String, time: LocalDateTime): String = &quot;chaldea-account-$userId-${time.format(timestamp)}.json&quot;"
+        errorLine2="                                                                                            ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ChaldeaFiles.kt"
+            line="12"
+            column="93"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.format.DateTimeFormatter#ofPattern`"
+        errorLine1="    private val secondStamp = DateTimeFormatter.ofPattern(&quot;yyyyMMdd-HHmm-ss&quot;, java.util.Locale.ROOT)"
+        errorLine2="                                                ~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ChaldeaFiles.kt"
+            line="14"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.LocalDateTime#format`"
+        errorLine1="    fun fallbackName(userId: String, time: LocalDateTime): String = &quot;chaldea-account-$userId-${time.format(secondStamp)}.json&quot;"
+        errorLine2="                                                                                                    ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ChaldeaFiles.kt"
+            line="17"
+            column="101"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `java.lang.Process#waitFor`"
+        errorLine1="        Shell(if (p.waitFor(10, TimeUnit.SECONDS)) p.exitValue() else null, out)"
+        errorLine2="                    ~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/chaldea/ChaldeaSyncService.kt"
+            line="40"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `java.lang.Process#waitFor`"
+        errorLine1="        if (p.waitFor(10, TimeUnit.SECONDS) &amp;&amp; p.exitValue() == 0) result else null"
+        errorLine2="              ~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/chaldea/ChaldeaSyncService.kt"
+            line="49"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                    ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/IconFileStore.kt"
+            line="52"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                   ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/IconFileStore.kt"
+            line="52"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                          ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/IconFileStore.kt"
+            line="52"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/IconFileStore.kt"
+            line="52"
+            column="62"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/IconFileStore.kt"
+            line="52"
+            column="94"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="    context.packageManager.getPackageInfo(CaptureVpnService.JP_GAME_PACKAGE, 0)"
+        errorLine2="                                          ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/JpRootSettings.kt"
+            line="34"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="            Files.move(file.toPath(), File(directory, &quot;outside-log.corrupt-${UUID.randomUUID()}.json&quot;).toPath())"
+        errorLine2="                            ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="67"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="            Files.move(file.toPath(), File(directory, &quot;outside-log.corrupt-${UUID.randomUUID()}.json&quot;).toPath())"
+        errorLine2="                                                                                                       ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="67"
+            column="104"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="            Files.move(file.toPath(), File(directory, &quot;outside-log.corrupt-${UUID.randomUUID()}.json&quot;).toPath())"
+        errorLine2="                  ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="67"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                    ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="98"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                   ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="98"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="          ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="98"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="98"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="98"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                    ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="109"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.io.File#toPath`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                   ~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="109"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.nio.file.Files#move`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="          ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="109"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#ATOMIC_MOVE`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="109"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.nio.file.StandardCopyOption#REPLACE_EXISTING`"
+        errorLine1="    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)"
+        errorLine2="                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/OutsideLogRepository.kt"
+            line="109"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="            tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf(&quot;http/1.1&quot;) }"
+        errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="149"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="            tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf(&quot;http/1.1&quot;) }"
+        errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="149"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="            tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf(&quot;http/1.1&quot;) }"
+        errorLine2="                                                                               ~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="149"
+            column="80"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="            tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf(&quot;http/1.1&quot;) }"
+        errorLine2="                                                                               ~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="149"
+            column="80"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="                applicationProtocols = arrayOf(&quot;http/1.1&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="163"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="                applicationProtocols = arrayOf(&quot;http/1.1&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="163"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="                applicationProtocols = arrayOf(&quot;http/1.1&quot;)"
+        errorLine2="                                     ~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="163"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 24): `javax.net.ssl.SSLParameters#setApplicationProtocols`"
+        errorLine1="                applicationProtocols = arrayOf(&quot;http/1.1&quot;)"
+        errorLine2="                                     ~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/ProxyServer.kt"
+            line="163"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `java.lang.Process#waitFor`"
+        errorLine1="            if (!process.waitFor(maxOf(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS)) {"
+        errorLine2="                         ~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/RootCaInjector.kt"
+            line="66"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `java.lang.Process#destroyForcibly`"
+        errorLine1="            process.destroyForcibly()"
+        errorLine2="                    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/RootCaInjector.kt"
+            line="74"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 29 (current min is 24): `Companion`"
+        errorLine1="            &quot;if pidof ${CaptureVpnService.JP_GAME_PACKAGE} >/dev/null 2>&amp;1; then echo FGA_GAME_RUNNING; fi\n&quot;, 5)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/RootCaInjector.kt"
+            line="135"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="        targetSdk = 36"
+        errorLine2="        ~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="324"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SuspiciousIndentation"
+        message="Suspicious indentation: This is indented but is not continuing the previous expression (`val showThird = show`...)"
+        errorLine1="                    Card("
+        errorLine2="                    ~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/BattleConfigScreen.kt"
+            line="295"
+            column="21"/>
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/BattleConfigScreen.kt"
+            line="294"
+            column="5"
+            message="Previous statement here"/>
+    </issue>
+
+    <issue
+        id="SuspiciousIndentation"
+        message="Suspicious indentation: This is indented but is not continuing the previous expression (`val showThird = show`...)"
+        errorLine1="                    Card("
+        errorLine2="                    ~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/BattleConfigScreen.kt"
+            line="343"
+            column="21"/>
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/BattleConfigScreen.kt"
+            line="342"
+            column="5"
+            message="Previous statement here"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `previewLayout` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:previewLayout=&quot;@layout/widget_picker_account&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/ap_widget_info.xml"
+            line="9"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `targetCellHeight` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:targetCellHeight=&quot;1&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/ap_widget_info.xml"
+            line="11"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `targetCellWidth` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:targetCellWidth=&quot;4&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/ap_widget_info.xml"
+            line="12"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `previewLayout` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:previewLayout=&quot;@layout/widget_picker_service&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/service_widget_info.xml"
+            line="7"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `maxResizeWidth` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:maxResizeWidth=&quot;160dp&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/service_widget_info.xml"
+            line="10"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `targetCellWidth` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:targetCellWidth=&quot;1&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/service_widget_info.xml"
+            line="11"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `targetCellHeight` is only used in API level 31 and higher (current min is 24)"
+        errorLine1="    android:targetCellHeight=&quot;1&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/service_widget_info.xml"
+            line="12"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="NonObservableLocale"
+        message="Reading locale in a non-observable way in a composable function"
+        errorLine1="                if (friend.lastLogin > 0) SimpleDateFormat(&quot;M/d HH:mm&quot;, Locale.getDefault()).format(Date(friend.lastLogin * 1000))"
+        errorLine2="                                                                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/FriendManagerScreen.kt"
+            line="562"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="RestrictedApi"
+        message="ColorProviderKt.ColorProvider can only be called from within the same library group (referenced groupId=`androidx.glance` from groupId=`Fate Grand Automata`)"
+        errorLine1="                colorFilter = ColorFilter.tint(ColorProvider(accent)),"
+        errorLine2="                                               ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/widget/ServiceWidget.kt"
+            line="135"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="RestrictedApi"
+        message="ColorProviderKt.ColorProvider can only be called from within the same library group (referenced groupId=`androidx.glance` from groupId=`Fate Grand Automata`)"
+        errorLine1="                color = ColorProvider(labelColor),"
+        errorLine2="                        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/widget/ServiceWidget.kt"
+            line="141"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions that return Unit should start with an uppercase letter"
+        errorLine1="private fun fpSellSwitch(label: Int, initial: Boolean, save: (Boolean) -> Unit) {"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/FpLauncher.kt"
+            line="130"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions that return Unit should start with an uppercase letter"
+        errorLine1="private fun Pref&lt;Int>.customOffset(text: String, maximum: Int, enabled: Boolean) {"
+        errorLine2="                      ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GameAreaPreference.kt"
+            line="207"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun FGAListItemColors() = ListItemDefaults.colors("
+        errorLine2="    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/Theme.kt"
+            line="160"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun FGAMenuContainerColor() = MaterialTheme.colorScheme.surfaceVariant"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/Theme.kt"
+            line="169"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun FGASliderColors() = SliderDefaults.colors("
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/Theme.kt"
+            line="178"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="        modifier = Modifier.width(minOf(screen.screenWidthDp * 0.9f, 900f).dp)"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="86"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="            .heightIn(max = (screen.screenHeightDp * 0.9f).dp).testTag(&quot;log-filter-dialog&quot;),"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="87"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="            modifier = Modifier.width(minOf(600, maxOf(360, screen.screenWidthDp - 32), screen.screenWidthDp).dp).testTag(&quot;log-date-range-dialog&quot;)) {"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="167"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="            modifier = Modifier.width(minOf(600, maxOf(360, screen.screenWidthDp - 32), screen.screenWidthDp).dp).testTag(&quot;log-date-range-dialog&quot;)) {"
+        errorLine2="                                                                                        ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="167"
+            column="89"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="                        .heightIn(max = (screen.screenHeightDp * 0.7f).coerceAtMost(500f).dp)"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="172"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="ContextCastToActivity"
+        message="LocalContext should not be cast to Activity, use LocalActivity instead"
+        errorLine1="            activity = LocalContext.current as Activity"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/test/java/io/github/fate_grand_automata/widget/WidgetCaptureMainFlowTest.kt"
+            line="67"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="LocalContextConfigurationRead"
+        message="Reading Configuration using LocalContext.current.resources.configuration is not configuration-aware and may return stale values if the Configuration changes"
+        errorLine1="                                        context.resources.configuration.locales[0]?.toLanguageTag() ?: Locale.getDefault().toLanguageTag())"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/ChaldeaImportDialog.kt"
+            line="199"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="LocalContextConfigurationRead"
+        message="Reading Configuration using LocalContext.current.resources.configuration is not configuration-aware and may return stale values if the Configuration changes"
+        errorLine1="            onSearch = { controller.searchPortraits(context.resources.configuration.locales[0].toLanguageTag()) },"
+        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/PortraitImportHost.kt"
+            line="37"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current is not configuration-aware and may return stale values if the Configuration changes"
+        errorLine1="                                    result.warnings.joinToString(&quot;\n&quot;) { context.getString(it.messageRes) }, Toast.LENGTH_LONG).show()"
+        errorLine2="                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/ChaldeaImportDialog.kt"
+            line="211"
+            column="74"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current is not configuration-aware and may return stale values if the Configuration changes"
+        errorLine1="                            val msg = context.getString(R.string.support_imgs_extracting)"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/onboarding/OnboardingItems.kt"
+            line="145"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Optional Modifier parameter should have a default value of `Modifier`"
+        errorLine1="    modifier: Modifier = Modifier.fillMaxWidth(),"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/BattleLauncher.kt"
+            line="573"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="MutableCollectionMutableState"
+        message="Creating a MutableState object with a mutable collection type"
+        errorLine1="    var ces by rememberSaveable { mutableStateOf(arrayListOf&lt;Long>()) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/FriendManagerScreen.kt"
+            line="145"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="MutableCollectionMutableState"
+        message="Creating a MutableState object with a mutable collection type"
+        errorLine1="    var skillLevels by rememberSaveable { mutableStateOf(ArrayList(List(3) { FriendSkillLevel.All })) }"
+        errorLine2="                                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/FriendManagerScreen.kt"
+            line="154"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="MutableCollectionMutableState"
+        message="Creating a MutableState object with a mutable collection type"
+        errorLine1="    var appendLevels by rememberSaveable { mutableStateOf(ArrayList(List(5) { FriendSkillLevel.All })) }"
+        errorLine2="                                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/FriendManagerScreen.kt"
+            line="155"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="MutableCollectionMutableState"
+        message="Creating a MutableState object with a mutable collection type"
+        errorLine1="    var pendingIds by rememberSaveable { mutableStateOf&lt;ArrayList&lt;String>?>(null) }"
+        errorLine2="                                         ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogScreen.kt"
+            line="99"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                {}, {}, {}, {}, {}, {}, {}, jpState = settings.state.value, jpInstalled = true)"
+        errorLine2="                                                                     ~~~~~">
+        <location
+            file="src/test/java/io/github/fate_grand_automata/capture/JpRootSettingsScreenshotTest.kt"
+            line="37"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="UnrememberedMutableState"
+        message="Creating a state object during composition without using `remember`"
+        errorLine1="    return object : MutableState&lt;T> {"
+        errorLine2="           ^">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/prefs/Preference.kt"
+            line="37"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
+        <location
+            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
+        <location
+            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
+    </issue>
+
+    <issue
+        id="Aligned16KB"
+        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
+        <location
+            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Fixed screen orientations will be ignored in most cases, starting from Android 16. Android is moving toward a model where apps are expected to adapt to various orientations, display sizes, and aspect ratios."
+        errorLine1="            android:screenOrientation=&quot;sensorLandscape&quot; />"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="50"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseAppTint"
+        message="Must use `app:tint` instead of `android:tint`"
+        errorLine1="            android:tint=&quot;@color/widget_accent&quot; />"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_picker_account.xml"
+            line="91"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseAppTint"
+        message="Must use `app:tint` instead of `android:tint`"
+        errorLine1="            android:tint=&quot;@color/widget_accent&quot; />"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_picker_service.xml"
+            line="21"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="Typos"
+        message="Did you mean &quot;asc!&quot; instead of &quot;asc1&quot;?"
+        errorLine1="    &lt;string name=&quot;support_img_namer_folder_hint&quot;>&quot;You can use folders like this: &apos;Merlin/asc1&apos;&quot;&lt;/string>"
+        errorLine2="                                                                                         ~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="130"
+            column="90"/>
+    </issue>
+
+    <issue
+        id="Typos"
+        message="Did you mean &quot;Slot!&quot; instead of &quot;Slot1&quot;?"
+        errorLine1="    &lt;string name=&quot;spam_target_slot_1&quot;>&quot;Slot1&quot;&lt;/string>"
+        errorLine2="                                       ~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="290"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;presses&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;hakuno_shuffle_unmet&quot;>Hakuno Shuffle unmet after %1$d presses: %2$s&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="21"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;item&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;battle_config_list_export_failed&quot;>&quot;Failed to export %d item(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="42"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;item&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;battle_config_list_import_failed&quot;>&quot;Import Failed for %d item(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="43"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;configuration&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;battle_config_list_delete_confirm_message&quot;>&quot;Are you sure you want to delete %d configuration(s)?&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="45"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;minute&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;wait_ap_regen_toast_message&quot;>&quot;Waiting for AP regeneration. Rechecking in %d minute(s).&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="202"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;time&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;times_ran&quot;>&quot;Ran %d time(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="354"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;out&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;times_ran_out_of&quot;>&quot;Ran %1$d out of %2$d time(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="355"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;refills&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;refills_used_out_of&quot;>&quot;%1$d refills used out of %2$d&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="356"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;Gold&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;picked_exp_stacks&quot;>&quot;Picked %1$d EXP stacks, resulting in a total amount of %2$d Gold embers&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="364"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;material&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;mats_farmed&quot;>&quot;Farmed %d material(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="368"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;time&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;times_rolled&quot;>&quot;Rolled %d time(s)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="371"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;turns&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;command_start_skipped&quot;>Quest ended before the command started (%1$d turns skipped).&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="684"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;skipped&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;command_start_wait_limit&quot;>Card condition not met after %1$d skipped turns.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="687"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;started&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;command_started_profile&quot;>Setting %1$d started at actual wave %2$d, turn %3$d&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="696"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;quests&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;bond_slot_reads&quot;>Read: %1$d quests · Missing: %2$d quests&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="715"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;runs&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;battle_log_card_runs&quot;>%1$d runs · avg %2$.1f turns&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="717"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;quests&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;bond_levelup_missed&quot;>Missing due to bond level-up popups: %1$d quests&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="718"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;additional&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;original_import_more_errors&quot;>%1$d additional errors are not shown.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="771"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;images&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;portrait_import_progress&quot;>%1$s: %2$d / %3$d images&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="780"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;cells&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;fp_sell_stop_state&quot;>Dry-run: %1$s / Selected cards: %2$d\nLock state unknown: %3$d cells&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="823"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;cells&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;fp_sell_summary&quot;>Selected %1$d cells\nLock state unknown: %2$d cells&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="827"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;target&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;skill_level_slot_target&quot;>Slot %1$d target level&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="834"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;runs&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;weekly_route_summary_line&quot;>%1$s / %2$s · AP %3$d: %4$d of %5$d runs, %6$s&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="882"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;quests&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;weekly_probe_count_selected&quot;>%1$d quests will be checked&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="904"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;more&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;weekly_probe_more&quot;>…and %1$d more (see the CSV)&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="909"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;started&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;command_started_profile_colours&quot;>Command profile %1$d started at wave %2$d, turn %3$d (%4$s)&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="959"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;retreats&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;p_battle_config_turn_limit_retreat_streak&quot;>&quot;Stop after %d retreats in a row&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="988"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;times&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;retreat_count&quot;>&quot;Retreated %1$d times (wipe %2$d, turn limit %3$d)&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="991"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;times&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;turn_limit_retreat_streak_stop&quot;>&quot;Retreated %d times in a row.&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="993"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;selected&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;battle_config_folder_selected_count&quot;>&quot;%d selected&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="998"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;times&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;capture_tls_warning&quot;>&quot;The game refused the certificate %d times. Install it as a CA certificate, not a Wi-Fi certificate.&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1026"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;response&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;capture_dropped_warning&quot;>&quot;%1$d response(s) could not be recorded (last: %2$s).&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1027"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;selected&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;capture_log_confirm_selected&quot;>Delete %1$d selected records?&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1126"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;battle&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;capture_log_retention_confirm&quot;>Keep the newest %1$d battle records and %1$d outside records? Older records will be permanently deleted.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1140"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;icons&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;icon_prefetch_ready&quot;>%1$d icons ready&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1197"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;icons&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;icon_prefetch_failed&quot;>%1$d icons ready, %2$d failed&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1198"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;slots&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;friends2_show_slots&quot;>Show %1$d slots&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1226"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;slots&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;friends2_result_count&quot;>%1$d slots&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1227"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;servants&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;friends_servants_selected_count&quot;>%1$d servants selected&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1319"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;items&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;chaldea_sync_status_synced&quot;>&quot;Last sync %1$s: %2$d items, %3$d mystic codes, %4$d class boards.&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1344"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatCount"
+        message="Inconsistent number of arguments in formatting string `error_could_not_create_directory`; found both 0 here and 1 in values/localized.xml"
+        errorLine1="    &lt;string name=&quot;error_could_not_create_directory&quot;>&quot;디렉&quot;&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-ko/localized.xml"
+            line="125"
+            column="5"/>
+        <location
+            file="src/main/res/values/localized.xml"
+            line="603"
+            column="5"
+            message="Conflicting number of arguments (1) here"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 24"
+        errorLine1="    PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/widget/ApWidgetRenderer.kt"
+            line="227"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    /** For the home-screen widget refresh after a save. */"
+        errorLine2="    ^">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/CaptureTracker.kt"
+            line="127"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `PrefsCore` which has field `context` pointing to `Context`); this is a memory leak"
+        errorLine1="    private var prefs: PrefsCore? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/chaldea/ChaldeaSyncManager.kt"
+            line="78"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `ChaldeaSyncClient` which has field `context` pointing to `Context`); this is a memory leak"
+        errorLine1="    private var client: ChaldeaSyncClient? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/chaldea/ChaldeaSyncManager.kt"
+            line="79"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `ChaldeaRootClient` which has field `context` pointing to `Context`); this is a memory leak"
+        errorLine1="    private var rootClient: ChaldeaRootClient? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/chaldea/ChaldeaSyncManager.kt"
+            line="80"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="This field leaks a context object"
+        errorLine1="    private val context = app.applicationContext"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GainsTrackerScreen.kt"
+            line="100"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var rollLimit by remember { mutableStateOf(prefs.limitFP) }"
+        errorLine2="                                ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/FpLauncher.kt"
+            line="37"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var bannerPosition by remember { mutableStateOf(prefs.fpBannerPosition.coerceIn(FpBannerReturn.POSITIONS)) }"
+        errorLine2="                                     ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/FpLauncher.kt"
+            line="39"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var maxGoldEmberStackSize by remember { mutableStateOf(prefs.maxGoldEmberStackSize) }"
+        errorLine2="                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/GiftBoxLauncher.kt"
+            line="74"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var maxGoldEmberTotalCount by remember { mutableStateOf(prefs.maxGoldEmberTotalCount) }"
+        errorLine2="                                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/GiftBoxLauncher.kt"
+            line="75"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var draftRetention by rememberSaveable { mutableStateOf(retention) }"
+        errorLine2="                                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/log/LogFilterDialog.kt"
+            line="73"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var maxGoldEmberStackSize by remember { mutableStateOf(prefs.maxGoldEmberStackSize) }"
+        errorLine2="                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/LotteryLauncher.kt"
+            line="31"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var maxGoldEmberTotalCount by remember { mutableStateOf(prefs.maxGoldEmberTotalCount) }"
+        errorLine2="                                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/launcher/LotteryLauncher.kt"
+            line="32"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        var currentRaidTurnDelaySeconds by remember(raidTurnDelaySeconds) { mutableStateOf(raidTurnDelaySeconds) }"
+        errorLine2="                                                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/RaidDelay.kt"
+            line="46"
+            column="77"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var starting by rememberSaveable { mutableStateOf(1) }"
+        errorLine2="                                       ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/skill_maker/SkillMakerOrderChange.kt"
+            line="37"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var sub by rememberSaveable { mutableStateOf(1) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/skill_maker/SkillMakerOrderChange.kt"
+            line="38"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var currentValue by remember(value) { mutableStateOf(value) }"
+        errorLine2="                                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/Stepper.kt"
+            line="68"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        var currentTurns by remember(turns) { mutableStateOf(turns) }"
+        errorLine2="                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/TurnLimitRetreat.kt"
+            line="46"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        var currentStreak by remember(streakCount) { mutableStateOf(streakCount.coerceIn(1, 99)) }"
+        errorLine2="                                                     ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/battle_config_item/TurnLimitRetreat.kt"
+            line="48"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="&lt;LinearLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="3"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="        &lt;LinearLayout"
+        errorLine2="         ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="31"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="&lt;LinearLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_picker_account.xml"
+            line="3"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_biceps` appears to be unused"
+        errorLine1="&lt;vector android:height=&quot;24dp&quot; android:viewportHeight=&quot;256&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_biceps.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_discord` appears to be unused"
+        errorLine1="&lt;vector android:height=&quot;25dp&quot; android:viewportHeight=&quot;24&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_discord.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_donate` appears to be unused"
+        errorLine1="&lt;vector android:height=&quot;25dp&quot; android:viewportHeight=&quot;24&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_donate.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_exit_run` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_exit_run.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_notch` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_notch.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_undo` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_undo.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.skill_maker_main_enemy` appears to be unused"
+        errorLine1="    &lt;string name=&quot;skill_maker_main_enemy&quot;>&quot;Enemy %d&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="69"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.p_battle_config_summary` appears to be unused"
+        errorLine1="    &lt;string name=&quot;p_battle_config_summary&quot;>&quot;Manage configs for Battle script&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="141"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.troubleshoot` appears to be unused"
+        errorLine1="    &lt;string name=&quot;troubleshoot&quot;>&quot;Troubleshooting&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="265"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.accessibility_service` appears to be unused"
+        errorLine1="    &lt;string name=&quot;accessibility_service&quot;>&quot;Accessibility Service: &quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="322"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.accessibility_enabled` appears to be unused"
+        errorLine1="    &lt;string name=&quot;accessibility_enabled&quot;>&quot;ENABLED&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="323"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.accessibility_disabled` appears to be unused"
+        errorLine1="    &lt;string name=&quot;accessibility_disabled&quot;>&quot;DISABLED&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="324"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.accessibility_disable` appears to be unused"
+        errorLine1="    &lt;string name=&quot;accessibility_disable&quot;>&quot;DISABLE&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="325"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.accessibility_enable_in_settings` appears to be unused"
+        errorLine1="    &lt;string name=&quot;accessibility_enable_in_settings&quot;>&quot;ENABLE IN SETTINGS&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="326"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.p_game_area_mode` appears to be unused"
+        errorLine1="    &lt;string name=&quot;p_game_area_mode&quot;>&quot;Game Area Mode&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="481"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.donate` appears to be unused"
+        errorLine1="    &lt;string name=&quot;donate&quot;>&quot;Donate&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="507"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.update_download_success` appears to be unused"
+        errorLine1="    &lt;string name=&quot;update_download_success&quot;>&quot;Download successful. Restarting app in 5 seconds.&quot;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="510"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.p_command_start_mode` appears to be unused"
+        errorLine1="    &lt;string name=&quot;p_command_start_mode&quot;>Start mode&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="673"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.p_command_start_servant` appears to be unused"
+        errorLine1="    &lt;string name=&quot;p_command_start_servant&quot;>Target Servant&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="676"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_start_description` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_start_description&quot;>Wait with face cards only until the target has at least this many usable face cards. Then start the existing command once, shifting its waves and turns to the start position. Waiting continues across waves. Servant face-card checks are enabled for this config; skills, NPs and automatic shuffle are held while waiting.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="681"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_start_waiting` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_start_waiting&quot;>Waiting for cards: Servant %1$d, %2$d / at least %3$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="682"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_started` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_started&quot;>Command started at actual wave %1$d, turn %2$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="683"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_start_second_enabled` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_start_second_enabled&quot;>Enable second condition and separate settings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="691"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_start_waiting_both` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_start_waiting_both&quot;>Waiting: Servant %1$d %2$d/%3$d; Servant %4$d %5$d/%6$d (at least)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="695"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.command_started_profile` appears to be unused"
+        errorLine1="    &lt;string name=&quot;command_started_profile&quot;>Setting %1$d started at actual wave %2$d, turn %3$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="696"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_loading` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_loading&quot;>Loading this week\&apos;s missions…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="864"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_unsupported_server` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_unsupported_server&quot;>Weekly mission clear supports only the JP and KR servers.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="865"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_solve_failed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_solve_failed&quot;>Could not compute a route: %1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="867"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_route_empty` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_route_empty&quot;>None of the supported missions needs a quest.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="871"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_chapters` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_chapters&quot;>Chapters (turn off the ones you have not opened)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="874"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_battle_config` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_battle_config&quot;>Battle config&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="875"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.weekly_route_run` appears to be unused"
+        errorLine1="    &lt;string name=&quot;weekly_route_run&quot;>Run route&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="876"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.dashboard_formation_seat` appears to be unused"
+        errorLine1="    &lt;string name=&quot;dashboard_formation_seat&quot;>Seat %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1159"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.friends2_deck` appears to be unused"
+        errorLine1="    &lt;string name=&quot;friends2_deck&quot;>Deck&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1221"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.friends2_login_amount` appears to be unused"
+        errorLine1="    &lt;string name=&quot;friends2_login_amount&quot;>Amount&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1246"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="NotShrinkingResources"
+        message="If enabling minification, also set isShrinkResources = true"
+        errorLine1="            isMinifyEnabled = true"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="352"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UselessLeaf"
+        message="This `FrameLayout` view is unnecessary (no children, no `background`, no `id`, no `style`)"
+        errorLine1="            &lt;FrameLayout"
+        errorLine2="             ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_item.xml"
+            line="62"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="UselessParent"
+        message="This `LinearLayout` layout or its `FrameLayout` parent is possibly unnecessary"
+        errorLine1="    &lt;LinearLayout"
+        errorLine2="     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_item.xml"
+            line="8"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="UselessParent"
+        message="This `LinearLayout` layout or its `LinearLayout` parent is unnecessary"
+        errorLine1="        &lt;LinearLayout"
+        errorLine2="         ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="104"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;chaldea_sync_status_working&quot;>&quot;反映中...&quot;&lt;/string>"
+        errorLine2="                                               ~~~~~~~~">
+        <location
+            file="src/main/res/values-ja/localized.xml"
+            line="1031"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;chaldea_sync_status_working&quot;>&quot;반영 중...&quot;&lt;/string>"
+        errorLine2="                                               ~~~~~~~~~">
+        <location
+            file="src/main/res/values-ko/localized.xml"
+            line="1273"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;chaldea_sync_status_working&quot;>&quot;Syncing...&quot;&lt;/string>"
+        errorLine2="                                               ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/localized.xml"
+            line="1343"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="GifUsage"
+        message="Using the `.gif` format for bitmaps is discouraged">
+        <location
+            file="src/main/res/drawable/skill_maker_transform.gif"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_amnesty_bell.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_amnesty_bell.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_arrow.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_arrow.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_ashes.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_ashes.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_bell.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_bell.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_bone.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_bone.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_ceremonial_blade.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_ceremonial_blade.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_chain.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_chain.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_claw.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_claw.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_converger.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_converger.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_core.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_core.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_demon_lantern.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_demon_lantern.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_divine_lens.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_divine_lens.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_dust.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_dust.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_egg.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_egg.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_fang.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_fang.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_fantasy_scales.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_fantasy_scales.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_feather.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_feather.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_flower_of_the_end.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_flower_of_the_end.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_fluid.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_fluid.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_fruit.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_fruit.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_gallstone.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_gallstone.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_gear.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_gear.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_ghost_lantern.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_ghost_lantern.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_giant_ring.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_giant_ring.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_golden_cauldron.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_golden_cauldron.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_grease.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_grease.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_gunpowder.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_gunpowder.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_heart.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_heart.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_holy_water_of_destiny.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_holy_water_of_destiny.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_homunculus_baby.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_homunculus_baby.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_horseshoe.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_horseshoe.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_ice.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_ice.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_lamp_of_evil_sealing.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_lamp_of_evil_sealing.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_lanugo.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_lanugo.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_magatama.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_magatama.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_medal.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_medal.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_mirror.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_mirror.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_monument_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_monument_saber.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_moonlight_nucleus.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_moonlight_nucleus.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_mysterious_wine.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_mysterious_wine.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_obsidian_edge.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_obsidian_edge.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_octuplet_crystal.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_octuplet_crystal.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_page.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_page.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_particle.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_particle.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_piece_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_piece_saber.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_proof.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_proof.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_reliquary.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_reliquary.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_scale.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_scale.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_scarab.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_scarab.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_seed.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_seed.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_serpent_jewel.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_serpent_jewel.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_shell_of_reminiscence.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_shell_of_reminiscence.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_blue_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_blue_saber.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_gold_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_gold_saber.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_skill_red_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_skill_red_saber.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_spirit_root.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_spirit_root.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_stake.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_stake.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_star_shard.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_star_shard.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_steel.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_steel.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_stinger.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_stinger.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_sunscale.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_sunscale.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_tear_stone.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_tear_stone.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_thread.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_thread.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_tiara.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_tiara.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_universal_cube.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_universal_cube.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_vestige.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_vestige.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/mat_young_horn.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/mat_young_horn.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/skill_maker_choices_2.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/skill_maker_choices_2.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/skill_maker_choices_3.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/skill_maker_choices_3.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/skill_maker_np_type_2.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/skill_maker_np_type_2.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/skill_maker_np_type_3.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/skill_maker_np_type_3.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/skill_maker_transform.gif` in densityless folder">
+        <location
+            file="src/main/res/drawable/skill_maker_transform.gif"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_all.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_all.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_archer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_archer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_assassin.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_assassin.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_berserker.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_berserker.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_caster.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_caster.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_extra.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_extra.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_lancer.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_lancer.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_mix.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_mix.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_rider.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_rider.png"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/support_saber.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/support_saber.png"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="            android:textSize=&quot;9sp&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_all_cell.xml"
+            line="34"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="        android:textSize=&quot;10sp&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_all_cell.xml"
+            line="58"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `9sp`"
+        errorLine1="                android:textSize=&quot;9sp&quot;"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_item.xml"
+            line="36"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="                android:textSize=&quot;10sp&quot; />"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_item.xml"
+            line="46"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SmallSp"
+        message="Avoid using sizes smaller than `11sp`: `10sp`"
+        errorLine1="                android:textSize=&quot;10sp&quot; />"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_picker_account.xml"
+            line="39"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="ViewConstructor"
+        message="Custom view `GameAreaPreviewView` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
+        errorLine1="private class GameAreaPreviewView(context: Context, region: Region) : View(context) {"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GameAreaPreviewManager.kt"
+            line="223"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                Uri.parse(&quot;package:${BuildConfig.APPLICATION_ID}&quot;)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/AdvancedGroup.kt"
+            line="147"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs(context).edit().putString(key(appWidgetId), accountId).apply()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/widget/ApWidgetShown.kt"
+            line="19"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        val edit = prefs(context).edit()"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/widget/ApWidgetShown.kt"
+            line="23"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/imaging/DroidCvPattern.kt"
+            line="143"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withTranslation` instead?"
+        errorLine1="        canvas.save()"
+        errorLine2="        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GameAreaPreviewManager.kt"
+            line="255"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="        Uri.parse(link)"
+        errorLine2="        ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/OpenLinkIntent.kt"
+            line="13"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    val editor = prefsCore.forBattleConfig(id).sharedPrefs.edit()"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/util/migration/OriginalFgaImportService.kt"
+            line="34"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            prefsCore.dirRoot.get().takeIf { it.isNotBlank() }?.let { document(Uri.parse(it)) }"
+        errorLine2="                                                                               ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/util/migration/OriginalFgaImportService.kt"
+            line="48"
+            column="80"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        val edit = prefs.edit()"
+        errorLine2="                   ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/PickedChaldeaFiles.kt"
+            line="34"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            if (!prefs.edit().putStringSet(id, remaining).commit()) success = false"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/capture/PickedChaldeaFiles.kt"
+            line="70"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="            val scaled = Bitmap.createScaledBitmap(source, SupportPortraitCrop.RESIZED_SIZE, SupportPortraitCrop.RESIZED_SIZE, true)"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/util/portraits/ServantPortraitImporter.kt"
+            line="69"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="            val scaled = Bitmap.createScaledBitmap(source, SupportCECrop.RESIZED_WIDTH, SupportCECrop.RESIZED_HEIGHT, true)"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/util/portraits/ServantPortraitImporter.kt"
+            line="105"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="    &lt;ImageView"
+        errorLine2="     ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/support_img_namer.xml"
+            line="17"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="    &lt;ImageView"
+        errorLine2="     ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/support_img_namer_item.xml"
+            line="16"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="            &lt;ImageView"
+        errorLine2="             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="74"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="            &lt;ImageView"
+        errorLine2="             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="88"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                    &lt;ImageView"
+        errorLine2="                     ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="125"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                    &lt;ImageView"
+        errorLine2="                     ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="157"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry"
+        errorLine1="    android:paddingEnd=&quot;8dp&quot;>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_all_cell.xml"
+            line="9"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="    android:paddingStart=&quot;14dp&quot;>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_item.xml"
+            line="7"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;14dp&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="37"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;14dp&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget_ap_root.xml"
+            line="54"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlHardcoded"
+        message="Use &quot;`Gravity.START`&quot; instead of &quot;`Gravity.LEFT`&quot; to ensure correct behavior in right-to-left locales"
+        errorLine1="            gravity = Gravity.TOP or Gravity.LEFT"
+        errorLine2="                                             ~~~~">
+        <location
+            file="src/main/java/io/github/fate_grand_automata/ui/more/GameAreaPreviewManager.kt"
+            line="148"
+            column="46"/>
+    </issue>
+
+</issues>

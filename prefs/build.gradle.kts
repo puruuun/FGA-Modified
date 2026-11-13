@@ -26,6 +26,12 @@ android {
     // run tests in CI builds instad of debug
     testBuildType = "ci"
 
+    lint {
+        abortOnError = true
+        baseline = file("lint-baseline.xml")
+        error += "StringFormatCount"
+    }
+
     namespace = "io.github.fate_grand_automata.prefs"
 }
 
