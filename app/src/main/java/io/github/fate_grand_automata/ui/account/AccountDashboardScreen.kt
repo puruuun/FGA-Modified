@@ -26,12 +26,14 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,10 +106,14 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                     if (data.resources.isNotEmpty() || data.teapots != null || dashboardAp(data.game, now) != null || data.game?.number("carryOverActPoint") != null || (data.game?.number("commandSpellRecoverAt") ?: 0) > now) add(1)
                     if (data.storage != null) add(2)
                     if (!data.servants.isNullOrEmpty()) add(3)
+                    if (!data.costumes.isNullOrEmpty()) add(9)
                     if (!data.inventory.isNullOrEmpty()) add(4)
+                    if (data.presentBox != null) add(10)
+                    if (!data.parties.isNullOrEmpty()) add(11)
                     add(7)
                     if (data.formations?.grand?.isNotEmpty() == true) add(8)
                     if (!data.equips.isNullOrEmpty()) add(5)
+                    if (data.commandCodes != null) add(12)
                     if (battle != null || outside != null) add(6)
                 }
                 val target = remember { BringIntoViewRequester() }
@@ -117,7 +123,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                 }
                 val sectionContent: @Composable (Int) -> Unit = { section ->
                     key(section) {
-                        DashboardSection(section, Modifier.fillMaxWidth().semantics {
+                        DashboardSection(section, sectionTitle(section, data), Modifier.fillMaxWidth().semantics {
                             isTraversalGroup = true
                             traversalIndex = sections.indexOf(section).toFloat()
                         }.then(
@@ -132,6 +138,10 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
                                 6 -> Recent(battle, outside, names, openLogs)
                                 7 -> SupportFormation(data.formations, names)
                                 8 -> GrandFormation(data.formations!!.grand, names)
+                                9 -> Costumes(data.costumes!!, names)
+                                10 -> PresentBox(data.presentBox!!, names)
+                                11 -> PartyFormations(data.parties!!, names)
+                                12 -> CommandCodeCollection(data.commandCodes!!, names)
                             }
                         }
                     }
@@ -147,13 +157,32 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
 }
 
 @Composable
-private fun DashboardSection(section: Int, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
-    val titles = listOf(R.string.dashboard_profile, R.string.dashboard_resources, R.string.dashboard_storage,
-        R.string.dashboard_servants, R.string.dashboard_items, R.string.dashboard_mystics, R.string.dashboard_recent,
-        R.string.dashboard_formation_support, R.string.dashboard_formation_grand)
+private fun sectionTitle(section: Int, data: DashboardData): String = when (section) {
+    9 -> stringResource(R.string.dashboard_costumes_header, data.costumes?.size ?: 0)
+    10 -> stringResource(R.string.dashboard_present_box_header, data.presentBox?.totalCount ?: 0)
+    else -> {
+        val titles = mapOf(
+            0 to R.string.dashboard_profile,
+            1 to R.string.dashboard_resources,
+            2 to R.string.dashboard_storage,
+            3 to R.string.dashboard_servants,
+            4 to R.string.dashboard_items,
+            5 to R.string.dashboard_mystics,
+            6 to R.string.dashboard_recent,
+            7 to R.string.dashboard_formation_support,
+            8 to R.string.dashboard_formation_grand,
+            11 to R.string.dashboard_party_formations,
+            12 to R.string.dashboard_command_code_collection,
+        )
+        stringResource(titles.getValue(section))
+    }
+}
+
+@Composable
+private fun DashboardSection(section: Int, title: String, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
     Card(modifier.testTag("dashboard-section:$section")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(titles[section]), style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
     }
@@ -349,16 +378,208 @@ private fun InventoryGroup.label() = when (this) {
     return parts.joinToString(" · ")
 }
 
+@Composable private fun Costumes(costumes: List<DashboardCostume>, names: GameNameMap) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val shown = if (expanded) costumes else costumes.take(5)
+    LazyColumn(
+        Modifier.fillMaxWidth().heightIn(max = if (expanded) 560.dp else 280.dp).testTag("dashboard-costumes-list"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(shown, key = { it.svtId }) { costume ->
+            val atlas = names.servantData[costume.svtId]
+            val name = names.servants[costume.svtId] ?: atlas?.name ?: "#${costume.svtId}"
+            Row(
+                Modifier.heightIn(min = 48.dp).testTag("dashboard-costume-row"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AtlasIcon("servants", costume.svtId, atlas?.icon)
+                Column(Modifier.weight(1f)) {
+                    Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        stringResource(R.string.dashboard_costumes_count, costume.count),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+    if (expanded || costumes.size > 5) {
+        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-costumes-toggle")) {
+            Text(if (expanded) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, costumes.size))
+        }
+    }
+}
+
+@Composable private fun PresentBox(presentBox: DashboardPresentBox, names: GameNameMap) {
+    Text(
+        stringResource(R.string.dashboard_present_box_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.testTag("dashboard-present-notice"),
+    )
+    if (presentBox.entries.isEmpty()) {
+        Text(
+            stringResource(R.string.dashboard_present_box_empty),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.testTag("dashboard-present-empty"),
+        )
+        return
+    }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val shown = if (expanded) presentBox.entries else presentBox.entries.take(12)
+    LazyVerticalGrid(
+        GridCells.Adaptive(144.dp),
+        Modifier.fillMaxWidth().heightIn(min = 48.dp, max = if (expanded) 380.dp else 360.dp).testTag("dashboard-present-grid"),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        items(shown, key = { "${it.giftType}:${it.objectId}" }) { entry ->
+            PresentTile(entry, names)
+        }
+    }
+    if (expanded || presentBox.entries.size > 12) {
+        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-present-toggle")) {
+            Text(if (expanded) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, presentBox.entries.size))
+        }
+    }
+}
+
+@Composable private fun PresentTile(entry: DashboardPresent, names: GameNameMap) {
+    val id = entry.objectId
+    when (entry.giftType) {
+        2 -> ResourceTile(LogResource(id = id, count = entry.count), names, signed = false)
+        11 -> ResourceTile(LogResource(LogResource.COMMAND_CODE, id, entry.count), names, signed = false)
+        1 -> {
+            val servant = names.servantData[id]
+            val equip = if (servant == null) names.equipData[id] else null
+            when {
+                servant != null -> CompactResourceTile(
+                    kind = "servants",
+                    id = id,
+                    name = servant.name ?: names.servants[id] ?: "#$id",
+                    iconUrl = servant.icon,
+                    countText = entry.count.grouped(),
+                    tag = "present:1:$id",
+                )
+                equip != null -> CompactResourceTile(
+                    kind = "servants",
+                    id = id,
+                    name = equip.name ?: names.equips[id] ?: "#$id",
+                    iconUrl = equip.icon,
+                    countText = entry.count.grouped(),
+                    tag = "present:1:$id",
+                )
+                else -> ResourceTile(LogResource(LogResource.SVT, id, entry.count), names, signed = false)
+            }
+        }
+        else -> CompactResourceTile(
+            kind = null,
+            id = id,
+            name = "#$id",
+            iconUrl = null,
+            countText = entry.count.grouped(),
+            tag = "present:${entry.giftType}:$id",
+        )
+    }
+}
+
+@Composable private fun CommandCodeCollection(codes: DashboardCommandCodes, names: GameNameMap) {
+    val ownedCount = codes.ownedIds.size
+    val header = if (codes.total != null) {
+        stringResource(R.string.dashboard_command_codes_progress, ownedCount, codes.total)
+    } else {
+        stringResource(R.string.dashboard_command_codes_owned_only, ownedCount)
+    }
+    Text(header, style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("dashboard-cc-header"))
+    if (codes.ownedIds.isNotEmpty()) {
+        var expanded by rememberSaveable { mutableStateOf(false) }
+        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-cc-toggle")) {
+            Text("${if (expanded) "−" else "+"} ${stringResource(R.string.dashboard_command_codes_owned_group)} ($ownedCount)")
+        }
+        if (expanded) {
+            LazyVerticalGrid(
+                GridCells.Adaptive(144.dp),
+                Modifier.fillMaxWidth().heightIn(min = 48.dp, max = 320.dp).testTag("dashboard-cc-grid"),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                items(codes.ownedIds, key = { it }) { id ->
+                    val atlas = names.commandCodeData[id]
+                    CompactResourceTile(
+                        kind = "commandCodes",
+                        id = id,
+                        name = atlas?.name?.takeIf { it.isNotBlank() } ?: "#$id",
+                        iconUrl = atlas?.icon,
+                        countText = null,
+                        tag = "command-code:$id",
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun CompactResourceTile(
+    kind: String?,
+    id: Long,
+    name: String,
+    iconUrl: String?,
+    countText: String?,
+    tag: String,
+) {
+    val summary = listOfNotNull(name, countText).joinToString(", ")
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.widthIn(max = 160.dp).testTag(tag).semantics(mergeDescendants = true) {
+            contentDescription = summary
+        },
+    ) {
+        Row(
+            Modifier.height(48.dp).padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (kind != null) AtlasIcon(kind, id, iconUrl, size = 32.dp, reserveSpace = false)
+            Row(
+                Modifier.weight(1f, fill = false),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).widthIn(max = 100.dp),
+                )
+                if (countText != null) {
+                    Text(countText, style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
+                }
+            }
+        }
+    }
+}
+
 /** Per-kind directories prevent mystic code IDs colliding with item IDs. */
-@Composable internal fun AtlasIcon(kind: String, id: Long, url: String?) {
+@Composable internal fun AtlasIcon(kind: String, id: Long, url: String?, size: Dp = 40.dp, reserveSpace: Boolean = true) {
     val context = LocalContext.current
     val store = remember(context, kind) { LogIconLoader.files(context, kind) }
     val loader = LocalLogIconLoader.current ?: LogIconLoader.get(context)
     var file by remember(kind, id, url) { mutableStateOf<File?>(null) }
     LaunchedEffect(kind, id, url) { file = store.resolve(id, url) }
-    Box(Modifier.size(40.dp)) {
-        if (file != null) AsyncImage(file!!.toURI().toString(), contentDescription = null, imageLoader = loader,
-            modifier = Modifier.fillMaxSize().testTag("dashboard-icon-ready"))
+    if (file != null || reserveSpace) {
+        Box(Modifier.size(size)) {
+            if (file != null) AsyncImage(
+                file!!.toURI().toString(),
+                contentDescription = null,
+                imageLoader = loader,
+                modifier = Modifier.fillMaxSize().testTag("dashboard-icon-ready"),
+            )
+        }
     }
 }
 

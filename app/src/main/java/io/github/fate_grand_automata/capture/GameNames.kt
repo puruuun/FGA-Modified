@@ -187,13 +187,21 @@ class GameNames(
             required["basic_equip"] = ids("userSvt", "svtId") - servants.keys
             val equips = metadata("basic_equip")
             val mystics = metadata("basic_mystic_code")
+            val hasCommandCodeCollection = states.any { it.rows("userCommandCodeCollection") != null }
+            val svtCards = cachedMetadata("basic_svt")
+            val commandCodes = if (hasCommandCodeCollection) {
+                metadata("basic_command_code")
+            } else {
+                cachedMetadata("basic_command_code")
+            }
             val kr = names.copy(items = names.items + items.mapNotNull { (id, row) ->
                 row.name?.takeIf { it.isNotBlank() }?.let { id to it }
             }.toMap(),
                 servants = names.servants + servants.mapValues { it.value.name ?: "#${it.key}" },
                 equips = names.equips + equips.mapValues { it.value.name ?: "#${it.key}" },
                 itemIcons = names.itemIcons + items.mapNotNull { (id, row) -> row.icon?.let { id to it } }.toMap(),
-                servantData = servants, equipData = equips, mysticData = mystics, itemData = items)
+                servantData = servants, equipData = equips, mysticData = mystics, itemData = items,
+                svtData = svtCards, commandCodeData = commandCodes)
             val allSvtIds = required["basic_servant"].orEmpty() + required["basic_equip"].orEmpty()
             val need = if (hasJpAccount) JpNeed.All else JpNeed(
                 items = required["nice_item"].orEmpty().any { it !in kr.items && it !in kr.itemData },
@@ -201,7 +209,32 @@ class GameNames(
                 equips = allSvtIds.any { it !in kr.servantData && it !in kr.equipData },
                 mystics = required["basic_mystic_code"].orEmpty().any { it !in kr.mysticData },
             )
-            jpFallback.merge(withJpLists(kr, need), required["nice_item"].orEmpty())
+            val resolved = jpFallback.merge(withJpLists(kr, need), required["nice_item"].orEmpty())
+            val needSvtCards = states.any { state ->
+                state.rows("userPresentBox").orEmpty().any { row ->
+                    row.number("giftType") == 1L && row.number("objectId")?.let { id ->
+                        id !in resolved.servantData && id !in resolved.equipData
+                    } == true
+                }
+            }
+            val mergedSvtCards = if (needSvtCards) {
+                val krSvtCards = metadata("basic_svt")
+                if (hasJpAccount) metadata("basic_svt", server = "JP") + krSvtCards else krSvtCards
+            } else {
+                if (hasJpAccount) cachedMetadata("basic_svt", "JP") + resolved.svtData else resolved.svtData
+            }
+            val mergedCommandCodes = if (hasJpAccount) {
+                val jpCommandCodes = if (hasCommandCodeCollection) {
+                    metadata("basic_command_code", server = "JP")
+                } else {
+                    cachedMetadata("basic_command_code", "JP")
+                }
+                jpCommandCodes + resolved.commandCodeData
+            } else {
+                resolved.commandCodeData
+            }
+            if (!needSvtCards && !hasJpAccount) resolved
+            else resolved.copy(svtData = mergedSvtCards, commandCodeData = mergedCommandCodes)
         } }
     }
 

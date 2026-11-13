@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.Widgets
 import io.github.fate_grand_automata.BuildConfig
@@ -22,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.prefs.core.AppTheme
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.root.SuperUser
@@ -78,6 +80,18 @@ fun LazyListScope.advancedGroup(
             title = stringResource(R.string.p_app_language),
             icon = icon(Icons.Default.Language),
             entries = LanguagePref.availableLanguages()
+        )
+    }
+
+    item {
+        prefs.appTheme.ListPreference(
+            title = stringResource(R.string.p_app_theme),
+            icon = icon(Icons.Default.DarkMode),
+            entries = mapOf(
+                AppTheme.System to stringResource(R.string.p_app_theme_system),
+                AppTheme.Light to stringResource(R.string.p_app_theme_light),
+                AppTheme.Dark to stringResource(R.string.p_app_theme_dark),
+            )
         )
     }
 
