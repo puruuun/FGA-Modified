@@ -1077,7 +1077,6 @@
     <string name="dashboard_class_score_squares_locks">マス %1$d / %2$d · ロック %3$d / %4$d</string>
     <string name="dashboard_class_score_counts_only">マス %1$d · ロック %2$d</string>
     <string name="dashboard_class_score_complete">完了</string>
-    <string name="dashboard_last_login_notice">最終ログイン時点</string>
     <string name="dashboard_summon_history">召喚履歴</string>
     <string name="dashboard_friend_point_summons">フレンドポイント召喚 %1$s回</string>
     <string name="dashboard_other_summons">その他の召喚</string>

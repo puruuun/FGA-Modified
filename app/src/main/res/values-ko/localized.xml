@@ -1319,7 +1319,6 @@
     <string name="dashboard_class_score_squares_locks">칸 %1$d / %2$d · 잠금 %3$d / %4$d</string>
     <string name="dashboard_class_score_counts_only">칸 %1$d · 잠금 %2$d</string>
     <string name="dashboard_class_score_complete">완료</string>
-    <string name="dashboard_last_login_notice">마지막 로그인 기준</string>
     <string name="dashboard_summon_history">소환 기록</string>
     <string name="dashboard_friend_point_summons">친구 포인트 소환 %1$s회</string>
     <string name="dashboard_other_summons">기타 소환</string>
