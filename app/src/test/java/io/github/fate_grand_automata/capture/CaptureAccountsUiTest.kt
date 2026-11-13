@@ -16,6 +16,8 @@ import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.LocalNavigateBack
 import io.github.fate_grand_automata.ui.log.LogScreenContent
 import io.github.fate_grand_automata.ui.screenshotRules
+import java.text.DateFormat
+import java.util.Date
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -40,11 +42,63 @@ class CaptureAccountsUiTest {
                 CaptureAccountCard(account, true, { id, name -> renamed = id to name }, {})
             }
         } }
-        composeRule.onNodeWithText(context.getString(R.string.capture_account_current)).assertExists()
+        val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
+        composeRule.onNodeWithText("Farming  Lv.120").assertIsDisplayed()
+        composeRule.onNodeWithTag("capture-account-server:${account.id}").assertIsDisplayed().assertTextEquals("KR")
+        composeRule.onNodeWithText(context.getString(R.string.capture_account_current)).assertIsDisplayed()
+        composeRule.onNodeWithText(
+            context.getString(R.string.capture_snapshot_time, format.format(Date(account.summary.snapshotTime * 1000))),
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText(
+            context.getString(R.string.capture_last_update, format.format(Date(account.summary.lastUpdateTime * 1000))),
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.capture_chaldea_create)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.capture_account_delete)).assertExists()
+        listOf(
+            "AP",
+            context.getString(R.string.capture_quartz),
+            context.getString(R.string.capture_fragments),
+            context.getString(R.string.capture_apples_gold),
+            context.getString(R.string.capture_apples_silver),
+            context.getString(R.string.capture_apples_bronze),
+            context.getString(R.string.capture_apples_copper),
+            "Bronze Sapling",
+            "Summon Tickets",
+            context.getString(R.string.capture_mana_prism),
+            context.getString(R.string.capture_rare_prism),
+            context.getString(R.string.capture_qp),
+        ).forEach { label ->
+            composeRule.onNodeWithText(label).assertDoesNotExist()
+        }
         composeRule.onNodeWithText(context.getString(R.string.capture_account_rename)).performScrollTo().performClick()
         composeRule.onNode(hasSetTextAction()).performTextClearance()
         composeRule.onNodeWithText(context.getString(android.R.string.ok)).performClick()
         assertEquals(account.id to "", renamed)
+    }
+
+    @Test fun accountCardShowsKrAndJpServersNextToNameAndHidesNullServer() {
+        val krAccount = captureAccountFixture(id = "7001", name = "KR Master").copy(server = "KR")
+        val jpAccount = captureAccountFixture(id = "7002", name = "JP Master").copy(server = "JP")
+        composeRule.setContent { FGATheme(darkTheme = false) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                CaptureAccountCard(krAccount, false, { _, _ -> }, {})
+                CaptureAccountCard(jpAccount, false, { _, _ -> }, {})
+                CaptureSummaryCard(account.summary, "No Server", server = null)
+            }
+        } }
+        val krName = composeRule.onNodeWithText("KR Master  Lv.120").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val krServer = composeRule.onNodeWithTag("capture-account-server:7001").assertIsDisplayed().assertTextEquals("KR")
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(krServer.left >= krName.right)
+        assertTrue(krServer.top < krName.bottom && krServer.bottom > krName.top)
+
+        val jpName = composeRule.onNodeWithText("JP Master  Lv.120").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val jpServer = composeRule.onNodeWithTag("capture-account-server:7002").assertIsDisplayed().assertTextEquals("JP")
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(jpServer.left >= jpName.right)
+        assertTrue(jpServer.top < jpName.bottom && jpServer.bottom > jpName.top)
+
+        composeRule.onNodeWithTag("capture-account-server").assertDoesNotExist()
     }
 
     @Test fun deletingRequiresConfirmationNamingTheAccountAndCancelKeepsIt() {

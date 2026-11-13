@@ -1033,15 +1033,12 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_account_delete">"Delete"</string>
     <string name="capture_account_delete_message">"Delete %1$s and its Chaldea files?"</string>
     <string name="capture_no_snapshot">"Start the game while log collection is on"</string>
-    <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"Saint Quartz"</string>
     <string name="capture_fragments">"Saint Quartz Fragments"</string>
     <string name="capture_apples_gold">"Golden Fruit"</string>
     <string name="capture_apples_silver">"Silver Fruit"</string>
     <string name="capture_apples_bronze">"Bronzed Cobalt Fruit"</string>
     <string name="capture_apples_copper">"Bronze Fruit"</string>
-    <string name="capture_sapling">"Bronze Sapling"</string>
-    <string name="capture_tickets">"Summon Tickets"</string>
     <string name="capture_mana_prism">"Mana prisms"</string>
     <string name="capture_rare_prism">"Rare prisms"</string>
     <string name="capture_qp">"QP"</string>

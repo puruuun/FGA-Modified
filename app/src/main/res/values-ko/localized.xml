@@ -963,15 +963,12 @@
     <string name="capture_account_delete">"삭제"</string>
     <string name="capture_account_delete_message">"%1$s 계정과 해당 Chaldea 파일을 삭제할까요?"</string>
     <string name="capture_no_snapshot">"로그 수집을 켠 상태에서 게임을 시작해 주세요"</string>
-    <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"성정석"</string>
     <string name="capture_fragments">"성정편"</string>
     <string name="capture_apples_gold">"황금색 과일"</string>
     <string name="capture_apples_silver">"백은색 과일"</string>
     <string name="capture_apples_bronze">"청동색 과일"</string>
     <string name="capture_apples_copper">"적동색 과일"</string>
-    <string name="capture_sapling">"청동색 묘목"</string>
-    <string name="capture_tickets">"호부"</string>
     <string name="capture_mana_prism">"마나 프리즘"</string>
     <string name="capture_rare_prism">"레어 프리즘"</string>
     <string name="capture_qp">"QP"</string>
