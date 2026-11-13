@@ -1390,4 +1390,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>
     <string name="dashboard_command_codes_owned_only">Command codes: %1$d owned</string>
     <string name="dashboard_command_codes_owned_group">Owned</string>
+    <string name="p_app_theme">"Dark mode"</string>
+    <string name="p_app_theme_system">"Follow system"</string>
+    <string name="p_app_theme_light">"Light"</string>
+    <string name="p_app_theme_dark">"Dark"</string>
 </resources>

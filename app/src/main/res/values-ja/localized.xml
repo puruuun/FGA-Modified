@@ -1078,4 +1078,8 @@
     <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>
     <string name="dashboard_command_codes_owned_only">所持 %1$d</string>
     <string name="dashboard_command_codes_owned_group">所持</string>
+    <string name="p_app_theme">"ダークモード"</string>
+    <string name="p_app_theme_system">"システム設定に従う"</string>
+    <string name="p_app_theme_light">"ライト"</string>
+    <string name="p_app_theme_dark">"ダーク"</string>
 </resources>

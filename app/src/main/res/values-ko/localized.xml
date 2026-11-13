@@ -1320,4 +1320,8 @@
     <string name="dashboard_command_codes_progress">보유 %1$d / 전체 %2$d</string>
     <string name="dashboard_command_codes_owned_only">보유 %1$d</string>
     <string name="dashboard_command_codes_owned_group">보유</string>
+    <string name="p_app_theme">"다크 모드"</string>
+    <string name="p_app_theme_system">"시스템 설정 따름"</string>
+    <string name="p_app_theme_light">"라이트"</string>
+    <string name="p_app_theme_dark">"다크"</string>
 </resources>
