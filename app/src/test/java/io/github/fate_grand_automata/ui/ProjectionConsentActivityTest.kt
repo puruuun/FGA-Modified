@@ -2,7 +2,9 @@ package io.github.fate_grand_automata.ui
 
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.os.Looper
@@ -43,6 +45,7 @@ class ProjectionConsentActivityTest {
         service.prefsCore.useRootForScreenshots.set(false)
         service.controller.screenshotServiceHolder.close()
         service.controller.projectionRestart.reset()
+        Shadows.shadowOf(service.application).clearNextStartedActivities()
         ShadowToast.reset()
     }
 
@@ -56,6 +59,20 @@ class ProjectionConsentActivityTest {
         if (::serviceController.isInitialized) {
             serviceController.destroy()
         }
+    }
+
+    @Test
+    fun manifestEntry_hasExcludeFromRecents_andDoesNotHaveNoHistory() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val activityInfo = app.packageManager.getActivityInfo(
+            ComponentName(app, ProjectionConsentActivity::class.java),
+            0
+        )
+
+        assertThat(activityInfo.flags and ActivityInfo.FLAG_NO_HISTORY).isEqualTo(0)
+        assertThat(activityInfo.flags and ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS)
+            .isEqualTo(ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS)
+        assertThat(activityInfo.exported).isFalse()
     }
 
     @Test
@@ -76,10 +93,17 @@ class ProjectionConsentActivityTest {
         assertThat(Shadows.shadowOf(recreated).nextStartedActivityForResult).isNull()
     }
 
-    @Test
-    fun resultCanceled_clearsPendingAndShowsToast() {
+    private fun requestConsentFromOverlay() {
         service.controller.overlay.act(ScriptRunnerUIAction.Start)
         assertThat(service.controller.projectionRestart.isPending).isTrue()
+        val consentIntent = Shadows.shadowOf(service.application).nextStartedActivity
+        assertThat(consentIntent?.component?.className).isEqualTo(ProjectionConsentActivity::class.java.name)
+        Shadows.shadowOf(service.application).clearNextStartedActivities()
+    }
+
+    @Test
+    fun resultCanceled_clearsPendingAndShowsToast() {
+        requestConsentFromOverlay()
 
         val activityController = Robolectric.buildActivity(ProjectionConsentActivity::class.java).setup()
         val activity = activityController.get()
@@ -97,13 +121,14 @@ class ProjectionConsentActivityTest {
 
     @Test
     fun resultOk_deliversTokenToScriptRunnerServiceAndFinishes() {
-        service.controller.overlay.act(ScriptRunnerUIAction.Start)
-        assertThat(service.controller.projectionRestart.isPending).isTrue()
+        requestConsentFromOverlay()
 
         val activityController = Robolectric.buildActivity(ProjectionConsentActivity::class.java).setup()
         val activity = activityController.get()
+        val expectedIntent = activity.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()
         val launched = Shadows.shadowOf(activity).nextStartedActivityForResult
         assertThat(launched).isNotNull()
+        assertThat(launched.intent.action).isEqualTo(expectedIntent.action)
 
         val token = Intent("test.media.projection.GRANTED")
         Shadows.shadowOf(activity).receiveResult(launched.intent, Activity.RESULT_OK, token)
@@ -115,9 +140,41 @@ class ProjectionConsentActivityTest {
     }
 
     @Test
-    fun destroyedWhileFinishingWithoutResult_clearsPending() {
-        service.controller.overlay.act(ScriptRunnerUIAction.Start)
+    fun consentDialogInFront_pauseStopAndConfigChange_keepPendingUntilResultOk() {
+        requestConsentFromOverlay()
+
+        val activityController = Robolectric.buildActivity(ProjectionConsentActivity::class.java).setup()
+        val activity = activityController.get()
+        val expectedIntent = activity.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()
+        val launched = Shadows.shadowOf(activity).nextStartedActivityForResult
+        assertThat(launched).isNotNull()
+        assertThat(launched.intent.action).isEqualTo(expectedIntent.action)
+
+        // System consent dialog comes to the foreground: activity pauses and stops without finishing.
+        activityController.pause().stop()
         assertThat(service.controller.projectionRestart.isPending).isTrue()
+
+        // A configuration change while the dialog is in front destroys the activity without finishing.
+        val outState = Bundle()
+        activityController.saveInstanceState(outState).destroy()
+        assertThat(service.controller.projectionRestart.isPending).isTrue()
+
+        val recreatedController = Robolectric.buildActivity(ProjectionConsentActivity::class.java).setup(outState)
+        val recreated = recreatedController.get()
+        assertThat(Shadows.shadowOf(recreated).nextStartedActivityForResult).isNull()
+
+        val token = Intent("test.media.projection.GRANTED_AFTER_RECREATE")
+        Shadows.shadowOf(recreated).receiveResult(launched.intent, Activity.RESULT_OK, token)
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(recreated.isFinishing).isTrue()
+        assertThat(ScriptRunnerService.mediaProjectionToken).isEqualTo(token)
+        assertThat(service.controller.projectionRestart.isPending).isFalse()
+    }
+
+    @Test
+    fun destroyedWhileFinishingWithoutResult_clearsPending() {
+        requestConsentFromOverlay()
 
         val activityController = Robolectric.buildActivity(ProjectionConsentActivity::class.java).setup()
         val activity = activityController.get()

@@ -26,6 +26,7 @@ class ProjectionConsentActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        resultDelivered = savedInstanceState?.getBoolean(KEY_RESULT_DELIVERED) == true
 
         if (savedInstanceState == null) {
             try {
@@ -39,14 +40,21 @@ class ProjectionConsentActivity : ComponentActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_RESULT_DELIVERED, resultDelivered)
+    }
+
     override fun onDestroy() {
-        if (isFinishing && !resultDelivered) {
+        if (isFinishing && !isChangingConfigurations && !resultDelivered) {
             ScriptRunnerService.onMediaProjectionConsentAbandoned()
         }
         super.onDestroy()
     }
 
     companion object {
+        private const val KEY_RESULT_DELIVERED = "result_delivered"
+
         fun createIntent(context: Context): Intent =
             Intent(context, ProjectionConsentActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
