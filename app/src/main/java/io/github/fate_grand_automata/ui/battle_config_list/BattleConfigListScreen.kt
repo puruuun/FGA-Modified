@@ -11,8 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,11 +30,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.fate_grand_automata.R
@@ -296,6 +301,15 @@ internal fun BattleConfigListContent(
     }
 }
 
+internal const val ConfigGridTag = "battle_config_grid"
+internal const val ServerHeaderTagPrefix = "server_header_"
+
+private val TwoColumnBreakpoint = 600.dp
+private val GridHorizontalPadding = 16.dp
+private val GridTopPadding = 16.dp
+private val ColumnGap = 12.dp
+private val RowGap = 10.dp
+
 @Composable
 private fun ConfigList(
     configs: List<BattleConfigCore>,
@@ -314,100 +328,155 @@ private fun ConfigList(
         }
     }
 
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(top = 16.dp)
-    ) {
-        if (configs.isEmpty()) {
-            item {
-                Text(
-                    stringResource(R.string.battle_config_list_no_items),
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        } else {
-            configsByServer.forEach { (server, entries, byId) ->
-                if (configsByServer.size > 1) {
-                    stickyHeader {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.secondary)
-                                .padding(10.dp, 5.dp),
-                        ) {
-                            Text(
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val twoColumns = maxWidth >= TwoColumnBreakpoint
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(if (twoColumns) 2 else 1),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(ConfigGridTag),
+            contentPadding = PaddingValues(
+                start = GridHorizontalPadding,
+                top = GridTopPadding,
+                end = GridHorizontalPadding
+            ),
+            horizontalArrangement = Arrangement.spacedBy(ColumnGap),
+            verticalArrangement = Arrangement.spacedBy(RowGap)
+        ) {
+            if (configs.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(R.string.battle_config_list_no_items),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            } else {
+                configsByServer.forEach { (server, entries, byId) ->
+                    if (configsByServer.size > 1) {
+                        val serverKey = server?.serialize() ?: "not_set"
+                        stickyHeader(key = "header:$serverKey") {
+                            ServerGroupHeader(
                                 text = stringResource(server?.simpleStringRes ?: R.string.p_not_set),
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.titleLarge,
-                                textAlign = TextAlign.Left,
-                                color = MaterialTheme.colorScheme.onSecondary
+                                tag = "$ServerHeaderTagPrefix$serverKey"
                             )
                         }
                     }
-                }
 
-                @Composable
-                fun configItem(core: BattleConfigCore, indent: Boolean) {
-                    BattleConfigListItem(
-                        core,
-                        onClick = {
-                            if (selectionMode) {
-                                action(BattleConfigListAction.ToggleSelected(core.id))
-                            } else {
-                                action(BattleConfigListAction.Edit(core.id))
-                            }
-                        },
-                        onLongClick = {
-                            if (!selectionMode) {
-                                action(BattleConfigListAction.StartSelection(core.id))
-                            }
-                        },
-                        isSelectionMode = selectionMode,
-                        isSelected = selectionMode && core.id in selectedConfigs,
-                        modifier = if (indent) Modifier.padding(start = 24.dp) else Modifier
-                    )
-                }
+                    @Composable
+                    fun configItem(core: BattleConfigCore, indent: Boolean) {
+                        BattleConfigListItem(
+                            core,
+                            onClick = {
+                                if (selectionMode) {
+                                    action(BattleConfigListAction.ToggleSelected(core.id))
+                                } else {
+                                    action(BattleConfigListAction.Edit(core.id))
+                                }
+                            },
+                            onLongClick = {
+                                if (!selectionMode) {
+                                    action(BattleConfigListAction.StartSelection(core.id))
+                                }
+                            },
+                            isSelectionMode = selectionMode,
+                            isSelected = selectionMode && core.id in selectedConfigs,
+                            modifier = if (indent) Modifier.padding(start = 24.dp) else Modifier
+                        )
+                    }
 
-                entries.forEach { entry ->
-                    when (entry) {
-                        is ConfigEntry.Folder -> {
-                            val expanded = entry.key in expandedFolders
-                            item(key = "folder:${server?.toString()}:${entry.key}") {
-                                val selectedCount = if (selectionMode && !expanded)
-                                    entry.items.count { it.id in selectedConfigs }
-                                else 0
-                                FolderRow(
-                                    name = entry.displayName,
-                                    count = entry.items.size,
-                                    expanded = expanded,
-                                    selectedCount = selectedCount,
-                                    onClick = { action(BattleConfigListAction.ToggleFolder(entry.key)) }
-                                )
-                            }
-                            if (expanded) {
-                                items(entry.items, key = { it.id }) { item ->
-                                    byId[item.id]?.let { configItem(it, indent = true) }
+                    entries.forEachIndexed { index, entry ->
+                        when (entry) {
+                            is ConfigEntry.Folder -> {
+                                val expanded = entry.key in expandedFolders
+                                item(
+                                    key = "folder:${server?.toString()}:${entry.key}",
+                                    span = { GridItemSpan(maxLineSpan) }
+                                ) {
+                                    val selectedCount = if (selectionMode && !expanded)
+                                        entry.items.count { it.id in selectedConfigs }
+                                    else 0
+                                    FolderRow(
+                                        name = entry.displayName,
+                                        count = entry.items.size,
+                                        expanded = expanded,
+                                        selectedCount = selectedCount,
+                                        onClick = { action(BattleConfigListAction.ToggleFolder(entry.key)) }
+                                    )
+                                }
+                                if (expanded) {
+                                    items(entry.items, key = { it.id }) { item ->
+                                        byId[item.id]?.let { configItem(it, indent = !twoColumns) }
+                                    }
+                                    val hasNextUnfiled = entries.getOrNull(index + 1) is ConfigEntry.Unfiled
+                                    if (twoColumns && hasNextUnfiled && entry.items.size % 2 == 1) {
+                                        // Keep unfiled items below an odd-count expanded folder on a fresh row.
+                                        item(
+                                            key = "folder-pad:${server?.toString()}:${entry.key}",
+                                            span = { GridItemSpan(1) }
+                                        ) {
+                                            Spacer(modifier = Modifier)
+                                        }
+                                    }
                                 }
                             }
-                        }
 
-                        is ConfigEntry.Unfiled -> item(key = entry.item.id) {
-                            byId[entry.item.id]?.let { configItem(it, indent = false) }
+                            is ConfigEntry.Unfiled -> item(key = entry.item.id) {
+                                byId[entry.item.id]?.let { configItem(it, indent = false) }
+                            }
                         }
                     }
-                }
 
-                item {
-                    Spacer(
-                        modifier = Modifier.height(10.dp)
-                    )
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Spacer(
+                            modifier = Modifier.height(10.dp)
+                        )
+                    }
                 }
             }
-
-
         }
     }
 }
+
+@Composable
+private fun ServerGroupHeader(
+    text: String,
+    tag: String
+) {
+    Column(
+        modifier = Modifier
+            .fullBleedHorizontal(GridHorizontalPadding)
+            .testTag(tag)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.secondary)
+            .padding(horizontal = 32.dp, vertical = 5.dp),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Left,
+            color = MaterialTheme.colorScheme.onSecondary
+        )
+    }
+}
+
+private fun Modifier.fullBleedHorizontal(horizontalPadding: Dp): Modifier =
+    layout { measurable, constraints ->
+        val paddingPx = horizontalPadding.roundToPx()
+        val expandedConstraints = if (constraints.hasBoundedWidth) {
+            constraints.copy(
+                minWidth = (constraints.minWidth + paddingPx * 2).coerceAtLeast(0),
+                maxWidth = constraints.maxWidth + paddingPx * 2
+            )
+        } else {
+            constraints
+        }
+        val placeable = measurable.measure(expandedConstraints)
+        layout(constraints.maxWidth, placeable.height) {
+            placeable.placeRelative(-paddingPx, 0)
+        }
+    }
 
 @Composable
 private fun BattleConfigItemSelected(
@@ -462,8 +531,7 @@ private fun BattleConfigListItem(
     Card(
         shape = RoundedCornerShape(25),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 5.dp else 1.dp),
-        modifier = modifier
-            .padding(5.dp),
+        modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
