@@ -38,7 +38,7 @@ data class ChaldeaPatch(
     val svtCoins: Map<Long, Long>? = null,
     val craftEssences: Map<Long, CeStatus>? = null,
     val commandCodes: Map<Long, CcStatus>? = null,
-    /** Distinct CE/command-code ids skipped because their collectionNo was unknown (not serialized or hashed). */
+    /** Distinct command-code ids skipped because their collectionNo was unknown (not serialized or hashed). */
     val unmapped: Int = 0,
 ) {
     data class Board(val unlockedSquares: List<Long>, val enhancedSquares: List<Long>)
@@ -157,7 +157,6 @@ data class ChaldeaPatch(
                 }
                 out
             }
-            val unmappedIds = LinkedHashSet<Long>()
             val svtCollectionRows = rows(state, "userSvtCollection")
             val svtRows = rows(state, "userSvt")
             val craftEssences = if (numbers.equips.isEmpty() || (svtCollectionRows == null && svtRows == null)) {
@@ -170,10 +169,6 @@ data class ChaldeaPatch(
                     val colNo = numbers.equips[svtId] ?: return@forEach
                     val status = (o["status"] as? JsonPrimitive)?.longOrNull ?: return@forEach
                     if (status != 1L && status != 2L) return@forEach
-                    if (colNo <= 0L) {
-                        unmappedIds += svtId
-                        return@forEach
-                    }
                     statusByCol[colNo] = maxOf(statusByCol[colNo] ?: 0L, status)
                 }
                 val maxLv = LinkedHashMap<Long, Long>()
@@ -183,10 +178,6 @@ data class ChaldeaPatch(
                     val o = row as? JsonObject ?: return@forEach
                     val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
                     val colNo = numbers.equips[svtId] ?: return@forEach
-                    if (colNo <= 0L) {
-                        unmappedIds += svtId
-                        return@forEach
-                    }
                     heldCols += colNo
                     (o["lv"] as? JsonPrimitive)?.longOrNull?.let { maxLv.merge(colNo, it, ::maxOf) }
                     (o["limitCount"] as? JsonPrimitive)?.longOrNull?.let { maxLimit.merge(colNo, it, ::maxOf) }
@@ -197,6 +188,7 @@ data class ChaldeaPatch(
                 }
                 out
             }
+            val unmappedIds = LinkedHashSet<Long>()
             val ccCollectionRows = rows(state, "userCommandCodeCollection")
             val ccRows = rows(state, "userCommandCode")
             val commandCodes = if (ccCollectionRows == null && ccRows == null) {
@@ -256,7 +248,8 @@ data class ChaldeaPatch(
             val o = Json.parseToJsonElement(text) as? JsonObject
             val server = ChaldeaServer.entries.firstOrNull { it.region == (o?.get("server") as? JsonPrimitive)?.contentOrNull }
             if (o == null || server == null) null else {
-                fun longs(name: String): Map<Long, Long>? = (o[name] as? JsonObject)?.entries?.associate {
+                fun obj(name: String): JsonObject? = o[name]?.takeUnless { it is JsonNull }?.jsonObject
+                fun longs(name: String): Map<Long, Long>? = obj(name)?.entries?.associate {
                     it.key.toLong() to (it.value as JsonPrimitive).long
                 }
                 ChaldeaPatch(
@@ -266,12 +259,12 @@ data class ChaldeaPatch(
                     isGirl = (o["isGirl"] as? JsonPrimitive)?.booleanOrNull,
                     items = longs("items"),
                     mysticCodes = longs("mysticCodes"),
-                    classBoards = (o["classBoards"] as? JsonObject)?.entries?.associate { (k, v) ->
+                    classBoards = obj("classBoards")?.entries?.associate { (k, v) ->
                         val b = v.jsonObject
                         k.toLong() to Board(ids(b["unlockedSquares"]), ids(b["enhancedSquares"]))
                     },
                     svtCoins = longs("svtCoins"),
-                    craftEssences = (o["craftEssences"] as? JsonObject)?.entries?.associate { (k, v) ->
+                    craftEssences = obj("craftEssences")?.entries?.associate { (k, v) ->
                         val c = v.jsonObject
                         k.toLong() to CeStatus(
                             status = (c["status"] as JsonPrimitive).long,
@@ -279,7 +272,7 @@ data class ChaldeaPatch(
                             limitCount = (c["limitCount"] as? JsonPrimitive)?.longOrNull,
                         )
                     },
-                    commandCodes = (o["commandCodes"] as? JsonObject)?.entries?.associate { (k, v) ->
+                    commandCodes = obj("commandCodes")?.entries?.associate { (k, v) ->
                         val c = v.jsonObject
                         k.toLong() to CcStatus(
                             status = (c["status"] as JsonPrimitive).long,

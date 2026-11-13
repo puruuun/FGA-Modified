@@ -1342,7 +1342,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_idle">"Nothing to sync yet."</string>
     <string name="chaldea_sync_status_working">"Syncing..."</string>
     <string name="chaldea_sync_status_synced">"Last sync %1$s: %2$d items, %3$d mystic codes, %4$d class boards, %5$d servant coins, %6$d craft essences, %7$d command codes."</string>
-    <string name="chaldea_sync_status_unmapped">"%1$d entries skipped because their collection number is not known yet (retried on the next sync)."</string>
+    <string name="chaldea_sync_status_unmapped">"%1$d command codes skipped because their collection number is not known yet (retried on the next sync)."</string>
     <string name="chaldea_sync_status_created">"A new Chaldea user was created."</string>
     <string name="chaldea_sync_status_region">"The Chaldea user's region differs from the game server (not changed)."</string>
     <string name="chaldea_sync_status_package">"Used: %s."</string>

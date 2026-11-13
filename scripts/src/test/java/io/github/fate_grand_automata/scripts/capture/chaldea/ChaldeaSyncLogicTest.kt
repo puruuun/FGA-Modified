@@ -362,15 +362,18 @@ class ChaldeaSyncLogicTest {
         val st = state(
             "userGame" to game,
             // 100100 is a servant (not in equips, must be ignored, not counted as unmapped)
+            // 9300999 is an unknown CE (not in equips, skipped silently without counting as unmapped)
             // 9300010 has 2 held copies; 9300020 has status 1 and no copy held; 9300030 has status 0 (skipped)
             "userSvtCollection" to """[
                 {"svtId":100100,"status":2},
+                {"svtId":9300999,"status":2},
                 {"svtId":9300010,"status":2},
                 {"svtId":9300020,"status":1},
                 {"svtId":9300030,"status":0}
             ]""",
             "userSvt" to """[
                 {"svtId":100100,"lv":90,"limitCount":4},
+                {"svtId":9300999,"lv":80,"limitCount":4},
                 {"svtId":9300010,"lv":50,"limitCount":1},
                 {"svtId":9300010,"lv":20,"limitCount":4}
             ]""",
@@ -431,9 +434,22 @@ class ChaldeaSyncLogicTest {
             "userCommandCodeCollection" to """[{"commandCodeId":80001,"status":2}]""",
             "userCommandCode" to """[{"commandCodeId":80001},{"commandCodeId":80002}]""",
         )
+        val ceOnlyEmptyPatch = ChaldeaPatch.from(
+            state(
+                "userGame" to game,
+                "userSvtCollection" to """[{"svtId":9300010,"status":2}]""",
+                "userSvt" to """[{"svtId":9300010,"lv":10,"limitCount":0}]""",
+            ),
+            ChaldeaServer.Kr,
+            ChaldeaCollectionNumbers.EMPTY,
+        )
+        assertNull(ceOnlyEmptyPatch.craftEssences)
+        assertEquals(0, ceOnlyEmptyPatch.unmapped)
+
         val emptyMapPatch = ChaldeaPatch.from(st, ChaldeaServer.Kr, ChaldeaCollectionNumbers.EMPTY)
         assertNull(emptyMapPatch.craftEssences)
         assertNull(emptyMapPatch.commandCodes)
+        // Only the 2 distinct command codes (80001, 80002) are counted; CE 9300010 is skipped silently.
         assertEquals(2, emptyMapPatch.unmapped)
 
         val missingTables = ChaldeaPatch.from(state("userGame" to game), ChaldeaServer.Kr, stage2Numbers)
@@ -617,5 +633,75 @@ class ChaldeaSyncLogicTest {
         assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"lv\":20", "\"lv\":21"), p, m, 0))
         // command code count tampered
         assertFalse(ChaldeaUserdataEditor.verify(root, good.replace("\"count\":3", "\"count\":2"), p, m, 0))
+    }
+
+    @Test fun verifyRejectsEveryUnintendedChangeInStage2Edit() {
+        val otherUser = user("1", items = """{"5":5}""")
+        val targetUser = user(
+            "123,456",
+            items = """{"7":7,"100":1}""",
+            extra = ""","itemsLeft":{"7":3},"plans":[1],"servants":{"100100":{"lv":90}},""" +
+                """"craftEssences":{"11":{"status":1,"lv":20,"limitCount":1,"fav":true},"99":{"status":2,"lv":100,"limitCount":4}},""" +
+                """"cmdCodes":{"5":{"status":1,"count":1,"note":"keep"},"9":{"status":2,"count":3}}""",
+        )
+        val text = file("[$otherUser,$targetUser]")
+        val root = Json.parseToJsonElement(text).jsonObject
+        val p = patch(items = mapOf(100L to 3L)).copy(
+            svtCoins = mapOf(10010001L to 9L),
+            craftEssences = mapOf(11L to ChaldeaPatch.CeStatus(2L, null, null)),
+            commandCodes = mapOf(5L to ChaldeaPatch.CcStatus(2L, 3L)),
+        )
+        val good = ok(ChaldeaUserdataEditor.edit(text, p, false)).output
+        val m = ChaldeaUserMatcher.Match.Existing(1, false)
+        assertTrue(ChaldeaUserdataEditor.verify(root, good, p, m, 1))
+
+        fun reject(tampered: String) {
+            assertNotEquals(good, tampered)
+            assertFalse(ChaldeaUserdataEditor.verify(root, tampered, p, m, 1))
+        }
+
+        // changed itemsLeft in target user
+        reject(good.replace(""""itemsLeft":{"7":3}""", """"itemsLeft":{"7":4}"""))
+        // changed plans in target user
+        reject(good.replace(""""plans":[1]""", """"plans":[2]"""))
+        // changed field in another (non-target) user
+        reject(good.replace(""""5":5""", """"5":6"""))
+        // uncovered CE entry in craftEssences: changed value
+        reject(good.replace(""""99":{"status":2,"lv":100,"limitCount":4}""", """"99":{"status":2,"lv":99,"limitCount":4}"""))
+        // uncovered CE entry in craftEssences: newly added entry
+        reject(good.replace(""""99":{"status":2,"lv":100,"limitCount":4}""", """"99":{"status":2,"lv":100,"limitCount":4},"88":{"status":1,"lv":1,"limitCount":0}"""))
+        // unknown field (fav) of patched CE entry changed
+        reject(good.replace(""""fav":true""", """"fav":false"""))
+        // unknown field (fav) of patched CE entry removed
+        reject(good.replace(""","fav":true""", ""))
+        // uncovered cmdCodes entry changed
+        reject(good.replace(""""9":{"status":2,"count":3}""", """"9":{"status":2,"count":4}"""))
+        // uncovered items key changed
+        reject(good.replace(""""7":7""", """"7":8"""))
+        // top-level field (version) changed
+        reject(good.replace(""""version":4""", """"version":5"""))
+    }
+
+    @Test fun fromJsonReturnsNullForMalformedStage2FieldsWhileStage1StillParses() {
+        val malformed = listOf(
+            """{"friendCode":"123,456","server":"kr","craftEssences":"bad"}""",
+            """{"friendCode":"123,456","server":"kr","craftEssences":{"11":"bad"}}""",
+            """{"friendCode":"123,456","server":"kr","craftEssences":{"11":{"lv":10}}}""",
+            """{"friendCode":"123,456","server":"kr","commandCodes":"bad"}""",
+            """{"friendCode":"123,456","server":"kr","commandCodes":{"1":"bad"}}""",
+            """{"friendCode":"123,456","server":"kr","commandCodes":{"1":{"count":1}}}""",
+            """{"friendCode":"123,456","server":"kr","commandCodes":{"1":{"status":2}}}""",
+            """{"friendCode":"123,456","server":"kr","svtCoins":"bad"}""",
+        )
+        for (json in malformed) {
+            assertNull(ChaldeaPatch.fromJson(json), "Expected null for malformed patch: $json")
+        }
+
+        val stage1 = ChaldeaPatch.fromJson("""{"friendCode":"123,456","server":"kr","items":{"1":100}}""")
+        assertNotNull(stage1)
+        assertEquals(mapOf(1L to 100L), stage1.items)
+        assertNull(stage1.svtCoins)
+        assertNull(stage1.craftEssences)
+        assertNull(stage1.commandCodes)
     }
 }

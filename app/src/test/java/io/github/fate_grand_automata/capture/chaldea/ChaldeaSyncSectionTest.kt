@@ -201,7 +201,9 @@ class ChaldeaSyncSectionTest {
                 results = mapOf(ChaldeaServer.Kr to synced),
             ),
         )
-        compose.onNodeWithText(context.getString(R.string.chaldea_sync_status_unmapped, 7), substring = true).assertExists()
+        val unmappedText = context.getString(R.string.chaldea_sync_status_unmapped, 7)
+        assertEquals("7 command codes skipped because their collection number is not known yet (retried on the next sync).", unmappedText)
+        compose.onNodeWithText(unmappedText, substring = true).assertExists()
     }
 
     @Test
@@ -210,7 +212,7 @@ class ChaldeaSyncSectionTest {
         val formatted = context.getString(R.string.chaldea_sync_status_synced, "T", 1, 2, 3, 4, 5, 6)
         assertEquals("마지막 반영 T: 아이템 1개, 마술예장 2개, 클래스 보드 3개, 서번트 코인 4개, 개념예장 5개, 커맨드 코드 6개.", formatted)
         assertEquals(
-            "도감 번호를 몰라 건너뛴 항목 8개 (다음 반영 때 다시 시도합니다).",
+            "도감 번호를 몰라 건너뛴 커맨드 코드 8개 (다음 반영 때 다시 시도합니다).",
             context.getString(R.string.chaldea_sync_status_unmapped, 8),
         )
     }
@@ -221,7 +223,7 @@ class ChaldeaSyncSectionTest {
         val formatted = context.getString(R.string.chaldea_sync_status_synced, "T", 1, 2, 3, 4, 5, 6)
         assertEquals("最終反映 T: アイテム1件、魔術礼装2件、クラスボード3件、サーヴァントコイン4件、概念礼装5件、コマンドコード6件。", formatted)
         assertEquals(
-            "図鑑番号が不明なため8件を飛ばしました（次回の反映で再試行します）。",
+            "図鑑番号が不明なためコマンドコード8件を飛ばしました（次回の反映で再試行します）。",
             context.getString(R.string.chaldea_sync_status_unmapped, 8),
         )
     }
