@@ -49,6 +49,14 @@
             android:label="Skill Maker"
             android:screenOrientation="sensorLandscape" />
 
+        <activity
+            android:name=".ui.ProjectionConsentActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".capture.CaptureVpnService"
             android:exported="false"

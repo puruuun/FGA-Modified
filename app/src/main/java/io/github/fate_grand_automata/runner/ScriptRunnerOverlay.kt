@@ -8,9 +8,12 @@ import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import dagger.hilt.android.scopes.ServiceScoped
+import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
+import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.prefs.core.CompletedRunsHolder
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.ui.ProjectionConsentActivity
 import io.github.fate_grand_automata.ui.highlight.HighlightManager
 import io.github.fate_grand_automata.ui.runner.ScriptRunnerUI
 import io.github.fate_grand_automata.ui.runner.ScriptRunnerUIAction
@@ -20,6 +23,8 @@ import io.github.fate_grand_automata.util.FakedComposeView
 import io.github.fate_grand_automata.util.ScriptState
 import io.github.fate_grand_automata.util.overlayType
 import io.github.lib_automata.Location
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -35,7 +40,10 @@ class ScriptRunnerOverlay @Inject constructor(
     private val uiStateHolder: ScriptRunnerUIStateHolder,
     private val scriptManager: ScriptManager,
     private val screenshotServiceHolder: ScreenshotServiceHolder,
-    private val scriptComponentBuilder: ScriptComponentBuilder
+    private val scriptComponentBuilder: ScriptComponentBuilder,
+    private val projectionRestart: ProjectionRestart,
+    private val messageBox: ScriptRunnerMessageBox,
+    @param:ServiceCoroutineScope private val scope: CoroutineScope
 ) {
     private val layout: ComposeView
 
@@ -153,7 +161,7 @@ class ScriptRunnerOverlay @Inject constructor(
         return Location(x, y)
     }
 
-    private fun act(action: ScriptRunnerUIAction) {
+    internal fun act(action: ScriptRunnerUIAction) {
         when (action) {
             ScriptRunnerUIAction.Pause, ScriptRunnerUIAction.Resume -> {
                 scriptManager.pause(ScriptManager.PauseAction.Toggle)
@@ -161,8 +169,12 @@ class ScriptRunnerOverlay @Inject constructor(
 
             ScriptRunnerUIAction.Start -> {
                 if (scriptManager.scriptState is ScriptState.Stopped) {
-                    screenshotServiceHolder.screenshotService?.let {
-                        scriptManager.startScript(service, it, scriptComponentBuilder)
+                    if (screenshotServiceHolder.needsNewConsent()) {
+                        requestScreenCaptureConsent()
+                    } else {
+                        screenshotServiceHolder.screenshotService?.let {
+                            scriptManager.startScript(service, it, scriptComponentBuilder)
+                        }
                     }
                 }
             }
@@ -175,6 +187,28 @@ class ScriptRunnerOverlay @Inject constructor(
 
             is ScriptRunnerUIAction.Status -> {
                 scriptManager.showStatus(action.status)
+            }
+        }
+    }
+
+    private fun requestScreenCaptureConsent() {
+        if (!projectionRestart.requestConsent()) {
+            Timber.d("Screen capture re-consent already pending; ignoring play tap")
+            return
+        }
+
+        screenshotServiceHolder.close()
+
+        try {
+            service.startActivity(ProjectionConsentActivity.createIntent(service))
+        } catch (e: Exception) {
+            projectionRestart.consentDenied()
+            Timber.e(e, "Failed to launch screen capture consent")
+            scope.launch {
+                messageBox.show(
+                    service.getString(R.string.script_exited),
+                    service.getString(R.string.error_screen_capture_stopped)
+                )
             }
         }
     }

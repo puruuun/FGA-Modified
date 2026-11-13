@@ -32,7 +32,7 @@ class MediaProjectionScreenshotService(
     private var screenDensity: Int,
     private val storageProvider: StorageProvider,
     private val colorManager: ColorManager
-) : ScreenshotService {
+) : StoppableScreenshotService {
     private val bufferMat = Mat()
     private val grayscaleMat = Mat()
     private val grayscalePattern = DroidCvPattern(grayscaleMat, ownsMat = false)
@@ -42,6 +42,9 @@ class MediaProjectionScreenshotService(
     @SuppressLint("WrongConstant")
     private var imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, PixelFormat.RGBA_8888, 2)
     private val closed = AtomicBoolean(false)
+
+    override val isStopped: Boolean
+        get() = closed.get()
 
     /**
      * Guards the [Mat]s and the [imageReader] against [close] running while a screenshot is

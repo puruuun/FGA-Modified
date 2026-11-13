@@ -5,9 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.imaging.MediaProjectionScreenshotService
+import io.github.fate_grand_automata.imaging.StoppableScreenshotService
 import io.github.fate_grand_automata.root.RootScreenshotService
 import io.github.fate_grand_automata.root.SuperUser
 import io.github.fate_grand_automata.scripts.FgoCaptureGeometry
@@ -92,6 +94,19 @@ class ScreenshotServiceHolder @Inject constructor(
             Timber.e(e, "Error preparing screenshot service")
             null
         }
+    }
+
+    /**
+     * Returns true in MediaProjection mode when there is no live capture session (either none was
+     * prepared yet or its projection stopped). Root mode never needs screen capture consent.
+     */
+    fun needsNewConsent(): Boolean =
+        prefs.wantsMediaProjectionToken &&
+            (screenshotService == null || (screenshotService as? StoppableScreenshotService)?.isStopped == true)
+
+    @VisibleForTesting
+    internal fun setScreenshotServiceForTest(service: ScreenshotService?) {
+        screenshotService = service
     }
 
     override fun close() {

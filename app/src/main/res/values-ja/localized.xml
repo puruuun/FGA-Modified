@@ -1062,4 +1062,6 @@
     <string name="chaldea_sync_status_failed">"反映に失敗しました（%s）。"</string>
     <string name="chaldea_sync_status_owner_changed">"Chaldeaのファイルの所有者または権限が変わり、元に戻せませんでした。バックアップは残っています。"</string>
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
+    <string name="error_screen_capture_stopped">"画面キャプチャが停止しました。画面がオフになったとき、システムや他のアプリが画面キャプチャを使ったとき、画面の設定が変わったときに停止します。再生ボタンをもう一度押すと画面キャプチャの許可を取り直します。"</string>
+    <string name="screen_capture_permission_denied">"画面キャプチャの許可がないため開始しませんでした。"</string>
 </resources>

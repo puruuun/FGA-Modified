@@ -2,9 +2,11 @@ package io.github.fate_grand_automata.runner
 
 import android.app.Service
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
@@ -28,10 +30,10 @@ import kotlin.time.Duration.Companion.seconds
 class ScriptRunnerServiceController @Inject constructor(
     private val service: Service,
     @param:ApplicationContext private val context: Context,
-    private val scriptManager: ScriptManager,
-    private val screenshotServiceHolder: ScreenshotServiceHolder,
+    @get:VisibleForTesting internal val scriptManager: ScriptManager,
+    @get:VisibleForTesting internal val screenshotServiceHolder: ScreenshotServiceHolder,
     private val imageLoader: ImageLoader,
-    private val overlay: ScriptRunnerOverlay,
+    @get:VisibleForTesting internal val overlay: ScriptRunnerOverlay,
     private val prefs: IPreferences,
     private val gameAreaCaptureSignal: GameAreaCaptureSignal,
     private val notification: ScriptRunnerNotification,
@@ -39,6 +41,8 @@ class ScriptRunnerServiceController @Inject constructor(
     private val messages: ScriptMessages,
     private val messageBox: ScriptRunnerMessageBox,
     private val gameAreaPreview: GameAreaPreviewManager,
+    @get:VisibleForTesting internal val projectionRestart: ProjectionRestart,
+    private val scriptComponentBuilder: ScriptComponentBuilder,
     @param:ServiceCoroutineScope private val scope: CoroutineScope
 ) {
     private val screenOffReceiver = ScreenOffReceiver()
@@ -57,6 +61,7 @@ class ScriptRunnerServiceController @Inject constructor(
         imageLoader.clearImageCache()
 
         overlay.hide()
+        projectionRestart.reset()
         scope.cancel()
         gameAreaPreview.endScript()
 
@@ -147,6 +152,7 @@ class ScriptRunnerServiceController @Inject constructor(
         // that consent has been granted we're allowed to add it.
         if (!notification.show(withMediaProjection = true)) {
             Timber.e("Stopping the service because the mediaProjection type was rejected")
+            projectionRestart.reset()
             service.stopSelf()
             return
         }
@@ -155,6 +161,44 @@ class ScriptRunnerServiceController @Inject constructor(
 
         if (shouldDisplayPlayButton()) {
             overlay.show()
+        }
+
+        if (projectionRestart.consentGranted()) {
+            val screenshotService = screenshotServiceHolder.screenshotService
+            if (screenshotService != null && !screenshotServiceHolder.needsNewConsent()) {
+                if (scriptManager.scriptState is ScriptState.Stopped) {
+                    scope.launch(Dispatchers.Main.immediate) {
+                        if (scriptManager.scriptState is ScriptState.Stopped) {
+                            scriptManager.startScript(service, screenshotService, scriptComponentBuilder)
+                        }
+                    }
+                }
+            } else {
+                showCaptureStoppedError()
+            }
+        }
+    }
+
+    fun onMediaProjectionConsentCancelled() {
+        projectionRestart.consentDenied()
+        messages.toast(context.getString(R.string.screen_capture_permission_denied))
+    }
+
+    fun onMediaProjectionConsentLaunchFailed() {
+        projectionRestart.consentDenied()
+        showCaptureStoppedError()
+    }
+
+    fun onMediaProjectionConsentAbandoned() {
+        projectionRestart.consentDenied()
+    }
+
+    private fun showCaptureStoppedError() {
+        scope.launch {
+            messageBox.show(
+                context.getString(R.string.script_exited),
+                context.getString(R.string.error_screen_capture_stopped)
+            )
         }
     }
 }

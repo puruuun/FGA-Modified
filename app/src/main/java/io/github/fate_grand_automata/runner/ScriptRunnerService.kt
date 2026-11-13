@@ -6,9 +6,11 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.IBinder
+import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
+import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.CaptureServiceLifecycle
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.widget.ServiceWidget
@@ -50,6 +52,36 @@ class ScriptRunnerService: Service() {
                     instance?.controller?.onNewMediaProjectionToken()
                 }
             }
+
+        fun onMediaProjectionConsentCancelled(context: Context) {
+            val controller = instance?.controller
+            if (controller != null) {
+                controller.onMediaProjectionConsentCancelled()
+            } else {
+                Toast.makeText(
+                    context.applicationContext,
+                    R.string.screen_capture_permission_denied,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        fun onMediaProjectionConsentLaunchFailed(context: Context) {
+            val controller = instance?.controller
+            if (controller != null) {
+                controller.onMediaProjectionConsentLaunchFailed()
+            } else {
+                Toast.makeText(
+                    context.applicationContext,
+                    R.string.error_screen_capture_stopped,
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+        fun onMediaProjectionConsentAbandoned() {
+            instance?.controller?.onMediaProjectionConsentAbandoned()
+        }
     }
 
     @Inject
