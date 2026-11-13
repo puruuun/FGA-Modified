@@ -198,4 +198,48 @@ class DashboardRound7UiTest {
         (4..6).forEach { compose.onNodeWithText("Servant $it", substring = true).assertDoesNotExist() }
         compose.onAllNodesWithText("Beast · ★5", substring = true).assertCountEquals(3)
     }
+
+    @Test fun coinsGroupShowsCountStartsCollapsedExpandsOnTapAndSitsBetweenEventAndOther() {
+        val names = fixture.names.copy(
+            items = fixture.names.items + mapOf(10010001L to "Coin Alpha", 10020001L to "Coin Beta"),
+            itemData = fixture.names.itemData + mapOf(9000L to AtlasBasic(9000L, "Event Token", "eventItem")),
+        )
+        val state = dashboardState(
+            "userItem" to """[{"itemId":6510,"num":60},{"itemId":9000,"num":12},{"itemId":999,"num":1}]""",
+            "userSvtCoin" to """[{"svtId":100100,"num":30},{"svtId":100200,"num":10},{"svtId":100300,"num":0}]""",
+        )
+        val data = dashboardData(state, names)
+        compose.setContent {
+            FGATheme {
+                CompositionLocalProvider(LocalNavigateBack provides {}) {
+                    fixture.Icons {
+                        AccountDashboardContent(data, names, "Alias", {}, {}, initialSection = 4)
+                    }
+                }
+            }
+        }
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithText("+ Servant coins (2)").fetchSemanticsNodes().isNotEmpty()
+        }
+        val eventBounds = compose.onNodeWithText("+ Event items (1)").fetchSemanticsNode().boundsInRoot
+        val coinsHeader = compose.onNodeWithText("+ Servant coins (2)")
+        val coinsBounds = coinsHeader.fetchSemanticsNode().boundsInRoot
+        val otherBounds = compose.onNodeWithText("+ Other (1)").fetchSemanticsNode().boundsInRoot
+        assertTrue(eventBounds.bottom <= coinsBounds.top)
+        assertTrue(coinsBounds.bottom <= otherBounds.top)
+
+        compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
+        compose.onNodeWithText("Coin Beta").assertDoesNotExist()
+
+        coinsHeader.performScrollTo().performClick()
+        compose.onNodeWithText("− Servant coins (2)").assertExists()
+        compose.onNodeWithText("Coin Alpha").assertExists()
+        compose.onNodeWithText("Coin Beta").assertExists()
+        compose.onNodeWithText("30").assertExists()
+        compose.onNodeWithText("10").assertExists()
+
+        compose.onNodeWithText("− Servant coins (2)").performClick()
+        compose.onNodeWithText("+ Servant coins (2)").assertExists()
+        compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
+    }
 }

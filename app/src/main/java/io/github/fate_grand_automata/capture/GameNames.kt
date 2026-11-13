@@ -173,7 +173,13 @@ class GameNames(
             }
             fun ids(table: String, field: String) = states.flatMap { it.rows(table).orEmpty() }
                 .mapNotNull { it.number(field) }.toSet()
-            val required = mutableMapOf("nice_item" to ids("userItem", "itemId"),
+            val coinIds = states.flatMap { it.rows("userSvtCoin").orEmpty() }
+                .mapNotNull { row ->
+                    val svtId = row.number("svtId") ?: return@mapNotNull null
+                    row.number("num")?.takeIf { it > 0 } ?: return@mapNotNull null
+                    svtId * 100 + 1
+                }.toSet()
+            val required = mutableMapOf("nice_item" to ids("userItem", "itemId") + coinIds,
                 "basic_servant" to ids("userSvtCollection", "svtId"),
                 "basic_equip" to emptySet(), "basic_mystic_code" to ids("userEquip", "equipId"))
             val items = metadata("nice_item", required["nice_item"].orEmpty())

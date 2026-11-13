@@ -1092,7 +1092,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_consent_needs_title">"What is needed:"</string>
     <string name="capture_consent_needs">"CA certificate installation and VPN permission. It cannot run alongside another VPN, such as an ad blocker."</string>
     <string name="capture_consent_risks_title">"Possible problems:"</string>
-    <string name="capture_consent_risks">"• Game updates may stop this feature from working. If you cannot log in, turn off log collection.\n• Some screens, such as event notices, may load slowly at first.\n• Changes made while log collection was off are not reflected until you log in again with it on.\n• Under the game operator terms, using third-party programs may result in penalties."</string>
+    <string name="capture_consent_risks">"• Game updates may stop this feature from working. If you cannot log in, turn off log collection.\n• Some screens, such as event notices, may load slowly at first.\n• Changes made while log collection was off are not reflected until you log in again with it on."</string>
     <string name="capture_consent_responsibility">"You are responsible for using this feature and for the consequences."</string>
     <string name="capture_consent_agree">"Agree and use"</string>
     <string name="capture_consent_review">"Show notice again"</string>
@@ -1188,6 +1188,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_group_pieces">Pieces and monuments</string>
     <string name="dashboard_group_grails">Grails and Lore</string>
     <string name="dashboard_group_event">Event items</string>
+    <string name="dashboard_group_coins">Servant coins</string>
     <string name="dashboard_group_other">Other</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">Equipped</string>

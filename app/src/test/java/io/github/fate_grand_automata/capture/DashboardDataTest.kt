@@ -170,6 +170,70 @@ class DashboardDataTest {
         assertEquals(InventoryGroup.Event, inventoryGroup(9000,"eventItem"))
         assertEquals(InventoryGroup.Other, inventoryGroup(6001,"futureType"))
         assertEquals(InventoryGroup.Other, inventoryGroup(6510,null))
+        assertEquals(InventoryGroup.Other, inventoryGroup(1001,"svtCoin"))
+        assertEquals(
+            listOf(
+                InventoryGroup.Materials,
+                InventoryGroup.Gems,
+                InventoryGroup.Pieces,
+                InventoryGroup.Grails,
+                InventoryGroup.Event,
+                InventoryGroup.Coins,
+                InventoryGroup.Other,
+            ),
+            InventoryGroup.entries,
+        )
+    }
+
+    @Test fun coinsFromUserSvtCoinJoinInventoryAfterUserItemsAndSkipZeroOrMissingSvtId() {
+        val names = dashboardNames().copy(itemData = mapOf(6510L to AtlasBasic(6510, "Gear", "skillLvUp")))
+        val data = dashboardData(dashboardState(
+            "userItem" to """[{"itemId":6510,"num":2}]""",
+            "userSvtCoin" to """[{"svtId":10,"num":30},{"svtId":11,"num":0},{"svtId":12,"num":-5},{"num":15},{"svtId":"bad","num":10}]""",
+        ), names)
+        assertEquals(
+            listOf(
+                DashboardItem(6510L, 2L, InventoryGroup.Materials),
+                DashboardItem(1001L, 30L, InventoryGroup.Coins),
+            ),
+            data.inventory,
+        )
+    }
+
+    @Test fun coinsSortByCountDescThenCollectionNoUnknownLastThenSvtId() {
+        val data = dashboardData(dashboardState(
+            "userSvtCoin" to """[
+                {"svtId":999,"num":100},
+                {"svtId":10,"num":100},
+                {"svtId":12,"num":100},
+                {"svtId":13,"num":250},
+                {"svtId":5,"num":100},
+                {"svtId":11,"num":100}
+            ]""",
+        ), dashboardNames())
+        assertEquals(
+            listOf(1301L, 1101L, 1001L, 501L, 1201L, 99901L),
+            data.inventory!!.map { it.id },
+        )
+        assertTrue(data.inventory.all { it.group == InventoryGroup.Coins })
+    }
+
+    @Test fun coinsWithoutUserItemFormInventoryAndZeroOnlyCoinsStayNull() {
+        val names = dashboardNames().copy(itemData = mapOf(6510L to AtlasBasic(6510, "Gear", "skillLvUp")))
+        val coinsOnly = dashboardData(dashboardState(
+            "userSvtCoin" to """[{"svtId":10,"num":5}]""",
+        ), names)
+        assertEquals(listOf(DashboardItem(1001L, 5L, InventoryGroup.Coins)), coinsOnly.inventory)
+
+        val zeroCoinsOnly = dashboardData(dashboardState(
+            "userSvtCoin" to """[{"svtId":10,"num":0},{"num":3}]""",
+        ), names)
+        assertNull(zeroCoinsOnly.inventory)
+
+        val noCoins = dashboardData(dashboardState(
+            "userItem" to """[{"itemId":6510,"num":2}]""",
+        ), names)
+        assertEquals(listOf(DashboardItem(6510L, 2L, InventoryGroup.Materials)), noCoins.inventory)
     }
     @Test fun inventoryHidesZeroNegativeAndCurrenciesAlreadyShown() {
         val data = dashboardData(dashboardState("userGame" to """[{"qp":100,"stone":2,"mana":3,"rarePri":4}]""",

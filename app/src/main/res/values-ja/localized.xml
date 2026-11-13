@@ -778,7 +778,7 @@
     <string name="capture_consent_needs_title">"必要なもの:"</string>
     <string name="capture_consent_needs">"CA証明書のインストールとVPNの許可。他のVPN（広告ブロックアプリなど）とは同時に使えません。"</string>
     <string name="capture_consent_risks_title">"起こり得る問題:"</string>
-    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• 一部の画面（イベントのお知らせなど）が最初は表示に時間がかかる場合があります。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。\n• ゲーム運営会社の利用規約により、第三者プログラムの使用は制裁の対象となる場合があります。"</string>
+    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• 一部の画面（イベントのお知らせなど）が最初は表示に時間がかかる場合があります。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。"</string>
     <string name="capture_consent_responsibility">"この機能の使用とその結果に対する責任は、ユーザーご本人にあります。"</string>
     <string name="capture_consent_agree">"同意して使用"</string>
     <string name="capture_consent_review">"案内をもう一度見る"</string>
@@ -874,6 +874,7 @@
     <string name="dashboard_group_pieces">ピース・モニュメント</string>
     <string name="dashboard_group_grails">聖杯・伝承結晶</string>
     <string name="dashboard_group_event">イベントアイテム</string>
+    <string name="dashboard_group_coins">サーヴァントコイン</string>
     <string name="dashboard_group_other">その他</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">装備中</string>

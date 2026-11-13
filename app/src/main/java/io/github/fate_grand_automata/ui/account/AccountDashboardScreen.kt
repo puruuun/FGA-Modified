@@ -289,7 +289,7 @@ internal fun date(seconds: Long): String = DateFormat.getDateTimeInstance(DateFo
     InventoryGroup.entries.forEach { group ->
         val rows = groups[group].orEmpty()
         if (rows.isNotEmpty()) key(group) {
-            var expanded by rememberSaveable { mutableStateOf(group !in setOf(InventoryGroup.Event, InventoryGroup.Other)) }
+            var expanded by rememberSaveable { mutableStateOf(group !in setOf(InventoryGroup.Event, InventoryGroup.Coins, InventoryGroup.Other)) }
             TextButton(onClick = { expanded = !expanded }) {
                 Text("${if (expanded) "−" else "+"} ${stringResource(group.label())} (${rows.size})")
             }
@@ -307,6 +307,7 @@ private fun InventoryGroup.label() = when (this) {
     InventoryGroup.Pieces -> R.string.dashboard_group_pieces
     InventoryGroup.Grails -> R.string.dashboard_group_grails
     InventoryGroup.Event -> R.string.dashboard_group_event
+    InventoryGroup.Coins -> R.string.dashboard_group_coins
     InventoryGroup.Other -> R.string.dashboard_group_other
 }
 

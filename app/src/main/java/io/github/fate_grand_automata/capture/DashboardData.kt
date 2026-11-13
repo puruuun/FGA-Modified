@@ -26,7 +26,7 @@ internal fun friendsText(keep: String, count: Int?): String {
 internal fun JsonObject.number(key: String) = (this[key] as? JsonPrimitive)?.longOrNull
 internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
 
-enum class InventoryGroup { Materials, Gems, Pieces, Grails, Event, Other }
+enum class InventoryGroup { Materials, Gems, Pieces, Grails, Event, Coins, Other }
 enum class ServantSort { Bond, Cost, Level }
 enum class StoredKind { Servant, Equip, Other }
 
@@ -158,9 +158,21 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap): Da
             copy?.number("lv"), appends)
     }
     val aliases = mapOf(5L to 1L, 6L to 2L, 7L to 2L, 11L to 16L)
-    val inventory = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->
+    val userItems = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->
         DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type))
     }
+    val coins = rows("userSvtCoin")?.mapNotNull { row ->
+        val svtId = row.number("svtId") ?: return@mapNotNull null
+        row.number("num")?.let { svtId to it }
+    }?.toMap()?.entries?.filter { it.value > 0 }
+        ?.sortedWith(
+            compareByDescending<Map.Entry<Long, Long>> { it.value }
+                .thenBy(nullsLast()) { names.servantData[it.key]?.collectionNo }
+                .thenBy { it.key }
+        )?.map { (svtId, count) ->
+            DashboardItem(id = svtId * 100 + 1, count = count, group = InventoryGroup.Coins)
+        }
+    val inventory = if (userItems == null && coins.isNullOrEmpty()) null else userItems.orEmpty() + coins.orEmpty()
     val equips = rows("userEquip")?.mapNotNull { row ->
         val id = row.number("equipId") ?: row.number("id") ?: return@mapNotNull null
         DashboardEquip(id, row.number("lv"), id == game?.number("userEquipId"))

@@ -1022,7 +1022,7 @@
     <string name="capture_consent_needs_title">"필요한 것:"</string>
     <string name="capture_consent_needs">"CA 인증서 설치와 VPN 허용. 다른 VPN(광고 차단 앱 등)과 동시에 쓸 수 없습니다."</string>
     <string name="capture_consent_risks_title">"생길 수 있는 문제:"</string>
-    <string name="capture_consent_risks">"• 게임 업데이트로 기능이 동작하지 않을 수 있습니다. 로그인이 안 되면 로그 수집을 끄면 됩니다.\n• 일부 화면(이벤트 안내 등)이 처음에 늦게 뜰 수 있습니다.\n• 로그 수집이 꺼져 있던 동안의 변화는, 켠 상태로 다시 로그인하기 전까지 반영되지 않습니다.\n• 게임 운영사 약관상 제3자 프로그램 사용은 제재 대상이 될 수 있습니다."</string>
+    <string name="capture_consent_risks">"• 게임 업데이트로 기능이 동작하지 않을 수 있습니다. 로그인이 안 되면 로그 수집을 끄면 됩니다.\n• 일부 화면(이벤트 안내 등)이 처음에 늦게 뜰 수 있습니다.\n• 로그 수집이 꺼져 있던 동안의 변화는, 켠 상태로 다시 로그인하기 전까지 반영되지 않습니다."</string>
     <string name="capture_consent_responsibility">"이 기능의 사용과 그 결과에 대한 책임은 사용자 본인에게 있습니다."</string>
     <string name="capture_consent_agree">"동의하고 사용"</string>
     <string name="capture_consent_review">"안내 다시 보기"</string>
@@ -1118,6 +1118,7 @@
     <string name="dashboard_group_pieces">피스·모뉴먼트</string>
     <string name="dashboard_group_grails">성배·전승 결정</string>
     <string name="dashboard_group_event">이벤트 아이템</string>
+    <string name="dashboard_group_coins">서번트 코인</string>
     <string name="dashboard_group_other">기타</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">장착 중</string>
