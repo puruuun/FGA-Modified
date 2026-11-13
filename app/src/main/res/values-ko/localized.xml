@@ -1330,15 +1330,15 @@
     <string name="dashboard_command_codes_owned_group">보유</string>
     <!-- 계정 대시보드 추가 카드 (#380) -->
     <string name="dashboard_class_score">클래스 스코어</string>
-    <string name="dashboard_class_score_squares_locks">사인 %1$d / %2$d · 잠금 %3$d / %4$d</string>
-    <string name="dashboard_class_score_counts_only">사인 %1$d · 잠금 %2$d</string>
+    <string name="dashboard_class_score_squares_locks">칸 %1$d / %2$d · 잠금 %3$d / %4$d</string>
+    <string name="dashboard_class_score_counts_only">칸 %1$d · 잠금 %2$d</string>
     <string name="dashboard_class_score_complete">완료</string>
     <string name="dashboard_last_login_notice">마지막 로그인 기준</string>
     <string name="dashboard_summon_history">소환 기록</string>
     <string name="dashboard_friend_point_summons">친구 포인트 소환 %1$s회</string>
     <string name="dashboard_other_summons">기타 소환</string>
     <string name="dashboard_summon_count">%1$s회</string>
-    <string name="dashboard_summon_bonus_note">10회 소환은 11회로 계산됩니다.</string>
+    <string name="dashboard_summon_bonus_note">횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.</string>
     <string name="dashboard_recent_summon_log">최근 소환 내역</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"다크 모드"</string>

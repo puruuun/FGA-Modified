@@ -231,13 +231,13 @@ class DashboardAccountCardsUiTest {
         compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
         compose.onNodeWithTag("dashboard-class-score-notice").assertTextEquals("마지막 로그인 기준")
         compose.onNodeWithText("세이버 스코어").performScrollTo().assertExists()
-        compose.onNodeWithText("사인 10 / 10 · 잠금 2 / 2").assertExists()
+        compose.onNodeWithText("칸 10 / 10 · 잠금 2 / 2").assertExists()
         compose.onNodeWithTag("class-board-complete:1").assertExists()
         compose.onNodeWithText("아처 스코어").performScrollTo().assertExists()
-        compose.onNodeWithText("사인 3 / 10 · 잠금 1 / 2").assertExists()
+        compose.onNodeWithText("칸 3 / 10 · 잠금 1 / 2").assertExists()
         compose.onNodeWithTag("class-board-complete:2").assertDoesNotExist()
         compose.onNodeWithText("#99").performScrollTo().assertExists()
-        compose.onNodeWithText("사인 4 · 잠금 1").assertExists()
+        compose.onNodeWithText("칸 4 · 잠금 1").assertExists()
     }
 
     @Test
@@ -267,7 +267,7 @@ class DashboardAccountCardsUiTest {
         compose.onNodeWithText("소환 기록").performScrollTo().assertExists()
         compose.onNodeWithTag("dashboard-summons-notice").assertTextEquals("마지막 로그인 기준")
         compose.onNodeWithText("친구 포인트 소환 1,234회").assertExists()
-        compose.onNodeWithText("10회 소환은 11회로 계산됩니다.").assertExists()
+        compose.onNodeWithText("횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.").assertExists()
         compose.onNodeWithTag("dashboard-summons-others-toggle").assertTextEquals("전체 보기 (12)")
         compose.onNodeWithText("픽업 12").assertDoesNotExist()
 
