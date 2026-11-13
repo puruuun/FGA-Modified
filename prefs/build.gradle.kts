@@ -30,6 +30,8 @@ android {
         abortOnError = true
         baseline = file("lint-baseline.xml")
         error += "StringFormatCount"
+        // Dependency versions are handled by dependencyUpdates (see docs/agents/dependencies.md).
+        disable += listOf("NewerVersionAvailable", "GradleDependency", "AndroidGradlePluginVersion", "SimilarGradleDependency")
     }
 
     namespace = "io.github.fate_grand_automata.prefs"

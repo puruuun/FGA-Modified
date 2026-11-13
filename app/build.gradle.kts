@@ -385,6 +385,8 @@ android {
         baseline = file("lint-baseline.xml")
         error += "StringFormatCount"
         disable += "MissingTranslation"
+        // Dependency versions are handled by dependencyUpdates (see docs/agents/dependencies.md).
+        disable += listOf("NewerVersionAvailable", "GradleDependency", "AndroidGradlePluginVersion", "SimilarGradleDependency")
     }
     // run tests in CI builds instad of debug
     testBuildType = if (providers.gradleProperty("fgaDeviceTests").orNull == "true") "deviceTest" else "ci"
