@@ -47,6 +47,7 @@ import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.rememberChaldeaAccountExport
 import io.github.fate_grand_automata.ui.log.*
 import io.github.fate_grand_automata.util.grouped
+import io.github.fate_grand_automata.util.servantClassRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -489,12 +490,6 @@ private fun InventoryGroup.label() = when (this) {
 }
 
 @Composable private fun ClassScore(boards: List<DashboardClassBoard>) {
-    Text(
-        stringResource(R.string.dashboard_last_login_notice),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.testTag("dashboard-class-score-notice"),
-    )
     var expanded by rememberSaveable { mutableStateOf(false) }
     val shown = if (expanded) boards else boards.take(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -575,12 +570,6 @@ private fun InventoryGroup.label() = when (this) {
 }
 
 @Composable private fun SummonHistory(summons: DashboardSummons) {
-    Text(
-        stringResource(R.string.dashboard_last_login_notice),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.testTag("dashboard-summons-notice"),
-    )
     if (summons.friendPointTotal != null) {
         Text(
             stringResource(R.string.dashboard_friend_point_summons, summons.friendPointTotal.grouped()),
@@ -747,16 +736,7 @@ private fun formatSummonPeriod(openedAt: Long?, closedAt: Long?): String? {
     }
 }
 
-@Composable internal fun dashboardClass(name: String): String {
-    val resource = when (name) {
-        "saber" -> R.string.p_support_class_saber; "archer" -> R.string.p_support_class_archer
-        "lancer" -> R.string.p_support_class_lancer; "rider" -> R.string.p_support_class_rider
-        "caster" -> R.string.p_support_class_caster; "assassin" -> R.string.p_support_class_assassin
-        "berserker" -> R.string.p_support_class_berserker; "shielder" -> R.string.portrait_class_shielder
-        "ruler" -> R.string.portrait_class_ruler; "avenger" -> R.string.portrait_class_avenger
-        "moonCancer" -> R.string.portrait_class_mooncancer; "alterEgo" -> R.string.portrait_class_alterego
-        "foreigner" -> R.string.portrait_class_foreigner; "pretender" -> R.string.portrait_class_pretender
-        else -> if (name.startsWith("beast", true)) R.string.portrait_class_beast else null
-    }
-    return resource?.let { stringResource(it) } ?: name
-}
+internal fun dashboardClassRes(name: String): Int? = servantClassRes(name, matchBeastSubstring = false)
+
+@Composable internal fun dashboardClass(name: String): String =
+    dashboardClassRes(name)?.let { stringResource(it) } ?: name

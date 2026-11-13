@@ -21,6 +21,7 @@ import androidx.compose.runtime.compositionLocalOf
 import coil3.compose.AsyncImage
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.util.portraits.*
+import io.github.fate_grand_automata.util.servantClassRes
 
 /** Test hook: Robolectric cannot size a platform-width dialog that holds a full-width text field. Null keeps the platform default. */
 internal val LocalPortraitImportDialogWidth = compositionLocalOf<androidx.compose.ui.unit.Dp?> { null }
@@ -110,24 +111,8 @@ fun ServantPortraitImportDialog(
     )
 }
 
+internal fun portraitClassRes(name: String): Int? = servantClassRes(name, matchBeastSubstring = true)
+
 @Composable
-private fun portraitClass(name: String): String {
-    val resource = when (name) {
-        "saber" -> R.string.p_support_class_saber
-        "archer" -> R.string.p_support_class_archer
-        "lancer" -> R.string.p_support_class_lancer
-        "rider" -> R.string.p_support_class_rider
-        "caster" -> R.string.p_support_class_caster
-        "assassin" -> R.string.p_support_class_assassin
-        "berserker" -> R.string.p_support_class_berserker
-        "ruler" -> R.string.portrait_class_ruler
-        "avenger" -> R.string.portrait_class_avenger
-        "moonCancer" -> R.string.portrait_class_mooncancer
-        "alterEgo" -> R.string.portrait_class_alterego
-        "foreigner" -> R.string.portrait_class_foreigner
-        "pretender" -> R.string.portrait_class_pretender
-        "shielder" -> R.string.portrait_class_shielder
-        else -> if (name.contains("beast", ignoreCase = true)) R.string.portrait_class_beast else null
-    }
-    return resource?.let { stringResource(it) } ?: name
-}
+private fun portraitClass(name: String): String =
+    portraitClassRes(name)?.let { stringResource(it) } ?: name
