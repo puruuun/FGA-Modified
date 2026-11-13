@@ -248,6 +248,7 @@ class ChaldeaSyncScheduler(
                     stopped.also { stopped = false }
                 }
                 if (wasStopped) persistStopped(false)
+                if (_status.value == ChaldeaSyncStatus.WaitingScript) _status.value = ChaldeaSyncStatus.Idle
                 if (hasWork()) scheduleAttempt(timing.graceMs, Phase.Grace)
             }
             Event.Foreground -> if (env.enabled()) {
@@ -364,12 +365,20 @@ class ChaldeaSyncScheduler(
                     // The attempt is best effort: a failure here must not reach anything else.
                     setResult(ChaldeaSyncStatus.Failed(ChaldeaSyncCode.ServiceError))
                 } finally {
+                    var clearStale = false
                     synchronized(lock) {
                         if (gen == generation) {
                             phase = Phase.Idle
                             attemptJob = null
                             again = normal && savedDuringAttempt && active && !stopped
                             savedDuringAttempt = false
+                            clearStale = normal
+                        }
+                    }
+                    if (clearStale && !hasWork() && !scriptActive()) {
+                        val cur = _status.value
+                        if (!cur.persistent && cur !is ChaldeaSyncStatus.Stopped) {
+                            _status.value = ChaldeaSyncStatus.Idle
                         }
                     }
                     // A save that came in while this attempt ran must not wait for the next trigger.
@@ -390,7 +399,7 @@ class ChaldeaSyncScheduler(
     /** The result of the account of [server]; replaced only by that server's next result. */
     private fun setServerResult(server: ChaldeaServer, s: ChaldeaSyncStatus) {
         _results.value = _results.value + (server to s)
-        if (s is ChaldeaSyncStatus.Synced && _status.value.persistent) _status.value = ChaldeaSyncStatus.Idle
+        if (s is ChaldeaSyncStatus.Synced) _status.value = ChaldeaSyncStatus.Idle
     }
 
     /** Waiting statuses never hide a persistent failure. */

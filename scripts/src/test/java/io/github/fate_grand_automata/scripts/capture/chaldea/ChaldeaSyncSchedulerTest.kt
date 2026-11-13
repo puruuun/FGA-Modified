@@ -1860,4 +1860,143 @@ class ChaldeaSyncSchedulerTest {
         assertTrue(store.read().stopped)
         assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
     }
+
+    // ---- stale waiting statuses (#405) ----
+
+    @Test fun scriptEndWithoutWorkLeavesStatusIdle() = fx {
+        start()
+        sch.onScriptStart()
+        ts.runCurrent()
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+        sch.onScriptEnd()
+        ts.runCurrent()
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+
+        // Even if WaitingScript was set and work was removed before ScriptEnd, ScriptEnd clears it.
+        account("a")
+        sch.onScriptStart()
+        sch.onAccountSaved(listOf("a"))
+        advance(10)
+        assertEquals(ChaldeaSyncStatus.WaitingScript, sch.status.value)
+        sch.onAccountDeleted("a")
+        ts.runCurrent()
+        sch.onScriptEnd()
+        ts.runCurrent()
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+    }
+
+    @Test fun scriptEndClearsWaitingScriptAndCommitLeavesIdle() = fx {
+        account("a")
+        start()
+        sch.onScriptStart()
+        advance(10)
+        sch.onAccountSaved(listOf("a"))
+        advance(10 * MIN)
+        assertEquals(0, opened)
+        assertEquals(ChaldeaSyncStatus.WaitingScript, sch.status.value)
+
+        sch.onScriptEnd()
+        advance(14_000)
+        assertEquals(0, opened, "still in the 15 s grace")
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+
+        advance(2_000)
+        assertEquals(1, commits.size)
+        assertIs<ChaldeaSyncStatus.Synced>(kr)
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+    }
+
+    @Test fun waitingVisibleClearsToIdleWhenChaldeaClosesAndWriteCommits() = fx {
+        account("a")
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertEquals(0, commits.size)
+        assertEquals(ChaldeaSyncStatus.WaitingVisible, sch.status.value)
+
+        stateFn = { _, _ -> ChaldeaRunState.NotRunning }
+        advance(MIN)
+        assertEquals(1, commits.size)
+        assertIs<ChaldeaSyncStatus.Synced>(kr)
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+    }
+
+    @Test fun waitingVisibleClearsToIdleWhenWorkDisappearsWithoutSynced() = fx {
+        account("a")
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertEquals(ChaldeaSyncStatus.WaitingVisible, sch.status.value)
+
+        sch.onAccountDeleted("a")
+        advance(MIN)
+        assertEquals(0, commits.size)
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+    }
+
+    @Test fun persistentFailureIsNotClearedByScriptEndOrNormalAttemptEnd() = fx {
+        inflight()
+        prepareCode = ChaldeaSyncCode.TooLarge
+        start()
+        advance(1_000)
+        sch.onForeground()
+        advance(1_000)
+        sch.onForeground()
+        advance(1_000)
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.TooLarge), sch.status.value)
+
+        sch.onScriptStart()
+        ts.runCurrent()
+        sch.onScriptEnd()
+        ts.runCurrent()
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.TooLarge), sch.status.value)
+
+        account("a")
+        store.update { it.copy(syncedPatchHash = mapOf("a" to hash("a"))) }
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.TooLarge), sch.status.value)
+    }
+
+    @Test fun attemptReturningWhileScriptIsStillRunningKeepsWaitingScript() = fx {
+        account("a")
+        closeMinutes = 30
+        commitDelay = 5_000
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(9 * MIN + 30_000)
+        advance(31_000)
+        assertEquals(1, commits.size)
+
+        sch.onScriptStart()
+        ts.runCurrent()
+        advance(10_000)
+        assertTrue(store.read().pending.isEmpty())
+        assertEquals(ChaldeaSyncStatus.WaitingScript, sch.status.value)
+
+        sch.onScriptEnd()
+        ts.runCurrent()
+        assertEquals(ChaldeaSyncStatus.Idle, sch.status.value)
+    }
+
+    @Test fun sessionStopAfterFinalWriteKeepsStoppedStatus() = fx {
+        account("a")
+        closeMinutes = 30
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(9 * MIN + 30_000)
+        assertFalse(store.read().stopped)
+        assertIs<ChaldeaSyncStatus.WaitingBackground>(sch.status.value)
+
+        advance(MIN)
+        assertEquals(1, commits.size)
+        assertTrue(store.read().pending.isEmpty())
+        assertTrue(store.read().stopped)
+        assertIs<ChaldeaSyncStatus.Synced>(kr)
+        assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+    }
 }
