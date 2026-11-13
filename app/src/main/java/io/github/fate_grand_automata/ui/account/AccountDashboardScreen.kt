@@ -490,12 +490,6 @@ private fun InventoryGroup.label() = when (this) {
 }
 
 @Composable private fun ClassScore(boards: List<DashboardClassBoard>) {
-    Text(
-        stringResource(R.string.dashboard_last_login_notice),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.testTag("dashboard-class-score-notice"),
-    )
     var expanded by rememberSaveable { mutableStateOf(false) }
     val shown = if (expanded) boards else boards.take(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -576,12 +570,6 @@ private fun InventoryGroup.label() = when (this) {
 }
 
 @Composable private fun SummonHistory(summons: DashboardSummons) {
-    Text(
-        stringResource(R.string.dashboard_last_login_notice),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.testTag("dashboard-summons-notice"),
-    )
     if (summons.friendPointTotal != null) {
         Text(
             stringResource(R.string.dashboard_friend_point_summons, summons.friendPointTotal.grouped()),

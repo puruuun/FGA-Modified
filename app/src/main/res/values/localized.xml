@@ -1390,7 +1390,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_class_score_squares_locks">Squares %1$d / %2$d · Locks %3$d / %4$d</string>
     <string name="dashboard_class_score_counts_only">Squares %1$d · Locks %2$d</string>
     <string name="dashboard_class_score_complete">Complete</string>
-    <string name="dashboard_last_login_notice">As of the last login</string>
     <string name="dashboard_summon_history">Summon history</string>
     <string name="dashboard_friend_point_summons">Friend point summons: %1$s</string>
     <string name="dashboard_other_summons">Other summons</string>
