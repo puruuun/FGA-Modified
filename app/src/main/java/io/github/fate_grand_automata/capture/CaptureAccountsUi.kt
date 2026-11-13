@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -7,7 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
@@ -46,7 +49,13 @@ internal fun CaptureAccountCard(
     var rename by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf(false) }
     val export = rememberChaldeaExport(account.id)
-    CaptureSummaryCard(account.summary, account.displayName, current) {
+    CaptureSummaryCard(
+        account.summary,
+        account.displayName,
+        current,
+        server = account.server,
+        accountId = account.id,
+    ) {
         ChaldeaExportAction(null, export)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { rename = true }) { Text(stringResource(R.string.capture_account_rename)) }
@@ -87,7 +96,14 @@ internal fun CaptureAccountRenameDialog(account: CaptureAccount, onDismiss: () -
 }
 
 @Composable
-internal fun CaptureSummaryCard(summary: AccountSummary?, displayName: String? = null, current: Boolean = false, actions: @Composable () -> Unit = {}) {
+internal fun CaptureSummaryCard(
+    summary: AccountSummary?,
+    displayName: String? = null,
+    current: Boolean = false,
+    server: String? = null,
+    accountId: String? = null,
+    actions: @Composable () -> Unit = {},
+) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
@@ -102,27 +118,35 @@ internal fun CaptureSummaryCard(summary: AccountSummary?, displayName: String? =
             }
             val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
             fun time(seconds: Long) = format.format(Date(seconds * 1000))
-            Text(
-                "${displayName ?: summary.masterName}  Lv.${summary.level.grouped()}",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            if (current) Text(stringResource(R.string.capture_account_current), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            val ap = buildString {
-                append("${summary.ap.grouped()} / ${summary.apMax.grouped()}")
-                if (summary.carryOverActPoint != 0L) append(" (+${summary.carryOverActPoint.grouped()})")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "${displayName ?: summary.masterName}  Lv.${summary.level.grouped()}",
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                server?.takeIf { it.isNotBlank() }?.let { code ->
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier
+                            .semantics(mergeDescendants = true) {}
+                            .testTag(if (accountId != null) "capture-account-server:$accountId" else "capture-account-server"),
+                    ) {
+                        Text(
+                            code,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                }
             }
-            Line(R.string.capture_ap, ap)
-            Line(R.string.capture_quartz, "${summary.stone.grouped()} (${summary.freeStone.grouped()} + ${summary.chargeStone.grouped()})")
-            Line(R.string.capture_fragments, summary.fragments.grouped())
-            Line(R.string.capture_apples_gold, summary.goldenApples.grouped())
-            Line(R.string.capture_apples_silver, summary.silverApples.grouped())
-            Line(R.string.capture_apples_bronze, summary.bronzeApples.grouped())
-            Line(R.string.capture_apples_copper, summary.copperApples.grouped())
-            Line(R.string.capture_sapling, summary.bronzeSaplings.grouped())
-            Line(R.string.capture_tickets, summary.tickets.grouped())
-            Line(R.string.capture_mana_prism, summary.manaPrisms.grouped())
-            Line(R.string.capture_rare_prism, summary.rarePrisms.grouped())
-            Line(R.string.capture_qp, summary.qp.grouped())
+            if (current) Text(stringResource(R.string.capture_account_current), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Text(
                 stringResource(R.string.capture_snapshot_time, time(summary.snapshotTime)),
                 style = MaterialTheme.typography.bodySmall,
@@ -133,13 +157,5 @@ internal fun CaptureSummaryCard(summary: AccountSummary?, displayName: String? =
             )
             actions()
         }
-    }
-}
-
-@Composable
-private fun Line(label: Int, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }

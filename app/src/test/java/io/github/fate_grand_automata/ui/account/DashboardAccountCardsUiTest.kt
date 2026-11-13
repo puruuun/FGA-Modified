@@ -229,7 +229,8 @@ class DashboardAccountCardsUiTest {
         )
         content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
         compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
-        compose.onNodeWithTag("dashboard-class-score-notice").assertTextEquals("마지막 로그인 기준")
+        compose.onNodeWithTag("dashboard-class-score-notice").assertDoesNotExist()
+        compose.onNodeWithText("마지막 로그인 기준").assertDoesNotExist()
         compose.onNodeWithText("세이버 스코어").performScrollTo().assertExists()
         compose.onNodeWithText("칸 10 / 10 · 잠금 2 / 2").assertExists()
         compose.onNodeWithTag("class-board-complete:1").assertExists()
@@ -317,7 +318,8 @@ class DashboardAccountCardsUiTest {
         content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
 
         compose.onNodeWithText("소환 기록").performScrollTo().assertExists()
-        compose.onNodeWithTag("dashboard-summons-notice").assertTextEquals("마지막 로그인 기준")
+        compose.onNodeWithTag("dashboard-summons-notice").assertDoesNotExist()
+        compose.onNodeWithText("마지막 로그인 기준").assertDoesNotExist()
         compose.onNodeWithText("친구 포인트 소환 1,234회").assertExists()
         compose.onNodeWithText("횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.").assertExists()
         compose.onNodeWithTag("dashboard-summons-others-toggle").assertTextEquals("전체 보기 (12)")

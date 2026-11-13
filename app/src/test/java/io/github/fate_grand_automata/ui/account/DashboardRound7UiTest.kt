@@ -199,6 +199,37 @@ class DashboardRound7UiTest {
         compose.onAllNodesWithText("Beast · ★5", substring = true).assertCountEquals(3)
     }
 
+    @Test
+    @Config(sdk = [32], qualifiers = "ko-w840dp-h800dp-hdpi")
+    fun unBeastClassShowsSeparatelyInRowAndFilterMenu() {
+        val rows = listOf("unBeastOlgaMarie", "beastIII", "saber").mapIndexed { index, cls ->
+            val id = index.toLong() + 1
+            DashboardServant(id, AtlasBasic(id, "서번트 $id", "normal", cls, 5), id, id, null, emptyList(), id)
+        }
+        show(fixture.data.copy(servants = rows, inventory = null))
+        val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithText("서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNode(
+            hasText("서번트 1", substring = true) and hasText("언비스트 · ★5", substring = true),
+        ).assertExists()
+        compose.onNode(
+            hasText("서번트 2", substring = true) and hasText("  비스트 · ★5", substring = true),
+        ).assertExists()
+
+        compose.onNode(hasText("모든 클래스") and collection).performClick()
+        compose.onAllNodesWithText("언비스트").assertCountEquals(1)
+        compose.onAllNodesWithText("비스트").assertCountEquals(1)
+
+        compose.onNodeWithText("언비스트").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithText("서번트 2", substring = true).fetchSemanticsNodes().isEmpty()
+        }
+        compose.onNodeWithText("서번트 1", substring = true).assertExists()
+        compose.onNodeWithText("서번트 3", substring = true).assertDoesNotExist()
+    }
+
     @Test fun coinsGroupShowsCountStartsCollapsedExpandsOnTapAndSitsBetweenEventAndOther() {
         val names = fixture.names.copy(
             items = fixture.names.items + mapOf(10010001L to "Coin Alpha", 10020001L to "Coin Beta"),

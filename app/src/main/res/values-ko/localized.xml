@@ -753,6 +753,7 @@
     <string name="portrait_class_pretender">프리텐더</string>
     <string name="portrait_class_shielder">실더</string>
     <string name="portrait_class_beast">비스트</string>
+    <string name="portrait_class_unbeast">언비스트</string>
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
     <string name="fp_sell_title">자동 판매</string>
@@ -963,15 +964,12 @@
     <string name="capture_account_delete">"삭제"</string>
     <string name="capture_account_delete_message">"%1$s 계정과 해당 Chaldea 파일을 삭제할까요?"</string>
     <string name="capture_no_snapshot">"로그 수집을 켠 상태에서 게임을 시작해 주세요"</string>
-    <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"성정석"</string>
     <string name="capture_fragments">"성정편"</string>
     <string name="capture_apples_gold">"황금색 과일"</string>
     <string name="capture_apples_silver">"백은색 과일"</string>
     <string name="capture_apples_bronze">"청동색 과일"</string>
     <string name="capture_apples_copper">"적동색 과일"</string>
-    <string name="capture_sapling">"청동색 묘목"</string>
-    <string name="capture_tickets">"호부"</string>
     <string name="capture_mana_prism">"마나 프리즘"</string>
     <string name="capture_rare_prism">"레어 프리즘"</string>
     <string name="capture_qp">"QP"</string>
@@ -1322,7 +1320,6 @@
     <string name="dashboard_class_score_squares_locks">칸 %1$d / %2$d · 잠금 %3$d / %4$d</string>
     <string name="dashboard_class_score_counts_only">칸 %1$d · 잠금 %2$d</string>
     <string name="dashboard_class_score_complete">완료</string>
-    <string name="dashboard_last_login_notice">마지막 로그인 기준</string>
     <string name="dashboard_summon_history">소환 기록</string>
     <string name="dashboard_friend_point_summons">친구 포인트 소환 %1$s회</string>
     <string name="dashboard_other_summons">기타 소환</string>

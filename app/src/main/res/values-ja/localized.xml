@@ -658,6 +658,7 @@
     <string name="portrait_class_pretender">プリテンダー</string>
     <string name="portrait_class_shielder">シールダー</string>
     <string name="portrait_class_beast">ビースト</string>
+    <string name="portrait_class_unbeast">アンビースト</string>
     <string name="grand_score_not_supported">このサーバーにはグランドスコアがないため、+16の条件を無視します。</string>
 
     <!-- FP auto-sell beta: owner-requested en/ko/ja strings. -->
@@ -719,15 +720,12 @@
     <string name="capture_account_delete">"削除"</string>
     <string name="capture_account_delete_message">"%1$sのアカウントとChaldeaファイルを削除しますか？"</string>
     <string name="capture_no_snapshot">"ログ収集をオンにしてゲームを起動してください"</string>
-    <string name="capture_ap">"AP"</string>
     <string name="capture_quartz">"聖晶石"</string>
     <string name="capture_fragments">"聖晶片"</string>
     <string name="capture_apples_gold">"黄金の果実"</string>
     <string name="capture_apples_silver">"白銀の果実"</string>
     <string name="capture_apples_bronze">"青銅の果実"</string>
     <string name="capture_apples_copper">"赤銅の果実"</string>
-    <string name="capture_sapling">"青銅の苗木"</string>
-    <string name="capture_tickets">"呼符"</string>
     <string name="capture_mana_prism">"マナプリズム"</string>
     <string name="capture_rare_prism">"レアプリズム"</string>
     <string name="capture_qp">"QP"</string>
@@ -1080,7 +1078,6 @@
     <string name="dashboard_class_score_squares_locks">マス %1$d / %2$d · ロック %3$d / %4$d</string>
     <string name="dashboard_class_score_counts_only">マス %1$d · ロック %2$d</string>
     <string name="dashboard_class_score_complete">完了</string>
-    <string name="dashboard_last_login_notice">最終ログイン時点</string>
     <string name="dashboard_summon_history">召喚履歴</string>
     <string name="dashboard_friend_point_summons">フレンドポイント召喚 %1$s回</string>
     <string name="dashboard_other_summons">その他の召喚</string>
