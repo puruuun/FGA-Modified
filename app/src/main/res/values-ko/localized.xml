@@ -1306,20 +1306,6 @@
     <string name="chaldea_sync_status_recovery_blocked">"이전에 중단된 반영을 확인하지 못했습니다(%s). 해결될 때까지 아무것도 쓰지 않으며 백업은 보존됩니다."</string>
     <string name="error_screen_capture_stopped">"화면 캡처가 끊겼습니다. 화면이 꺼지거나, 시스템이나 다른 앱이 화면 캡처를 가져가거나, 화면 설정이 바뀌면 끊깁니다. 재생 버튼을 다시 누르면 화면 캡처 권한을 다시 받습니다."</string>
     <string name="screen_capture_permission_denied">"화면 캡처 권한이 없어 시작하지 않았습니다."</string>
-    <string name="touch_test_title">터치 분리 실험</string>
-    <string name="touch_test_path">경로</string>
-    <string name="touch_test_path_accessibility">접근성</string>
-    <string name="touch_test_path_shizuku">시즈쿠</string>
-    <string name="touch_test_path_root">루트</string>
-    <string name="touch_test_start">시작</string>
-    <string name="touch_test_stop">중지</string>
-    <string name="touch_test_countdown_notice">5초 뒤 시작합니다</string>
-    <string name="touch_test_taps_label">보낸 탭 / 받은 탭</string>
-    <string name="touch_test_drags_label">보낸 드래그 / 받은 드래그</string>
-    <string name="touch_test_cancel_label">취소</string>
-    <string name="touch_test_failure_label">실패</string>
-    <string name="touch_test_note_label">내 터치 메모</string>
-    <string name="touch_test_result_label">결과</string>
     <!-- 계정 대시보드 추가 카드 (#379) -->
     <string name="dashboard_present_box_header">선물함 (%1$d)</string>
     <string name="dashboard_present_box_notice">마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.</string>
