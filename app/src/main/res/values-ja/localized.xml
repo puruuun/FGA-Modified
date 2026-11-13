@@ -1062,4 +1062,20 @@
     <string name="chaldea_sync_status_failed">"反映に失敗しました（%s）。"</string>
     <string name="chaldea_sync_status_owner_changed">"Chaldeaのファイルの所有者または権限が変わり、元に戻せませんでした。バックアップは残っています。"</string>
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
+    <!-- アカウントダッシュボード追加カード (#379) -->
+    <string name="dashboard_present_box_header">プレゼントボックス（%1$d）</string>
+    <string name="dashboard_present_box_notice">最終ログイン以降に受け取ったプレゼントは次回のログイン時に反映されます。</string>
+    <string name="dashboard_present_box_empty">プレゼントなし</string>
+    <string name="dashboard_party_formations">マイパーティ編成</string>
+    <string name="dashboard_party_name">パーティ %1$d</string>
+    <string name="dashboard_party_cost">コスト %1$d</string>
+    <string name="dashboard_party_back_line">後衛</string>
+    <string name="dashboard_party_support">サポート</string>
+    <string name="dashboard_party_empty">空き</string>
+    <string name="dashboard_costumes_header">霊衣（%1$d）</string>
+    <string name="dashboard_costumes_count">霊衣 %1$d着</string>
+    <string name="dashboard_command_code_collection">コマンドコード図鑑</string>
+    <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>
+    <string name="dashboard_command_codes_owned_only">所持 %1$d</string>
+    <string name="dashboard_command_codes_owned_group">所持</string>
 </resources>
