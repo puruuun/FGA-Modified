@@ -8,12 +8,16 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
@@ -96,16 +100,33 @@ class SupportImageLookup(private val source: SupportCatalogSource) {
 }
 
 @Singleton
-class AtlasSupportRepository @Inject constructor(@param:ApplicationContext context: Context) : SupportCatalogSource {
-    private val cache = File(context.cacheDir, "support-catalogs")
-    private val assets = context.assets
+class AtlasSupportRepository internal constructor(
+    private val cache: File,
+    private val versionSource: SupportCatalogVersionSource,
+    private val now: () -> Long = System::currentTimeMillis,
+    private val fetcher: (suspend (String, Int) -> ByteArray?)? = null,
+    private val openAsset: (String) -> InputStream = { error("assets not configured") },
+) : SupportCatalogSource {
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+        versionSource: SupportCatalogVersionSource,
+    ) : this(
+        cache = File(context.cacheDir, "support-catalogs"),
+        versionSource = versionSource,
+        now = System::currentTimeMillis,
+        fetcher = null,
+        openAsset = context.assets::open,
+    )
+
+    private val fileMutexes = ConcurrentHashMap<String, Mutex>()
     @Volatile private var koreanNamesCache: Map<Int, Set<String>>? = null
 
     override suspend fun koreanNames(): Map<Int, Set<String>> {
         koreanNamesCache?.let { return it }
         return withContext(Dispatchers.IO) {
             val names = try {
-                SupportKoreanNames.parse(assets.open(SupportKoreanNames.ASSET).use { it.readBytes().toString(Charsets.UTF_8) })
+                SupportKoreanNames.parse(openAsset(SupportKoreanNames.ASSET).use { it.readBytes().toString(Charsets.UTF_8) })
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -119,11 +140,12 @@ class AtlasSupportRepository @Inject constructor(@param:ApplicationContext conte
 
     override suspend fun servantNames(region: String): Map<Int, Set<String>> = withContext(Dispatchers.IO) {
         require(region in SupportImageCatalog.regions)
-        cache.mkdirs()
         val file = File(cache, "$region-servant-names-v1.json")
-        val cached = if (file.isFile) runCatching { SupportServantNames.parseCache(file.readText()) }.getOrNull() else null
-        if (cached != null && System.currentTimeMillis() - file.lastModified() in 0L..86_400_000L) return@withContext cached
-        val names = try {
+        cachedOrFetch(
+            file = file,
+            region = region,
+            parseCached = SupportServantNames::parseCache,
+        ) {
             val parts = coroutineScope {
                 ServantNameTable.entries.map { table -> async {
                     // Atlas's public Git API serves current raw tables for each game region.
@@ -133,36 +155,89 @@ class AtlasSupportRepository @Inject constructor(@param:ApplicationContext conte
                     SupportServantNames.parse(data, table)
                 } }.awaitAll()
             }
-            SupportServantNames.merge(parts)
-        } catch (e: PortraitImportException) {
-            if (cached != null && e.reason == PortraitImportError.Network) return@withContext cached
-            throw e
+            val names = SupportServantNames.merge(parts)
+            names to SupportServantNames.encodeCache(names)
         }
-        runCatching {
-            val tmp = File(cache, "${file.name}.tmp")
-            tmp.writeText(SupportServantNames.encodeCache(names))
-            tmp.renameTo(file)
-        }
-        names
     }
 
     override suspend fun catalog(kind: SupportCatalogKind, region: String): List<SupportCatalogRecord> = withContext(Dispatchers.IO) {
         require(region in SupportImageCatalog.regions)
-        cache.mkdirs()
         val file = File(cache, "$region-${kind.endpoint}.json")
-        val cached = if (file.isFile) runCatching { SupportImageCatalog.parse(file.readText(), kind) }.getOrNull() else null
-        if (cached != null && System.currentTimeMillis() - file.lastModified() in 0L..86_400_000L) return@withContext cached
-        val data = try {
-            download("https://api.atlasacademy.io/export/$region/basic_${kind.endpoint}.json", 8_388_608)?.toString(Charsets.UTF_8)
+        cachedOrFetch(
+            file = file,
+            region = region,
+            parseCached = { SupportImageCatalog.parse(it, kind) },
+        ) {
+            val data = download("https://api.atlasacademy.io/export/$region/basic_${kind.endpoint}.json", 8_388_608)
+                ?.toString(Charsets.UTF_8)
                 ?: throw PortraitImportException(PortraitImportError.Network)
-        } catch (e: PortraitImportException) {
-            if (cached != null && e.reason == PortraitImportError.Network) return@withContext cached
-            throw e
+            SupportImageCatalog.parse(data, kind) to data
         }
-        val records = SupportImageCatalog.parse(data, kind)
-        // Cache failure must not prevent a successful online search.
-        runCatching { val tmp = File(cache, "${file.name}.tmp"); tmp.writeText(data); tmp.renameTo(file) }
-        records
+    }
+
+    private suspend fun <T> cachedOrFetch(
+        file: File,
+        region: String,
+        parseCached: (String) -> T,
+        fetch: suspend () -> Pair<T, String>,
+    ): T = fileMutexes.getOrPut(file.name) { Mutex() }.withLock {
+        cache.mkdirs()
+        val cached = if (file.isFile) runCatching { parseCached(file.readText()) }.getOrNull() else null
+        val regionHash = if (region in SupportCatalogFreshness.VERSIONED_REGIONS) {
+            versionSource.current()?.get(region)
+        } else {
+            null
+        }
+        val hashFile = File(cache, "${file.name}.hash")
+        val attemptFile = File(cache, "${file.name}.attempt")
+        val nowMs = now()
+        when (
+            SupportCatalogFreshness.decide(
+                region = region,
+                hasCached = cached != null,
+                lastModifiedMs = file.lastModified(),
+                regionHash = regionHash,
+                recordedHash = readSidecar(hashFile),
+                lastAttemptMs = readSidecar(attemptFile)?.toLongOrNull(),
+                nowMs = nowMs,
+            )
+        ) {
+            SupportCatalogAction.UseCache -> cached!!
+            SupportCatalogAction.Throttled -> cached ?: throw PortraitImportException(PortraitImportError.Network)
+            SupportCatalogAction.Download -> {
+                if (regionHash != null) {
+                    runCatching { writeSidecar(attemptFile, nowMs.toString()) }
+                }
+                val (value, encoded) = try {
+                    fetch()
+                } catch (e: PortraitImportException) {
+                    if (cached != null && e.reason == PortraitImportError.Network) return@withLock cached
+                    throw e
+                }
+                // Cache failure must not prevent a successful online search.
+                runCatching {
+                    writeSidecar(file, encoded)
+                    if (nowMs >= 0L) file.setLastModified(nowMs)
+                    if (regionHash != null) {
+                        writeSidecar(hashFile, regionHash)
+                    } else {
+                        hashFile.delete()
+                    }
+                }
+                value
+            }
+        }
+    }
+
+    private fun readSidecar(file: File): String? = runCatching {
+        if (!file.isFile) return null
+        file.readText().trim().takeIf { it.isNotEmpty() }
+    }.getOrNull()
+
+    private fun writeSidecar(target: File, content: String) {
+        val tmp = File(cache, "${target.name}.tmp")
+        tmp.writeText(content)
+        check(tmp.renameTo(target) || (target.delete() && tmp.renameTo(target)))
     }
 
     override suspend fun detail(kind: SupportCatalogKind, region: String, id: Int): String? {
@@ -176,33 +251,47 @@ class AtlasSupportRepository @Inject constructor(@param:ApplicationContext conte
         return download(url, 1_048_576) ?: throw PortraitImportException(PortraitImportError.Image)
     }
 
-    private suspend fun download(url: String, maxBytes: Int): ByteArray? = withContext(Dispatchers.IO) {
-        coroutineContext.ensureActive()
-        val connection = URL(url).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 20_000
-            connection.instanceFollowRedirects = false
-            connection.setRequestProperty("User-Agent", "FGA-support-images")
-            when (connection.responseCode) {
-                HttpURLConnection.HTTP_OK -> Unit
-                HttpURLConnection.HTTP_NOT_FOUND -> return@withContext null
-                else -> throw PortraitImportException(PortraitImportError.Network)
+    private suspend fun download(url: String, maxBytes: Int): ByteArray? =
+        fetcher?.invoke(url, maxBytes)
+            ?: withContext(Dispatchers.IO) {
+                downloadPublicBytes(url, maxBytes) { coroutineContext.ensureActive() }
             }
-            connection.inputStream.use { input ->
-                val output = ByteArrayOutputStream()
-                val buffer = ByteArray(8192)
-                while (true) {
-                    coroutineContext.ensureActive()
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    if (output.size() + count > maxBytes) throw PortraitImportException(PortraitImportError.Metadata)
-                    output.write(buffer, 0, count)
+
+    internal companion object {
+        fun downloadPublicBytes(
+            url: String,
+            maxBytes: Int,
+            checkActive: () -> Unit = {},
+        ): ByteArray? {
+            checkActive()
+            val connection = URL(url).openConnection() as HttpURLConnection
+            return try {
+                connection.connectTimeout = 10_000
+                connection.readTimeout = 20_000
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty("User-Agent", "FGA-support-images")
+                when (connection.responseCode) {
+                    HttpURLConnection.HTTP_OK -> Unit
+                    HttpURLConnection.HTTP_NOT_FOUND -> return null
+                    else -> throw PortraitImportException(PortraitImportError.Network)
                 }
-                output.toByteArray()
+                connection.inputStream.use { input ->
+                    val output = ByteArrayOutputStream()
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        checkActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (output.size() + count > maxBytes) throw PortraitImportException(PortraitImportError.Metadata)
+                        output.write(buffer, 0, count)
+                    }
+                    output.toByteArray()
+                }
+            } catch (e: IOException) {
+                throw PortraitImportException(PortraitImportError.Network)
+            } finally {
+                connection.disconnect()
             }
-        } catch (e: IOException) {
-            throw PortraitImportException(PortraitImportError.Network)
-        } finally { connection.disconnect() }
+        }
     }
 }

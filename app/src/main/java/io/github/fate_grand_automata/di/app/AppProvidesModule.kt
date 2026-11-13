@@ -22,6 +22,12 @@ import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import javax.inject.Singleton
 import javax.inject.Named
 import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.capture.AtlasVersions
+import io.github.fate_grand_automata.util.portraits.AtlasSupportRepository
+import io.github.fate_grand_automata.util.portraits.PortraitImportError
+import io.github.fate_grand_automata.util.portraits.PortraitImportException
+import io.github.fate_grand_automata.util.portraits.SupportCatalogVersionSource
+import java.io.File
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -73,4 +79,19 @@ class AppProvidesModule {
                 Context.MODE_PRIVATE
             )
         )
+
+    @Singleton
+    @Provides
+    fun provideSupportCatalogVersionSource(@ApplicationContext context: Context): SupportCatalogVersionSource {
+        val versions = AtlasVersions(
+            directory = File(context.filesDir, "capture/names"),
+            download = { url ->
+                require(url == AtlasVersions.INFO_URL)
+                AtlasSupportRepository.downloadPublicBytes(url, 65_536)?.toString(Charsets.UTF_8)
+                    ?: throw PortraitImportException(PortraitImportError.Network)
+            },
+            now = System::currentTimeMillis,
+        )
+        return SupportCatalogVersionSource { versions.current() }
+    }
 }
