@@ -85,3 +85,13 @@ The chain can also be dragged forward **transitively**: any dependency pulling a
 
 When a bump fails, read the `checkAarMetadata` output first — it names the required AGP
 version and compileSdk directly, much faster than bisecting versions.
+
+## CI checks and Android Lint
+
+- **Workflows by path:**
+  - `PR Build` (`.github/workflows/pr-build.yml`) and `Main CI` (`.github/workflows/main-ci.yml`) run unit tests and `:app:assembleCi` on code changes (ignoring docs, `wiki/`, `docs/`, and markdown files).
+  - `Android Lint` (`.github/workflows/android-lint.yml`) runs `./gradlew :app:lintCi :prefs:lintCi` on pull requests touching `app/**`, `prefs/**`, `gradle/**`, `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`, or `.github/workflows/android-lint.yml`.
+  - `Manual Build` (`.github/workflows/docs-check.yml`) runs `mkdocs build --strict` on pull requests and `main` pushes touching `wiki/**`, `mkdocs.yml`, `tools/docs-site/**`, or `.github/workflows/docs-check.yml`.
+- **Lint baseline:** `app/lint-baseline.xml` and `prefs/lint-baseline.xml` record pre-existing findings, and `abortOnError = true` (with `StringFormatCount` promoted to error) makes CI fail only on findings not in the baseline.
+- **Disabled dependency-version lint checks:** `NewerVersionAvailable`, `GradleDependency`, `AndroidGradlePluginVersion`, and `SimilarGradleDependency` are disabled because `./gradlew dependencyUpdates` handles dependency versions, and baselines must not contain machine-specific paths (check for `$HOME` after regenerating).
+- **Regenerating a baseline:** delete the module's `lint-baseline.xml` and run `./gradlew :app:lintCi :prefs:lintCi` twice (the first run writes the new baseline and exits with a failure; the second verifies it passes). Regenerate a baseline only intentionally (for example after an AGP/lint upgrade or intentional cleanup) — never to hide a new error.
