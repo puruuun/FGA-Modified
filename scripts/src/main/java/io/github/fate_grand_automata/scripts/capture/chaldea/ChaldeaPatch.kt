@@ -22,7 +22,8 @@ data class ChaldeaCollectionNumbers(
 
 /**
  * What FGA writes into one Chaldea user, built from the stored account tables (items, mystic codes, class boards,
- * gender, servant coins, craft essences, command codes). A null map means the table (or required collection number
+ * gender, servant coins, craft essences, command codes). A craft essence's level and limit break are the highest over
+ * its held copies in `userSvt` and the storage room table `userSvtStorage`. A null map means the table (or required collection number
  * list) was absent, so that Chaldea field is left alone. `itemsLeft` and servant growth are not touched.
  */
 data class ChaldeaPatch(
@@ -158,8 +159,9 @@ data class ChaldeaPatch(
                 out
             }
             val svtCollectionRows = rows(state, "userSvtCollection")
-            val svtRows = rows(state, "userSvt")
-            val craftEssences = if (numbers.equips.isEmpty() || (svtCollectionRows == null && svtRows == null)) {
+            val hasSvtTables = svtCollectionRows != null ||
+                rows(state, "userSvt") != null || rows(state, "userSvtStorage") != null
+            val craftEssences = if (numbers.equips.isEmpty() || !hasSvtTables) {
                 null
             } else {
                 val statusByCol = LinkedHashMap<Long, Long>()
@@ -174,13 +176,16 @@ data class ChaldeaPatch(
                 val maxLv = LinkedHashMap<Long, Long>()
                 val maxLimit = LinkedHashMap<Long, Long>()
                 val heldCols = LinkedHashSet<Long>()
-                svtRows?.forEach { row ->
-                    val o = row as? JsonObject ?: return@forEach
-                    val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
-                    val colNo = numbers.equips[svtId] ?: return@forEach
-                    heldCols += colNo
-                    (o["lv"] as? JsonPrimitive)?.longOrNull?.let { maxLv.merge(colNo, it, ::maxOf) }
-                    (o["limitCount"] as? JsonPrimitive)?.longOrNull?.let { maxLimit.merge(colNo, it, ::maxOf) }
+                // Held copies live in userSvt and in the storage room (userSvtStorage); one table at a time.
+                for (table in listOf("userSvt", "userSvtStorage")) {
+                    rows(state, table)?.forEach { row ->
+                        val o = row as? JsonObject ?: return@forEach
+                        val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                        val colNo = numbers.equips[svtId] ?: return@forEach
+                        heldCols += colNo
+                        (o["lv"] as? JsonPrimitive)?.longOrNull?.let { maxLv.merge(colNo, it, ::maxOf) }
+                        (o["limitCount"] as? JsonPrimitive)?.longOrNull?.let { maxLimit.merge(colNo, it, ::maxOf) }
+                    }
                 }
                 val out = LinkedHashMap<Long, CeStatus>()
                 for (colNo in (statusByCol.keys + heldCols)) {

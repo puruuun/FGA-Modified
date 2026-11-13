@@ -399,6 +399,47 @@ class ChaldeaSyncLogicTest {
         assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 15L, limitCount = 2L)), p.craftEssences)
     }
 
+    @Test fun craftEssenceBestCopyOnlyInStorageUsesStorageValues() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":9300030,"status":2}]""",
+            "userSvt" to """[{"svtId":9300030,"lv":1,"limitCount":0}]""",
+            "userSvtStorage" to """[{"svtId":9300030,"lv":55,"limitCount":4}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage2Numbers)
+        assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 55L, limitCount = 4L)), p.craftEssences)
+    }
+
+    @Test fun craftEssenceLvAndLimitCountAreMaxedSeparatelyAcrossBothTables() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":9300030,"status":2}]""",
+            "userSvt" to """[{"svtId":9300030,"lv":60,"limitCount":1}]""",
+            "userSvtStorage" to """[{"svtId":9300030,"lv":20,"limitCount":4}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage2Numbers)
+        assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 60L, limitCount = 4L)), p.craftEssences)
+    }
+
+    @Test fun craftEssenceHeldOnlyInStorageAndMissingFromCollectionGetsStatus2() {
+        val st = state(
+            "userGame" to game,
+            "userSvtStorage" to """[{"svtId":9300030,"lv":15,"limitCount":2}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage2Numbers)
+        assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 15L, limitCount = 2L)), p.craftEssences)
+    }
+
+    @Test fun craftEssenceWithoutStorageTableBehavesAsBefore() {
+        val st = state(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":9300030,"status":2}]""",
+            "userSvt" to """[{"svtId":9300030,"lv":15,"limitCount":2},{"svtId":9300030,"lv":30,"limitCount":1}]""",
+        )
+        val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage2Numbers)
+        assertEquals(mapOf(33L to ChaldeaPatch.CeStatus(status = 2L, lv = 30L, limitCount = 2L)), p.craftEssences)
+    }
+
     @Test fun commandCodesCountCopiesDefaultStatusAndCountDistinctUnmapped() {
         val st = state(
             "userGame" to game,
