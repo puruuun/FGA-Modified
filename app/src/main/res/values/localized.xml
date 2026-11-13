@@ -1116,6 +1116,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_source_manual_quest">Quests played by hand</string>
     <string name="capture_source_missions">Missions</string>
     <string name="capture_source_other">Other</string>
+    <string name="capture_source_external_payment">External payment</string>
     <string name="capture_log_confirm_clear">Delete all records?</string>
     <string name="tools_chaldea_export">Export Chaldea file</string>
     <string name="tools_choose_account">Choose an account</string>

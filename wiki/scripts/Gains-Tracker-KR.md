@@ -185,7 +185,7 @@ Atlas KR의 공개 아이템·서번트·개념예장·마술예장 목록을 �
 
 카드 이름과 얼굴은 Atlas KR의 공개 `basic_svt`(모든 카드 종류, 약 2 MB)·`basic_command_code` 목록을 사용합니다. 기록의 계정이 JP이거나 KR에 없는 서번트·개념예장이 있으면 JP의 `basic_servant`·`basic_equip` 목록에서 보충합니다. 종화는 같은 이름 뒤에 클래스 이름을 괄호로 붙이며, 모든 비스트 계열은 **비스트**, ALL 클래스는 **전체**로 표시합니다. 이름이 없으면 `#ID`로 표시합니다. 목록은 앱 내부 `capture/names/`에 보관하며 화면이 필요로 할 때 Atlas 데이터 버전을 확인해 바뀐 경우에만 다시 내려받고, 버전을 읽지 못하면 파일이 없거나 받은 지 7일 이상일 때 파일별 하루 최대 한 번 갱신을 시도합니다. 카드 얼굴은 표시할 때 없는 파일만 받아 서번트·개념예장·종화·포우는 `capture/icons/servants/`, 커맨드 코드는 `capture/icons/commandCodes/`에 보관합니다. **로그 수집 데이터 삭제** 후에도 공개 목록과 아이콘은 남습니다.
 
-출처는 API 경로로 추정합니다. KR 응답에서 확인된 경로는 `present/receive`(선물함)와 `battle/result`(수동 퀘스트)입니다. 나머지 접두사(`shop/`에서 `shop/Verify` 제외, `gacha/`, `boxGacha/`, `card/`, `svt` 계열, `item/recover`, `eventMission/`, `mission/`)는 추정 분류이며 게임 업데이트나 실제 응답에 따라 달라질 수 있습니다. 강화의 `svt` 계열에는 `svt/`뿐 아니라 `svtCombine/`, `svtSkill/`처럼 접두사를 공유하는 경로도 포함합니다. `shop/Verify`와 모르는 경로는 기타로 남습니다.
+출처는 API 경로로 추정합니다. KR 응답에서 확인된 경로는 `present/receive`(선물함)와 `battle/result`(수동 퀘스트)입니다. 나머지 접두사(`shop/`에서 `shop/Verify` 제외, `gacha/`, `boxGacha/`, `card/`, `svt` 계열, `item/recover`, `eventMission/`, `mission/`)는 추정 분류이며 게임 업데이트나 실제 응답에 따라 달라질 수 있습니다. 강화의 `svt` 계열에는 `svt/`뿐 아니라 `svtCombine/`, `svtSkill/`처럼 접두사를 공유하는 경로도 포함합니다. `shop/Verify`와 모르는 경로는 기타로 남습니다. 웹 스토어 결제 반영 응답(`externalPayment/reflect`)은 **트럭**으로 표시되며 필터에서는 기타로 집계됩니다.
 
 열린 기간은 앱 내부 `capture/accounts/<userId>/outside-period.json`에 저장되며 프로세스가 종료되어도 다음 초기화 때 이어집니다. 확정된 기록은 별도의 `outside-log.json`에 설정한 보관 개수만큼 최신 기록을 보관합니다. 진행 중 기록 다음에 전투 로그와 함께 종료 시각 순으로 표시합니다. 폭 840dp 이상에서는 목록과 상세가 나란히 표시됩니다.
 

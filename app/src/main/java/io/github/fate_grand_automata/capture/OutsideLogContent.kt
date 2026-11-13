@@ -88,10 +88,17 @@ internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: 
     }
 }
 
+private val otherSourceLabels = mapOf(
+    "externalPayment/reflect" to R.string.capture_source_external_payment,
+)
+
 @Composable
 private fun sourceName(source: ChangeSource): String {
-    val label = sourceFilterLabel(source.logSource())
-    return if (!source.script && source.group == ChangeSource.Group.Other) "$label · ${source.path.orEmpty()}" else label
+    if (!source.script && source.group == ChangeSource.Group.Other) {
+        otherSourceLabels[source.path]?.let { return stringResource(it) }
+        return "${sourceFilterLabel(source.logSource())} · ${source.path.orEmpty()}"
+    }
+    return sourceFilterLabel(source.logSource())
 }
 
 @Composable
