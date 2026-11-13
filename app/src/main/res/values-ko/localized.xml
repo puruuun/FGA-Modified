@@ -1304,4 +1304,18 @@
     <string name="chaldea_sync_status_failed">"반영에 실패했습니다(%s)."</string>
     <string name="chaldea_sync_status_owner_changed">"Chaldea 파일의 소유자나 권한이 바뀌어 되돌리지 못했습니다. 백업은 남아 있습니다."</string>
     <string name="chaldea_sync_status_recovery_blocked">"이전에 중단된 반영을 확인하지 못했습니다(%s). 해결될 때까지 아무것도 쓰지 않으며 백업은 보존됩니다."</string>
+    <string name="touch_test_title">터치 분리 실험</string>
+    <string name="touch_test_path">경로</string>
+    <string name="touch_test_path_accessibility">접근성</string>
+    <string name="touch_test_path_shizuku">시즈쿠</string>
+    <string name="touch_test_path_root">루트</string>
+    <string name="touch_test_start">시작</string>
+    <string name="touch_test_stop">중지</string>
+    <string name="touch_test_countdown_notice">5초 뒤 시작합니다</string>
+    <string name="touch_test_taps_label">보낸 탭 / 받은 탭</string>
+    <string name="touch_test_drags_label">보낸 드래그 / 받은 드래그</string>
+    <string name="touch_test_cancel_label">취소</string>
+    <string name="touch_test_failure_label">실패</string>
+    <string name="touch_test_note_label">내 터치 메모</string>
+    <string name="touch_test_result_label">결과</string>
 </resources>
