@@ -241,6 +241,58 @@ class DashboardAccountCardsUiTest {
     }
 
     @Test
+    fun classScoreCollapsesToThreeBoardsAndTogglesWithFiveBoards() {
+        val boards = (1L..5L).map { id ->
+            DashboardClassBoard(id, "보드 $id", null, acquired = id.toInt(), unlockedLocks = 1, squareTotal = 10, lockTotal = 2)
+        }
+        val data = fixture.data.copy(classBoards = boards)
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+
+        compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
+        (1L..3L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").assertExists()
+            compose.onNodeWithText("보드 $id").assertExists()
+        }
+        (4L..5L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").assertDoesNotExist()
+            compose.onNodeWithText("보드 $id").assertDoesNotExist()
+        }
+        compose.onNodeWithTag("dashboard-class-score-toggle").assertTextEquals("전체 보기 (5)")
+
+        compose.onNodeWithTag("dashboard-class-score-toggle").performScrollTo().performClick()
+        (1L..5L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").performScrollTo().assertExists()
+            compose.onNodeWithText("보드 $id").assertExists()
+        }
+        compose.onNodeWithTag("dashboard-class-score-toggle").performScrollTo().assertTextEquals("접기")
+
+        compose.onNodeWithTag("dashboard-class-score-toggle").performClick()
+        (1L..3L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").assertExists()
+        }
+        (4L..5L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").assertDoesNotExist()
+        }
+        compose.onNodeWithTag("dashboard-class-score-toggle").assertTextEquals("전체 보기 (5)")
+    }
+
+    @Test
+    fun classScoreHidesToggleWhenThreeOrFewerBoards() {
+        val boards = (1L..3L).map { id ->
+            DashboardClassBoard(id, "보드 $id", null, acquired = id.toInt(), unlockedLocks = 1, squareTotal = 10, lockTotal = 2)
+        }
+        val data = fixture.data.copy(classBoards = boards)
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+
+        compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
+        (1L..3L).forEach { id ->
+            compose.onNodeWithTag("class-board:$id").performScrollTo().assertExists()
+            compose.onNodeWithText("보드 $id").assertExists()
+        }
+        compose.onNodeWithTag("dashboard-class-score-toggle").assertDoesNotExist()
+    }
+
+    @Test
     fun summonHistoryShowsFriendPointOtherShowAllAndCollapsedRecentLog() {
         val others = (1..12).map { index ->
             DashboardSummon(
