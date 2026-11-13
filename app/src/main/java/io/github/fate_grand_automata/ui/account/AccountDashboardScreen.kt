@@ -495,8 +495,10 @@ private fun InventoryGroup.label() = when (this) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.testTag("dashboard-class-score-notice"),
     )
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val shown = if (expanded) boards else boards.take(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (board in boards) {
+        for (board in shown) {
             Row(
                 Modifier.fillMaxWidth().testTag("class-board:${board.id}"),
                 verticalAlignment = Alignment.CenterVertically,
@@ -557,6 +559,17 @@ private fun InventoryGroup.label() = when (this) {
                     }
                 }
             }
+        }
+    }
+    if (expanded || boards.size > 3) {
+        TextButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier.testTag("dashboard-class-score-toggle"),
+        ) {
+            Text(
+                if (expanded) stringResource(R.string.friends2_collapse)
+                else stringResource(R.string.dashboard_show_all, boards.size),
+            )
         }
     }
 }

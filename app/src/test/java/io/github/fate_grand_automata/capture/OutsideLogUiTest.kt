@@ -158,4 +158,24 @@ class OutsideLogUiTest {
         } }
         composeRule.onNode(hasText("오전", substring = true) or hasText("오후", substring = true)).assertIsDisplayed()
     }
+
+    @Test
+    @Config(qualifiers = "ko-w360dp-h800dp-hdpi")
+    fun externalPaymentReflectShowsTruckInCardAndDetailWhileOtherPathsKeepPrefix() {
+        val period = OutsidePeriod("fictionalA", 10)
+            .add(ChangeSource.of("externalPayment/reflect"), AccountDelta(chargeStone = 86, freeStone = 82), 11)
+            .add(ChangeSource.of("home/top"), AccountDelta(qp = 1000), 12)
+        val entry = outsideFixture().copy(period = period)
+        composeRule.setContent { FGATheme(false) {
+            LogScreenContent(emptyList(), {}, {}, outsideEntries = listOf(entry))
+        } }
+        composeRule.onNodeWithText("트럭 · 기타 · home/top").assertIsDisplayed()
+        composeRule.onAllNodes(hasText("externalPayment/reflect", substring = true)).assertCountEquals(0)
+        composeRule.onNodeWithTag("log-card:outside:${entry.id}").performClick()
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("outside-source:Other:externalPayment/reflect"))
+        composeRule.onNode(hasText("트럭") and hasAnyAncestor(hasTestTag("outside-source:Other:externalPayment/reflect"))).assertIsDisplayed()
+        composeRule.onAllNodes(hasText("externalPayment/reflect", substring = true)).assertCountEquals(0)
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("outside-source:Other:home/top"))
+        composeRule.onNode(hasText("기타 · home/top") and hasAnyAncestor(hasTestTag("outside-source:Other:home/top"))).assertIsDisplayed()
+    }
 }
