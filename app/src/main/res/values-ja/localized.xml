@@ -803,6 +803,7 @@
     <string name="capture_source_manual_quest">手動クエスト</string>
     <string name="capture_source_missions">ミッション</string>
     <string name="capture_source_other">その他</string>
+    <string name="capture_source_external_payment">外部決済</string>
     <string name="capture_log_confirm_clear">すべての記録を削除しますか？</string>
     <string name="tools_chaldea_export">Chaldeaファイルをエクスポート</string>
     <string name="tools_choose_account">アカウントを選択</string>
