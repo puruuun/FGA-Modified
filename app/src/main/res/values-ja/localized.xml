@@ -1064,6 +1064,20 @@
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
     <string name="error_screen_capture_stopped">"画面キャプチャが停止しました。画面がオフになったとき、システムや他のアプリが画面キャプチャを使ったとき、画面の設定が変わったときに停止します。再生ボタンをもう一度押すと画面キャプチャの許可を取り直します。"</string>
     <string name="screen_capture_permission_denied">"画面キャプチャの許可がないため開始しませんでした。"</string>
+    <string name="touch_test_title">タッチ分離テスト</string>
+    <string name="touch_test_path">経路</string>
+    <string name="touch_test_path_accessibility">ユーザー補助</string>
+    <string name="touch_test_path_shizuku">Shizuku</string>
+    <string name="touch_test_path_root">ルート</string>
+    <string name="touch_test_start">開始</string>
+    <string name="touch_test_stop">停止</string>
+    <string name="touch_test_countdown_notice">5秒後に開始します</string>
+    <string name="touch_test_taps_label">送信タップ / 受信タップ</string>
+    <string name="touch_test_drags_label">送信ドラッグ / 受信ドラッグ</string>
+    <string name="touch_test_cancel_label">キャンセル</string>
+    <string name="touch_test_failure_label">失敗</string>
+    <string name="touch_test_note_label">自分のタッチメモ</string>
+    <string name="touch_test_result_label">結果</string>
     <!-- アカウントダッシュボード追加カード (#379) -->
     <string name="dashboard_present_box_header">プレゼントボックス（%1$d）</string>
     <string name="dashboard_present_box_notice">最終ログイン以降に受け取ったプレゼントは次回のログイン時に反映されます。</string>

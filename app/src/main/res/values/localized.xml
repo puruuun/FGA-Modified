@@ -1375,6 +1375,20 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="chaldea_sync_status_owner_changed">"The owner or permissions of the Chaldea files changed and could not be restored. The backup is kept."</string>
     <string name="chaldea_sync_status_recovery_blocked">"A sync that was interrupted earlier could not be checked (%s). Nothing is written until this is resolved; the backup is kept."</string>
     <string name="screen_capture_permission_denied">"Screen capture permission was not granted, so nothing was started."</string>
+    <string name="touch_test_title">Touch separation test</string>
+    <string name="touch_test_path">Path</string>
+    <string name="touch_test_path_accessibility">Accessibility</string>
+    <string name="touch_test_path_shizuku">Shizuku</string>
+    <string name="touch_test_path_root">Root</string>
+    <string name="touch_test_start">Start</string>
+    <string name="touch_test_stop">Stop</string>
+    <string name="touch_test_countdown_notice">Starting in 5 seconds</string>
+    <string name="touch_test_taps_label">Sent taps / received taps</string>
+    <string name="touch_test_drags_label">Sent drags / received drags</string>
+    <string name="touch_test_cancel_label">Cancelled</string>
+    <string name="touch_test_failure_label">Failures</string>
+    <string name="touch_test_note_label">My touch note</string>
+    <string name="touch_test_result_label">Result</string>
     <!-- Dashboard account cards (#379) -->
     <string name="dashboard_present_box_header">Present box (%1$d)</string>
     <string name="dashboard_present_box_notice">Gifts received after the last login are shown after the next login.</string>

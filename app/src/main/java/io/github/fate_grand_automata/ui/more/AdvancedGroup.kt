@@ -33,6 +33,7 @@ import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
+import io.github.fate_grand_automata.ui.touchtest.TouchTestActivity
 
 fun LazyListScope.advancedGroup(
     prefs: PrefsCore,
@@ -116,6 +117,20 @@ fun LazyListScope.advancedGroup(
             summary = stringResource(R.string.p_debug_mode_summary),
             icon = icon(R.drawable.ic_bug)
         )
+    }
+
+    item {
+        val debugMode by prefs.debugMode.remember()
+        if (debugMode) {
+            val context = LocalContext.current
+            Preference(
+                title = stringResource(R.string.touch_test_title),
+                icon = icon(R.drawable.ic_bug),
+                onClick = {
+                    context.startActivity(Intent(context, TouchTestActivity::class.java))
+                }
+            )
+        }
     }
 
     item {

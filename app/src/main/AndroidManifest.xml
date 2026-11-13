@@ -55,6 +55,14 @@
             android:exported="false"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- Touch separation spike (#387): resizeable so it can be placed in split screen.
+             TouchInjectorService (Shizuku UserService) and TouchRootService (libsu RootService, like ChaldeaRootService)
+             are started directly in their privileged processes and need no manifest service entries. -->
+        <activity
+            android:name=".ui.touchtest.TouchTestActivity"
+            android:exported="false"
+            android:label="@string/touch_test_title"
+            android:resizeableActivity="true" />
 
         <service
             android:name=".capture.CaptureVpnService"
