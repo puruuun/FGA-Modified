@@ -37,12 +37,3 @@
     private kotlinx.coroutines.CoroutineScope settingsScope;
     private kotlinx.coroutines.Job settingsJob;
 }
-
-# Touch separation spike (#387): Shizuku starts TouchInjectorService by class name in a shell process and libsu
-# starts TouchRootService in a root process. Keep the services and AIDL stub intact.
--keep class io.github.fate_grand_automata.touch.TouchInjector { *; }
--keep class io.github.fate_grand_automata.touch.TouchInjectorService { *; }
--keep class io.github.fate_grand_automata.touch.TouchRootService { *; }
--keep class io.github.fate_grand_automata.touch.ITouchInjector { *; }
--keep class io.github.fate_grand_automata.touch.ITouchInjector$Stub { *; }
--keep class io.github.fate_grand_automata.touch.ITouchInjector$Stub$Proxy { *; }
