@@ -1453,6 +1453,11 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(1, fx2.count("commit"))
         assertTrue(fx2.store.read().stopped)
         assertEquals(ChaldeaSyncStatus.Stopped(10), fx2.sch.status.value)
+        val fx2OpenedAtStop = fx2.opened
+        val fx2StatesAtStop = fx2.count("state")
+        fx2.advance(4 * 3_600_000L)
+        assertEquals(fx2OpenedAtStop, fx2.opened, "no openSession() calls after stop")
+        assertEquals(fx2StatesAtStop, fx2.count("state"), "no state() calls after stop")
 
         // (3) Re-check returns Visible -> no close, no write, stops with pending intact.
         val fx3 = Fx(ts, File(tmp, "fx3"))
@@ -1471,6 +1476,11 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(0, fx3.count("commit"))
         assertTrue("c" in fx3.store.read().pending)
         assertTrue(fx3.store.read().stopped)
+        val fx3OpenedAtStop = fx3.opened
+        val fx3StatesAtStop = fx3.count("state")
+        fx3.advance(4 * 3_600_000L)
+        assertEquals(fx3OpenedAtStop, fx3.opened, "no openSession() calls after stop")
+        assertEquals(fx3StatesAtStop, fx3.count("state"), "no state() calls after stop")
 
         // (4) forceStop fails (still Background) -> no write, stops with pending intact.
         val fx4 = Fx(ts, File(tmp, "fx4"))
@@ -1485,6 +1495,11 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(0, fx4.count("commit"))
         assertTrue("d" in fx4.store.read().pending)
         assertTrue(fx4.store.read().stopped)
+        val fx4OpenedAtStop = fx4.opened
+        val fx4StatesAtStop = fx4.count("state")
+        fx4.advance(4 * 3_600_000L)
+        assertEquals(fx4OpenedAtStop, fx4.opened, "no openSession() calls after stop")
+        assertEquals(fx4StatesAtStop, fx4.count("state"), "no state() calls after stop")
     }
 
     @Test fun inactiveBackgroundWithNeverOptionDoesNotCloseOrWriteAndStops() = fx {
@@ -1646,5 +1661,203 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(ChaldeaSyncNowOutcome.Done, outcome)
         assertEquals(1, count("commit"))
         assertTrue(store.read().stopped, "syncNow must not touch stopped")
+    }
+
+    @Test fun fgoVisibleWithChaldeaNotRunningWritesAfterQuietTimeWithoutStopping() = fx {
+        account("a")
+        gameVisible = true
+        stateFn = { _, _ -> ChaldeaRunState.NotRunning }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(59_000)
+        assertEquals(0, opened)
+        advance(2_000)
+        assertEquals(1, commits.size)
+        assertFalse(store.read().stopped)
+        assertTrue(store.read().pending.isEmpty())
+        assertIs<ChaldeaSyncStatus.Synced>(kr)
+    }
+
+    @Test fun alternatingChaldeaVisibleAndFgoVisibleNeverStopsThenClosesAndWritesWhenBackgrounded() = fx {
+        account("a")
+        closeMinutes = 30
+        stopMinutes = 10
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 100)
+
+        // Alternate Chaldea Visible and FGO Visible (with Chaldea Background) every 3 min for 24 min (> 10 min stopMinutes).
+        repeat(4) {
+            stateFn = { _, _ -> ChaldeaRunState.Background }
+            gameVisible = true
+            advance(3 * MIN)
+            stateFn = { _, _ -> ChaldeaRunState.Visible }
+            gameVisible = false
+            advance(3 * MIN)
+        }
+        // Let one Visible poll reset backgroundSince cleanly, then stay Background with FGO visible for closeMinutes.
+        advance(5 * MIN)
+        assertFalse(store.read().stopped)
+        assertEquals(0, count("forceStop"))
+        assertEquals(0, count("commit"))
+
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        gameVisible = true
+        advance(35 * MIN)
+        assertEquals(1, count("forceStop"))
+        assertEquals(1, count("commit"))
+        assertFalse(store.read().stopped)
+        assertTrue(store.read().pending.isEmpty())
+    }
+
+    @Test fun screenOffWithFgoVisibleAndChaldeaBackgroundIsInactiveAndEndsAtStopMinutes() = fx {
+        account("a")
+        screenOn = false
+        gameVisible = true
+        closeMinutes = 30
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(9 * MIN + 30_000)
+        assertFalse(store.read().stopped)
+        assertEquals(0, count("forceStop"))
+        assertEquals(0, count("commit"))
+
+        advance(MIN)
+        assertEquals(0, gameVisibleCalls, "must not query gameVisible while screen is off")
+        assertEquals(1, count("forceStop"))
+        assertEquals(1, count("commit"))
+        assertTrue(store.read().stopped)
+        assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+    }
+
+    @Test fun newSchedulerWithStoppedTrueStartsNothingUntilSaveRestartsIt() = fx {
+        account("a")
+        store.update { it.copy(pending = setOf("a"), stopped = true) }
+
+        val sch2 = ChaldeaSyncScheduler(
+            ts.backgroundScope, env, source, store, backups,
+            clock = { ts.testScheduler.currentTime + clockOffset }, wallClock = { wall++ },
+        )
+        sch2.onSettingsChanged()
+        advance(30 * MIN)
+        assertEquals(0, opened)
+        assertTrue(store.read().stopped)
+
+        sch2.onAccountSaved(listOf("a"))
+        advance(59_000)
+        assertEquals(0, opened, "quiet time still applies after restart")
+        advance(2_000)
+        assertEquals(1, commits.size)
+        assertFalse(store.read().stopped)
+        assertTrue(store.read().pending.isEmpty())
+    }
+
+    @Test fun saveArrivingDuringFinalPassOfSessionEndIsNotLost() = fx {
+        account("a", num = 1)
+        closeMinutes = 30
+        commitDelay = 5_000
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(9 * MIN + 30_000)
+        assertFalse(store.read().stopped)
+
+        // At 10m the poll enters endSession -> forceStop -> writePass -> commit (suspended for 5s).
+        advance(31_000)
+        assertEquals(1, commits.size)
+
+        // A new save arrives during the final pass while commit is suspended.
+        account("b", code = "222", server = ChaldeaServer.Jp)
+        sch.onAccountSaved(listOf("b"))
+        ts.runCurrent()
+
+        // Final pass completes: session must not stop and must write "b" on the next pass.
+        advance(10_000)
+        assertFalse(store.read().stopped)
+        assertNotEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+        assertTrue("b" in store.read().pending)
+
+        commitDelay = 0
+        advance(2 * MIN)
+        assertEquals(2, commits.size)
+        assertEquals(ChaldeaServer.Jp, commits[1].first.server)
+        assertFalse(store.read().stopped)
+        assertTrue(store.read().pending.isEmpty())
+    }
+
+    @Test fun foregroundWhileActiveDoesNotFlipInMemoryStoppedState() = fx {
+        account("a")
+        closeMinutes = 0
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(11 * MIN)
+        assertTrue(store.read().stopped)
+        val openedAtStop = opened
+
+        // Even if the store has stopped=false while scheduler is stopped in memory, Foreground keeps in-memory stopped.
+        store.update { it.copy(stopped = false) }
+        sch.onForeground()
+        advance(5 * MIN)
+        assertEquals(openedAtStop, opened)
+
+        // Conversely, once restarted in memory, a stale stopped=true in store must not stop it on Foreground.
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        sch.onAccountSaved(listOf("a"))
+        ts.runCurrent()
+        store.update { it.copy(stopped = true) }
+        sch.onForeground()
+        ts.runCurrent()
+        stateFn = { _, _ -> ChaldeaRunState.NotRunning }
+        advance(2 * MIN)
+        assertEquals(1, commits.size)
+    }
+
+    @Test fun processRestartWithPendingWorkViaForegroundDoesNotStopOnFirstPoll() = fx {
+        start() // empty store at t=0: active=true, lastActive=null
+        advance(20 * MIN)
+
+        account("a")
+        closeMinutes = 0
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        store.update { it.copy(pending = setOf("a")) }
+
+        sch.onForeground()
+        ts.runCurrent()
+        assertEquals(1, opened)
+        assertFalse(store.read().stopped, "first poll after Foreground must not stop")
+        assertNotEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+
+        advance(9 * MIN)
+        assertFalse(store.read().stopped)
+
+        advance(2 * MIN)
+        assertTrue(store.read().stopped)
+        assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+    }
+
+    @Test fun processRestartWithInflightWorkViaAccessChangedDoesNotStopOnFirstPoll() = fx {
+        shizuku = ShizukuState.NotRunning
+        closeMinutes = 0
+        stateFn = { _, _ -> ChaldeaRunState.Background }
+        start() // empty store at t=0: active=true, lastActive=null
+        advance(20 * MIN)
+
+        inflight()
+        shizuku = ShizukuState.Ready
+        sch.onAccessChanged()
+        ts.runCurrent()
+        assertEquals(1, opened)
+        assertFalse(store.read().stopped, "first poll after AccessChanged must not stop")
+        assertNotEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+
+        advance(9 * MIN)
+        assertFalse(store.read().stopped)
+
+        advance(2 * MIN)
+        assertTrue(store.read().stopped)
+        assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
     }
 }

@@ -252,7 +252,7 @@ class ChaldeaSyncScheduler(
             }
             Event.Foreground -> if (env.enabled()) {
                 if (!active) return handle(Event.Settings)
-                restore()
+                restore(includeStopped = false)
                 val isStopped = synchronized(lock) { stopped }
                 if (!isStopped && hasWork()) scheduleAttempt(0, Phase.Quiet)
             }
@@ -273,7 +273,7 @@ class ChaldeaSyncScheduler(
                 } else if (!active) {
                     active = true
                     resetStatuses()
-                    restore()
+                    restore(includeStopped = true)
                     val isStopped = synchronized(lock) { stopped }
                     if (!isStopped && hasWork()) {
                         synchronized(lock) { lastActive = clock() }
@@ -309,13 +309,13 @@ class ChaldeaSyncScheduler(
         _status.value = ChaldeaSyncStatus.Idle
     }
 
-    private fun restore() {
+    private fun restore(includeStopped: Boolean) {
         val d = store.read()
         val now = clock()
         synchronized(lock) {
             pending += d.pending
-            stopped = d.stopped
-            if (!d.stopped && backgroundSince == null && d.backgroundSince != null && d.lastObservation != null &&
+            if (includeStopped) stopped = d.stopped
+            if (!stopped && backgroundSince == null && d.backgroundSince != null && d.lastObservation != null &&
                 d.backgroundSince <= now && d.lastObservation <= now &&
                 now - d.lastObservation <= timing.pollSlowMs + timing.gapMs
             ) {
@@ -403,6 +403,8 @@ class ChaldeaSyncScheduler(
     private fun interval(waitStart: Long, now: Long) = if (now - waitStart < timing.fastWindowMs) timing.pollFastMs else timing.pollSlowMs
 
     private suspend fun runAttempt(gen: Int) {
+        val attemptStart = clock()
+        synchronized(lock) { if (lastActive == null) lastActive = attemptStart }
         var waitStart: Long? = null
         // The patch is built and compared once, and again only when an account was saved since or right before a
         // write: waiting polls must not parse the account tables every minute.
@@ -553,20 +555,35 @@ class ChaldeaSyncScheduler(
             setTransient(ChaldeaSyncStatus.WaitingScript)
             return Step(true)
         }
-        val reactivated = synchronized(lock) { savedDuringAttempt || lastActive != activeBefore }
-        if (reactivated) return Step(false, interval)
-        return stopSession(stopMin)
+        return stopSessionIfNotReactivated(activeBefore, stopMin, interval)
     }
 
-    private fun stopSession(stopMin: Int): Step {
-        synchronized(lock) {
-            stopped = true
-            backgroundSince = null
-            lastObservation = null
-            savedDuringAttempt = false
+    private fun stopSessionIfNotReactivated(activeBefore: Long?, stopMin: Int, interval: Long): Step {
+        val didStop = synchronized(lock) {
+            val reactivated = savedDuringAttempt || lastActive != activeBefore
+            if (reactivated) {
+                false
+            } else {
+                stopped = true
+                backgroundSince = null
+                lastObservation = null
+                savedDuringAttempt = false
+                true
+            }
         }
-        runCatching { store.update { it.copy(backgroundSince = null, lastObservation = null, stopped = true) } }
-        setTransient(ChaldeaSyncStatus.Stopped(stopMin))
+        if (!didStop) return Step(false, interval)
+        if (synchronized(lock) { stopped }) {
+            runCatching {
+                store.update { d ->
+                    if (synchronized(lock) { stopped }) {
+                        d.copy(backgroundSince = null, lastObservation = null, stopped = true)
+                    } else d
+                }
+            }
+            if (synchronized(lock) { stopped }) {
+                setTransient(ChaldeaSyncStatus.Stopped(stopMin))
+            }
+        }
         return Step(true)
     }
 

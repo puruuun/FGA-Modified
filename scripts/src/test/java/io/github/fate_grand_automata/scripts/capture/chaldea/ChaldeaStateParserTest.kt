@@ -275,9 +275,16 @@ class ChaldeaStateParserTest {
 
         assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("not json"))
         assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("{}"))
-        assertEquals(ChaldeaGameStateResult(false), ChaldeaGameStateResult.fromJson("""{"visible":true,"package":""}""").copy(packageName = null).let {
-            ChaldeaGameStateResult.fromJson("""{"visible":false,"package":null}""")
-        })
+        assertEquals(ChaldeaGameStateResult(true, ""), ChaldeaGameStateResult.fromJson("""{"visible":true,"package":""}"""))
+        assertEquals(ChaldeaGameStateResult(false, null), ChaldeaGameStateResult.fromJson("""{"visible":false,"package":null}"""))
+    }
+
+    @Test fun gameStateJsonTreatsStringVisibleTrueAsFalse() {
+        assertEquals(ChaldeaGameStateResult(visible = false), ChaldeaGameStateResult.fromJson("""{"visible":"true"}"""))
+        assertEquals(
+            ChaldeaGameStateResult(visible = false),
+            ChaldeaGameStateResult.fromJson("""{"visible":"true","package":"com.netmarble.fgok"}"""),
+        )
     }
 
     @Test fun gameStateFirstVisibleChecksAllKnownPackagesAndShortCircuits() {

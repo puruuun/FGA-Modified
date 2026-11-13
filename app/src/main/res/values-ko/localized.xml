@@ -1264,7 +1264,7 @@
     <string name="chaldea_sync_close_title">"Chaldea가 뒤에 있을 때 닫기"</string>
     <string name="chaldea_sync_close_after">"%d분 후"</string>
     <string name="chaldea_sync_close_never">"닫지 않음"</string>
-    <string name="chaldea_sync_stop_title">"FGO와 Chaldea를 쓰지 않을 때 세션 멈추기"</string>
+    <string name="chaldea_sync_stop_title">"FGO·Chaldea를 쓰지 않을 때 멈추기"</string>
     <string name="chaldea_sync_now">"지금 반영"</string>
     <string name="chaldea_sync_confirm_background">"Chaldea가 뒤에서 실행 중입니다. 닫고 지금 반영할까요?"</string>
     <string name="chaldea_sync_confirm_visible">"Chaldea가 화면에 열려 있습니다. 닫고 지금 반영할까요?"</string>
@@ -1282,7 +1282,7 @@
     <string name="chaldea_sync_status_waiting_visible">"대기 중: Chaldea가 켜져 있습니다."</string>
     <string name="chaldea_sync_status_waiting_background">"대기 중: Chaldea가 %1$d분째 뒤에 있습니다(%2$d분 후 닫음)."</string>
     <string name="chaldea_sync_status_waiting_background_never">"대기 중: Chaldea가 %1$d분째 뒤에 있습니다(닫지 않음)."</string>
-    <string name="chaldea_sync_status_stopped">"FGO와 Chaldea가 %1$d분간 쓰이지 않아 멈췄습니다. 다음 저장 때 다시 시작합니다."</string>
+    <string name="chaldea_sync_status_stopped">"FGO와 Chaldea를 %1$d분 동안 쓰지 않아 자동 반영을 멈췄습니다. 게임에서 새 데이터가 들어오거나 스크립트가 끝나면 다시 반영합니다."</string>
     <string name="chaldea_sync_shizuku_not_installed">"Shizuku가 설치되어 있지 않습니다."</string>
     <string name="chaldea_sync_shizuku_not_running">"Shizuku가 실행 중이 아닙니다. 실행되면 이어서 반영합니다."</string>
     <string name="chaldea_sync_shizuku_needs_permission">"Shizuku가 아직 FGA를 허용하지 않았습니다. Shizuku 요청에서 허용하세요."</string>
