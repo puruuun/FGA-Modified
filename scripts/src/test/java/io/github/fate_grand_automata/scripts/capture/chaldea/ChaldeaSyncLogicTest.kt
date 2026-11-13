@@ -905,6 +905,39 @@ class ChaldeaSyncLogicTest {
         assertNull(ChaldeaPatch.from(state("userGame" to game, "userSvtCollection" to """[{"svtId":100100}]"""), ChaldeaServer.Kr, stage3Numbers).servants)
     }
 
+    @Test fun servantsEquipCmdCodesIsNullAndSkippedServantHasNoEntryWhenMappingDataMissing() {
+        val baseTables = mapOf(
+            "userGame" to game,
+            "userSvtCollection" to """[{"svtId":100100,"status":2,"friendshipRank":5},{"svtId":200100,"status":2,"friendshipRank":3}]""",
+            "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":1},{"id":2,"svtId":200100,"lv":80,"status":0}]""",
+            "userSvtCommandCode" to """[{"svtId":100100,"userCommandCodeIds":[10,-1]},{"svtId":200100,"userCommandCodeIds":[10]}]""",
+        )
+
+        // Case 1: numbers.commandCodes is empty even though userCommandCode table is present
+        val withEmptyCcNumbers = ChaldeaPatch.from(
+            AccountState(baseTables + ("userCommandCode" to """[{"id":10,"commandCodeId":80001}]"""), "[]", null, 1L, 2L),
+            ChaldeaServer.Kr,
+            stage3Numbers.copy(commandCodes = emptyMap()),
+        )
+        val svtsEmptyNum = withEmptyCcNumbers.servants!!
+        assertEquals(true, svtsEmptyNum[2L]!!.favorite)
+        assertEquals(5L, svtsEmptyNum[2L]!!.bond)
+        assertNull(svtsEmptyNum[2L]!!.equipCmdCodes)
+        assertFalse(11L in svtsEmptyNum, "skipped servant with only command codes must not get an entry")
+
+        // Case 2: userCommandCode table is absent even though numbers.commandCodes is present
+        val withoutUserCcTable = ChaldeaPatch.from(
+            AccountState(baseTables, "[]", null, 1L, 2L),
+            ChaldeaServer.Kr,
+            stage3Numbers,
+        )
+        val svtsNoTable = withoutUserCcTable.servants!!
+        assertEquals(true, svtsNoTable[2L]!!.favorite)
+        assertEquals(5L, svtsNoTable[2L]!!.bond)
+        assertNull(svtsNoTable[2L]!!.equipCmdCodes)
+        assertFalse(11L in svtsNoTable, "skipped servant with only command codes must not get an entry")
+    }
+
     @Test fun servantsBigTablesAreParsedAtMostOncePerFromCall() {
         val parseCounts = LinkedHashMap<String, Int>()
         val st = state(

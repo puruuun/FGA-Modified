@@ -206,12 +206,8 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
 
     override fun gameData(knownVersion: String?): String = try {
         val pkg = choosePackage()
-        if (pkg == null) {
-            ChaldeaGameDataReader.errorJson(ChaldeaSyncCode.NotFound)
-        } else {
-            val dir = File(ChaldeaPackages.gameDir(pkg))
-            ChaldeaGameDataReader.readResponseJson(JavaChaldeaFileAccess(dir), dir.isDirectory, knownVersion)
-        }
+        val dir = File(ChaldeaPackages.gameDir(pkg))
+        ChaldeaGameDataReader.readResponseJson(JavaChaldeaFileAccess(dir), dir.isDirectory, knownVersion)
     } catch (t: Throwable) {
         ChaldeaGameDataReader.errorJson(ChaldeaSyncCode.ServiceError)
     }

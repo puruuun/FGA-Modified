@@ -445,18 +445,20 @@ data class ChaldeaPatch(
                     set
                 }
                 val equipCmdCodesByCol = LinkedHashMap<Long, List<Long?>>()
-                rows("userSvtCommandCode")?.forEach { row ->
-                    val o = row as? JsonObject ?: return@forEach
-                    val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
-                    val colNo = numbers.servants[svtId] ?: return@forEach
-                    val arr = o["userCommandCodeIds"] as? JsonArray ?: return@forEach
-                    equipCmdCodesByCol[colNo] = List(5) { idx ->
-                        val userCcId = (arr.getOrNull(idx) as? JsonPrimitive)?.longOrNull
-                        if (userCcId == null || userCcId <= 0L) {
-                            null
-                        } else {
-                            userCcIdToCommandCodeId[userCcId]?.let { ccId ->
-                                numbers.commandCodes[ccId]?.takeIf { it > 0L }
+                if (hasUserCommandCode && numbers.commandCodes.isNotEmpty()) {
+                    rows("userSvtCommandCode")?.forEach { row ->
+                        val o = row as? JsonObject ?: return@forEach
+                        val svtId = (o["svtId"] as? JsonPrimitive)?.longOrNull ?: return@forEach
+                        val colNo = numbers.servants[svtId] ?: return@forEach
+                        val arr = o["userCommandCodeIds"] as? JsonArray ?: return@forEach
+                        equipCmdCodesByCol[colNo] = List(5) { idx ->
+                            val userCcId = (arr.getOrNull(idx) as? JsonPrimitive)?.longOrNull
+                            if (userCcId == null || userCcId <= 0L) {
+                                null
+                            } else {
+                                userCcIdToCommandCodeId[userCcId]?.let { ccId ->
+                                    numbers.commandCodes[ccId]?.takeIf { it > 0L }
+                                }
                             }
                         }
                     }

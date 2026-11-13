@@ -854,6 +854,40 @@ class ChaldeaSyncSchedulerTest {
         assertEquals(0, opened)
     }
 
+    @Test fun syncNowWithUnidentifiedAccountAndRunningChaldeaReturnsDoneWithoutSession() = fx {
+        account("a", code = null)
+        stateFn = { _, _ -> ChaldeaRunState.Visible }
+        assertNull(store.readInflight())
+        assertEquals(ChaldeaSyncNowOutcome.Done, sch.syncNow(null))
+        assertEquals(0, opened)
+        assertEquals(ChaldeaSyncStatus.AccountNotIdentified, kr)
+    }
+
+    @Test fun syncNowWithCachedMapAndChangedNewMapUsesNewMapForPatch() = fx {
+        numbers = ChaldeaCollectionNumbers(emptyMap(), emptyMap(), servants = mapOf(100100L to 2L))
+        loaded["kr"] = ChaldeaAccountSource.Loaded(
+            ChaldeaServer.Kr,
+            AccountState(
+                mapOf(
+                    "userGame" to """[{"friendCode":"111","name":"K","genderType":1}]""",
+                    "userSvtCollection" to """[{"svtId":100100,"status":2,"costumeIds":[12]}]""",
+                    "userSvt" to """[{"id":1,"svtId":100100,"lv":90,"status":1}]""",
+                ),
+                "[]", null, 1L, 2L,
+            ),
+        )
+        current[ChaldeaServer.Kr] = "kr"
+        store.writeGameData(ChaldeaGameData("v1", mapOf(100100L to mapOf(12L to 800140L)), emptyMap()))
+        gameDataFn = { known ->
+            assertEquals("v1", known)
+            ChaldeaGameDataResult.Loaded(ChaldeaGameData("v2", mapOf(100100L to mapOf(12L to 800150L)), emptyMap()))
+        }
+        assertEquals(ChaldeaSyncNowOutcome.Done, sch.syncNow(null))
+        assertEquals(1, commits.size)
+        assertEquals(mapOf(800150L to 1L), commits.single().first.servants!![2L]!!.costumes)
+        assertEquals("v2", store.readGameData()?.version)
+    }
+
     // ---- review round: S1, S2, S3, M1, M2, per-server results, coalescing ----
 
     @Test fun aSaveDuringTheWriteKeepsTheAccountPendingAndTheNewerPatchIsWritten() = fx {
@@ -1180,8 +1214,10 @@ class ChaldeaSyncSchedulerTest {
         eventsLog.clear()
         val res = localSch.syncNow(null)
         assertEquals(ChaldeaSyncNowOutcome.Done, res)
+        val idxSyncNowGd = eventsLog.indexOf("gameData:v2")
+        assertTrue(idxSyncNowGd >= 0)
         assertEquals("gameData:v2", eventsLog.first { it.startsWith("gameData") })
-        assertTrue(eventsLog.indexOf("gameData:v2") < eventsLog.indexOf("load"))
+        assertTrue(eventsLog.drop(idxSyncNowGd + 1).contains("load"))
         assertEquals(mapOf(800150L to 1L), commits.last().first.servants!![2L]!!.costumes)
         assertEquals("v3", store.readGameData()?.version)
     }

@@ -871,8 +871,9 @@ class ChaldeaSyncScheduler(
             recoveryFailures = 0
             recoveryGaveUp = false
         }
-        val currentIds = accounts.currentIds().values.toList()
-        if (currentIds.isEmpty() && store.readInflight() == null) return ChaldeaSyncNowOutcome.Done
+        val cachedGameData = store.readGameData()
+        val initialTargets = resolveTargets(accounts.currentIds().values.toList(), true, cachedGameData)
+        if (initialTargets.isEmpty() && store.readInflight() == null) return ChaldeaSyncNowOutcome.Done
         val session = env.openSession() ?: return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.CannotBind).also { setResult(it.status) }
         try {
             val state = session.state().state
@@ -894,7 +895,12 @@ class ChaldeaSyncScheduler(
             resetBackground()
             if (!recoverInflight(session)) return ChaldeaSyncNowOutcome.Done
             val gameData = refreshGameData(session)
-            val targets = resolveTargets(accounts.currentIds().values.toList(), true, gameData)
+            val gameDataChanged = gameData != null && (cachedGameData == null || !gameData.sameContentAs(cachedGameData))
+            val targets = if (gameDataChanged) {
+                resolveTargets(accounts.currentIds().values.toList(), true, gameData)
+            } else {
+                initialTargets
+            }
             for (t in targets) if (writeOne(session, t) == Pass.Abort) break
             return ChaldeaSyncNowOutcome.Done
         } finally {
