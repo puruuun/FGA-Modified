@@ -1064,4 +1064,24 @@
     <string name="chaldea_sync_status_recovery_blocked">"以前に中断された反映を確認できませんでした（%s）。解決するまで何も書き込まず、バックアップは保持されます。"</string>
     <string name="error_screen_capture_stopped">"画面キャプチャが停止しました。画面がオフになったとき、システムや他のアプリが画面キャプチャを使ったとき、画面の設定が変わったときに停止します。再生ボタンをもう一度押すと画面キャプチャの許可を取り直します。"</string>
     <string name="screen_capture_permission_denied">"画面キャプチャの許可がないため開始しませんでした。"</string>
+    <!-- アカウントダッシュボード追加カード (#379) -->
+    <string name="dashboard_present_box_header">プレゼントボックス（%1$d）</string>
+    <string name="dashboard_present_box_notice">最終ログイン以降に受け取ったプレゼントは次回のログイン時に反映されます。</string>
+    <string name="dashboard_present_box_empty">プレゼントなし</string>
+    <string name="dashboard_party_formations">マイパーティ編成</string>
+    <string name="dashboard_party_name">パーティ %1$d</string>
+    <string name="dashboard_party_cost">コスト %1$d</string>
+    <string name="dashboard_party_back_line">後衛</string>
+    <string name="dashboard_party_support">サポート</string>
+    <string name="dashboard_party_empty">空き</string>
+    <string name="dashboard_costumes_header">霊衣（%1$d）</string>
+    <string name="dashboard_costumes_count">霊衣 %1$d着</string>
+    <string name="dashboard_command_code_collection">コマンドコード図鑑</string>
+    <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>
+    <string name="dashboard_command_codes_owned_only">所持 %1$d</string>
+    <string name="dashboard_command_codes_owned_group">所持</string>
+    <string name="p_app_theme">"ダークモード"</string>
+    <string name="p_app_theme_system">"システム設定に従う"</string>
+    <string name="p_app_theme_light">"ライト"</string>
+    <string name="p_app_theme_dark">"ダーク"</string>
 </resources>

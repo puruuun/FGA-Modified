@@ -342,4 +342,143 @@ class DashboardDataTest {
             dir.deleteRecursively()
         }
     }
+
+    @Test fun presentBoxSumsOrdersCountsRowsAndHandlesEmptyOrMissing() {
+        assertNull(dashboardData(dashboardState(), GameNameMap()).presentBox)
+        val empty = dashboardData(dashboardState("userPresentBox" to "[]"), GameNameMap()).presentBox
+        assertEquals(DashboardPresentBox(0, emptyList()), empty)
+
+        val rows = """[
+            {"presentId":1,"giftType":1,"objectId":9770400,"num":5,"message":"hidden"},
+            {"presentId":2,"giftType":2,"objectId":6510,"num":2},
+            {"presentId":3,"giftType":2,"objectId":6501,"num":5},
+            {"presentId":4,"giftType":2,"objectId":6510,"num":3},
+            {"presentId":5,"giftType":1,"objectId":9770400,"num":5},
+            {"presentId":6,"giftType":11,"objectId":300,"num":1},
+            {"presentId":7,"giftType":1,"objectId":10,"num":0},
+            {"presentId":8,"giftType":2,"num":4},
+            {"presentId":9,"objectId":6510,"num":4},
+            {"presentId":10,"giftType":2,"objectId":6510,"num":-1}
+        ]"""
+        val box = dashboardData(dashboardState("userPresentBox" to rows), GameNameMap()).presentBox!!
+        assertEquals(10, box.totalCount)
+        assertEquals(
+            listOf(
+                DashboardPresent(giftType = 2, objectId = 6501L, count = 5L),
+                DashboardPresent(giftType = 2, objectId = 6510L, count = 5L),
+                DashboardPresent(giftType = 1, objectId = 9770400L, count = 10L),
+                DashboardPresent(giftType = 11, objectId = 300L, count = 1L),
+            ),
+            box.entries,
+        )
+    }
+
+    @Test fun partiesSortDecksAndSlotsResolveStorageFollowerEmptyAndMysticCode() {
+        assertNull(dashboardData(dashboardState(), GameNameMap()).parties)
+        assertNull(dashboardData(dashboardState("userDeck" to "[]"), GameNameMap()).parties)
+
+        val state = dashboardState(
+            "userDeck" to """[
+                {"id":2,"deckNo":2,"name":"","cost":12,"deckInfo":{
+                    "userEquipId":9999,
+                    "svts":[
+                        {"id":1,"userSvtId":0,"userSvtEquipIds":[0],"isFollowerSvt":false,"initPos":1}
+                    ]
+                }},
+                {"id":1,"deckNo":1,"name":"Farming","cost":96,"deckInfo":{
+                    "userEquipId":501,
+                    "waveSvts":[{"svtId":10}],
+                    "svts":[
+                        {"id":6,"userSvtId":99999,"userSvtEquipIds":[],"isFollowerSvt":false,"initPos":6},
+                        {"id":3,"userSvtId":103,"userSvtEquipIds":[0],"isFollowerSvt":true,"initPos":3},
+                        {"id":1,"userSvtId":101,"userSvtEquipIds":[0,201],"isFollowerSvt":false,"initPos":1},
+                        {"id":4,"userSvtId":0,"userSvtEquipIds":[],"isFollowerSvt":false,"initPos":4},
+                        {"id":2,"userSvtId":102,"userSvtEquipIds":[202],"isFollowerSvt":false,"initPos":2},
+                        {"id":5,"userSvtId":101,"userSvtEquipIds":[201],"isFollowerSvt":false,"initPos":5}
+                    ]
+                }}
+            ]""",
+            "userEventDeck" to """[{"id":99,"deckNo":1,"name":"Ignored"}]""",
+            "userSvt" to """[
+                {"id":101,"svtId":10,"lv":90,"limitCount":4},
+                {"id":202,"svtId":20,"lv":100}
+            ]""",
+            "userSvtStorage" to """[
+                {"id":102,"svtId":13,"lv":80,"limitCount":3},
+                {"id":201,"svtId":21,"lv":1}
+            ]""",
+            "userEquip" to """[{"id":501,"equipId":2,"lv":10}]""",
+        )
+        val parties = dashboardData(state, dashboardNames()).parties!!
+        assertEquals(listOf(1, 2), parties.map { it.deckNo })
+
+        val first = parties[0]
+        assertEquals("Farming", first.name)
+        assertEquals(96, first.cost)
+        assertEquals(DashboardPartyMystic(equipId = 2L, lv = 10), first.mysticCode)
+        assertEquals(6, first.slots.size)
+        assertEquals(
+            DashboardPartySlot(DashboardPartySlot.Kind.Servant, svtId = 10L, lv = 90, limitCount = 4, ce = DashboardPartyCe(21L, 1)),
+            first.slots[0],
+        )
+        assertEquals(
+            DashboardPartySlot(DashboardPartySlot.Kind.Servant, svtId = 13L, lv = 80, limitCount = 3, ce = DashboardPartyCe(20L, 100)),
+            first.slots[1],
+        )
+        assertEquals(DashboardPartySlot(DashboardPartySlot.Kind.Support), first.slots[2])
+        assertEquals(DashboardPartySlot(DashboardPartySlot.Kind.Empty), first.slots[3])
+        assertEquals(
+            DashboardPartySlot(DashboardPartySlot.Kind.Servant, svtId = 10L, lv = 90, limitCount = 4, ce = DashboardPartyCe(21L, 1)),
+            first.slots[4],
+        )
+        assertEquals(DashboardPartySlot(DashboardPartySlot.Kind.Empty), first.slots[5])
+
+        val second = parties[1]
+        assertNull(second.name)
+        assertNull(second.mysticCode)
+    }
+
+    @Test fun costumesCountDistinctAbsValuesAndSortByCountCollectionAndId() {
+        assertNull(dashboardData(dashboardState(), dashboardNames()).costumes)
+        assertNull(dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2,"costumeIds":[]}]"""), dashboardNames()).costumes)
+
+        val state = dashboardState(
+            "userSvtCollection" to """[
+                {"svtId":10,"status":2,"costumeIds":[1]},
+                {"svtId":11,"status":2,"costumeIds":[-11,11,12]},
+                {"svtId":13,"status":2,"costumeIds":[30]},
+                {"svtId":999,"status":2,"costumeIds":[40]}
+            ]"""
+        )
+        val costumes = dashboardData(state, dashboardNames()).costumes!!
+        assertEquals(
+            listOf(
+                DashboardCostume(svtId = 11L, count = 2),
+                DashboardCostume(svtId = 10L, count = 1),
+                DashboardCostume(svtId = 13L, count = 1),
+                DashboardCostume(svtId = 999L, count = 1),
+            ),
+            costumes,
+        )
+    }
+
+    @Test fun commandCodesCountOwnedStatus2AndUseAtlasTotalOnlyWhenPresent() {
+        assertNull(dashboardData(dashboardState(), GameNameMap()).commandCodes)
+        val state = dashboardState(
+            "userCommandCodeCollection" to """[
+                {"commandCodeId":1001,"status":1},
+                {"commandCodeId":1002,"status":2},
+                {"commandCodeId":1003,"status":2},
+                {"commandCodeId":1004,"status":0}
+            ]"""
+        )
+        val withoutList = dashboardData(state, GameNameMap()).commandCodes!!
+        assertEquals(DashboardCommandCodes(ownedIds = listOf(1002L, 1003L), total = null), withoutList)
+
+        val withList = dashboardData(
+            state,
+            GameNameMap(commandCodeData = mapOf(1001L to AtlasBasic(1001, "A"), 1002L to AtlasBasic(1002, "B"), 1003L to AtlasBasic(1003, "C"), 1004L to AtlasBasic(1004, "D"))),
+        ).commandCodes!!
+        assertEquals(DashboardCommandCodes(ownedIds = listOf(1002L, 1003L), total = 4), withList)
+    }
 }
