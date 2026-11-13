@@ -1046,6 +1046,7 @@
     <string name="capture_source_manual_quest">직접 퀘스트</string>
     <string name="capture_source_missions">미션</string>
     <string name="capture_source_other">기타</string>
+    <string name="capture_source_external_payment">트럭</string>
     <string name="capture_log_confirm_clear">모든 기록을 삭제할까요?</string>
     <string name="tools_chaldea_export">Chaldea 파일 내보내기</string>
     <string name="tools_choose_account">계정 선택</string>
