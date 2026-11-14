@@ -118,7 +118,9 @@ class ProxyServer(
             try {
                 pool.execute { handle(c) }
             } catch (_: Exception) {
-                activeConnections.decrementAndGet()
+                if (options.maxConnections != null) {
+                    activeConnections.decrementAndGet()
+                }
                 live -= c
                 runCatching { c.close() }
             }
@@ -240,6 +242,9 @@ class ProxyServer(
         isSocks5: Boolean,
     ) {
         if (options.ipSniff && isIpLiteral(connectHost)) {
+            // Reply success before peeking so SOCKS5 (and CONNECT) clients actually send their
+            // ClientHello. Because the reply is already sent, an upstream failure on this path
+            // closes the connection without a SOCKS error code.
             sendTunnelReady(client, isSocks5)
             val peeked = peekClientHello(client, clientInput)
             val sni = peeked.sni?.lowercase()
@@ -314,18 +319,19 @@ class ProxyServer(
 
     private fun peekClientHello(client: Socket, input: InputStream): PeekedHello {
         val previousTimeout = client.soTimeout
-        client.soTimeout = PEER_SNIFF_TIMEOUT_MS
         val collected = ByteArrayOutputStream()
         try {
+            val deadlineNs = System.nanoTime() + PEER_SNIFF_TIMEOUT_MS * 1_000_000L
+            val firstTimeout = remainingTimeoutMs(deadlineNs)
+            if (firstTimeout <= 0) return PeekedHello(EMPTY_BYTES, null)
+            client.soTimeout = firstTimeout
             val first = input.read()
             if (first < 0) return PeekedHello(EMPTY_BYTES, null)
             collected.write(first)
             if (first != TlsClientHello.RECORD_TYPE_HANDSHAKE) {
                 return PeekedHello(collected.toByteArray(), null)
             }
-            val remainingHeader = readUpTo(input, 4)
-            collected.write(remainingHeader)
-            if (remainingHeader.size < 4) {
+            if (!readInto(client, input, 4, collected, deadlineNs)) {
                 return PeekedHello(collected.toByteArray(), null)
             }
             val header = collected.toByteArray()
@@ -333,10 +339,9 @@ class ProxyServer(
             if (recordLen <= 0 || recordLen > TlsClientHello.MAX_RECORD_PAYLOAD_BYTES) {
                 return PeekedHello(header, null)
             }
-            val payload = readUpTo(input, recordLen)
-            collected.write(payload)
+            val payloadOk = readInto(client, input, recordLen, collected, deadlineNs)
             val fullRecord = collected.toByteArray()
-            val sni = if (payload.size == recordLen) {
+            val sni = if (payloadOk) {
                 TlsClientHello.sniHost(fullRecord, fullRecord.size)
             } else {
                 null
@@ -349,15 +354,32 @@ class ProxyServer(
         }
     }
 
-    private fun readUpTo(input: InputStream, count: Int): ByteArray {
-        val buf = ByteArray(count)
-        var offset = 0
-        while (offset < count) {
-            val n = input.read(buf, offset, count - offset)
-            if (n < 0) break
-            offset += n
+    private fun remainingTimeoutMs(deadlineNs: Long): Int =
+        ((deadlineNs - System.nanoTime()) / 1_000_000L)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+
+    private fun readInto(
+        client: Socket,
+        input: InputStream,
+        count: Int,
+        collected: ByteArrayOutputStream,
+        deadlineNs: Long,
+    ): Boolean {
+        val buf = ByteArray(minOf(count, 4096))
+        var remaining = count
+        while (remaining > 0) {
+            val remainingMs = remainingTimeoutMs(deadlineNs)
+            if (remainingMs <= 0) return false
+            client.soTimeout = remainingMs
+            val n = input.read(buf, 0, minOf(buf.size, remaining))
+            if (n < 0) return false
+            if (n > 0) {
+                collected.write(buf, 0, n)
+                remaining -= n
+            }
         }
-        return if (offset == count) buf else buf.copyOf(offset)
+        return true
     }
 
     private fun tunnel(
@@ -497,19 +519,30 @@ class ProxyServer(
         }
         val up = try {
             val factory = upstreamSslFactoryForTesting ?: (SSLSocketFactory.getDefault() as SSLSocketFactory)
-            val s = factory.createSocket(connectHost, port) as SSLSocket
-            s.sslParameters = s.sslParameters.apply {
-                serverNames = listOf(SNIHostName(tlsHost))
-                applicationProtocols = arrayOf("http/1.1")
+            val plain = Socket()
+            try {
+                plain.connect(InetSocketAddress(connectHost, port), 15_000)
+                val s = factory.createSocket(plain, tlsHost, port, true) as SSLSocket
+                try {
+                    s.sslParameters = s.sslParameters.apply {
+                        serverNames = listOf(SNIHostName(tlsHost))
+                        applicationProtocols = arrayOf("http/1.1")
+                    }
+                    s.soTimeout = 120_000
+                    s.startHandshake()
+                    val verifier = upstreamHostnameVerifierForTesting ?: HttpsURLConnection.getDefaultHostnameVerifier()
+                    if (!verifier.verify(tlsHost, s.session)) {
+                        throw IOException("upstream hostname verification failed")
+                    }
+                    s
+                } catch (t: Throwable) {
+                    runCatching { s.close() }
+                    throw t
+                }
+            } catch (t: Throwable) {
+                runCatching { plain.close() }
+                throw t
             }
-            s.soTimeout = 120_000
-            s.startHandshake()
-            val verifier = upstreamHostnameVerifierForTesting ?: HttpsURLConnection.getDefaultHostnameVerifier()
-            if (!verifier.verify(tlsHost, s.session)) {
-                s.close()
-                throw IOException("upstream hostname verification failed")
-            }
-            s
         } catch (e: Exception) {
             if (tlsHost.lowercase() in CaptureNames.HOST_SERVERS) {
                 onUpstreamFailure?.invoke(tlsHost.lowercase())
@@ -587,7 +620,10 @@ class ProxyServer(
     ) : Socket() {
         override fun getInputStream(): InputStream = input
         override fun getOutputStream(): OutputStream = delegate.getOutputStream()
-        override fun close() = delegate.close()
+        override fun close() {
+            runCatching { delegate.close() }
+            runCatching { super.close() }
+        }
         override fun isClosed(): Boolean = delegate.isClosed
         override fun isConnected(): Boolean = delegate.isConnected
         override fun isInputShutdown(): Boolean = delegate.isInputShutdown

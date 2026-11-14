@@ -50,6 +50,7 @@ class CaptureProxyService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        alive = true
         CaptureController.init(applicationContext)
         CaptureTracker.init(applicationContext)
         CaptureProxyStatus.reset()
@@ -97,11 +98,13 @@ class CaptureProxyService : Service() {
                     ?.let { name -> CaptureStopReason.entries.firstOrNull { it.name == name } }
                     ?: CaptureStopReason.User
                 turnReadingOff(reason)
+                ensureListening(targetPort)
             }
 
             ACTION_TOGGLE_READING -> {
                 if (readingActive || CaptureTracker.running.value) {
                     turnReadingOff(CaptureStopReason.User)
+                    ensureListening(targetPort)
                 } else {
                     val listening = ensureListening(targetPort)
                     if (listening) {
@@ -115,6 +118,10 @@ class CaptureProxyService : Service() {
 
             ACTION_APPLY_PORT -> {
                 applyPortChange(targetPort)
+            }
+
+            else -> {
+                ensureListening(targetPort)
             }
         }
 
@@ -133,7 +140,11 @@ class CaptureProxyService : Service() {
         turnReadingOff(CaptureStopReason.User)
         stopCurrentProxy()
         CaptureProxyStatus.reset()
-        super.onDestroy()
+        try {
+            super.onDestroy()
+        } finally {
+            alive = false
+        }
     }
 
     private fun observeStartConditions() {
@@ -165,11 +176,11 @@ class CaptureProxyService : Service() {
     }
 
     private fun applyPortChange(newPort: Int) {
-        if (readingActive || CaptureTracker.running.value || CaptureTracker.starting) {
-            turnReadingOff(CaptureStopReason.User)
-        }
         if (proxy != null && boundPort == newPort && CaptureProxyStatus.state.value.state is CaptureProxyState.Listening) {
             return
+        }
+        if (readingActive || CaptureTracker.running.value || CaptureTracker.starting) {
+            turnReadingOff(CaptureStopReason.User)
         }
         val oldProxy = proxy
         val created = createConfiguredProxy()
@@ -192,6 +203,9 @@ class CaptureProxyService : Service() {
     }
 
     private fun bindProxy(port: Int): Boolean {
+        if (readingActive || CaptureTracker.running.value || CaptureTracker.starting) {
+            turnReadingOff(CaptureStopReason.User)
+        }
         val oldProxy = proxy
         val created = createConfiguredProxy()
         return try {
@@ -199,7 +213,7 @@ class CaptureProxyService : Service() {
             proxy = created
             boundPort = actualPort
             runCatching { oldProxy?.stop() }
-            CaptureProxyStatus.setListening(actualPort, reading = readingActive)
+            CaptureProxyStatus.setListening(actualPort, reading = false)
             Timber.i("Capture: proxy listening on 127.0.0.1:%d", actualPort)
             true
         } catch (t: Throwable) {
@@ -208,8 +222,6 @@ class CaptureProxyService : Service() {
             runCatching { oldProxy?.stop() }
             proxy = null
             boundPort = null
-            readingActive = false
-            releaseSaveGuard()
             CaptureProxyStatus.setPortError(port)
             false
         }
@@ -382,6 +394,10 @@ class CaptureProxyService : Service() {
     }
 
     companion object {
+        @Volatile
+        var alive: Boolean = false
+            private set
+
         const val ACTION_ENSURE = "io.github.fate_grand_automata.capture.proxy.ENSURE"
         const val ACTION_START_READING = "io.github.fate_grand_automata.capture.proxy.START_READING"
         const val ACTION_STOP_READING = "io.github.fate_grand_automata.capture.proxy.STOP_READING"

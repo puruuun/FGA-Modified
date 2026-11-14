@@ -456,6 +456,501 @@ class ProxyServerTest {
         }
     }
 
+    @Test(timeout = 10000)
+    fun defaultOptionsTunnelIpAtOnceAndDoNotSniffSocks5() {
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val echoThread = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val data = s.getInputStream().readNBytes(3)
+                    s.getOutputStream().apply {
+                        write(data)
+                        flush()
+                    }
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap())
+        val port = proxy.start(0)
+        try {
+            // CONNECT to IP literal with TLS-like first byte 0x16 must tunnel immediately (no 3s peek delay).
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT 127.0.0.1:${echoServer.localPort} HTTP/1.1\r\n\r\n".toByteArray())
+                out.flush()
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 200"))
+
+                val probe = byteArrayOf(0x16, 0x03, 0x01)
+                val startedNs = System.nanoTime()
+                out.write(probe)
+                out.flush()
+                assertContentEquals(probe, inp.readNBytes(3))
+                val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000L
+                assertTrue(elapsedMs < 1500, "Expected immediate tunnel without peek delay, took ${elapsedMs}ms")
+            }
+
+            // First byte 0x05 is NOT treated as SOCKS5 under default options (501 on HTTP line or close on EOF).
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                s.getOutputStream().apply {
+                    write(byteArrayOf(0x05, 0x01, 0x00) + "\r\n\r\n".toByteArray())
+                    flush()
+                }
+                val resp = readUntilBlankLine(s.getInputStream())
+                assertTrue(resp.startsWith("HTTP/1.1 501"), "Expected 501, got: $resp")
+            }
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                s.getOutputStream().apply {
+                    write(byteArrayOf(0x05, 0x01, 0x00))
+                    flush()
+                }
+                s.shutdownOutput()
+                assertEquals(-1, s.getInputStream().read())
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            echoThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun defaultOptionsConnectHostnameRoundTrip() {
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val echoThread = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val buf = ByteArray(1024)
+                    val inp = s.getInputStream()
+                    val out = s.getOutputStream()
+                    while (true) {
+                        val n = inp.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        out.flush()
+                    }
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap())
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT localhost:${echoServer.localPort} HTTP/1.1\r\nHost: localhost:${echoServer.localPort}\r\n\r\n".toByteArray())
+                out.flush()
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 200"))
+
+                out.write("PING".toByteArray())
+                out.flush()
+                assertEquals("PING", String(inp.readNBytes(4)))
+
+                out.write("PONG".toByteArray())
+                out.flush()
+                assertEquals("PONG", String(inp.readNBytes(4)))
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            echoThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun adGuardOptionsConnectHeadAndPayloadInOneWriteToIpTarget() {
+        val received = ByteArrayOutputStream()
+        val latch = CountDownLatch(1)
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val t = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val data = s.getInputStream().readNBytes(11)
+                    received.write(data)
+                    s.getOutputStream().apply {
+                        write(data)
+                        flush()
+                    }
+                    latch.countDown()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap(), ProxyOptions(socks5 = true, ipSniff = true))
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                val combined = "CONNECT 127.0.0.1:${echoServer.localPort} HTTP/1.1\r\n\r\nPAYLOAD-123".toByteArray()
+                out.write(combined)
+                out.flush()
+
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 200"))
+                assertTrue(latch.await(3, TimeUnit.SECONDS))
+                assertEquals("PAYLOAD-123", received.toString())
+                assertEquals("PAYLOAD-123", String(inp.readNBytes(11)))
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            t.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun adGuardOptionsSocks5GreetingRequestAndPayloadInOneWrite() {
+        val received = ByteArrayOutputStream()
+        val latch = CountDownLatch(1)
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val t = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val data = s.getInputStream().readNBytes(8)
+                    received.write(data)
+                    s.getOutputStream().apply {
+                        write(data)
+                        flush()
+                    }
+                    latch.countDown()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap(), ProxyOptions(socks5 = true, ipSniff = true))
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                val p = echoServer.localPort
+                val oneWrite = byteArrayOf(0x05, 0x01, 0x00) +
+                    byteArrayOf(0x05, 0x01, 0x00, 0x01, 127, 0, 0, 1, (p ushr 8).toByte(), p.toByte()) +
+                    "ONESHOT!".toByteArray()
+                out.write(oneWrite)
+                out.flush()
+
+                assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+                assertContentEquals(Socks5.reply(Socks5.REP_SUCCEEDED), inp.readNBytes(10))
+                assertTrue(latch.await(3, TimeUnit.SECONDS))
+                assertEquals("ONESHOT!", received.toString())
+                assertEquals("ONESHOT!", String(inp.readNBytes(8)))
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            t.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun adGuardOptionsSocks5DomainConnectRoundTrip() {
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val t = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val buf = ByteArray(1024)
+                    val inp = s.getInputStream()
+                    val out = s.getOutputStream()
+                    while (true) {
+                        val n = inp.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        out.flush()
+                    }
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap(), ProxyOptions(socks5 = true, ipSniff = true))
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write(byteArrayOf(0x05, 0x01, 0x00))
+                out.flush()
+                assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+
+                val domain = "localhost".toByteArray()
+                val p = echoServer.localPort
+                out.write(
+                    byteArrayOf(0x05, 0x01, 0x00, 0x03, domain.size.toByte()) +
+                        domain + byteArrayOf((p ushr 8).toByte(), p.toByte())
+                )
+                out.flush()
+                assertContentEquals(Socks5.reply(Socks5.REP_SUCCEEDED), inp.readNBytes(10))
+
+                out.write("ROUND".toByteArray())
+                out.flush()
+                assertEquals("ROUND", String(inp.readNBytes(5)))
+
+                out.write("TRIP".toByteArray())
+                out.flush()
+                assertEquals("TRIP", String(inp.readNBytes(4)))
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            t.join(1000)
+        }
+    }
+
+    @Test(timeout = 15000)
+    fun peekTimeoutReplaysAlreadyReadBytesInOrder() {
+        val received = ByteArrayOutputStream()
+        val latch = CountDownLatch(1)
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val t = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val data = s.getInputStream().readNBytes(10)
+                    received.write(data)
+                    s.getOutputStream().apply {
+                        write(data)
+                        flush()
+                    }
+                    latch.countDown()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap(), ProxyOptions(socks5 = true, ipSniff = true))
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 6000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT 127.0.0.1:${echoServer.localPort} HTTP/1.1\r\n\r\n".toByteArray())
+                out.flush()
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 200"))
+
+                val part1 = byteArrayOf(0x16, 0x03, 0x01)
+                val part2 = byteArrayOf(0x00, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05)
+                out.write(part1)
+                out.flush()
+                Thread.sleep(3300)
+                out.write(part2)
+                out.flush()
+
+                assertTrue(latch.await(5, TimeUnit.SECONDS))
+                val expected = part1 + part2
+                assertContentEquals(expected, received.toByteArray())
+                assertContentEquals(expected, inp.readNBytes(10))
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            t.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun upstreamFailureCounterIncrementsForInterceptedGameHost() {
+        val gameHost = CaptureNames.GAME_HOST
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val mitmServerCtx = serverSslContext(mitmCerts)
+        val mitmClientCtx = clientTrustContext(mitmCerts)
+        val closedPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+
+        val failedHosts = CopyOnWriteArrayList<String>()
+        val failureLatch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = mapOf(gameHost to mitmServerCtx),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onUpstreamFailure = { host ->
+                failedHosts += host
+                failureLatch.countDown()
+            },
+        )
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 3000
+            raw.getOutputStream().apply {
+                write("CONNECT 127.0.0.1:$closedPort HTTP/1.1\r\n\r\n".toByteArray())
+                flush()
+            }
+            assertTrue(readUntilBlankLine(raw.getInputStream()).startsWith("HTTP/1.1 200"))
+
+            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", closedPort, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(gameHost))
+            }
+            tlsClient.startHandshake()
+
+            assertTrue(failureLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(listOf(gameHost), failedHosts.toList())
+            runCatching { tlsClient.close() }
+        } finally {
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun snapshotPersistsThroughTlsHandshakeAfterContextsClearedBeforeFirstRequest() {
+        val gameHost = CaptureNames.JP_HOST
+        val upstreamCerts = SingleUseCa.issue(gameHost)
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val upstreamServerCtx = serverSslContext(upstreamCerts)
+        val upstreamClientCtx = clientTrustContext(upstreamCerts)
+        val mitmServerCtx = serverSslContext(mitmCerts)
+        val mitmClientCtx = clientTrustContext(mitmCerts)
+
+        val mockServer = (upstreamServerCtx.serverSocketFactory.createServerSocket(
+            0,
+            50,
+            InetAddress.getByName("127.0.0.1"),
+        ) as SSLServerSocket).apply { enabledProtocols = arrayOf("TLSv1.2", "TLSv1.3") }
+
+        val serverThread = Thread {
+            runCatching {
+                while (!mockServer.isClosed) {
+                    val s = mockServer.accept() as SSLSocket
+                    Thread {
+                        runCatching {
+                            s.use { sock ->
+                                sock.startHandshake()
+                                val r = HttpReader(sock.getInputStream())
+                                while (true) {
+                                    val req = r.readHead() ?: break
+                                    val payload = """{"ok":true,"req":"${req.target}"}"""
+                                    val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${payload.length}\r\n\r\n$payload"
+                                    sock.getOutputStream().apply {
+                                        write(resp.toByteArray())
+                                        flush()
+                                    }
+                                }
+                            }
+                        }
+                    }.start()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val capturedTargets = CopyOnWriteArrayList<String>()
+        val proxy = ProxyServer(
+            sslContexts = mapOf(gameHost to mitmServerCtx),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onGameResponse = { target, _, _ -> capturedTargets += target },
+        ).apply {
+            upstreamSslFactoryForTesting = upstreamClientCtx.socketFactory
+            upstreamHostnameVerifierForTesting = HostnameVerifier { host, session ->
+                val leaf = session.peerCertificates.firstOrNull() as? X509Certificate ?: return@HostnameVerifier false
+                leaf.subjectAlternativeNames?.any { entry -> entry.size >= 2 && entry[1] == host } == true
+            }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            raw.getOutputStream().apply {
+                write("CONNECT 127.0.0.1:${mockServer.localPort} HTTP/1.1\r\n\r\n".toByteArray())
+                flush()
+            }
+            assertTrue(readUntilBlankLine(raw.getInputStream()).startsWith("HTTP/1.1 200"))
+
+            // Turn reading off before the TLS handshake and first request; connection keeps its snapshot.
+            proxy.setContexts(emptyMap())
+
+            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", mockServer.localPort, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(gameHost))
+            }
+            tlsClient.startHandshake()
+
+            tlsClient.getOutputStream().apply {
+                write("GET /login/top HTTP/1.1\r\nHost: $gameHost\r\n\r\n".toByteArray())
+                flush()
+            }
+            val head = runCatching { HttpReader(tlsClient.getInputStream()).readHead() }.getOrNull()
+            assertEquals(null, head)
+            assertEquals(emptyList(), capturedTargets.toList())
+            runCatching { tlsClient.close() }
+        } finally {
+            proxy.stop()
+            mockServer.close()
+            serverThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun maxConnectionsCapReleasesSlotWhenConnectionCloses() {
+        val entered = AtomicInteger(0)
+        val twoHeld = CountDownLatch(2)
+        val releaseOne = CountDownLatch(1)
+        val releaseSecond = CountDownLatch(1)
+        val proxy = ProxyServer(
+            emptyMap(),
+            ProxyOptions(socks5 = true, ipSniff = true, maxConnections = 2),
+        )
+        proxy.handleHookForTesting = {
+            when (entered.incrementAndGet()) {
+                1 -> {
+                    twoHeld.countDown()
+                    releaseOne.await(5, TimeUnit.SECONDS)
+                }
+                2 -> {
+                    twoHeld.countDown()
+                    releaseSecond.await(5, TimeUnit.SECONDS)
+                }
+            }
+        }
+        val port = proxy.start(0)
+        val s1 = Socket("127.0.0.1", port)
+        val s2 = Socket("127.0.0.1", port)
+        try {
+            assertTrue(twoHeld.await(3, TimeUnit.SECONDS))
+            Socket("127.0.0.1", port).use { rejected ->
+                rejected.soTimeout = 2000
+                assertEquals(-1, runCatching { rejected.getInputStream().read() }.getOrDefault(-1))
+            }
+
+            releaseOne.countDown()
+            runCatching { s1.close() }
+
+            var accepted = false
+            val deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+            while (System.nanoTime() < deadlineNs && !accepted) {
+                Socket("127.0.0.1", port).use { candidate ->
+                    candidate.soTimeout = 1000
+                    runCatching {
+                        candidate.getOutputStream().apply {
+                            write("GET / HTTP/1.1\r\n\r\n".toByteArray())
+                            flush()
+                        }
+                        val resp = readUntilBlankLine(candidate.getInputStream())
+                        if (resp.startsWith("HTTP/1.1 501")) {
+                            accepted = true
+                        }
+                    }
+                }
+                if (!accepted) Thread.sleep(20)
+            }
+            assertTrue(accepted, "Expected new connection to be accepted after slot was released")
+        } finally {
+            releaseOne.countDown()
+            releaseSecond.countDown()
+            runCatching { s1.close() }
+            runCatching { s2.close() }
+            proxy.stop()
+        }
+    }
+
     private fun readUntilBlankLine(input: java.io.InputStream): String {
         val sb = StringBuilder()
         var tail = 0

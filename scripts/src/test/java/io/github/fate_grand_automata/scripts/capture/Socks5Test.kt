@@ -82,4 +82,24 @@ class Socks5Test {
             Socks5.reply(Socks5.REP_SUCCEEDED),
         )
     }
+
+    @Test
+    fun `rejects wrong SOCKS version with error`() {
+        val packet = byteArrayOf(0x04, 0x01, 0x00, 0x01, 127, 0, 0, 1, 0x01, 0xBB.toByte())
+        val error = assertIs<Socks5.RequestResult.Error>(Socks5.readRequest(ByteArrayInputStream(packet)))
+        assertEquals(Socks5.REP_GENERAL_FAILURE, error.replyCode)
+    }
+
+    @Test
+    fun `rejects truncated requests with error`() {
+        val truncatedPackets = listOf(
+            byteArrayOf(0x05, 0x01, 0x00),
+            byteArrayOf(0x05, 0x01, 0x00, 0x01, 127, 0),
+            byteArrayOf(0x05, 0x01, 0x00, 0x03, 0x08, 'a'.code.toByte()),
+            byteArrayOf(0x05, 0x01, 0x00, 0x01, 127, 0, 0, 1, 0x01),
+        )
+        for (packet in truncatedPackets) {
+            assertIs<Socks5.RequestResult.Error>(Socks5.readRequest(ByteArrayInputStream(packet)))
+        }
+    }
 }

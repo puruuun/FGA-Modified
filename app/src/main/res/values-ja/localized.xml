@@ -1111,13 +1111,14 @@
     <string name="capture_adguard_port_apply">"適用"</string>
     <string name="capture_adguard_port_invalid">"1024〜65535 のポート番号を入力してください。"</string>
     <string name="capture_adguard_port_changed_drop">"ポートを変更しました。FGO の接続が一時的に切れる場合があります。"</string>
-    <string name="capture_adguard_steps">"1. AdGuard → 設定 → ネットワーク → プロキシ → プロキシサーバーを開きます。\n2. 種類を SOCKS5（または HTTP）として追加します。\n3. ホストに 127.0.0.1、ポートに上の番号を入力します。\n4. プロキシ認証はオフのままにします。\n5. プロキシを使用するアプリで FGO のみを指定します。"</string>
+    <string name="capture_adguard_steps">"1. AdGuard → 設定 → フィルタリング → ネットワーク → プロキシ → プロキシサーバーで SOCKS5(または HTTP)、ホスト 127.0.0.1、上のポートを追加します。プロキシ認証はオフのままにします。\n2. 「プロキシ経由で動作するアプリ」で FGO だけを選びます(JP を使う場合は JP も)。\n3. AdGuard のアプリ管理で FGA を AdGuard の対象から外します。\n4. AdGuard のアプリ管理で FGO の HTTPS フィルタリングをオフにします。\n5. AdGuard でプロキシをオンにします。"</string>
     <string name="capture_adguard_status_waiting">"プロキシ待機中 · 127.0.0.1:%1$d"</string>
     <string name="capture_adguard_status_collecting">"収集中 · 127.0.0.1:%1$d"</string>
-    <string name="capture_adguard_status_port_error">"ポート %1$d は使用中です。別のポートを入力するか使用中のアプリを終了してください。"</string>
+    <string name="capture_adguard_status_port_error">"ポート %1$d は使用中です。別のポートに変更し、AdGuard にも同じポートを入力してください。"</string>
     <string name="capture_adguard_last_connection">"最後の FGO 接続: %1$d分前"</string>
     <string name="capture_adguard_no_connection">"FGO の接続がまだ確認できていません — AdGuard の設定を確認してください。"</string>
-    <string name="capture_adguard_upstream_warning">"FGO サーバーへの上流接続が %1$d回失敗しました。"</string>
+    <string name="capture_adguard_tls_warning">"ゲームが FGA の証明書を %1$d 回拒否しました。AdGuard で FGO の HTTPS フィルタリングをオフにしてください。"</string>
+    <string name="capture_adguard_upstream_warning">"FGA がゲームサーバーに %1$d 回接続できませんでした。AdGuard で FGA を除外しているか確認してください。"</string>
     <string name="capture_adguard_leave_title">"先に AdGuard のプロキシをオフにしてください"</string>
     <string name="capture_adguard_leave_message">"先に AdGuard のプロキシ設定をオフにしないと FGO が通信できなくなります。"</string>
     <string name="capture_adguard_leave_confirm">"続行"</string>

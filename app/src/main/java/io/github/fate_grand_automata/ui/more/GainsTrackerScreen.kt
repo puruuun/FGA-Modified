@@ -84,7 +84,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -300,6 +299,13 @@ class GainsTrackerViewModel @Inject constructor(
 
     fun applyProxyPort(port: Int) {
         if (!CaptureConnectionMode.isValidProxyPort(port)) return
+        val currentState = CaptureProxyStatus.state.value.state
+        if (currentState is CaptureProxyState.Listening && currentState.port == port) {
+            if (prefsCore.captureProxyPort.get() != port) {
+                prefsCore.captureProxyPort.set(port)
+            }
+            return
+        }
         prefsCore.captureProxyPort.set(port)
         CaptureController.applyProxyPort(context)
         toast(context.getString(R.string.capture_adguard_port_changed_drop))
@@ -338,7 +344,9 @@ class GainsTrackerViewModel @Inject constructor(
             try {
                 CaptureController.shutdownProxy(context)
                 withTimeoutOrNull(5_000) {
-                    CaptureProxyStatus.state.first { it.state == CaptureProxyState.Idle }
+                    while (CaptureController.isProxyAlive() || CaptureProxyStatus.state.value.state != CaptureProxyState.Idle) {
+                        delay(50)
+                    }
                 }
                 if (disableFeature) {
                     prefsCore.captureTrackerEnabled.set(false)
@@ -708,7 +716,14 @@ fun GainsTrackerContent(
                         val showTlsWarning = state.tlsFailures > 0 &&
                             (state.running || state.connectionMode == CaptureConnectionMode.AdGuard)
                         if (showTlsWarning) Text(
-                            stringResource(R.string.capture_tls_warning, state.tlsFailures),
+                            stringResource(
+                                if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                    R.string.capture_adguard_tls_warning
+                                } else {
+                                    R.string.capture_tls_warning
+                                },
+                                state.tlsFailures,
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )

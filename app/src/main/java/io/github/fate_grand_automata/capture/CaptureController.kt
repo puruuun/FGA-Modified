@@ -105,13 +105,8 @@ object CaptureController {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         return when (captureStartDispatch(connectionMode(context))) {
             CaptureStartKind.StartVpn -> {
-                runCatching {
-                    context.startForegroundService(Intent(context, CaptureVpnService::class.java))
-                    true
-                }.onFailure { t ->
-                    Timber.w(t, "Capture: failed to start VPN service")
-                    CaptureTracker.starting = false
-                }.getOrDefault(false)
+                context.startForegroundService(Intent(context, CaptureVpnService::class.java))
+                true
             }
 
             CaptureStartKind.StartProxyReading -> {
@@ -152,6 +147,9 @@ object CaptureController {
 
     fun isVpnActive(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && CaptureVpnService.instance != null
+
+    fun isProxyAlive(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && CaptureProxyService.alive
 
     fun stopVpn(reason: CaptureStopReason = CaptureStopReason.User) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return

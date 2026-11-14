@@ -44,6 +44,17 @@ class TlsClientHelloTest {
         assertEquals("line1-s1.bilibiligame.net", TlsClientHello.sniHost(packet, packet.size))
     }
 
+    @Test
+    fun `returns null on oversized TLS record`() {
+        val valid = buildClientHelloRecord(serverName = "game.fate-go.jp")
+        val oversizedPayloadLen = TlsClientHello.MAX_RECORD_PAYLOAD_BYTES + 1
+        val oversized = ByteArray(5 + oversizedPayloadLen)
+        valid.copyInto(oversized)
+        oversized[3] = ((oversizedPayloadLen ushr 8) and 0xFF).toByte()
+        oversized[4] = (oversizedPayloadLen and 0xFF).toByte()
+        assertNull(TlsClientHello.sniHost(oversized, oversized.size))
+    }
+
     companion object {
         fun buildClientHelloRecord(
             serverName: String?,
