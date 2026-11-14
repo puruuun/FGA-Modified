@@ -1,22 +1,38 @@
 package io.github.fate_grand_automata.ui.more
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.OfflineBolt
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.enums.GameServers
+import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.SingleSelectChipPreference
-import io.github.fate_grand_automata.ui.prefs.StepperPreference
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
@@ -93,14 +109,19 @@ fun LazyListScope.battleGroup(
     }
     item {
         val enabled by prefs.missionPopupClear.remember()
+        var seconds by prefs.missionPopupClearSeconds.remember()
         val resources = LocalResources.current
-        prefs.missionPopupClearSeconds.StepperPreference(
+        InlineSubStepperRow(
             title = stringResource(R.string.p_mission_popup_clear_seconds),
+            value = seconds,
+            onValueChange = { seconds = it },
             valueRange = 1..60,
             enabled = enabled,
             valueRepresentation = {
                 resources.getString(R.string.p_mission_popup_clear_seconds_value, it)
-            }
+            },
+            modifier = Modifier.testTag("mission-popup-clear-seconds"),
+            titleTestTag = "mission-popup-clear-seconds-title"
         )
     }
 
@@ -136,6 +157,65 @@ fun LazyListScope.battleGroup(
             title = stringResource(R.string.p_enable_quest_item_control),
             icon = icon(R.drawable.ic_gift)
         )
+    }
+}
+
+@Composable
+private fun InlineSubStepperRow(
+    title: String,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    valueRange: IntRange,
+    enabled: Boolean,
+    valueRepresentation: (Int) -> String,
+    modifier: Modifier = Modifier,
+    titleTestTag: String? = null
+) {
+    val titleColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    }
+
+    // Match ListItem's container/padding/leading slot (16 + 40 + 16) plus 16 dp sub-item indent
+    // without ListItem's mergeDescendants, keeping the title and stepper nodes individually addressable.
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 56.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(Modifier.width(40.dp))
+                Spacer(Modifier.width(16.dp))
+                Row(
+                    modifier = Modifier.padding(start = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = title,
+                        color = titleColor,
+                        modifier = Modifier
+                            .then(titleTestTag?.let { Modifier.testTag(it) } ?: Modifier)
+                            .weight(1f, fill = false)
+                    )
+                    Stepper(
+                        value = value,
+                        onValueChange = onValueChange,
+                        valueRange = valueRange,
+                        enabled = enabled,
+                        valueRepresentation = valueRepresentation
+                    )
+                }
+            }
+        }
     }
 }
 
