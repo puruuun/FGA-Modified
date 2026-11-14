@@ -36,6 +36,7 @@ object CaptureAutoStart {
                 CaptureTracker.init(context)
                 if (serverCode != null) CaptureTracker.outsideScriptStart(battle, serverCode)
                 if (!CaptureController.isSupported) return@captureSafely
+                CaptureController.ensureProxy(context)
                 val readiness = captureReadiness(context, prefs)
                 if (server != GameServer.Kr && (server != GameServer.Jp.Original || !readiness.jpReady)) return@captureSafely
                 if (battle && serverCode != null) CaptureTracker.startRun(serverCode)
@@ -48,7 +49,9 @@ object CaptureAutoStart {
                         toast(context, R.string.capture_auto_no_certificate)
                     } else {
                         CaptureTracker.starting = true
-                        CaptureController.start(context)
+                        if (!CaptureController.start(context)) {
+                            CaptureTracker.starting = false
+                        }
                     }
                 } catch (t: Throwable) {
                     CaptureTracker.starting = false

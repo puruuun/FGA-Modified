@@ -1404,4 +1404,32 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_mission_popup_clear_summary">"On the Repeat dialog, taps the top centre (where mission popups show) rapidly for the set time before pressing Repeat. Turn on for quests where many popups pile up and cover the wave and turn display."</string>
     <string name="p_mission_popup_clear_seconds">"Tapping time"</string>
     <string name="p_mission_popup_clear_seconds_value">"%1$d s"</string>
+    <!-- AdGuard capture proxy mode (#416) -->
+    <string name="capture_connection_mode_label">"Connection mode"</string>
+    <string name="capture_connection_mode_vpn">"FGA VPN"</string>
+    <string name="capture_connection_mode_adguard">"AdGuard"</string>
+    <string name="capture_proxy_port_in_use">"Port %1$d is in use."</string>
+    <string name="capture_proxy_notification_waiting">"Proxy waiting · 127.0.0.1:%1$d"</string>
+    <string name="capture_proxy_notification_collecting">"Collecting · 127.0.0.1:%1$d"</string>
+    <string name="capture_proxy_notification_port_error">"Port %1$d is in use"</string>
+    <string name="capture_proxy_notification_action_start">"Turn reading on"</string>
+    <string name="capture_proxy_notification_action_stop">"Turn reading off"</string>
+    <string name="capture_adguard_card_title">"AdGuard local proxy"</string>
+    <string name="capture_adguard_address">"Proxy address: %1$s"</string>
+    <string name="capture_adguard_copy">"Copy"</string>
+    <string name="capture_adguard_copied">"Copied %1$s"</string>
+    <string name="capture_adguard_port_label">"Port (1024–65535)"</string>
+    <string name="capture_adguard_port_apply">"Apply"</string>
+    <string name="capture_adguard_port_invalid">"Enter a port number between 1024 and 65535."</string>
+    <string name="capture_adguard_port_changed_drop">"Port updated. FGO's connection may drop for a moment."</string>
+    <string name="capture_adguard_steps">"1. Open AdGuard → Settings → Network → Proxy → Proxy server.\n2. Add a server with type SOCKS5 (or HTTP).\n3. Set Host to 127.0.0.1 and Port to the value above.\n4. Leave proxy authentication off.\n5. Set Apps using proxy to route only FGO through it."</string>
+    <string name="capture_adguard_status_waiting">"Proxy waiting · 127.0.0.1:%1$d"</string>
+    <string name="capture_adguard_status_collecting">"Collecting · 127.0.0.1:%1$d"</string>
+    <string name="capture_adguard_status_port_error">"Port %1$d is in use. Enter another port or stop the app using it."</string>
+    <string name="capture_adguard_last_connection">"Last FGO connection: %1$d min ago"</string>
+    <string name="capture_adguard_no_connection">"FGO connection not confirmed yet — check the AdGuard settings."</string>
+    <string name="capture_adguard_upstream_warning">"Upstream connections to FGO servers failed %1$d times."</string>
+    <string name="capture_adguard_leave_title">"Turn off AdGuard proxy first"</string>
+    <string name="capture_adguard_leave_message">"Turn off the proxy in AdGuard first, otherwise FGO has no connection."</string>
+    <string name="capture_adguard_leave_confirm">"Continue"</string>
 </resources>

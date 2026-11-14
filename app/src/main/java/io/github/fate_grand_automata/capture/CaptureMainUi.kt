@@ -115,8 +115,11 @@ fun rememberCaptureMain(
                 finishStart(false)
                 openSettings()
             } else {
-                CaptureController.start(context)
-                awaitingStart = true
+                if (CaptureController.start(context)) {
+                    awaitingStart = true
+                } else {
+                    finishStart(false)
+                }
             }
         }.onFailure {
             finishStart(false)
@@ -127,7 +130,7 @@ fun rememberCaptureMain(
         if (it.resultCode == Activity.RESULT_OK) start() else finishStart(false)
     }
     val toggle: () -> Unit = {
-        if (CaptureTracker.running.value) CaptureController.stop()
+        if (CaptureTracker.running.value) CaptureController.stop(context = context)
         else agreement(false) {
             runCatching {
                 if (!captureReadiness(context, prefs).ready) {

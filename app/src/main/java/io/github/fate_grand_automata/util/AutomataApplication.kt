@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import dagger.hilt.android.HiltAndroidApp
 import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.deleteLegacyEventCache
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.widget.WidgetRefresh
@@ -36,6 +37,7 @@ class AutomataApplication : Application() {
         // Reaches the sync hooks (no Context there) and starts the sync only when its switch is on.
         io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager.init(this, prefsCore)
         WidgetSettingsObserver.start(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
+        CaptureController.ensureProxy(this)
 
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }

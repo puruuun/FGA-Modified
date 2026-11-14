@@ -11,6 +11,7 @@ object CaptureServiceLifecycle {
     fun shouldStop(stopWithService: Boolean): Boolean = stopWithService
 
     fun onStart(context: Context, prefs: PrefsCore, requestConsent: (Intent) -> Unit) {
+        CaptureController.ensureProxy(context)
         if (!CaptureController.isSupported || !prefs.captureTrackerEnabled.get() ||
             !CaptureConsent.agreed(prefs.captureConsentVersion.get()) || CaptureTracker.running.value) return
         runCatching {
@@ -28,7 +29,7 @@ object CaptureServiceLifecycle {
     fun onStop(context: Context, prefs: PrefsCore) {
         CaptureTracker.serviceStop()
         if (CaptureController.isSupported && shouldStop(prefs.captureStopWithService.get())) {
-            CaptureController.stop(CaptureStopReason.Service)
+            CaptureController.stop(CaptureStopReason.Service, context)
             // Also cancel a queued start whose service instance has not been created yet.
             context.stopService(Intent(context, CaptureVpnService::class.java))
         }

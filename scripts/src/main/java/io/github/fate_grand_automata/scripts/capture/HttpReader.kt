@@ -57,6 +57,9 @@ class HttpReader(
 ) {
     private val input = BufferedInputStream(input, 16 * 1024)
 
+    /** Returns the internal buffered stream so bytes read ahead during header sniffing are preserved. */
+    fun inputStream(): InputStream = input
+
     /** Returns null on a clean EOF before the first byte of a message. */
     fun readHead(): HttpHead? {
         val buf = ByteArrayOutputStream()

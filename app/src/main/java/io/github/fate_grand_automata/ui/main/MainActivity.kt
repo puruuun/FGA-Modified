@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
 import io.github.fate_grand_automata.ui.prefs.initializeApplicationLanguage
 import io.github.fate_grand_automata.util.CutoutManager
@@ -49,5 +50,6 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         vm.activityStarted()
+        CaptureController.ensureProxy(this)
     }
 }

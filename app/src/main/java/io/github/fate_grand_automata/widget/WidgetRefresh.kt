@@ -64,6 +64,7 @@ object WidgetRefresh {
 class WidgetRestoreReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        io.github.fate_grand_automata.capture.CaptureController.ensureProxy(context)
         val pending = goAsync()
         val app = context.applicationContext
         WidgetRefresh.scope.launch {
