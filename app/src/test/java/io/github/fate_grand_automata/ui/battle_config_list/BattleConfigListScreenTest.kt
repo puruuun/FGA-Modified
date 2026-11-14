@@ -7,9 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
@@ -190,6 +194,7 @@ class BattleConfigListScreenTest {
         val gridBounds = composeRule.onNodeWithTag(ConfigGridTag).getBoundsInRoot()
         val jpHeader = composeRule.onNodeWithTag("${ServerHeaderTagPrefix}${GameServer.Jp.Original.serialize()}")
             .getBoundsInRoot()
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}f1").getBoundsInRoot()
         val folderBounds = composeRule.onNodeWithText("F1").getBoundsInRoot()
         val jpItemBounds = composeRule.onNodeWithText("JpUnfiled").getBoundsInRoot()
 
@@ -208,9 +213,11 @@ class BattleConfigListScreenTest {
         val itemTextBounds = composeRule.onNodeWithText("JpUnfiled", useUnmergedTree = true).getBoundsInRoot()
         assertDpClose(headerTextBounds.left, itemTextBounds.left)
 
-        // Folder row spans full content width (across both columns)
-        assertDpClose(folderBounds.left - gridBounds.left, 16.dp)
-        assertDpClose(gridBounds.right - folderBounds.right, 16.dp)
+        // Folder box spans full content width (across both columns), with 8dp padding around the folder row
+        assertDpClose(boxBounds.left - gridBounds.left, 16.dp)
+        assertDpClose(gridBounds.right - boxBounds.right, 16.dp)
+        assertDpClose(folderBounds.left - boxBounds.left, 8.dp)
+        assertDpClose(boxBounds.right - folderBounds.right, 8.dp)
         assertThat(folderBounds.width).isGreaterThan(jpItemBounds.width)
     }
 
@@ -240,12 +247,15 @@ class BattleConfigListScreenTest {
         val gridBounds = composeRule.onNodeWithTag(ConfigGridTag).getBoundsInRoot()
         val jpHeader = composeRule.onNodeWithTag("${ServerHeaderTagPrefix}${GameServer.Jp.Original.serialize()}")
             .getBoundsInRoot()
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}f1").getBoundsInRoot()
         val folderBounds = composeRule.onNodeWithText("F1").getBoundsInRoot()
 
         assertDpClose(jpHeader.left, gridBounds.left)
         assertDpClose(jpHeader.right, gridBounds.right)
-        assertDpClose(folderBounds.left - gridBounds.left, 16.dp)
-        assertDpClose(gridBounds.right - folderBounds.right, 16.dp)
+        assertDpClose(boxBounds.left - gridBounds.left, 16.dp)
+        assertDpClose(gridBounds.right - boxBounds.right, 16.dp)
+        assertDpClose(folderBounds.left - boxBounds.left, 8.dp)
+        assertDpClose(boxBounds.right - folderBounds.right, 8.dp)
     }
 
     @Test
@@ -271,25 +281,28 @@ class BattleConfigListScreenTest {
         }
         composeRule.waitForIdle()
 
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer").getBoundsInRoot()
         val b1 = composeRule.onNodeWithText("FirstInFolder").onParent().getBoundsInRoot()
         val b2 = composeRule.onNodeWithText("SecondInFolder").onParent().getBoundsInRoot()
         val b3 = composeRule.onNodeWithText("ThirdInFolder").onParent().getBoundsInRoot()
         val u1 = composeRule.onNodeWithText("UnfiledItem").onParent().getBoundsInRoot()
 
-        // First two folder items are side by side; no 24dp indent
+        // First two folder items are side by side inside the 8dp-padded box; odd third item takes one cell width
         assertDpClose(b1.top, b2.top)
-        assertThat(b2.left).isGreaterThan(b1.right)
-        assertDpClose(b1.left, 16.dp)
+        assertDpClose(b2.left - b1.right, 12.dp)
+        assertDpClose(b1.left - boxBounds.left, 8.dp)
+        assertDpClose(boxBounds.right - b2.right, 8.dp)
         assertThat(b3.top).isGreaterThan(b1.bottom)
+        assertDpClose(b3.width, b1.width)
 
-        // Unfiled item after odd-count expanded folder starts on a fresh row
-        assertThat(u1.top).isGreaterThan(b3.bottom)
-        assertDpClose(u1.left, b1.left)
+        // Unfiled item starts below the folder box on a fresh row
+        assertThat(u1.top).isGreaterThan(boxBounds.bottom)
+        assertDpClose(u1.left, boxBounds.left)
     }
 
     @Test
     @Config(qualifiers = "w400dp-h800dp")
-    fun `expanded folder items keep 24dp indent in one-column mode`() {
+    fun `expanded folder items sit inside 8dp box padding without extra indent in one-column mode`() {
         val configs = listOf(
             makeConfig("f1", "FirstInFolder", folder = "Lancer"),
             makeConfig("u1", "UnfiledItem")
@@ -309,10 +322,13 @@ class BattleConfigListScreenTest {
         }
         composeRule.waitForIdle()
 
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer").getBoundsInRoot()
         val folderItem = composeRule.onNodeWithText("FirstInFolder").onParent().getBoundsInRoot()
         val unfiledItem = composeRule.onNodeWithText("UnfiledItem").onParent().getBoundsInRoot()
 
-        assertDpClose(folderItem.left - unfiledItem.left, 24.dp)
+        assertDpClose(boxBounds.left, unfiledItem.left)
+        assertDpClose(folderItem.left - boxBounds.left, 8.dp)
+        assertDpClose(folderItem.left - unfiledItem.left, 8.dp)
     }
 
     @OptIn(ExperimentalTestApi::class)
@@ -416,5 +432,214 @@ class BattleConfigListScreenTest {
         val headerBounds = jpHeaderNode.getBoundsInRoot()
         assertThat(headerBounds.top).isLessThan(gridTop + 20.dp)
         composeRule.onNodeWithText("JP_01").assertDoesNotExist()
+    }
+
+    @Test
+    fun `expanded folder box contains its 3 configs and excludes 2 unfiled configs`() {
+        val configs = listOf(
+            makeConfig("f1", "Alpha", folder = "Lancer"),
+            makeConfig("f2", "Beta", folder = "Lancer"),
+            makeConfig("f3", "Gamma", folder = "Lancer"),
+            makeConfig("u1", "SoloOne"),
+            makeConfig("u2", "SoloTwo")
+        )
+
+        composeRule.setContent {
+            FGATheme {
+                BattleConfigListContent(
+                    configs = configs,
+                    selectionMode = false,
+                    selectedConfigs = emptySet(),
+                    expandedFolders = setOf("lancer"),
+                    folderRevision = 0,
+                    action = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val boxNode = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer")
+        boxNode.assertIsDisplayed()
+        // FolderRow + 3 BattleConfigListItem cards are inside the folder box
+        boxNode.onChildren().assertCountEquals(4)
+        listOf("Alpha", "Beta", "Gamma").forEach { name ->
+            boxNode.onChildren().filterToOne(hasAnyDescendant(hasText(name))).assertIsDisplayed()
+            composeRule.onNode(
+                hasText(name) and hasAnyAncestor(hasTestTag("${FolderBoxTagPrefix}lancer"))
+            ).assertIsDisplayed()
+        }
+
+        val boxBounds = boxNode.getBoundsInRoot()
+        listOf("SoloOne", "SoloTwo").forEach { name ->
+            composeRule.onNode(
+                hasText(name) and hasAnyAncestor(hasTestTag("${FolderBoxTagPrefix}lancer"))
+            ).assertDoesNotExist()
+            val unfiledBounds = composeRule.onNodeWithText(name).onParent().getBoundsInRoot()
+            assertThat(unfiledBounds.top).isGreaterThan(boxBounds.bottom)
+        }
+    }
+
+    @Test
+    fun `collapsed folder box exists and contains no config`() {
+        val configs = listOf(
+            makeConfig("f1", "Alpha", folder = "Lancer"),
+            makeConfig("f2", "Beta", folder = "Lancer")
+        )
+
+        composeRule.setContent {
+            FGATheme {
+                BattleConfigListContent(
+                    configs = configs,
+                    selectionMode = false,
+                    selectedConfigs = emptySet(),
+                    expandedFolders = emptySet(),
+                    folderRevision = 0,
+                    action = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val boxNode = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer")
+        boxNode.assertIsDisplayed()
+        // Only the FolderRow child is inside the collapsed box
+        boxNode.onChildren().assertCountEquals(1)
+        composeRule.onNodeWithText("Alpha").assertDoesNotExist()
+        composeRule.onNodeWithText("Beta").assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun `selection mode works for configs inside a folder box`() {
+        val configs = listOf(
+            makeConfig("f1", "FolderOne", folder = "Farm"),
+            makeConfig("f2", "FolderTwo", folder = "Farm")
+        )
+        var lastSelected: Set<String> = emptySet()
+
+        composeRule.setContent {
+            var selectionMode by remember { mutableStateOf(false) }
+            var selected by remember { mutableStateOf(emptySet<String>()) }
+
+            FGATheme {
+                BattleConfigListContent(
+                    configs = configs,
+                    selectionMode = selectionMode,
+                    selectedConfigs = selected,
+                    expandedFolders = setOf("farm"),
+                    folderRevision = 0,
+                    action = { action ->
+                        when (action) {
+                            is BattleConfigListAction.StartSelection -> {
+                                selectionMode = true
+                                selected = setOf(action.id)
+                                lastSelected = selected
+                            }
+                            is BattleConfigListAction.ToggleSelected -> {
+                                selected = if (action.id in selected) selected - action.id else selected + action.id
+                                if (selected.isEmpty()) selectionMode = false
+                                lastSelected = selected
+                            }
+                            else -> {}
+                        }
+                    }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("FolderOne").performTouchInput { longClick() }
+        composeRule.waitForIdle()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        composeRule.onNodeWithText(
+            context.getString(R.string.battle_config_folder_move),
+            ignoreCase = true
+        ).assertIsDisplayed()
+        assertThat(lastSelected).isEqualTo(setOf("f1"))
+
+        composeRule.onNodeWithText("FolderTwo").performClick()
+        composeRule.waitForIdle()
+        assertThat(lastSelected).isEqualTo(setOf("f1", "f2"))
+
+        composeRule.onNodeWithText("FolderOne").performClick()
+        composeRule.waitForIdle()
+        assertThat(lastSelected).isEqualTo(setOf("f2"))
+    }
+
+    @Test
+    fun `two-column width renders expanded odd folder followed by unfiled config without pad spacer`() {
+        val configs = listOf(
+            makeConfig("f1", "Alpha", folder = "Lancer"),
+            makeConfig("f2", "Beta", folder = "Lancer"),
+            makeConfig("f3", "Gamma", folder = "Lancer"),
+            makeConfig("u1", "Solo")
+        )
+
+        composeRule.setContent {
+            FGATheme {
+                BattleConfigListContent(
+                    configs = configs,
+                    selectionMode = false,
+                    selectedConfigs = emptySet(),
+                    expandedFolders = setOf("lancer"),
+                    folderRevision = 0,
+                    action = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer").getBoundsInRoot()
+        val b1 = composeRule.onNodeWithText("Alpha").onParent().getBoundsInRoot()
+        val b2 = composeRule.onNodeWithText("Beta").onParent().getBoundsInRoot()
+        val b3 = composeRule.onNodeWithText("Gamma").onParent().getBoundsInRoot()
+        val u1 = composeRule.onNodeWithText("Solo").onParent().getBoundsInRoot()
+
+        assertDpClose(b1.top, b2.top)
+        assertDpClose(b2.left - b1.right, 12.dp)
+        assertDpClose(b3.top - b1.bottom, 10.dp)
+        assertDpClose(b3.width, b1.width)
+        assertDpClose(u1.top - boxBounds.bottom, 10.dp)
+        // Grid has only the folder box and the unfiled card (no pad spacer)
+        composeRule.onNodeWithTag(ConfigGridTag).onChildren().assertCountEquals(2)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h800dp")
+    fun `one-column width renders expanded folder followed by unfiled config without pad spacer`() {
+        val configs = listOf(
+            makeConfig("f1", "Alpha", folder = "Lancer"),
+            makeConfig("f2", "Beta", folder = "Lancer"),
+            makeConfig("f3", "Gamma", folder = "Lancer"),
+            makeConfig("u1", "Solo")
+        )
+
+        composeRule.setContent {
+            FGATheme {
+                BattleConfigListContent(
+                    configs = configs,
+                    selectionMode = false,
+                    selectedConfigs = emptySet(),
+                    expandedFolders = setOf("lancer"),
+                    folderRevision = 0,
+                    action = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val boxBounds = composeRule.onNodeWithTag("${FolderBoxTagPrefix}lancer").getBoundsInRoot()
+        val b1 = composeRule.onNodeWithText("Alpha").onParent().getBoundsInRoot()
+        val b2 = composeRule.onNodeWithText("Beta").onParent().getBoundsInRoot()
+        val b3 = composeRule.onNodeWithText("Gamma").onParent().getBoundsInRoot()
+        val u1 = composeRule.onNodeWithText("Solo").onParent().getBoundsInRoot()
+
+        assertDpClose(b1.left, b2.left)
+        assertDpClose(b2.left, b3.left)
+        assertDpClose(b2.top - b1.bottom, 10.dp)
+        assertDpClose(b3.top - b2.bottom, 10.dp)
+        assertDpClose(u1.top - boxBounds.bottom, 10.dp)
+        // Grid has only the folder box and the unfiled card (no pad spacer)
+        composeRule.onNodeWithTag(ConfigGridTag).onChildren().assertCountEquals(2)
     }
 }

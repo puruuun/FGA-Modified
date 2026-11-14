@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -303,12 +302,15 @@ internal fun BattleConfigListContent(
 
 internal const val ConfigGridTag = "battle_config_grid"
 internal const val ServerHeaderTagPrefix = "server_header_"
+internal const val FolderBoxTagPrefix = "config-folder-box:"
 
 private val TwoColumnBreakpoint = 600.dp
 private val GridHorizontalPadding = 16.dp
 private val GridTopPadding = 16.dp
 private val ColumnGap = 12.dp
 private val RowGap = 10.dp
+private val FolderBoxCornerRadius = 12.dp
+private val FolderBoxPadding = 8.dp
 
 @Composable
 private fun ConfigList(
@@ -364,7 +366,7 @@ private fun ConfigList(
                     }
 
                     @Composable
-                    fun configItem(core: BattleConfigCore, indent: Boolean) {
+                    fun configItem(core: BattleConfigCore, modifier: Modifier = Modifier) {
                         BattleConfigListItem(
                             core,
                             onClick = {
@@ -381,11 +383,11 @@ private fun ConfigList(
                             },
                             isSelectionMode = selectionMode,
                             isSelected = selectionMode && core.id in selectedConfigs,
-                            modifier = if (indent) Modifier.padding(start = 24.dp) else Modifier
+                            modifier = modifier
                         )
                     }
 
-                    entries.forEachIndexed { index, entry ->
+                    entries.forEach { entry ->
                         when (entry) {
                             is ConfigEntry.Folder -> {
                                 val expanded = entry.key in expandedFolders
@@ -396,33 +398,25 @@ private fun ConfigList(
                                     val selectedCount = if (selectionMode && !expanded)
                                         entry.items.count { it.id in selectedConfigs }
                                     else 0
-                                    FolderRow(
+                                    val folderConfigs = if (expanded) {
+                                        entry.items.mapNotNull { byId[it.id] }
+                                    } else emptyList()
+                                    FolderBox(
+                                        folderKey = entry.key,
                                         name = entry.displayName,
                                         count = entry.items.size,
                                         expanded = expanded,
                                         selectedCount = selectedCount,
-                                        onClick = { action(BattleConfigListAction.ToggleFolder(entry.key)) }
+                                        twoColumns = twoColumns,
+                                        configs = folderConfigs,
+                                        onToggle = { action(BattleConfigListAction.ToggleFolder(entry.key)) },
+                                        configItem = { core, itemModifier -> configItem(core, itemModifier) }
                                     )
-                                }
-                                if (expanded) {
-                                    items(entry.items, key = { it.id }) { item ->
-                                        byId[item.id]?.let { configItem(it, indent = !twoColumns) }
-                                    }
-                                    val hasNextUnfiled = entries.getOrNull(index + 1) is ConfigEntry.Unfiled
-                                    if (twoColumns && hasNextUnfiled && entry.items.size % 2 == 1) {
-                                        // Keep unfiled items below an odd-count expanded folder on a fresh row.
-                                        item(
-                                            key = "folder-pad:${server?.toString()}:${entry.key}",
-                                            span = { GridItemSpan(1) }
-                                        ) {
-                                            Spacer(modifier = Modifier)
-                                        }
-                                    }
                                 }
                             }
 
                             is ConfigEntry.Unfiled -> item(key = entry.item.id) {
-                                byId[entry.item.id]?.let { configItem(it, indent = false) }
+                                byId[entry.item.id]?.let { configItem(it) }
                             }
                         }
                     }
@@ -431,6 +425,55 @@ private fun ConfigList(
                         Spacer(
                             modifier = Modifier.height(10.dp)
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FolderBox(
+    folderKey: String,
+    name: String,
+    count: Int,
+    expanded: Boolean,
+    selectedCount: Int,
+    twoColumns: Boolean,
+    configs: List<BattleConfigCore>,
+    onToggle: () -> Unit,
+    configItem: @Composable (BattleConfigCore, Modifier) -> Unit
+) {
+    val shape = RoundedCornerShape(FolderBoxCornerRadius)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("$FolderBoxTagPrefix$folderKey")
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), shape)
+            .padding(FolderBoxPadding),
+        verticalArrangement = Arrangement.spacedBy(RowGap)
+    ) {
+        FolderRow(
+            name = name,
+            count = count,
+            expanded = expanded,
+            selectedCount = selectedCount,
+            onClick = onToggle
+        )
+        if (expanded) {
+            val columnCount = if (twoColumns) 2 else 1
+            configs.chunked(columnCount).forEach { rowConfigs ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(ColumnGap)
+                ) {
+                    rowConfigs.forEach { core ->
+                        configItem(core, Modifier.weight(1f))
+                    }
+                    if (rowConfigs.size < columnCount) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
