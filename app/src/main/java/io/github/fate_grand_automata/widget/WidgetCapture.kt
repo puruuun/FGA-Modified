@@ -41,6 +41,7 @@ internal interface WidgetCaptureControl {
     fun canStart(context: Context): Boolean
     fun start(context: Context)
     fun stop()
+    fun ensureProxy(context: Context) {}
 }
 
 private object AndroidWidgetCaptureControl : WidgetCaptureControl {
@@ -57,8 +58,15 @@ private object AndroidWidgetCaptureControl : WidgetCaptureControl {
             ) == WidgetCaptureAction.Start
     }
 
-    override fun start(context: Context) = CaptureController.start(context)
+    override fun start(context: Context) {
+        if (!CaptureController.start(context)) error("Capture start failed")
+    }
+
     override fun stop() = CaptureController.stop(CaptureStopReason.User)
+
+    override fun ensureProxy(context: Context) {
+        CaptureController.ensureProxy(context)
+    }
 }
 
 /** Handles the user interaction synchronously so the widget's foreground-start exemption is retained. */
@@ -66,6 +74,7 @@ class ToggleCaptureReceiver internal constructor(private val control: WidgetCapt
     constructor() : this(AndroidWidgetCaptureControl)
 
     override fun onReceive(context: Context, intent: Intent) {
+        control.ensureProxy(context)
         if (control.running()) {
             control.stop()
             return

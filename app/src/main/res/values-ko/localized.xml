@@ -1335,4 +1335,33 @@
     <string name="p_mission_popup_clear_summary">"연속 출격 창에서 [연속 출격]을 누르기 전에 화면 위쪽 가운데(미션 팝업 자리)를 정한 시간 동안 빠르게 연타해 팝업을 지웁니다. 팝업이 많이 쌓여 전투의 웨이브·턴 표시를 가리는 퀘스트에서 켜세요."</string>
     <string name="p_mission_popup_clear_seconds">"연타 시간"</string>
     <string name="p_mission_popup_clear_seconds_value">"%1$d초"</string>
+    <!-- AdGuard 프록시 수집 모드 (#416) -->
+    <string name="capture_connection_mode_label">"연결 방식"</string>
+    <string name="capture_connection_mode_vpn">"FGA VPN"</string>
+    <string name="capture_connection_mode_adguard">"AdGuard"</string>
+    <string name="capture_proxy_port_in_use">"포트 %1$d이(가) 사용 중입니다."</string>
+    <string name="capture_proxy_notification_waiting">"프록시 대기 중 · 127.0.0.1:%1$d"</string>
+    <string name="capture_proxy_notification_collecting">"수집 중 · 127.0.0.1:%1$d"</string>
+    <string name="capture_proxy_notification_port_error">"포트 %1$d 사용 중"</string>
+    <string name="capture_proxy_notification_action_start">"수집 켜기"</string>
+    <string name="capture_proxy_notification_action_stop">"수집 끄기"</string>
+    <string name="capture_adguard_card_title">"AdGuard 로컬 프록시"</string>
+    <string name="capture_adguard_address">"프록시 주소: %1$s"</string>
+    <string name="capture_adguard_copy">"복사"</string>
+    <string name="capture_adguard_copied">"복사됨: %1$s"</string>
+    <string name="capture_adguard_port_label">"포트 (1024–65535)"</string>
+    <string name="capture_adguard_port_apply">"적용"</string>
+    <string name="capture_adguard_port_invalid">"1024~65535 사이의 포트 번호를 입력하세요."</string>
+    <string name="capture_adguard_port_changed_drop">"포트를 변경했습니다. FGO 연결이 잠시 끊길 수 있습니다."</string>
+    <string name="capture_adguard_steps">"1. AdGuard → 설정 → 필터링 → 네트워크 → 프록시 → 프록시 서버에서 SOCKS5(또는 HTTP), 호스트 127.0.0.1, 위 포트를 추가합니다. 프록시 인증은 끈 상태로 둡니다.\n2. \"프록시를 통해 작동하는 앱\"에서 FGO만 선택합니다(KR, JP를 쓰면 JP도).\n3. AdGuard 앱 관리에서 FGA를 AdGuard 대상에서 제외합니다.\n4. AdGuard 앱 관리에서 FGO의 HTTPS 필터링을 끕니다.\n5. AdGuard에서 프록시를 켭니다."</string>
+    <string name="capture_adguard_status_waiting">"프록시 대기 중 · 127.0.0.1:%1$d"</string>
+    <string name="capture_adguard_status_collecting">"수집 중 · 127.0.0.1:%1$d"</string>
+    <string name="capture_adguard_status_port_error">"포트 %1$d이(가) 사용 중입니다. 다른 포트로 바꾸고 AdGuard에도 같은 포트를 넣으세요."</string>
+    <string name="capture_adguard_last_connection">"마지막 FGO 연결: %1$d분 전"</string>
+    <string name="capture_adguard_no_connection">"아직 FGO 연결이 확인되지 않았습니다 — AdGuard 설정을 확인하세요."</string>
+    <string name="capture_adguard_tls_warning">"게임이 FGA 인증서를 %1$d회 거부했습니다. AdGuard에서 FGO의 HTTPS 필터링을 끄세요."</string>
+    <string name="capture_adguard_upstream_warning">"FGA가 게임 서버에 %1$d회 연결하지 못했습니다. AdGuard에서 FGA를 제외했는지 확인하세요."</string>
+    <string name="capture_adguard_leave_title">"먼저 AdGuard 프록시를 끄세요"</string>
+    <string name="capture_adguard_leave_message">"AdGuard의 프록시 설정을 먼저 끄지 않으면 FGO 연결이 끊어집니다."</string>
+    <string name="capture_adguard_leave_confirm">"계속"</string>
 </resources>

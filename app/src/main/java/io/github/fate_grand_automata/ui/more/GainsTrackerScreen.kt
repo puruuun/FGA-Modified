@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.ui.more
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -9,14 +11,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,10 +32,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -40,6 +54,9 @@ import io.github.fate_grand_automata.capture.captureAccountCards
 import io.github.fate_grand_automata.capture.CaptureConsent
 import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.CaptureEnableAction
+import io.github.fate_grand_automata.capture.CaptureProxySnapshot
+import io.github.fate_grand_automata.capture.CaptureProxyState
+import io.github.fate_grand_automata.capture.CaptureProxyStatus
 import io.github.fate_grand_automata.capture.CaptureStopReason
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CaptureFileSaver
@@ -54,6 +71,7 @@ import io.github.fate_grand_automata.capture.JpRootSettings
 import io.github.fate_grand_automata.capture.JpRootState
 import io.github.fate_grand_automata.capture.rememberCaptureAgreement
 import io.github.fate_grand_automata.capture.RootCaInjector
+import io.github.fate_grand_automata.prefs.core.CaptureConnectionMode
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.CappedWidth
@@ -63,6 +81,7 @@ import io.github.fate_grand_automata.ui.prefs.PreferenceGroupHeader
 import io.github.fate_grand_automata.ui.prefs.remember
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +90,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class GainsTrackerUiState(
     val enabled: Boolean = false,
@@ -87,6 +107,11 @@ data class GainsTrackerUiState(
     val certSaving: Boolean = false,
     val droppedCount: Int = 0,
     val lastDroppedPath: String? = null,
+    val connectionMode: CaptureConnectionMode = CaptureConnectionMode.Vpn,
+    val proxyPort: Int = CaptureConnectionMode.DEFAULT_PROXY_PORT,
+    val proxyStatus: CaptureProxySnapshot = CaptureProxySnapshot(),
+    val modeSwitching: Boolean = false,
+    val nowMillis: Long = System.currentTimeMillis(),
 )
 
 /** The system save dialog for the certificate; [pending] is committed only after the user saved it. */
@@ -125,6 +150,7 @@ class GainsTrackerViewModel @Inject constructor(
     private val savedPath = MutableStateFlow<String?>(null)
     val saveRequest = MutableStateFlow<CertSaveRequest?>(null)
     private val clock = MutableStateFlow(System.currentTimeMillis() / 1000)
+    private val switchingMode = MutableStateFlow(false)
 
     init {
         CaptureTracker.init(context)
@@ -139,7 +165,14 @@ class GainsTrackerViewModel @Inject constructor(
         val lastDroppedPath: String?,
     )
 
-    val state: StateFlow<GainsTrackerUiState> = combine(
+    private data class ProxyUiStatus(
+        val mode: CaptureConnectionMode,
+        val port: Int,
+        val status: CaptureProxySnapshot,
+        val switching: Boolean,
+    )
+
+    private val coreStatus = combine(
         prefsCore.captureTrackerEnabled.asFlow(),
         prefsCore.captureStopWithService.asFlow(),
         cert,
@@ -168,6 +201,26 @@ class GainsTrackerViewModel @Inject constructor(
             certSaving = busy,
             droppedCount = vpn.droppedCount,
             lastDroppedPath = vpn.lastDroppedPath,
+            nowMillis = now * 1000L,
+        )
+    }
+
+    val state: StateFlow<GainsTrackerUiState> = combine(
+        coreStatus,
+        combine(
+            prefsCore.captureConnectionMode.asFlow(),
+            prefsCore.captureProxyPort.asFlow(),
+            CaptureProxyStatus.state,
+            switchingMode,
+        ) { mode, port, status, switching ->
+            ProxyUiStatus(mode, port, status, switching)
+        },
+    ) { base, proxyUi ->
+        base.copy(
+            connectionMode = proxyUi.mode,
+            proxyPort = proxyUi.port,
+            proxyStatus = proxyUi.status,
+            modeSwitching = proxyUi.switching,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
@@ -242,7 +295,69 @@ class GainsTrackerViewModel @Inject constructor(
     /** Moves the summary clock so AP keeps recovering on screen while no response arrives. */
     fun tick() { clock.value = System.currentTimeMillis() / 1000 }
 
-    fun stop() = CaptureController.stop()
+    fun stop() = CaptureController.stop(context = context)
+
+    fun applyProxyPort(port: Int) {
+        if (!CaptureConnectionMode.isValidProxyPort(port)) return
+        val currentState = CaptureProxyStatus.state.value.state
+        if (currentState is CaptureProxyState.Listening && currentState.port == port) {
+            if (prefsCore.captureProxyPort.get() != port) {
+                prefsCore.captureProxyPort.set(port)
+            }
+            return
+        }
+        prefsCore.captureProxyPort.set(port)
+        CaptureController.applyProxyPort(context)
+        toast(context.getString(R.string.capture_adguard_port_changed_drop))
+    }
+
+    fun switchToAdGuard() {
+        if (switchingMode.value) return
+        viewModelScope.launch {
+            switchingMode.value = true
+            try {
+                if (CaptureController.isVpnActive() || CaptureTracker.running.value) {
+                    CaptureController.stopVpn(CaptureStopReason.User)
+                    val stopped = withTimeoutOrNull(5_000) {
+                        while (CaptureController.isVpnActive() || CaptureTracker.running.value) {
+                            delay(50)
+                        }
+                        true
+                    } == true
+                    if (!stopped) {
+                        toast(context.getString(R.string.capture_start_failed))
+                        return@launch
+                    }
+                }
+                prefsCore.captureConnectionMode.set(CaptureConnectionMode.AdGuard)
+                CaptureController.ensureProxy(context)
+            } finally {
+                switchingMode.value = false
+            }
+        }
+    }
+
+    fun leaveAdGuard(disableFeature: Boolean) {
+        if (switchingMode.value) return
+        viewModelScope.launch {
+            switchingMode.value = true
+            try {
+                CaptureController.shutdownProxy(context)
+                withTimeoutOrNull(5_000) {
+                    while (CaptureController.isProxyAlive() || CaptureProxyStatus.state.value.state != CaptureProxyState.Idle) {
+                        delay(50)
+                    }
+                }
+                if (disableFeature) {
+                    prefsCore.captureTrackerEnabled.set(false)
+                } else {
+                    prefsCore.captureConnectionMode.set(CaptureConnectionMode.Vpn)
+                }
+            } finally {
+                switchingMode.value = false
+            }
+        }
+    }
 
     fun deleteData() {
         viewModelScope.launch {
@@ -300,9 +415,22 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         state = state,
         onEnabled = {
             when (CaptureConsent.enableAction(it, vm.prefsCore.captureConsentVersion.get())) {
-                CaptureEnableAction.Disable -> { enabled = false; vm.stop() }
-                CaptureEnableAction.Enable -> enabled = true
-                CaptureEnableAction.RequestConsent -> agreement(false) { enabled = true }
+                CaptureEnableAction.Disable -> {
+                    if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                        vm.leaveAdGuard(disableFeature = true)
+                    } else {
+                        enabled = false
+                        vm.stop()
+                    }
+                }
+                CaptureEnableAction.Enable -> {
+                    enabled = true
+                    CaptureController.ensureProxy(context)
+                }
+                CaptureEnableAction.RequestConsent -> agreement(false) {
+                    enabled = true
+                    CaptureController.ensureProxy(context)
+                }
             }
         },
         onReviewConsent = { agreement(true) {} },
@@ -325,6 +453,14 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         jpState = jpState,
         jpInstalled = jpGameInstalled(context),
         onJpRoot = vm::setJpRoot,
+        onSelectMode = { mode ->
+            when (mode) {
+                CaptureConnectionMode.Vpn -> vm.leaveAdGuard(disableFeature = false)
+                CaptureConnectionMode.AdGuard -> vm.switchToAdGuard()
+            }
+        },
+        onApplyProxyPort = vm::applyProxyPort,
+        onConfirmDisableAdGuard = { vm.leaveAdGuard(disableFeature = true) },
         extraItems = {
             chaldeaSyncItems(
                 ui = chaldeaUi,
@@ -374,11 +510,15 @@ fun GainsTrackerContent(
     jpState: JpRootState = JpRootState(),
     jpInstalled: Boolean = false,
     onJpRoot: (Boolean) -> Unit = {},
+    onSelectMode: (CaptureConnectionMode) -> Unit = {},
+    onApplyProxyPort: (Int) -> Unit = {},
+    onConfirmDisableAdGuard: () -> Unit = {},
     extraItems: LazyListScope.() -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showGuide by remember { mutableStateOf(false) }
+    var pendingLeaveAdGuardAction by remember { mutableStateOf<LeaveAdGuardAction?>(null) }
 
     if (confirmRecreate) AlertDialog(
         onDismissRequest = { confirmRecreate = false },
@@ -411,6 +551,39 @@ fun GainsTrackerContent(
         },
         dismissButton = { TextButton(onClick = { showGuide = false }) { Text(stringResource(android.R.string.ok)) } },
     )
+    pendingLeaveAdGuardAction?.let { action ->
+        AlertDialog(
+            onDismissRequest = { pendingLeaveAdGuardAction = null },
+            title = { Text(stringResource(R.string.capture_adguard_leave_title)) },
+            text = { Text(stringResource(R.string.capture_adguard_leave_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingLeaveAdGuardAction = null
+                        when (action) {
+                            LeaveAdGuardAction.SwitchToVpn -> onSelectMode(CaptureConnectionMode.Vpn)
+                            LeaveAdGuardAction.DisableFeature -> onConfirmDisableAdGuard()
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.capture_adguard_leave_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingLeaveAdGuardAction = null }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    val handleEnabledChange: (Boolean) -> Unit = { targetEnabled ->
+        if (!targetEnabled && state.connectionMode == CaptureConnectionMode.AdGuard) {
+            pendingLeaveAdGuardAction = LeaveAdGuardAction.DisableFeature
+        } else {
+            onEnabled(targetEnabled)
+        }
+    }
 
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
@@ -419,9 +592,13 @@ fun GainsTrackerContent(
                 item {
                     Preference(
                         title = stringResource(R.string.capture_enable),
-                        onClick = { onEnabled(!state.enabled) },
+                        onClick = { handleEnabledChange(!state.enabled) },
                     ) {
-                        androidx.compose.material3.Switch(checked = state.enabled, onCheckedChange = onEnabled)
+                        androidx.compose.material3.Switch(
+                            checked = state.enabled,
+                            enabled = !state.modeSwitching,
+                            onCheckedChange = handleEnabledChange,
+                        )
                     }
                 }
                 item {
@@ -468,39 +645,128 @@ fun GainsTrackerContent(
                 item { JpRootPreference(jpState, jpInstalled, onJpRoot) }
                 item { PreferenceGroupHeader(stringResource(R.string.capture_vpn_header)) }
                 item {
+                    val context = LocalContext.current
+                    val resources = LocalResources.current
                     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            stringResource(if (state.running) R.string.capture_vpn_running else R.string.capture_vpn_stopped),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        if (!state.running) state.stopReason?.let {
+                        if (CaptureController.isSupported) {
                             Text(
-                                stringResource(
-                                    when (it) {
-                                        CaptureStopReason.User -> R.string.capture_stop_user
-                                        CaptureStopReason.Service -> R.string.capture_stop_service
-                                        CaptureStopReason.Revoked -> R.string.capture_stop_revoked
-                                        CaptureStopReason.Error -> R.string.capture_stop_error
-                                        CaptureStopReason.Unsupported -> R.string.capture_stop_error
-                                    }
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                stringResource(R.string.capture_connection_mode_label),
+                                style = MaterialTheme.typography.labelLarge,
                             )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = state.connectionMode == CaptureConnectionMode.Vpn,
+                                    enabled = !state.modeSwitching,
+                                    onClick = {
+                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                            pendingLeaveAdGuardAction = LeaveAdGuardAction.SwitchToVpn
+                                        }
+                                    },
+                                    label = { Text(stringResource(R.string.capture_connection_mode_vpn)) },
+                                )
+                                FilterChip(
+                                    selected = state.connectionMode == CaptureConnectionMode.AdGuard,
+                                    enabled = !state.modeSwitching,
+                                    onClick = {
+                                        if (state.connectionMode != CaptureConnectionMode.AdGuard) {
+                                            onSelectMode(CaptureConnectionMode.AdGuard)
+                                        }
+                                    },
+                                    label = { Text(stringResource(R.string.capture_connection_mode_adguard)) },
+                                )
+                            }
                         }
-                        if (state.running && state.tlsFailures > 0) Text(
-                            stringResource(R.string.capture_tls_warning, state.tlsFailures),
+
+                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                            AdGuardProxyCard(
+                                state = state,
+                                onCopyAddress = { addr ->
+                                    context.getSystemService(ClipboardManager::class.java)
+                                        ?.setPrimaryClip(ClipData.newPlainText("AdGuard proxy", addr))
+                                    Toast.makeText(
+                                        context,
+                                        resources.getString(R.string.capture_adguard_copied, addr),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                                onApplyPort = onApplyProxyPort,
+                            )
+                        } else {
+                            Text(
+                                stringResource(if (state.running) R.string.capture_vpn_running else R.string.capture_vpn_stopped),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            if (!state.running) state.stopReason?.let {
+                                Text(
+                                    stringResource(
+                                        when (it) {
+                                            CaptureStopReason.User -> R.string.capture_stop_user
+                                            CaptureStopReason.Service -> R.string.capture_stop_service
+                                            CaptureStopReason.Revoked -> R.string.capture_stop_revoked
+                                            CaptureStopReason.Error -> R.string.capture_stop_error
+                                            CaptureStopReason.Unsupported -> R.string.capture_stop_error
+                                        }
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        val showTlsWarning = state.tlsFailures > 0 &&
+                            (state.running || state.connectionMode == CaptureConnectionMode.AdGuard)
+                        if (showTlsWarning) Text(
+                            stringResource(
+                                if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                    R.string.capture_adguard_tls_warning
+                                } else {
+                                    R.string.capture_tls_warning
+                                },
+                                state.tlsFailures,
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                        if (state.connectionMode == CaptureConnectionMode.AdGuard && state.proxyStatus.upstreamFailureCount > 0) {
+                            Text(
+                                stringResource(R.string.capture_adguard_upstream_warning, state.proxyStatus.upstreamFailureCount),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         if (state.running && state.droppedCount > 0 && state.lastDroppedPath != null) Text(
                             stringResource(R.string.capture_dropped_warning, state.droppedCount, state.lastDroppedPath),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
-                        if (state.running) OutlinedButton(onClick = onStop) { Text(stringResource(R.string.capture_vpn_stop)) }
-                        else Button(onClick = onStart, enabled = state.enabled && state.certExists && !state.certSaving) {
-                            Text(stringResource(R.string.capture_vpn_start))
+
+                        if (state.running) {
+                            OutlinedButton(onClick = onStop, enabled = !state.modeSwitching) {
+                                Text(
+                                    stringResource(
+                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                            R.string.capture_proxy_notification_action_stop
+                                        } else {
+                                            R.string.capture_vpn_stop
+                                        }
+                                    )
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onStart,
+                                enabled = state.enabled && state.certExists && !state.certSaving && !state.modeSwitching,
+                            ) {
+                                Text(
+                                    stringResource(
+                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                            R.string.capture_proxy_notification_action_start
+                                        } else {
+                                            R.string.capture_vpn_start
+                                        }
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -522,6 +788,125 @@ fun GainsTrackerContent(
                     }
                 }
             }
+        }
+    }
+}
+
+private enum class LeaveAdGuardAction {
+    SwitchToVpn,
+    DisableFeature,
+}
+
+@Composable
+private fun AdGuardProxyCard(
+    state: GainsTrackerUiState,
+    onCopyAddress: (String) -> Unit,
+    onApplyPort: (Int) -> Unit,
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    var portText by rememberSaveable(state.proxyPort) { mutableStateOf(state.proxyPort.toString()) }
+    var portInvalid by remember { mutableStateOf(false) }
+
+    fun submitPort() {
+        val parsed = portText.trim().toIntOrNull()
+        if (parsed == null || !CaptureConnectionMode.isValidProxyPort(parsed)) {
+            portInvalid = true
+            return
+        }
+        portInvalid = false
+        keyboard?.hide()
+        onApplyPort(parsed)
+    }
+
+    val displayPort = when (val st = state.proxyStatus.state) {
+        is CaptureProxyState.Listening -> st.port
+        is CaptureProxyState.PortError -> st.port
+        CaptureProxyState.Idle -> state.proxyPort
+    }
+    val address = "127.0.0.1:$displayPort"
+
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.capture_adguard_card_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.capture_adguard_address, address),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(onClick = { onCopyAddress(address) }) {
+                    Text(stringResource(R.string.capture_adguard_copy))
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = portText,
+                    onValueChange = {
+                        portText = it
+                        portInvalid = false
+                    },
+                    label = { Text(stringResource(R.string.capture_adguard_port_label)) },
+                    isError = portInvalid,
+                    supportingText = if (portInvalid) {
+                        { Text(stringResource(R.string.capture_adguard_port_invalid)) }
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { submitPort() }),
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(
+                    onClick = { submitPort() },
+                    enabled = !state.modeSwitching,
+                ) {
+                    Text(stringResource(R.string.capture_adguard_port_apply))
+                }
+            }
+            Text(
+                stringResource(R.string.capture_adguard_steps),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val isPortError = state.proxyStatus.state is CaptureProxyState.PortError
+            Text(
+                text = when {
+                    isPortError -> stringResource(R.string.capture_adguard_status_port_error, displayPort)
+                    state.running -> stringResource(R.string.capture_adguard_status_collecting, displayPort)
+                    else -> stringResource(R.string.capture_adguard_status_waiting, displayPort)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isPortError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            )
+            val lastConnectedAt = state.proxyStatus.lastGameHostConnectedAt
+            Text(
+                text = if (lastConnectedAt != null) {
+                    val minutes = ((state.nowMillis - lastConnectedAt).coerceAtLeast(0L) / 60_000L).toInt()
+                    stringResource(R.string.capture_adguard_last_connection, minutes)
+                } else {
+                    stringResource(R.string.capture_adguard_no_connection)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

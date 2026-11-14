@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -66,6 +67,14 @@
             </intent-filter>
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Gains tracker: routes only the Fate/Grand Order app through a local read-only proxy on this device so the account summary can be shown. Nothing leaves the device."/>
+        </service>
+        <service
+            android:name=".capture.CaptureProxyService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            tools:targetApi="q">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Gains tracker: local proxy for AdGuard capture mode on this device so the account summary can be shown. Nothing leaves the device."/>
         </service>
 
         <service

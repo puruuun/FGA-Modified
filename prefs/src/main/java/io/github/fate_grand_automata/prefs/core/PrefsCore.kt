@@ -70,6 +70,12 @@ class PrefsCore @Inject constructor(
     val captureConsentVersion = maker.int("capture_consent_version", 0)
     val captureStopWithService = maker.bool("capture_stop_with_service", false)
     val captureJpRoot = maker.bool("capture_jp_root", false)
+    val captureConnectionMode = maker.enum("capture_connection_mode", CaptureConnectionMode.Vpn)
+    val captureProxyPort = maker.int("capture_proxy_port", CaptureConnectionMode.DEFAULT_PROXY_PORT).map(
+        defaultValue = CaptureConnectionMode.DEFAULT_PROXY_PORT,
+        convert = CaptureConnectionMode::clampProxyPort,
+        reverse = CaptureConnectionMode::clampProxyPort,
+    )
 
     /** Chaldea direct sync (stage 1): writes captured account data into Chaldea through Shizuku. Off until opted in. */
     val chaldeaSyncEnabled = maker.bool("chaldea_sync_enabled", false)

@@ -246,22 +246,3 @@ class CaptureVpnService : VpnService() {
             private set
     }
 }
-
-/** Starts and stops the capture VPN. Only meaningful on Android 10+, which is where the UI is shown. */
-object CaptureController {
-    val isSupported get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-
-    /** The consent intent, or null when the VPN permission is already granted. */
-    fun consentIntent(context: Context): Intent? = VpnService.prepare(context)
-
-    /** Starts the VPN. The caller has checked consent. */
-    fun start(context: Context) {
-        if (!isSupported) return
-        context.startForegroundService(Intent(context, CaptureVpnService::class.java))
-    }
-
-    fun stop(reason: CaptureStopReason = CaptureStopReason.User) {
-        if (!isSupported) return
-        CaptureVpnService.instance?.stopAll(reason)
-    }
-}
