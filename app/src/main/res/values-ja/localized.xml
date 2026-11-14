@@ -1089,4 +1089,8 @@
     <string name="p_app_theme_system">"システム設定に従う"</string>
     <string name="p_app_theme_light">"ライト"</string>
     <string name="p_app_theme_dark">"ダーク"</string>
+    <string name="p_mission_popup_clear">"連続出撃前にミッション通知を消す"</string>
+    <string name="p_mission_popup_clear_summary">"連続出撃の確認画面で[連続出撃]を押す前に、画面上部中央（ミッション通知の位置）を設定時間だけ連打して通知を消します。通知が溜まって戦闘のウェーブ・ターン表示を隠すクエストで使ってください。"</string>
+    <string name="p_mission_popup_clear_seconds">"連打時間"</string>
+    <string name="p_mission_popup_clear_seconds_value">"%1$d秒"</string>
 </resources>

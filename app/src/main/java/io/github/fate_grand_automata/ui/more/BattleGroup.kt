@@ -5,7 +5,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.OfflineBolt
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -13,7 +16,9 @@ import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.SingleSelectChipPreference
+import io.github.fate_grand_automata.ui.prefs.StepperPreference
 import io.github.fate_grand_automata.ui.prefs.SwitchPreference
+import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 fun LazyListScope.battleGroup(
@@ -76,6 +81,26 @@ fun LazyListScope.battleGroup(
             title = stringResource(R.string.p_screenshot_bond),
             summary = stringResource(R.string.p_screenshot_bond_summary),
             icon = icon(R.drawable.ic_screenshot)
+        )
+    }
+
+    item {
+        prefs.missionPopupClear.SwitchPreference(
+            title = stringResource(R.string.p_mission_popup_clear),
+            summary = stringResource(R.string.p_mission_popup_clear_summary),
+            icon = icon(Icons.Default.TouchApp)
+        )
+    }
+    item {
+        val enabled by prefs.missionPopupClear.remember()
+        val resources = LocalResources.current
+        prefs.missionPopupClearSeconds.StepperPreference(
+            title = stringResource(R.string.p_mission_popup_clear_seconds),
+            valueRange = 1..60,
+            enabled = enabled,
+            valueRepresentation = {
+                resources.getString(R.string.p_mission_popup_clear_seconds_value, it)
+            }
         )
     }
 

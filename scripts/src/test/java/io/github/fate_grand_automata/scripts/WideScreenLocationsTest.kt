@@ -199,4 +199,11 @@ class WideScreenLocationsTest {
         val (from, to) = MapView.dragPath(io.github.fate_grand_automata.scripts.weekly.ScreenPoint(2000.0, 0.0), 1680, 720)
         assertTrue(from.x >= 372 + WIDE_EDGE_INSET / 2.0 - 0.1 && to.x <= 1680 - 126 - WIDE_EDGE_INSET / 2.0 + 0.1)
     }
+
+    @Test fun `mission popup clear click stays at the horizontal centre and y 100 across screen shapes`() {
+        for (transforms in listOf(transforms(2304), sixteenNine, twentyOneNine)) {
+            val loc = Locations(transforms, mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+            assertEquals(Location(transforms.scriptArea.center.x, 100), loc.missionPopupClearClick)
+        }
+    }
 }

@@ -50,6 +50,8 @@ class PrefsCore @Inject constructor(
     val screenshotDrops = maker.bool("screenshot_drops")
     val screenshotDropsUnmodified = maker.bool("screenshot_drops_unmodified")
     val screenshotBond = maker.bool("screenshot_bond")
+    val missionPopupClear = maker.bool("mission_popup_clear")
+    val missionPopupClearSeconds = maker.int("mission_popup_clear_seconds", 10)
     val hidePlayButton = maker.bool("hide_play_button")
     val debugMode = maker.bool("debug_mode")
     val supportReaderDiagnostics = maker.bool("support_reader_diagnostics")

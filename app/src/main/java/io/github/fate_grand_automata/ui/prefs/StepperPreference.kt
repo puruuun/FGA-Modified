@@ -27,6 +27,7 @@ fun Pref<Int>.StepperPreference(
                 value = state,
                 onValueChange = { state = it },
                 valueRange = valueRange,
+                enabled = enabled,
                 valueRepresentation = valueRepresentation
             )
         },

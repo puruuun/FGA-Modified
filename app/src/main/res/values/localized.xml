@@ -1400,4 +1400,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_app_theme_system">"Follow system"</string>
     <string name="p_app_theme_light">"Light"</string>
     <string name="p_app_theme_dark">"Dark"</string>
+    <string name="p_mission_popup_clear">"Clear mission popups before Repeat"</string>
+    <string name="p_mission_popup_clear_summary">"On the Repeat dialog, taps the top centre (where mission popups show) rapidly for the set time before pressing Repeat. Turn on for quests where many popups pile up and cover the wave and turn display."</string>
+    <string name="p_mission_popup_clear_seconds">"Tapping time"</string>
+    <string name="p_mission_popup_clear_seconds_value">"%1$d s"</string>
 </resources>

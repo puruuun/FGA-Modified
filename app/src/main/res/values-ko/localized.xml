@@ -1331,4 +1331,8 @@
     <string name="p_app_theme_system">"시스템 설정 따름"</string>
     <string name="p_app_theme_light">"라이트"</string>
     <string name="p_app_theme_dark">"다크"</string>
+    <string name="p_mission_popup_clear">"연속 출격 전 미션 팝업 지우기"</string>
+    <string name="p_mission_popup_clear_summary">"연속 출격 창에서 [연속 출격]을 누르기 전에 화면 위쪽 가운데(미션 팝업 자리)를 정한 시간 동안 빠르게 연타해 팝업을 지웁니다. 팝업이 많이 쌓여 전투의 웨이브·턴 표시를 가리는 퀘스트에서 켜세요."</string>
+    <string name="p_mission_popup_clear_seconds">"연타 시간"</string>
+    <string name="p_mission_popup_clear_seconds_value">"%1$d초"</string>
 </resources>

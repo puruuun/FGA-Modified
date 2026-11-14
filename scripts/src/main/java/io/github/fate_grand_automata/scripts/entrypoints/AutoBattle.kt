@@ -19,6 +19,7 @@ import io.github.fate_grand_automata.scripts.models.BondSummary
 import io.github.fate_grand_automata.scripts.modules.CEDropsTracker
 import io.github.fate_grand_automata.scripts.modules.ConnectionRetry
 import io.github.fate_grand_automata.scripts.modules.MaterialsTracker
+import io.github.fate_grand_automata.scripts.modules.MissionPopupClear
 import io.github.fate_grand_automata.scripts.modules.QuestLaunch
 import io.github.fate_grand_automata.scripts.modules.Refill
 import io.github.fate_grand_automata.scripts.modules.ScreenshotDrops
@@ -70,6 +71,7 @@ class AutoBattle @Inject constructor(
     private val bonds: BondTracker,
     private val turnLimitRetreat: TurnLimitRetreat,
     private val capture: CaptureBattleTracker? = null,
+    private val missionPopupClear: MissionPopupClear = MissionPopupClear(api),
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
     sealed class ExitReason(val cause: Exception? = null) {
         data object Abort : ExitReason()
@@ -119,6 +121,8 @@ class AutoBattle @Inject constructor(
 
 
     private var canScreenshotBondCE = false
+
+    private var missionPopupClearedForRepeat = false
 
     override fun script(): Nothing = try { runLoop() } finally { finishRun() }
 
@@ -251,6 +255,7 @@ class AutoBattle @Inject constructor(
             { battle.isIdle() } to {
                 storySkipPossible = false
                 isInBattle = true
+                missionPopupClearedForRepeat = false
                 bonds.beginBattle()
                 battle.performBattle()
                 if (turnLimitRetreat.pending) retreatFromQuest()
@@ -468,6 +473,11 @@ class AutoBattle @Inject constructor(
 
         capture?.beginBattle()
 
+        if (prefs.missionPopupClear && !missionPopupClearedForRepeat) {
+            missionPopupClearedForRepeat = true
+            missionPopupClear.clear(prefs.missionPopupClearDuration)
+        }
+
         val continueButtonRegion = findRepeatButton()?.region
             ?: return
 
@@ -482,6 +492,8 @@ class AutoBattle @Inject constructor(
             locations.continueBoostClick.click()
             useBoostItem()
         } else continueButtonRegion.click()
+
+        missionPopupClearedForRepeat = false
 
         showRefillsAndRunsMessage()
 

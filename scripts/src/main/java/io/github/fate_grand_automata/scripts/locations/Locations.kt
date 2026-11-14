@@ -24,6 +24,8 @@ class Locations @Inject constructor(
 
     val continueBoostClick = Location(-20, 1120).xFromCenter()
 
+    val missionPopupClearClick = Location(0, 100).xFromCenter()
+
     val inventoryFullRegion = Region(-280, 860, 560, 190).xFromCenter()
 
     val ordealCallConfirmPodUseRegion = Region(190, 1096, 420, 62).xFromCenter()

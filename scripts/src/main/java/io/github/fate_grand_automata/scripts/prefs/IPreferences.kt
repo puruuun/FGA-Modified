@@ -23,6 +23,8 @@ interface IPreferences {
     val screenshotDrops: Boolean
     val screenshotDropsUnmodified: Boolean
     val screenshotBond: Boolean
+    val missionPopupClear: Boolean
+    val missionPopupClearDuration: Duration
     val supportReaderDiagnostics: Boolean
     var hidePlayButton: Boolean
     val hideSQInAPResources: Boolean

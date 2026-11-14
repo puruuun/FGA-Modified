@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.map
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
+import io.github.fate_grand_automata.scripts.modules.MissionPopupClear
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IGesturesPreferences
 import io.github.fate_grand_automata.scripts.prefs.IPerServerConfigPrefs
@@ -16,6 +17,7 @@ import io.github.lib_automata.PlatformPrefs
 import javax.inject.Inject
 import javax.inject.Named
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class PreferencesImpl @Inject constructor(
     val prefs: PrefsCore,
@@ -88,6 +90,12 @@ class PreferencesImpl @Inject constructor(
     override val screenshotDropsUnmodified by prefs.screenshotDropsUnmodified
 
     override val screenshotBond by prefs.screenshotBond
+
+    override val missionPopupClear by prefs.missionPopupClear
+
+    override val missionPopupClearDuration by prefs.missionPopupClearSeconds.map {
+        MissionPopupClear.clampSeconds(it).seconds
+    }
 
     override val supportReaderDiagnostics by prefs.supportReaderDiagnostics
 
