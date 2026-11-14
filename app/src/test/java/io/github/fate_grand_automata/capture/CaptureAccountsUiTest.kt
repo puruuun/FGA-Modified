@@ -89,12 +89,16 @@ class CaptureAccountsUiTest {
         val krName = composeRule.onNodeWithText("KR Master  Lv.120").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         val krServer = composeRule.onNodeWithTag("capture-account-server:7001").assertIsDisplayed().assertTextEquals("KR")
             .fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithTag("capture-account-server:7001", useUnmergedTree = true)
+            .assert(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Text))
         assertTrue(krServer.left >= krName.right)
         assertTrue(krServer.top < krName.bottom && krServer.bottom > krName.top)
 
         val jpName = composeRule.onNodeWithText("JP Master  Lv.120").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         val jpServer = composeRule.onNodeWithTag("capture-account-server:7002").assertIsDisplayed().assertTextEquals("JP")
             .fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithTag("capture-account-server:7002", useUnmergedTree = true)
+            .assert(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Text))
         assertTrue(jpServer.left >= jpName.right)
         assertTrue(jpServer.top < jpName.bottom && jpServer.bottom > jpName.top)
 

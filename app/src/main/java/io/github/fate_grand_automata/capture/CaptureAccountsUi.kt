@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.capture
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -10,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
@@ -129,21 +127,14 @@ internal fun CaptureSummaryCard(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 server?.takeIf { it.isNotBlank() }?.let { code ->
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        modifier = Modifier
-                            .semantics(mergeDescendants = true) {}
-                            .testTag(if (accountId != null) "capture-account-server:$accountId" else "capture-account-server"),
-                    ) {
-                        Text(
-                            code,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        )
-                    }
+                    Text(
+                        code,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.testTag(
+                            if (accountId != null) "capture-account-server:$accountId" else "capture-account-server",
+                        ),
+                    )
                 }
             }
             if (current) Text(stringResource(R.string.capture_account_current), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
