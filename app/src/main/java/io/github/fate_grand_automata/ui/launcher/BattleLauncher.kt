@@ -16,12 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,8 +38,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -102,12 +112,21 @@ fun battleLauncher(
             folderEntries.forEach { entry ->
                 when (entry) {
                     is ConfigEntry.Folder -> {
-                        add(LauncherRow.FolderHeader(entry))
-                        if (entry.key in expandedFolders) {
-                            entry.items.forEach { add(LauncherRow.Config(it, indent = true)) }
+                        val expanded = entry.key in expandedFolders
+                        add(LauncherRow.FolderHeader(entry, expanded))
+                        if (expanded) {
+                            entry.items.forEachIndexed { index, item ->
+                                add(
+                                    LauncherRow.Config(
+                                        item = item,
+                                        folderKey = entry.key,
+                                        isLastInFolder = index == entry.items.lastIndex
+                                    )
+                                )
+                            }
                         }
                     }
-                    is ConfigEntry.Unfiled -> add(LauncherRow.Config(entry.item, indent = false))
+                    is ConfigEntry.Unfiled -> add(LauncherRow.Config(entry.item))
                 }
             }
         }
@@ -229,6 +248,8 @@ fun battleLauncher(
                 }
             }
 
+            val folderBoxBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            val folderBoxBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -243,18 +264,25 @@ fun battleLauncher(
                 items(visibleRows, key = { it.key }) { row ->
                     when (row) {
                         is LauncherRow.FolderHeader -> {
-                            val expanded = row.folder.key in expandedFolders
-                            val heldName = if (!expanded) {
+                            val heldName = if (!row.expanded) {
                                 row.folder.items.firstOrNull { it.id == selectedConfigId }?.name
                             } else null
                             LauncherFolderRow(
                                 name = row.folder.displayName,
-                                expanded = expanded,
+                                expanded = row.expanded,
                                 selectedName = heldName,
                                 onClick = {
-                                    expandedFolders = if (expanded) expandedFolders - row.folder.key
+                                    expandedFolders = if (row.expanded) expandedFolders - row.folder.key
                                     else expandedFolders + row.folder.key
-                                }
+                                },
+                                modifier = Modifier
+                                    .testTag("$LauncherFolderBoxTagPrefix${row.folder.key}")
+                                    .folderBoxSegment(
+                                        isTop = true,
+                                        isBottom = !row.expanded || row.folder.items.isEmpty(),
+                                        bgColor = folderBoxBgColor,
+                                        borderColor = folderBoxBorderColor
+                                    )
                             )
                         }
 
@@ -262,7 +290,18 @@ fun battleLauncher(
                             name = row.item.name,
                             isSelected = selectedConfigId == row.item.id,
                             onSelected = { selectedConfigId = row.item.id },
-                            modifier = if (row.indent) Modifier.padding(start = 16.dp) else Modifier
+                            modifier = if (row.folderKey != null) {
+                                Modifier
+                                    .testTag("$LauncherFolderBoxItemTagPrefix${row.folderKey}")
+                                    .folderBoxSegment(
+                                        isTop = false,
+                                        isBottom = row.isLastInFolder,
+                                        bgColor = folderBoxBgColor,
+                                        borderColor = folderBoxBorderColor
+                                    )
+                            } else {
+                                Modifier
+                            }
                         )
                     }
                 }
@@ -529,29 +568,187 @@ fun battleLauncher(
     )
 }
 
+internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"
+internal const val LauncherFolderBoxItemTagPrefix = "launcher-folder-box-item:"
+
+private val LauncherFolderBoxCornerRadius = 12.dp
+private val LauncherFolderBoxBorderWidth = 1.dp
+private val LauncherFolderBoxHorizontalPadding = 4.dp
+private val LauncherFolderBoxVerticalGap = 2.dp
+
 private sealed class LauncherRow(val key: String) {
-    class FolderHeader(val folder: ConfigEntry.Folder) : LauncherRow("folder:${folder.key}")
-    class Config(val item: FolderItem, val indent: Boolean) : LauncherRow(item.id)
+    class FolderHeader(val folder: ConfigEntry.Folder, val expanded: Boolean) : LauncherRow("folder:${folder.key}")
+    class Config(
+        val item: FolderItem,
+        val folderKey: String? = null,
+        val isLastInFolder: Boolean = false
+    ) : LauncherRow(item.id)
 }
+
+/**
+ * Draws one contiguous vertical slice of a folder box across a LazyColumn row so adjacent
+ * rows join without seams while preserving per-row item keys for scroll-to-selected.
+ */
+private fun Modifier.folderBoxSegment(
+    isTop: Boolean,
+    isBottom: Boolean,
+    bgColor: Color,
+    borderColor: Color
+): Modifier = this
+    .fillMaxWidth()
+    .padding(
+        top = if (isTop) LauncherFolderBoxVerticalGap else 0.dp,
+        bottom = if (isBottom) LauncherFolderBoxVerticalGap else 0.dp
+    )
+    .drawBehind {
+        val width = size.width
+        val height = size.height
+        if (width <= 0f || height <= 0f) return@drawBehind
+
+        val strokeWidth = LauncherFolderBoxBorderWidth.toPx()
+        val half = strokeWidth / 2f
+        val maxRadius = minOf(
+            LauncherFolderBoxCornerRadius.toPx(),
+            width / 2f,
+            if (isTop && isBottom) height / 2f else height
+        )
+        val topRadius = if (isTop) CornerRadius(maxRadius, maxRadius) else CornerRadius.Zero
+        val bottomRadius = if (isBottom) CornerRadius(maxRadius, maxRadius) else CornerRadius.Zero
+
+        val fillPath = Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 0f,
+                    top = 0f,
+                    right = width,
+                    bottom = height,
+                    topLeftCornerRadius = topRadius,
+                    topRightCornerRadius = topRadius,
+                    bottomRightCornerRadius = bottomRadius,
+                    bottomLeftCornerRadius = bottomRadius
+                )
+            )
+        }
+        drawPath(fillPath, color = bgColor)
+
+        val left = half
+        val right = width - half
+        val top = half
+        val bottom = height - half
+        val innerRadius = (maxRadius - half).coerceAtLeast(0f)
+
+        when {
+            isTop && isBottom -> {
+                val borderPath = Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            left = left,
+                            top = top,
+                            right = right,
+                            bottom = bottom,
+                            cornerRadius = CornerRadius(innerRadius, innerRadius)
+                        )
+                    )
+                }
+                drawPath(borderPath, color = borderColor, style = Stroke(width = strokeWidth))
+            }
+
+            isTop -> {
+                val borderPath = Path().apply {
+                    moveTo(left, height)
+                    lineTo(left, top + innerRadius)
+                    if (innerRadius > 0f) {
+                        arcTo(
+                            rect = Rect(left, top, left + 2f * innerRadius, top + 2f * innerRadius),
+                            startAngleDegrees = 180f,
+                            sweepAngleDegrees = 90f,
+                            forceMoveTo = false
+                        )
+                    } else {
+                        lineTo(left, top)
+                    }
+                    lineTo(right - innerRadius, top)
+                    if (innerRadius > 0f) {
+                        arcTo(
+                            rect = Rect(right - 2f * innerRadius, top, right, top + 2f * innerRadius),
+                            startAngleDegrees = 270f,
+                            sweepAngleDegrees = 90f,
+                            forceMoveTo = false
+                        )
+                    } else {
+                        lineTo(right, top)
+                    }
+                    lineTo(right, height)
+                }
+                drawPath(borderPath, color = borderColor, style = Stroke(width = strokeWidth))
+            }
+
+            isBottom -> {
+                val borderPath = Path().apply {
+                    moveTo(left, 0f)
+                    lineTo(left, bottom - innerRadius)
+                    if (innerRadius > 0f) {
+                        arcTo(
+                            rect = Rect(left, bottom - 2f * innerRadius, left + 2f * innerRadius, bottom),
+                            startAngleDegrees = 180f,
+                            sweepAngleDegrees = -90f,
+                            forceMoveTo = false
+                        )
+                    } else {
+                        lineTo(left, bottom)
+                    }
+                    lineTo(right - innerRadius, bottom)
+                    if (innerRadius > 0f) {
+                        arcTo(
+                            rect = Rect(right - 2f * innerRadius, bottom - 2f * innerRadius, right, bottom),
+                            startAngleDegrees = 90f,
+                            sweepAngleDegrees = -90f,
+                            forceMoveTo = false
+                        )
+                    } else {
+                        lineTo(right, bottom)
+                    }
+                    lineTo(right, 0f)
+                }
+                drawPath(borderPath, color = borderColor, style = Stroke(width = strokeWidth))
+            }
+
+            else -> {
+                drawLine(
+                    color = borderColor,
+                    start = Offset(left, 0f),
+                    end = Offset(left, height),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = borderColor,
+                    start = Offset(right, 0f),
+                    end = Offset(right, height),
+                    strokeWidth = strokeWidth
+                )
+            }
+        }
+    }
+    .padding(horizontal = LauncherFolderBoxHorizontalPadding)
 
 @Composable
 private fun LauncherFolderRow(
     name: String,
     expanded: Boolean,
     selectedName: String?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .padding(3.dp)
             .clickable(onClick = onClick)
             .padding(8.dp, 3.dp)
             .fillMaxWidth()
     ) {
-        androidx.compose.material3.Icon(
-            if (expanded) androidx.compose.material.icons.Icons.Default.KeyboardArrowDown
-            else androidx.compose.material.icons.Icons.Default.KeyboardArrowRight,
+        Icon(
+            if (expanded) Icons.Default.FolderOpen else Icons.Default.Folder,
             contentDescription = null,
             modifier = Modifier.padding(end = 6.dp)
         )
@@ -560,7 +757,7 @@ private fun LauncherFolderRow(
             style = MaterialTheme.typography.titleSmall,
             color = if (selectedName != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
