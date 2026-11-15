@@ -127,6 +127,7 @@ data class GainsTrackerUiState(
     val adGuardAutoSwitch: Boolean = false,
     val adGuardAutomationPassword: String = "",
     val modeSwitching: Boolean = false,
+    val rootChecking: Boolean = false,
     val nowMillis: Long = System.currentTimeMillis(),
 ) {
     val adGuardAutoSwitchEffective: Boolean
@@ -171,6 +172,7 @@ class GainsTrackerViewModel @Inject constructor(
     val saveRequest = MutableStateFlow<CertSaveRequest?>(null)
     private val clock = MutableStateFlow(System.currentTimeMillis() / 1000)
     private val switchingMode = MutableStateFlow(false)
+    private val checkingRoot = MutableStateFlow(false)
 
     init {
         CaptureTracker.init(context)
@@ -190,6 +192,7 @@ class GainsTrackerViewModel @Inject constructor(
         val port: Int,
         val status: CaptureProxySnapshot,
         val switching: Boolean,
+        val rootChecking: Boolean,
         val adGuardInstalled: Boolean,
         val adGuardAutoSwitch: Boolean,
         val adGuardPassword: String,
@@ -236,14 +239,14 @@ class GainsTrackerViewModel @Inject constructor(
             prefsCore.captureConnectionMode.asFlow(),
             prefsCore.captureProxyPort.asFlow(),
             CaptureProxyStatus.state,
-            switchingMode,
+            combine(switchingMode, checkingRoot) { switching, rootCheck -> switching to rootCheck },
             combine(
                 adGuardInstalled,
                 prefsCore.captureAdGuardAutoSwitch.asFlow(),
                 prefsCore.captureAdGuardAutomationPassword.asFlow(),
             ) { installed, autoSwitch, password -> Triple(installed, autoSwitch, password) },
-        ) { mode, port, status, switching, (installed, autoSwitch, password) ->
-            ProxyUiStatus(mode, port, status, switching, installed, autoSwitch, password)
+        ) { mode, port, status, (switching, rootCheck), (installed, autoSwitch, password) ->
+            ProxyUiStatus(mode, port, status, switching, rootCheck, installed, autoSwitch, password)
         },
     ) { base, proxyUi ->
         base.copy(
@@ -254,6 +257,7 @@ class GainsTrackerViewModel @Inject constructor(
             adGuardAutoSwitch = proxyUi.adGuardAutoSwitch,
             adGuardAutomationPassword = proxyUi.adGuardPassword,
             modeSwitching = proxyUi.switching,
+            rootChecking = proxyUi.rootChecking,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
 
@@ -356,27 +360,77 @@ class GainsTrackerViewModel @Inject constructor(
         toast(context.getString(R.string.capture_adguard_port_changed_drop))
     }
 
+    private suspend fun stopCurrentTransport(): Boolean {
+        if (CaptureController.isVpnActive() ||
+            (prefsCore.captureConnectionMode.get() == CaptureConnectionMode.Vpn && CaptureTracker.running.value)
+        ) {
+            CaptureController.stopVpn(CaptureStopReason.User)
+            val stopped = withTimeoutOrNull(5_000) {
+                while (CaptureController.isVpnActive() || CaptureTracker.running.value) {
+                    delay(50)
+                }
+                true
+            } == true
+            if (!stopped) return false
+        }
+        if (CaptureController.isProxyAlive() ||
+            CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
+            CaptureProxyStatus.state.value.rootRulesActive
+        ) {
+            CaptureController.shutdownProxy(context)
+            val gone = withTimeoutOrNull(5_000) {
+                while (CaptureController.isProxyAlive() ||
+                    CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
+                    CaptureProxyStatus.state.value.rootRulesActive
+                ) {
+                    delay(50)
+                }
+                true
+            } == true
+            if (!gone) return false
+        }
+        return true
+    }
+
     fun switchToAdGuard() {
         if (switchingMode.value) return
         viewModelScope.launch {
             switchingMode.value = true
             try {
-                if (CaptureController.isVpnActive() || CaptureTracker.running.value) {
-                    CaptureController.stopVpn(CaptureStopReason.User)
-                    val stopped = withTimeoutOrNull(5_000) {
-                        while (CaptureController.isVpnActive() || CaptureTracker.running.value) {
-                            delay(50)
-                        }
-                        true
-                    } == true
-                    if (!stopped) {
-                        toast(context.getString(R.string.capture_start_failed))
-                        return@launch
-                    }
+                if (!stopCurrentTransport()) {
+                    toast(context.getString(R.string.capture_start_failed))
+                    return@launch
                 }
                 prefsCore.captureConnectionMode.set(CaptureConnectionMode.AdGuard)
                 CaptureController.ensureProxy(context)
             } finally {
+                switchingMode.value = false
+            }
+        }
+    }
+
+    fun switchToRoot() {
+        if (switchingMode.value) return
+        viewModelScope.launch {
+            switchingMode.value = true
+            checkingRoot.value = true
+            try {
+                val hasRoot = withContext(Dispatchers.IO) {
+                    RootCaInjector(context).hasRoot(timeoutSeconds = 30)
+                }
+                checkingRoot.value = false
+                if (!hasRoot) {
+                    toast(context.getString(R.string.capture_root_unavailable_toast))
+                    return@launch
+                }
+                if (!stopCurrentTransport()) {
+                    toast(context.getString(R.string.capture_start_failed))
+                    return@launch
+                }
+                prefsCore.captureConnectionMode.set(CaptureConnectionMode.Root)
+                CaptureController.ensureProxy(context)
+            } finally {
+                checkingRoot.value = false
                 switchingMode.value = false
             }
         }
@@ -387,14 +441,7 @@ class GainsTrackerViewModel @Inject constructor(
         viewModelScope.launch {
             switchingMode.value = true
             try {
-                CaptureController.shutdownProxy(context)
-                val gone = withTimeoutOrNull(5_000) {
-                    while (CaptureController.isProxyAlive() || CaptureProxyStatus.state.value.state != CaptureProxyState.Idle) {
-                        delay(50)
-                    }
-                    true
-                } == true
-                if (!gone) {
+                if (!stopCurrentTransport()) {
                     toast(context.getString(R.string.capture_start_failed))
                     return@launch
                 }
@@ -467,7 +514,9 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         onEnabled = {
             when (CaptureConsent.enableAction(it, vm.prefsCore.captureConsentVersion.get())) {
                 CaptureEnableAction.Disable -> {
-                    if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                    if (state.connectionMode == CaptureConnectionMode.AdGuard ||
+                        state.connectionMode == CaptureConnectionMode.Root
+                    ) {
                         vm.leaveAdGuard(disableFeature = true)
                     } else {
                         enabled = false
@@ -508,6 +557,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
             when (mode) {
                 CaptureConnectionMode.Vpn -> vm.leaveAdGuard(disableFeature = false)
                 CaptureConnectionMode.AdGuard -> vm.switchToAdGuard()
+                CaptureConnectionMode.Root -> vm.switchToRoot()
             }
         },
         onApplyProxyPort = vm::applyProxyPort,
@@ -617,6 +667,7 @@ fun GainsTrackerContent(
                         pendingLeaveAdGuardAction = null
                         when (action) {
                             LeaveAdGuardAction.SwitchToVpn -> onSelectMode(CaptureConnectionMode.Vpn)
+                            LeaveAdGuardAction.SwitchToRoot -> onSelectMode(CaptureConnectionMode.Root)
                             LeaveAdGuardAction.DisableFeature -> onConfirmDisableAdGuard()
                         }
                     },
@@ -723,6 +774,8 @@ fun GainsTrackerContent(
                                             } else {
                                                 pendingLeaveAdGuardAction = LeaveAdGuardAction.SwitchToVpn
                                             }
+                                        } else if (state.connectionMode == CaptureConnectionMode.Root) {
+                                            onSelectMode(CaptureConnectionMode.Vpn)
                                         }
                                     },
                                     label = { Text(stringResource(R.string.capture_connection_mode_vpn)) },
@@ -737,44 +790,78 @@ fun GainsTrackerContent(
                                     },
                                     label = { Text(stringResource(R.string.capture_connection_mode_adguard)) },
                                 )
-                            }
-                        }
-
-                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
-                            AdGuardProxyCard(
-                                state = state,
-                                onCopyAddress = { addr ->
-                                    context.getSystemService(ClipboardManager::class.java)
-                                        ?.setPrimaryClip(ClipData.newPlainText("External proxy", addr))
-                                    Toast.makeText(
-                                        context,
-                                        resources.getString(R.string.capture_adguard_copied, addr),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                },
-                                onApplyPort = onApplyProxyPort,
-                                onAdGuardAutoSwitch = onAdGuardAutoSwitch,
-                                onAdGuardAutomationPassword = onAdGuardAutomationPassword,
-                            )
-                        } else {
-                            Text(
-                                stringResource(if (state.running) R.string.capture_vpn_running else R.string.capture_vpn_stopped),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            if (!state.running) state.stopReason?.let {
-                                Text(
-                                    stringResource(
-                                        when (it) {
-                                            CaptureStopReason.User -> R.string.capture_stop_user
-                                            CaptureStopReason.Service -> R.string.capture_stop_service
-                                            CaptureStopReason.Revoked -> R.string.capture_stop_revoked
-                                            CaptureStopReason.Error -> R.string.capture_stop_error
-                                            CaptureStopReason.Unsupported -> R.string.capture_stop_error
+                                FilterChip(
+                                    selected = state.connectionMode == CaptureConnectionMode.Root,
+                                    enabled = !state.modeSwitching,
+                                    onClick = {
+                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                            if (state.adGuardAutoSwitchEffective) {
+                                                onSelectMode(CaptureConnectionMode.Root)
+                                            } else {
+                                                pendingLeaveAdGuardAction = LeaveAdGuardAction.SwitchToRoot
+                                            }
+                                        } else if (state.connectionMode != CaptureConnectionMode.Root) {
+                                            onSelectMode(CaptureConnectionMode.Root)
                                         }
-                                    ),
+                                    },
+                                    label = { Text(stringResource(R.string.capture_connection_mode_root)) },
+                                )
+                            }
+                            if (state.rootChecking) {
+                                Text(
+                                    stringResource(R.string.capture_root_checking),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            }
+                        }
+
+                        when (state.connectionMode) {
+                            CaptureConnectionMode.AdGuard -> {
+                                AdGuardProxyCard(
+                                    state = state,
+                                    onCopyAddress = { addr ->
+                                        context.getSystemService(ClipboardManager::class.java)
+                                            ?.setPrimaryClip(ClipData.newPlainText("External proxy", addr))
+                                        Toast.makeText(
+                                            context,
+                                            resources.getString(R.string.capture_adguard_copied, addr),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    },
+                                    onApplyPort = onApplyProxyPort,
+                                    onAdGuardAutoSwitch = onAdGuardAutoSwitch,
+                                    onAdGuardAutomationPassword = onAdGuardAutomationPassword,
+                                )
+                            }
+
+                            CaptureConnectionMode.Root -> {
+                                RootCaptureCard(
+                                    state = state,
+                                    onApplyPort = onApplyProxyPort,
+                                )
+                            }
+
+                            CaptureConnectionMode.Vpn -> {
+                                Text(
+                                    stringResource(if (state.running) R.string.capture_vpn_running else R.string.capture_vpn_stopped),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                if (!state.running) state.stopReason?.let {
+                                    Text(
+                                        stringResource(
+                                            when (it) {
+                                                CaptureStopReason.User -> R.string.capture_stop_user
+                                                CaptureStopReason.Service -> R.string.capture_stop_service
+                                                CaptureStopReason.Revoked -> R.string.capture_stop_revoked
+                                                CaptureStopReason.Error -> R.string.capture_stop_error
+                                                CaptureStopReason.Unsupported -> R.string.capture_stop_error
+                                            }
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
 
@@ -805,11 +892,13 @@ fun GainsTrackerContent(
                             color = MaterialTheme.colorScheme.error,
                         )
 
+                        val isProxyMode = state.connectionMode == CaptureConnectionMode.AdGuard ||
+                            state.connectionMode == CaptureConnectionMode.Root
                         if (state.running) {
                             OutlinedButton(onClick = onStop, enabled = !state.modeSwitching) {
                                 Text(
                                     stringResource(
-                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                        if (isProxyMode) {
                                             R.string.capture_proxy_notification_action_stop
                                         } else {
                                             R.string.capture_vpn_stop
@@ -824,7 +913,7 @@ fun GainsTrackerContent(
                             ) {
                                 Text(
                                     stringResource(
-                                        if (state.connectionMode == CaptureConnectionMode.AdGuard) {
+                                        if (isProxyMode) {
                                             R.string.capture_proxy_notification_action_start
                                         } else {
                                             R.string.capture_vpn_start
@@ -859,7 +948,181 @@ fun GainsTrackerContent(
 
 private enum class LeaveAdGuardAction {
     SwitchToVpn,
+    SwitchToRoot,
     DisableFeature,
+}
+
+@Composable
+private fun RootCaptureCard(
+    state: GainsTrackerUiState,
+    onApplyPort: (Int) -> Unit,
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    var portText by rememberSaveable(state.proxyPort) { mutableStateOf(state.proxyPort.toString()) }
+    var portInvalid by remember { mutableStateOf(false) }
+
+    fun submitPort() {
+        val parsed = portText.trim().toIntOrNull()
+        if (parsed == null || !CaptureConnectionMode.isValidProxyPort(parsed)) {
+            portInvalid = true
+            return
+        }
+        portInvalid = false
+        keyboard?.hide()
+        onApplyPort(parsed)
+    }
+
+    val snap = state.proxyStatus
+    val displayPort = when (val st = snap.state) {
+        is CaptureProxyState.Listening -> st.port
+        is CaptureProxyState.PortError -> st.port
+        CaptureProxyState.Idle -> state.proxyPort
+    }
+
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.capture_root_card_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = if (snap.rootRulesActive) {
+                    stringResource(
+                        R.string.capture_root_status_active,
+                        snap.rootIpv4RuleCount,
+                        snap.rootIpv6RuleCount,
+                        displayPort,
+                    )
+                } else {
+                    stringResource(R.string.capture_root_status_inactive)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = stringResource(
+                    if (snap.rootWatchdogActive) {
+                        R.string.capture_root_watchdog_active
+                    } else {
+                        R.string.capture_root_watchdog_inactive
+                    }
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (snap.rootIpv6Unsupported) {
+                Text(
+                    text = stringResource(R.string.capture_root_ipv6_unsupported),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(
+                    R.string.capture_root_connections_since_apply,
+                    snap.gameConnectionsSinceApply,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val lastConnectedAt = snap.lastGameHostConnectedAt
+            if (lastConnectedAt != null) {
+                val minutes = ((state.nowMillis - lastConnectedAt).coerceAtLeast(0L) / 60_000L).toInt()
+                Text(
+                    text = stringResource(R.string.capture_adguard_last_connection, minutes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(R.string.capture_root_reconnect_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (snap.unexpectedConnectionCount > 0) {
+                Text(
+                    text = stringResource(
+                        R.string.capture_root_unexpected_connections,
+                        snap.unexpectedConnectionCount,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (snap.nonGameUpstreamFailureCount > 0) {
+                Text(
+                    text = stringResource(
+                        R.string.capture_root_non_game_failures,
+                        snap.nonGameUpstreamFailureCount,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (snap.rootCleanupRetrying) {
+                Text(
+                    text = stringResource(R.string.capture_root_cleanup_retry_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            snap.rootLastError?.takeIf { it.isNotEmpty() && !snap.rootCleanupRetrying }?.let { err ->
+                Text(
+                    text = err,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            if (snap.state is CaptureProxyState.PortError) {
+                Text(
+                    text = stringResource(R.string.capture_proxy_port_in_use, displayPort),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = portText,
+                    onValueChange = {
+                        portText = it
+                        portInvalid = false
+                    },
+                    label = { Text(stringResource(R.string.capture_adguard_port_label)) },
+                    isError = portInvalid,
+                    supportingText = if (portInvalid) {
+                        { Text(stringResource(R.string.capture_adguard_port_invalid)) }
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { submitPort() }),
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(
+                    onClick = { submitPort() },
+                    enabled = !state.modeSwitching,
+                ) {
+                    Text(stringResource(R.string.capture_adguard_port_apply))
+                }
+            }
+            HorizontalDivider()
+            Text(
+                text = stringResource(R.string.capture_root_adguard_vpn_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable

@@ -31,6 +31,9 @@ private fun logRootOutput(out: RootShellOutput) {
 /** Runs the script in init's mount namespace; `su` from an app inherits the app's own namespace. */
 val ROOT_GLOBAL_NS_COMMAND = listOf("su", "-c", "nsenter --mount=/proc/1/ns/mnt -- /system/bin/sh")
 
+/** Standard root shell command (`su -c sh`) with script passed on stdin. */
+val ROOT_SH_COMMAND = listOf("su", "-c", "sh")
+
 /** Independently testable runner. Tests supply a shell and never start a process. */
 class RootCaRunner(private val shell: RootShell) {
     fun inject(script: String): RootCaResult = try {
@@ -92,10 +95,12 @@ class RootCaInjector(
     private val shell: RootShell = ProcessRootShell(),
     private val api: Int = Build.VERSION.SDK_INT,
 ) : JpCaInstaller {
-    override fun hasRoot(): Boolean = runCatching {
-        val out = shell.run(listOf("su", "-c", "id"), "", 5)
+    fun hasRoot(timeoutSeconds: Long): Boolean = runCatching {
+        val out = shell.run(listOf("su", "-c", "id"), "", timeoutSeconds)
         !out.timedOut && out.exitCode == 0 && out.lines.any { Regex("(^|\\s)uid=0(?:\\D|$)").containsMatchIn(it) }
     }.getOrDefault(false)
+
+    override fun hasRoot(): Boolean = hasRoot(5)
 
     override fun ensureCertificate() = CertStore.ensureJp(context)
 

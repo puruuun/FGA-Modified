@@ -27,17 +27,23 @@ enum class CaptureStopKind {
 
 fun captureConsentMode(mode: CaptureConnectionMode): CaptureServiceTarget = when (mode) {
     CaptureConnectionMode.Vpn -> CaptureServiceTarget.VpnService
-    CaptureConnectionMode.AdGuard -> CaptureServiceTarget.ProxyService
+    CaptureConnectionMode.AdGuard,
+    CaptureConnectionMode.Root,
+    -> CaptureServiceTarget.ProxyService
 }
 
 fun captureStartDispatch(mode: CaptureConnectionMode): CaptureStartKind = when (mode) {
     CaptureConnectionMode.Vpn -> CaptureStartKind.StartVpn
-    CaptureConnectionMode.AdGuard -> CaptureStartKind.StartProxyReading
+    CaptureConnectionMode.AdGuard,
+    CaptureConnectionMode.Root,
+    -> CaptureStartKind.StartProxyReading
 }
 
 fun captureStopDispatch(mode: CaptureConnectionMode): CaptureStopKind = when (mode) {
     CaptureConnectionMode.Vpn -> CaptureStopKind.StopVpn
-    CaptureConnectionMode.AdGuard -> CaptureStopKind.StopProxyReading
+    CaptureConnectionMode.AdGuard,
+    CaptureConnectionMode.Root,
+    -> CaptureStopKind.StopProxyReading
 }
 
 fun shouldEnsureCaptureProxy(
@@ -146,7 +152,11 @@ object CaptureController {
 
     fun ensureProxy(context: Context): Boolean {
         init(context)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !shouldEnsureProxy(context)) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        if (!CaptureProxyStatus.state.value.reading && RootRulesActiveFlag.from(context).isSet()) {
+            CaptureProxyService.cleanupLeftoverRootRulesAsync(context.applicationContext)
+        }
+        if (!shouldEnsureProxy(context)) return false
         return ensureProxyQ(context)
     }
 
@@ -164,7 +174,14 @@ object CaptureController {
 
     fun applyProxyPort(context: Context) {
         init(context)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !shouldEnsureProxy(context)) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val mode = connectionMode(context)
+        val shouldApply = when (mode) {
+            CaptureConnectionMode.AdGuard -> shouldEnsureProxy(context)
+            CaptureConnectionMode.Root -> CaptureProxyStatus.state.value.reading
+            CaptureConnectionMode.Vpn -> false
+        }
+        if (!shouldApply) return
         sendProxyCommandQ(context, CaptureProxyService.ACTION_APPLY_PORT)
     }
 
@@ -180,6 +197,9 @@ object CaptureController {
             .setAction(CaptureProxyService.ACTION_SHUTDOWN)
         val running = CaptureProxyStatus.state.value.state != CaptureProxyState.Idle || isProxyAlive()
         if (!running) {
+            if (RootRulesActiveFlag.from(context).isSet()) {
+                CaptureProxyService.cleanupLeftoverRootRulesAsync(context.applicationContext)
+            }
             val currentPrefs = PrefsCore(
                 PrefMaker(context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)),
                 context,
