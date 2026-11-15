@@ -937,7 +937,14 @@ class ProxyServerTest {
             assertEquals("""{"ok":true,"req":"/login/top"}""", String(body.payload ?: ByteArray(0)))
             assertEquals(listOf("/login/top"), upstreamTargets.toList())
             assertEquals(emptyList(), capturedTargets.toList())
-            val closed = runCatching { tlsClient.getInputStream().read() }.getOrDefault(-1)
+            // Closed means EOF or a close-type socket/TLS exception; anything else fails the test.
+            val closed = try {
+                tlsClient.getInputStream().read()
+            } catch (_: java.net.SocketException) {
+                -1
+            } catch (_: javax.net.ssl.SSLException) {
+                -1
+            }
             assertEquals(-1, closed)
             assertEquals(emptyList(), capturedTargets.toList())
             runCatching { tlsClient.close() }

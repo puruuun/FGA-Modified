@@ -4,11 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
-import android.widget.Toast
 import androidx.annotation.RequiresApi
-import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.CaptureConnectionMode
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -110,16 +106,8 @@ object CaptureController {
             }
 
             CaptureStartKind.StartProxyReading -> {
-                val proxyState = CaptureProxyStatus.state.value.state
-                if (proxyState is CaptureProxyState.PortError) {
-                    CaptureTracker.starting = false
-                    val msg = context.getString(R.string.capture_proxy_port_in_use, proxyState.port)
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(context.applicationContext, msg, Toast.LENGTH_LONG).show()
-                    }
-                    ensureProxy(context)
-                    return false
-                }
+                // In PortError the service retries the bind itself, shows the port toast and
+                // resets CaptureTracker.starting on failure.
                 sendProxyCommandQ(context, CaptureProxyService.ACTION_START_READING).also { sent ->
                     if (!sent) CaptureTracker.starting = false
                 }

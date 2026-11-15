@@ -346,10 +346,15 @@ class GainsTrackerViewModel @Inject constructor(
             switchingMode.value = true
             try {
                 CaptureController.shutdownProxy(context)
-                withTimeoutOrNull(5_000) {
+                val gone = withTimeoutOrNull(5_000) {
                     while (CaptureController.isProxyAlive() || CaptureProxyStatus.state.value.state != CaptureProxyState.Idle) {
                         delay(50)
                     }
+                    true
+                } == true
+                if (!gone) {
+                    toast(context.getString(R.string.capture_start_failed))
+                    return@launch
                 }
                 if (disableFeature) {
                     prefsCore.captureTrackerEnabled.set(false)
