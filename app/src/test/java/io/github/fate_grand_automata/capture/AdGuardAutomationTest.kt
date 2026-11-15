@@ -124,6 +124,20 @@ class AdGuardAutomationTest {
     }
 
     @Test
+    fun `reading off after failed start still returns proxy_state enable false`() {
+        val commands = AdGuardAutomation.commandsFor(
+            event = AdGuardSwitchEvent.ReadingOff,
+            autoSwitchEffective = true,
+            readingActive = false,
+            startupDisableSent = false,
+            port = 8899,
+        )
+        assertThat(commands).containsExactly(
+            AdGuardCommand.ProxyState(enable = false),
+        )
+    }
+
+    @Test
     fun `service start with reading off returns proxy_state enable false at most once`() {
         val first = AdGuardAutomation.commandsFor(
             event = AdGuardSwitchEvent.ServiceStartEnsureOrSticky,

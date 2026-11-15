@@ -130,7 +130,8 @@ data class GainsTrackerUiState(
     val nowMillis: Long = System.currentTimeMillis(),
 ) {
     val adGuardAutoSwitchEffective: Boolean
-        get() = AdGuardAutomation.isAutoSwitchEffective(adGuardAutoSwitch, adGuardAutomationPassword)
+        get() = adGuardInstalled &&
+            AdGuardAutomation.isAutoSwitchEffective(adGuardAutoSwitch, adGuardAutomationPassword)
 }
 
 /** The system save dialog for the certificate; [pending] is committed only after the user saved it. */

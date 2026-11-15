@@ -276,6 +276,7 @@ class CaptureProxyService : Service() {
             )
             if (contexts.isEmpty()) {
                 Timber.w("Capture: no certificate context available for AdGuard proxy")
+                dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOff, boundPort ?: port)
                 turnReadingOff(CaptureStopReason.Error)
                 Handler(Looper.getMainLooper()).post {
                     Toast.makeText(applicationContext, R.string.capture_main_no_certificate, Toast.LENGTH_SHORT).show()
@@ -289,6 +290,7 @@ class CaptureProxyService : Service() {
             Timber.i("Capture: AdGuard proxy reading started on 127.0.0.1:%d", port)
         } catch (t: Throwable) {
             Timber.w(t, "Capture: failed to turn proxy reading on")
+            dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOff, boundPort ?: port)
             turnReadingOff(CaptureStopReason.Error)
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(applicationContext, R.string.capture_start_failed, Toast.LENGTH_SHORT).show()
