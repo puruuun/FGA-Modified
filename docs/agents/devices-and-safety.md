@@ -10,8 +10,18 @@ in-game resources or a working emulator before.
   `127.0.0.1:5555`. If `adb devices` does not list it, the only allowed fix is
   `adb connect 127.0.0.1:5555`.
 - **`emulator-5554`** is not ours to use: never install to it, read from it or send it commands.
+- **MuMu Player 15** on the work PC: serial `127.0.0.1:16416`, Android 15, rooted with KernelSU,
+  FGO KR and JP installed.
 - **The owner's tablet** (Lenovo Legion Y700, 3040×1904, 16:10) is used only when the owner has
   connected it and asks for it. Then installs, logs and read-only screencaps are allowed.
+
+### Choosing the device (owner decision, 2026-11-16)
+
+For device QA and beta installs, pick by yourself any app player that `adb devices` already lists
+(BlueStacks, MuMu, …), as long as it meets what the check needs: capture features need Android 10+
+(API 29), the root capture mode needs root. Check `getprop ro.build.version.release` first. Ask the
+owner only when the check needs a device that is not connected, for example Android 15 or root while
+MuMu is off. Say in the report which device ran the check.
 
 ## adb
 

@@ -44,7 +44,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
 - Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
 - After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
-- Device QA scope (owner decision, 2026-10-26) for `tools/device-qa/run.py` on BlueStacks:
+- Device QA scope (owner decision, 2026-10-26) for `tools/device-qa/run.py` on any connected app player that meets the check's needs (owner decision, 2026-11-16; see [`docs/agents/devices-and-safety.md`](docs/agents/devices-and-safety.md)):
   - **Beta:** run only the suites that cover the changed area, for example `--suite skillLevel,skillLevelPanel` for a skill-level reader change. The full unit tests and PR `Main CI` still run every time.
   - **Full device QA (every suite, including `skillLevelPanel`):** before promoting `stable.*`, and also on a beta that changes shared code: `libautomata`, coordinate or wide-screen transforms, the battle flow (`AutoBattle`, `Battle`), templates used by several scripts, or an upstream sync.
   - The planner names the suites in each agent prompt; report the suites that ran and their counts.
