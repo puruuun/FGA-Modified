@@ -6,9 +6,12 @@ import android.graphics.PixelFormat
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.prefs.core.CompletedRunsHolder
@@ -65,6 +68,7 @@ class ScriptRunnerOverlay @Inject constructor(
         require(service is ScriptRunnerService)
 
         layout = FakedComposeView(service) {
+            val collecting by CaptureTracker.running.collectAsState()
             ScriptRunnerUI(
                 state = uiStateHolder.uiState,
                 prefsCore = prefsCore,
@@ -72,6 +76,7 @@ class ScriptRunnerOverlay @Inject constructor(
                 updateState = { act(it) },
                 isRecording = uiStateHolder.isRecording,
                 enabled = uiStateHolder.isPlayButtonEnabled,
+                collecting = collecting,
                 onDrag = { x, y -> onDrag(x, y) }
             )
         }.view

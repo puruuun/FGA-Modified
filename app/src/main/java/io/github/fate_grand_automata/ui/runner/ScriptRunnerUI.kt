@@ -33,6 +33,11 @@ import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.prefs.remember
 import kotlinx.coroutines.flow.StateFlow
 
+internal val scriptButtonCollectingColor = Color(0xFF7A4012)
+
+internal fun scriptButtonBaseColor(collecting: Boolean, surface: Color): Color =
+    if (collecting) scriptButtonCollectingColor else surface
+
 @Composable
 fun ScriptRunnerUI(
     state: ScriptRunnerUIState,
@@ -41,7 +46,8 @@ fun ScriptRunnerUI(
     updateState: (ScriptRunnerUIAction) -> Unit,
     onDrag: (Float, Float) -> Unit,
     enabled: Boolean,
-    isRecording: Boolean
+    isRecording: Boolean,
+    collecting: Boolean = false
 ) {
     val hidePlayButton by prefsCore.hidePlayButton.remember()
     val script by prefsCore.scriptMode.remember()
@@ -64,13 +70,15 @@ fun ScriptRunnerUI(
                     }
                 }
 
+            val baseColor = scriptButtonBaseColor(collecting, MaterialTheme.colorScheme.surface)
+
             Surface(
                 color = when (state) {
                     ScriptRunnerUIState.Running ->
-                        MaterialTheme.colorScheme.surface.copy(
+                        baseColor.copy(
                             alpha = if (hidePlayButton && script == ScriptModeEnum.Battle) 0f else 0.5f
                         )
-                    else -> MaterialTheme.colorScheme.surface
+                    else -> baseColor
                 },
                 contentColor = when (state) {
                     ScriptRunnerUIState.Running -> {
