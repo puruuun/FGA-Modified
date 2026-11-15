@@ -20,6 +20,8 @@
         <!-- Visibility for installed KR/JP VPN routing and the JP root CA switch. -->
         <package android:name="com.netmarble.fgok" />
         <package android:name="com.aniplex.fategrandorder" />
+        <!-- Visibility for AdGuard auto-switch detection in External proxy app mode. -->
+        <package android:name="com.adguard.android" />
     </queries>
 
     <!-- largeHeap: the JP friend/top capture needs headroom on top of the account state trees (#254). -->

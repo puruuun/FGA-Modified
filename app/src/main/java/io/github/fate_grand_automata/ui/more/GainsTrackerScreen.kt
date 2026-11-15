@@ -21,13 +21,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +52,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -52,6 +61,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.fate_grand_automata.capture.AdGuardAutomation
 import io.github.fate_grand_automata.capture.CaptureAccount
 import io.github.fate_grand_automata.capture.captureAccountCards
 import io.github.fate_grand_automata.capture.CaptureConsent
@@ -113,9 +123,15 @@ data class GainsTrackerUiState(
     val connectionMode: CaptureConnectionMode = CaptureConnectionMode.Vpn,
     val proxyPort: Int = CaptureConnectionMode.DEFAULT_PROXY_PORT,
     val proxyStatus: CaptureProxySnapshot = CaptureProxySnapshot(),
+    val adGuardInstalled: Boolean = false,
+    val adGuardAutoSwitch: Boolean = false,
+    val adGuardAutomationPassword: String = "",
     val modeSwitching: Boolean = false,
     val nowMillis: Long = System.currentTimeMillis(),
-)
+) {
+    val adGuardAutoSwitchEffective: Boolean
+        get() = AdGuardAutomation.isAutoSwitchEffective(adGuardAutoSwitch, adGuardAutomationPassword)
+}
 
 /** The system save dialog for the certificate; [pending] is committed only after the user saved it. */
 class CertSaveRequest(val name: String, val bytes: ByteArray, val pending: CertStore.Pending?)
@@ -173,7 +189,12 @@ class GainsTrackerViewModel @Inject constructor(
         val port: Int,
         val status: CaptureProxySnapshot,
         val switching: Boolean,
+        val adGuardInstalled: Boolean,
+        val adGuardAutoSwitch: Boolean,
+        val adGuardPassword: String,
     )
+
+    private val adGuardInstalled = MutableStateFlow(AdGuardAutomation.isInstalled(context))
 
     private val coreStatus = combine(
         prefsCore.captureTrackerEnabled.asFlow(),
@@ -215,17 +236,37 @@ class GainsTrackerViewModel @Inject constructor(
             prefsCore.captureProxyPort.asFlow(),
             CaptureProxyStatus.state,
             switchingMode,
-        ) { mode, port, status, switching ->
-            ProxyUiStatus(mode, port, status, switching)
+            combine(
+                adGuardInstalled,
+                prefsCore.captureAdGuardAutoSwitch.asFlow(),
+                prefsCore.captureAdGuardAutomationPassword.asFlow(),
+            ) { installed, autoSwitch, password -> Triple(installed, autoSwitch, password) },
+        ) { mode, port, status, switching, (installed, autoSwitch, password) ->
+            ProxyUiStatus(mode, port, status, switching, installed, autoSwitch, password)
         },
     ) { base, proxyUi ->
         base.copy(
             connectionMode = proxyUi.mode,
             proxyPort = proxyUi.port,
             proxyStatus = proxyUi.status,
+            adGuardInstalled = proxyUi.adGuardInstalled,
+            adGuardAutoSwitch = proxyUi.adGuardAutoSwitch,
+            adGuardAutomationPassword = proxyUi.adGuardPassword,
             modeSwitching = proxyUi.switching,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GainsTrackerUiState())
+
+    fun refreshAdGuardInstalled() {
+        adGuardInstalled.value = AdGuardAutomation.isInstalled(context)
+    }
+
+    fun setAdGuardAutoSwitch(enabled: Boolean) {
+        prefsCore.captureAdGuardAutoSwitch.set(enabled)
+    }
+
+    fun setAdGuardAutomationPassword(password: String) {
+        prefsCore.captureAdGuardAutomationPassword.set(password)
+    }
 
     fun refreshCertificate() {
         viewModelScope.launch {
@@ -403,6 +444,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
     LifecycleResumeEffect(Unit) {
         vm.refreshCertificate()
         vm.refreshJpRoot()
+        vm.refreshAdGuardInstalled()
         onPauseOrDispose {}
     }
     LaunchedEffect(Unit) {
@@ -469,6 +511,8 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
         },
         onApplyProxyPort = vm::applyProxyPort,
         onConfirmDisableAdGuard = { vm.leaveAdGuard(disableFeature = true) },
+        onAdGuardAutoSwitch = vm::setAdGuardAutoSwitch,
+        onAdGuardAutomationPassword = vm::setAdGuardAutomationPassword,
         extraItems = {
             chaldeaSyncItems(
                 ui = chaldeaUi,
@@ -521,6 +565,8 @@ fun GainsTrackerContent(
     onSelectMode: (CaptureConnectionMode) -> Unit = {},
     onApplyProxyPort: (Int) -> Unit = {},
     onConfirmDisableAdGuard: () -> Unit = {},
+    onAdGuardAutoSwitch: (Boolean) -> Unit = {},
+    onAdGuardAutomationPassword: (String) -> Unit = {},
     extraItems: LazyListScope.() -> Unit = {},
 ) {
     var confirmRecreate by remember { mutableStateOf(false) }
@@ -587,7 +633,11 @@ fun GainsTrackerContent(
 
     val handleEnabledChange: (Boolean) -> Unit = { targetEnabled ->
         if (!targetEnabled && state.connectionMode == CaptureConnectionMode.AdGuard) {
-            pendingLeaveAdGuardAction = LeaveAdGuardAction.DisableFeature
+            if (state.adGuardAutoSwitchEffective) {
+                onConfirmDisableAdGuard()
+            } else {
+                pendingLeaveAdGuardAction = LeaveAdGuardAction.DisableFeature
+            }
         } else {
             onEnabled(targetEnabled)
         }
@@ -667,7 +717,11 @@ fun GainsTrackerContent(
                                     enabled = !state.modeSwitching,
                                     onClick = {
                                         if (state.connectionMode == CaptureConnectionMode.AdGuard) {
-                                            pendingLeaveAdGuardAction = LeaveAdGuardAction.SwitchToVpn
+                                            if (state.adGuardAutoSwitchEffective) {
+                                                onSelectMode(CaptureConnectionMode.Vpn)
+                                            } else {
+                                                pendingLeaveAdGuardAction = LeaveAdGuardAction.SwitchToVpn
+                                            }
                                         }
                                     },
                                     label = { Text(stringResource(R.string.capture_connection_mode_vpn)) },
@@ -690,7 +744,7 @@ fun GainsTrackerContent(
                                 state = state,
                                 onCopyAddress = { addr ->
                                     context.getSystemService(ClipboardManager::class.java)
-                                        ?.setPrimaryClip(ClipData.newPlainText("AdGuard proxy", addr))
+                                        ?.setPrimaryClip(ClipData.newPlainText("External proxy", addr))
                                     Toast.makeText(
                                         context,
                                         resources.getString(R.string.capture_adguard_copied, addr),
@@ -698,6 +752,8 @@ fun GainsTrackerContent(
                                     ).show()
                                 },
                                 onApplyPort = onApplyProxyPort,
+                                onAdGuardAutoSwitch = onAdGuardAutoSwitch,
+                                onAdGuardAutomationPassword = onAdGuardAutomationPassword,
                             )
                         } else {
                             Text(
@@ -810,10 +866,13 @@ private fun AdGuardProxyCard(
     state: GainsTrackerUiState,
     onCopyAddress: (String) -> Unit,
     onApplyPort: (Int) -> Unit,
+    onAdGuardAutoSwitch: (Boolean) -> Unit,
+    onAdGuardAutomationPassword: (String) -> Unit,
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     var portText by rememberSaveable(state.proxyPort) { mutableStateOf(state.proxyPort.toString()) }
     var portInvalid by remember { mutableStateOf(false) }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     fun submitPort() {
         val parsed = portText.trim().toIntOrNull()
@@ -889,11 +948,6 @@ private fun AdGuardProxyCard(
                     Text(stringResource(R.string.capture_adguard_port_apply))
                 }
             }
-            Text(
-                stringResource(R.string.capture_adguard_steps),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             val isPortError = state.proxyStatus.state is CaptureProxyState.PortError
             Text(
                 text = when {
@@ -934,6 +988,79 @@ private fun AdGuardProxyCard(
                 OutlinedButton(onClick = { requestBatteryExclusion(batteryContext) }) {
                     Text(stringResource(R.string.capture_adguard_battery_button))
                 }
+            }
+
+            HorizontalDivider()
+            Text(
+                stringResource(R.string.capture_proxy_common_requirements_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                stringResource(R.string.capture_proxy_common_requirements, displayPort),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider()
+            Text(
+                stringResource(R.string.capture_adguard_section_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                stringResource(R.string.capture_adguard_steps),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (state.adGuardInstalled) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.capture_adguard_auto_switch_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            stringResource(R.string.capture_adguard_auto_switch_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = state.adGuardAutoSwitch,
+                        onCheckedChange = onAdGuardAutoSwitch,
+                    )
+                }
+                OutlinedTextField(
+                    value = state.adGuardAutomationPassword,
+                    onValueChange = onAdGuardAutomationPassword,
+                    label = { Text(stringResource(R.string.capture_adguard_automation_password_label)) },
+                    supportingText = {
+                        Text(stringResource(R.string.capture_adguard_automation_password_help))
+                    },
+                    singleLine = true,
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = stringResource(
+                                    if (passwordVisible) R.string.capture_adguard_automation_password_hide
+                                    else R.string.capture_adguard_automation_password_show
+                                ),
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

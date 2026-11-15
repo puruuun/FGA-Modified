@@ -178,8 +178,32 @@ object CaptureController {
     private fun shutdownProxyQ(context: Context) {
         val intent = Intent(context, CaptureProxyService::class.java)
             .setAction(CaptureProxyService.ACTION_SHUTDOWN)
+        val running = CaptureProxyStatus.state.value.state != CaptureProxyState.Idle || isProxyAlive()
+        if (!running) {
+            val currentPrefs = PrefsCore(
+                PrefMaker(context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)),
+                context,
+            )
+            if (currentPrefs.captureConnectionMode.get() == CaptureConnectionMode.AdGuard) {
+                val password = currentPrefs.captureAdGuardAutomationPassword.get()
+                val effective = AdGuardAutomation.isAutoSwitchEffective(
+                    enabled = currentPrefs.captureAdGuardAutoSwitch.get(),
+                    password = password,
+                )
+                val commands = AdGuardAutomation.commandsFor(
+                    event = AdGuardSwitchEvent.LeavingOrShutdown,
+                    autoSwitchEffective = effective,
+                    readingActive = false,
+                    startupDisableSent = false,
+                    port = currentPrefs.captureProxyPort.get(),
+                )
+                if (commands.isNotEmpty()) {
+                    AdGuardAutomation.sendCommands(context.applicationContext, commands, password)
+                }
+            }
+        }
         val sent = runCatching {
-            if (CaptureProxyStatus.state.value.state != CaptureProxyState.Idle) {
+            if (running) {
                 context.startService(intent)
             } else {
                 context.stopService(intent)

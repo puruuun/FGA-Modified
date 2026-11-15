@@ -45,12 +45,14 @@ class CaptureProxyService : Service() {
     private var ownsSaveGuard = false
     private var readingActive = false
     private var shuttingDown = false
+    private var startupDisableSent = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         alive = true
+        startupDisableSent = false
         CaptureController.init(applicationContext)
         CaptureTracker.init(applicationContext)
         CaptureProxyStatus.reset()
@@ -76,16 +78,21 @@ class CaptureProxyService : Service() {
             null -> {
                 // Service restarted by START_STICKY: rebind the listener with reading left off.
                 turnReadingOff(CaptureStopReason.User)
+                dispatchAdGuardSwitch(AdGuardSwitchEvent.ServiceStartEnsureOrSticky, targetPort)
                 ensureListening(targetPort)
             }
 
             ACTION_ENSURE -> {
+                dispatchAdGuardSwitch(AdGuardSwitchEvent.ServiceStartEnsureOrSticky, targetPort)
                 ensureListening(targetPort)
             }
 
             ACTION_START_READING -> {
                 val listening = ensureListening(targetPort)
                 if (listening) {
+                    if (!(readingActive && CaptureTracker.running.value)) {
+                        dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOn, boundPort ?: targetPort)
+                    }
                     turnReadingOn()
                 } else {
                     CaptureTracker.starting = false
@@ -97,17 +104,20 @@ class CaptureProxyService : Service() {
                 val reason = intent.getStringExtra(EXTRA_STOP_REASON)
                     ?.let { name -> CaptureStopReason.entries.firstOrNull { it.name == name } }
                     ?: CaptureStopReason.User
+                dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOff, targetPort)
                 turnReadingOff(reason)
                 ensureListening(targetPort)
             }
 
             ACTION_TOGGLE_READING -> {
                 if (readingActive || CaptureTracker.running.value) {
+                    dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOff, targetPort)
                     turnReadingOff(CaptureStopReason.User)
                     ensureListening(targetPort)
                 } else {
                     val listening = ensureListening(targetPort)
                     if (listening) {
+                        dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOn, boundPort ?: targetPort)
                         turnReadingOn()
                     } else {
                         CaptureTracker.starting = false
@@ -180,6 +190,7 @@ class CaptureProxyService : Service() {
             return
         }
         if (readingActive) {
+            dispatchAdGuardSwitch(AdGuardSwitchEvent.ReadingOff, newPort)
             turnReadingOff(CaptureStopReason.User)
         }
         val oldProxy = proxy
@@ -309,12 +320,38 @@ class CaptureProxyService : Service() {
     }
 
     private fun shutdownAndStopSelf(reason: CaptureStopReason) {
+        if (shuttingDown) return
         shuttingDown = true
+        dispatchAdGuardSwitch(AdGuardSwitchEvent.LeavingOrShutdown)
         turnReadingOff(reason)
         stopCurrentProxy()
         CaptureProxyStatus.reset()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun dispatchAdGuardSwitch(
+        event: AdGuardSwitchEvent,
+        port: Int = prefs.captureProxyPort.get(),
+    ) {
+        val password = prefs.captureAdGuardAutomationPassword.get()
+        val effective = AdGuardAutomation.isAutoSwitchEffective(
+            enabled = prefs.captureAdGuardAutoSwitch.get(),
+            password = password,
+        )
+        val commands = AdGuardAutomation.commandsFor(
+            event = event,
+            autoSwitchEffective = effective,
+            readingActive = readingActive || CaptureTracker.running.value,
+            startupDisableSent = startupDisableSent,
+            port = port,
+        )
+        if (event == AdGuardSwitchEvent.ServiceStartEnsureOrSticky && commands.isNotEmpty()) {
+            startupDisableSent = true
+        }
+        if (commands.isNotEmpty()) {
+            AdGuardAutomation.sendCommands(applicationContext, commands, password)
+        }
     }
 
     private fun showPortErrorToast(port: Int) {

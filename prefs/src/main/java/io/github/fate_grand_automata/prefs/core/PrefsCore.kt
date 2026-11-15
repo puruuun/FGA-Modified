@@ -76,6 +76,8 @@ class PrefsCore @Inject constructor(
         convert = CaptureConnectionMode::clampProxyPort,
         reverse = CaptureConnectionMode::clampProxyPort,
     )
+    val captureAdGuardAutoSwitch = maker.bool("capture_adguard_auto_switch", false)
+    val captureAdGuardAutomationPassword = maker.string("capture_adguard_automation_password", "")
 
     /** Chaldea direct sync (stage 1): writes captured account data into Chaldea through Shizuku. Off until opted in. */
     val chaldeaSyncEnabled = maker.bool("chaldea_sync_enabled", false)
