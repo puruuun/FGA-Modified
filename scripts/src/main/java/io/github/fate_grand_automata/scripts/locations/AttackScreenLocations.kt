@@ -37,13 +37,20 @@ class AttackScreenLocations @Inject constructor(
         CommandCard.Face.E -> 1068
     }.let { x -> Region(x, 590, 250, 260) + faceCardDeltaY }.xFromCenter()
 
-    fun typeRegion(card: CommandCard.Face) = when (card) {
+    private fun typeColumnX(card: CommandCard.Face) = when (card) {
         CommandCard.Face.A -> -1280
         CommandCard.Face.B -> -768
         CommandCard.Face.C -> -256
         CommandCard.Face.D -> 256
         CommandCard.Face.E -> 768
-    }.let { x -> Region(x, 1060, 512, 200) + faceCardDeltaY }.xFromCenter()
+    }
+
+    fun typeRegion(card: CommandCard.Face) =
+        (Region(typeColumnX(card), 1060, 512, 200) + faceCardDeltaY).xFromCenter()
+
+    /** Region around the bottom-right swap icon next to a command card's type label (1440p). */
+    fun swapIconRegion(card: CommandCard.Face) =
+        (Region(typeColumnX(card) + 240, 1040, 272, 240) + faceCardDeltaY).xFromCenter()
 
     fun servantMatchRegion(card: CommandCard.Face) = when (card) {
         CommandCard.Face.A -> -1174

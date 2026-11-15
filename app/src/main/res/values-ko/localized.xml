@@ -1376,4 +1376,7 @@
     <string name="capture_adguard_battery_excluded">"배터리 최적화: 제외됨"</string>
     <string name="capture_adguard_battery_not_excluded">"배터리 최적화: 제외 안 됨 — FGA가 백그라운드에서 종료되면 FGO 연결이 끊길 수 있습니다"</string>
     <string name="capture_adguard_battery_button">"배터리 최적화 제외"</string>
+    <string name="card_swap_shared_header">모든 웨이브·턴 공통</string>
+    <string name="card_swap_detection">아오코 카드 변화 감지</string>
+    <string name="card_swap_detection_summary">켜면 모든 웨이브와 턴에 적용됩니다. 카드에 변환 아이콘이 있으면 Arts로 취급합니다</string>
 </resources>

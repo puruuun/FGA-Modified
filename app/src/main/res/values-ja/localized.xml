@@ -1134,4 +1134,7 @@
     <string name="capture_adguard_battery_excluded">"バッテリー最適化: 除外済み"</string>
     <string name="capture_adguard_battery_not_excluded">"バッテリー最適化: 除外されていません — FGA がバックグラウンドで終了すると FGO の接続が切れることがあります"</string>
     <string name="capture_adguard_battery_button">"バッテリー最適化から除外"</string>
+    <string name="card_swap_shared_header">全ウェーブ・ターン共通</string>
+    <string name="card_swap_detection">青子のカード変化を検出</string>
+    <string name="card_swap_detection_summary">オンにするとすべてのウェーブとターンに適用されます。変換アイコンのあるカードをArtsとして扱います</string>
 </resources>

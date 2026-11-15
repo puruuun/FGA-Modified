@@ -26,8 +26,11 @@ import org.opencv.core.Size as CvSize
 class DroidCvPattern(
     private var mat: Mat = Mat(),
     private val ownsMat: Boolean = true,
-    override var tag: String = ""
+    override var tag: String = "",
+    private val mask: Mat? = null
 ) : Pattern {
+    private class MaskedMats(val mat: Mat, val mask: Mat?)
+
     private companion object {
         fun makeMat(
             stream: InputStream,
@@ -42,9 +45,55 @@ class DroidCvPattern(
                 )
             }
         }
+
+        fun makeMaskedMats(
+            stream: InputStream,
+            isColor: Boolean,
+            filePath: String
+        ): MaskedMats {
+            val byteArray = stream.readBytes()
+            val rgba = MatOfByte(*byteArray).use {
+                Imgcodecs.imdecode(it, Imgcodecs.IMREAD_UNCHANGED)
+            }
+            val colorMat = Mat()
+            val alpha = Mat()
+            val mask = Mat()
+            try {
+                if (rgba.channels() != 4) {
+                    error("$filePath must have an alpha channel")
+                }
+                Imgproc.cvtColor(
+                    rgba,
+                    colorMat,
+                    if (isColor) Imgproc.COLOR_BGRA2BGR else Imgproc.COLOR_BGRA2GRAY
+                )
+                Core.extractChannel(rgba, alpha, 3)
+                Core.compare(alpha, Scalar(0.0), mask, Core.CMP_GT)
+                return MaskedMats(colorMat, mask)
+            } catch (t: Throwable) {
+                colorMat.release()
+                mask.release()
+                throw t
+            } finally {
+                alpha.release()
+                rgba.release()
+            }
+        }
     }
 
+    private constructor(mats: MaskedMats, tag: String) : this(mats.mat, tag = tag, mask = mats.mask)
+
     constructor(stream: InputStream, isColor: Boolean, tag: String = "") : this(makeMat(stream, isColor), tag = tag)
+
+    constructor(
+        stream: InputStream,
+        isColor: Boolean,
+        tag: String = "",
+        masked: Boolean
+    ) : this(
+        if (masked) makeMaskedMats(stream, isColor, tag) else MaskedMats(makeMat(stream, isColor), null),
+        tag = tag
+    )
 
     override fun toString() =
         tag.ifBlank { super.toString() }
@@ -53,6 +102,7 @@ class DroidCvPattern(
         if (ownsMat) {
             mat.release()
         }
+        mask?.release()
     }
 
     private fun resize(source: Mat, target: Mat, size: Size) {
@@ -64,12 +114,14 @@ class DroidCvPattern(
     }
 
     override fun resize(size: Size): Pattern {
+        check(mask == null) { "masked template: resize not supported" }
         val resizedMat = Mat().apply { resize(mat, this, size) }
 
         return DroidCvPattern(resizedMat, tag = tag)
     }
 
     override fun resize(target: Pattern, size: Size) {
+        check(mask == null && (target as? DroidCvPattern)?.mask == null) { "masked template: resize not supported" }
         if (target is DroidCvPattern) {
             resize(mat, target.mat, size)
         }
@@ -77,16 +129,42 @@ class DroidCvPattern(
         target.tag = tag
     }
 
+    private fun sanitizeMaskedResult(result: Mat) {
+        val ok = Mat()
+        val bad = Mat()
+        try {
+            // NaN, ±Inf and |value| > 1.01 (outside normal float32 correlation bounds) map to 0.
+            Core.inRange(result, Scalar(-1.01), Scalar(1.01), ok)
+            Core.bitwise_not(ok, bad)
+            result.setTo(Scalar(0.0), bad)
+        } finally {
+            bad.release()
+            ok.release()
+        }
+    }
+
     private fun match(template: Pattern): Mat? {
         if (template is DroidCvPattern) {
             if (template.width <= width && template.height <= height) {
                 val result = Mat()
-                Imgproc.matchTemplate(
-                    mat,
-                    template.mat,
-                    result,
-                    Imgproc.TM_CCOEFF_NORMED
-                )
+                val templateMask = template.mask
+                if (templateMask != null) {
+                    Imgproc.matchTemplate(
+                        mat,
+                        template.mat,
+                        result,
+                        Imgproc.TM_CCOEFF_NORMED,
+                        templateMask
+                    )
+                    sanitizeMaskedResult(result)
+                } else {
+                    Imgproc.matchTemplate(
+                        mat,
+                        template.mat,
+                        result,
+                        Imgproc.TM_CCOEFF_NORMED
+                    )
+                }
                 return result
             } else {
                 Timber.v("Skipped matching $template: Region out of bounds")
@@ -131,6 +209,7 @@ class DroidCvPattern(
     override val height get() = mat.height()
 
     override fun crop(region: Region): Pattern {
+        check(mask == null) { "masked template: crop not supported" }
         val clippedRegion = Region(0, 0, width, height)
             .clip(region)
 
@@ -160,9 +239,13 @@ class DroidCvPattern(
         }
     }
 
-    override fun copy() = DroidCvPattern(mat.clone(), tag = tag)
+    override fun copy(): Pattern {
+        check(mask == null) { "masked template: copy not supported" }
+        return DroidCvPattern(mat.clone(), tag = tag)
+    }
 
     override fun stackedWith(other: Pattern): Pattern {
+        check(mask == null && (other as? DroidCvPattern)?.mask == null) { "masked template: stackedWith not supported" }
         require(other is DroidCvPattern && other.mat.type() == mat.type()) { "stackedWith needs the same image type" }
         val wide = maxOf(width, other.width)
         fun padded(source: Mat): Mat = if (source.width() == wide) source.clone() else Mat().also {
@@ -178,6 +261,7 @@ class DroidCvPattern(
     }
 
     override fun threshold(value: Double): Pattern {
+        check(mask == null) { "masked template: threshold not supported" }
         val result = Mat()
 
         Imgproc.threshold(mat, result, value * 255, 255.0, Imgproc.THRESH_BINARY)
@@ -264,6 +348,7 @@ class DroidCvPattern(
      * Fills in outlined text. Only use this on binary images produced by [threshold].
      */
     override fun fillText(): Pattern {
+        check(mask == null) { "masked template: fillText not supported" }
         val mask = Mat.zeros(org.opencv.core.Size(width + 2.0, height + 2.0), mat.type())
 
         for (point in getPointInHoles(this.mat)) {
@@ -276,6 +361,7 @@ class DroidCvPattern(
 
     /** Enlarge a small outlined label without changing the shared OCR preprocessing. */
     fun prepareTextLine(options: TextLineOcrOptions): DroidCvPattern {
+        check(mask == null) { "masked template: prepareTextLine not supported" }
         val enlarged = Mat()
         Imgproc.resize(mat, enlarged, CvSize(width * options.scale * options.horizontalScale, height * options.scale.toDouble()),
             0.0, 0.0, Imgproc.INTER_CUBIC)

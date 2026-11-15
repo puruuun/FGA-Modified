@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 fun CardPriorityView(
     items: SnapshotStateList<CardPriorityListItem>,
     cardPrioritySplit: Pref<CardPrioritySplit>,
+    cardSwapDetection: Pref<Boolean>,
     profileIndex: Int = 0
 ) {
     val pagerState = rememberPagerState(pageCount = {items.size},)
@@ -88,7 +89,7 @@ fun CardPriorityView(
                             Text(stringResource(R.string.card_priority_low))
                         }
 
-                        items.getOrNull(it)?.Render()
+                        items.getOrNull(it)?.Render(cardSwapDetection)
                     }
                 }
             }

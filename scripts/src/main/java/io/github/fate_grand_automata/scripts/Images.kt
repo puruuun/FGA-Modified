@@ -1,6 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
-enum class Images(val path: String) {
+enum class Images(val path: String, val masked: Boolean = false) {
     WeeklyGate("weekly_gate.png"),
     WeeklyDaily("weekly_daily.png"),
     WeeklyDailyQuest("weekly_daily_quest.png"),
@@ -44,6 +44,7 @@ enum class Images(val path: String) {
     Buster("buster.png"),
     Arts("art.png"),
     Quick("quick.png"),
+    CardSwap("card_swap.png", masked = true),
     Weak("weak.png"),
     Resist("resist.png"),
     Friend("friend.png"),

@@ -20,6 +20,7 @@ import io.github.fate_grand_automata.qa.suites.verifyRankUp
 import io.github.fate_grand_automata.qa.suites.verifySkillLevelPanel
 import io.github.fate_grand_automata.qa.suites.verifyHakunoShuffle
 import io.github.fate_grand_automata.qa.suites.verifyCEEnhance
+import io.github.fate_grand_automata.qa.suites.verifyCardSwap
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -77,6 +78,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                         "skillLevelPanel" -> api.verifySkillLevelPanel()
                         "hakunoShuffle" -> api.verifyHakunoShuffle()
                         "ceEnhance" -> api.verifyCEEnhance()
+                        "cardSwap" -> api.verifyCardSwap()
                         else -> error("Unknown suite")
                     })
                     api.checkCoverage()

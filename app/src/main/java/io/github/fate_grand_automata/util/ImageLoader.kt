@@ -24,7 +24,7 @@ class ImageLoader @Inject constructor(
     @param:ApplicationContext val context: Context,
     private val colorManager: ColorManager
 ) : IImageLoader {
-    private fun createPattern(gameServer: GameServer, FileName: String): Pattern {
+    private fun createPattern(gameServer: GameServer, FileName: String, masked: Boolean = false): Pattern {
         val gameServerPath = gameServer.simple
         val filePath = "$gameServerPath/$FileName"
 
@@ -38,7 +38,11 @@ class ImageLoader @Inject constructor(
         val inputStream = assets.open("$gameServerWithImage/${FileName}")
 
         inputStream.use {
-            return DroidCvPattern(it, colorManager.isColor, filePath)
+            return if (masked) {
+                DroidCvPattern(it, colorManager.isColor, filePath, masked = true)
+            } else {
+                DroidCvPattern(it, colorManager.isColor, filePath)
+            }
         }
     }
 
@@ -62,15 +66,15 @@ class ImageLoader @Inject constructor(
         }
 
         return regionCachedPatterns.getOrPut(key(path, gameServer)) {
-            loadPatternWithFallback(path, gameServer)
+            loadPatternWithFallback(path, gameServer, img.masked)
         }
     }
 
     /**
      * When image is not available for the current server, use the image from NA server.
      */
-    private fun loadPatternWithFallback(path: String, gameServer: GameServer?): Pattern {
-        return createPattern(gameServer ?: currentGameServer, path)
+    private fun loadPatternWithFallback(path: String, gameServer: GameServer?, masked: Boolean = false): Pattern {
+        return createPattern(gameServer ?: currentGameServer, path, masked)
     }
 
     override fun clearImageCache() = synchronized(regionCachedPatterns) {

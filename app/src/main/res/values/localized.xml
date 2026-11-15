@@ -1445,4 +1445,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_adguard_battery_excluded">"Battery optimization: excluded"</string>
     <string name="capture_adguard_battery_not_excluded">"Battery optimization: not excluded — if FGA is stopped in the background, FGO loses its connection"</string>
     <string name="capture_adguard_battery_button">"Exclude from battery optimization"</string>
+    <string name="card_swap_shared_header">All waves and turns</string>
+    <string name="card_swap_detection">Detect Aoko card change</string>
+    <string name="card_swap_detection_summary">When on, applies to every wave and turn: a card with the swap icon is treated as Arts</string>
 </resources>
