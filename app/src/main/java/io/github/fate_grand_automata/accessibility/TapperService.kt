@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.fate_grand_automata.capture.CaptureController
+import io.github.fate_grand_automata.capture.EnsureThrottle
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
@@ -85,12 +87,19 @@ class TapperService : AccessibilityService() {
                     Timber.d("Detected FGO: $server")
 
                     detectedFgoServer = server
+
+                    // No-op unless the AdGuard start conditions hold; only sends an intent.
+                    if (ensureThrottle.tryAcquire()) {
+                        runCatching { CaptureController.ensureProxy(applicationContext) }
+                    }
                 }
             }
 
             else -> {}
         }
     }
+
+    private val ensureThrottle = EnsureThrottle()
 
     override fun onInterrupt() {}
 }

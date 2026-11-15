@@ -3,7 +3,10 @@ package io.github.fate_grand_automata.ui.more
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -906,6 +909,48 @@ private fun AdGuardProxyCard(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val batteryContext = LocalContext.current
+            var batteryExcluded by remember { mutableStateOf(isIgnoringBatteryOptimizations(batteryContext)) }
+            LifecycleResumeEffect(Unit) {
+                batteryExcluded = isIgnoringBatteryOptimizations(batteryContext)
+                onPauseOrDispose {}
+            }
+            Text(
+                text = stringResource(
+                    if (batteryExcluded) R.string.capture_adguard_battery_excluded
+                    else R.string.capture_adguard_battery_not_excluded
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (batteryExcluded) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.error,
+            )
+            if (!batteryExcluded) {
+                OutlinedButton(onClick = { requestBatteryExclusion(batteryContext) }) {
+                    Text(stringResource(R.string.capture_adguard_battery_button))
+                }
+            }
+        }
+    }
+}
+
+private fun isIgnoringBatteryOptimizations(context: android.content.Context): Boolean =
+    runCatching {
+        context.getSystemService(PowerManager::class.java)
+            ?.isIgnoringBatteryOptimizations(context.packageName) == true
+    }.getOrDefault(false)
+
+private fun requestBatteryExclusion(context: android.content.Context) {
+    val request = Intent(
+        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+        Uri.parse("package:${context.packageName}"),
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(request)
+    } catch (_: ActivityNotFoundException) {
+        runCatching {
+            context.startActivity(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
     }

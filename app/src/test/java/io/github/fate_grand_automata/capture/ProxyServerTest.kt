@@ -709,6 +709,55 @@ class ProxyServerTest {
     }
 
     @Test(timeout = 15000)
+    fun peekDeadlineIsTotalNotPerRead() {
+        val firstByteAtNs = java.util.concurrent.atomic.AtomicLong(0)
+        val upstreamSawNs = java.util.concurrent.atomic.AtomicLong(0)
+        val seen = CountDownLatch(1)
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val t = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    if (s.getInputStream().read() >= 0) {
+                        upstreamSawNs.set(System.nanoTime())
+                        seen.countDown()
+                    }
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val proxy = ProxyServer(emptyMap(), ProxyOptions(socks5 = true, ipSniff = true))
+        val port = proxy.start(0)
+        try {
+            Socket("127.0.0.1", port).use { s ->
+                s.soTimeout = 6000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT 127.0.0.1:${echoServer.localPort} HTTP/1.1\r\n\r\n".toByteArray())
+                out.flush()
+                assertTrue(readUntilBlankLine(inp).startsWith("HTTP/1.1 200"))
+
+                // A TLS record header sent one byte per 1.2 s: no single read waits 3 s, but the
+                // total peek deadline (3 s) must still end the peek and start the tunnel.
+                val header = byteArrayOf(0x16, 0x03, 0x01, 0x00, 0x20, 0x01)
+                firstByteAtNs.set(System.nanoTime())
+                for (b in header) {
+                    if (seen.count == 0L) break
+                    out.write(byteArrayOf(b))
+                    out.flush()
+                    if (seen.await(1200, TimeUnit.MILLISECONDS)) break
+                }
+                assertTrue(seen.await(3, TimeUnit.SECONDS), "tunnel must start")
+                val elapsedMs = TimeUnit.NANOSECONDS.toMillis(upstreamSawNs.get() - firstByteAtNs.get())
+                assertTrue(elapsedMs in 2800..4500, "Expected the tunnel after the ~3s total deadline, took ${elapsedMs}ms")
+            }
+        } finally {
+            proxy.stop()
+            echoServer.close()
+            t.join(1000)
+        }
+    }
+
+    @Test(timeout = 15000)
     fun peekTimeoutReplaysAlreadyReadBytesInOrder() {
         val received = ByteArrayOutputStream()
         val latch = CountDownLatch(1)
@@ -817,6 +866,7 @@ class ProxyServerTest {
             InetAddress.getByName("127.0.0.1"),
         ) as SSLServerSocket).apply { enabledProtocols = arrayOf("TLSv1.2", "TLSv1.3") }
 
+        val upstreamTargets = CopyOnWriteArrayList<String>()
         val serverThread = Thread {
             runCatching {
                 while (!mockServer.isClosed) {
@@ -828,6 +878,7 @@ class ProxyServerTest {
                                 val r = HttpReader(sock.getInputStream())
                                 while (true) {
                                     val req = r.readHead() ?: break
+                                    upstreamTargets += req.target
                                     val payload = """{"ok":true,"req":"${req.target}"}"""
                                     val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${payload.length}\r\n\r\n$payload"
                                     sock.getOutputStream().apply {
@@ -877,8 +928,17 @@ class ProxyServerTest {
                 write("GET /login/top HTTP/1.1\r\nHost: $gameHost\r\n\r\n".toByteArray())
                 flush()
             }
-            val head = runCatching { HttpReader(tlsClient.getInputStream()).readHead() }.getOrNull()
-            assertEquals(null, head)
+            // Reading is off: the request still reaches the upstream and the client gets the
+            // response, but nothing is recorded; then the connection is closed.
+            val reader = HttpReader(tlsClient.getInputStream())
+            val head = reader.readHead()
+            assertTrue(head != null && head.status == 200, "client must get the upstream response")
+            val body = reader.copyBody(head!!, java.io.ByteArrayOutputStream(), isResponse = true, requestMethod = "GET", captureBody = true)
+            assertEquals("""{"ok":true,"req":"/login/top"}""", String(body.payload ?: ByteArray(0)))
+            assertEquals(listOf("/login/top"), upstreamTargets.toList())
+            assertEquals(emptyList(), capturedTargets.toList())
+            val closed = runCatching { tlsClient.getInputStream().read() }.getOrDefault(-1)
+            assertEquals(-1, closed)
             assertEquals(emptyList(), capturedTargets.toList())
             runCatching { tlsClient.close() }
         } finally {

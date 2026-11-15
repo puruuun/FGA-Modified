@@ -1433,4 +1433,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_adguard_leave_title">"Turn off AdGuard proxy first"</string>
     <string name="capture_adguard_leave_message">"Turn off the proxy in AdGuard first, otherwise FGO has no connection."</string>
     <string name="capture_adguard_leave_confirm">"Continue"</string>
+    <string name="capture_adguard_battery_excluded">"Battery optimization: excluded"</string>
+    <string name="capture_adguard_battery_not_excluded">"Battery optimization: not excluded — if FGA is stopped in the background, FGO loses its connection"</string>
+    <string name="capture_adguard_battery_button">"Exclude from battery optimization"</string>
 </resources>

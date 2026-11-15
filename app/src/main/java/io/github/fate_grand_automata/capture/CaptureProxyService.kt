@@ -179,7 +179,7 @@ class CaptureProxyService : Service() {
         if (proxy != null && boundPort == newPort && CaptureProxyStatus.state.value.state is CaptureProxyState.Listening) {
             return
         }
-        if (readingActive || CaptureTracker.running.value || CaptureTracker.starting) {
+        if (readingActive) {
             turnReadingOff(CaptureStopReason.User)
         }
         val oldProxy = proxy
@@ -203,7 +203,7 @@ class CaptureProxyService : Service() {
     }
 
     private fun bindProxy(port: Int): Boolean {
-        if (readingActive || CaptureTracker.running.value || CaptureTracker.starting) {
+        if (readingActive) {
             turnReadingOff(CaptureStopReason.User)
         }
         val oldProxy = proxy

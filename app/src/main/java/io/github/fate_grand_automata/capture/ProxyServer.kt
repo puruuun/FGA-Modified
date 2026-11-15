@@ -567,8 +567,10 @@ class ProxyServer(
         val cout = client.getOutputStream()
         val uout = up.getOutputStream()
         while (true) {
-            if (!reading) return
             val req = cr.readHead() ?: return
+            // When reading was turned off, this request is still relayed so the game gets its
+            // response, but nothing is recorded and the connection is closed afterwards.
+            val recordThis = reading
             uout.write(req.raw)
             // The request body is forwarded but never kept.
             cr.copyBody(req, uout, isResponse = false, captureBody = false)
@@ -583,10 +585,10 @@ class ProxyServer(
                 resp = ur.readHead() ?: return
             }
             cout.write(resp.raw)
-            val body = ur.copyBody(resp, cout, isResponse = true, requestMethod = req.method, captureBody = !account)
+            val body = ur.copyBody(resp, cout, isResponse = true, requestMethod = req.method, captureBody = !account && recordThis)
             cout.flush()
             val total = resp.raw.size + body.rawBytes
-            val stillReading = reading
+            val stillReading = reading && recordThis
             if (account) {
                 Timber.d("Capture: %s account path %d", req.method, resp.status)
             } else {
