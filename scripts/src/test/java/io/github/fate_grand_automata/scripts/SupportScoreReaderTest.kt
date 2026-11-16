@@ -7,6 +7,8 @@ import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreDispla
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreDarkRetry
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReadProfile
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreSelection
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScores
@@ -491,6 +493,85 @@ class SupportScoreReaderTest {
         every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("S9/+16", 90)
         assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
         assertThat(f.reader.read(f.bounds, true, false)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
+    }
+
+    @Test
+    fun `profile selection per server picks KR JP and Default on every read call`() {
+        assertThat(SupportScoreReadProfile.forServer(GameServer.Kr)).isEqualTo(SupportScoreReadProfile.Kr)
+        assertThat(SupportScoreReadProfile.forServer(GameServer.Jp.Original)).isEqualTo(SupportScoreReadProfile.Jp)
+        assertThat(SupportScoreReadProfile.forServer(GameServer.Jp.BetterFGO)).isEqualTo(SupportScoreReadProfile.Jp)
+        assertThat(SupportScoreReadProfile.forServer(GameServer.En.Original)).isEqualTo(SupportScoreReadProfile.Default)
+        assertThat(SupportScoreReadProfile.forServer(GameServer.Cn)).isEqualTo(SupportScoreReadProfile.Default)
+        assertThat(SupportScoreReadProfile.forServer(GameServer.Tw)).isEqualTo(SupportScoreReadProfile.Default)
+
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("", 0)
+        every { f.api.prefs.gameServer } returns GameServer.Jp.Original
+        f.reader.read(f.bounds, true, false)
+        verify(exactly = 4) { f.ocr.detectTextLine(f.crop, any()) }
+
+        every { f.api.prefs.gameServer } returns GameServer.Kr
+        f.reader.read(f.bounds, true, false)
+        verify(exactly = 10) { f.ocr.detectTextLine(f.crop, any()) }
+    }
+
+    @Test
+    fun `KR JP and Default profiles equal the old constants field by field`() {
+        val expectedBase = SupportScoreReadProfile(
+            name = "default",
+            primaryOcrProfiles = SupportScoreReader.OCR_PROFILES,
+            darkOcrProfiles = SupportScoreReader.OCR_DARK_PROFILES,
+            darkRetry = SupportScoreDarkRetry.Never,
+            darkInspectCounts = false,
+            minOcrConfidence = SupportScoreReader.MIN_OCR_CONFIDENCE,
+            minConfirmConfidence = SupportScoreReader.MIN_CONFIRM_CONFIDENCE,
+            minAgreement = SupportScoreReader.MIN_AGREEMENT,
+            compactFieldSimilarity = SupportScoreReader.COMPACT_FIELD_SIMILARITY,
+            grandFieldSimilarity = SupportScoreReader.GRAND_FIELD_SIMILARITY,
+            legacyScoreSimilarity = SupportScoreSelection.SCORE_SIMILARITY,
+            useBlocks = false,
+            ignoreSlashlessPartialsInCompound = false,
+            grandTail416AsPlus16 = false,
+            noGlyphNotClippedWithVerifiedGrand = false
+        )
+        assertThat(SupportScoreReadProfile.Default).isEqualTo(expectedBase)
+        assertThat(SupportScoreReadProfile.Kr).isEqualTo(
+            expectedBase.copy(name = "kr", darkRetry = SupportScoreDarkRetry.WhenInconclusive, darkInspectCounts = true)
+        )
+        assertThat(SupportScoreReadProfile.Jp).isEqualTo(
+            expectedBase.copy(name = "jp", useBlocks = true)
+        )
+    }
+
+    @Test
+    fun `dark retry runs on KR only when inconclusive`() {
+        for ((server, expectedCalls) in listOf(
+            GameServer.Kr to 6,
+            GameServer.Jp.Original to 4,
+            GameServer.En.Original to 4
+        )) {
+            val f = Fixture()
+            every { f.api.prefs.gameServer } returns server
+            every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("", 0)
+            f.reader.read(f.bounds, true, false)
+            verify(exactly = expectedCalls) { f.ocr.detectTextLine(f.crop, any()) }
+        }
+    }
+
+    @Test
+    fun `injected profile override changes agreement requirement proving wiring`() {
+        val f = Fixture()
+        every { f.ocr.detectTextLine(f.crop, any()) } returnsMany listOf(
+            OcrText("+62/+16", 92), OcrText("+62/+16", 91), OcrText("+62/+16", 74), OcrText("+62/+16", 74)
+        )
+        assertThat(f.reader.read(f.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+
+        val f2 = Fixture()
+        f2.reader.profileOverrideForTest = SupportScoreReadProfile.Jp.copy(minAgreement = 3)
+        every { f2.ocr.detectTextLine(f2.crop, any()) } returnsMany listOf(
+            OcrText("+62/+16", 92), OcrText("+62/+16", 91), OcrText("+62/+16", 74), OcrText("+62/+16", 74)
+        )
+        assertThat(f2.reader.read(f2.bounds, true, true)).isEqualTo(SupportScores(display = SupportScoreDisplay.Compound))
     }
 }
 

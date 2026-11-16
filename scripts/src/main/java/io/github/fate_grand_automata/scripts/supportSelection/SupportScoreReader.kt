@@ -24,6 +24,45 @@ import kotlin.math.max
 
 enum class SupportScoreDisplay { Ordinary, Compound, Unknown }
 
+enum class SupportScoreDarkRetry { Never, WhenInconclusive, WhenPrimaryEmpty }
+
+data class SupportScoreReadProfile(
+    val name: String,
+    val primaryOcrProfiles: List<TextLineOcrOptions> = SupportScoreReader.OCR_PROFILES,
+    val darkOcrProfiles: List<TextLineOcrOptions> = SupportScoreReader.OCR_DARK_PROFILES,
+    val darkRetry: SupportScoreDarkRetry = SupportScoreDarkRetry.Never,
+    val darkInspectCounts: Boolean = false,
+    val minOcrConfidence: Int = SupportScoreReader.MIN_OCR_CONFIDENCE,
+    val minConfirmConfidence: Int = SupportScoreReader.MIN_CONFIRM_CONFIDENCE,
+    val minAgreement: Int = SupportScoreReader.MIN_AGREEMENT,
+    val compactFieldSimilarity: Double = SupportScoreReader.COMPACT_FIELD_SIMILARITY,
+    val grandFieldSimilarity: Double = SupportScoreReader.GRAND_FIELD_SIMILARITY,
+    val legacyScoreSimilarity: Double = SupportScoreSelection.SCORE_SIMILARITY,
+    val useBlocks: Boolean = false,
+    val ignoreSlashlessPartialsInCompound: Boolean = false,
+    val grandTail416AsPlus16: Boolean = false,
+    val noGlyphNotClippedWithVerifiedGrand: Boolean = false
+) {
+    companion object {
+        val Default = SupportScoreReadProfile(name = "default")
+        val Kr = SupportScoreReadProfile(
+            name = "kr",
+            darkRetry = SupportScoreDarkRetry.WhenInconclusive,
+            darkInspectCounts = true
+        )
+        val Jp = SupportScoreReadProfile(
+            name = "jp",
+            useBlocks = true
+        )
+
+        fun forServer(server: GameServer): SupportScoreReadProfile = when (server) {
+            is GameServer.Kr -> Kr
+            is GameServer.Jp -> Jp
+            else -> Default
+        }
+    }
+}
+
 /** Keep the confirmed display format separate from independently read numeric fields. */
 data class SupportScores(
     val classScore: Int? = null,
@@ -92,13 +131,13 @@ class SupportScoreReader @Inject constructor(
          * OCR fallback for a Grand +16 whose Class half is unreadable. Every readable result must end in
          * exactly "/16" (with or without the plus), and at least [MIN_AGREEMENT] of them must be strong.
          */
-        fun grandTail16(results: List<OcrText>): Boolean {
-            val tails = results.filter { it.confidence >= MIN_OCR_CONFIDENCE }.mapNotNull { result ->
+        fun grandTail16(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): Boolean {
+            val tails = results.filter { it.confidence >= profile.minOcrConfidence }.mapNotNull { result ->
                 grandTail.matchEntire(result.text.trim().replace(Regex("""\s+"""), ""))
                     ?.let { (it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE) to result.confidence }
             }
             return tails.isNotEmpty() && tails.all { it.first == 16 } &&
-                tails.count { it.second >= MIN_CONFIRM_CONFIDENCE } >= MIN_AGREEMENT
+                tails.count { it.second >= profile.minConfirmConfidence } >= profile.minAgreement
         }
 
         /** Diagnostics stop recording after this many candidates in one run. */
@@ -113,8 +152,8 @@ class SupportScoreReader @Inject constructor(
         private const val DIAGNOSTIC_SCORE_TAG = "support_score_diagnostic"
         private const val DIAGNOSTIC_WIDE_TAG = "support_score_diagnostic_wide"
 
-        private fun rawParse(result: OcrText): SupportScores? {
-            if (result.confidence < MIN_OCR_CONFIDENCE) return null
+        private fun rawParse(result: OcrText, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): SupportScores? {
+            if (result.confidence < profile.minOcrConfidence) return null
             val text = result.text.trim().replace(Regex("""\s+"""), "")
             compoundScore.matchEntire(text)?.let {
                 return SupportScores((it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), (it.groupValues[2].toIntOrNull() ?: Int.MAX_VALUE), SupportScoreDisplay.Compound)
@@ -124,22 +163,22 @@ class SupportScoreReader @Inject constructor(
             }
         }
 
-        fun parse(result: OcrText): SupportScores? = rawParse(result)?.let {
+        fun parse(result: OcrText, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): SupportScores? = rawParse(result, profile)?.let {
             it.copy(classScore = it.classScore?.takeIf { value -> value in 0..62 },
                 grandScore = it.grandScore?.takeIf { value -> value in 0..16 })
         }
 
-        private fun invalidClass(results: List<OcrText>) = results.any {
-            rawParse(it)?.classScore?.let { value -> value !in 0..62 } == true
+        private fun invalidClass(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default) = results.any {
+            rawParse(it, profile)?.classScore?.let { value -> value !in 0..62 } == true
         }
 
-        private fun invalidGrand(results: List<OcrText>) = results.any {
-            it.confidence >= MIN_OCR_CONFIDENCE && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+        private fun invalidGrand(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default) = results.any {
+            it.confidence >= profile.minOcrConfidence && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
                 ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value !in 0..16 } == true
         }
 
-        fun confirmed(results: List<OcrText>): SupportScores? {
-            val parsed = results.mapNotNull { result -> parse(result)?.let { it to result.confidence } }
+        fun confirmed(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): SupportScores? {
+            val parsed = results.mapNotNull { result -> parse(result, profile)?.let { it to result.confidence } }
             val compound = results.any { '/' in it.text }
             val readings = parsed.filter { (scores, _) ->
                 scores.display == if (compound) SupportScoreDisplay.Compound else SupportScoreDisplay.Ordinary
@@ -147,18 +186,20 @@ class SupportScoreReader @Inject constructor(
             fun field(value: (SupportScores) -> Int?): Int? {
                 val detected = readings.mapNotNull { value(it.first) }.distinct().singleOrNull() ?: return null
                 return detected.takeIf {
-                    readings.count { it.second >= MIN_CONFIRM_CONFIDENCE && value(it.first) == detected } >= MIN_AGREEMENT
+                    readings.count { it.second >= profile.minConfirmConfidence && value(it.first) == detected } >= profile.minAgreement
                 }
             }
             // A disabled/uncertain Class field must not veto a confidently read Grand field,
             // and vice versa. Only the selected conditions are combined by the selection policy.
-            val classScore = if (invalidClass(results)) null else field { it.classScore }
-            val grandScore = if (invalidGrand(results)) null else field { it.grandScore }
+            val classScore = if (invalidClass(results, profile)) null else field { it.classScore }
+            val grandScore = if (invalidGrand(results, profile)) null else field { it.grandScore }
             if (classScore == null && grandScore == null) return null
             return SupportScores(classScore, grandScore,
                 if (compound) SupportScoreDisplay.Compound else SupportScoreDisplay.Ordinary)
         }
     }
+
+    internal var profileOverrideForTest: SupportScoreReadProfile? = null
 
     private var diagnosticCandidates = 0
     private var diagnosticLimitLogged = false
@@ -239,11 +280,12 @@ class SupportScoreReader @Inject constructor(
         checkGrand: Boolean,
         evidence: ReadEvidence?
     ): SupportScores {
+        val profile = profileOverrideForTest ?: SupportScoreReadProfile.forServer(prefs.gameServer)
         val region = SupportScoreLayout.numberRegion(bounds.region)
         // Preserve the validated ordinary +62 matcher; compact +62/+16 uses a different font.
         val legacyClass62 = evidence.template(
             Images.SupportScore62,
-            region.exists(images[Images.SupportScore62], similarity = addedTuning.support.similarity(SupportScoreSelection.SCORE_SIMILARITY))
+            region.exists(images[Images.SupportScore62], similarity = addedTuning.support.similarity(profile.legacyScoreSimilarity))
         )
         var blockedClass = false
         var blockedGrand = false
@@ -260,7 +302,7 @@ class SupportScoreReader @Inject constructor(
                         if ('/' in result.text) {
                             val tail = grandTail.matchEntire(result.text.filterNot(Char::isWhitespace))
                             if (ink == null ||
-                                (result.confidence >= MIN_OCR_CONFIDENCE && tail != null &&
+                                (result.confidence >= profile.minOcrConfidence && tail != null &&
                                     !ink.grandDigitsAgree(tail.groupValues[1].length))) inconsistentGrand = true
                         }
                     }
@@ -272,24 +314,31 @@ class SupportScoreReader @Inject constructor(
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
-                if (prefs.gameServer is GameServer.Jp) {
+                if (profile.useBlocks) {
                     blocks = pattern.grayPixels()?.let { SupportScoreBlocks.read(it, pattern.width, pattern.height, addedTuning.support) }
                 }
-                val primary = OCR_PROFILES.mapIndexed { profile, options ->
-                    detect(pattern, options, "primary", profile, evidence).also { inspect(pattern, options, it) }
+                val primary = profile.primaryOcrProfiles.mapIndexed { profileIdx, options ->
+                    detect(pattern, options, "primary", profileIdx, evidence).also { inspect(pattern, options, it) }
                 }
-                val known = confirmed(primary)
-                if (known != null && (known.display == SupportScoreDisplay.Ordinary ||
-                        ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null)))) primary
-                else if (prefs.gameServer is GameServer.Kr) primary + OCR_DARK_PROFILES.mapIndexed { profile, options ->
-                    detect(pattern, options, "dark", profile, evidence).also { inspect(pattern, options, it) }
+                val known = confirmed(primary, profile)
+                val inconclusive = !(known != null && (known.display == SupportScoreDisplay.Ordinary ||
+                    ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null))))
+                val runDark = when (profile.darkRetry) {
+                    SupportScoreDarkRetry.Never -> false
+                    SupportScoreDarkRetry.WhenInconclusive -> inconclusive
+                    SupportScoreDarkRetry.WhenPrimaryEmpty -> primary.all { it.text.isEmpty() || it.confidence < profile.minOcrConfidence }
                 }
-                else primary
+                if (!runDark) primary
+                else primary + profile.darkOcrProfiles.mapIndexed { profileIdx, options ->
+                    detect(pattern, options, "dark", profileIdx, evidence).also {
+                        if (profile.darkInspectCounts) inspect(pattern, options, it)
+                    }
+                }
             }
         }
         // A clipped number is not evidence that Grand is absent.
         if (results.isEmpty()) return SupportScores()
-        val recognized = confirmed(results)?.let {
+        val recognized = confirmed(results, profile)?.let {
             if (inconsistentGrand) it.copy(grandScore = null) else it
         }
         // JP shrinks the entire pair for two-digit Class scores. Reading both tiny fields
@@ -299,16 +348,16 @@ class SupportScoreReader @Inject constructor(
         var differentGrandDigit = false
         fun matches(templates: List<Images>, verifyGrandDigit: Boolean = false) = templates.any { image ->
             val template = images[image]
-            val hit = if (!verifyGrandDigit) region.exists(template, similarity = addedTuning.support.similarity(COMPACT_FIELD_SIMILARITY))
+            val hit = if (!verifyGrandDigit) region.exists(template, similarity = addedTuning.support.similarity(profile.compactFieldSimilarity))
             else {
-                val candidates = region.findAll(template, similarity = addedTuning.support.similarity(GRAND_FIELD_SIMILARITY))
+                val candidates = region.findAll(template, similarity = addedTuning.support.similarity(profile.grandFieldSimilarity))
                 if (candidates.isEmpty()) false else {
                     // The common /+1 prefix must not hide a different final digit.
                     val pixels = SupportScoreLayout.grandLastDigit(template.width, template.height)
                     template.crop(pixels).use { digit ->
                         candidates.any { match ->
                             SupportScoreLayout.matchedPixels(match.region, template.width, template.height, pixels)
-                                .exists(digit, similarity = addedTuning.support.similarity(GRAND_FIELD_SIMILARITY)).also {
+                                .exists(digit, similarity = addedTuning.support.similarity(profile.grandFieldSimilarity)).also {
                                     if (!it) differentGrandDigit = true
                                 }
                         }
@@ -322,17 +371,17 @@ class SupportScoreReader @Inject constructor(
         // A width mismatch discards OCR (including the tail fallback), while a complete,
         // final-digit-verified template is independent evidence. Explicit OCR contradictions
         // and range/clipping vetoes below still make the field unknown.
-        val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(results))
+        val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(results, profile))
         val compound = blocks?.compound == true || class62 || grand16 || results.any { '/' in it.text }
         val blockClass62 = checkClass && blocks?.class62 == SupportScoreBlocks.Decision.Positive
         val blockGrand16 = checkGrand && blocks?.grand16 == SupportScoreBlocks.Decision.Positive
         val classTemplate = if (compound) class62 else legacyClass62
-        val raw = results.mapNotNull(::rawParse)
-        blockedClass = blockedClass || (!compound && clipped) || invalidClass(results) ||
+        val raw = results.mapNotNull { rawParse(it, profile) }
+        blockedClass = blockedClass || (!compound && clipped) || invalidClass(results, profile) ||
             ((classTemplate || blockClass62) && raw.any { it.classScore != null && it.classScore != 62 })
-        blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(results) ||
+        blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(results, profile) ||
             ((grandTemplate16 || blockGrand16) && results.any {
-                it.confidence >= MIN_OCR_CONFIDENCE && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+                it.confidence >= profile.minOcrConfidence && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
                     ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value != 16 } == true
             }) || (!grandTemplate16 && differentGrandDigit && (recognized?.grandScore == 16 || blockGrand16))
         // D-2 is independent evidence, never permission to override D-1 conflicts, clipping or ranges.
@@ -346,7 +395,7 @@ class SupportScoreReader @Inject constructor(
         evidence?.blocks?.putAll(mapOf(
             "class62" to blocks?.class62?.name, "grand16" to blocks?.grand16?.name,
             "compound" to blocks?.compound, "clipped" to clipped,
-            "invalidClass" to invalidClass(results), "invalidGrand" to invalidGrand(results),
+            "invalidClass" to invalidClass(results, profile), "invalidGrand" to invalidGrand(results, profile),
             "blockedClass" to blockedClass, "blockedGrand" to blockedGrand,
             "differentGrandDigit" to differentGrandDigit, "inconsistentGrand" to inconsistentGrand
         ))
