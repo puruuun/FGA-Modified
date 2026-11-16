@@ -22,6 +22,15 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Deliver **code changes** through a pull request (owner decision, 2026-10-23). Branch from the latest remote `main` (for example `feat/…`, `fix/…`), commit there, push the branch, and open a PR against `main`. A change is a code change if it touches anything other than documentation: source, tests, resources, assets, build files, version files or workflows.
 - **Documentation-only changes** — design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files — are pushed directly to `main` without a PR (owner decision, 2026-10-23). Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
+- Keep the long-lived integration branch (`feat/capture-tracker` for 1.8.0) on the same rules as `main` (owner decision, 2026-11-16). Agents working from it read its copy of `AGENTS.md`, `docs/agents/` and the workflows.
+  - After each documentation push to `main`, merge `main` into the integration branch, one way only.
+  - If the merge brings only documentation, push it directly. If it also brings workflows or code, it goes through a PR into the integration branch.
+  - The integration branch is merged into `main` at its stable promotion. After that, new work branches from `main` again.
+- Rebase a work branch onto its latest base before its first push. Once it is pushed, merge the base into it instead, because force pushes are not allowed.
+- Images in the repository (owner decision, 2026-11-16):
+  - Commit only app assets (`app/src/main/assets/`) and QA regression samples that a device QA case file uses (`docs/reference-images/`).
+  - One-off measurement crops, debugging screenshots and audit images stay local under `build/` or go on the issue as attachments.
+  - Captures with account data are never committed.
 - The local checkout can be shared with another agent at the same time. Never stash, reset, rebase or check out over changes you did not make, stage only your own paths, and check `git show --stat HEAD` before pushing.
 - The planner (Claude) reviews each code PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
 - What the planner's PR review checks (owner decision, 2026-11-01). A green CI and the implementer's report are not enough; check the diff against these points before merging:
