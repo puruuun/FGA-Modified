@@ -55,7 +55,7 @@ jobs:
           echo "FGA_VERSION_NAME=$VERSION_NAME" >>${GITHUB_ENV}
 
       - name: Run unit tests
-        run: ./gradlew test
+        run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
 
       - name: Build Android Package
         run: ./gradlew assembleCi --parallel
