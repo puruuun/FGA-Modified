@@ -84,6 +84,14 @@ internal class RootCaptureRunner(
     @Volatile
     private var listenerOpen: Boolean = false
 
+    // Drain of the newest stop request: 0 for a shutdown, the user drain for a stop (K3).
+    @Volatile
+    private var lastStopDrainMs: Long = drainTimeoutMs
+
+    // Start generation whose end the service already heard about; an idle stop reports once per start (K1/H3).
+    @Volatile
+    private var reportedForStartGeneration: Long = -1L
+
     @Volatile
     private var activePort: Int? = null
 
@@ -144,6 +152,7 @@ internal class RootCaptureRunner(
     fun requestStopReading(drainMs: Long = drainTimeoutMs) {
         val gen = generation.incrementAndGet()
         readingWanted.set(false)
+        lastStopDrainMs = drainMs
         executor.execute {
             cancelPeriodicCheckOnExecutor()
             cancelCleanupRetryOnExecutor()
@@ -194,6 +203,7 @@ internal class RootCaptureRunner(
     fun onDestroyCleanup(maxWaitMs: Long = 2_000L) {
         val wasReadingOrFlagged = readingWanted.getAndSet(false) || flag.isSet() || activePort != null
         val gen = generation.incrementAndGet()
+        lastStopDrainMs = 0L
         if (!wasReadingOrFlagged) return
         val future = executor.submit {
             cancelPeriodicCheckOnExecutor()
@@ -206,7 +216,7 @@ internal class RootCaptureRunner(
                     activePort = null
                     activeIpv6 = false
                     activeUids = emptyList()
-                    callbacks.onCleanupSucceeded(gen)
+                    reportCleanupSucceeded(gen)
                 }
             } else {
                 closeListener()
@@ -232,6 +242,11 @@ internal class RootCaptureRunner(
 
     private fun shouldProceed(expectedGen: Long): Boolean =
         readingWanted.get() && generation.get() == expectedGen
+
+    private fun reportCleanupSucceeded(gen: Long) {
+        reportedForStartGeneration = lastStartGeneration
+        callbacks.onCleanupSucceeded(gen)
+    }
 
     private fun closeListener() {
         proxyController.closeProxy()
@@ -323,8 +338,14 @@ internal class RootCaptureRunner(
         // R5 / B8: synchronously set flag before apply
         flag.markMaybeActive()
 
-        val applyRes = runShell(RootRedirectScripts.apply(targetUids, listener.port, useIpv6))
-        if (!isApplyOk(applyRes)) {
+        // K2: apply and watchdog start run in one root script, so rules never exist without the watchdog.
+        val applyRes = runShell(
+            RootRedirectScripts.applyAndStartWatchdog(targetUids, listener.port, fgaUid, useIpv6),
+        )
+        // The watchdog part exits 1 on a failed probe after FGA_APPLY_OK, so the marker alone says apply was done.
+        val applyDone = !applyRes.timedOut &&
+            applyRes.lines.any { it.trim() == RootRedirectScripts.MARKER_APPLY_OK }
+        if (!applyDone) {
             val step = parseFailStep(applyRes.lines)
             val errMsg = if (step != null) {
                 "루트 규칙 설정 실패 (단계 $step)"
@@ -335,20 +356,20 @@ internal class RootCaptureRunner(
             return
         }
 
-        if (!shouldProceed(expectedGen)) {
-            // Rules are in the kernel; never leave them behind a start that is no longer wanted.
-            if (!readingWanted.get()) runStopReadingOnExecutor(generation.get(), drainTimeoutMs)
-            return
-        }
-
-        val watchdogRes = runShell(RootRedirectScripts.startWatchdog(listener.port, fgaUid, useIpv6))
-        if (!isWatchdogOk(watchdogRes)) {
-            val errMsg = if (watchdogRes.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE }) {
+        if (!isWatchdogOk(applyRes)) {
+            val errMsg = if (applyRes.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE }) {
                 "루트 감시 프로그램 소켓 확인 실패 (${RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE})"
             } else {
                 "루트 감시 프로그램 시작 실패"
             }
             rollbackFailedApply(errMsg)
+            return
+        }
+
+        if (!shouldProceed(expectedGen)) {
+            // Rules are in the kernel; never leave them behind a start that is no longer wanted.
+            // K3: use the drain of the request that cancelled this start (0 for a shutdown).
+            if (!readingWanted.get()) runStopReadingOnExecutor(generation.get(), lastStopDrainMs)
             return
         }
 
@@ -424,15 +445,18 @@ internal class RootCaptureRunner(
 
     private fun runStopReadingOnExecutor(expectedGen: Long, drainMs: Long) {
         if (readingWanted.get()) return
-        // H3: nothing active -> nothing to close and nothing to report.
-        if (!flag.isSet() && activePort == null && !listenerOpen) return
+        // H3: nothing active -> nothing to close. K1: the service still has to end, once per start.
+        if (!flag.isSet() && activePort == null && !listenerOpen) {
+            if (reportedForStartGeneration != lastStartGeneration) reportCleanupSucceeded(expectedGen)
+            return
+        }
 
         if (!stopRulesAndListener(expectedGen, drainMs, announceRulesRemoved = true)) {
             // B4: keep listener open so FGO keeps working through it, retry every 10 s
             scheduleCleanupRetryOnExecutor(expectedGen, drainMs)
             return
         }
-        callbacks.onCleanupSucceeded(expectedGen)
+        reportCleanupSucceeded(expectedGen)
     }
 
     private fun scheduleCleanupRetryOnExecutor(expectedGen: Long, drainMs: Long) {

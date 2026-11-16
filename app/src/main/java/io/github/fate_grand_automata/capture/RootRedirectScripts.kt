@@ -114,6 +114,14 @@ internal object RootRedirectScripts {
         }
     }
 
+    /**
+     * Apply and watchdog start in one root shell script (K2): apply first, then the watchdog start and its first
+     * probe, so both run inside the root process even if FGA dies right after sending it. A failed apply exits
+     * before the watchdog starts; output carries [MARKER_APPLY_OK] then [MARKER_WATCHDOG_OK] on success.
+     */
+    fun applyAndStartWatchdog(fgoUids: List<Int>, port: Int, fgaUid: Int, ipv6: Boolean): String =
+        apply(fgoUids, port, ipv6) + startWatchdog(port, fgaUid, ipv6)
+
     fun checkChains(ipv6: Boolean): String = buildString {
         appendLine("IPT=/system/bin/iptables")
         appendLine("[ -x \"\$IPT\" ] || IPT=iptables")

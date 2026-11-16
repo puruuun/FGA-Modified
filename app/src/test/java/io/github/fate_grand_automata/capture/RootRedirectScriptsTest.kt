@@ -149,6 +149,23 @@ class RootRedirectScriptsTest {
     }
 
     @Test
+    fun applyAndStartWatchdogRunsApplyFirstThenTheWatchdogInOneScript() {
+        val script = RootRedirectScripts.applyAndStartWatchdog(listOf(10123), 8899, 10999, ipv6 = true)
+        val applyOk = script.indexOf("echo FGA_APPLY_OK")
+        val launch = script.indexOf("setsid nohup sh")
+        val watchdogOk = script.indexOf("echo FGA_WATCHDOG_OK")
+        assertTrue(script.indexOf("-A FGA_CAP") in 0 until applyOk)
+        assertTrue(applyOk in 0 until launch)
+        assertTrue(launch in 0 until watchdogOk)
+        assertTrue(script.contains("echo FGA_FAIL_STEP=1; exit 1"))
+        assertTrue(script.contains("echo FGA_FAIL_WATCHDOG_PROBE"))
+        assertEquals(
+            RootRedirectScripts.apply(listOf(10123), 8899, true) + RootRedirectScripts.startWatchdog(8899, 10999, true),
+            script,
+        )
+    }
+
+    @Test
     fun allProtocolMarkersMatchProcessRootShellFilter() {
         val markers = listOf(
             RootRedirectScripts.MARKER_APPLY_OK,
@@ -178,6 +195,7 @@ class RootRedirectScriptsTest {
             "watchdog_v4" to RootRedirectScripts.watchdogScript(8899, 10999, ipv6 = false),
             "watchdog_v6" to RootRedirectScripts.watchdogScript(8899, 10999, ipv6 = true),
             "startWatchdog" to RootRedirectScripts.startWatchdog(8899, 10999, ipv6 = true),
+            "applyAndStartWatchdog" to RootRedirectScripts.applyAndStartWatchdog(listOf(10123), 8899, 10999, ipv6 = true),
         )
 
         for ((name, script) in scripts) {
