@@ -127,7 +127,9 @@ class ChaldeaCommandConverter(private val metadata: ChaldeaMetadata) {
         val mc: JsonObject?,
         val ignoreEnemyTargeting: Boolean
     ) {
-        val front = members.take(3).toMutableList()
+        val front = members.take(3).filterNotNull().toMutableList<Member?>().apply {
+            while (size < 3) add(null)
+        }
         var back = members.drop(3).toMutableList()
         val delegate = data.obj("delegate")
         val swaps = ArrayDeque(delegate?.array("replaceMemberIndexes").orEmpty())

@@ -4,6 +4,8 @@ import io.github.fate_grand_automata.ui.skill_maker.SkillMakerModel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
@@ -222,6 +224,122 @@ class ChaldeaCommandConverterTest {
         assertEquals(5, ids.size)
         assertTrue(ids.none { "equip" in it })
     }
+
+    @Test fun `empty first front slot shifts skills and NP to compacted FGA positions`() = runBlocking {
+        val team = user.getValue("data").jsonObject.obj("team")!!
+        val onField = team.array("onFieldSvts")!!
+        val data = teamWithSlots(
+            onField = listOf(JsonNull, onField[0], onField[2]),
+            backup = listOf(JsonNull, JsonNull, JsonNull),
+            actions = listOf(
+                skillAction(svt = 0, skill = 0, enemyTarget = 1),
+                skillAction(svt = 1, skill = 2, playerTarget = 0),
+                npAction(svt = 0)
+            )
+        )
+        assertEquals("t2af14", converter().convert(encode(data.toString())))
+    }
+
+    @Test fun `empty middle front slot maps second compacted index to the third slot servant`() = runBlocking {
+        val team = user.getValue("data").jsonObject.obj("team")!!
+        val onField = team.array("onFieldSvts")!!
+        val data = teamWithSlots(
+            onField = listOf(onField[0], JsonNull, onField[2]),
+            backup = listOf(JsonNull, JsonNull, JsonNull),
+            actions = listOf(
+                skillAction(svt = 1, skill = 2, playerTarget = 0),
+                npAction(svt = 1)
+            )
+        )
+        assertEquals("f15", converter().convert(encode(data.toString())))
+    }
+
+    @Test fun `order change reserve index stays bound to raw backup slots`() = runBlocking {
+        val data = user.getValue("data").jsonObject
+        val team = data.obj("team")!!
+        val backup = team.array("backupSvts")!!
+        val withEmptyFirstBackup = JsonObject(
+            data + ("team" to JsonObject(team + ("backupSvts" to JsonArray(listOf(JsonNull, backup[0], JsonNull)))))
+        )
+        assertEquals(ChaldeaImportError.DATA, assertFailsWith<ChaldeaImportException> {
+            converter().convert(encode(withEmptyFirstBackup.toString()))
+        }.error)
+
+        val targetingRawSlot = JsonObject(
+            withEmptyFirstBackup + (
+                "delegate" to JsonObject(
+                    mapOf("replaceMemberIndexes" to JsonArray(listOf(JsonArray(listOf(JsonPrimitive(2), JsonPrimitive(1))))))
+                )
+            )
+        )
+        assertEquals(user.text("expected"), converter().convert(encode(targetingRawSlot.toString())))
+    }
+
+    @Test fun `svt index beyond present members after compaction is rejected with DATA`() = runBlocking {
+        val team = user.getValue("data").jsonObject.obj("team")!!
+        val onField = team.array("onFieldSvts")!!
+        for (actions in listOf(listOf(skillAction(svt = 2, skill = 0)), listOf(npAction(svt = 2)))) {
+            val data = teamWithSlots(
+                onField = listOf(JsonNull, onField[0], onField[1]),
+                backup = listOf(JsonNull, JsonNull, JsonNull),
+                actions = actions
+            )
+            assertEquals(ChaldeaImportError.DATA, assertFailsWith<ChaldeaImportException> {
+                converter().convert(encode(data.toString()))
+            }.error)
+        }
+    }
+
+    private fun teamWithSlots(
+        onField: List<JsonElement>,
+        backup: List<JsonElement>,
+        actions: List<JsonObject>
+    ): JsonObject {
+        val data = user.getValue("data").jsonObject
+        val team = data.obj("team")!!
+        return JsonObject(
+            data + mapOf(
+                "team" to JsonObject(
+                    team + mapOf(
+                        "onFieldSvts" to JsonArray(onField),
+                        "backupSvts" to JsonArray(backup)
+                    )
+                ),
+                "actions" to JsonArray(actions)
+            )
+        )
+    }
+
+    private fun skillAction(svt: Int, skill: Int, playerTarget: Int? = null, enemyTarget: Int? = null): JsonObject {
+        val options = buildMap {
+            if (playerTarget != null) put("playerTarget", JsonPrimitive(playerTarget))
+            if (enemyTarget != null) put("enemyTarget", JsonPrimitive(enemyTarget))
+        }
+        return JsonObject(
+            mapOf(
+                "type" to JsonPrimitive("skill"),
+                "svt" to JsonPrimitive(svt),
+                "skill" to JsonPrimitive(skill),
+                "options" to JsonObject(options)
+            )
+        )
+    }
+
+    private fun npAction(svt: Int): JsonObject = JsonObject(
+        mapOf(
+            "type" to JsonPrimitive("attack"),
+            "attacks" to JsonArray(
+                listOf(
+                    JsonObject(
+                        mapOf(
+                            "svt" to JsonPrimitive(svt),
+                            "isTD" to JsonPrimitive(true)
+                        )
+                    )
+                )
+            )
+        )
+    )
 
     private fun encode(json: String, prefix: String = "G", gzip: Boolean = true): String {
         val output = ByteArrayOutputStream()
