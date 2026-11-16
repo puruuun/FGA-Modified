@@ -118,6 +118,64 @@ class DashboardRound7UiTest {
             CaptureTracker.delete()
         }
     }
+
+    @Test fun sameSecondProfileChangeWithNewRevisionRebuildsDashboardData() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        CaptureTracker.clockSeconds = { 1_000L }
+        CaptureTracker.init(context)
+        CaptureTracker.delete()
+        try {
+            CaptureTracker.onGameResponse(
+                "https://yfgo-game.netmarble.com/login/top",
+                """{"response":[{"nid":"login","resCode":"00"}],"cache":{"replaced":{"userGame":[{"userId":7001,"name":"Stored Master","lv":120,"qp":1000}]}}}""".toByteArray(),
+                null,
+            )
+            val repo = io.github.fate_grand_automata.battlelog.BattleLogRepository(context)
+            val namesCache = GameNames(java.io.File(context.filesDir, "capture/names-test-revision"), JpNamesFixture::download) { 1000 }
+            val vm = AccountDashboardViewModel(repo, context, namesCache)
+
+            compose.setContent {
+                FGATheme {
+                    CompositionLocalProvider(LocalNavigateBack provides {}) {
+                        fixture.Icons {
+                            AccountDashboardScreen("7001", {}, {}, vm = vm)
+                        }
+                    }
+                }
+            }
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("120", substring = true).fetchSemanticsNodes().isNotEmpty() &&
+                    !vm.account("7001").value.loading &&
+                    vm.account("7001").value.data != null
+            }
+            val firstData = vm.account("7001").value.data!!
+            val firstProfile = CaptureTracker.accounts.value.single { it.id == "7001" }
+            assertEquals("120", firstData.profile["lv"])
+            assertEquals(1000L, firstData.resources[1L])
+            assertEquals(1_000L, firstProfile.lastUpdateTime)
+
+            CaptureTracker.onGameResponse(
+                "https://yfgo-game.netmarble.com/item/use",
+                """{"cache":{"updated":{"userGame":[{"userId":7001,"lv":121,"qp":2500}]}}}""".toByteArray(),
+                null,
+            )
+            val secondProfile = CaptureTracker.accounts.value.single { it.id == "7001" }
+            assertEquals(firstProfile.lastUpdateTime, secondProfile.lastUpdateTime)
+            assertTrue(secondProfile.revision > firstProfile.revision)
+
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("121", substring = true).fetchSemanticsNodes().isNotEmpty() &&
+                    vm.account("7001").value.data !== firstData
+            }
+            val secondData = vm.account("7001").value.data!!
+            assertEquals("121", secondData.profile["lv"])
+            assertEquals(2500L, secondData.resources[1L])
+            assertEquals(1_000L, secondData.lastUpdateTime)
+        } finally {
+            CaptureTracker.clockSeconds = { System.currentTimeMillis() / 1000 }
+            CaptureTracker.delete()
+        }
+    }
     private fun layout(width: Int) {
         RuntimeEnvironment.setQualifiers("en-w${width}dp-h800dp-hdpi")
         // A short profile beside a tall collection exposes row-pairing regressions.

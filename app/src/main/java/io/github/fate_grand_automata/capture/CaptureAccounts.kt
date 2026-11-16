@@ -21,6 +21,8 @@ data class CaptureAccount(
     /** Null while the account has no friend roster. The roster itself stays on disk (issue #258). */
     val friendCount: Int? = null,
     val friendUpdatedAt: Long = 0,
+    /** In-memory monotonic change counter so same-second updates are never dropped. */
+    val revision: Long = 0,
 )
 
 /** Runs file work. The app version moves it to one low-priority thread; tests run it inline. */
@@ -61,7 +63,10 @@ internal class CaptureAccounts(
         val friendUpdatedAt: Long = 0,
     )
 
-    private class Entry(var metadata: Metadata, var stored: Stored)
+    private class Entry(var metadata: Metadata, var stored: Stored, var revision: Long = 0)
+
+    private var revisionSeq = 0L
+    private fun nextRevision(): Long = ++revisionSeq
 
     private val index = mutableMapOf<String, Entry>()
     private val resident = mutableMapOf<String, AccountState>()
@@ -258,6 +263,7 @@ internal class CaptureAccounts(
         if (identified) {
             if (entry.metadata.server != server) {
                 entry.metadata = entry.metadata.copy(server = server)
+                entry.revision = nextRevision()
                 sideDirty += id
             }
             currentByServer.entries.removeAll { it.key != server && it.value == id }
@@ -270,6 +276,7 @@ internal class CaptureAccounts(
         if (id in dirty) save(id) // the folder must hold its state before it holds a roster
         writeRoster(id, next)
         entry.stored = entry.stored.copy(friendCount = next.friends.size, friendUpdatedAt = next.updatedAt)
+        entry.revision = nextRevision()
         sideDirty += id
         return true
     }
@@ -323,6 +330,7 @@ internal class CaptureAccounts(
             val entry = index[id]!!
             if (entry.metadata.server != server) {
                 entry.metadata = entry.metadata.copy(server = server)
+                entry.revision = nextRevision()
                 sideDirty += id
             }
             currentByServer.entries.removeAll { it.key != server && it.value == id }
@@ -341,13 +349,18 @@ internal class CaptureAccounts(
         val old = index[id]
         val keep = old?.stored
         val stored = storedFor(id, state, now, null).copy(friendCount = keep?.friendCount, friendUpdatedAt = keep?.friendUpdatedAt ?: 0)
-        if (old == null) index[id] = Entry(Metadata(server = server ?: "KR"), stored) else old.stored = stored
+        val revision = nextRevision()
+        if (old == null) index[id] = Entry(Metadata(server = server ?: "KR"), stored, revision)
+        else {
+            old.stored = stored
+            old.revision = revision
+        }
         sideDirty += id
     }
 
     fun accounts(now: Long): List<CaptureAccount> = index.map { (id, entry) ->
         CaptureAccount(id, displayName(id)!!, entry.stored.summary.atTime(now), entry.stored.summary.lastUpdateTime,
-            entry.metadata.server, entry.stored.friendCount, entry.stored.friendUpdatedAt)
+            entry.metadata.server, entry.stored.friendCount, entry.stored.friendUpdatedAt, entry.revision)
     }.sortedWith(compareByDescending<CaptureAccount> { it.id == currentId }
         .thenByDescending { it.lastUpdateTime }.thenBy { it.id })
 
@@ -360,6 +373,7 @@ internal class CaptureAccounts(
     fun rename(id: String, name: String) {
         val entry = index[id] ?: return
         entry.metadata = entry.metadata.copy(customName = name.trim().takeIf { it.isNotBlank() })
+        entry.revision = nextRevision()
         sideDirty += id
     }
 
