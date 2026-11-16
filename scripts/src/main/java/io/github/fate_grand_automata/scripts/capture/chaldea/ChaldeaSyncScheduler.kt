@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -982,9 +983,9 @@ class ChaldeaSyncScheduler(
         var myGen = 0
         lateinit var job: Deferred<ChaldeaSyncNowOutcome>
         while (true) {
-            val running = synchronized(lock) {
+            val waitingForWrite = synchronized(lock) {
                 if (phase == Phase.Writing) {
-                    attemptJob
+                    true
                 } else {
                     attemptJob?.cancel()
                     myGen = ++generation
@@ -1004,11 +1005,16 @@ class ChaldeaSyncScheduler(
                     job = created
                     attemptJob = created
                     created.start()
-                    null
+                    false
                 }
             }
-            if (running != null) {
-                running.join()
+            if (waitingForWrite) {
+                if (writeMutex.tryLock()) {
+                    writeMutex.unlock()
+                    yield()
+                } else {
+                    writeMutex.withLock { }
+                }
             } else {
                 break
             }

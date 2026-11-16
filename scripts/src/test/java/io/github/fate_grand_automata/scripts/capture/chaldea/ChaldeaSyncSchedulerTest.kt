@@ -2079,6 +2079,88 @@ class ChaldeaSyncSchedulerTest {
         assertFalse(backups.inflightDir(PKG).exists())
     }
 
+    @Test fun syncNowWaitsOnlyForRunningWriteNotForRetryPollDelay() = fx {
+        account("a", num = 1)
+        account("b", code = "222", num = 1, server = ChaldeaServer.Jp, current = false)
+        val autoStatePaused = CompletableDeferred<Unit>()
+        val resumeAutoState = CompletableDeferred<Unit>()
+        var autoInflightId: String? = null
+        var manualCommitTime: Long? = null
+        var inflightBeforeDelay: ChaldeaSyncStore.Inflight? = null
+        var inflightAfterDelay: ChaldeaSyncStore.Inflight? = null
+        var backupBeforeDelay = false
+        var backupAfterDelay = false
+
+        // call 0: pre-write state check -> NotRunning; call 1: post-commit state check -> Background (Pass.Retry)
+        // call >= 2: manualSync -> NotRunning
+        stateFn = { _, call -> if (call == 1) ChaldeaRunState.Background else ChaldeaRunState.NotRunning }
+        onState = { call ->
+            if (call == 1) {
+                autoInflightId = store.readInflight()?.id
+                autoStatePaused.complete(Unit)
+                resumeAutoState.await()
+            }
+        }
+        onCommit = { count ->
+            if (count == 2) {
+                manualCommitTime = now()
+                inflightBeforeDelay = store.readInflight()
+                backupBeforeDelay = backups.inflightDir(PKG).isDirectory
+            }
+        }
+        commitResult = { n ->
+            if (n == 2) {
+                inflightAfterDelay = store.readInflight()
+                backupAfterDelay = backups.inflightDir(PKG).isDirectory
+            }
+            ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("written-$n".toByteArray()), itemCount = 2)
+        }
+
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertTrue(autoStatePaused.isCompleted, "automatic write is paused in state() after commit")
+        assertEquals(1, commits.size)
+        assertNotNull(autoInflightId)
+        val pausedAt = now()
+
+        // Add non-current account "b" to pending while automatic write is paused; manual sync skips non-current accounts,
+        // so only an uncancelled automatic retry loop would wake up after pollFastMs to write it.
+        sch.onAccountSaved(listOf("b"))
+        commitDelay = 2_000
+        val manual = ts.backgroundScope.async { sch.syncNow(null) }
+        ts.runCurrent()
+
+        assertFalse(manual.isCompleted, "syncNow must wait while the automatic write section is running")
+        assertEquals(1, commits.size)
+        assertEquals(1, opened)
+
+        resumeAutoState.complete(Unit)
+        ts.runCurrent()
+
+        assertEquals(2, commits.size, "manual write must start right after the write section ends")
+        assertEquals(pausedAt, manualCommitTime, "manual write must start without waiting for pollFastMs")
+        assertTrue(now() - pausedAt < MIN)
+
+        advance(2_000)
+        assertTrue(manual.isCompleted, "syncNow must complete before pollFastMs elapses")
+        assertEquals(ChaldeaSyncNowOutcome.Done, manual.await())
+        assertTrue(now() - pausedAt < MIN)
+        assertNotNull(inflightBeforeDelay, "readInflight() must be non-null during manual commit")
+        assertNotNull(inflightAfterDelay, "manual write's inflight record must not be deleted while committing")
+        assertEquals(inflightBeforeDelay!!.id, inflightAfterDelay!!.id)
+        assertNotEquals(autoInflightId, inflightBeforeDelay!!.id)
+        assertTrue(backupBeforeDelay && backupAfterDelay, "backup folder must exist throughout manual commit")
+        assertNull(store.readInflight())
+        assertFalse(backups.inflightDir(PKG).exists())
+
+        // Even past pollFastMs, the cancelled automatic attempt never wakes up to poll or write "b".
+        advance(10 * MIN)
+        assertEquals(2, opened)
+        assertEquals(2, commits.size)
+        assertTrue("b" in store.read().pending)
+    }
+
     @Test fun finishWriteWithDifferentIdLeavesRecordAndBackupInPlace() = fx {
         val dir = inflight(writeId = "owner-1")
         sch.finishWrite(PKG, "other-id")
