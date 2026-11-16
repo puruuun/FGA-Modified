@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.battlelog
 
 import io.github.fate_grand_automata.scripts.capture.BattleGains
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -12,8 +13,6 @@ import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.UUID
 
 /**
@@ -114,7 +113,7 @@ internal class FileBattleLogStorage(private val directory: File) : BattleLogStor
             stream.flush()
             stream.fd.sync()
         }
-        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        replaceFile(temp, file)
     }
 }
 
