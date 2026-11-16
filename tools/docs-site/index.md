@@ -23,6 +23,7 @@ hide:
 
 - 개발 베타는 정규판과 **다른 앱**(`io.github.fate_grand_automata.beta`)으로 설치됩니다. 정규판의 설정은 옮겨지지 않습니다.
 - GitHub Releases와 Obtainium 외의 곳에서 받은 APK는 설치하지 마세요.
+- 자세한 설치 방법과 초기 권한 설정은 [설치 안내](scripts/Installation-KR.md)를 확인하세요.
 
 ## 기능 설명서
 

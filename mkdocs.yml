@@ -48,6 +48,9 @@ theme:
 
 plugins:
   - search:
+      lang:
+        - ko
+        - en
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)'
 
 markdown_extensions:
@@ -64,6 +67,16 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 extra:
+  alternate:
+    - name: 한국어
+      link: /
+      lang: ko
+    - name: English
+      link: /en/
+      lang: en
+    - name: 日本語
+      link: /ja/
+      lang: ja
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/puruuun/FGA-Modified
