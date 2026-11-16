@@ -91,6 +91,7 @@ class ProxyServer(
     internal var upstreamSslFactoryForTesting: SSLSocketFactory? = null
     internal var upstreamHostnameVerifierForTesting: HostnameVerifier? = null
     internal var transparentUpstreamOverrideForTesting: ((String, Int) -> InetSocketAddress)? = null
+    internal var ipPreconnectTimeoutMsForTesting: Int = IP_PRECONNECT_TIMEOUT_MS
 
     fun setContexts(contexts: Map<String, SSLContext>) {
         val filtered = contexts.filterKeys { it in CaptureNames.HOST_SERVERS }
@@ -349,40 +350,71 @@ class ProxyServer(
         isSocks5: Boolean,
     ) {
         if (options.ipSniff && isIpLiteral(connectHost)) {
-            // Reply success before peeking so SOCKS5 (and CONNECT) clients actually send their
-            // ClientHello. Because the reply is already sent, an upstream failure on this path
-            // closes the connection without a SOCKS error code.
-            sendTunnelReady(client, isSocks5)
-            val peeked = peekClientHello(client, clientInput)
-            val sni = peeked.sni?.lowercase()
-            if (sni != null && sni in CaptureNames.HOST_SERVERS) {
-                onGameHostConnected?.invoke(System.currentTimeMillis())
+            val up = Socket()
+            live += up
+            var transferred = false
+            try {
+                try {
+                    val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
+                        ?: InetSocketAddress(connectHost, port)
+                    up.connect(targetAddress, ipPreconnectTimeoutMsForTesting)
+                } catch (e: IOException) {
+                    onNonGameUpstreamFailure?.invoke(connectHost.lowercase())
+                    runCatching {
+                        client.getOutputStream().apply {
+                            write(
+                                if (isSocks5) Socks5.reply(socks5FailureCode(e))
+                                else HTTP_502_BAD_GATEWAY,
+                            )
+                            flush()
+                        }
+                    }
+                    return
+                }
+
+                // Reply success only after upstream TCP connect succeeded so the client can fall
+                // back (e.g. from unreachable IPv6 to IPv4) before sending ClientHello.
+                sendTunnelReady(client, isSocks5)
+                val peeked = peekClientHello(client, clientInput)
+                val sni = peeked.sni?.lowercase()
+                if (sni != null && sni in CaptureNames.HOST_SERVERS) {
+                    onGameHostConnected?.invoke(System.currentTimeMillis())
+                }
+                val sslContext = sni?.let { contexts[it] }
+                if (sslContext != null) {
+                    val combinedInput = SequenceInputStream(ByteArrayInputStream(peeked.bytes), clientInput)
+                    val replayClient = ReplaySocket(client, combinedInput)
+                    transferred = true
+                    interceptGame(
+                        client = replayClient,
+                        connectHost = connectHost,
+                        tlsHost = sni,
+                        port = port,
+                        sslContext = sslContext,
+                        alreadyReplied = true,
+                        preconnected = up,
+                    )
+                } else {
+                    transferred = true
+                    tunnel(
+                        client = client,
+                        clientInput = clientInput,
+                        connectHost = connectHost,
+                        statsHost = sni ?: connectHost,
+                        port = port,
+                        alreadyReplied = true,
+                        isSocks5 = isSocks5,
+                        initialUpstreamBytes = peeked.bytes,
+                        preconnected = up,
+                    )
+                }
+                return
+            } finally {
+                if (!transferred) {
+                    live -= up
+                    runCatching { up.close() }
+                }
             }
-            val sslContext = sni?.let { contexts[it] }
-            if (sslContext != null) {
-                val combinedInput = SequenceInputStream(ByteArrayInputStream(peeked.bytes), clientInput)
-                val replayClient = ReplaySocket(client, combinedInput)
-                interceptGame(
-                    client = replayClient,
-                    connectHost = connectHost,
-                    tlsHost = sni,
-                    port = port,
-                    sslContext = sslContext,
-                    alreadyReplied = true,
-                )
-            } else {
-                tunnel(
-                    client = client,
-                    clientInput = clientInput,
-                    connectHost = connectHost,
-                    statsHost = sni ?: connectHost,
-                    port = port,
-                    alreadyReplied = true,
-                    isSocks5 = isSocks5,
-                    initialUpstreamBytes = peeked.bytes,
-                )
-            }
-            return
         }
 
         val lowerHost = connectHost.lowercase()
@@ -498,35 +530,40 @@ class ProxyServer(
         alreadyReplied: Boolean,
         isSocks5: Boolean,
         initialUpstreamBytes: ByteArray,
+        preconnected: Socket? = null,
     ) {
-        val up = Socket()
-        live += up
+        val up = preconnected ?: Socket()
+        if (preconnected == null) {
+            live += up
+        }
         try {
-            try {
-                val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
-                    ?: InetSocketAddress(connectHost, port)
-                up.connect(targetAddress, 15_000)
-            } catch (e: IOException) {
-                val lowerStats = statsHost.lowercase()
-                if (lowerStats in CaptureNames.HOST_SERVERS) {
-                    onUpstreamFailure?.invoke(lowerStats)
-                } else {
-                    onNonGameUpstreamFailure?.invoke(lowerStats)
-                }
-                if (!alreadyReplied && isSocks5) {
-                    val code = if (e is ConnectException) {
-                        Socks5.REP_CONNECTION_REFUSED
+            if (preconnected == null) {
+                try {
+                    val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
+                        ?: InetSocketAddress(connectHost, port)
+                    up.connect(targetAddress, 15_000)
+                } catch (e: IOException) {
+                    val lowerStats = statsHost.lowercase()
+                    if (lowerStats in CaptureNames.HOST_SERVERS) {
+                        onUpstreamFailure?.invoke(lowerStats)
                     } else {
-                        Socks5.REP_HOST_UNREACHABLE
+                        onNonGameUpstreamFailure?.invoke(lowerStats)
                     }
-                    runCatching {
-                        client.getOutputStream().apply {
-                            write(Socks5.reply(code))
-                            flush()
+                    if (!alreadyReplied && isSocks5) {
+                        val code = if (e is ConnectException) {
+                            Socks5.REP_CONNECTION_REFUSED
+                        } else {
+                            Socks5.REP_HOST_UNREACHABLE
+                        }
+                        runCatching {
+                            client.getOutputStream().apply {
+                                write(Socks5.reply(code))
+                                flush()
+                            }
                         }
                     }
+                    return
                 }
-                return
             }
 
             if (statsHost.lowercase() in CaptureNames.HOST_SERVERS) {
@@ -605,76 +642,86 @@ class ProxyServer(
         sslContext: SSLContext,
         alreadyReplied: Boolean = false,
         clientInputOverride: InputStream? = null,
+        preconnected: Socket? = null,
     ) {
-        if (!alreadyReplied) {
-            client.getOutputStream().apply {
-                write(HTTP_200_ESTABLISHED)
-                flush()
-            }
-        }
-        val handshakeSocket = if (clientInputOverride != null && options.socks5) {
-            ReplaySocket(client, clientInputOverride)
-        } else {
-            client
-        }
-        val tls = sslContext.socketFactory.createSocket(handshakeSocket, null, handshakeSocket.port, true) as SSLSocket
         try {
-            tls.useClientMode = false
-            tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf("http/1.1") }
-            tls.soTimeout = 120_000
-            tls.startHandshake()
-            onGameTlsSuccess?.invoke()
-        } catch (e: Exception) {
-            // The game rejected our certificate: the CA is not installed as a CA certificate.
-            onTlsFailure()
-            Timber.d("Capture: TLS handshake with the game failed (%s)", e.javaClass.simpleName)
-            runCatching { tls.close() }
-            return
-        }
-        val up = try {
-            val factory = upstreamSslFactoryForTesting ?: (SSLSocketFactory.getDefault() as SSLSocketFactory)
-            val plain = Socket()
+            if (!alreadyReplied) {
+                client.getOutputStream().apply {
+                    write(HTTP_200_ESTABLISHED)
+                    flush()
+                }
+            }
+            val handshakeSocket = if (clientInputOverride != null && options.socks5) {
+                ReplaySocket(client, clientInputOverride)
+            } else {
+                client
+            }
+            val tls = sslContext.socketFactory.createSocket(handshakeSocket, null, handshakeSocket.port, true) as SSLSocket
             try {
-                val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
-                    ?: InetSocketAddress(connectHost, port)
-                plain.connect(targetAddress, 15_000)
-                val s = factory.createSocket(plain, tlsHost, port, true) as SSLSocket
+                tls.useClientMode = false
+                tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf("http/1.1") }
+                tls.soTimeout = 120_000
+                tls.startHandshake()
+                onGameTlsSuccess?.invoke()
+            } catch (e: Exception) {
+                // The game rejected our certificate: the CA is not installed as a CA certificate.
+                onTlsFailure()
+                Timber.d("Capture: TLS handshake with the game failed (%s)", e.javaClass.simpleName)
+                runCatching { tls.close() }
+                return
+            }
+            val up = try {
+                val factory = upstreamSslFactoryForTesting ?: (SSLSocketFactory.getDefault() as SSLSocketFactory)
+                val plain = preconnected ?: Socket()
                 try {
-                    s.sslParameters = s.sslParameters.apply {
-                        serverNames = listOf(SNIHostName(tlsHost))
-                        applicationProtocols = arrayOf("http/1.1")
+                    if (preconnected == null) {
+                        val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
+                            ?: InetSocketAddress(connectHost, port)
+                        plain.connect(targetAddress, 15_000)
                     }
-                    s.soTimeout = 120_000
-                    s.startHandshake()
-                    val verifier = upstreamHostnameVerifierForTesting ?: HttpsURLConnection.getDefaultHostnameVerifier()
-                    if (!verifier.verify(tlsHost, s.session)) {
-                        throw IOException("upstream hostname verification failed")
+                    val s = factory.createSocket(plain, tlsHost, port, true) as SSLSocket
+                    try {
+                        s.sslParameters = s.sslParameters.apply {
+                            serverNames = listOf(SNIHostName(tlsHost))
+                            applicationProtocols = arrayOf("http/1.1")
+                        }
+                        s.soTimeout = 120_000
+                        s.startHandshake()
+                        val verifier = upstreamHostnameVerifierForTesting ?: HttpsURLConnection.getDefaultHostnameVerifier()
+                        if (!verifier.verify(tlsHost, s.session)) {
+                            throw IOException("upstream hostname verification failed")
+                        }
+                        onGameUpstreamSuccess?.invoke()
+                        s
+                    } catch (t: Throwable) {
+                        runCatching { s.close() }
+                        throw t
                     }
-                    onGameUpstreamSuccess?.invoke()
-                    s
                 } catch (t: Throwable) {
-                    runCatching { s.close() }
+                    runCatching { plain.close() }
                     throw t
                 }
-            } catch (t: Throwable) {
-                runCatching { plain.close() }
-                throw t
+            } catch (e: Exception) {
+                if (tlsHost.lowercase() in CaptureNames.HOST_SERVERS) {
+                    onUpstreamFailure?.invoke(tlsHost.lowercase())
+                }
+                Timber.d("Capture: upstream connection failed (%s)", e.javaClass.simpleName)
+                runCatching { tls.close() }
+                return
             }
-        } catch (e: Exception) {
-            if (tlsHost.lowercase() in CaptureNames.HOST_SERVERS) {
-                onUpstreamFailure?.invoke(tlsHost.lowercase())
+            live += up
+            try {
+                relay(tls, up, tlsHost)
+            } finally {
+                live -= up
+                runCatching { up.close() }
+                runCatching { tls.close() }
             }
-            Timber.d("Capture: upstream connection failed (%s)", e.javaClass.simpleName)
-            runCatching { tls.close() }
-            return
-        }
-        live += up
-        try {
-            relay(tls, up, tlsHost)
         } finally {
-            live -= up
-            runCatching { up.close() }
-            runCatching { tls.close() }
+            if (preconnected != null) {
+                live -= preconnected
+                runCatching { preconnected.close() }
+            }
         }
     }
 
@@ -774,10 +821,19 @@ class ProxyServer(
 
     companion object {
         private const val PEER_SNIFF_TIMEOUT_MS = 3_000
+        private const val IP_PRECONNECT_TIMEOUT_MS = 10_000
         private val EMPTY_BYTES = ByteArray(0)
         private val HTTP_200_ESTABLISHED = "HTTP/1.1 200 Connection Established\r\n\r\n".toByteArray()
+        private val HTTP_502_BAD_GATEWAY = "HTTP/1.1 502 Bad Gateway\r\n\r\n".toByteArray()
         private val NOT_IMPLEMENTED_RESPONSE =
             "HTTP/1.1 501 Not Implemented\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray()
+
+        private fun socks5FailureCode(e: IOException): Byte = when {
+            e.message?.contains("Network is unreachable", ignoreCase = true) == true ->
+                Socks5.REP_NETWORK_UNREACHABLE
+            e is ConnectException -> Socks5.REP_CONNECTION_REFUSED
+            else -> Socks5.REP_HOST_UNREACHABLE
+        }
 
         internal fun parseHostPort(target: String, stripBrackets: Boolean): Pair<String, Int> {
             if (stripBrackets && target.startsWith("[")) {

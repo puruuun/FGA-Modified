@@ -238,6 +238,7 @@ class ProxyServerTest {
         val req2InFlightAtServer = CountDownLatch(1)
         val allowReq2Response = CountDownLatch(1)
 
+        val upstreamAcceptCount = AtomicInteger(0)
         val mockServer = (upstreamServerCtx.serverSocketFactory.createServerSocket(
             0,
             50,
@@ -248,6 +249,7 @@ class ProxyServerTest {
             runCatching {
                 while (!mockServer.isClosed) {
                     val s = mockServer.accept() as SSLSocket
+                    upstreamAcceptCount.incrementAndGet()
                     Thread {
                         s.use { sock ->
                             sock.startHandshake()
@@ -343,6 +345,7 @@ class ProxyServerTest {
             // Next boundary should be closed cleanly by proxy
             val eof = runCatching { reader.readHead() }.getOrNull()
             assertEquals(null, eof)
+            assertEquals(1, upstreamAcceptCount.get())
             tlsClient.close()
         } finally {
             proxy.stop()
@@ -814,9 +817,16 @@ class ProxyServerTest {
         val mitmCerts = SingleUseCa.issue(gameHost)
         val mitmServerCtx = serverSslContext(mitmCerts)
         val mitmClientCtx = clientTrustContext(mitmCerts)
-        val closedPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        // Accept TCP so preconnect succeeds, then close immediately to trigger a TLS-stage upstream failure.
+        val tlsDropServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val acceptThread = Thread {
+            runCatching {
+                tlsDropServer.accept().use { }
+            }
+        }.apply { isDaemon = true; start() }
 
         val failedHosts = CopyOnWriteArrayList<String>()
+        val nonGameFailed = AtomicInteger(0)
         val failureLatch = CountDownLatch(1)
         val proxy = ProxyServer(
             sslContexts = mapOf(gameHost to mitmServerCtx),
@@ -825,18 +835,19 @@ class ProxyServerTest {
                 failedHosts += host
                 failureLatch.countDown()
             },
+            onNonGameUpstreamFailure = { nonGameFailed.incrementAndGet() },
         )
         val proxyPort = proxy.start(0)
         try {
             val raw = Socket("127.0.0.1", proxyPort)
             raw.soTimeout = 3000
             raw.getOutputStream().apply {
-                write("CONNECT 127.0.0.1:$closedPort HTTP/1.1\r\n\r\n".toByteArray())
+                write("CONNECT 127.0.0.1:${tlsDropServer.localPort} HTTP/1.1\r\n\r\n".toByteArray())
                 flush()
             }
             assertTrue(readUntilBlankLine(raw.getInputStream()).startsWith("HTTP/1.1 200"))
 
-            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", closedPort, true) as SSLSocket
+            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", tlsDropServer.localPort, true) as SSLSocket
             tlsClient.sslParameters = tlsClient.sslParameters.apply {
                 serverNames = listOf(SNIHostName(gameHost))
             }
@@ -844,9 +855,12 @@ class ProxyServerTest {
 
             assertTrue(failureLatch.await(3, TimeUnit.SECONDS))
             assertEquals(listOf(gameHost), failedHosts.toList())
+            assertEquals(0, nonGameFailed.get())
             runCatching { tlsClient.close() }
         } finally {
             proxy.stop()
+            tlsDropServer.close()
+            acceptThread.join(1000)
         }
     }
 
@@ -1268,6 +1282,410 @@ class ProxyServerTest {
             assertEquals(1, unexpectedCount.get())
         } finally {
             proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun socks5IpTargetRefusedRepliesFailureBeforeSuccessAndCountsNonGame() {
+        val deadPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        val gameFailures = AtomicInteger(0)
+        val nonGameFailedHosts = CopyOnWriteArrayList<String>()
+        val nonGameLatch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onUpstreamFailure = { gameFailures.incrementAndGet() },
+            onNonGameUpstreamFailure = { host ->
+                nonGameFailedHosts += host
+                nonGameLatch.countDown()
+            },
+        )
+        val proxyPort = proxy.start(0)
+        try {
+            Socket("127.0.0.1", proxyPort).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write(byteArrayOf(0x05, 0x01, 0x00))
+                out.flush()
+                assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+
+                out.write(
+                    byteArrayOf(
+                        0x05,
+                        0x01,
+                        0x00,
+                        0x01,
+                        127,
+                        0,
+                        0,
+                        1,
+                        (deadPort ushr 8).toByte(),
+                        deadPort.toByte(),
+                    )
+                )
+                out.flush()
+
+                val reply = inp.readNBytes(10)
+                assertEquals(10, reply.size)
+                assertEquals(Socks5.VERSION, reply[0])
+                assertTrue(reply[1] != Socks5.REP_SUCCEEDED, "Expected non-zero SOCKS5 REP, got ${reply[1]}")
+                assertEquals(Socks5.REP_CONNECTION_REFUSED, reply[1])
+                assertEquals(-1, runCatching { inp.read() }.getOrDefault(-1))
+            }
+            assertTrue(nonGameLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(listOf("127.0.0.1"), nonGameFailedHosts.toList())
+            assertEquals(0, gameFailures.get())
+            assertTrue(proxy.awaitOpenConnections(2000))
+        } finally {
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun socks5IpTargetTimeoutOrUnreachableRepliesHostOrNetworkUnreachable() {
+        val gameFailures = AtomicInteger(0)
+        val nonGameFailedHosts = CopyOnWriteArrayList<String>()
+        val nonGameLatch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onUpstreamFailure = { gameFailures.incrementAndGet() },
+            onNonGameUpstreamFailure = { host ->
+                nonGameFailedHosts += host
+                nonGameLatch.countDown()
+            },
+        ).apply {
+            ipPreconnectTimeoutMsForTesting = 150
+            transparentUpstreamOverrideForTesting = { _, _ ->
+                // TEST-NET-1 (RFC 5737): unroutable so connect either times out or fails unreachable.
+                InetSocketAddress("192.0.2.1", 443)
+            }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            Socket("127.0.0.1", proxyPort).use { s ->
+                s.soTimeout = 5000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write(byteArrayOf(0x05, 0x01, 0x00))
+                out.flush()
+                assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+
+                val ipv6Addr = InetAddress.getByName("2001:db8::1").address
+                out.write(byteArrayOf(0x05, 0x01, 0x00, 0x04) + ipv6Addr + byteArrayOf(0x01, 0xBB.toByte()))
+                out.flush()
+
+                val reply = inp.readNBytes(10)
+                assertEquals(10, reply.size)
+                assertEquals(Socks5.VERSION, reply[0])
+                assertTrue(
+                    reply[1] == Socks5.REP_HOST_UNREACHABLE || reply[1] == Socks5.REP_NETWORK_UNREACHABLE,
+                    "Expected host/network unreachable REP, got ${reply[1]}"
+                )
+                assertEquals(-1, runCatching { inp.read() }.getOrDefault(-1))
+            }
+            assertTrue(nonGameLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(listOf("2001:db8:0:0:0:0:0:1"), nonGameFailedHosts.toList())
+            assertEquals(0, gameFailures.get())
+            assertTrue(proxy.awaitOpenConnections(2000))
+        } finally {
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun httpConnectIpTargetRefusedReturns502Without200() {
+        val deadPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        val gameFailures = AtomicInteger(0)
+        val nonGameFailedHosts = CopyOnWriteArrayList<String>()
+        val nonGameLatch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onUpstreamFailure = { gameFailures.incrementAndGet() },
+            onNonGameUpstreamFailure = { host ->
+                nonGameFailedHosts += host
+                nonGameLatch.countDown()
+            },
+        )
+        val proxyPort = proxy.start(0)
+        try {
+            Socket("127.0.0.1", proxyPort).use { s ->
+                s.soTimeout = 3000
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT 127.0.0.1:$deadPort HTTP/1.1\r\nHost: 127.0.0.1:$deadPort\r\n\r\n".toByteArray())
+                out.flush()
+
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 502"), "Expected 502 response, got: $resp")
+                assertEquals(-1, runCatching { inp.read() }.getOrDefault(-1))
+            }
+            assertTrue(nonGameLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(listOf("127.0.0.1"), nonGameFailedHosts.toList())
+            assertEquals(0, gameFailures.get())
+            assertTrue(proxy.awaitOpenConnections(2000))
+        } finally {
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun socks5IpTargetWithGameSniInterceptsAndAcceptsSingleUpstreamConnection() {
+        val gameHost = CaptureNames.JP_HOST
+        val upstreamCerts = SingleUseCa.issue(gameHost)
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val upstreamServerCtx = serverSslContext(upstreamCerts)
+        val upstreamClientCtx = clientTrustContext(upstreamCerts)
+        val mitmServerCtx = serverSslContext(mitmCerts)
+        val mitmClientCtx = clientTrustContext(mitmCerts)
+
+        val upstreamAcceptCount = AtomicInteger(0)
+        val mockServer = (upstreamServerCtx.serverSocketFactory.createServerSocket(
+            0,
+            50,
+            InetAddress.getByName("127.0.0.1"),
+        ) as SSLServerSocket).apply { enabledProtocols = arrayOf("TLSv1.2", "TLSv1.3") }
+
+        val serverThread = Thread {
+            runCatching {
+                while (!mockServer.isClosed) {
+                    val s = mockServer.accept() as SSLSocket
+                    upstreamAcceptCount.incrementAndGet()
+                    Thread {
+                        runCatching {
+                            s.use { sock ->
+                                sock.startHandshake()
+                                val r = HttpReader(sock.getInputStream())
+                                val req = r.readHead() ?: return@use
+                                val payload = """{"ok":true,"req":"${req.target}"}"""
+                                val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${payload.length}\r\nConnection: close\r\n\r\n$payload"
+                                sock.getOutputStream().apply {
+                                    write(resp.toByteArray())
+                                    flush()
+                                }
+                            }
+                        }
+                    }.start()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val capturedTargets = CopyOnWriteArrayList<String>()
+        val capturedLatch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = mapOf(gameHost to mitmServerCtx),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onGameResponse = { target, _, _ ->
+                capturedTargets += target
+                capturedLatch.countDown()
+            },
+        ).apply {
+            upstreamSslFactoryForTesting = upstreamClientCtx.socketFactory
+            upstreamHostnameVerifierForTesting = HostnameVerifier { host, _ -> host == gameHost }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            val out = raw.getOutputStream()
+            val inp = raw.getInputStream()
+            out.write(byteArrayOf(0x05, 0x01, 0x00))
+            out.flush()
+            assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+
+            val p = mockServer.localPort
+            out.write(byteArrayOf(0x05, 0x01, 0x00, 0x01, 127, 0, 0, 1, (p ushr 8).toByte(), p.toByte()))
+            out.flush()
+            assertContentEquals(Socks5.reply(Socks5.REP_SUCCEEDED), inp.readNBytes(10))
+
+            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", p, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(gameHost))
+            }
+            tlsClient.startHandshake()
+            tlsClient.getOutputStream().apply {
+                write("GET /login/top HTTP/1.1\r\nHost: $gameHost\r\nConnection: close\r\n\r\n".toByteArray())
+                flush()
+            }
+
+            val reader = HttpReader(tlsClient.getInputStream())
+            val head = reader.readHead() ?: error("Expected HTTP response")
+            assertEquals(200, head.status)
+            val body = reader.copyBody(head, ByteArrayOutputStream(), isResponse = true, requestMethod = "GET")
+            assertTrue(String(body.payload ?: ByteArray(0)).contains("login/top"))
+            assertTrue(capturedLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(listOf("https://$gameHost/login/top"), capturedTargets.toList())
+            assertEquals(1, upstreamAcceptCount.get())
+            tlsClient.close()
+        } finally {
+            proxy.stop()
+            mockServer.close()
+            serverThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun socks5IpTargetWithNonGameSniTunnelsPeekedClientHelloAndDataWithSingleUpstreamConnection() {
+        val gameHost = CaptureNames.JP_HOST
+        val nonGameHost = "example.com"
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val upstreamCerts = SingleUseCa.issue(nonGameHost)
+        val mitmServerCtx = serverSslContext(mitmCerts)
+        val upstreamServerCtx = serverSslContext(upstreamCerts)
+        val upstreamClientCtx = clientTrustContext(upstreamCerts)
+
+        val upstreamAcceptCount = AtomicInteger(0)
+        val mockServer = (upstreamServerCtx.serverSocketFactory.createServerSocket(
+            0,
+            50,
+            InetAddress.getByName("127.0.0.1"),
+        ) as SSLServerSocket).apply { enabledProtocols = arrayOf("TLSv1.2", "TLSv1.3") }
+
+        val serverThread = Thread {
+            runCatching {
+                while (!mockServer.isClosed) {
+                    val s = mockServer.accept() as SSLSocket
+                    upstreamAcceptCount.incrementAndGet()
+                    Thread {
+                        runCatching {
+                            s.use { sock ->
+                                sock.startHandshake()
+                                val r = HttpReader(sock.getInputStream())
+                                val req = r.readHead() ?: return@use
+                                val payload = """{"tunnel":"${req.target}"}"""
+                                val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${payload.length}\r\nConnection: close\r\n\r\n$payload"
+                                sock.getOutputStream().apply {
+                                    write(resp.toByteArray())
+                                    flush()
+                                }
+                            }
+                        }
+                    }.start()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val gameConnects = AtomicInteger(0)
+        val proxy = ProxyServer(
+            sslContexts = mapOf(gameHost to mitmServerCtx),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+            onGameHostConnected = { gameConnects.incrementAndGet() },
+        )
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            val out = raw.getOutputStream()
+            val inp = raw.getInputStream()
+            out.write(byteArrayOf(0x05, 0x01, 0x00))
+            out.flush()
+            assertContentEquals(byteArrayOf(0x05, 0x00), inp.readNBytes(2))
+
+            val p = mockServer.localPort
+            out.write(byteArrayOf(0x05, 0x01, 0x00, 0x01, 127, 0, 0, 1, (p ushr 8).toByte(), p.toByte()))
+            out.flush()
+            assertContentEquals(Socks5.reply(Socks5.REP_SUCCEEDED), inp.readNBytes(10))
+
+            // TLS handshake verifies the peeked ClientHello bytes were forwarded intact to upstream.
+            val tlsClient = upstreamClientCtx.socketFactory.createSocket(raw, nonGameHost, p, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(nonGameHost))
+            }
+            tlsClient.startHandshake()
+            tlsClient.getOutputStream().apply {
+                write("GET /ping HTTP/1.1\r\nHost: $nonGameHost\r\nConnection: close\r\n\r\n".toByteArray())
+                flush()
+            }
+
+            val reader = HttpReader(tlsClient.getInputStream())
+            val head = reader.readHead() ?: error("Expected HTTP response")
+            assertEquals(200, head.status)
+            val body = reader.copyBody(head, ByteArrayOutputStream(), isResponse = true, requestMethod = "GET")
+            assertEquals("""{"tunnel":"/ping"}""", String(body.payload ?: ByteArray(0)))
+            assertEquals(1, upstreamAcceptCount.get())
+            assertEquals(0, gameConnects.get())
+            tlsClient.close()
+        } finally {
+            proxy.stop()
+            mockServer.close()
+            serverThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun hostnameTargetRepliesOnlyAfterUpstreamConnect() {
+        val echoServer = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val echoThread = Thread {
+            runCatching {
+                echoServer.accept().use { s ->
+                    val data = s.getInputStream().readNBytes(4)
+                    s.getOutputStream().apply {
+                        write(data)
+                        flush()
+                    }
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val deadPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        val connectEntered = CountDownLatch(1)
+        val releaseConnect = CountDownLatch(1)
+
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true),
+        ).apply {
+            transparentUpstreamOverrideForTesting = { host, _ ->
+                if (host == "delayed.example.com") {
+                    connectEntered.countDown()
+                    releaseConnect.await(5, TimeUnit.SECONDS)
+                    InetSocketAddress("127.0.0.1", echoServer.localPort)
+                } else {
+                    InetSocketAddress("127.0.0.1", deadPort)
+                }
+            }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            // Hostname HTTP CONNECT must not send 200 before upstream connect completes.
+            Socket("127.0.0.1", proxyPort).use { s ->
+                val out = s.getOutputStream()
+                val inp = s.getInputStream()
+                out.write("CONNECT delayed.example.com:443 HTTP/1.1\r\nHost: delayed.example.com:443\r\n\r\n".toByteArray())
+                out.flush()
+
+                assertTrue(connectEntered.await(3, TimeUnit.SECONDS))
+                s.soTimeout = 150
+                assertFailsWith<java.net.SocketTimeoutException> {
+                    inp.read()
+                }
+
+                releaseConnect.countDown()
+                s.soTimeout = 3000
+                val resp = readUntilBlankLine(inp)
+                assertTrue(resp.startsWith("HTTP/1.1 200"), "Expected 200 after connect, got: $resp")
+
+                out.write("ECHO".toByteArray())
+                out.flush()
+                assertEquals("ECHO", String(inp.readNBytes(4)))
+            }
+
+            // Hostname HTTP CONNECT to dead upstream closes without sending 200.
+            Socket("127.0.0.1", proxyPort).use { s ->
+                s.soTimeout = 3000
+                s.getOutputStream().apply {
+                    write("CONNECT dead.example.com:443 HTTP/1.1\r\nHost: dead.example.com:443\r\n\r\n".toByteArray())
+                    flush()
+                }
+                assertEquals(-1, s.getInputStream().read())
+            }
+        } finally {
+            releaseConnect.countDown()
+            proxy.stop()
+            echoServer.close()
+            echoThread.join(1000)
         }
     }
 

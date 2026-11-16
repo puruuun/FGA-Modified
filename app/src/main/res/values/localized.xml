@@ -1414,7 +1414,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_proxy_notification_action_start">"Turn reading on"</string>
     <string name="capture_proxy_notification_action_stop">"Turn reading off"</string>
     <string name="capture_adguard_card_title">"External proxy app"</string>
-    <string name="capture_adguard_address">"Proxy address: %1$s"</string>
+    <string name="capture_adguard_host">"Host: %1$s"</string>
+    <string name="capture_adguard_port">"Port: %1$s"</string>
     <string name="capture_adguard_copy">"Copy"</string>
     <string name="capture_adguard_copied">"Copied %1$s"</string>
     <string name="capture_adguard_port_label">"Port (1024–65535)"</string>

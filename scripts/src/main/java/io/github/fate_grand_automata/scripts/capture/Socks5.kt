@@ -19,6 +19,7 @@ object Socks5 {
 
     const val REP_SUCCEEDED: Byte = 0x00
     const val REP_GENERAL_FAILURE: Byte = 0x01
+    const val REP_NETWORK_UNREACHABLE: Byte = 0x03
     const val REP_HOST_UNREACHABLE: Byte = 0x04
     const val REP_CONNECTION_REFUSED: Byte = 0x05
     const val REP_COMMAND_NOT_SUPPORTED: Byte = 0x07

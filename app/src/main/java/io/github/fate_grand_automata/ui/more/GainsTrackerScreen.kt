@@ -852,12 +852,12 @@ fun GainsTrackerContent(
                             CaptureConnectionMode.AdGuard -> {
                                 AdGuardProxyCard(
                                     state = state,
-                                    onCopyAddress = { addr ->
+                                    onCopyValue = { value ->
                                         context.getSystemService(ClipboardManager::class.java)
-                                            ?.setPrimaryClip(ClipData.newPlainText("External proxy", addr))
+                                            ?.setPrimaryClip(ClipData.newPlainText("External proxy", value))
                                         Toast.makeText(
                                             context,
-                                            resources.getString(R.string.capture_adguard_copied, addr),
+                                            resources.getString(R.string.capture_adguard_copied, value),
                                             Toast.LENGTH_SHORT,
                                         ).show()
                                     },
@@ -1168,7 +1168,7 @@ private fun RootCaptureCard(
 @Composable
 private fun AdGuardProxyCard(
     state: GainsTrackerUiState,
-    onCopyAddress: (String) -> Unit,
+    onCopyValue: (String) -> Unit,
     onApplyPort: (Int) -> Unit,
     onAdGuardAutoSwitch: (Boolean) -> Unit,
     onAdGuardAutomationPassword: (String) -> Unit,
@@ -1194,7 +1194,8 @@ private fun AdGuardProxyCard(
         is CaptureProxyState.PortError -> st.port
         CaptureProxyState.Idle -> state.proxyPort
     }
-    val address = "127.0.0.1:$displayPort"
+    val hostValue = PROXY_HOST
+    val portValue = displayPort.toString()
 
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(
@@ -1205,18 +1206,23 @@ private fun AdGuardProxyCard(
                 stringResource(R.string.capture_adguard_card_title),
                 style = MaterialTheme.typography.titleSmall,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.capture_adguard_address, address),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                OutlinedButton(onClick = { onCopyAddress(address) }) {
-                    Text(stringResource(R.string.capture_adguard_copy))
+            listOf(
+                stringResource(R.string.capture_adguard_host, hostValue) to hostValue,
+                stringResource(R.string.capture_adguard_port, portValue) to portValue,
+            ).forEach { (label, copyValue) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedButton(onClick = { onCopyValue(copyValue) }) {
+                        Text(stringResource(R.string.capture_adguard_copy))
+                    }
                 }
             }
             Row(
@@ -1369,6 +1375,8 @@ private fun AdGuardProxyCard(
         }
     }
 }
+
+private const val PROXY_HOST = "127.0.0.1"
 
 private fun isIgnoringBatteryOptimizations(context: android.content.Context): Boolean =
     runCatching {

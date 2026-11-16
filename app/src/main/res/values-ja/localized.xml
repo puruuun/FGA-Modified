@@ -1103,7 +1103,8 @@
     <string name="capture_proxy_notification_action_start">"収集をオン"</string>
     <string name="capture_proxy_notification_action_stop">"収集をオフ"</string>
     <string name="capture_adguard_card_title">"外部アプリのプロキシ"</string>
-    <string name="capture_adguard_address">"プロキシアドレス: %1$s"</string>
+    <string name="capture_adguard_host">"ホスト: %1$s"</string>
+    <string name="capture_adguard_port">"ポート: %1$s"</string>
     <string name="capture_adguard_copy">"コピー"</string>
     <string name="capture_adguard_copied">"コピーしました: %1$s"</string>
     <string name="capture_adguard_port_label">"ポート (1024–65535)"</string>

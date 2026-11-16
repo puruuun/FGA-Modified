@@ -1345,7 +1345,8 @@
     <string name="capture_proxy_notification_action_start">"수집 켜기"</string>
     <string name="capture_proxy_notification_action_stop">"수집 끄기"</string>
     <string name="capture_adguard_card_title">"외부 앱 프록시"</string>
-    <string name="capture_adguard_address">"프록시 주소: %1$s"</string>
+    <string name="capture_adguard_host">"호스트: %1$s"</string>
+    <string name="capture_adguard_port">"포트: %1$s"</string>
     <string name="capture_adguard_copy">"복사"</string>
     <string name="capture_adguard_copied">"복사됨: %1$s"</string>
     <string name="capture_adguard_port_label">"포트 (1024–65535)"</string>
