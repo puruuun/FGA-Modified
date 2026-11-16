@@ -44,6 +44,8 @@ interface IBattleConfig : IExecutionProfile {
     val bondMaxIgnoredCharacters: Set<Int>
     val shuffleCards: ShuffleCardsEnum
     val shuffleCardsWave: Int
+    /** When on, command cards showing the swap icon are treated as Arts across all waves and turns. */
+    val cardSwapDetection: Boolean
 
     fun executionProfile(index: Int): IExecutionProfile = when (index) {
         0 -> this

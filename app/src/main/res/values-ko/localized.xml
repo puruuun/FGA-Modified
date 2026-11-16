@@ -1398,4 +1398,7 @@
     <string name="capture_root_cleanup_retry_warning">"루트 규칙을 지우지 못했습니다. 다시 시도 중이며, 계속 실패하면 재부팅하세요."</string>
     <string name="capture_root_auto_retreat_message">"루트 모드 수집을 자동으로 껐습니다: %1$s"</string>
     <string name="capture_root_adguard_vpn_note">"AdGuard는 '자동 프록시' 모드로 두고, AdGuard 필터링에서 FGO와 FGA를 모두 제외하세요. WireGuard 등 개인 VPN과 함께 쓸 수 있습니다."</string>
+    <string name="card_swap_shared_header">모든 웨이브·턴 공통</string>
+    <string name="card_swap_detection">아오코 카드 변화 감지</string>
+    <string name="card_swap_detection_summary">켜면 모든 웨이브와 턴에 적용됩니다. 카드에 변환 아이콘이 있으면 Arts로 취급합니다</string>
 </resources>

@@ -1156,4 +1156,7 @@
     <string name="capture_root_cleanup_retry_warning">"ルートルールを削除できませんでした。再試行中です。失敗が続く場合は再起動してください。"</string>
     <string name="capture_root_auto_retreat_message">"ルートモード収集を自動でオフにしました: %1$s"</string>
     <string name="capture_root_adguard_vpn_note">"AdGuard は「自動プロキシ」モードにし、AdGuard のフィルタリングから FGO と FGA の両方を除外してください。WireGuard などの個人 VPN と併用できます。"</string>
+    <string name="card_swap_shared_header">全ウェーブ・ターン共通</string>
+    <string name="card_swap_detection">青子のカード変化を検出</string>
+    <string name="card_swap_detection_summary">オンにするとすべてのウェーブとターンに適用されます。変換アイコンのあるカードをArtsとして扱います</string>
 </resources>

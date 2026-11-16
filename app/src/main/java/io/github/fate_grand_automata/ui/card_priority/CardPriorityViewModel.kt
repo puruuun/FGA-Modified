@@ -59,6 +59,7 @@ class CardPriorityViewModel @AssistedInject constructor(
     }
 
     val cardPrioritySplit = battleConfig.cardPrioritySplit
+    val cardSwapDetection = prefsCore.forBattleConfig(id).cardSwapDetection
 
     fun save() {
         battleConfig.cardPriority.set(

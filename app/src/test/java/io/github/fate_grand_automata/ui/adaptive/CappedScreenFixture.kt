@@ -84,7 +84,7 @@ internal class CappedScreenFixture(context: Context) {
                 configs = configs, selectionMode = false, selectedConfigs = emptySet(),
                 expandedFolders = setOf("events"), folderRevision = 0, action = {}
             )
-            CappedScreen.CardPriority -> CardPriorityView(cardPriorities, config.cardPrioritySplit)
+            CappedScreen.CardPriority -> CardPriorityView(cardPriorities, config.cardPrioritySplit, config.cardSwapDetection)
             CappedScreen.MoreOptions -> MoreOptionsContent(
                 prefs = prefs, storageSummary = "FGA", extractSummary = "", extractSupportImages = {},
                 additionalFeatures = {}, goToFineTune = {}, goToAddedFeatureTuning = {},

@@ -1,0 +1,256 @@
+{
+  "schema": 1,
+  "suite": "cardSwap",
+  "cases": [
+    {
+      "name": "aoko-buster-mumu-A",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-mumu.webp",
+      "card": "A",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-mumu-B",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-mumu.webp",
+      "card": "B",
+      "found": true,
+      "minScore": 0.85,
+      "maxScore": 1
+    },
+    {
+      "name": "aoko-buster-mumu-C",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-mumu.webp",
+      "card": "C",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-mumu-D",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-mumu.webp",
+      "card": "D",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-mumu-E",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-mumu.webp",
+      "card": "E",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "super-aoko-arts-mumu-A",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-super-aoko-arts-mumu.webp",
+      "card": "A",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "super-aoko-arts-mumu-B",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-super-aoko-arts-mumu.webp",
+      "card": "B",
+      "found": true,
+      "minScore": 0.85,
+      "maxScore": 1
+    },
+    {
+      "name": "super-aoko-arts-mumu-C",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-super-aoko-arts-mumu.webp",
+      "card": "C",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "super-aoko-arts-mumu-D",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-super-aoko-arts-mumu.webp",
+      "card": "D",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "super-aoko-arts-mumu-E",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-super-aoko-arts-mumu.webp",
+      "card": "E",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-tablet-window-A",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-tablet-window.webp",
+      "card": "A",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-tablet-window-B",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-tablet-window.webp",
+      "card": "B",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-tablet-window-C",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-tablet-window.webp",
+      "card": "C",
+      "found": true,
+      "minScore": 0.85,
+      "maxScore": 1
+    },
+    {
+      "name": "aoko-buster-tablet-window-D",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-tablet-window.webp",
+      "card": "D",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "aoko-buster-tablet-window-E",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-aoko-buster-tablet-window.webp",
+      "card": "E",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "none-tablet-A",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-none-tablet.webp",
+      "card": "A",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "none-tablet-B",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-none-tablet.webp",
+      "card": "B",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "none-tablet-C",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-none-tablet.webp",
+      "card": "C",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "none-tablet-D",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-none-tablet.webp",
+      "card": "D",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "none-tablet-E",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-none-tablet.webp",
+      "card": "E",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0.5
+    },
+    {
+      "name": "flat-grey-A",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-flat-grey.webp",
+      "card": "A",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0
+    },
+    {
+      "name": "flat-grey-B",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-flat-grey.webp",
+      "card": "B",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0
+    },
+    {
+      "name": "flat-grey-C",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-flat-grey.webp",
+      "card": "C",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0
+    },
+    {
+      "name": "flat-grey-D",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-flat-grey.webp",
+      "card": "D",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0
+    },
+    {
+      "name": "flat-grey-E",
+      "suite": "cardSwap",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/card-swap-flat-grey.webp",
+      "card": "E",
+      "found": false,
+      "minScore": 0,
+      "maxScore": 0
+    }
+  ]
+}

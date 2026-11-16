@@ -52,6 +52,7 @@ class BattleConfigCore(
     val servantPriority get() = execution.servantPriority
     val rearrangeCards get() = execution.rearrangeCards
     val braveChains get() = execution.braveChains
+    val cardSwapDetection = maker.bool("card_swap_detection")
     private val shuffle = ShuffleConfigCore(maker)
     val shuffleCards get() = shuffle.mode
     val shuffleCardsWave get() = shuffle.wave

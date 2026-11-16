@@ -9,6 +9,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.TeamSlot
@@ -31,10 +33,11 @@ import io.github.fate_grand_automata.ui.FGAListItemColors
 import io.github.fate_grand_automata.ui.drag_sort.DragSort
 import io.github.fate_grand_automata.ui.drag_sort.DragSortItemStyle
 import io.github.fate_grand_automata.ui.prefs.listDialog
+import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun CardPriorityListItem.Render() {
+fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
     var style by style
     var useServantPriority by useServantPriority
     val servantStyle = style == CardPriorityStyle.Servant
@@ -138,6 +141,33 @@ fun CardPriorityListItem.Render() {
                     )
                 }
             }
+        }
+
+        OutlinedCard(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.card_swap_shared_header),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
+            )
+
+            var swapDetection by cardSwapDetection.remember()
+
+            ListItem(
+                modifier = Modifier.clickable { swapDetection = !swapDetection },
+                headlineContent = { Text(stringResource(R.string.card_swap_detection)) },
+                supportingContent = { Text(stringResource(R.string.card_swap_detection_summary)) },
+                trailingContent = {
+                    Switch(
+                        checked = swapDetection,
+                        onCheckedChange = { swapDetection = it }
+                    )
+                },
+                colors = FGAListItemColors()
+            )
         }
 
         if (useServantPriority && !servantStyle) {
