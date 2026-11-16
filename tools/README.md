@@ -12,6 +12,7 @@ py -3 tools/device-qa/run.py --build --suite support,bond,questItems
 - Suites: `support` (screens and crops of score, NP and skill), `bond` (result and level-up frames), `questItems` (Teapot and Storm Pod buttons and dialogs). Each case reads `docs/reference-images/cases/<suite>.json`.
 - Run one suite with `--suite bond` or one case file with `--cases <repo-relative path>`.
 - Needs Python 3 (use `py -3`; `python` may resolve to the Windows Store stub), the Android SDK platform-tools, and BlueStacks with ADB enabled.
+- `--local-fixtures DIR` (optional) pushes device-only images before each suite: every case, piece or import path under the device QA root that exists as `DIR/<path relative to that root>` is pushed to the device, and `local fixtures: pushed N, missing M` is printed per suite. The folder stays local (for example under the gitignored `build/`) and is never committed.
 - `--serial` defaults to `127.0.0.1:5555`. Pass `--serial` if your instance uses another port.
 - The script uses one adb binary for the whole run and prints its path. Do not mix the SDK adb and `HD-Adb.exe` in one session: they kill each other's server.
 

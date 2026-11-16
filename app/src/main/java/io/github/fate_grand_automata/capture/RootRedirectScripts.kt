@@ -188,9 +188,20 @@ internal object RootRedirectScripts {
         appendLine("rm -f $WATCHDOG_OK_PRIMARY $WATCHDOG_OK_FALLBACK >/dev/null 2>&1 || true")
     }
 
+    private fun procNetListenGrep(
+        localIpHex: String,
+        portHex: String,
+        fgaUid: Int,
+        procPathVar: String,
+    ): String =
+        "grep -Eq \"^[[:space:]]*[0-9]+:[[:space:]]+$localIpHex:$portHex[[:space:]]+[0-9A-Fa-f]+:[0-9A-Fa-f]+[[:space:]]+0A[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+$fgaUid([[:space:]]|\$)\" \"\$$procPathVar\" 2>/dev/null"
+
     fun watchdogScript(port: Int, fgaUid: Int, ipv6: Boolean): String {
         val portHex = portToProcHex(port)
         validateUid(fgaUid, "fgaUid")
+        val ipv4Grep = procNetListenGrep("0100007F", portHex, fgaUid, "PROC_NET_TCP")
+        val ipv4MappedGrep = procNetListenGrep("0000000000000000FFFF00000100007F", portHex, fgaUid, "PROC_NET_TCP6")
+        val ipv6Grep = procNetListenGrep("00000000000000000000000001000000", portHex, fgaUid, "PROC_NET_TCP6")
         return buildString {
             appendLine("#!/system/bin/sh")
             appendLine("for CG in /sys/fs/cgroup/cgroup.procs /dev/cg2_bpf/cgroup.procs /acct/cgroup.procs; do")
@@ -210,10 +221,12 @@ internal object RootRedirectScripts {
             appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
             appendLine("IP6T=/system/bin/ip6tables")
             appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
+            appendLine("PROC_NET_TCP=\"\${PROC_NET_TCP:-/proc/net/tcp}\"")
+            appendLine("PROC_NET_TCP6=\"\${PROC_NET_TCP6:-/proc/net/tcp6}\"")
             appendLine("check_socket() {")
-            appendLine("  grep -Eq \"^[[:space:]]*[0-9]+:[[:space:]]+0100007F:${portHex}[[:space:]]+[0-9A-Fa-f]+:[0-9A-Fa-f]+[[:space:]]+0A[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+${fgaUid}([[:space:]]|\$)\" /proc/net/tcp 2>/dev/null || return 1")
+            appendLine("  $ipv4Grep || $ipv4MappedGrep || return 1")
             if (ipv6) {
-                appendLine("  grep -Eq \"^[[:space:]]*[0-9]+:[[:space:]]+00000000000000000000000001000000:${portHex}[[:space:]]+[0-9A-Fa-f]+:[0-9A-Fa-f]+[[:space:]]+0A[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+${fgaUid}([[:space:]]|\$)\" /proc/net/tcp6 2>/dev/null || return 1")
+                appendLine("  $ipv6Grep || return 1")
             }
             appendLine("  return 0")
             appendLine("}")

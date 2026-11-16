@@ -717,14 +717,10 @@
             "classOnly": true,
             "grandOnly": true,
             "bothScores": true
-          },
-          "protectiveUnknown": [
-            "class"
-          ]
+          }
         }
       ],
-      "bleedRight720": 5,
-      "d1Note": "D-1 protective veto: require null and reject the corresponding selection condition. Original ground truth and policy retained; not counted as successful detection."
+      "bleedRight720": 5
     },
     {
       "name": "Jp-score-030.png",
@@ -1481,10 +1477,14 @@
             "classOnly": true,
             "grandOnly": true,
             "bothScores": true
-          }
+          },
+          "protectiveUnknown": [
+            "class"
+          ]
         }
       ],
-      "bleedRight720": 5
+      "bleedRight720": 5,
+      "d1Note": "D-1 protective veto: require null and reject the corresponding selection condition. Original ground truth and policy retained; not counted as successful detection."
     },
     {
       "name": "Jp-score-062.png",

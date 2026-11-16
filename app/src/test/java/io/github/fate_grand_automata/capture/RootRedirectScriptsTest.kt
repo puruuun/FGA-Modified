@@ -1,7 +1,9 @@
 package io.github.fate_grand_automata.capture
 
 import org.junit.Assume.assumeTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -10,6 +12,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class RootRedirectScriptsTest {
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+
     private val markerRegex = Regex("FGA_[A-Z_]+(=[0-9]+)?")
 
     @Test
@@ -127,6 +132,7 @@ class RootRedirectScriptsTest {
         val watchdog = RootRedirectScripts.watchdogScript(port = 8899, fgaUid = 10999, ipv6 = true)
         assertTrue(watchdog.contains("/sys/fs/cgroup/cgroup.procs /dev/cg2_bpf/cgroup.procs /acct/cgroup.procs"))
         assertTrue(watchdog.contains("0100007F:22C3"))
+        assertTrue(watchdog.contains("0000000000000000FFFF00000100007F:22C3"))
         assertTrue(watchdog.contains("00000000000000000000000001000000:22C3"))
         assertTrue(watchdog.contains("0A"))
         assertTrue(watchdog.contains("10999"))
@@ -135,7 +141,9 @@ class RootRedirectScriptsTest {
 
         val ipv4OnlyWatchdog = RootRedirectScripts.watchdogScript(port = 8899, fgaUid = 10999, ipv6 = false)
         assertTrue(ipv4OnlyWatchdog.contains("0100007F:22C3"))
-        assertFalse(ipv4OnlyWatchdog.contains("/proc/net/tcp6"))
+        assertTrue(ipv4OnlyWatchdog.contains("0000000000000000FFFF00000100007F:22C3"))
+        assertTrue(ipv4OnlyWatchdog.contains("/proc/net/tcp6"))
+        assertFalse(ipv4OnlyWatchdog.contains("00000000000000000000000001000000:22C3"))
     }
 
     @Test
@@ -216,5 +224,170 @@ class RootRedirectScriptsTest {
             assertTrue(finished, "sh -n timed out for $name")
             assertEquals(0, process.exitValue(), "sh -n syntax error in $name: $output")
         }
+    }
+
+    @Test
+    fun watchdogCheckSocketMatchesTcpAndTcp6FixturesWithSh() {
+        val tcpHeader = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        val tcp6Header = "  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+
+        fun tcpRow(
+            localAddr: String = "0100007F",
+            portHex: String = "22C3",
+            state: String = "0A",
+            uid: Int = 10062,
+        ) = "   0: $localAddr:$portHex 00000000:0000 $state 00000000:00000000 00:00000000 00000000 $uid        0 12345 1 0000000000000000 100 0 0 10 0\n"
+
+        fun tcp6Row(
+            slot: Int = 0,
+            localAddr: String = "0000000000000000FFFF00000100007F",
+            portHex: String = "22C3",
+            state: String = "0A",
+            uid: Int = 10062,
+        ) = "   $slot: $localAddr:$portHex 00000000000000000000000000000000:0000 $state 00000000:00000000 00:00000000 00000000 $uid        0 23456 1 0000000000000000 100 0 0 10 0\n"
+
+        val ipv4MappedAddr = "0000000000000000FFFF00000100007F"
+        val ipv6LoopbackAddr = "00000000000000000000000001000000"
+
+        val tcpFile = tempFolder.newFile("proc_net_tcp")
+        val tcp6File = tempFolder.newFile("proc_net_tcp6")
+
+        fun runCheck(ipv6: Boolean, tcpContent: String, tcp6Content: String): Int {
+            tcpFile.writeText(tcpContent, Charsets.UTF_8)
+            tcp6File.writeText(tcp6Content, Charsets.UTF_8)
+            val snippet = extractCheckSocketSnippet(
+                RootRedirectScripts.watchdogScript(port = 8899, fgaUid = 10062, ipv6 = ipv6),
+            )
+            val process = try {
+                ProcessBuilder("sh").apply {
+                    environment()["PROC_NET_TCP"] = tcpFile.absolutePath
+                    environment()["PROC_NET_TCP6"] = tcp6File.absolutePath
+                    redirectErrorStream(true)
+                }.start()
+            } catch (_: IOException) {
+                assumeTrue("sh binary not available on this host; skipping check_socket execution test", false)
+                return -1
+            }
+            process.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(snippet)
+            }
+            val finished = process.waitFor(5, TimeUnit.SECONDS)
+            val output = process.inputStream.bufferedReader(Charsets.UTF_8).readText()
+            process.destroyForcibly()
+            assertTrue(finished, "sh check_socket timed out: $output")
+            return process.exitValue()
+        }
+
+        // IPv4-mapped row only in /proc/net/tcp6 -> pass
+        assertEquals(
+            0,
+            runCheck(
+                ipv6 = false,
+                tcpContent = tcpHeader,
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv4MappedAddr),
+            ),
+            "IPv4-mapped listener in tcp6 should pass",
+        )
+
+        // Plain IPv4 row in /proc/net/tcp -> pass
+        assertEquals(
+            0,
+            runCheck(
+                ipv6 = false,
+                tcpContent = tcpHeader + tcpRow(),
+                tcp6Content = tcp6Header,
+            ),
+            "Plain IPv4 listener in tcp should pass",
+        )
+
+        // Wrong UID (both distinct and prefix-matching UID) -> fail
+        assertEquals(
+            1,
+            runCheck(
+                ipv6 = false,
+                tcpContent = tcpHeader + tcpRow(uid = 10063),
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv4MappedAddr, uid = 100620),
+            ),
+            "Wrong UID should fail",
+        )
+
+        // Wrong port -> fail
+        assertEquals(
+            1,
+            runCheck(
+                ipv6 = false,
+                tcpContent = tcpHeader + tcpRow(portHex = "22C4"),
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv4MappedAddr, portHex = "22C4"),
+            ),
+            "Wrong port should fail",
+        )
+
+        // State 01 (ESTABLISHED) instead of 0A (LISTEN) -> fail
+        assertEquals(
+            1,
+            runCheck(
+                ipv6 = false,
+                tcpContent = tcpHeader + tcpRow(state = "01"),
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv4MappedAddr, state = "01"),
+            ),
+            "Non-LISTEN state 01 should fail",
+        )
+
+        // ipv6 = true with ::1 row missing -> fail
+        assertEquals(
+            1,
+            runCheck(
+                ipv6 = true,
+                tcpContent = tcpHeader,
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv4MappedAddr),
+            ),
+            "ipv6=true without ::1 listener should fail",
+        )
+
+        // ipv6 = true with IPv4-mapped and ::1 rows in tcp6 -> pass
+        assertEquals(
+            0,
+            runCheck(
+                ipv6 = true,
+                tcpContent = tcpHeader,
+                tcp6Content = tcp6Header +
+                    tcp6Row(slot = 0, localAddr = ipv4MappedAddr) +
+                    tcp6Row(slot = 1, localAddr = ipv6LoopbackAddr),
+            ),
+            "ipv6=true with IPv4-mapped and ::1 listeners in tcp6 should pass",
+        )
+
+        // ipv6 = true with plain IPv4 in tcp and ::1 in tcp6 -> pass
+        assertEquals(
+            0,
+            runCheck(
+                ipv6 = true,
+                tcpContent = tcpHeader + tcpRow(),
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv6LoopbackAddr),
+            ),
+            "ipv6=true with plain IPv4 in tcp and ::1 in tcp6 should pass",
+        )
+
+        // ipv6 = true with only ::1 in tcp6 (no IPv4 or IPv4-mapped listener) -> fail
+        assertEquals(
+            1,
+            runCheck(
+                ipv6 = true,
+                tcpContent = tcpHeader,
+                tcp6Content = tcp6Header + tcp6Row(localAddr = ipv6LoopbackAddr),
+            ),
+            "ipv6=true with only ::1 listener should fail",
+        )
+    }
+
+    private fun extractCheckSocketSnippet(watchdogScript: String): String {
+        val lines = watchdogScript.lines()
+        val start = lines.indexOfFirst { it.startsWith("PROC_NET_TCP=") }
+        assertTrue(start >= 0, "PROC_NET_TCP assignment not found")
+        val fnStart = lines.indexOfFirst { it == "check_socket() {" }
+        assertTrue(fnStart > start, "check_socket() definition not found")
+        val fnEnd = (fnStart + 1 until lines.size).firstOrNull { lines[it] == "}" }
+            ?: error("Closing brace for check_socket() not found")
+        return lines.subList(start, fnEnd + 1).joinToString("\n") + "\ncheck_socket\n"
     }
 }
