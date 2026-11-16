@@ -99,14 +99,16 @@ def device_path_for(repo_relative: str) -> str:
     return f"{DEVICE_ROOT}/{repo_relative}"
 
 
-def push_local_fixtures(adb_path: str, serial: str, staged: dict, local_dir: Path) -> None:
-    """Push device-only fixture files (absolute device paths in the case file) from a local folder, never committed."""
+def push_local_fixtures(adb_path: str, serial: str, original: dict, local_dir: Path) -> None:
+    """Push device-only fixture files (paths already absolute on the device in the original case file) from a local folder, never committed."""
     prefix = f"{DEVICE_ROOT}/"
     paths = []
-    for case in staged.get("cases", []):
+    for case in original.get("cases", []):
+        if "skip" in case:
+            continue
         paths.append(case.get("file", ""))
         paths.extend(piece.get("file", "") for piece in case.get("pieces", []))
-    for files in staged.get("imports", {}).values():
+    for files in original.get("imports", {}).values():
         paths.extend(files)
     pushed = missing = 0
     for device_path in dict.fromkeys(p for p in paths if p.startswith(prefix)):
@@ -151,7 +153,7 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path, local_fixtures
     for key, files in staged.get("imports", {}).items():
         staged["imports"][key] = [push(f) if not f.startswith("/") else f for f in files]
     if local_fixtures is not None:
-        push_local_fixtures(adb_path, serial, staged, local_fixtures)
+        push_local_fixtures(adb_path, serial, data, local_fixtures)
     local = Path(f"build/device-qa-staged-{case_file.stem}.json")
     local = REPO / local
     local.parent.mkdir(parents=True, exist_ok=True)
