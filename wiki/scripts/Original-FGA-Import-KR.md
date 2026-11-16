@@ -1,7 +1,5 @@
 # 원본 FGA 데이터 가져오기
 
-[한국어](Original-FGA-Import-KR.md) | [English](Original-FGA-Import.md)
-
 **더 많은 옵션 → 추가 기능 → 원본 FGA 데이터 가져오기**에서 다음 중 하나를 선택합니다.
 
 - 스크립트만 가져오기

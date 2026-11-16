@@ -1,7 +1,5 @@
 # FGA(mod) 상세 안내
 
-[한국어](Modified-Features-KR.md) | [English](Modified-Features.md)
-
 [README로 돌아가기](../../README.md)
 
 **KR(한국)·JP(일본) 서버에서만 테스트했습니다. 다른 서버의 동작은 확인하지 않았습니다.**
