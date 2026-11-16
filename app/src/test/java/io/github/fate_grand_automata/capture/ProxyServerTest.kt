@@ -1018,6 +1018,259 @@ class ProxyServerTest {
         }
     }
 
+    @Test(timeout = 10000)
+    fun transparentModeInterceptsGameHostSniAndCapturesResponse() {
+        val gameHost = CaptureNames.JP_HOST
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val upstreamCerts = SingleUseCa.issue(gameHost)
+        val mitmServerCtx = serverSslContext(mitmCerts)
+        val mitmClientCtx = clientTrustContext(mitmCerts)
+        val upstreamServerCtx = serverSslContext(upstreamCerts)
+        val upstreamClientCtx = clientTrustContext(upstreamCerts)
+
+        val mockServer = upstreamServerCtx.serverSocketFactory.createServerSocket(
+            0,
+            50,
+            InetAddress.getByName("127.0.0.1"),
+        ) as SSLServerSocket
+        val serverThread = Thread {
+            runCatching {
+                val up = mockServer.accept() as SSLSocket
+                up.use {
+                    up.startHandshake()
+                    val reader = HttpReader(up.getInputStream())
+                    val head = reader.readHead() ?: return@use
+                    reader.copyBody(head, ByteArrayOutputStream(), isResponse = false, captureBody = false)
+                    val body = """{"captured":"transparent"}"""
+                    val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
+                    up.getOutputStream().write(resp.toByteArray())
+                    up.getOutputStream().flush()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val capturedTargets = CopyOnWriteArrayList<String>()
+        val unexpectedCount = AtomicInteger(0)
+        val tlsSuccessCount = AtomicInteger(0)
+        val upstreamSuccessCount = AtomicInteger(0)
+
+        val proxy = ProxyServer(
+            sslContexts = mapOf(gameHost to mitmServerCtx),
+            options = ProxyOptions(transparent = true, ipv6Loopback = true, maxConnections = 1024),
+            onGameTlsSuccess = { tlsSuccessCount.incrementAndGet() },
+            onGameUpstreamSuccess = { upstreamSuccessCount.incrementAndGet() },
+            onUnexpectedConnection = { unexpectedCount.incrementAndGet() },
+            onGameResponse = { target, _, _ -> capturedTargets += target },
+        ).apply {
+            upstreamSslFactoryForTesting = upstreamClientCtx.socketFactory
+            upstreamHostnameVerifierForTesting = HostnameVerifier { host, _ -> host == gameHost }
+            transparentUpstreamOverrideForTesting = { _, _ ->
+                InetSocketAddress("127.0.0.1", mockServer.localPort)
+            }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            val tlsClient = mitmClientCtx.socketFactory.createSocket(raw, gameHost, 443, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(gameHost))
+            }
+            tlsClient.startHandshake()
+            tlsClient.getOutputStream().apply {
+                write("GET /Home/top HTTP/1.1\r\nHost: $gameHost\r\nConnection: close\r\n\r\n".toByteArray())
+                flush()
+            }
+            val reader = HttpReader(tlsClient.getInputStream())
+            val head = reader.readHead()
+            assertTrue(head != null && head.status == 200)
+            val body = reader.copyBody(head!!, ByteArrayOutputStream(), isResponse = true, requestMethod = "GET", captureBody = true)
+            assertEquals("""{"captured":"transparent"}""", String(body.payload ?: ByteArray(0)))
+            assertEquals(listOf("https://$gameHost/Home/top"), capturedTargets.toList())
+            assertEquals(0, unexpectedCount.get())
+            assertEquals(1, tlsSuccessCount.get())
+            assertEquals(1, upstreamSuccessCount.get())
+            runCatching { tlsClient.close() }
+        } finally {
+            proxy.stop()
+            mockServer.close()
+            serverThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun transparentModeBlindTunnelsNonGameHostSniAndCountsNonGameUpstreamFailure() {
+        val nonGameHost = "login.netmarble.com"
+        val upstreamCerts = SingleUseCa.issue(nonGameHost)
+        val upstreamServerCtx = serverSslContext(upstreamCerts)
+        val upstreamClientCtx = clientTrustContext(upstreamCerts)
+
+        val mockServer = upstreamServerCtx.serverSocketFactory.createServerSocket(
+            0,
+            50,
+            InetAddress.getByName("127.0.0.1"),
+        ) as SSLServerSocket
+        val serverThread = Thread {
+            runCatching {
+                val up = mockServer.accept() as SSLSocket
+                up.use {
+                    up.startHandshake()
+                    val reader = HttpReader(up.getInputStream())
+                    val head = reader.readHead() ?: return@use
+                    reader.copyBody(head, ByteArrayOutputStream(), isResponse = false, captureBody = false)
+                    val body = """{"tunnel":"ok"}"""
+                    val resp = "HTTP/1.1 200 OK\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
+                    up.getOutputStream().write(resp.toByteArray())
+                    up.getOutputStream().flush()
+                }
+            }
+        }.apply { isDaemon = true; start() }
+
+        val capturedTargets = CopyOnWriteArrayList<String>()
+        val unexpectedCount = AtomicInteger(0)
+        val gameUpstreamFailures = AtomicInteger(0)
+        val nonGameUpstreamFailures = AtomicInteger(0)
+        val nonGameFailLatch = CountDownLatch(1)
+
+        val deadPort = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(transparent = true, maxConnections = 1024),
+            onUpstreamFailure = { gameUpstreamFailures.incrementAndGet() },
+            onUnexpectedConnection = { unexpectedCount.incrementAndGet() },
+            onNonGameUpstreamFailure = {
+                nonGameUpstreamFailures.incrementAndGet()
+                nonGameFailLatch.countDown()
+            },
+            onGameResponse = { target, _, _ -> capturedTargets += target },
+        ).apply {
+            transparentUpstreamOverrideForTesting = { host, _ ->
+                if (host.equals("dead.example.com", ignoreCase = true)) {
+                    InetSocketAddress("127.0.0.1", deadPort)
+                } else {
+                    InetSocketAddress("127.0.0.1", mockServer.localPort)
+                }
+            }
+        }
+        val proxyPort = proxy.start(0)
+        try {
+            // 1. Non-game SNI blind tunnel succeeds end-to-end with upstream's own TLS certificate
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            val tlsClient = upstreamClientCtx.socketFactory.createSocket(raw, nonGameHost, 443, true) as SSLSocket
+            tlsClient.sslParameters = tlsClient.sslParameters.apply {
+                serverNames = listOf(SNIHostName(nonGameHost))
+            }
+            tlsClient.startHandshake()
+            tlsClient.getOutputStream().apply {
+                write("GET /oauth HTTP/1.1\r\nHost: $nonGameHost\r\nConnection: close\r\n\r\n".toByteArray())
+                flush()
+            }
+            val reader = HttpReader(tlsClient.getInputStream())
+            val head = reader.readHead()
+            assertTrue(head != null && head.status == 200)
+            val body = reader.copyBody(head!!, ByteArrayOutputStream(), isResponse = true, requestMethod = "GET", captureBody = true)
+            assertEquals("""{"tunnel":"ok"}""", String(body.payload ?: ByteArray(0)))
+            assertEquals(emptyList(), capturedTargets.toList())
+            assertEquals(0, unexpectedCount.get())
+            runCatching { tlsClient.close() }
+
+            // 2. Non-game SNI blind tunnel failure increments nonGameUpstreamFailures, NOT gameUpstreamFailures
+            val raw2 = Socket("127.0.0.1", proxyPort)
+            raw2.soTimeout = 5000
+            val tlsClient2 = upstreamClientCtx.socketFactory.createSocket(raw2, "dead.example.com", 443, true) as SSLSocket
+            tlsClient2.sslParameters = tlsClient2.sslParameters.apply {
+                serverNames = listOf(SNIHostName("dead.example.com"))
+            }
+            runCatching { tlsClient2.startHandshake() }
+            runCatching { tlsClient2.close() }
+
+            assertTrue(nonGameFailLatch.await(3, TimeUnit.SECONDS))
+            assertEquals(1, nonGameUpstreamFailures.get())
+            assertEquals(0, gameUpstreamFailures.get())
+            assertEquals(0, unexpectedCount.get())
+        } finally {
+            proxy.stop()
+            mockServer.close()
+            serverThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun transparentModeClosesAndCountsNoSniOrNonTlsConnections() {
+        val unexpectedCount = AtomicInteger(0)
+        val latch = CountDownLatch(2)
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(transparent = true),
+            onUnexpectedConnection = {
+                unexpectedCount.incrementAndGet()
+                latch.countDown()
+            },
+        )
+        val proxyPort = proxy.start(0)
+        try {
+            // 1. Plain non-TLS HTTP bytes -> closed and counted as unexpected
+            Socket("127.0.0.1", proxyPort).use { s ->
+                s.soTimeout = 3000
+                s.getOutputStream().apply {
+                    write("GET / HTTP/1.1\r\n\r\n".toByteArray())
+                    flush()
+                }
+                assertEquals(-1, runCatching { s.getInputStream().read() }.getOrDefault(-1))
+            }
+
+            // 2. TLS ClientHello without SNI extension -> closed and counted as unexpected
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 3000
+            val tlsNoSni = SSLContext.getDefault().socketFactory.createSocket(raw, "127.0.0.1", proxyPort, true) as SSLSocket
+            tlsNoSni.sslParameters = tlsNoSni.sslParameters.apply {
+                serverNames = emptyList()
+            }
+            runCatching { tlsNoSni.startHandshake() }
+            runCatching { tlsNoSni.close() }
+
+            assertTrue(latch.await(3, TimeUnit.SECONDS))
+            assertEquals(2, unexpectedCount.get())
+        } finally {
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun ipv6LoopbackListenerAcceptsConnectionsOnColonColonOne() {
+        val unexpectedCount = AtomicInteger(0)
+        val latch = CountDownLatch(1)
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(transparent = true, ipv6Loopback = true),
+            onUnexpectedConnection = {
+                unexpectedCount.incrementAndGet()
+                latch.countDown()
+            },
+        )
+        val port = proxy.start(0)
+        try {
+            if (!proxy.isIpv6Listening) {
+                return
+            }
+            Socket().use { s ->
+                s.connect(InetSocketAddress(InetAddress.getByName("::1"), port), 3000)
+                s.soTimeout = 3000
+                s.getOutputStream().apply {
+                    write("PLAIN\r\n".toByteArray())
+                    flush()
+                }
+                assertEquals(-1, runCatching { s.getInputStream().read() }.getOrDefault(-1))
+            }
+            assertTrue(latch.await(3, TimeUnit.SECONDS))
+            assertEquals(1, unexpectedCount.get())
+        } finally {
+            proxy.stop()
+        }
+    }
+
     private fun readUntilBlankLine(input: java.io.InputStream): String {
         val sb = StringBuilder()
         var tail = 0

@@ -3,8 +3,11 @@ package io.github.fate_grand_automata.ui.more
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.capture.CaptureAccount
+import io.github.fate_grand_automata.capture.CaptureProxySnapshot
+import io.github.fate_grand_automata.capture.CaptureProxyState
+import io.github.fate_grand_automata.prefs.core.CaptureConnectionMode
+import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import org.junit.Rule
@@ -54,6 +57,53 @@ class GainsTrackerScreenshotTest {
         GainsTrackerUiState(
             enabled = true, certExists = true, certInstalled = true, running = true,
             accounts = listOf(CaptureAccount("7001", "Master", summary, summary.lastUpdateTime)), currentId = "7001",
+        ),
+    )
+
+    @Test
+    fun rootModeActive() = shoot(
+        "RootActive",
+        GainsTrackerUiState(
+            enabled = true,
+            certExists = true,
+            certInstalled = true,
+            running = true,
+            connectionMode = CaptureConnectionMode.Root,
+            proxyPort = 8899,
+            proxyStatus = CaptureProxySnapshot(
+                state = CaptureProxyState.Listening(8899),
+                reading = true,
+                rootRulesActive = true,
+                rootIpv4RuleCount = 2,
+                rootIpv6RuleCount = 2,
+                rootWatchdogActive = true,
+                gameConnectionsSinceApply = 3,
+                lastGameHostConnectedAt = 1_762_003_540_000L,
+            ),
+            nowMillis = 1_762_003_600_000L,
+        ),
+    )
+
+    @Test
+    fun rootModeCleanupRetryError() = shoot(
+        "RootCleanupRetry",
+        GainsTrackerUiState(
+            enabled = true,
+            certExists = true,
+            certInstalled = true,
+            running = false,
+            connectionMode = CaptureConnectionMode.Root,
+            proxyPort = 8899,
+            proxyStatus = CaptureProxySnapshot(
+                state = CaptureProxyState.Listening(8899),
+                reading = false,
+                rootRulesActive = true,
+                rootIpv4RuleCount = 1,
+                rootIpv6RuleCount = 1,
+                rootWatchdogActive = true,
+                rootCleanupRetrying = true,
+            ),
+            nowMillis = 1_762_003_600_000L,
         ),
     )
 

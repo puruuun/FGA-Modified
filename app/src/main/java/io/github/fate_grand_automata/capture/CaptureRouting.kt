@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.capture
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 
@@ -45,3 +47,32 @@ internal fun <T : Any> captureServerContexts(kr: T?, jp: T?, jpEnabled: Boolean)
     if (kr != null) put(CaptureNames.GAME_HOST, kr)
     if (jpEnabled && jp != null) put(CaptureNames.JP_HOST, jp)
 }
+
+internal fun rootTargetUids(
+    krUid: Int?,
+    krCertificate: Boolean,
+    jpUid: Int?,
+    jpEnabled: Boolean,
+    jpCertificate: Boolean,
+): List<Int> = buildList {
+    if (krUid != null && krUid > 0 && krCertificate) add(krUid)
+    if (jpEnabled && jpUid != null && jpUid > 0 && jpCertificate) add(jpUid)
+}.distinct()
+
+internal fun packageUid(context: Context, packageName: String): Int? =
+    try {
+        context.packageManager.getApplicationInfo(packageName, 0).uid.takeIf { it > 0 }
+    } catch (_: PackageManager.NameNotFoundException) {
+        null
+    }
+
+@RequiresApi(Build.VERSION_CODES.Q)
+internal fun resolveRootTargetUids(context: Context, prefs: PrefsCore): List<Int> =
+    rootTargetUids(
+        krUid = packageUid(context, CaptureVpnService.GAME_PACKAGE),
+        krCertificate = CertStore.exists(context),
+        jpUid = packageUid(context, CaptureVpnService.JP_GAME_PACKAGE),
+        jpEnabled = prefs.captureJpRoot.get(),
+        jpCertificate = CertStore.existsJp(context),
+    )
+
