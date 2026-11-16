@@ -321,7 +321,7 @@ class DashboardAccountCardsUiTest {
         compose.onNodeWithTag("dashboard-summons-notice").assertDoesNotExist()
         compose.onNodeWithText("마지막 로그인 기준").assertDoesNotExist()
         compose.onNodeWithText("친구 포인트 소환 1,234회").assertExists()
-        compose.onNodeWithText("횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.").assertExists()
+        compose.onNodeWithText("횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-summons-others-toggle").assertTextEquals("전체 보기 (12)")
         compose.onNodeWithText("픽업 12").assertDoesNotExist()
 
