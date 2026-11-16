@@ -24,14 +24,13 @@ import kotlin.math.max
 
 enum class SupportScoreDisplay { Ordinary, Compound, Unknown }
 
-enum class SupportScoreDarkRetry { Never, WhenInconclusive, WhenPrimaryEmpty }
+enum class SupportScoreDarkRetry { Never, WhenInconclusive }
 
 data class SupportScoreReadProfile(
     val name: String,
     val primaryOcrProfiles: List<TextLineOcrOptions> = SupportScoreReader.OCR_PROFILES,
     val darkOcrProfiles: List<TextLineOcrOptions> = SupportScoreReader.OCR_DARK_PROFILES,
     val darkRetry: SupportScoreDarkRetry = SupportScoreDarkRetry.Never,
-    val darkInspectCounts: Boolean = false,
     val minOcrConfidence: Int = SupportScoreReader.MIN_OCR_CONFIDENCE,
     val minConfirmConfidence: Int = SupportScoreReader.MIN_CONFIRM_CONFIDENCE,
     val minAgreement: Int = SupportScoreReader.MIN_AGREEMENT,
@@ -47,13 +46,10 @@ data class SupportScoreReadProfile(
         val Default = SupportScoreReadProfile(name = "default")
         val Kr = SupportScoreReadProfile(
             name = "kr",
-            darkRetry = SupportScoreDarkRetry.WhenInconclusive,
-            darkInspectCounts = true
+            darkRetry = SupportScoreDarkRetry.WhenInconclusive
         )
         val Jp = SupportScoreReadProfile(
             name = "jp",
-            darkRetry = SupportScoreDarkRetry.WhenPrimaryEmpty,
-            darkInspectCounts = false,
             useBlocks = true,
             ignoreSlashlessPartialsInCompound = true,
             grandTail416AsPlus16 = true,
@@ -134,6 +130,31 @@ class SupportScoreReader @Inject constructor(
 
         private fun isNormalizedGrandTail416(text: String, profile: SupportScoreReadProfile): Boolean =
             profile.grandTail416AsPlus16 && '/' in text && text.filterNot(Char::isWhitespace).substringAfter('/') == "416"
+
+        private fun grandTailValue(text: String, profile: SupportScoreReadProfile): Int? {
+            if ('/' !in text) return null
+            if (isNormalizedGrandTail416(text, profile)) return 16
+            return grandTail.matchEntire(text.filterNot(Char::isWhitespace))
+                ?.groupValues?.get(1)?.toIntOrNull()
+        }
+
+        private fun ordinaryValue(text: String): Int? {
+            if ('/' in text) return null
+            return ordinaryScore.matchEntire(text.filterNot(Char::isWhitespace))
+                ?.groupValues?.get(1)?.toIntOrNull()
+        }
+
+        private fun partitionSlashlessPartials(
+            results: List<OcrText>,
+            profile: SupportScoreReadProfile
+        ): Pair<List<OcrText>, List<OcrText>> {
+            if (!profile.ignoreSlashlessPartialsInCompound || results.none { '/' in it.text }) {
+                return results to emptyList()
+            }
+            val tails = results.mapNotNullTo(mutableSetOf()) { grandTailValue(it.text, profile) }
+            if (tails.isEmpty()) return results to emptyList()
+            return results.partition { ordinaryValue(it.text) !in tails }
+        }
 
         /**
          * OCR fallback for a Grand +16 whose Class half is unreadable. Every readable result must end in
@@ -347,23 +368,20 @@ class SupportScoreReader @Inject constructor(
                 val primary = profile.primaryOcrProfiles.mapIndexed { profileIdx, options ->
                     detect(pattern, options, "primary", profileIdx, evidence).also { inspect(pattern, options, it, profileIdx) }
                 }
-                val primarySlashProven = profile.ignoreSlashlessPartialsInCompound && primary.any { '/' in it.text }
-                val primaryKept = if (primarySlashProven) primary.filter { '/' in it.text } else primary
-                val primaryIgnored = if (primarySlashProven) primary.filterNot { '/' in it.text } else emptyList()
+                val (primaryKept, primaryIgnored) = partitionSlashlessPartials(primary, profile)
                 val known = confirmed(primaryKept, profile, primaryIgnored)
                 val inconclusive = !(known != null && (known.display == SupportScoreDisplay.Ordinary ||
                     ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null))))
                 val runDark = when (profile.darkRetry) {
                     SupportScoreDarkRetry.Never -> false
                     SupportScoreDarkRetry.WhenInconclusive -> inconclusive
-                    SupportScoreDarkRetry.WhenPrimaryEmpty -> primary.all { it.text.isEmpty() || it.confidence < profile.minOcrConfidence }
                 }
                 if (!runDark) primary
                 else {
                     darkRan = true
                     primary + profile.darkOcrProfiles.mapIndexed { profileIdx, options ->
                         detect(pattern, options, "dark", profileIdx, evidence).also {
-                            if (profile.darkInspectCounts) inspect(pattern, options, it, null)
+                            inspect(pattern, options, it, null)
                         }
                     }
                 }
@@ -398,10 +416,7 @@ class SupportScoreReader @Inject constructor(
         }
         val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
         val grandTemplate16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
-        val slashProven = profile.ignoreSlashlessPartialsInCompound &&
-            (class62 || grandTemplate16 || results.any { '/' in it.text })
-        val keptResults = if (slashProven) results.filter { '/' in it.text } else results
-        val ignoredPartials = if (slashProven) results.filterNot { '/' in it.text } else emptyList()
+        val (keptResults, ignoredPartials) = partitionSlashlessPartials(results, profile)
         val recognized = confirmed(keptResults, profile, ignoredPartials)?.let {
             if (inconsistentGrand) it.copy(grandScore = null) else it
         }

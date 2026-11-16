@@ -334,7 +334,7 @@ class AppendSupportTest {
         val f = Fixture(enabled = false, scoreEnabled = true)
         assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
         verify(exactly = 1) { with(f.api) { f.first.region.click(any()) } }
-        verify(exactly = 6) { f.scoreOcr.detectTextLine(any(), any()) }
+        verify(exactly = 4) { f.scoreOcr.detectTextLine(any(), any()) }
     }
 
     @Test

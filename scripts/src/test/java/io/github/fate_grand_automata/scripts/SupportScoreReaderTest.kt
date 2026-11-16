@@ -522,7 +522,6 @@ class SupportScoreReaderTest {
             primaryOcrProfiles = SupportScoreReader.OCR_PROFILES,
             darkOcrProfiles = SupportScoreReader.OCR_DARK_PROFILES,
             darkRetry = SupportScoreDarkRetry.Never,
-            darkInspectCounts = false,
             minOcrConfidence = SupportScoreReader.MIN_OCR_CONFIDENCE,
             minConfirmConfidence = SupportScoreReader.MIN_CONFIRM_CONFIDENCE,
             minAgreement = SupportScoreReader.MIN_AGREEMENT,
@@ -536,13 +535,12 @@ class SupportScoreReaderTest {
         )
         assertThat(SupportScoreReadProfile.Default).isEqualTo(expectedBase)
         assertThat(SupportScoreReadProfile.Kr).isEqualTo(
-            expectedBase.copy(name = "kr", darkRetry = SupportScoreDarkRetry.WhenInconclusive, darkInspectCounts = true)
+            expectedBase.copy(name = "kr", darkRetry = SupportScoreDarkRetry.WhenInconclusive)
         )
         assertThat(SupportScoreReadProfile.Jp).isEqualTo(
             expectedBase.copy(
                 name = "jp",
-                darkRetry = SupportScoreDarkRetry.WhenPrimaryEmpty,
-                darkInspectCounts = false,
+                darkRetry = SupportScoreDarkRetry.Never,
                 useBlocks = true,
                 ignoreSlashlessPartialsInCompound = true,
                 grandTail416AsPlus16 = true,
@@ -552,10 +550,10 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `dark retry runs on KR when inconclusive and on JP only when primary is empty`() {
+    fun `dark retry runs on KR when inconclusive and never on JP or Default`() {
         for ((server, expectedCalls) in listOf(
             GameServer.Kr to 6,
-            GameServer.Jp.Original to 6,
+            GameServer.Jp.Original to 4,
             GameServer.En.Original to 4
         )) {
             val f = Fixture()
@@ -583,33 +581,61 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `Fix A ignores slashless partials in compound fields on JP only`() {
-        // JP, 010-like: 62/416(50), 62 +16(48), 62/416(72), +16(92), with class template matched -> class 62
+    fun `Fix A ignores slashless partials matching a slash read grand tail on JP only`() {
+        // JP, 010: 62/416(50), 62 +16(48), 62/416(72), +16(92), Class62A + Grand16A -> 62/16
         val f010 = Fixture()
         every { f010.ocr.detectTextLine(f010.crop, any()) } returnsMany listOf(
             OcrText("62/416", 50), OcrText("62 +16", 48), OcrText("62/416", 72), OcrText("+16", 92)
         )
         f010.show(Images.SupportCompactClass62A)
-        assertThat(f010.reader.read(f010.bounds, true, false)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        f010.show(Images.SupportGrand16A)
+        assertThat(f010.reader.read(f010.bounds, true, true)).isEqualTo(SupportScores(62, 16))
 
-        // JP, 048-like: 62/+16(75)x2 and +16(92) -> class 62
+        // JP, 048: 62/+16(75), 12/416(0), 62/+16(75), +16(92), Class62B + Grand16B, differentGrandDigit=true on A -> 62/16
         val f048 = Fixture()
         every { f048.ocr.detectTextLine(f048.crop, any()) } returnsMany listOf(
             OcrText("62/+16", 75), OcrText("12/416", 0), OcrText("62/+16", 75), OcrText("+16", 92)
         )
-        f048.show(Images.SupportCompactClass62A)
-        assertThat(f048.reader.read(f048.bounds, true, false)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        f048.show(Images.SupportCompactClass62B)
+        f048.show(Images.SupportGrand16A, correctLastDigit = false)
+        f048.show(Images.SupportGrand16B)
+        assertThat(f048.reader.read(f048.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+
+        // JP, 061: 62/ 416(14), 62 +16(80), 62/ +416(42), +16(96), Class62A + Grand16A -> 62/16
+        val f061 = Fixture()
+        every { f061.ocr.detectTextLine(f061.crop, any()) } returnsMany listOf(
+            OcrText("62/ 416", 14), OcrText("62 +16", 80), OcrText("62/ +416", 42), OcrText("+16", 96)
+        )
+        f061.show(Images.SupportCompactClass62A)
+        f061.show(Images.SupportGrand16A)
+        assertThat(f061.reader.read(f061.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+
+        // Guard: +56x2 and +16x2 with class62 template and no slash read -> Class unknown (templates do not prove slash).
+        val f56And16 = Fixture()
+        every { f56And16.ocr.detectTextLine(f56And16.crop, any()) } returnsMany listOf(
+            OcrText("+56", 90), OcrText("+56", 90), OcrText("+16", 92), OcrText("+16", 92)
+        )
+        f56And16.show(Images.SupportCompactClass62A)
+        assertThat(f56And16.reader.read(f56And16.bounds, true, false).classScore).isNull()
+
+        // Guard: 62/+16(80) plus +56(90) with class62 template -> Class unknown (+56 is not the Grand tail, so it stays as a veto).
+        val fSlashPlus56 = Fixture()
+        every { fSlashPlus56.ocr.detectTextLine(fSlashPlus56.crop, any()) } returnsMany listOf(
+            OcrText("62/+16", 80), OcrText("+56", 90), OcrText("", 0), OcrText("", 0)
+        )
+        fSlashPlus56.show(Images.SupportCompactClass62A)
+        assertThat(fSlashPlus56.reader.read(fSlashPlus56.bounds, true, false).classScore).isNull()
 
         // Guard: +16x4 with no slash anywhere, no template -> class unknown (16 != 62), as today.
         val fNoSlash = Fixture()
         every { fNoSlash.ocr.detectTextLine(fNoSlash.crop, any()) } returns OcrText("+16", 92)
         val noSlashScores = fNoSlash.reader.read(fNoSlash.bounds, true, false)
         assertThat(SupportScoreSelection.matches(noSlashScores, true, false)).isEqualTo(false)
-        // With only the class template matched, the class must not come out as 16 (template proves slash -> +16 ignored -> 62 from template, never 16).
+        // Guard: template-only, +16x4 with no slash read -> Class unknown (template alone no longer drops +16).
         val fOnlyClassTpl = Fixture()
         every { fOnlyClassTpl.ocr.detectTextLine(fOnlyClassTpl.crop, any()) } returns OcrText("+16", 92)
         fOnlyClassTpl.show(Images.SupportCompactClass62A)
-        assertThat(fOnlyClassTpl.reader.read(fOnlyClassTpl.bounds, true, false)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        assertThat(fOnlyClassTpl.reader.read(fOnlyClassTpl.bounds, true, false).classScore).isNull()
 
         // Guard: 58/+16 at high confidence with the 62 template -> class unknown
         val f58 = Fixture()
@@ -649,16 +675,25 @@ class SupportScoreReaderTest {
         f024.show(Images.SupportGrand16A)
         assertThat(f024.reader.read(f024.bounds, true, true)).isEqualTo(SupportScores(62, 16))
 
+        // Mix of 62/16(90)x2 and 62/416(90) with no Grand template -> Grand 16 comes from the two real /16 reads.
+        val fMix416 = Fixture()
+        every { fMix416.ocr.detectTextLine(fMix416.crop, any()) } returnsMany listOf(
+            OcrText("62/16", 90), OcrText("62/16", 90), OcrText("62/416", 90), OcrText("", 0)
+        )
+        assertThat(fMix416.reader.read(fMix416.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+
         // Guard: 62/416x4 with no Grand template -> grand unknown
         val fNoTpl = Fixture()
         every { fNoTpl.ocr.detectTextLine(fNoTpl.crop, any()) } returns OcrText("62/416", 92)
         assertThat(fNoTpl.reader.read(fNoTpl.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
 
-        // Guard: 62/414 -> unknown
-        val f414 = Fixture()
-        every { f414.ocr.detectTextLine(f414.crop, any()) } returns OcrText("62/414", 92)
-        f414.show(Images.SupportGrand16A)
-        assertThat(f414.reader.read(f414.bounds, false, true).grandScore).isNull()
+        // Guard: 62/414, 62/4160, 62/41 -> not neutral, stay invalid/blocked
+        for (badTail in listOf("62/414", "62/4160", "62/41")) {
+            val fBad = Fixture()
+            every { fBad.ocr.detectTextLine(fBad.crop, any()) } returns OcrText(badTail, 92)
+            fBad.show(Images.SupportGrand16A)
+            assertThat(fBad.reader.read(fBad.bounds, false, true).grandScore).isNull()
+        }
 
         // Guard: 62/+416 -> unknown, as today
         val fPlus416 = Fixture()
@@ -681,21 +716,17 @@ class SupportScoreReaderTest {
     }
 
     @Test
-    fun `Fix C handles dimmed rows with dark retry and no-glyph exemption on JP only`() {
+    fun `Fix C2 handles dimmed rows with no-glyph exemption on JP only without dark retry`() {
         val blankInk = ByteArray(60 * 30) { 255.toByte() }
 
-        // (a) Non-null pixels with no glyph, all primary empty, Grand16 verified and Class62 matched -> 62/16.
-        // Dark profiles called, and their inspect did not run.
+        // (a) Non-null pixels with no glyph, Grand16 verified and Class62 matched -> 62/16, primary OCR only (4 calls).
         val fDim = Fixture()
-        every { fDim.prepared.grayPixels() } answers {
-            // If dark inspect ran, we can test or verify resize calls: 4 primary only!
-            blankInk
-        }
+        every { fDim.prepared.grayPixels() } returns blankInk
         every { fDim.ocr.detectTextLine(fDim.crop, any()) } returns OcrText("", 0)
         fDim.show(Images.SupportCompactClass62A)
         fDim.show(Images.SupportGrand16A)
         assertThat(fDim.reader.read(fDim.bounds, true, true)).isEqualTo(SupportScores(62, 16))
-        verify(exactly = 6) { fDim.ocr.detectTextLine(fDim.crop, any()) }
+        verify(exactly = 4) { fDim.ocr.detectTextLine(fDim.crop, any()) }
         verify(exactly = 4) { fDim.crop.resize(any()) }
 
         // (a) Same, but with no Grand template -> grand unknown.
@@ -704,6 +735,37 @@ class SupportScoreReaderTest {
         every { fDimNoGrand.ocr.detectTextLine(fDimNoGrand.crop, any()) } returns OcrText("", 0)
         fDimNoGrand.show(Images.SupportCompactClass62A)
         assertThat(fDimNoGrand.reader.read(fDimNoGrand.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+
+        // C2 guard: no-glyph inks with D-2 grand16=Positive but no Grand16 template -> not exempt, clipped=true, grand unknown.
+        val d2Image = javax.imageio.ImageIO.read(java.io.File(
+            "../docs/reference-images/support-score-d2/scores/d2-1920x1080-01-row-2.png"))
+        val d2Pixels = ByteArray(d2Image.width * d2Image.height) { p ->
+            val rgb = d2Image.getRGB(p % d2Image.width, p / d2Image.width)
+            (((rgb shr 16 and 255) * 299 + (rgb shr 8 and 255) * 587 + (rgb and 255) * 114 + 500) / 1000).toByte()
+        }
+        var recordedJson = ""
+        val diag = object : io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics {
+            override val enabled = true
+            override val runId = "test"
+            override fun record(reader: String, stem: String, images: Map<String, Pattern>, json: String) {
+                recordedJson = json
+            }
+        }
+        val fD2NoGrandTpl = Fixture()
+        val diagReader = SupportScoreReader(fD2NoGrandTpl.api, fD2NoGrandTpl.ocr, diag)
+        every { fD2NoGrandTpl.crop.grayPixels() } returns d2Pixels
+        every { fD2NoGrandTpl.prepared.grayPixels() } returns blankInk
+        every { fD2NoGrandTpl.ocr.detectTextLine(fD2NoGrandTpl.crop, any()) } returns OcrText("", 0)
+        val d2Scores = diagReader.read(fD2NoGrandTpl.bounds, true, true, screen = 0, row = 0)
+        assertThat(d2Scores).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+        kotlin.test.assertTrue(recordedJson.contains("\"grand16\":\"Positive\""))
+        kotlin.test.assertTrue(recordedJson.contains("\"clipped\":true"))
+
+        // C2 guard: no-glyph inks with OCR /+16 tail but no Grand16 template -> not exempt, grand unknown.
+        val fTailNoGrandTpl = Fixture()
+        every { fTailNoGrandTpl.prepared.grayPixels() } returns blankInk
+        every { fTailNoGrandTpl.ocr.detectTextLine(fTailNoGrandTpl.crop, any()) } returns OcrText("S9/+16", 90)
+        assertThat(fTailNoGrandTpl.reader.read(fTailNoGrandTpl.bounds, false, true).grandScore).isNull()
 
         // C2 guard: Grand16 prefix found with a different final digit -> no-glyph exemption does NOT apply (clipped=true, grandScore=null).
         val fDiffGrandDigit = Fixture()
@@ -729,25 +791,6 @@ class SupportScoreReaderTest {
         fEdgeClip.show(Images.SupportCompactClass62A)
         fEdgeClip.show(Images.SupportGrand16A)
         assertThat(fEdgeClip.reader.read(fEdgeClip.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
-
-        // Guard: dark OCR reading 62/+18 at high confidence -> grand unknown.
-        val fDarkConflict = Fixture()
-        every { fDarkConflict.prepared.grayPixels() } returns blankInk
-        every { fDarkConflict.ocr.detectTextLine(fDarkConflict.crop, any()) } answers {
-            if (secondArg<io.github.lib_automata.TextLineOcrOptions>().threshold == SupportScoreReader.OCR_DARK_THRESHOLD)
-                OcrText("62/+18", 92) else OcrText("", 0)
-        }
-        fDarkConflict.show(Images.SupportCompactClass62A)
-        fDarkConflict.show(Images.SupportGrand16A)
-        assertThat(fDarkConflict.reader.read(fDarkConflict.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
-
-        // Guard: when primary OCR has any confident result, the dark profiles are not called on JP.
-        val fPrimaryConfident = Fixture()
-        every { fPrimaryConfident.ocr.detectTextLine(fPrimaryConfident.crop, any()) } returnsMany listOf(
-            OcrText("62/+16", 80), OcrText("", 0), OcrText("", 0), OcrText("", 0)
-        )
-        fPrimaryConfident.reader.read(fPrimaryConfident.bounds, true, true)
-        verify(exactly = 4) { fPrimaryConfident.ocr.detectTextLine(fPrimaryConfident.crop, any()) }
 
         // KR: no glyph still counts as clipped, and the dark retry rule is unchanged.
         val fKrNoGlyph = Fixture()
