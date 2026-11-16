@@ -1,10 +1,9 @@
 package io.github.fate_grand_automata.scripts.weekly
 
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.zip.GZIPInputStream
@@ -125,7 +124,7 @@ class AtlasRouteRepository(
 
     companion object {
         private fun replace(temp: File, target: File) {
-            Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            replaceFile(temp, target)
         }
 
         private fun download(path: String, target: File) {
