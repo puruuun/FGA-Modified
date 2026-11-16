@@ -13,9 +13,9 @@
 4. **기기 검사.** 정규판 전에는 블루스택에서 11개 suite 전체(`support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp,skillLevelPanel,ceEnhance,hakunoShuffle`)를 `py -3 tools/device-qa/run.py --build --serial 127.0.0.1:5555 --suite …`로 실행합니다. 모든 suite가 실패 없이 끝나야 합니다. skip은 `docs/reference-images/README.md`의 목록과 같아야 합니다.
 5. **실제 게임 수동 확인 (소유자).** 범위와 결과를 검증 리포트에 적습니다.
 6. **정규 APK 만들기.** 릴리스 PR을 병합한 `main`에서 `./gradlew :app:assembleCi`로 만듭니다. `aapt2`로 패키지·버전·앱 이름·ABI를, `apksigner`로 서명(v3 오너 키, v2 `fgadebug`, lineage 인증서 2개)을, `zipalign -c -P 16 4`를 확인합니다. 블루스택의 이전 정규판 위에 업데이트로 설치되는지 확인합니다.
-7. **문서 작성.** `docs/releases/<버전>-validation.md`와 `wiki/releases/<버전>-KR.md`를 작성합니다. 게시 직전에 `README.md`(한국어)와 `README.en.md`(영어)를 이번 정규판에 맞춥니다. README는 베타 동안 바꾸지 않고 이 단계에서만 바꿉니다.
-   - 두 파일의 **추가·수정된 기능 표**를 같은 순서로 고칩니다. 근거는 릴리스 노트와 `git diff v<직전 정규판>..HEAD -- wiki/scripts`입니다.
-   - 한국어 정규판 줄과 영문 릴리스 노트 링크를 바꿉니다.
+7. **문서 작성.** `docs/releases/<버전>-validation.md`와 `wiki/releases/<버전>-KR.md`를 작성합니다. 게시 직전에 `README.md`(한국어), `README.en.md`(영어), `README.ja.md`(일본어)를 이번 정규판에 맞춥니다. README는 베타 동안 바꾸지 않고 이 단계에서만 바꿉니다.
+   - 세 파일의 **추가·수정된 기능 표**를 같은 순서로 고칩니다. 근거는 릴리스 노트와 `git diff v<직전 정규판>..HEAD -- wiki/scripts`입니다.
+   - 한국어·일본어 정규판 줄과 영문 릴리스 노트 링크를 바꿉니다.
 8. **GitHub Release 게시.** 정규판(프리릴리스가 아닌) Release를 게시하면 설명서 사이트가 그 태그 기준으로 자동 갱신됩니다(`Publish manual site` 실행 확인). 태그는 `v<버전>`, 첨부 파일은 `FGA-mod-<버전>-arm.apk` 하나입니다(GitHub가 파일마다 SHA-256을 보여 줍니다). 파일 이름 형식은 앱 내 업데이트 확인(`GitHubUpdateChecker`)과 Obtainium 필터(`^FGA-mod-.*-arm\.apk$`)가 요구하므로 바꾸지 않습니다.
 
 ## 서명
