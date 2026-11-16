@@ -206,4 +206,18 @@ class WideScreenLocationsTest {
             assertEquals(Location(transforms.scriptArea.center.x, 100), loc.missionPopupClearClick)
         }
     }
+
+    @Test fun `command spell diamond click uses fixed right-anchored x per layout`() {
+        val expectedX = mapOf(
+            2560 to 2136,
+            2880 to 2456,
+            3120 to 2626,
+            3200 to 2706,
+            3360 to 2866,
+        )
+        for ((width, x) in expectedX) {
+            val loc = MasterLocations(transforms(width), mockk(), mockk(), mockk())
+            assertEquals(Location(x, 150), loc.commandSpellClick)
+        }
+    }
 }
