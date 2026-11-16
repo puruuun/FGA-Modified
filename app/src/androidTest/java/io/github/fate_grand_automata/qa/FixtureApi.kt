@@ -17,6 +17,10 @@ import io.github.fate_grand_automata.util.ImageLoader
 import io.github.lib_automata.*
 import org.json.JSONArray
 import org.json.JSONObject
+import org.opencv.core.Mat
+import org.opencv.core.MatOfByte
+import org.opencv.imgcodecs.Imgcodecs
+import org.opencv.imgproc.Imgproc
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.lang.reflect.Proxy
@@ -102,6 +106,15 @@ internal class FixtureApi(
         ByteArrayInputStream(runner.fixture(file)).use { DroidCvPattern(it, color) }
 
     private fun clearFrame() { gray?.close(); color?.close(); gray = null; color = null; frame = null }
+    private fun decodeFrame(bytes: ByteArray, isColor: Boolean): DroidCvPattern {
+        val encoded = MatOfByte(*bytes)
+        val bgr = try { Imgcodecs.imdecode(encoded, Imgcodecs.IMREAD_COLOR) } finally { encoded.release() }
+        check(!bgr.empty()) { "Frame could not be decoded" }
+        if (isColor) return DroidCvPattern(bgr)
+        val grayMat = Mat()
+        try { Imgproc.cvtColor(bgr, grayMat, Imgproc.COLOR_BGR2GRAY) } finally { bgr.release() }
+        return DroidCvPattern(grayMat)
+    }
     private fun screenshot(): Pattern {
         if (frame == null) {
             frame = if (isCrop) composeCrop() else if (!live) runner.fixture(case.getString("file")) else {
@@ -111,7 +124,8 @@ internal class FixtureApi(
             }
         }
         (if (colors.isColor) color else gray)?.let { return it }
-        val picture = ByteArrayInputStream(frame!!).use { DroidCvPattern(it, colors.isColor) }
+        // Decode like live capture: colour decode ignores sRGB/gAMA chunks, then cvtColor as the product's RGBA2GRAY does.
+        val picture = decodeFrame(frame!!, colors.isColor)
         // Scale to 720 high and keep the aspect ratio, so 1440p coordinates map the same way as in the app.
         val targetWidth = picture.width * 720 / picture.height
         val resized = if (picture.width == targetWidth && picture.height == 720) picture

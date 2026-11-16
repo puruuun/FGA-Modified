@@ -99,7 +99,31 @@ def device_path_for(repo_relative: str) -> str:
     return f"{DEVICE_ROOT}/{repo_relative}"
 
 
-def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> tuple[str, list[str]]:
+def push_local_fixtures(adb_path: str, serial: str, staged: dict, local_dir: Path) -> None:
+    """Push device-only fixture files (absolute device paths in the case file) from a local folder, never committed."""
+    prefix = f"{DEVICE_ROOT}/"
+    paths = []
+    for case in staged.get("cases", []):
+        paths.append(case.get("file", ""))
+        paths.extend(piece.get("file", "") for piece in case.get("pieces", []))
+    for files in staged.get("imports", {}).values():
+        paths.extend(files)
+    pushed = missing = 0
+    for device_path in dict.fromkeys(p for p in paths if p.startswith(prefix)):
+        relative = device_path[len(prefix):]
+        if not SAFE_DEVICE_PATH.match(device_path) or ".." in relative:
+            sys.exit(f"fixture path not allowed on device: {device_path}")
+        source = local_dir / relative
+        if not source.is_file():
+            missing += 1
+            continue
+        adb(adb_path, serial, "shell", "mkdir", "-p", os.path.dirname(device_path))
+        adb(adb_path, serial, "push", str(source), device_path)
+        pushed += 1
+    print(f"local fixtures: pushed {pushed}, missing {missing}")
+
+
+def stage_repo_cases(adb_path: str, serial: str, case_file: Path, local_fixtures: Path | None = None) -> tuple[str, list[str]]:
     """Push a repo-side case file and the images it references; return the rewritten device path and skipped case names.
 
     Cases marked "skip" in the case file are left out of the run and reported as skipped.
@@ -122,9 +146,12 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path) -> tuple[str, 
         if "file" in case and not case["file"].startswith("/"):
             case["file"] = push(case["file"])
         for piece in case.get("pieces", []):
-            piece["file"] = push(piece["file"])
+            if not piece["file"].startswith("/"):
+                piece["file"] = push(piece["file"])
     for key, files in staged.get("imports", {}).items():
         staged["imports"][key] = [push(f) if not f.startswith("/") else f for f in files]
+    if local_fixtures is not None:
+        push_local_fixtures(adb_path, serial, staged, local_fixtures)
     local = Path(f"build/device-qa-staged-{case_file.stem}.json")
     local = REPO / local
     local.parent.mkdir(parents=True, exist_ok=True)
@@ -194,6 +221,7 @@ def main() -> int:
     parser.add_argument("--build", action="store_true", help="build the deviceTest APKs first")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
+    parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
     args = parser.parse_args()
 
     if args.build:
@@ -217,7 +245,7 @@ def main() -> int:
             sys.exit(f"unknown suite: {suite}")
         case_file = REPO / (args.cases or f"docs/reference-images/cases/{suite}.json")
         if case_file.exists():
-            device_case, skipped = stage_repo_cases(adb_path, args.serial, case_file)
+            device_case, skipped = stage_repo_cases(adb_path, args.serial, case_file, args.local_fixtures)
         elif suite in LEGACY_DEVICE_CASES:
             print(f"warning: {case_file.relative_to(REPO)} not found; using legacy device file (0002 stage 1 only)")
             device_case, skipped = LEGACY_DEVICE_CASES[suite], []

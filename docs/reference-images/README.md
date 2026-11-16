@@ -51,3 +51,5 @@ py -3 tools/device-qa/run.py --build --suite support,bond,questItems
 | bond | 0 | |
 
 The support and bond counts above match the last full run (185 passed + 3 skipped, 20 passed).
+
+QA frames are converted to gray like live capture (`IMREAD_COLOR` followed by `cvtColor`), so colour chunks (sRGB, gAMA) in fixture PNGs do not change results.
