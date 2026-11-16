@@ -1466,6 +1466,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_root_non_game_failures">"Non-game host connection failures: %1$d"</string>
     <string name="capture_root_cleanup_retry_warning">"Could not remove root rules. Retrying; if it keeps failing, please reboot."</string>
     <string name="capture_root_auto_retreat_message">"Automatically turned off root capture: %1$s"</string>
+    <string name="capture_root_retreat_reason_tls">"Repeated TLS handshake failures"</string>
+    <string name="capture_root_retreat_reason_upstream">"Repeated game server connection failures"</string>
     <string name="capture_root_adguard_vpn_note">"Set AdGuard to 'Automatic proxy' mode, and exclude both FGO and FGA from AdGuard filtering. Can be used together with personal VPNs such as WireGuard."</string>
     <string name="card_swap_shared_header">All waves and turns</string>
     <string name="card_swap_detection">Detect Aoko card change</string>

@@ -81,6 +81,9 @@ class ProxyServer(
     var isIpv6Listening: Boolean = false
         private set
 
+    /** True while the accept loop is running (listener not closed by [stopAccepting] or [stop]). */
+    val isAccepting: Boolean get() = running
+
     internal var handleHookForTesting: ((Socket) -> Unit)? = null
     internal var upstreamSslFactoryForTesting: SSLSocketFactory? = null
     internal var upstreamHostnameVerifierForTesting: HostnameVerifier? = null

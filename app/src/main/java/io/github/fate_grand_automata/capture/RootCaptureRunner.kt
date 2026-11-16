@@ -22,6 +22,7 @@ internal class RootCaptureRunner(
     private val cleanupRetryDelayMs: Long = 10_000L,
     private val periodicCheckIntervalMs: Long = 60_000L,
     private val shellTimeoutMs: Long = 10_000L,
+    private val drainSliceMs: Long = 200L,
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "fga-root-capture").apply { isDaemon = true }
     },
@@ -32,10 +33,28 @@ internal class RootCaptureRunner(
     )
 
     interface ProxyController {
-        fun startListening(preferredPort: Int): ListenerInfo?
+        /**
+         * Starts listening on [preferredPort]. With [keepPrevious] (port change) the current listener stays open
+         * and usable until [closePreviousListener]; a failed listen must leave it untouched (G3).
+         */
+        fun startListening(preferredPort: Int, keepPrevious: Boolean = false): ListenerInfo?
         fun isLastListenErrorPortConflict(): Boolean = true
+
+        /** False when the current listener is already closed or dead. */
+        fun isListenerUsable(): Boolean = true
+
+        /** Drops the certificate contexts so open connections finish their current request and close (G2). */
+        fun clearContexts() {}
         fun stopAccepting()
         fun awaitOpenConnections(timeoutMs: Long): Boolean
+
+        /** Closes the new listener of a superseded port change and makes the previous one current again. */
+        fun abandonNewListener() {}
+        fun stopAcceptingPrevious() {}
+        fun awaitPreviousConnections(timeoutMs: Long): Boolean = true
+        fun closePreviousListener() {}
+
+        /** Closes the current listener and any previous one. */
         fun closeProxy()
     }
 
@@ -52,6 +71,12 @@ internal class RootCaptureRunner(
             cleanupRetrying: Boolean = false,
         )
         fun onCleanupSucceeded()
+
+        /** Rules are confirmed gone: reading is off now, the listener only drains open connections (G2). */
+        fun onRulesRemoved() {}
+
+        /** A port change could not listen on the new port; reading continues on the old port (G3). */
+        fun onPortChangeFailed(port: Int, portConflict: Boolean) {}
         fun onCleanupRetryScheduled(message: String)
         fun onPortError(port: Int)
     }
@@ -217,9 +242,8 @@ internal class RootCaptureRunner(
         }
 
         if (isPortChange && activePort != null) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
-            activePort = null
+            runPortChange(preferredPort, expectedGen, targetUids, fgaUid)
+            return
         }
 
         // Order (B6): listen -> pre-check -> apply -> watchdog start
@@ -316,6 +340,104 @@ internal class RootCaptureRunner(
         schedulePeriodicCheckOnExecutor(expectedGen)
     }
 
+    /**
+     * G3: listen on the new port first; only then re-apply rules, restart the watchdog and retire the old listener.
+     * Rules never point at a port without a listener.
+     */
+    private fun runPortChange(newPort: Int, expectedGen: Long, targetUids: List<Int>, fgaUid: Int) {
+        if (newPort == activePort) return
+        val listener = proxyController.startListening(newPort, keepPrevious = true)
+        if (listener == null) {
+            if (!shouldProceed(expectedGen)) return
+            val conflict = proxyController.isLastListenErrorPortConflict()
+            if (proxyController.isListenerUsable()) {
+                // Old listener and rules stay as they are; reading continues on the old port.
+                callbacks.onPortChangeFailed(newPort, conflict)
+            } else {
+                cleanupAfterUnusableListener(newPort, conflict)
+            }
+            return
+        }
+        if (!shouldProceed(expectedGen)) {
+            proxyController.abandonNewListener()
+            return
+        }
+
+        val useIpv6 = activeIpv6 && listener.ipv6Listening
+        // Kill the old watchdog while the old listener is still open, so it cannot clean up the new rules.
+        runShell(RootRedirectScripts.killWatchdog())
+        flag.markMaybeActive()
+        val applyRes = runShell(RootRedirectScripts.apply(targetUids, listener.port, useIpv6))
+        if (!isApplyOk(applyRes)) {
+            val step = parseFailStep(applyRes.lines)
+            rollbackFailedApply(if (step != null) "루트 규칙 설정 실패 (단계 $step)" else "루트 규칙 설정 실패")
+            return
+        }
+        if (!shouldProceed(expectedGen)) {
+            runStopReadingOnExecutor(generation.get(), drainTimeoutMs)
+            return
+        }
+        val watchdogRes = runShell(RootRedirectScripts.startWatchdog(listener.port, fgaUid, useIpv6))
+        if (!isWatchdogOk(watchdogRes)) {
+            val errMsg = if (watchdogRes.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE }) {
+                "루트 감시 프로그램 소켓 확인 실패 (${RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE})"
+            } else {
+                "루트 감시 프로그램 시작 실패"
+            }
+            rollbackFailedApply(errMsg)
+            return
+        }
+
+        activePort = listener.port
+        activeIpv6 = useIpv6
+        activeUids = targetUids
+        callbacks.onApplied(
+            port = listener.port,
+            ipv4RuleCount = targetUids.size,
+            ipv6RuleCount = if (useIpv6) targetUids.size else 0,
+            ipv6Unsupported = !useIpv6,
+        )
+        schedulePeriodicCheckOnExecutor(expectedGen)
+
+        // Retire the old listener only now: rules and watchdog already use the new port.
+        proxyController.stopAcceptingPrevious()
+        drain(drainTimeoutMs, expectedGen) { proxyController.awaitPreviousConnections(it) }
+        proxyController.closePreviousListener()
+    }
+
+    /** The old listener died and the new one could not start: remove the rules at once (rollback path). */
+    private fun cleanupAfterUnusableListener(port: Int, portConflict: Boolean) {
+        readingWanted.set(false)
+        cancelPeriodicCheckOnExecutor()
+        val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
+        if (isCleanupOk(res)) {
+            flag.clear()
+            proxyController.closeProxy()
+            activePort = null
+            activeIpv6 = false
+            activeUids = emptyList()
+            if (portConflict) {
+                callbacks.onPortError(port)
+            } else {
+                callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = false)
+            }
+        } else {
+            scheduleCleanupRetryOnExecutor(generation.get(), drainTimeoutMs)
+            callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = true)
+        }
+    }
+
+    /** Waits for open connections in short slices; a newer request (generation change) cuts the drain short. */
+    private fun drain(totalMs: Long, expectedGen: Long, await: (Long) -> Boolean) {
+        if (totalMs <= 0L) return
+        val deadline = System.currentTimeMillis() + totalMs
+        while (generation.get() == expectedGen) {
+            val remaining = deadline - System.currentTimeMillis()
+            if (remaining <= 0L) break
+            if (await(minOf(drainSliceMs, remaining))) break
+        }
+    }
+
     private fun rollbackFailedApply(errorMessage: String) {
         readingWanted.set(false)
         cancelPeriodicCheckOnExecutor()
@@ -354,13 +476,17 @@ internal class RootCaptureRunner(
             return
         }
 
+        // G2: rules are gone, so reading is off at once (tracker, status, notification), and open connections
+        // finish their current request and close instead of being intercepted again.
+        proxyController.clearContexts()
+        callbacks.onRulesRemoved()
+
         // B4 step (2): stop accepting new connections
         proxyController.stopAccepting()
 
-        // B4 step (3): let open connections finish up to drainMs, then close proxy and kill watchdog
-        if (drainMs > 0L) {
-            proxyController.awaitOpenConnections(drainMs)
-        }
+        // B4 step (3): let open connections finish up to drainMs (a newer request cuts it short),
+        // then close proxy and kill watchdog
+        drain(drainMs, expectedGen) { proxyController.awaitOpenConnections(it) }
         proxyController.closeProxy()
         runShell(RootRedirectScripts.killWatchdog())
 

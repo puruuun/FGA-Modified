@@ -71,6 +71,7 @@ import io.github.fate_grand_automata.capture.CaptureProxySnapshot
 import io.github.fate_grand_automata.capture.CaptureProxyState
 import io.github.fate_grand_automata.capture.CaptureProxyStatus
 import io.github.fate_grand_automata.capture.CaptureStopReason
+import io.github.fate_grand_automata.capture.rootShutdownSettled
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CaptureFileSaver
 import io.github.fate_grand_automata.capture.CertificateSaveGuard
@@ -382,7 +383,9 @@ class GainsTrackerViewModel @Inject constructor(
                 while ((CaptureController.isProxyAlive() ||
                     CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
                     CaptureProxyStatus.state.value.rootRulesActive) &&
-                    !CaptureProxyStatus.state.value.rootCleanupRetrying
+                    !CaptureProxyStatus.state.value.rootCleanupRetrying &&
+                    // G2: rules gone and reading off is enough; the listener may keep draining in the background.
+                    !rootShutdownSettled(CaptureProxyStatus.state.value)
                 ) {
                     delay(50)
                 }

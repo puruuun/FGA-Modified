@@ -25,9 +25,42 @@ data class CaptureProxySnapshot(
     val unexpectedConnectionCount: Int = 0,
     val nonGameUpstreamFailureCount: Int = 0,
     val rootCleanupRetrying: Boolean = false,
+    /** Root rules are gone and reading is off, but the old listener is still draining open connections. */
+    val rootDraining: Boolean = false,
     val rootLastError: String? = null,
     val lastRefreshAtMs: Long? = null,
 )
+
+/**
+ * Snapshot that stays visible after the proxy service stops (G1).
+ *
+ * In root mode the service stops itself right after reading is turned off, a root rule apply failed,
+ * a port was in use or the auto-retreat fired. The status card must still tell the user what happened,
+ * so the last error, the port error and the connection counters survive; only the live state
+ * (rules, watchdog, reading, drain, listener) is cleared. External proxy mode keeps the plain reset.
+ */
+internal fun postDestroySnapshot(current: CaptureProxySnapshot, ranAsRoot: Boolean): CaptureProxySnapshot {
+    if (!ranAsRoot) return CaptureProxySnapshot()
+    return current.copy(
+        state = if (current.state is CaptureProxyState.PortError) current.state else CaptureProxyState.Idle,
+        reading = false,
+        rootRulesActive = false,
+        rootIpv4RuleCount = 0,
+        rootIpv6RuleCount = 0,
+        rootIpv6Unsupported = false,
+        rootWatchdogActive = false,
+        gameConnectionsSinceApply = 0,
+        rootCleanupRetrying = false,
+        rootDraining = false,
+    )
+}
+
+/**
+ * True when a mode switch can proceed: rules are confirmed gone and reading is off while the old
+ * listener only drains in the background (G2).
+ */
+internal fun rootShutdownSettled(snap: CaptureProxySnapshot): Boolean =
+    snap.rootDraining && !snap.rootRulesActive && !snap.reading && !snap.rootCleanupRetrying
 
 /** Single source of truth for [CaptureProxyService] runtime state and connection counters. */
 object CaptureProxyStatus {
@@ -36,6 +69,23 @@ object CaptureProxyStatus {
 
     fun reset() {
         _state.value = CaptureProxySnapshot()
+    }
+
+    fun onServiceDestroyed(ranAsRoot: Boolean) {
+        _state.update { postDestroySnapshot(it, ranAsRoot) }
+    }
+
+    /** Rules are gone and reading is off; the listener drains in the background (G2). */
+    fun setRootRulesRemoved() {
+        _state.update {
+            it.copy(
+                reading = false,
+                rootRulesActive = false,
+                rootWatchdogActive = false,
+                rootDraining = true,
+                rootCleanupRetrying = false,
+            )
+        }
     }
 
     fun setListening(port: Int, reading: Boolean) {
@@ -90,6 +140,7 @@ object CaptureProxyStatus {
                 rootWatchdogActive = watchdogActive,
                 gameConnectionsSinceApply = if (resetGameConnections) 0 else it.gameConnectionsSinceApply,
                 rootCleanupRetrying = false,
+                rootDraining = false,
                 rootLastError = null,
                 lastRefreshAtMs = System.currentTimeMillis(),
             )
@@ -108,6 +159,7 @@ object CaptureProxyStatus {
                 rootWatchdogActive = false,
                 gameConnectionsSinceApply = 0,
                 rootCleanupRetrying = false,
+                rootDraining = false,
                 rootLastError = if (preserveError) it.rootLastError else null,
             )
         }

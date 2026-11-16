@@ -50,9 +50,23 @@ class CaptureProxyService : Service() {
     private val jpScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Written on the root serial executor and read on the main thread (and the other way round): volatile.
+    @Volatile
     private var proxy: ProxyServer? = null
+
+    @Volatile
     private var boundPort: Int? = null
-    private var ownsSaveGuard = false
+
+    // Root port change keeps the old listener until the new rules and watchdog are in place (G3).
+    @Volatile
+    private var previousProxy: ProxyServer? = null
+
+    @Volatile
+    private var previousBoundPort: Int? = null
+
+    // In root mode the guard is taken and released only on the root serial executor, so an async release
+    // from an old listener cannot release the guard of the new one (G5). AdGuard mode stays on the main thread.
+    private val ownsSaveGuard = AtomicBoolean(false)
     private var readingActive = false
     private var shuttingDown = false
     private var rootShuttingDown = false
@@ -92,7 +106,10 @@ class CaptureProxyService : Service() {
         ensureCleanupRanThisStart = false
         CaptureController.init(applicationContext)
         CaptureTracker.init(applicationContext)
-        CaptureProxyStatus.reset()
+        // G1: in root mode the status left by the previous run (error, port error, counters) stays visible.
+        if (prefs.captureConnectionMode.get() != CaptureConnectionMode.Root) {
+            CaptureProxyStatus.reset()
+        }
         rootFlag = RootRulesActiveFlag.from(applicationContext)
         rootRunner = createRootRunner()
         connectivityManager = getSystemService(ConnectivityManager::class.java)
@@ -117,7 +134,9 @@ class CaptureProxyService : Service() {
             return handleRootStartCommand(action, intent)
         }
 
-        if (rootShuttingDown || CaptureProxyStatus.state.value.rootCleanupRetrying) {
+        if (rootShuttingDown || CaptureProxyStatus.state.value.rootCleanupRetrying ||
+            CaptureProxyStatus.state.value.rootDraining
+        ) {
             updateNotification()
             return START_NOT_STICKY
         }
@@ -313,6 +332,8 @@ class CaptureProxyService : Service() {
     }
 
     override fun onDestroy() {
+        val ranAsRoot = (activeServiceMode ?: prefs.captureConnectionMode.get()) == CaptureConnectionMode.Root ||
+            rootShuttingDown
         shuttingDown = true
         unregisterNetworkCallback()
         serviceScope.cancel()
@@ -321,7 +342,8 @@ class CaptureProxyService : Service() {
         rootRunner.onDestroyCleanup(maxWaitMs = 2_000L)
         turnReadingOff(CaptureStopReason.User)
         stopCurrentProxy()
-        CaptureProxyStatus.reset()
+        // G1: root mode keeps the last error, port error and counters after the service stops.
+        CaptureProxyStatus.onServiceDestroyed(ranAsRoot)
         try {
             super.onDestroy()
         } finally {
@@ -357,11 +379,18 @@ class CaptureProxyService : Service() {
         fgaUidProvider = { Process.myUid() },
         targetUidsProvider = { resolveRootTargetUids(applicationContext, prefs) },
         proxyController = object : RootCaptureRunner.ProxyController {
-            override fun startListening(preferredPort: Int): RootCaptureRunner.ListenerInfo? =
-                startRootProxyListener(preferredPort)
+            override fun startListening(preferredPort: Int, keepPrevious: Boolean): RootCaptureRunner.ListenerInfo? =
+                startRootProxyListener(preferredPort, keepPrevious)
 
             override fun isLastListenErrorPortConflict(): Boolean =
                 lastRootListenPortConflict
+
+            override fun isListenerUsable(): Boolean = proxy?.isAccepting == true
+
+            override fun clearContexts() {
+                runCatching { proxy?.setContexts(emptyMap()) }
+                runCatching { previousProxy?.setContexts(emptyMap()) }
+            }
 
             override fun stopAccepting() {
                 runCatching { proxy?.stopAccepting() }
@@ -370,11 +399,33 @@ class CaptureProxyService : Service() {
             override fun awaitOpenConnections(timeoutMs: Long): Boolean =
                 proxy?.awaitOpenConnections(timeoutMs) ?: true
 
+            override fun abandonNewListener() {
+                val abandoned = proxy
+                proxy = previousProxy
+                boundPort = previousBoundPort
+                previousProxy = null
+                previousBoundPort = null
+                runCatching { abandoned?.stop() }
+            }
+
+            override fun stopAcceptingPrevious() {
+                runCatching { previousProxy?.stopAccepting() }
+            }
+
+            override fun awaitPreviousConnections(timeoutMs: Long): Boolean =
+                previousProxy?.awaitOpenConnections(timeoutMs) ?: true
+
+            override fun closePreviousListener() {
+                val old = previousProxy
+                previousProxy = null
+                previousBoundPort = null
+                runCatching { old?.stop() }
+            }
+
             override fun closeProxy() {
-                mainHandler.post {
-                    unregisterNetworkCallback()
-                    releaseSaveGuard()
-                }
+                mainHandler.post { unregisterNetworkCallback() }
+                // Called on the root serial executor, the same thread that took the guard.
+                releaseSaveGuard()
                 stopCurrentProxy()
             }
         },
@@ -430,7 +481,6 @@ class CaptureProxyService : Service() {
                             getString(R.string.capture_root_cleanup_retry_warning),
                         )
                     } else {
-                        releaseSaveGuard()
                         CaptureProxyStatus.setRootCleanedUp(preserveError = false)
                         CaptureProxyStatus.setRootError(localizedError)
                     }
@@ -449,13 +499,38 @@ class CaptureProxyService : Service() {
                 }
             }
 
+            override fun onRulesRemoved() {
+                mainHandler.post {
+                    // G2: reading is off as soon as the rules are gone; the listener only drains.
+                    readingActive = false
+                    unregisterNetworkCallback()
+                    if (CaptureTracker.running.value || CaptureTracker.starting) {
+                        CaptureTracker.setRunning(false, pendingRootStopReason)
+                    }
+                    CaptureProxyStatus.setRootRulesRemoved()
+                    updateNotification()
+                }
+            }
+
+            override fun onPortChangeFailed(port: Int, portConflict: Boolean) {
+                mainHandler.post {
+                    val message = if (portConflict) {
+                        getString(R.string.capture_proxy_port_in_use, port)
+                    } else {
+                        getString(R.string.capture_start_failed)
+                    }
+                    CaptureProxyStatus.setRootError(message)
+                    Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+                    updateNotification()
+                }
+            }
+
             override fun onCleanupSucceeded() {
                 mainHandler.post {
                     val wasRootShuttingDown = rootShuttingDown
                     rootShuttingDown = false
                     readingActive = false
                     unregisterNetworkCallback()
-                    releaseSaveGuard()
                     if (CaptureTracker.running.value || CaptureTracker.starting) {
                         CaptureTracker.setRunning(false, pendingRootStopReason)
                     }
@@ -468,9 +543,10 @@ class CaptureProxyService : Service() {
                         updateNotification()
                         return@post
                     }
-                    if (wasRootShuttingDown || shuttingDown || activeServiceMode != CaptureConnectionMode.Root) {
+                    if (activeServiceMode != CaptureConnectionMode.Root) {
                         CaptureProxyStatus.reset()
                     } else {
+                        // G1: keep the last error and counters for the status card.
                         CaptureProxyStatus.setRootCleanedUp(preserveError = true)
                     }
                     updateNotification()
@@ -499,7 +575,6 @@ class CaptureProxyService : Service() {
                 mainHandler.post {
                     readingActive = false
                     unregisterNetworkCallback()
-                    releaseSaveGuard()
                     CaptureTracker.starting = false
                     CaptureProxyStatus.setPortError(port)
                     showPortErrorToast(port)
@@ -513,15 +588,17 @@ class CaptureProxyService : Service() {
         executor = ROOT_SERIAL_EXECUTOR,
     )
 
-    private fun startRootProxyListener(preferredPort: Int): RootCaptureRunner.ListenerInfo? {
+    private fun startRootProxyListener(preferredPort: Int, keepPrevious: Boolean): RootCaptureRunner.ListenerInfo? {
         lastRootListenPortConflict = false
+        var acquiredHere = false
         return try {
-            if (!ownsSaveGuard) {
+            if (!ownsSaveGuard.get()) {
                 if (!CertificateSaveGuard.beginVpn()) {
                     Timber.w("Capture: certificate save in progress; cannot start root proxy")
                     return null
                 }
-                ownsSaveGuard = true
+                ownsSaveGuard.set(true)
+                acquiredHere = true
             }
             val jpEnabled = prefs.captureJpRoot.get()
             val contexts = captureServerContexts(
@@ -530,7 +607,7 @@ class CaptureProxyService : Service() {
                 jpEnabled,
             )
             if (contexts.isEmpty()) {
-                releaseSaveGuard()
+                if (acquiredHere) releaseSaveGuard()
                 return null
             }
             val created = ProxyServer(
@@ -567,16 +644,25 @@ class CaptureProxyService : Service() {
                 throw t
             }
             val oldProxy = proxy
-            proxy = created
-            boundPort = actualPort
-            runCatching { oldProxy?.stop() }
+            if (keepPrevious && oldProxy != null) {
+                // G3: the old listener keeps serving until the runner has moved rules and watchdog to the new port.
+                runCatching { previousProxy?.stop() }
+                previousProxy = oldProxy
+                previousBoundPort = boundPort
+                proxy = created
+                boundPort = actualPort
+            } else {
+                proxy = created
+                boundPort = actualPort
+                runCatching { oldProxy?.stop() }
+            }
             RootCaptureRunner.ListenerInfo(
                 port = actualPort,
                 ipv6Listening = created.isIpv6Listening,
             )
         } catch (t: Throwable) {
             Timber.w(t, "Capture: failed to start root transparent proxy on port %d", preferredPort)
-            releaseSaveGuard()
+            if (acquiredHere) releaseSaveGuard()
             null
         }
     }
@@ -593,7 +679,7 @@ class CaptureProxyService : Service() {
 
     private fun triggerRootAutoRetreat(reason: RootAutoRetreat.Reason) {
         if (!retreatTriggered.compareAndSet(false, true)) return
-        val message = getString(R.string.capture_root_auto_retreat_message, reason.koreanSummary)
+        val message = getString(R.string.capture_root_auto_retreat_message, getString(reason.messageRes))
         mainHandler.post {
             pendingRootStopReason = CaptureStopReason.Error
             CaptureProxyStatus.setRootError(message)
@@ -738,7 +824,7 @@ class CaptureProxyService : Service() {
 
         try {
             check(CertificateSaveGuard.beginVpn()) { "Certificate save in progress" }
-            ownsSaveGuard = true
+            ownsSaveGuard.set(true)
             val jpEnabled = prefs.captureJpRoot.get()
             val contexts = captureServerContexts(
                 if (CertStore.exists(this)) CertStore.serverContext(this) else null,
@@ -780,16 +866,18 @@ class CaptureProxyService : Service() {
     }
 
     private fun releaseSaveGuard() {
-        if (ownsSaveGuard) {
-            ownsSaveGuard = false
+        if (ownsSaveGuard.compareAndSet(true, false)) {
             CertificateSaveGuard.endVpn()
         }
     }
 
     private fun stopCurrentProxy() {
         runCatching { proxy?.stop() }
+        runCatching { previousProxy?.stop() }
         proxy = null
         boundPort = null
+        previousProxy = null
+        previousBoundPort = null
     }
 
     private fun shutdownAndStopSelf(reason: CaptureStopReason) {

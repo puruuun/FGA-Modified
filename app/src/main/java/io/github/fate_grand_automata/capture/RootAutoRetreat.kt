@@ -1,5 +1,8 @@
 package io.github.fate_grand_automata.capture
 
+import androidx.annotation.StringRes
+import io.github.fate_grand_automata.R
+
 /**
  * Pure helper for B5 automatic retreat in Root capture mode.
  *
@@ -13,9 +16,9 @@ package io.github.fate_grand_automata.capture
 internal class RootAutoRetreat(
     private val nowMs: () -> Long = System::currentTimeMillis,
 ) {
-    enum class Reason(val koreanSummary: String) {
-        TlsHandshakeFailures("연속 TLS 핸드셰이크 실패"),
-        UpstreamFailures("연속 게임 서버 연결 실패"),
+    enum class Reason(@StringRes val messageRes: Int) {
+        TlsHandshakeFailures(R.string.capture_root_retreat_reason_tls),
+        UpstreamFailures(R.string.capture_root_retreat_reason_upstream),
     }
 
     private val handshakeFailureTimesMs = ArrayDeque<Long>()
