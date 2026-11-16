@@ -1,0 +1,330 @@
+{
+  "schema": 1,
+  "normalization": "MuMu JP captures, full screen with no window chrome; OpenCV INTER_AREA to height 720, aspect kept. Score crop 60x30 at the product number region (x from the wide support offset, y = row + 155). Regression samples; never templates or calibration inputs.",
+  "frames": [
+    {
+      "id": "00",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "3284a43b35f100226d6cf1aaf79de81cfa2d247eb3a50ee66cecb37281de7b72",
+      "rows": [
+        {
+          "y": 298,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 498,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "01",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "541e63f8f236cbb76ac3c7c379e8b26afb102a0e84e3de69c35c7cbec2c5a404",
+      "rows": [
+        {
+          "y": 284,
+          "class": 18,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 484,
+          "class": 8,
+          "grand": 12,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "77d0981c2f0053343746dae73ab0eb92289216987bcbc021ee2e435dd90c2486",
+      "rows": [
+        {
+          "y": 303,
+          "class": 10,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 503,
+          "class": 14,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "3c0ea8dc9577b99c681a58a6997808565ec4888eaefbdc2b8a9b0f878d82e411",
+      "rows": [
+        {
+          "y": 278,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        },
+        {
+          "y": 478,
+          "class": 58,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "a8c57eaebd0737c6206eab06c4689a655cf949d669bbd2507dcc397e86bd64d1",
+      "rows": [
+        {
+          "y": 261,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 461,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "05",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "bdf326b4dfd32509148cd2ea4129e84dc04e456fef0b64edea834d0d9e326026",
+      "rows": [
+        {
+          "y": 260,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 460,
+          "class": 57,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "06",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "39eae97fcbc15ca5e6423417fb1071d10aa4d7423e4855f2db6ec2e4941d3ac1",
+      "rows": [
+        {
+          "y": 274,
+          "class": 47,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 474,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "07",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "c6d2b1395da857bc19a2673dec202532ade5fde86bf03db47203ed79c64fdbdc",
+      "rows": [
+        {
+          "y": 298,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 498,
+          "class": 61,
+          "grand": null,
+          "display": "Ordinary"
+        }
+      ]
+    },
+    {
+      "id": "08",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "9009618c52f9c7958cadb23a1dd9a7942a7016e2906f0721c370565106c22e1e",
+      "rows": [
+        {
+          "y": 281,
+          "class": 1,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 481,
+          "class": 25,
+          "grand": 0,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "09",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "c680dd879713bdf40bc7f39e31239a4644053332d2393e0d6ea809d08c1ab617",
+      "rows": [
+        {
+          "y": 299,
+          "class": 29,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 499,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "80651ac0a8be580eeee26144c1367d004abf0522ea31db37ed8b8a5a75f0f6b7",
+      "rows": [
+        {
+          "y": 271,
+          "class": 0,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 471,
+          "class": 62,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "sourceSize": [
+        2400,
+        1080
+      ],
+      "normalizedSize": [
+        1600,
+        720
+      ],
+      "scoreX720": 1199,
+      "sourceSha256": "20d0887442e5b11563fbead0689a463aeeb412b1f8f2f7ecfdee023251929bc0",
+      "rows": [
+        {
+          "y": 288,
+          "class": 58,
+          "grand": 16,
+          "display": "Compound"
+        },
+        {
+          "y": 488,
+          "class": 43,
+          "grand": 16,
+          "display": "Compound"
+        }
+      ]
+    }
+  ]
+}

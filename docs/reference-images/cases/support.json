@@ -5265,6 +5265,558 @@
       ]
     },
     {
+      "name": "live-20261117-00-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-00-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-00-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-00-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-01-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-01-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-01-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-01-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-02-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-02-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-02-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-02-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-03-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-03-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-03-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-03-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-04-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-04-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-04-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-04-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-05-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-05-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-05-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-05-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-06-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-06-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-06-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-06-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-07-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-07-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-07-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-07-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-08-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-08-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-08-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-08-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": false,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-09-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-09-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-09-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-09-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-10-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-10-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-10-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-10-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": true,
+            "grandOnly": true,
+            "bothScores": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-11-row-1",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-11-row-1.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "live-20261117-11-row-2",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-scores-live/scores/live-20261117-11-row-2.png",
+      "region720": [
+        1018,
+        355,
+        60,
+        30
+      ],
+      "rows": [
+        {
+          "rowY720": 200,
+          "readScore": true,
+          "policy": {
+            "classOnly": false,
+            "grandOnly": true,
+            "bothScores": false
+          }
+        }
+      ]
+    },
+    {
       "name": "0023-Jp-wide-2560-grand-lancer-CE-selection",
       "server": "Jp",
       "view": "CESelection",
