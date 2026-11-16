@@ -2,7 +2,7 @@ name: Main CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/capture-tracker]
     # Same list as pr-build.yml. .github/workflows/** is deliberately not ignored so
     # commits that change a workflow are still checked.
     paths-ignore:
