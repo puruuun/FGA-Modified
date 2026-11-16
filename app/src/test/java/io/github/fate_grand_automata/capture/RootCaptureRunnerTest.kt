@@ -45,40 +45,27 @@ class RootCaptureRunnerTest {
         var onStartListeningHook: (() -> Unit)? = null,
         val events: MutableList<String> = CopyOnWriteArrayList(),
         val failingPorts: MutableSet<Int> = mutableSetOf(),
-        var listenerUsable: Boolean = true,
+        var alive: Boolean = true,
         /** When set, awaitOpenConnections blocks for the whole slice and reports connections still open. */
         var slowAwait: Boolean = false,
     ) : RootCaptureRunner.ProxyController {
         var listeningPort: Int? = null
         var accepting: Boolean = false
-        var previousPort: Int? = null
 
-        override fun startListening(preferredPort: Int, keepPrevious: Boolean): RootCaptureRunner.ListenerInfo? {
+        override fun startListening(preferredPort: Int): RootCaptureRunner.ListenerInfo? {
             events += "listen:$preferredPort"
             onStartListeningHook?.invoke()
             if (preferredPort in failingPorts) return null
             val info = listenResult?.copy(port = preferredPort) ?: return null
-            if (keepPrevious) previousPort = listeningPort
             listeningPort = info.port
             accepting = true
             return info
         }
 
-        override fun isListenerUsable(): Boolean = listenerUsable
+        override fun isListenerAlive(): Boolean = alive
 
         override fun clearContexts() {
             events += "clearContexts"
-        }
-
-        override fun abandonNewListener() {
-            events += "abandonNewListener"
-            listeningPort = previousPort
-            previousPort = null
-        }
-
-        override fun closePreviousListener() {
-            events += "closePrevious"
-            previousPort = null
         }
 
         override fun isLastListenErrorPortConflict(): Boolean = portConflict
@@ -100,7 +87,6 @@ class RootCaptureRunnerTest {
         override fun closeProxy() {
             events += "closeProxy"
             listeningPort = null
-            previousPort = null
             accepting = false
         }
     }
@@ -117,15 +103,10 @@ class RootCaptureRunnerTest {
         var lastApplyFailedRetrying: Boolean = false
         var cleanupRetryMessage: String? = null
         var portError: Int? = null
-        var portChangeFailed: Int? = null
+        val cleanupGenerations = CopyOnWriteArrayList<Long>()
 
         override fun onRulesRemoved() {
             events += "onRulesRemoved"
-        }
-
-        override fun onPortChangeFailed(port: Int, portConflict: Boolean) {
-            events += "onPortChangeFailed:$port"
-            this.portChangeFailed = port
         }
 
         override fun onApplied(port: Int, ipv4RuleCount: Int, ipv6RuleCount: Int, ipv6Unsupported: Boolean) {
@@ -147,8 +128,9 @@ class RootCaptureRunnerTest {
             this.lastApplyFailedRetrying = cleanupRetrying
         }
 
-        override fun onCleanupSucceeded() {
+        override fun onCleanupSucceeded(generation: Long) {
             events += "onCleanupSucceeded"
+            cleanupGenerations += generation
             this.appliedPort = null
         }
 
@@ -234,7 +216,7 @@ class RootCaptureRunnerTest {
                 stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
                 stdin.contains("-A FGA_CAP") -> {
-                    assertFalse(stdin.contains("ip6tables"))
+                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
                 }
                 stdin.contains("setsid nohup sh") -> {
@@ -642,7 +624,7 @@ class RootCaptureRunnerTest {
     )
 
     @Test
-    fun portChangeListensOnNewPortFirstThenAppliesWatchdogThenClosesOldListener() {
+    fun portChangeIsTheNormalStopSequenceFollowedByTheNormalStartOnTheNewPort() {
         val events = CopyOnWriteArrayList<String>()
         val proxy = FakeProxyController(events = events)
         val callbacks = RecordingCallbacks(events = events)
@@ -656,46 +638,46 @@ class RootCaptureRunnerTest {
         drainExecutor()
 
         val order = events.filter {
-            it in setOf("listen:9001", "shell:killWatchdog", "apply:9001", "watchdog:9001", "closePrevious")
+            it in setOf(
+                "shell:cleanup", "stopAccepting", "closeProxy", "shell:killWatchdog",
+                "listen:9001", "apply:9001", "watchdog:9001",
+            )
         }
         assertEquals(
-            listOf("listen:9001", "shell:killWatchdog", "apply:9001", "watchdog:9001", "closePrevious"),
+            listOf(
+                "shell:cleanup", "stopAccepting", "closeProxy", "shell:killWatchdog",
+                "listen:9001", "apply:9001", "watchdog:9001",
+            ),
             order,
         )
-        assertFalse(events.contains("closeProxy"))
+        // The port change is not a stop: nothing reports the rules or the service as finished.
+        assertFalse(events.contains("onCleanupSucceeded"))
+        assertFalse(events.contains("onRulesRemoved"))
         assertEquals(9001, callbacks.appliedPort)
         assertEquals(9001, proxy.listeningPort)
+        assertTrue(runner.isReadingWanted())
+        assertTrue(flag.isSet())
     }
 
     @Test
-    fun portChangeListenFailureKeepsOldListenerAndRulesAndReportsPortError() {
+    fun portChangeToTheSamePortDoesNothing() {
         val events = CopyOnWriteArrayList<String>()
         val proxy = FakeProxyController(events = events)
         val callbacks = RecordingCallbacks(events = events)
-        val cleanupCalls = CopyOnWriteArrayList<String>()
-        val runner = portChangeRunner(events, proxy, callbacks, portChangeShell(events, cleanupCalls))
+        val runner = portChangeRunner(events, proxy, callbacks, portChangeShell(events))
 
         runner.requestStartReading(8899)
         drainExecutor()
         events.clear()
-        proxy.failingPorts += 9001
 
-        runner.requestPortChange(9001)
+        runner.requestPortChange(8899)
         drainExecutor()
 
-        assertEquals(9001, callbacks.portChangeFailed)
-        assertEquals(8899, proxy.listeningPort)
-        assertTrue(proxy.accepting)
-        assertTrue(runner.isReadingWanted())
-        assertTrue(flag.isSet())
-        assertTrue(cleanupCalls.isEmpty())
-        assertFalse(events.any { it.startsWith("apply:") || it.startsWith("watchdog:") })
-        assertFalse(events.contains("closeProxy"))
-        assertFalse(events.contains("shell:killWatchdog"))
+        assertTrue(events.isEmpty(), events.toString())
     }
 
     @Test
-    fun portChangeListenFailureWithDeadOldListenerRunsCleanupAtOnce() {
+    fun portChangeBindFailureLeavesReadingOffWithPortErrorNoRulesAndFlagClear() {
         val events = CopyOnWriteArrayList<String>()
         val proxy = FakeProxyController(events = events)
         val callbacks = RecordingCallbacks(events = events)
@@ -705,14 +687,221 @@ class RootCaptureRunnerTest {
         drainExecutor()
         events.clear()
         proxy.failingPorts += 9001
-        proxy.listenerUsable = false
 
         runner.requestPortChange(9001)
         drainExecutor()
 
+        assertEquals(9001, callbacks.portError)
+        assertFalse(runner.isReadingWanted())
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+        assertTrue(runner.isIdle())
+        assertFalse(events.any { it.startsWith("apply:") || it.startsWith("watchdog:") })
+        // The old rules were taken away before the new port was tried.
+        assertTrue(events.indexOf("shell:cleanup") < events.indexOf("listen:9001"))
+    }
+
+    @Test
+    fun portChangeWithFailingCleanupKeepsTheOldListenerAndRetries() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var failCleanup = false
+        val base = portChangeShell(events)
+        val shell = RootShell { c, stdin, t ->
+            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP")) {
+                RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+            } else {
+                base.run(c, stdin, t)
+            }
+        }
+        val runner = portChangeRunner(events, proxy, callbacks, shell)
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+        failCleanup = true
+        events.clear()
+
+        runner.requestPortChange(9001)
+        drainExecutor()
+
+        assertFalse(events.contains("closeProxy"))
+        assertFalse(events.contains("listen:9001"))
+        assertEquals(8899, proxy.listeningPort)
+        assertTrue(callbacks.lastApplyFailedRetrying)
+        assertTrue(flag.isSet())
+    }
+
+    @Test
+    fun drainInterruptedByAStartEndsWithReadingOnAndDoesNotStopTheService() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events, slowAwait = true)
+        val callbacks = RecordingCallbacks(events = events)
+        val runner = RootCaptureRunner(
+            rootShell = portChangeShell(events),
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            drainTimeoutMs = 30_000L,
+            drainSliceMs = 20L,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+        events.clear()
+
+        runner.requestStopReading()
+        val deadline = System.currentTimeMillis() + 3_000L
+        while (!events.contains("awaitOpenConnections") && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10)
+        }
+        assertTrue(events.contains("awaitOpenConnections"))
+
+        runner.requestStartReading(8899)
+        val finish = System.currentTimeMillis() + 5_000L
+        while (events.none { it.startsWith("onApplied") } && System.currentTimeMillis() < finish) {
+            Thread.sleep(10)
+        }
+
+        assertEquals(8899, callbacks.appliedPort)
+        assertTrue(runner.isReadingWanted())
+        assertEquals(1, callbacks.cleanupGenerations.size)
+        // The completion of the interrupted stop is stale: the service must not stop itself on it.
+        assertFalse(
+            RootCaptureRunner.shouldStopServiceAfterCleanup(
+                callbacks.cleanupGenerations.single(),
+                runner.lastStartGeneration(),
+                runner.isReadingWanted(),
+            ),
+        )
+        assertTrue(flag.isSet())
+    }
+
+    @Test
+    fun userStopFollowedByShutdownClosesOnceAndCompletesOnce() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events, slowAwait = true)
+        val callbacks = RecordingCallbacks(events = events)
+        val runner = RootCaptureRunner(
+            rootShell = portChangeShell(events),
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            drainTimeoutMs = 30_000L,
+            drainSliceMs = 20L,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+        events.clear()
+
+        runner.requestStopReading()
+        val deadline = System.currentTimeMillis() + 3_000L
+        while (!events.contains("awaitOpenConnections") && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10)
+        }
+        runner.requestShutdown()
+        drainExecutor()
+
+        assertEquals(1, events.count { it == "closeProxy" })
+        assertEquals(1, events.count { it == "onCleanupSucceeded" })
+        // A newer stop does not make the completion stale: the service still stops on it.
+        assertTrue(
+            RootCaptureRunner.shouldStopServiceAfterCleanup(
+                callbacks.cleanupGenerations.single(),
+                runner.lastStartGeneration(),
+                runner.isReadingWanted(),
+            ),
+        )
+        assertTrue(runner.isIdle())
+    }
+
+    @Test
+    fun stopWithNothingActiveClosesNothingAndReportsNothing() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var shellCalls = 0
+        val shell = RootShell { _, _, _ ->
+            shellCalls += 1
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+        }
+        val runner = portChangeRunner(events, proxy, callbacks, shell)
+
+        runner.requestStopReading()
+        runner.requestShutdown()
+        drainExecutor()
+
+        assertTrue(events.isEmpty(), events.toString())
+        assertEquals(0, shellCalls)
+        assertTrue(runner.isIdle())
+    }
+
+    @Test
+    fun shutdownWithFailingCleanupKeepsTheListenerAndIsNotIdle() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var failCleanup = false
+        val base = portChangeShell(events)
+        val shell = RootShell { c, stdin, t ->
+            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP")) {
+                RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+            } else {
+                base.run(c, stdin, t)
+            }
+        }
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            cleanupRetryDelayMs = 60_000L,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+        runner.requestStartReading(8899)
+        drainExecutor()
+        failCleanup = true
+
+        runner.requestShutdown()
+        drainExecutor()
+
+        assertFalse(events.contains("closeProxy"))
+        assertEquals(8899, proxy.listeningPort)
+        assertFalse(runner.isIdle())
+        assertTrue(events.contains("onCleanupRetryScheduled"))
+    }
+
+    @Test
+    fun deadAcceptLoopRemovesTheRulesAtOnceAndReports() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val runner = portChangeRunner(events, proxy, callbacks, portChangeShell(events))
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+        events.clear()
+        proxy.alive = false
+
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
         assertTrue(events.contains("shell:cleanup"))
         assertTrue(events.contains("closeProxy"))
-        assertEquals(9001, callbacks.portError)
+        assertEquals(RootCaptureRunner.ERROR_LISTENER_LOST, callbacks.lastError)
+        assertFalse(callbacks.lastApplyFailedRetrying)
         assertFalse(flag.isSet())
         assertFalse(runner.isReadingWanted())
     }

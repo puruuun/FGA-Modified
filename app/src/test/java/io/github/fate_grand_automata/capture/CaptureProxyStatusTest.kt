@@ -56,20 +56,43 @@ class CaptureProxyStatusTest {
     }
 
     @Test
-    fun rootShutdownIsSettledOnlyWhileDrainingWithRulesGoneAndReadingOff() {
-        val draining = rootRun.copy(reading = false, rootRulesActive = false, rootCleanupRetrying = false)
-
-        assertTrue(rootShutdownSettled(draining))
-        assertFalse(rootShutdownSettled(draining.copy(rootRulesActive = true)))
-        assertFalse(rootShutdownSettled(draining.copy(reading = true)))
-        assertFalse(rootShutdownSettled(draining.copy(rootCleanupRetrying = true)))
-        assertFalse(rootShutdownSettled(draining.copy(rootDraining = false)))
+    fun leavingRootModeIsRefusedWhileTheCleanupRetries() {
+        assertFalse(canLeaveRootMode(rootRun.copy(rootCleanupRetrying = true)))
+        assertTrue(canLeaveRootMode(rootRun.copy(rootCleanupRetrying = false)))
     }
 
     @Test
-    fun rulesRemovedMarksReadingOffAndDraining() {
+    fun rootTransportIsGoneOnlyWhenServiceRulesAndRetryAreAllGone() {
+        val gone = rootRun.copy(rootRulesActive = false, rootCleanupRetrying = false)
+
+        assertTrue(rootTransportGone(gone, serviceAlive = false))
+        assertFalse(rootTransportGone(gone, serviceAlive = true))
+        assertFalse(rootTransportGone(gone.copy(rootRulesActive = true), serviceAlive = false))
+        assertFalse(rootTransportGone(gone.copy(rootCleanupRetrying = true), serviceAlive = false))
+    }
+
+    @Test
+    fun anOldServiceInstanceIsNotLiveOnceANewerOneClaimedTheGate() {
+        val gate = InstanceGate()
+        val oldRoot = Any()
+        val newExternal = Any()
+        gate.claim(oldRoot)
+        assertTrue(gate.isLive(oldRoot))
+
+        gate.claim(newExternal)
+
+        // A callback posted by the destroyed root service no longer applies, and its release leaves the new one alone.
+        assertFalse(gate.isLive(oldRoot))
+        assertFalse(gate.release(oldRoot))
+        assertTrue(gate.isLive(newExternal))
+        assertTrue(gate.release(newExternal))
+        assertFalse(gate.isLive(newExternal))
+    }
+
+    @Test
+    fun rulesRemovedMarksReadingOffDrainingAndClearsTheRuleCounts() {
         CaptureProxyStatus.reset()
-        CaptureProxyStatus.setRootApplied(8899, 1, 0, true, watchdogActive = true)
+        CaptureProxyStatus.setRootApplied(8899, 2, 2, false, watchdogActive = true)
         CaptureProxyStatus.setRootRulesRemoved()
 
         val snap = CaptureProxyStatus.state.value
@@ -77,7 +100,8 @@ class CaptureProxyStatusTest {
         assertFalse(snap.rootRulesActive)
         assertFalse(snap.rootWatchdogActive)
         assertTrue(snap.rootDraining)
-        assertTrue(rootShutdownSettled(snap))
+        assertEquals(0, snap.rootIpv4RuleCount)
+        assertEquals(0, snap.rootIpv6RuleCount)
         CaptureProxyStatus.reset()
     }
 }

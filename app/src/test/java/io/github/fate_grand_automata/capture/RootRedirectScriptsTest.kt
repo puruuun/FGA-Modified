@@ -48,14 +48,19 @@ class RootRedirectScriptsTest {
     }
 
     @Test
-    fun applyIpv4OnlyOmitsIp6tablesCommands() {
+    fun applyIpv4OnlyAddsNoIpv6RulesAndRemovesOldIpv6Chain() {
         val script = RootRedirectScripts.apply(
             fgoUids = listOf(10123),
             port = 8899,
             ipv6 = false,
         )
         assertTrue(script.contains("IPT=/system/bin/iptables"))
-        assertFalse(script.contains("ip6tables"))
+        // H6: no IPv6 rule is added, but an IPv6 jump and chain left by an earlier apply are removed.
+        assertFalse(script.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
+        assertFalse(script.contains("\"\$IP6T\" -w 3 -t nat -N FGA_CAP"))
+        assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -D OUTPUT -j FGA_CAP"))
+        assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -F FGA_CAP >/dev/null 2>&1 || true"))
+        assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -X FGA_CAP >/dev/null 2>&1 || true"))
         assertTrue(
             script.contains(
                 "\"\$IPT\" -w 3 -t nat -A FGA_CAP -p tcp --dport 443 -m owner --uid-owner 10123 -j REDIRECT --to-ports 8899"

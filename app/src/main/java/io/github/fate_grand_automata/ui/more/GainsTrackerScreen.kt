@@ -71,7 +71,8 @@ import io.github.fate_grand_automata.capture.CaptureProxySnapshot
 import io.github.fate_grand_automata.capture.CaptureProxyState
 import io.github.fate_grand_automata.capture.CaptureProxyStatus
 import io.github.fate_grand_automata.capture.CaptureStopReason
-import io.github.fate_grand_automata.capture.rootShutdownSettled
+import io.github.fate_grand_automata.capture.canLeaveRootMode
+import io.github.fate_grand_automata.capture.rootTransportGone
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.CaptureFileSaver
 import io.github.fate_grand_automata.capture.CertificateSaveGuard
@@ -374,6 +375,9 @@ class GainsTrackerViewModel @Inject constructor(
             } == true
             if (!stopped) return false
         }
+        if (prefsCore.captureConnectionMode.get() == CaptureConnectionMode.Root) {
+            return stopRootTransport()
+        }
         if (CaptureController.isProxyAlive() ||
             CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
             CaptureProxyStatus.state.value.rootRulesActive
@@ -383,9 +387,7 @@ class GainsTrackerViewModel @Inject constructor(
                 while ((CaptureController.isProxyAlive() ||
                     CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
                     CaptureProxyStatus.state.value.rootRulesActive) &&
-                    !CaptureProxyStatus.state.value.rootCleanupRetrying &&
-                    // G2: rules gone and reading off is enough; the listener may keep draining in the background.
-                    !rootShutdownSettled(CaptureProxyStatus.state.value)
+                    !CaptureProxyStatus.state.value.rootCleanupRetrying
                 ) {
                     delay(50)
                 }
@@ -396,13 +398,36 @@ class GainsTrackerViewModel @Inject constructor(
         return true
     }
 
+    /**
+     * H4: leaving root mode sends the shutdown and waits until the root service is fully gone (rules gone,
+     * listener closed, service not alive). It is refused while the rule cleanup is retrying.
+     */
+    private suspend fun stopRootTransport(): Boolean {
+        if (!canLeaveRootMode(CaptureProxyStatus.state.value)) return false
+        if (!CaptureController.isProxyAlive() && CaptureProxyStatus.state.value.let { !it.rootRulesActive }) return true
+        CaptureController.shutdownProxy(context)
+        return withTimeoutOrNull(10_000) {
+            while (!rootTransportGone(CaptureProxyStatus.state.value, CaptureController.isProxyAlive())) {
+                if (!canLeaveRootMode(CaptureProxyStatus.state.value)) return@withTimeoutOrNull false
+                delay(50)
+            }
+            true
+        } == true
+    }
+
+    private fun toastStopFailed() {
+        val refused = prefsCore.captureConnectionMode.get() == CaptureConnectionMode.Root &&
+            !canLeaveRootMode(CaptureProxyStatus.state.value)
+        toast(context.getString(if (refused) R.string.capture_root_switch_refused_cleanup else R.string.capture_start_failed))
+    }
+
     fun switchToAdGuard() {
         if (switchingMode.value) return
         viewModelScope.launch {
             switchingMode.value = true
             try {
                 if (!stopCurrentTransport()) {
-                    toast(context.getString(R.string.capture_start_failed))
+                    toastStopFailed()
                     return@launch
                 }
                 prefsCore.captureConnectionMode.set(CaptureConnectionMode.AdGuard)
@@ -428,7 +453,7 @@ class GainsTrackerViewModel @Inject constructor(
                     return@launch
                 }
                 if (!stopCurrentTransport()) {
-                    toast(context.getString(R.string.capture_start_failed))
+                    toastStopFailed()
                     return@launch
                 }
                 prefsCore.captureConnectionMode.set(CaptureConnectionMode.Root)
@@ -446,7 +471,7 @@ class GainsTrackerViewModel @Inject constructor(
             switchingMode.value = true
             try {
                 if (!stopCurrentTransport()) {
-                    toast(context.getString(R.string.capture_start_failed))
+                    toastStopFailed()
                     return@launch
                 }
                 if (disableFeature) {

@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * Serializes all Root capture mode operations (pre-check, apply, re-apply, cleanup, watchdog start/kill)
  * on a single-thread executor with generation-based cancellation (R3–R6, B1, B3, B4, B6, B8).
+ *
+ * There is one way to take the rules away ([stopRulesAndListener]) and one way to put them on ([runStart]).
+ * A port change is the first followed by the second.
  */
 internal class RootCaptureRunner(
     private val rootShell: RootShell,
@@ -33,28 +36,18 @@ internal class RootCaptureRunner(
     )
 
     interface ProxyController {
-        /**
-         * Starts listening on [preferredPort]. With [keepPrevious] (port change) the current listener stays open
-         * and usable until [closePreviousListener]; a failed listen must leave it untouched (G3).
-         */
-        fun startListening(preferredPort: Int, keepPrevious: Boolean = false): ListenerInfo?
+        fun startListening(preferredPort: Int): ListenerInfo?
         fun isLastListenErrorPortConflict(): Boolean = true
 
-        /** False when the current listener is already closed or dead. */
-        fun isListenerUsable(): Boolean = true
+        /** False when the accept loop of the current listener has died (H7). */
+        fun isListenerAlive(): Boolean = true
 
         /** Drops the certificate contexts so open connections finish their current request and close (G2). */
         fun clearContexts() {}
         fun stopAccepting()
         fun awaitOpenConnections(timeoutMs: Long): Boolean
 
-        /** Closes the new listener of a superseded port change and makes the previous one current again. */
-        fun abandonNewListener() {}
-        fun stopAcceptingPrevious() {}
-        fun awaitPreviousConnections(timeoutMs: Long): Boolean = true
-        fun closePreviousListener() {}
-
-        /** Closes the current listener and any previous one. */
+        /** Closes the current listener. */
         fun closeProxy()
     }
 
@@ -70,19 +63,26 @@ internal class RootCaptureRunner(
             toastMessage: String,
             cleanupRetrying: Boolean = false,
         )
-        fun onCleanupSucceeded()
+
+        /** Rules and listener are gone. [generation] is the request that finished them (H2). */
+        fun onCleanupSucceeded(generation: Long)
 
         /** Rules are confirmed gone: reading is off now, the listener only drains open connections (G2). */
         fun onRulesRemoved() {}
-
-        /** A port change could not listen on the new port; reading continues on the old port (G3). */
-        fun onPortChangeFailed(port: Int, portConflict: Boolean) {}
         fun onCleanupRetryScheduled(message: String)
         fun onPortError(port: Int)
     }
 
     private val generation = AtomicLong(0L)
     private val readingWanted = AtomicBoolean(false)
+
+    // Generation of the newest start or port change request; a cleanup from an older start is stale (H2).
+    @Volatile
+    private var lastStartGeneration: Long = 0L
+
+    // True from a successful listen until the listener is closed; lets a stop with nothing active do nothing (H3).
+    @Volatile
+    private var listenerOpen: Boolean = false
 
     @Volatile
     private var activePort: Int? = null
@@ -94,10 +94,17 @@ internal class RootCaptureRunner(
     private var activeUids: List<Int> = emptyList()
 
     private var periodicCheckFuture: ScheduledFuture<*>? = null
+
+    @Volatile
     private var cleanupRetryFuture: ScheduledFuture<*>? = null
 
     fun isReadingWanted(): Boolean = readingWanted.get()
     fun currentGeneration(): Long = generation.get()
+    fun lastStartGeneration(): Long = lastStartGeneration
+
+    /** True when no listener, rules, flag, retry or wanted reading is left (nothing for a stop to do). */
+    fun isIdle(): Boolean = !readingWanted.get() && !listenerOpen && activePort == null && !flag.isSet() &&
+        cleanupRetryFuture == null
 
     /**
      * Requests starting Root capture reading on [preferredPort].
@@ -105,23 +112,26 @@ internal class RootCaptureRunner(
      */
     fun requestStartReading(preferredPort: Int) {
         val gen = generation.incrementAndGet()
+        lastStartGeneration = gen
         readingWanted.set(true)
         executor.execute {
             cancelCleanupRetryOnExecutor()
-            runStartOrPortChange(preferredPort, gen, isPortChange = false)
+            runStart(preferredPort, gen, skipIfSamePort = false)
         }
     }
 
     /**
-     * Requests changing the listening port while reading is active (B6: restarts listener, rules, and watchdog).
+     * H1: a port change while reading is the normal stop sequence followed by the normal start on the new port.
+     * Between the two FGO connects directly (no rules), so it is never cut off.
      */
     fun requestPortChange(newPort: Int) {
         if (!readingWanted.get()) return
         val gen = generation.incrementAndGet()
+        lastStartGeneration = gen
         readingWanted.set(true)
         executor.execute {
             cancelCleanupRetryOnExecutor()
-            runStartOrPortChange(newPort, gen, isPortChange = true)
+            runStart(newPort, gen, skipIfSamePort = true)
         }
     }
 
@@ -192,15 +202,14 @@ internal class RootCaptureRunner(
                 val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
                 if (isCleanupOk(res)) {
                     flag.clear()
-                    proxyController.stopAccepting()
-                    proxyController.closeProxy()
+                    giveUpListener()
                     activePort = null
                     activeIpv6 = false
                     activeUids = emptyList()
-                    callbacks.onCleanupSucceeded()
+                    callbacks.onCleanupSucceeded(gen)
                 }
             } else {
-                proxyController.closeProxy()
+                closeListener()
             }
             gen
         }
@@ -224,7 +233,17 @@ internal class RootCaptureRunner(
     private fun shouldProceed(expectedGen: Long): Boolean =
         readingWanted.get() && generation.get() == expectedGen
 
-    private fun runStartOrPortChange(preferredPort: Int, expectedGen: Long, isPortChange: Boolean) {
+    private fun closeListener() {
+        proxyController.closeProxy()
+        listenerOpen = false
+    }
+
+    private fun giveUpListener() {
+        proxyController.stopAccepting()
+        closeListener()
+    }
+
+    private fun runStart(preferredPort: Int, expectedGen: Long, skipIfSamePort: Boolean) {
         if (!shouldProceed(expectedGen)) return
 
         val targetUids = targetUidsProvider().filter { it > 0 }.distinct()
@@ -241,9 +260,18 @@ internal class RootCaptureRunner(
             return
         }
 
-        if (isPortChange && activePort != null) {
-            runPortChange(preferredPort, expectedGen, targetUids, fgaUid)
-            return
+        if (skipIfSamePort && activePort == preferredPort && listenerOpen) return
+
+        // H1: anything still active (port change, repeated start, leftover flag) is stopped first.
+        if (listenerOpen || activePort != null || flag.isSet()) {
+            cancelPeriodicCheckOnExecutor()
+            if (!stopRulesAndListener(expectedGen, drainMs = 0L, announceRulesRemoved = false)) {
+                readingWanted.set(false)
+                scheduleCleanupRetryOnExecutor(expectedGen, drainTimeoutMs)
+                callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = true)
+                return
+            }
+            if (!shouldProceed(expectedGen)) return
         }
 
         // Order (B6): listen -> pre-check -> apply -> watchdog start
@@ -257,26 +285,24 @@ internal class RootCaptureRunner(
             }
             return
         }
+        listenerOpen = true
 
         if (!shouldProceed(expectedGen)) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
+            giveUpListener()
             return
         }
 
         // B1 pre-check IPv4 nat OUTPUT
         val ipv4Check = runShell(RootRedirectScripts.precheckIpv4())
         if (!isApplyOk(ipv4Check)) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
+            giveUpListener()
             readingWanted.set(false)
             callbacks.onApplyFailed(ERROR_NAT_UNSUPPORTED, TOAST_APPLY_FAILED)
             return
         }
 
         if (!shouldProceed(expectedGen)) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
+            giveUpListener()
             return
         }
 
@@ -290,8 +316,7 @@ internal class RootCaptureRunner(
         val ipv6Unsupported = !useIpv6
 
         if (!shouldProceed(expectedGen)) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
+            giveUpListener()
             return
         }
 
@@ -311,7 +336,8 @@ internal class RootCaptureRunner(
         }
 
         if (!shouldProceed(expectedGen)) {
-            runStopReadingOnExecutor(generation.get(), drainTimeoutMs)
+            // Rules are in the kernel; never leave them behind a start that is no longer wanted.
+            if (!readingWanted.get()) runStopReadingOnExecutor(generation.get(), drainTimeoutMs)
             return
         }
 
@@ -340,93 +366,6 @@ internal class RootCaptureRunner(
         schedulePeriodicCheckOnExecutor(expectedGen)
     }
 
-    /**
-     * G3: listen on the new port first; only then re-apply rules, restart the watchdog and retire the old listener.
-     * Rules never point at a port without a listener.
-     */
-    private fun runPortChange(newPort: Int, expectedGen: Long, targetUids: List<Int>, fgaUid: Int) {
-        if (newPort == activePort) return
-        val listener = proxyController.startListening(newPort, keepPrevious = true)
-        if (listener == null) {
-            if (!shouldProceed(expectedGen)) return
-            val conflict = proxyController.isLastListenErrorPortConflict()
-            if (proxyController.isListenerUsable()) {
-                // Old listener and rules stay as they are; reading continues on the old port.
-                callbacks.onPortChangeFailed(newPort, conflict)
-            } else {
-                cleanupAfterUnusableListener(newPort, conflict)
-            }
-            return
-        }
-        if (!shouldProceed(expectedGen)) {
-            proxyController.abandonNewListener()
-            return
-        }
-
-        val useIpv6 = activeIpv6 && listener.ipv6Listening
-        // Kill the old watchdog while the old listener is still open, so it cannot clean up the new rules.
-        runShell(RootRedirectScripts.killWatchdog())
-        flag.markMaybeActive()
-        val applyRes = runShell(RootRedirectScripts.apply(targetUids, listener.port, useIpv6))
-        if (!isApplyOk(applyRes)) {
-            val step = parseFailStep(applyRes.lines)
-            rollbackFailedApply(if (step != null) "루트 규칙 설정 실패 (단계 $step)" else "루트 규칙 설정 실패")
-            return
-        }
-        if (!shouldProceed(expectedGen)) {
-            runStopReadingOnExecutor(generation.get(), drainTimeoutMs)
-            return
-        }
-        val watchdogRes = runShell(RootRedirectScripts.startWatchdog(listener.port, fgaUid, useIpv6))
-        if (!isWatchdogOk(watchdogRes)) {
-            val errMsg = if (watchdogRes.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE }) {
-                "루트 감시 프로그램 소켓 확인 실패 (${RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE})"
-            } else {
-                "루트 감시 프로그램 시작 실패"
-            }
-            rollbackFailedApply(errMsg)
-            return
-        }
-
-        activePort = listener.port
-        activeIpv6 = useIpv6
-        activeUids = targetUids
-        callbacks.onApplied(
-            port = listener.port,
-            ipv4RuleCount = targetUids.size,
-            ipv6RuleCount = if (useIpv6) targetUids.size else 0,
-            ipv6Unsupported = !useIpv6,
-        )
-        schedulePeriodicCheckOnExecutor(expectedGen)
-
-        // Retire the old listener only now: rules and watchdog already use the new port.
-        proxyController.stopAcceptingPrevious()
-        drain(drainTimeoutMs, expectedGen) { proxyController.awaitPreviousConnections(it) }
-        proxyController.closePreviousListener()
-    }
-
-    /** The old listener died and the new one could not start: remove the rules at once (rollback path). */
-    private fun cleanupAfterUnusableListener(port: Int, portConflict: Boolean) {
-        readingWanted.set(false)
-        cancelPeriodicCheckOnExecutor()
-        val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
-        if (isCleanupOk(res)) {
-            flag.clear()
-            proxyController.closeProxy()
-            activePort = null
-            activeIpv6 = false
-            activeUids = emptyList()
-            if (portConflict) {
-                callbacks.onPortError(port)
-            } else {
-                callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = false)
-            }
-        } else {
-            scheduleCleanupRetryOnExecutor(generation.get(), drainTimeoutMs)
-            callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = true)
-        }
-    }
-
     /** Waits for open connections in short slices; a newer request (generation change) cuts the drain short. */
     private fun drain(totalMs: Long, expectedGen: Long, await: (Long) -> Boolean) {
         if (totalMs <= 0L) return
@@ -444,8 +383,7 @@ internal class RootCaptureRunner(
         val cleanupRes = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
         if (isCleanupOk(cleanupRes)) {
             flag.clear()
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
+            giveUpListener()
             activePort = null
             activeIpv6 = false
             activeUids = emptyList()
@@ -457,46 +395,44 @@ internal class RootCaptureRunner(
         }
     }
 
+    /**
+     * B4 order: (1) remove the rules and confirm `FGA_CLEANUP_OK`, (2) stop accepting, (3) drain open connections
+     * (a newer request cuts it short), then close the listener, kill the watchdog and clear the flag.
+     * Always finishes what it owns, so the next job starts clean. Returns false, leaving listener and watchdog
+     * alone, when the rules could not be removed.
+     */
+    private fun stopRulesAndListener(expectedGen: Long, drainMs: Long, announceRulesRemoved: Boolean): Boolean {
+        val rulesMaybe = flag.isSet() || activePort != null
+        if (rulesMaybe) {
+            val cleanupRes = runShell(RootRedirectScripts.cleanup(killWatchdog = false))
+            if (!isCleanupOk(cleanupRes)) return false
+            proxyController.clearContexts()
+            if (announceRulesRemoved) callbacks.onRulesRemoved()
+        }
+        proxyController.stopAccepting()
+        drain(drainMs, expectedGen) { proxyController.awaitOpenConnections(it) }
+        closeListener()
+        if (rulesMaybe) {
+            runShell(RootRedirectScripts.killWatchdog())
+            flag.clear()
+        }
+        activePort = null
+        activeIpv6 = false
+        activeUids = emptyList()
+        return true
+    }
+
     private fun runStopReadingOnExecutor(expectedGen: Long, drainMs: Long) {
         if (readingWanted.get()) return
+        // H3: nothing active -> nothing to close and nothing to report.
+        if (!flag.isSet() && activePort == null && !listenerOpen) return
 
-        val needRuleCleanup = flag.isSet() || activePort != null
-        if (!needRuleCleanup) {
-            proxyController.stopAccepting()
-            proxyController.closeProxy()
-            callbacks.onCleanupSucceeded()
-            return
-        }
-
-        // B4 step (1): cleanup rules first and confirm FGA_CLEANUP_OK (keep watchdog until proxy closes)
-        val cleanupRes = runShell(RootRedirectScripts.cleanup(killWatchdog = false))
-        if (!isCleanupOk(cleanupRes)) {
+        if (!stopRulesAndListener(expectedGen, drainMs, announceRulesRemoved = true)) {
             // B4: keep listener open so FGO keeps working through it, retry every 10 s
             scheduleCleanupRetryOnExecutor(expectedGen, drainMs)
             return
         }
-
-        // G2: rules are gone, so reading is off at once (tracker, status, notification), and open connections
-        // finish their current request and close instead of being intercepted again.
-        proxyController.clearContexts()
-        callbacks.onRulesRemoved()
-
-        // B4 step (2): stop accepting new connections
-        proxyController.stopAccepting()
-
-        // B4 step (3): let open connections finish up to drainMs (a newer request cuts it short),
-        // then close proxy and kill watchdog
-        drain(drainMs, expectedGen) { proxyController.awaitOpenConnections(it) }
-        proxyController.closeProxy()
-        runShell(RootRedirectScripts.killWatchdog())
-
-        // Confirmed FGA_CLEANUP_OK and chain gone -> clear flag
-        flag.clear()
-
-        activePort = null
-        activeIpv6 = false
-        activeUids = emptyList()
-        callbacks.onCleanupSucceeded()
+        callbacks.onCleanupSucceeded(expectedGen)
     }
 
     private fun scheduleCleanupRetryOnExecutor(expectedGen: Long, drainMs: Long) {
@@ -504,6 +440,7 @@ internal class RootCaptureRunner(
         cancelCleanupRetryOnExecutor()
         cleanupRetryFuture = executor.schedule(
             {
+                cleanupRetryFuture = null
                 if (!readingWanted.get() && generation.get() == expectedGen) {
                     runStopReadingOnExecutor(expectedGen, drainMs)
                 }
@@ -529,6 +466,12 @@ internal class RootCaptureRunner(
         val port = activePort ?: return
         val uids = activeUids.ifEmpty { return }
         val useIpv6 = activeIpv6
+
+        // H7: a dead accept loop is a lost listener; take the rules away at once so FGO connects directly.
+        if (!proxyController.isListenerAlive()) {
+            rollbackFailedApply(ERROR_LISTENER_LOST)
+            return
+        }
 
         val checkRes = runShell(RootRedirectScripts.checkChains(useIpv6))
         if (isApplyOk(checkRes)) {
@@ -572,6 +515,7 @@ internal class RootCaptureRunner(
         const val ERROR_NAT_UNSUPPORTED = "이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"
         const val ERROR_NO_TARGETS = "수집할 수 있는 FGO 대상이 없습니다 (인증서 및 게임 설치를 확인하세요)"
         const val ERROR_INVALID_FGA_UID = "FGA 앱 UID를 확인할 수 없습니다"
+        const val ERROR_LISTENER_LOST = "로그 수집 수신 소켓이 닫혀 루트 규칙을 제거했습니다"
         const val ERROR_START_FAILED = "로그 수집을 시작하지 못했습니다."
         const val IPV6_UNSUPPORTED_NOTE = "이 기기는 IPv6 규칙을 지원하지 않아 IPv6 연결은 수집되지 않습니다(게임은 정상)"
         const val TOAST_APPLY_FAILED = "루트 규칙을 설정하지 못했습니다"
@@ -579,6 +523,16 @@ internal class RootCaptureRunner(
         const val TOAST_ROOT_UNAVAILABLE = "루트 권한을 확인할 수 없습니다"
         const val ROOT_CHECKING_MESSAGE = "루트 권한 확인 중 — 허용 팝업을 눌러 주세요"
         const val CLEANUP_RETRY_MESSAGE = "루트 규칙을 지우지 못했습니다. 다시 시도 중이며, 계속 실패하면 재부팅하세요."
+
+        /**
+         * H2: the service stops itself after a cleanup only when no start was requested since and reading is not
+         * wanted again; a newer stop does not make an earlier completion stale.
+         */
+        internal fun shouldStopServiceAfterCleanup(
+            callbackGeneration: Long,
+            lastStartGeneration: Long,
+            readingWanted: Boolean,
+        ): Boolean = !readingWanted && callbackGeneration >= lastStartGeneration
 
         internal fun isApplyOk(res: RootShellOutput): Boolean =
             !res.timedOut && res.exitCode == 0 && res.lines.any { it.trim() == RootRedirectScripts.MARKER_APPLY_OK }

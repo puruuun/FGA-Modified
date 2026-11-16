@@ -69,7 +69,10 @@ class ProxyServer(
     // A core-size-0 ThreadPoolExecutor hung the spike (the accept loop held its only worker), so
     // connections go to a cached pool and the accept loop has its own thread.
     private val pool = Executors.newCachedThreadPool()
+    @Volatile
     private var server: ServerSocket? = null
+
+    @Volatile
     private var server6: ServerSocket? = null
     private val live = java.util.Collections.synchronizedSet(mutableSetOf<Socket>())
     private val activeConnections = AtomicInteger(0)
@@ -157,6 +160,15 @@ class ProxyServer(
     }
 
     private fun acceptLoop(s: ServerSocket) {
+        try {
+            acceptConnections(s)
+        } finally {
+            // H7: an accept loop that ends by an exception must not leave the listener looking usable.
+            if (running) stopAccepting()
+        }
+    }
+
+    private fun acceptConnections(s: ServerSocket) {
         while (running) {
             val c = try {
                 s.accept()

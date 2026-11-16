@@ -55,12 +55,34 @@ internal fun postDestroySnapshot(current: CaptureProxySnapshot, ranAsRoot: Boole
     )
 }
 
+/** H4: leaving root mode is refused while the rule cleanup is still retrying; the old mode stays. */
+internal fun canLeaveRootMode(snap: CaptureProxySnapshot): Boolean = !snap.rootCleanupRetrying
+
+/** H4: the root service is fully gone: service not alive, rules gone and no cleanup retry pending. */
+internal fun rootTransportGone(snap: CaptureProxySnapshot, serviceAlive: Boolean): Boolean =
+    !serviceAlive && !snap.rootRulesActive && !snap.rootCleanupRetrying
+
 /**
- * True when a mode switch can proceed: rules are confirmed gone and reading is off while the old
- * listener only drains in the background (G2).
+ * H5: tells which service instance is the live one. Posts from an old instance (for example a destroyed root
+ * service) check [isLive] on the main thread before they touch the global status or the tracker.
  */
-internal fun rootShutdownSettled(snap: CaptureProxySnapshot): Boolean =
-    snap.rootDraining && !snap.rootRulesActive && !snap.reading && !snap.rootCleanupRetrying
+internal class InstanceGate {
+    @Volatile
+    private var current: Any? = null
+
+    fun claim(instance: Any) {
+        current = instance
+    }
+
+    fun isLive(instance: Any): Boolean = current === instance
+
+    /** Returns true when [instance] was the live one; a newer instance is left alone. */
+    fun release(instance: Any): Boolean {
+        if (current !== instance) return false
+        current = null
+        return true
+    }
+}
 
 /** Single source of truth for [CaptureProxyService] runtime state and connection counters. */
 object CaptureProxyStatus {
@@ -81,6 +103,9 @@ object CaptureProxyStatus {
             it.copy(
                 reading = false,
                 rootRulesActive = false,
+                rootIpv4RuleCount = 0,
+                rootIpv6RuleCount = 0,
+                rootIpv6Unsupported = false,
                 rootWatchdogActive = false,
                 rootDraining = true,
                 rootCleanupRetrying = false,

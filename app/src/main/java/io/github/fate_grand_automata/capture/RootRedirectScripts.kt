@@ -99,6 +99,16 @@ internal object RootRedirectScripts {
                 appendLine(
                     "\"\$IP6T\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -I OUTPUT 1 -j $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}6; exit 1; }"
                 )
+            } else {
+                // H6: rules from an earlier IPv6 apply must not stay behind (errors are ignored, e.g. no ip6tables nat).
+                appendLine("IP6T=/system/bin/ip6tables")
+                appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
+                appendLine("k=0")
+                appendLine("while [ \"\$k\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+                appendLine("  k=\$((k + 1))")
+                appendLine("done")
+                appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
+                appendLine("\"\$IP6T\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
             }
             appendLine("echo $MARKER_APPLY_OK")
         }
