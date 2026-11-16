@@ -705,6 +705,14 @@ class SupportScoreReaderTest {
         fDimNoGrand.show(Images.SupportCompactClass62A)
         assertThat(fDimNoGrand.reader.read(fDimNoGrand.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
 
+        // C2 guard: Grand16 prefix found with a different final digit -> no-glyph exemption does NOT apply (clipped=true, grandScore=null).
+        val fDiffGrandDigit = Fixture()
+        every { fDiffGrandDigit.prepared.grayPixels() } returns blankInk
+        every { fDiffGrandDigit.ocr.detectTextLine(fDiffGrandDigit.crop, any()) } returns OcrText("", 0)
+        fDiffGrandDigit.show(Images.SupportCompactClass62A)
+        fDiffGrandDigit.show(Images.SupportGrand16A, correctLastDigit = false)
+        assertThat(fDiffGrandDigit.reader.read(fDiffGrandDigit.bounds, true, true)).isEqualTo(SupportScores(62, null, SupportScoreDisplay.Compound))
+
         // (b) Null pixels -> grand unknown, still clipped.
         val fNullInk = Fixture()
         every { fNullInk.prepared.grayPixels() } returns null
@@ -753,6 +761,32 @@ class SupportScoreReaderTest {
         assertThat(fKrNoGlyph.reader.read(fKrNoGlyph.bounds, false, true).grandScore).isNull()
         verify(exactly = 6) { fKrNoGlyph.ocr.detectTextLine(fKrNoGlyph.crop, any()) }
         verify(exactly = 6) { fKrNoGlyph.crop.resize(any()) }
+    }
+
+    @Test
+    fun `KR dark-profile no-glyph ink counts as clipped just like before 431`() {
+        val blankInk = ByteArray(60 * 30) { 255.toByte() }
+        val f = Fixture()
+        every { f.api.prefs.gameServer } returns GameServer.Kr
+        every { f.ocr.detectTextLine(f.crop, any()) } returns OcrText("", 0)
+        // Primary inspects (first 4 calls) see valid glyphs; dark inspects (last 2 calls) see blank ink.
+        every { f.prepared.grayPixels() } returnsMany (List(4) { scoreInk() } + List(2) { blankInk })
+        f.show(Images.SupportGrand16A)
+
+        // With noGlyphDark set by the dark inspect, (compound && clipped) blocks Grand just as pre-#431 did.
+        // Before this fix (when inspect(..., null) ignored !ink.hasGlyphs), noGlyphProfiles stayed empty,
+        // clipped stayed false, and this exact input returned SupportScores(null, 16, Compound) unblocked.
+        assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, null, SupportScoreDisplay.Compound))
+        verify(exactly = 6) { f.ocr.detectTextLine(f.crop, any()) }
+        verify(exactly = 6) { f.crop.resize(any()) }
+
+        // Control: with non-blank dark ink on the same inputs, Grand 16 is unblocked.
+        val fControl = Fixture()
+        every { fControl.api.prefs.gameServer } returns GameServer.Kr
+        every { fControl.ocr.detectTextLine(fControl.crop, any()) } returns OcrText("", 0)
+        every { fControl.prepared.grayPixels() } returns scoreInk()
+        fControl.show(Images.SupportGrand16A)
+        assertThat(fControl.reader.read(fControl.bounds, false, true)).isEqualTo(SupportScores(null, 16, SupportScoreDisplay.Compound))
     }
 }
 

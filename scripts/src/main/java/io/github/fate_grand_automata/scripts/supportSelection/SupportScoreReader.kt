@@ -307,6 +307,7 @@ class SupportScoreReader @Inject constructor(
         var inconsistentGrand = false
         var clippedEdge = false
         var nullInk = false
+        var noGlyphDark = false
         val noGlyphProfiles = mutableListOf<Int>()
         fun inspect(pattern: Pattern, options: TextLineOcrOptions, result: OcrText, profileIndex: Int?) {
             pattern.resize(Size(pattern.width * options.scale, pattern.height * options.scale)).use { scaled ->
@@ -319,6 +320,7 @@ class SupportScoreReader @Inject constructor(
                             nullInk = true
                         } else if (!ink.hasGlyphs) {
                             if (profileIndex != null) noGlyphProfiles.add(profileIndex)
+                            else noGlyphDark = true
                         } else if (ink.clippedByEdgeOnly(options.scale)) {
                             clippedEdge = true
                         }
@@ -405,7 +407,7 @@ class SupportScoreReader @Inject constructor(
         }
         val noGlyphExempt = profile.noGlyphNotClippedWithVerifiedGrand &&
             noGlyphProfiles.isNotEmpty() && grandTemplate16 && !differentGrandDigit
-        val clipped = nullInk || clippedEdge || (noGlyphProfiles.isNotEmpty() && !noGlyphExempt)
+        val clipped = nullInk || clippedEdge || noGlyphDark || (noGlyphProfiles.isNotEmpty() && !noGlyphExempt)
         // A width mismatch discards OCR (including the tail fallback), while a complete,
         // final-digit-verified template is independent evidence. Explicit OCR contradictions
         // and range/clipping vetoes below still make the field unknown.
@@ -438,6 +440,7 @@ class SupportScoreReader @Inject constructor(
             "noGlyphProfiles" to noGlyphProfiles,
             "clippedEdge" to clippedEdge,
             "noGlyphExempt" to noGlyphExempt,
+            "noGlyphDark" to noGlyphDark,
             "partialsIgnored" to ignoredPartials.size,
             "grandTail416" to grandTail416,
             "class62" to blocks?.class62?.name, "grand16" to blocks?.grand16?.name,
