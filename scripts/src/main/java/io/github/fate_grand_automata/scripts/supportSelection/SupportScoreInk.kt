@@ -44,12 +44,21 @@ internal class SupportScoreInk(pixels: ByteArray, val width: Int, val height: In
         glyphs = found.sortedBy { it.left }
     }
 
+    val hasGlyphs: Boolean get() = glyphs.isNotEmpty()
+
     // fillText adds a one-pixel border; reserve one original-image pixel inside it too.
-    fun clipped(scale: Int): Boolean {
+    fun clipped(scale: Int): Boolean = !hasGlyphs || clippedByEdgeOnly(scale)
+
+    /**
+     * Checks whether any detected glyph or the unfilled right margin at the glyph baseline touches
+     * the right edge. When [hasGlyphs] is false, this returns false and the raw-binary margin check
+     * is skipped because there is no baseline band to inspect.
+     */
+    fun clippedByEdgeOnly(scale: Int): Boolean {
         if (glyphs.any { it.right >= width - 1 - scale }) return true
         // An outline opened by the crop may disappear from fillText altogether. Inspect the
         // unfilled right margin at the surviving score baseline as well.
-        val band = glyphs.maxByOrNull { it.bottom } ?: return true
+        val band = glyphs.maxByOrNull { it.bottom } ?: return false
         val raw = binary ?: return false
         val rawWidth = width - 2
         for (x in rawWidth - scale until rawWidth) {

@@ -173,6 +173,7 @@ class SupportScoreDiagnosticsTest {
             "\"checkGrand\":true",
             "\"ocr\":[{\"stage\":\"primary\",\"profile\":0,\"text\":\"+62/+16\",\"confidence\":92}",
             "\"templates\":{\"SupportScore62\":false",
+            "\"blocks\":{\"readProfile\":\"jp\",\"darkRan\":false,\"noGlyphProfiles\":[],\"clippedEdge\":false,\"noGlyphExempt\":false,\"partialsIgnored\":0,\"grandTail416\":false",
             "\"result\":{\"class\":62,\"grand\":16,\"display\":\"Compound\"}",
             "\"matched\":true",
             "\"elapsedMs\":"

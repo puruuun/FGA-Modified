@@ -52,7 +52,12 @@ data class SupportScoreReadProfile(
         )
         val Jp = SupportScoreReadProfile(
             name = "jp",
-            useBlocks = true
+            darkRetry = SupportScoreDarkRetry.WhenPrimaryEmpty,
+            darkInspectCounts = false,
+            useBlocks = true,
+            ignoreSlashlessPartialsInCompound = true,
+            grandTail416AsPlus16 = true,
+            noGlyphNotClippedWithVerifiedGrand = true
         )
 
         fun forServer(server: GameServer): SupportScoreReadProfile = when (server) {
@@ -127,12 +132,15 @@ class SupportScoreReader @Inject constructor(
         // Anything may precede the slash (a garbled Class field); only the Grand digits matter here.
         private val grandTail = Regex(""".*/\+?(-?\d+)""")
 
+        private fun isNormalizedGrandTail416(text: String, profile: SupportScoreReadProfile): Boolean =
+            profile.grandTail416AsPlus16 && '/' in text && text.filterNot(Char::isWhitespace).substringAfter('/') == "416"
+
         /**
          * OCR fallback for a Grand +16 whose Class half is unreadable. Every readable result must end in
          * exactly "/16" (with or without the plus), and at least [MIN_AGREEMENT] of them must be strong.
          */
         fun grandTail16(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): Boolean {
-            val tails = results.filter { it.confidence >= profile.minOcrConfidence }.mapNotNull { result ->
+            val tails = results.filter { it.confidence >= profile.minOcrConfidence && !isNormalizedGrandTail416(it.text, profile) }.mapNotNull { result ->
                 grandTail.matchEntire(result.text.trim().replace(Regex("""\s+"""), ""))
                     ?.let { (it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE) to result.confidence }
             }
@@ -156,7 +164,8 @@ class SupportScoreReader @Inject constructor(
             if (result.confidence < profile.minOcrConfidence) return null
             val text = result.text.trim().replace(Regex("""\s+"""), "")
             compoundScore.matchEntire(text)?.let {
-                return SupportScores((it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), (it.groupValues[2].toIntOrNull() ?: Int.MAX_VALUE), SupportScoreDisplay.Compound)
+                val grand = if (isNormalizedGrandTail416(text, profile)) null else (it.groupValues[2].toIntOrNull() ?: Int.MAX_VALUE)
+                return SupportScores((it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), grand, SupportScoreDisplay.Compound)
             }
             return ordinaryScore.matchEntire(text)?.let {
                 SupportScores(classScore = (it.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE), display = SupportScoreDisplay.Ordinary)
@@ -173,13 +182,19 @@ class SupportScoreReader @Inject constructor(
         }
 
         private fun invalidGrand(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default) = results.any {
-            it.confidence >= profile.minOcrConfidence && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
-                ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value !in 0..16 } == true
+            it.confidence >= profile.minOcrConfidence && !isNormalizedGrandTail416(it.text, profile) &&
+                grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+                    ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value !in 0..16 } == true
         }
 
-        fun confirmed(results: List<OcrText>, profile: SupportScoreReadProfile = SupportScoreReadProfile.Default): SupportScores? {
-            val parsed = results.mapNotNull { result -> parse(result, profile)?.let { it to result.confidence } }
-            val compound = results.any { '/' in it.text }
+        fun confirmed(
+            results: List<OcrText>,
+            profile: SupportScoreReadProfile = SupportScoreReadProfile.Default,
+            ignored: List<OcrText> = emptyList()
+        ): SupportScores? {
+            val kept = if (ignored.isEmpty()) results else results.filterNot { it in ignored }
+            val parsed = kept.mapNotNull { result -> parse(result, profile)?.let { it to result.confidence } }
+            val compound = kept.any { '/' in it.text }
             val readings = parsed.filter { (scores, _) ->
                 scores.display == if (compound) SupportScoreDisplay.Compound else SupportScoreDisplay.Ordinary
             }
@@ -191,8 +206,8 @@ class SupportScoreReader @Inject constructor(
             }
             // A disabled/uncertain Class field must not veto a confidently read Grand field,
             // and vice versa. Only the selected conditions are combined by the selection policy.
-            val classScore = if (invalidClass(results, profile)) null else field { it.classScore }
-            val grandScore = if (invalidGrand(results, profile)) null else field { it.grandScore }
+            val classScore = if (invalidClass(kept, profile)) null else field { it.classScore }
+            val grandScore = if (invalidGrand(kept, profile)) null else field { it.grandScore }
             if (classScore == null && grandScore == null) return null
             return SupportScores(classScore, grandScore,
                 if (compound) SupportScoreDisplay.Compound else SupportScoreDisplay.Ordinary)
@@ -290,20 +305,29 @@ class SupportScoreReader @Inject constructor(
         var blockedClass = false
         var blockedGrand = false
         var inconsistentGrand = false
-        var clipped = false
-        fun inspect(pattern: Pattern, options: TextLineOcrOptions, result: OcrText) {
+        var clippedEdge = false
+        var nullInk = false
+        val noGlyphProfiles = mutableListOf<Int>()
+        fun inspect(pattern: Pattern, options: TextLineOcrOptions, result: OcrText, profileIndex: Int?) {
             pattern.resize(Size(pattern.width * options.scale, pattern.height * options.scale)).use { scaled ->
                 scaled.threshold(options.threshold).use { binary ->
                     binary.fillText().use { filled ->
                         val ink = filled.grayPixels()?.let {
                             SupportScoreInk(it, filled.width, filled.height, binary.grayPixels())
                         }
-                        clipped = clipped || ink == null || ink.clipped(options.scale)
+                        if (ink == null) {
+                            nullInk = true
+                        } else if (!ink.hasGlyphs) {
+                            if (profileIndex != null) noGlyphProfiles.add(profileIndex)
+                        } else if (ink.clippedByEdgeOnly(options.scale)) {
+                            clippedEdge = true
+                        }
                         if ('/' in result.text) {
                             val tail = grandTail.matchEntire(result.text.filterNot(Char::isWhitespace))
+                            val expectedDigits = if (isNormalizedGrandTail416(result.text, profile)) 2 else tail?.groupValues?.get(1)?.length
                             if (ink == null ||
-                                (result.confidence >= profile.minOcrConfidence && tail != null &&
-                                    !ink.grandDigitsAgree(tail.groupValues[1].length))) inconsistentGrand = true
+                                (result.confidence >= profile.minOcrConfidence && expectedDigits != null &&
+                                    !ink.grandDigitsAgree(expectedDigits))) inconsistentGrand = true
                         }
                     }
                 }
@@ -311,6 +335,7 @@ class SupportScoreReader @Inject constructor(
         }
 
         var blocks: SupportScoreBlocks.Result? = null
+        var darkRan = false
         val results = region.getPattern("support_class_grand_scores").use { pattern ->
             if (pattern.width * 2 < region.width - 1 || pattern.height * 2 < region.height - 1) emptyList()
             else {
@@ -318,9 +343,12 @@ class SupportScoreReader @Inject constructor(
                     blocks = pattern.grayPixels()?.let { SupportScoreBlocks.read(it, pattern.width, pattern.height, addedTuning.support) }
                 }
                 val primary = profile.primaryOcrProfiles.mapIndexed { profileIdx, options ->
-                    detect(pattern, options, "primary", profileIdx, evidence).also { inspect(pattern, options, it) }
+                    detect(pattern, options, "primary", profileIdx, evidence).also { inspect(pattern, options, it, profileIdx) }
                 }
-                val known = confirmed(primary, profile)
+                val primarySlashProven = profile.ignoreSlashlessPartialsInCompound && primary.any { '/' in it.text }
+                val primaryKept = if (primarySlashProven) primary.filter { '/' in it.text } else primary
+                val primaryIgnored = if (primarySlashProven) primary.filterNot { '/' in it.text } else emptyList()
+                val known = confirmed(primaryKept, profile, primaryIgnored)
                 val inconclusive = !(known != null && (known.display == SupportScoreDisplay.Ordinary ||
                     ((!checkClass || known.classScore != null) && (!checkGrand || known.grandScore != null))))
                 val runDark = when (profile.darkRetry) {
@@ -329,18 +357,18 @@ class SupportScoreReader @Inject constructor(
                     SupportScoreDarkRetry.WhenPrimaryEmpty -> primary.all { it.text.isEmpty() || it.confidence < profile.minOcrConfidence }
                 }
                 if (!runDark) primary
-                else primary + profile.darkOcrProfiles.mapIndexed { profileIdx, options ->
-                    detect(pattern, options, "dark", profileIdx, evidence).also {
-                        if (profile.darkInspectCounts) inspect(pattern, options, it)
+                else {
+                    darkRan = true
+                    primary + profile.darkOcrProfiles.mapIndexed { profileIdx, options ->
+                        detect(pattern, options, "dark", profileIdx, evidence).also {
+                            if (profile.darkInspectCounts) inspect(pattern, options, it, null)
+                        }
                     }
                 }
             }
         }
         // A clipped number is not evidence that Grand is absent.
         if (results.isEmpty()) return SupportScores()
-        val recognized = confirmed(results, profile)?.let {
-            if (inconsistentGrand) it.copy(grandScore = null) else it
-        }
         // JP shrinks the entire pair for two-digit Class scores. Reading both tiny fields
         // as one OCR word can lose the slash/plus or produce low confidence even on +56/+16.
         // Independently recover only a requested maximum, with a delimiter-bearing template.
@@ -368,21 +396,32 @@ class SupportScoreReader @Inject constructor(
         }
         val class62 = checkClass && matches(COMPACT_CLASS_TEMPLATES)
         val grandTemplate16 = checkGrand && matches(GRAND_TEMPLATES, verifyGrandDigit = true)
+        val slashProven = profile.ignoreSlashlessPartialsInCompound &&
+            (class62 || grandTemplate16 || results.any { '/' in it.text })
+        val keptResults = if (slashProven) results.filter { '/' in it.text } else results
+        val ignoredPartials = if (slashProven) results.filterNot { '/' in it.text } else emptyList()
+        val recognized = confirmed(keptResults, profile, ignoredPartials)?.let {
+            if (inconsistentGrand) it.copy(grandScore = null) else it
+        }
+        val noGlyphExempt = profile.noGlyphNotClippedWithVerifiedGrand &&
+            noGlyphProfiles.isNotEmpty() && grandTemplate16 && !differentGrandDigit
+        val clipped = nullInk || clippedEdge || (noGlyphProfiles.isNotEmpty() && !noGlyphExempt)
         // A width mismatch discards OCR (including the tail fallback), while a complete,
         // final-digit-verified template is independent evidence. Explicit OCR contradictions
         // and range/clipping vetoes below still make the field unknown.
-        val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(results, profile))
+        val grand16 = grandTemplate16 || (checkGrand && !inconsistentGrand && grandTail16(keptResults, profile))
         val compound = blocks?.compound == true || class62 || grand16 || results.any { '/' in it.text }
         val blockClass62 = checkClass && blocks?.class62 == SupportScoreBlocks.Decision.Positive
         val blockGrand16 = checkGrand && blocks?.grand16 == SupportScoreBlocks.Decision.Positive
         val classTemplate = if (compound) class62 else legacyClass62
-        val raw = results.mapNotNull { rawParse(it, profile) }
-        blockedClass = blockedClass || (!compound && clipped) || invalidClass(results, profile) ||
+        val raw = keptResults.mapNotNull { rawParse(it, profile) }
+        blockedClass = blockedClass || (!compound && clipped) || invalidClass(keptResults, profile) ||
             ((classTemplate || blockClass62) && raw.any { it.classScore != null && it.classScore != 62 })
-        blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(results, profile) ||
-            ((grandTemplate16 || blockGrand16) && results.any {
-                it.confidence >= profile.minOcrConfidence && grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
-                    ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value != 16 } == true
+        blockedGrand = blockedGrand || (compound && clipped) || invalidGrand(keptResults, profile) ||
+            ((grandTemplate16 || blockGrand16) && keptResults.any {
+                it.confidence >= profile.minOcrConfidence && !isNormalizedGrandTail416(it.text, profile) &&
+                    grandTail.matchEntire(it.text.filterNot(Char::isWhitespace))
+                        ?.groupValues?.get(1)?.let { text -> text.toIntOrNull() ?: Int.MAX_VALUE }?.let { value -> value != 16 } == true
             }) || (!grandTemplate16 && differentGrandDigit && (recognized?.grandScore == 16 || blockGrand16))
         // D-2 is independent evidence, never permission to override D-1 conflicts, clipping or ranges.
         // A counted one-digit block or a decisive near-miss vetoes an existing maximum as well.
@@ -392,10 +431,18 @@ class SupportScoreReader @Inject constructor(
             (blockClass62 && recognized?.classScore?.let { it != 62 } == true)
         blockedGrand = blockedGrand || (rejectGrand16 && (grand16 || recognized?.grandScore == 16)) ||
             (blockGrand16 && recognized?.grandScore?.let { it != 16 } == true)
+        val grandTail416 = keptResults.any { isNormalizedGrandTail416(it.text, profile) }
         evidence?.blocks?.putAll(mapOf(
+            "readProfile" to profile.name,
+            "darkRan" to darkRan,
+            "noGlyphProfiles" to noGlyphProfiles,
+            "clippedEdge" to clippedEdge,
+            "noGlyphExempt" to noGlyphExempt,
+            "partialsIgnored" to ignoredPartials.size,
+            "grandTail416" to grandTail416,
             "class62" to blocks?.class62?.name, "grand16" to blocks?.grand16?.name,
             "compound" to blocks?.compound, "clipped" to clipped,
-            "invalidClass" to invalidClass(results, profile), "invalidGrand" to invalidGrand(results, profile),
+            "invalidClass" to invalidClass(keptResults, profile), "invalidGrand" to invalidGrand(keptResults, profile),
             "blockedClass" to blockedClass, "blockedGrand" to blockedGrand,
             "differentGrandDigit" to differentGrandDigit, "inconsistentGrand" to inconsistentGrand
         ))
