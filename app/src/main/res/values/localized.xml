@@ -1469,7 +1469,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_root_retreat_reason_tls">"Repeated TLS handshake failures"</string>
     <string name="capture_root_retreat_reason_upstream">"Repeated game server connection failures"</string>
     <string name="capture_root_adguard_vpn_note">"Set AdGuard to 'Automatic proxy' mode, and exclude both FGO and FGA from AdGuard filtering. Can be used together with personal VPNs such as WireGuard."</string>
-    <string name="card_swap_shared_header">All waves and turns</string>
     <string name="card_swap_detection">Detect Aoko card change</string>
     <string name="card_swap_detection_summary">When on, applies to every wave and turn: a card with the swap icon is treated as Arts</string>
 </resources>

@@ -77,12 +77,11 @@ class CardSwapSettingAndUiTest {
             }
         }
 
-        val header = context.getString(R.string.card_swap_shared_header)
         val title = context.getString(R.string.card_swap_detection)
         val summary = context.getString(R.string.card_swap_detection_summary)
 
         val swapSwitch = isToggleable() and hasAnyAncestor(hasClickAction() and hasAnyDescendant(hasText(title)))
-        compose.onNodeWithText(header).performScrollTo().assertExists()
+        compose.onNodeWithText("All waves and turns").assertDoesNotExist()
         compose.onNodeWithText(title).performScrollTo().assertExists()
         compose.onNodeWithText(summary).performScrollTo().assertExists()
         compose.onNode(swapSwitch, useUnmergedTree = true).assertIsEnabled().assertIsOff()

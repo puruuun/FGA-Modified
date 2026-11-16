@@ -9,7 +9,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
@@ -143,17 +142,20 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
             }
         }
 
-        OutlinedCard(
-            modifier = Modifier
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.card_swap_shared_header),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
+        if (useServantPriority && !servantStyle) {
+            ServantPriority(
+                priorities = servantPriority
             )
+        }
 
+        Card(
+            modifier = Modifier
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        ) {
             var swapDetection by cardSwapDetection.remember()
 
             ListItem(
@@ -167,12 +169,6 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                     )
                 },
                 colors = FGAListItemColors()
-            )
-        }
-
-        if (useServantPriority && !servantStyle) {
-            ServantPriority(
-                priorities = servantPriority
             )
         }
     }

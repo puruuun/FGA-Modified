@@ -1400,7 +1400,6 @@
     <string name="capture_root_retreat_reason_tls">"연속 TLS 핸드셰이크 실패"</string>
     <string name="capture_root_retreat_reason_upstream">"연속 게임 서버 연결 실패"</string>
     <string name="capture_root_adguard_vpn_note">"AdGuard는 '자동 프록시' 모드로 두고, AdGuard 필터링에서 FGO와 FGA를 모두 제외하세요. WireGuard 등 개인 VPN과 함께 쓸 수 있습니다."</string>
-    <string name="card_swap_shared_header">모든 웨이브·턴 공통</string>
     <string name="card_swap_detection">아오코 카드 변화 감지</string>
     <string name="card_swap_detection_summary">켜면 모든 웨이브와 턴에 적용됩니다. 카드에 변환 아이콘이 있으면 Arts로 취급합니다</string>
 </resources>

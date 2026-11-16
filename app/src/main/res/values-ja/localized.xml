@@ -1158,7 +1158,6 @@
     <string name="capture_root_retreat_reason_tls">"TLSハンドシェイクの連続失敗"</string>
     <string name="capture_root_retreat_reason_upstream">"ゲームサーバーへの接続の連続失敗"</string>
     <string name="capture_root_adguard_vpn_note">"AdGuard は「自動プロキシ」モードにし、AdGuard のフィルタリングから FGO と FGA の両方を除外してください。WireGuard などの個人 VPN と併用できます。"</string>
-    <string name="card_swap_shared_header">全ウェーブ・ターン共通</string>
     <string name="card_swap_detection">青子のカード変化を検出</string>
     <string name="card_swap_detection_summary">オンにするとすべてのウェーブとターンに適用されます。変換アイコンのあるカードをArtsとして扱います</string>
 </resources>
