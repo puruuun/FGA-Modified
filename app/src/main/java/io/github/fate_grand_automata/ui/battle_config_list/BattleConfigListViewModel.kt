@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.OutputStream
 import java.util.UUID
 import javax.inject.Inject
 
@@ -109,30 +110,41 @@ class BattleConfigListViewModel @Inject constructor(
 
     data class ImportExportResult(val failureCount: Int)
 
-    private suspend fun exportAsync(dirUri: Uri, context: Context): ImportExportResult {
-        var failed = 0
-
+    internal suspend fun exportAsync(dirUri: Uri, context: Context): ImportExportResult =
         withContext(Dispatchers.IO) {
             val resolver = context.contentResolver
             val dir = DocumentFile.fromTreeUri(context, dirUri)
 
-            val configs = configsToExport()
+            exportConfigs(
+                configs = configsToExport(),
+                createFile = { filename -> dir?.createFile("*/*", filename)?.uri },
+                openOutputStream = { uri -> resolver.openOutputStream(uri) }
+            )
+        }
 
-            configs.forEach { battleConfig ->
+    internal fun exportConfigs(
+        configs: List<IBattleConfig>,
+        createFile: (filename: String) -> Uri?,
+        openOutputStream: (Uri) -> OutputStream?
+    ): ImportExportResult {
+        var failed = 0
+
+        configs.forEach { battleConfig ->
+            try {
                 val json = BattleConfigFile.encode(battleConfig.export())
-
-                try {
-                    dir?.createFile("*/*", "${battleConfig.name}.fga")
-                        ?.uri
-                        ?.let { uri ->
-                            resolver.openOutputStream(uri)?.use { outStream ->
-                                outStream.writer().use { it.write(json) }
-                            }
-                        }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to export")
+                val uri = createFile("${battleConfig.name}.fga")
+                val wrote = uri?.let { targetUri ->
+                    openOutputStream(targetUri)?.use { outStream ->
+                        outStream.writer().use { it.write(json) }
+                        true
+                    }
+                } ?: false
+                if (!wrote) {
                     ++failed
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to export")
+                ++failed
             }
         }
 
@@ -152,20 +164,25 @@ class BattleConfigListViewModel @Inject constructor(
         }
     }
 
-    private suspend fun importAsync(uris: List<Uri>, context: Context): ImportExportResult {
+    internal suspend fun importAsync(uris: List<Uri>, context: Context): ImportExportResult {
         var failed = 0
 
         withContext(Dispatchers.IO) {
             uris.forEach { uri ->
                 try {
                     val json = context.contentResolver.openInputStream(uri)?.use { inStream ->
-                        inStream.use {
-                            it.reader().readText()
-                        }
+                        inStream.reader().readText()
                     }
 
                     if (json != null) {
-                        newConfig().import(BattleConfigFile.decode(json))
+                        val decoded = BattleConfigFile.decode(json)
+                        val created = newConfig()
+                        try {
+                            created.import(decoded)
+                        } catch (e: Exception) {
+                            prefs.removeBattleConfig(created.id)
+                            throw e
+                        }
                     }
                 } catch (e: Exception) {
                     ++failed

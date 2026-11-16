@@ -10,16 +10,31 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.MaterialEnum
 
-class BattleConfigCore(
+class BattleConfigCore private constructor(
     val id: String,
-    val context: Context
+    private val _context: Context?,
+    private val _sharedPrefs: SharedPreferences?,
+    private val maker: PrefMaker
 ) {
-    val sharedPrefs: SharedPreferences = context.getSharedPreferences(
-        id,
-        Context.MODE_PRIVATE
+    constructor(id: String, context: Context) : this(
+        id = id,
+        context = context,
+        sharedPrefs = context.getSharedPreferences(id, Context.MODE_PRIVATE)
     )
 
-    private val maker = PrefMaker(sharedPrefs)
+    private constructor(
+        id: String,
+        context: Context,
+        sharedPrefs: SharedPreferences
+    ) : this(
+        id = id,
+        _context = context,
+        _sharedPrefs = sharedPrefs,
+        maker = PrefMaker(sharedPrefs)
+    )
+
+    val context: Context get() = requireNotNull(_context)
+    val sharedPrefs: SharedPreferences get() = requireNotNull(_sharedPrefs)
 
     fun import(map: Map<String, *>) =
         sharedPrefs.edit {
@@ -155,5 +170,18 @@ class BattleConfigCore(
     companion object {
         const val STREAK_COUNT_KEY = "turn_limit_retreat_streak_count"
         const val DEFAULT_STREAK_COUNT = 3
+
+        /**
+         * Declared preference types keyed by SharedPreferences key, derived from [BattleConfigCore]'s
+         * own [PrefMaker] definitions so validation stays in sync with the schema.
+         */
+        val prefTypes: Map<String, PrefType> by lazy {
+            BattleConfigCore(
+                id = "",
+                _context = null,
+                _sharedPrefs = null,
+                maker = PrefMaker.schemaOnly()
+            ).maker.types.toMap()
+        }
     }
 }

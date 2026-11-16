@@ -74,9 +74,10 @@ class CaptureAccountsLazyTest {
         first.apply(kr("login/top"), login(7002, ""), 20)
         first.rename("7001", "Farm")
         first.save()
-        val expected = first.accounts(1234)
+        val expected = first.accounts(1234).map { it.copy(revision = 0) }
         for (file in directory.walkTopDown().filter { it.name == "account-state.json" }) file.writeText("not json")
         val light = store(migrate = false)
+        assertTrue(light.accounts(1234).all { it.revision == 0L })
         assertEquals(expected, light.accounts(1234))
         assertEquals("7002", light.currentId)
         assertEquals("#7002", light.displayName("7002"))
@@ -93,12 +94,13 @@ class CaptureAccountsLazyTest {
         first.apply(kr("friend/top"), top(7001), 25)
         first.applyFriends("7001", kr("friend/top"), top(7001), 25)
         first.save()
-        val expected = first.accounts(100)
+        val expected = first.accounts(100).map { it.copy(revision = 0) }
         // Today's code wrote only account-state.json, account.json, friends.json and current.
         directory.walkTopDown().filter { it.name == "summary.json" }.toList().forEach { assertTrue(it.delete()) }
         val widget = store(migrate = false)
         assertTrue(widget.accounts(100).isEmpty(), "the widget path never parses a state")
         val upgraded = store()
+        assertTrue(upgraded.accounts(100).all { it.revision == 0L })
         assertEquals(expected, upgraded.accounts(100))
         assertEquals(1, upgraded.accounts(100).first { it.id == "7001" }.friendCount)
         assertNull(upgraded.accounts(100).first { it.id == "7002" }.friendCount)

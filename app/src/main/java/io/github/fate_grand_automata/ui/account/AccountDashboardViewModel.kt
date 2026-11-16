@@ -47,16 +47,16 @@ class AccountDashboardViewModel @Inject constructor(
      */
     internal fun account(userId: String): StateFlow<DashboardVersion> = versions.getOrPut(userId) {
         val projection = DashboardProjectionCache()
-        var lastStateTime: Long? = null
+        var lastRevision: Long? = null
         var lastServer: String? = null
         var lastData: DashboardData? = null
         CaptureTracker.accounts
             .onStart { CaptureTracker.init(appContext) }
             .map { accounts -> accounts.find { it.id == userId } }
-            .distinctUntilChangedBy { p -> listOf(p?.lastUpdateTime, p?.displayName, p?.friendCount, p?.friendUpdatedAt, p?.server) }
+            .distinctUntilChangedBy { p -> listOf(p?.revision, p?.displayName, p?.friendCount, p?.friendUpdatedAt, p?.server) }
             .mapLatest { profile ->
                 val server = profile?.server ?: "KR"
-                val data = if (profile != null && lastData != null && profile.lastUpdateTime == lastStateTime && server == lastServer) {
+                val data = if (profile != null && lastData != null && profile.revision == lastRevision && server == lastServer) {
                     lastData
                 } else {
                     val state = if (profile == null) null else CaptureTracker.loadState(userId)
@@ -64,7 +64,7 @@ class AccountDashboardViewModel @Inject constructor(
                     val atlas = if (tables == null) names.value else cache.dashboardTables(listOf(tables), hasJpAccount = server == "JP")
                     names.value = atlas
                     projection.getTables(tables, atlas).also {
-                        lastStateTime = profile?.lastUpdateTime
+                        lastRevision = profile?.revision
                         lastServer = server
                         lastData = it
                     }

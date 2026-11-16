@@ -1,5 +1,8 @@
 package io.github.fate_grand_automata.capture
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /** Exercises the actual response hook, using handwritten JSON and no files or Android services. */
@@ -26,6 +29,7 @@ class CaptureTrackerTest {
     }
 
     @BeforeTest fun reset() {
+        CaptureTracker.clockSeconds = { System.currentTimeMillis() / 1000 }
         CaptureTracker.discardRun()
         CaptureTracker.setRunning(false)
         CaptureTracker.delete()
@@ -200,5 +204,27 @@ class CaptureTrackerTest {
             """{"cache":{"updated":{"userItem":[{"userId":7001,"itemId":100,"num":1}]}}}""".toByteArray(), null)
         assertEquals(setOf("7001"), CaptureTracker.accounts.value.map { it.id }.toSet())
         assertSame(before, CaptureTracker.snapshot("7001")?.second)
+    }
+
+    @Test fun sameSecondChangesProduceDistinctRevisionsAndEmissions() = runBlocking {
+        CaptureTracker.clockSeconds = { 1_800_000_000L }
+        val emissions = mutableListOf<List<CaptureAccount>>()
+        val job = launch(Dispatchers.Unconfined) {
+            CaptureTracker.accounts.collect { emissions += it }
+        }
+        try {
+            login(7001)
+            feed("/item/use", """{"cache":{"updated":{"userItem":[{"userId":7001,"itemId":100,"num":2}]}}}""")
+            // A change outside AccountSummary in the exact same second must still emit with a higher revision.
+            feed("/gacha/draw", """{"cache":{"updated":{"userSvt":[{"userId":7001,"id":1001,"svtId":100100,"lv":1}]}}}""")
+
+            val profiles = emissions.mapNotNull { list -> list.singleOrNull { it.id == "7001" } }
+            assertEquals(3, profiles.size)
+            assertTrue(profiles.all { it.lastUpdateTime == 1_800_000_000L })
+            assertTrue(profiles[0].revision < profiles[1].revision)
+            assertTrue(profiles[1].revision < profiles[2].revision)
+        } finally {
+            job.cancel()
+        }
     }
 }

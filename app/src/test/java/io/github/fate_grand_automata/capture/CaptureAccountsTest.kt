@@ -314,4 +314,35 @@ class CaptureAccountsTest {
         assertEquals(setOf("7001"), store.ids)
         assertEquals(5, fruit(store, "7001"))
     }
+
+    @Test fun sameSecondUpdatesBumpRevisionMonotonicallyWithoutWritingToDisk() {
+        val store = store()
+        store.apply(kr("login/top"), login(7001), 100)
+        val r1 = store.accounts(100).single().revision
+        assertTrue(r1 > 0)
+
+        store.apply(kr("item/use"), item(7001, 3), 100)
+        val afterItem = store.accounts(100).single()
+        assertEquals(100L, afterItem.lastUpdateTime)
+        assertTrue(afterItem.revision > r1)
+
+        // An unchanged response in the same second leaves revision untouched.
+        store.apply(kr("item/use"), item(7001, 3), 100)
+        assertEquals(afterItem.revision, store.accounts(100).single().revision)
+
+        store.rename("7001", "Farm")
+        val afterRename = store.accounts(100).single()
+        assertTrue(afterRename.revision > afterItem.revision)
+
+        val friendTop = body("""{"cache":{"replaced":{"tblFriend":[{"userId":7001,"friendId":11},{"userId":12,"friendId":7001}]},"updated":{"otherUserGame":[{"userId":11,"userName":"Friend"}]}}}""")
+        assertTrue(store.applyFriends("7001", kr("friend/top"), friendTop, 100))
+        val afterFriends = store.accounts(100).single()
+        assertTrue(afterFriends.revision > afterRename.revision)
+
+        store.save()
+        listOf("account.json", "summary.json", "account-state.json").forEach { fileName ->
+            assertFalse(File(directory, "accounts/7001/$fileName").readText().contains("revision"))
+        }
+        assertEquals(0L, store().accounts(100).single().revision)
+    }
 }

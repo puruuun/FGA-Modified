@@ -47,6 +47,8 @@ data class DroppedResponse(
 object CaptureTracker {
     @Volatile var starting = false
         internal set
+    /** Replaced in tests to verify same-second updates without clock flakiness. */
+    @Volatile internal var clockSeconds: () -> Long = { System.currentTimeMillis() / 1000 }
     internal val battleInbox = CaptureBattleInbox()
     private const val SAVE_DELAY_SECONDS = 2L
     private val _rosterRevision = MutableStateFlow(0L)
@@ -224,7 +226,7 @@ object CaptureTracker {
 
     private fun publish() {
         _currentId.value = stored.currentId
-        _accounts.value = stored.accounts(System.currentTimeMillis() / 1000)
+        _accounts.value = stored.accounts(clockSeconds())
     }
 
     fun setRunning(running: Boolean, reason: CaptureStopReason? = null) {
@@ -272,7 +274,7 @@ object CaptureTracker {
         synchronized(lock) {
             val previousCurrent = stored.currentId
             val previousServers = stored.currentServers
-            val now = System.currentTimeMillis() / 1000
+            val now = clockSeconds()
             stored.recordFriendFields(target, body, now)
             val rosterId = stored.friendTarget(target, body)
             val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, now)

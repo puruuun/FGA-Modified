@@ -5,6 +5,8 @@ import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
+import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.PrefType
 import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -90,5 +92,78 @@ class BattleConfigFileTest {
         assertFailsWith<SerializationException> {
             BattleConfigFile.decode("not a battle config")
         }
+    }
+
+    @Test
+    fun `a boolean given for a string pref is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"autoskill_name":true}""")
+        }
+    }
+
+    @Test
+    fun `an int pref given as a string is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"shuffle_cards_wave":"3"}""")
+        }
+    }
+
+    @Test
+    fun `a stringAsInt pref given as a JSON number is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"autoskill_party":-1}""")
+        }
+    }
+
+    @Test
+    fun `a boolean pref given as a string is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"use_servant_priority":"true"}""")
+        }
+    }
+
+    @Test
+    fun `a string set pref given as a non-array or non-string array is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"battle_config_mat":"Proof"}""")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"battle_config_mat":[1,2]}""")
+        }
+    }
+
+    @Test
+    fun `int pref accepts Long in Int range and rejects out-of-range Long or Double`() {
+        val validated = BattleConfigFile.validate(mapOf("shuffle_cards_wave" to 3L))
+        assertThat(validated["shuffle_cards_wave"]).isEqualTo(3)
+        assertThat(validated["shuffle_cards_wave"]).isNotNull().isInstanceOf(Int::class)
+
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"shuffle_cards_wave":3000000000}""")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            BattleConfigFile.decode("""{"shuffle_cards_wave":3.5}""")
+        }
+    }
+
+    @Test
+    fun `unknown keys keep existing decode behaviour alongside validated known keys`() {
+        val decoded = BattleConfigFile.decode(
+            """{"autoskill_name":"Farming","some_future_pref":42,"another_future_flag":true}"""
+        )
+        assertThat(decoded["autoskill_name"]).isEqualTo("Farming")
+        assertThat(decoded["some_future_pref"]).isEqualTo(42)
+        assertThat(decoded["another_future_flag"]).isEqualTo(true)
+    }
+
+    @Test
+    fun `schema covers BattleConfigCore and nested preference groups`() {
+        val types = BattleConfigCore.prefTypes
+        assertThat(types["autoskill_name"]).isEqualTo(PrefType.String)
+        assertThat(types["secondary_autoskill_cmd"]).isEqualTo(PrefType.String)
+        assertThat(types["command_start_buster"]).isEqualTo(PrefType.Int)
+        assertThat(types["support_append_skill_max_5"]).isEqualTo(PrefType.Boolean)
+        assertThat(types["battle_config_mat"]).isEqualTo(PrefType.StringSet)
+        assertThat(types[BattleConfigCore.STREAK_COUNT_KEY]).isEqualTo(PrefType.Int)
     }
 }
