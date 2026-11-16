@@ -1393,7 +1393,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_friend_point_summons">Friend point summons: %1$s</string>
     <string name="dashboard_other_summons">Other summons</string>
     <string name="dashboard_summon_count">%1$s pulls</string>
-    <string name="dashboard_summon_bonus_note">Counts are cards drawn; a 10-pull counts as 11.</string>
     <string name="dashboard_recent_summon_log">Recent summon log</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"Dark mode"</string>

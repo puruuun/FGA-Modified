@@ -581,11 +581,6 @@ private fun InventoryGroup.label() = when (this) {
         var expandedOthers by rememberSaveable { mutableStateOf(false) }
         val shown = if (expandedOthers) summons.otherSummons else summons.otherSummons.take(10)
         Text(stringResource(R.string.dashboard_other_summons), style = MaterialTheme.typography.labelLarge)
-        Text(
-            stringResource(R.string.dashboard_summon_bonus_note),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         LazyColumn(
             Modifier.fillMaxWidth().heightIn(min = 48.dp, max = if (expandedOthers) 380.dp else 360.dp)
                 .testTag("dashboard-summons-others"),

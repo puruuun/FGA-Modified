@@ -1082,7 +1082,6 @@
     <string name="dashboard_friend_point_summons">フレンドポイント召喚 %1$s回</string>
     <string name="dashboard_other_summons">その他の召喚</string>
     <string name="dashboard_summon_count">%1$s回</string>
-    <string name="dashboard_summon_bonus_note">回数は引いた枚数で、10連召喚1回は11と数えます。</string>
     <string name="dashboard_recent_summon_log">最近の召喚履歴</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"ダークモード"</string>

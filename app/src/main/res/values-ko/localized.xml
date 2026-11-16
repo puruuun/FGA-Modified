@@ -1324,7 +1324,6 @@
     <string name="dashboard_friend_point_summons">친구 포인트 소환 %1$s회</string>
     <string name="dashboard_other_summons">기타 소환</string>
     <string name="dashboard_summon_count">%1$s회</string>
-    <string name="dashboard_summon_bonus_note">횟수는 뽑은 장수이며 10연차 1번은 11로 셉니다.</string>
     <string name="dashboard_recent_summon_log">최근 소환 내역</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
     <string name="p_app_theme">"다크 모드"</string>
