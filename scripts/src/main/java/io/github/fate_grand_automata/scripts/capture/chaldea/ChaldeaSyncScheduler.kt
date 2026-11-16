@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.scripts.capture.chaldea
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -14,10 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -101,6 +106,9 @@ class ChaldeaSyncScheduler(
 
     /** Guards the small state below. Never held across a suspension, a binder call or file work. */
     private val lock = Any()
+
+    /** Serialises every path that writes Chaldea files or inflight/backup records. Never acquired while holding [lock]. */
+    private val writeMutex = Mutex()
     private val pending = LinkedHashSet<String>()
     private var backgroundSince: Long? = null
     private var lastObservation: Long? = null
@@ -598,21 +606,34 @@ class ChaldeaSyncScheduler(
 
     /** Chaldea is not running: recover an interrupted write, then write every target in this one session. */
     private suspend fun writePass(session: ChaldeaSyncSession, gen: Int, interval: Long): Step {
-        resetBackground()
-        setPhase(gen, Phase.Writing)
-        if (!recoverInflight(session)) return Step(true)
-        val gameData = refreshGameData(session)
-        val targets = resolveTargets(null, false, gameData)
-        var retry = false
-        for (t in targets) {
-            if (scriptActive()) return Step(true).also { setTransient(ChaldeaSyncStatus.WaitingScript) }
-            when (writeOne(session, t)) {
-                Pass.Abort -> return Step(true)
-                Pass.Retry -> retry = true
-                Pass.Done -> {}
+        currentCoroutineContext().ensureActive()
+        val activeGen = synchronized(lock) {
+            if (gen != generation) false
+            else {
+                phase = Phase.Writing
+                true
             }
         }
-        setPhase(gen, Phase.Waiting)
+        if (!activeGen) return Step(true)
+        var retry = false
+        try {
+            writeMutex.withLock {
+                resetBackground()
+                if (!recoverInflight(session)) return Step(true)
+                val gameData = refreshGameData(session)
+                val targets = resolveTargets(null, false, gameData)
+                for (t in targets) {
+                    if (scriptActive()) return Step(true).also { setTransient(ChaldeaSyncStatus.WaitingScript) }
+                    when (writeOne(session, t)) {
+                        Pass.Abort -> return Step(true)
+                        Pass.Retry -> retry = true
+                        Pass.Done -> {}
+                    }
+                }
+            }
+        } finally {
+            setPhase(gen, Phase.Waiting)
+        }
         // An account that was saved during its own write stays pending: poll again and write the newer patch.
         val left = synchronized(lock) { pending.isNotEmpty() }
         return if (retry || left) Step(false, interval) else Step(true)
@@ -741,6 +762,10 @@ class ChaldeaSyncScheduler(
                 if (r.code != ChaldeaSyncCode.ChaldeaRunning && r.code != ChaldeaSyncCode.StateUnknown) recoveryFailed(r.code)
                 return false
             }
+            if (r.packageName != inflight.packageName) {
+                recoveryFailed(ChaldeaSyncCode.FileChanged)
+                return false
+            }
             if (!damaged) {
                 // userdata.json is valid, but the interrupted write also covers .bak (written second): it must be
                 // its own original or the new userdata.json. Anything else (cut short, empty) means interrupted.
@@ -847,8 +872,9 @@ class ChaldeaSyncScheduler(
             setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
             return Pass.Abort
         }
+        val writeId = UUID.randomUUID().toString()
         try {
-            store.writeInflight(ChaldeaSyncStore.Inflight(pkg, backupFolder.path, baseSha, bundleSize, bundleSha, wallClock()))
+            store.writeInflight(ChaldeaSyncStore.Inflight(pkg, backupFolder.path, baseSha, bundleSize, bundleSha, wallClock(), writeId))
         } catch (e: IOException) {
             backups.release(pkg)
             setServerResult(t.server, ChaldeaSyncStatus.BackupFailed)
@@ -860,7 +886,7 @@ class ChaldeaSyncScheduler(
             when (r.code) {
                 ChaldeaSyncCode.Ok -> {
                     val after = runCatching { session.state().state }.getOrDefault(ChaldeaRunState.Unknown)
-                    finishWrite(pkg)
+                    finishWrite(pkg, writeId)
                     if (after != ChaldeaRunState.NotRunning) {
                         setResult(ChaldeaSyncStatus.ChaldeaStartedDuring)
                         Pass.Retry
@@ -896,7 +922,7 @@ class ChaldeaSyncScheduler(
                     }
                 }
                 ChaldeaSyncCode.Restored -> {
-                    finishWrite(pkg)
+                    finishWrite(pkg, writeId)
                     setServerResult(t.server, ChaldeaSyncStatus.FailedRestored)
                     settleIf(t.id, t.gen)
                     Pass.Done
@@ -908,16 +934,17 @@ class ChaldeaSyncScheduler(
                     Pass.Abort
                 }
                 else -> {
-                    finishWrite(pkg)
+                    finishWrite(pkg, writeId)
                     afterFailure(t, r.code)
                 }
             }
         }
     }
 
-    private fun finishWrite(pkg: String) {
-        store.clearInflight()
-        backups.release(pkg)
+    internal fun finishWrite(pkg: String, writeId: String) {
+        if (store.clearInflight(writeId)) {
+            backups.release(pkg)
+        }
     }
 
     /** Maps a refusal to a status; says whether the account stays pending. */
@@ -952,12 +979,39 @@ class ChaldeaSyncScheduler(
      * [ChaldeaRunState.Unknown]) is never closed.
      */
     suspend fun syncNow(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome {
-        val job = scope.async { manualSync(confirmed) }
-        synchronized(lock) {
-            attemptJob?.cancel()
-            generation++
-            attemptJob = job
-            phase = Phase.Waiting
+        var myGen = 0
+        lateinit var job: Deferred<ChaldeaSyncNowOutcome>
+        while (true) {
+            val running = synchronized(lock) {
+                if (phase == Phase.Writing) {
+                    attemptJob
+                } else {
+                    attemptJob?.cancel()
+                    myGen = ++generation
+                    phase = Phase.Waiting
+                    val created = scope.async(start = CoroutineStart.LAZY) {
+                        try {
+                            manualSync(confirmed, myGen)
+                        } finally {
+                            synchronized(lock) {
+                                if (myGen == generation) {
+                                    attemptJob = null
+                                    phase = Phase.Idle
+                                }
+                            }
+                        }
+                    }
+                    job = created
+                    attemptJob = created
+                    created.start()
+                    null
+                }
+            }
+            if (running != null) {
+                running.join()
+            } else {
+                break
+            }
         }
         return try {
             job.await()
@@ -965,16 +1019,18 @@ class ChaldeaSyncScheduler(
             if (!currentCoroutineContext().isActive) throw c
             ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.WaitingScript)
         } finally {
-            synchronized(lock) {
-                if (attemptJob === job) {
-                    attemptJob = null
-                    phase = Phase.Idle
+            if (!job.isActive) {
+                synchronized(lock) {
+                    if (attemptJob === job) {
+                        attemptJob = null
+                        phase = Phase.Idle
+                    }
                 }
             }
         }
     }
 
-    private suspend fun manualSync(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome {
+    private suspend fun manualSync(confirmed: ChaldeaRunState?, gen: Int): ChaldeaSyncNowOutcome {
         if (!env.enabled()) return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
         if (scriptActive()) return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.WaitingScript)
         val access = env.access()
@@ -1009,16 +1065,31 @@ class ChaldeaSyncScheduler(
                     return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.StateUnknown)
                 }
             }
-            resetBackground()
-            if (!recoverInflight(session)) return ChaldeaSyncNowOutcome.Done
-            val gameData = refreshGameData(session)
-            val gameDataChanged = gameData != null && (cachedGameData == null || !gameData.sameContentAs(cachedGameData))
-            val targets = if (gameDataChanged) {
-                resolveTargets(accounts.currentIds().values.toList(), true, gameData)
-            } else {
-                initialTargets
+            currentCoroutineContext().ensureActive()
+            val activeGen = synchronized(lock) {
+                if (gen != generation) false
+                else {
+                    phase = Phase.Writing
+                    true
+                }
             }
-            for (t in targets) if (writeOne(session, t) == Pass.Abort) break
+            if (!activeGen) return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.WaitingScript)
+            try {
+                writeMutex.withLock {
+                    resetBackground()
+                    if (!recoverInflight(session)) return ChaldeaSyncNowOutcome.Done
+                    val gameData = refreshGameData(session)
+                    val gameDataChanged = gameData != null && (cachedGameData == null || !gameData.sameContentAs(cachedGameData))
+                    val targets = if (gameDataChanged) {
+                        resolveTargets(accounts.currentIds().values.toList(), true, gameData)
+                    } else {
+                        initialTargets
+                    }
+                    for (t in targets) if (writeOne(session, t) == Pass.Abort) break
+                }
+            } finally {
+                setPhase(gen, Phase.Waiting)
+            }
             return ChaldeaSyncNowOutcome.Done
         } finally {
             session.close()

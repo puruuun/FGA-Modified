@@ -9,6 +9,7 @@ class ChaldeaSyncStore(private val dir: File) {
     data class Inflight(
         val packageName: String, val backupPath: String, val baseSha256: String,
         val bundleSize: Long, val bundleSha256: String, val timeMs: Long,
+        val id: String? = null,
     )
 
     private val stateFile get() = File(dir, "state.json")
@@ -73,6 +74,7 @@ class ChaldeaSyncStore(private val dir: File) {
             o["package"]!!.jsonPrimitive.content, o["backup"]!!.jsonPrimitive.content,
             o["baseSha256"]!!.jsonPrimitive.content, o["bundleSize"]!!.jsonPrimitive.long,
             o["bundleSha256"]!!.jsonPrimitive.content, o["time"]!!.jsonPrimitive.long,
+            (o["id"] as? JsonPrimitive)?.takeIf { it.isString }?.content,
         )
     } catch (e: Exception) {
         null
@@ -87,12 +89,20 @@ class ChaldeaSyncStore(private val dir: File) {
             put("bundleSize", i.bundleSize)
             put("bundleSha256", i.bundleSha256)
             put("time", i.timeMs)
+            i.id?.let { put("id", it) }
         }
         atomicWrite(inflightFile, o.toString())
     }
 
     @Synchronized fun clearInflight() {
         inflightFile.delete()
+    }
+
+    /** Clears `inflight.json` only when its stored [Inflight.id] matches [expectedId]. Returns true when deleted. */
+    @Synchronized fun clearInflight(expectedId: String): Boolean {
+        val current = readInflight() ?: return false
+        if (current.id == null || current.id != expectedId) return false
+        return inflightFile.delete() || !inflightFile.exists()
     }
 
     private fun atomicWrite(target: File, text: String) {

@@ -1,10 +1,12 @@
 package io.github.fate_grand_automata.scripts.capture.chaldea
 
 import io.github.fate_grand_automata.scripts.capture.AccountState
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -40,14 +42,17 @@ private class Fx(val ts: TestScope, val tmp: File) {
     // Scripted service
     var stateFn: (now: Long, call: Int) -> ChaldeaRunState = { _, _ -> ChaldeaRunState.NotRunning }
     var stateCalls = 0
+    var onState: (suspend (Int) -> Unit)? = null
     var base = "base-bytes".toByteArray()
     var bak: ByteArray? = null
     var loads = 0
     val restoredBundles = mutableListOf<ByteArray>()
     var baseSource: ChaldeaBaseSource = ChaldeaBaseSource.UserdataJson
     var prepareCode = ChaldeaSyncCode.Ok
+    var preparePackage = PKG
     var backupMatches = true
     var commitDelay = 0L
+    var onCommit: (suspend (Int) -> Unit)? = null
     var commitResult: (Int) -> ChaldeaSyncResult = { n ->
         ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("written-$n".toByteArray()), itemCount = 2)
     }
@@ -74,7 +79,9 @@ private class Fx(val ts: TestScope, val tmp: File) {
     inner class Session : ChaldeaSyncSession {
         override suspend fun state(): ChaldeaStateResult {
             log += "state"
-            return ChaldeaStateResult(stateFn(now(), stateCalls++), PKG)
+            val call = stateCalls++
+            onState?.invoke(call)
+            return ChaldeaStateResult(stateFn(now(), call), PKG)
         }
 
         override suspend fun forceStop(): ChaldeaStateResult {
@@ -92,7 +99,7 @@ private class Fx(val ts: TestScope, val tmp: File) {
             val sha = sha256Hex(base)
             val bundleSha = sha256Hex(bundle)
             val result = ChaldeaSyncResult(
-                prepareCode, packageName = PKG, base = baseSource, size = base.size.toLong(), sha256 = sha,
+                prepareCode, packageName = preparePackage, base = baseSource, size = base.size.toLong(), sha256 = sha,
                 bundleSize = bundle.size.toLong(), bundleSha256 = bundleSha,
             )
             return ChaldeaSyncSession.PrepareOutcome(result, ChaldeaBackupReceiver.Received(bundle.size.toLong(), bundleSha), backupMatches)
@@ -107,6 +114,7 @@ private class Fx(val ts: TestScope, val tmp: File) {
         ): ChaldeaSyncResult {
             log += "commit"
             commits += patch to allowCreate
+            onCommit?.invoke(commits.size)
             if (commitDelay > 0) delay(commitDelay)
             return commitResult(commits.size).also { if (it.ok) base = "written-${commits.size}".toByteArray() }
         }
@@ -730,13 +738,18 @@ class ChaldeaSyncSchedulerTest {
 
     // ---- in-flight recovery ----
 
-    private fun Fx.inflight(json: ByteArray = "orig".toByteArray(), bakBytes: ByteArray? = null): File {
-        val dir = backups.inflightDir(PKG)
+    private fun Fx.inflight(
+        json: ByteArray = "orig".toByteArray(),
+        bakBytes: ByteArray? = null,
+        pkg: String = PKG,
+        writeId: String? = null,
+    ): File {
+        val dir = backups.inflightDir(pkg)
         dir.mkdirs()
         File(dir, "userdata.json").writeBytes(json)
         bakBytes?.let { File(dir, "userdata.json.bak").writeBytes(it) }
         val bundle = ChaldeaBackupBundle.encode(json, bakBytes)
-        store.writeInflight(ChaldeaSyncStore.Inflight(PKG, dir.path, sha256Hex(json), bundle.size.toLong(), sha256Hex(bundle), 1))
+        store.writeInflight(ChaldeaSyncStore.Inflight(pkg, dir.path, sha256Hex(json), bundle.size.toLong(), sha256Hex(bundle), 1, writeId))
         return dir
     }
 
@@ -1998,5 +2011,135 @@ class ChaldeaSyncSchedulerTest {
         assertTrue(store.read().stopped)
         assertIs<ChaldeaSyncStatus.Synced>(kr)
         assertEquals(ChaldeaSyncStatus.Stopped(10), sch.status.value)
+    }
+
+    // ---- issue #443: write serialisation, write ownership, recovery package check ----
+
+    @Test fun syncNowWaitsForRunningAutomaticWriteAndKeepsItsOwnInflightRecordDuringCommit() = fx {
+        account("a", num = 1)
+        val autoStatePaused = CompletableDeferred<Unit>()
+        val resumeAutoState = CompletableDeferred<Unit>()
+        val trace = mutableListOf<String>()
+        var autoInflightId: String? = null
+        var inflightBeforeDelay: ChaldeaSyncStore.Inflight? = null
+        var inflightAfterDelay: ChaldeaSyncStore.Inflight? = null
+        var backupBeforeDelay = false
+        var backupAfterDelay = false
+
+        onState = { call ->
+            if (commits.size == 1 && call == 1) {
+                autoInflightId = store.readInflight()?.id
+                autoStatePaused.complete(Unit)
+                resumeAutoState.await()
+                trace += "auto-state-resumed"
+            }
+        }
+        onCommit = { count ->
+            if (count == 2) {
+                trace += "manual-commit-start"
+                inflightBeforeDelay = store.readInflight()
+                backupBeforeDelay = backups.inflightDir(PKG).isDirectory
+            }
+        }
+        commitResult = { n ->
+            if (n == 2) {
+                inflightAfterDelay = store.readInflight()
+                backupAfterDelay = backups.inflightDir(PKG).isDirectory
+            }
+            ChaldeaSyncResult(ChaldeaSyncCode.Ok, packageName = PKG, size = 5, sha256 = sha256Hex("written-$n".toByteArray()), itemCount = 2)
+        }
+
+        start()
+        sch.onAccountSaved(listOf("a"))
+        advance(MIN + 1_000)
+        assertTrue(autoStatePaused.isCompleted, "automatic write is paused in state() after commit")
+        assertEquals(1, commits.size)
+        assertNotNull(autoInflightId)
+
+        commitDelay = 2_000
+        val manual = ts.backgroundScope.async { sch.syncNow(null) }
+        ts.runCurrent()
+
+        assertFalse(manual.isCompleted, "syncNow must wait for the running automatic write")
+        assertEquals(1, commits.size, "manual write must not start before automatic write finishes")
+        assertEquals(1, opened, "manual sync must not open a session while automatic write is running")
+
+        resumeAutoState.complete(Unit)
+        advance(5_000)
+
+        assertEquals(ChaldeaSyncNowOutcome.Done, manual.await())
+        assertEquals(2, commits.size)
+        assertEquals(listOf("auto-state-resumed", "manual-commit-start"), trace)
+        assertNotNull(inflightBeforeDelay, "readInflight() must be non-null during manual commit")
+        assertNotNull(inflightAfterDelay, "manual write's inflight record must not be deleted while committing")
+        assertEquals(inflightBeforeDelay!!.id, inflightAfterDelay!!.id)
+        assertNotEquals(autoInflightId, inflightBeforeDelay!!.id)
+        assertTrue(backupBeforeDelay && backupAfterDelay, "backup folder must exist throughout manual commit")
+        assertNull(store.readInflight())
+        assertFalse(backups.inflightDir(PKG).exists())
+    }
+
+    @Test fun finishWriteWithDifferentIdLeavesRecordAndBackupInPlace() = fx {
+        val dir = inflight(writeId = "owner-1")
+        sch.finishWrite(PKG, "other-id")
+
+        assertEquals("owner-1", store.readInflight()?.id)
+        assertTrue(File(dir, "userdata.json").isFile)
+
+        // Matching id clears both the record and the backup folder.
+        sch.finishWrite(PKG, "owner-1")
+        assertNull(store.readInflight())
+        assertFalse(dir.exists())
+
+        // Legacy record without id (null) is not deleted by a non-null expected id.
+        val legacyDir = inflight(writeId = null)
+        sch.finishWrite(PKG, "any-id")
+        val legacy = store.readInflight()
+        assertNotNull(legacy)
+        assertNull(legacy.id)
+        assertTrue(File(legacyDir, "userdata.json").isFile)
+    }
+
+    @Test fun oldInflightRecordWithoutIdLoadsAndRecoversAsBefore() = fx {
+        val dir = backups.inflightDir(PKG)
+        dir.mkdirs()
+        val json = "orig".toByteArray()
+        File(dir, "userdata.json").writeBytes(json)
+        val bundle = ChaldeaBackupBundle.encode(json, null)
+        val syncDir = File(tmp, "sync").apply { mkdirs() }
+        File(syncDir, "inflight.json").writeText(
+            """{"package":"$PKG","backup":"${dir.path.replace("\\", "\\\\")}","baseSha256":"${sha256Hex(json)}","bundleSize":${bundle.size},"bundleSha256":"${sha256Hex(bundle)}","time":1}""",
+        )
+
+        val loaded = store.readInflight()
+        assertNotNull(loaded)
+        assertNull(loaded.id)
+        assertFalse(store.clearInflight("some-id"))
+        assertNotNull(store.readInflight())
+
+        prepareCode = ChaldeaSyncCode.InvalidJson
+        start()
+        advance(1_000)
+
+        assertEquals(1, restores)
+        assertEquals(ChaldeaSyncStatus.FailedRestored, sch.status.value)
+        assertNull(store.readInflight())
+        assertFalse(dir.exists())
+    }
+
+    @Test fun recoveryWithMismatchedPackageBlocksWithoutClearingOrReleasing() = fx {
+        val otherPkg = "cc.narumi.chaldea.play"
+        val dir = inflight(pkg = otherPkg, bakBytes = null)
+        preparePackage = PKG
+        account("a")
+
+        start()
+        advance(1_000)
+
+        assertEquals(0, restores)
+        assertEquals(0, commits.size)
+        assertEquals(otherPkg, store.readInflight()?.packageName)
+        assertTrue(File(dir, "userdata.json").isFile)
+        assertEquals(ChaldeaSyncStatus.RecoveryBlocked(ChaldeaSyncCode.FileChanged), sch.status.value)
     }
 }
