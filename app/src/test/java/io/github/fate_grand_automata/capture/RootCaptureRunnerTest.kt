@@ -216,7 +216,7 @@ class RootCaptureRunnerTest {
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
                 stdin.contains("-A FGA_CAP") -> {
                     assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
-                    assertFalse(stdin.contains("/proc/net/tcp6"))
+                    assertFalse(stdin.contains("00000000000000000000000001000000:"))
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
                 else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
