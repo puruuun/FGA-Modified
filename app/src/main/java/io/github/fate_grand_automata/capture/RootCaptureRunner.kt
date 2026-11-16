@@ -33,6 +33,7 @@ internal class RootCaptureRunner(
 
     interface ProxyController {
         fun startListening(preferredPort: Int): ListenerInfo?
+        fun isLastListenErrorPortConflict(): Boolean = true
         fun stopAccepting()
         fun awaitOpenConnections(timeoutMs: Long): Boolean
         fun closeProxy()
@@ -45,7 +46,11 @@ internal class RootCaptureRunner(
             ipv6RuleCount: Int,
             ipv6Unsupported: Boolean,
         )
-        fun onApplyFailed(errorMessage: String, toastMessage: String)
+        fun onApplyFailed(
+            errorMessage: String,
+            toastMessage: String,
+            cleanupRetrying: Boolean = false,
+        )
         fun onCleanupSucceeded()
         fun onCleanupRetryScheduled(message: String)
         fun onPortError(port: Int)
@@ -109,6 +114,14 @@ internal class RootCaptureRunner(
             cancelCleanupRetryOnExecutor()
             runStopReadingOnExecutor(gen, drainMs)
         }
+    }
+
+    /**
+     * Asynchronous shutdown for mode switch away from Root, tracker disabled, or consent withdrawn (F3).
+     * Submits cleanup on the serial executor without blocking the main thread; retries every 10 s on failure.
+     */
+    fun requestShutdown() {
+        requestStopReading(drainMs = 0L)
     }
 
     private fun runShell(script: String): RootShellOutput {
@@ -213,7 +226,11 @@ internal class RootCaptureRunner(
         val listener = proxyController.startListening(preferredPort)
         if (listener == null) {
             readingWanted.set(false)
-            callbacks.onPortError(preferredPort)
+            if (proxyController.isLastListenErrorPortConflict()) {
+                callbacks.onPortError(preferredPort)
+            } else {
+                callbacks.onApplyFailed(ERROR_START_FAILED, TOAST_START_FAILED, cleanupRetrying = false)
+            }
             return
         }
 
@@ -310,11 +327,11 @@ internal class RootCaptureRunner(
             activePort = null
             activeIpv6 = false
             activeUids = emptyList()
-            callbacks.onApplyFailed(errorMessage, TOAST_APPLY_FAILED)
+            callbacks.onApplyFailed(errorMessage, TOAST_APPLY_FAILED, cleanupRetrying = false)
         } else {
-            // B4: cleanup failed — keep listener open so FGO traffic still works and retry every 10 s
-            callbacks.onApplyFailed(errorMessage, TOAST_APPLY_FAILED)
+            // B4 / F2: cleanup failed — keep listener open so FGO traffic still works and retry every 10 s
             scheduleCleanupRetryOnExecutor(generation.get(), drainTimeoutMs)
+            callbacks.onApplyFailed(errorMessage, TOAST_APPLY_FAILED, cleanupRetrying = true)
         }
     }
 
@@ -337,9 +354,6 @@ internal class RootCaptureRunner(
             return
         }
 
-        // Confirmed FGA_CLEANUP_OK and chain gone -> clear flag
-        flag.clear()
-
         // B4 step (2): stop accepting new connections
         proxyController.stopAccepting()
 
@@ -349,6 +363,9 @@ internal class RootCaptureRunner(
         }
         proxyController.closeProxy()
         runShell(RootRedirectScripts.killWatchdog())
+
+        // Confirmed FGA_CLEANUP_OK and chain gone -> clear flag
+        flag.clear()
 
         activePort = null
         activeIpv6 = false
@@ -429,8 +446,10 @@ internal class RootCaptureRunner(
         const val ERROR_NAT_UNSUPPORTED = "이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"
         const val ERROR_NO_TARGETS = "수집할 수 있는 FGO 대상이 없습니다 (인증서 및 게임 설치를 확인하세요)"
         const val ERROR_INVALID_FGA_UID = "FGA 앱 UID를 확인할 수 없습니다"
+        const val ERROR_START_FAILED = "로그 수집을 시작하지 못했습니다."
         const val IPV6_UNSUPPORTED_NOTE = "이 기기는 IPv6 규칙을 지원하지 않아 IPv6 연결은 수집되지 않습니다(게임은 정상)"
         const val TOAST_APPLY_FAILED = "루트 규칙을 설정하지 못했습니다"
+        const val TOAST_START_FAILED = "로그 수집을 시작하지 못했습니다."
         const val TOAST_ROOT_UNAVAILABLE = "루트 권한을 확인할 수 없습니다"
         const val ROOT_CHECKING_MESSAGE = "루트 권한 확인 중 — 허용 팝업을 눌러 주세요"
         const val CLEANUP_RETRY_MESSAGE = "루트 규칙을 지우지 못했습니다. 다시 시도 중이며, 계속 실패하면 재부팅하세요."

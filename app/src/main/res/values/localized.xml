@@ -1447,6 +1447,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_adguard_battery_button">"Exclude from battery optimization"</string>
     <!-- Root capture mode (#419) -->
     <string name="capture_connection_mode_root">"Root"</string>
+    <string name="capture_root_notification_collecting">"Root mode · collecting · port %d"</string>
+    <string name="capture_root_notification_cleanup">"Root mode · cleaning up rules"</string>
+    <string name="capture_root_notification_port_error">"Root mode · port %d is in use"</string>
     <string name="capture_root_checking">"Checking root access — please allow the superuser prompt"</string>
     <string name="capture_root_unavailable_toast">"Could not verify root access"</string>
     <string name="capture_root_apply_failed_toast">"Failed to set root rules"</string>

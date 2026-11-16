@@ -41,6 +41,8 @@ class RootCaptureRunnerTest {
 
     private class FakeProxyController(
         var listenResult: RootCaptureRunner.ListenerInfo? = RootCaptureRunner.ListenerInfo(8899, ipv6Listening = true),
+        var portConflict: Boolean = true,
+        var onStartListeningHook: (() -> Unit)? = null,
         val events: MutableList<String> = CopyOnWriteArrayList(),
     ) : RootCaptureRunner.ProxyController {
         var listeningPort: Int? = null
@@ -48,11 +50,14 @@ class RootCaptureRunnerTest {
 
         override fun startListening(preferredPort: Int): RootCaptureRunner.ListenerInfo? {
             events += "listen:$preferredPort"
+            onStartListeningHook?.invoke()
             val info = listenResult?.copy(port = preferredPort) ?: return null
             listeningPort = info.port
             accepting = true
             return info
         }
+
+        override fun isLastListenErrorPortConflict(): Boolean = portConflict
 
         override fun stopAccepting() {
             events += "stopAccepting"
@@ -80,6 +85,7 @@ class RootCaptureRunnerTest {
         var ipv6Unsupported: Boolean = false
         var lastError: String? = null
         var lastToast: String? = null
+        var lastApplyFailedRetrying: Boolean = false
         var cleanupRetryMessage: String? = null
         var portError: Int? = null
 
@@ -91,10 +97,15 @@ class RootCaptureRunnerTest {
             this.ipv6Unsupported = ipv6Unsupported
         }
 
-        override fun onApplyFailed(errorMessage: String, toastMessage: String) {
-            events += "onApplyFailed:$errorMessage"
+        override fun onApplyFailed(
+            errorMessage: String,
+            toastMessage: String,
+            cleanupRetrying: Boolean,
+        ) {
+            events += "onApplyFailed:$errorMessage:$cleanupRetrying"
             this.lastError = errorMessage
             this.lastToast = toastMessage
+            this.lastApplyFailedRetrying = cleanupRetrying
         }
 
         override fun onCleanupSucceeded() {
@@ -595,5 +606,390 @@ class RootCaptureRunnerTest {
         runner.requestPeriodicCheck()
         drainExecutor()
         assertEquals(listOf("checkChains:false", "apply", "onApplied:8899:1:1:false"), events.toList())
+    }
+
+    @Test
+    fun applyFailureWithFailedCleanupKeepsListenerOpenAndRetriesUntilCleanupSucceeds() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val retryDone = CountDownLatch(1)
+
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("-A FGA_CAP") -> {
+                    events += "shell:applyFail"
+                    RootShellOutput(1, listOf("FGA_FAIL_STEP=2"))
+                }
+                stdin == RootRedirectScripts.cleanup(killWatchdog = true) -> {
+                    events += "shell:rollbackCleanupFail"
+                    RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+                }
+                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                    events += "shell:retryCleanupOk"
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+                stdin == RootRedirectScripts.killWatchdog() -> {
+                    events += "shell:killWatchdog"
+                    retryDone.countDown()
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            drainTimeoutMs = 10L,
+            cleanupRetryDelayMs = 40L,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        // Pause retry by inspecting state immediately after the first batch completes
+        runner.requestStartReading(8899)
+        val firstBatch = CountDownLatch(1)
+        executor.execute { firstBatch.countDown() }
+        assertTrue(firstBatch.await(2, TimeUnit.SECONDS))
+
+        // After failed apply + failed rollback cleanup: listener open, retry scheduled, onApplyFailed reports retrying, flag set
+        assertEquals(8899, proxy.listeningPort)
+        assertTrue(proxy.accepting)
+        assertTrue(callbacks.lastApplyFailedRetrying)
+        assertEquals(RootCaptureRunner.CLEANUP_RETRY_MESSAGE, callbacks.cleanupRetryMessage)
+        assertTrue(flag.isSet())
+        assertTrue(
+            events.indexOf("onCleanupRetryScheduled") < events.indexOf("onApplyFailed:루트 규칙 설정 실패 (단계 2):true"),
+            "Retry state must be scheduled before onApplyFailed is posted",
+        )
+
+        // Wait for retry to succeed
+        assertTrue(retryDone.await(3, TimeUnit.SECONDS))
+        drainExecutor()
+
+        assertNull(proxy.listeningPort)
+        assertFalse(flag.isSet())
+        assertTrue(events.contains("onCleanupSucceeded"))
+    }
+
+    @Test
+    fun shutdownCleanupSuccessClosesListenerKillsWatchdogAndClearsFlag() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("-A FGA_CAP") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("setsid nohup sh") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
+                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                    events += "shell:cleanupRules"
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+                stdin == RootRedirectScripts.killWatchdog() -> {
+                    events += "shell:killWatchdog"
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+        assertTrue(flag.isSet())
+        events.clear()
+
+        runner.requestShutdown()
+        drainExecutor()
+
+        assertEquals(
+            listOf(
+                "shell:cleanupRules",
+                "stopAccepting",
+                "closeProxy",
+                "shell:killWatchdog",
+                "onCleanupSucceeded",
+            ),
+            events.toList(),
+        )
+        assertNull(proxy.listeningPort)
+        assertFalse(flag.isSet())
+    }
+
+    @Test
+    fun shutdownCleanupFailureKeepsListenerOpenAndRetriesUntilSuccess() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var cleanupAttempts = 0
+        val retryDone = CountDownLatch(1)
+
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("-A FGA_CAP") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("setsid nohup sh") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
+                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                    cleanupAttempts += 1
+                    if (cleanupAttempts == 1) {
+                        RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+                    } else {
+                        RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                    }
+                }
+                stdin == RootRedirectScripts.killWatchdog() -> {
+                    retryDone.countDown()
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            cleanupRetryDelayMs = 40L,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        runner.requestShutdown()
+        val firstBatch = CountDownLatch(1)
+        executor.execute { firstBatch.countDown() }
+        assertTrue(firstBatch.await(2, TimeUnit.SECONDS))
+
+        // First shutdown cleanup failed -> listener kept, retry scheduled, flag still set
+        assertEquals(8899, proxy.listeningPort)
+        assertTrue(proxy.accepting)
+        assertTrue(flag.isSet())
+        assertEquals(RootCaptureRunner.CLEANUP_RETRY_MESSAGE, callbacks.cleanupRetryMessage)
+        assertFalse(events.contains("onCleanupSucceeded"))
+
+        // Retry succeeds -> proxy closed, flag cleared
+        assertTrue(retryDone.await(3, TimeUnit.SECONDS))
+        drainExecutor()
+
+        assertNull(proxy.listeningPort)
+        assertFalse(flag.isSet())
+        assertTrue(events.contains("onCleanupSucceeded"))
+    }
+
+    @Test
+    fun onDestroyCleanupClearsFlagOnSuccessAndLeavesFlagSetOnFailureOrTimeout() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var cleanupMode = "ok"
+        val unblockTimeout = CountDownLatch(1)
+
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("-A FGA_CAP") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("setsid nohup sh") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
+                stdin == RootRedirectScripts.cleanup(killWatchdog = true) -> {
+                    when (cleanupMode) {
+                        "ok" -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                        "fail" -> RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+                        else -> {
+                            unblockTimeout.await(2, TimeUnit.SECONDS)
+                            RootShellOutput(1, emptyList(), timedOut = true)
+                        }
+                    }
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        // 1. Success -> flag cleared and proxy closed
+        cleanupMode = "ok"
+        runner.requestStartReading(8899)
+        drainExecutor()
+        assertTrue(flag.isSet())
+        runner.onDestroyCleanup(maxWaitMs = 2_000L)
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+
+        // 2. Cleanup failure -> flag stays set
+        cleanupMode = "fail"
+        runner.requestStartReading(8899)
+        drainExecutor()
+        assertTrue(flag.isSet())
+        runner.onDestroyCleanup(maxWaitMs = 2_000L)
+        assertTrue(flag.isSet(), "Flag must remain set when onDestroyCleanup fails")
+
+        // 3. Timeout -> returns after maxWaitMs and leaves flag set
+        cleanupMode = "timeout"
+        flag.markMaybeActive()
+        runner.onDestroyCleanup(maxWaitMs = 25L)
+        assertTrue(flag.isSet(), "Flag must remain set when onDestroyCleanup times out")
+        unblockTimeout.countDown()
+        drainExecutor()
+        assertTrue(flag.isSet())
+    }
+
+    @Test
+    fun nonPortConflictListenFailureReportsGenericStartFailedInsteadOfPortError() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(
+            listenResult = null,
+            portConflict = false,
+            events = events,
+        )
+        val callbacks = RecordingCallbacks(events = events)
+        var shellCalls = 0
+        val shell = RootShell { _, _, _ ->
+            shellCalls += 1
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertEquals(0, shellCalls)
+        assertNull(callbacks.portError)
+        assertEquals(RootCaptureRunner.ERROR_START_FAILED, callbacks.lastError)
+        assertEquals(RootCaptureRunner.TOAST_START_FAILED, callbacks.lastToast)
+        assertFalse(callbacks.lastApplyFailedRetrying)
+        assertFalse(flag.isSet())
+    }
+
+    @Test
+    fun generationRaceStopQueuedAfterStartDropsPendingApply() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var applyCalled = false
+
+        val shell = RootShell { _, stdin, _ ->
+            if (stdin.contains("-A FGA_CAP")) {
+                applyCalled = true
+            }
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_CLEANUP_OK))
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        // Hold executor while start and stop are queued back-to-back
+        val gate = CountDownLatch(1)
+        executor.execute { gate.await(2, TimeUnit.SECONDS) }
+        runner.requestStartReading(8899)
+        runner.requestStopReading()
+        gate.countDown()
+        drainExecutor()
+
+        assertFalse(applyCalled, "Pending apply must be dropped when superseded by stop")
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+
+        // Also verify stop queued while startListening is in flight drops apply and closes listener
+        events.clear()
+        proxy.onStartListeningHook = {
+            runner.requestStopReading()
+        }
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertFalse(applyCalled, "In-flight start must drop apply when stop advances generation")
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+    }
+
+    @Test
+    fun noTargetUidDoesNotStartReadingAndMakesNoShellCall() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        var shellCalls = 0
+        val shell = RootShell { _, _, _ ->
+            shellCalls += 1
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { emptyList() },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertEquals(0, shellCalls)
+        assertNull(proxy.listeningPort)
+        assertFalse(runner.isReadingWanted())
+        assertFalse(flag.isSet())
+        assertEquals(RootCaptureRunner.ERROR_NO_TARGETS, callbacks.lastError)
+        assertEquals(RootCaptureRunner.TOAST_APPLY_FAILED, callbacks.lastToast)
     }
 }

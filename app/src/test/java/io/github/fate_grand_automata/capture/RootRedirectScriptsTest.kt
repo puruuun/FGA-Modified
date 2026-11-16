@@ -84,7 +84,7 @@ class RootRedirectScriptsTest {
     }
 
     @Test
-    fun cleanupRemovesBothIpv4AndIpv6ChainsAndVerifiesWatchdogPid() {
+    fun cleanupRemovesBothIpv4AndIpv6ChainsAndKillsWatchdogOnlyAfterChainCheck() {
         val script = RootRedirectScripts.cleanup(killWatchdog = true)
         assertTrue(script.contains("\"\$IPT\" -w 3 -t nat -D OUTPUT -j FGA_CAP"))
         assertTrue(script.contains("\"\$IPT\" -w 3 -t nat -F FGA_CAP"))
@@ -96,6 +96,24 @@ class RootRedirectScriptsTest {
         assertTrue(script.contains("/proc/\$WPID/cmdline"))
         assertTrue(script.contains("fga_cap_watchdog"))
         assertTrue(script.contains("echo FGA_CLEANUP_OK"))
+
+        val chainCheckIdx = script.indexOf("if \"\$IPT\" -w 3 -t nat -S FGA_CAP")
+        val failStepIdx = script.indexOf("echo FGA_FAIL_STEP=1")
+        val failExitIdx = script.indexOf("exit 1", startIndex = failStepIdx)
+        val killLoopIdx = script.indexOf("for PF in ${RootRedirectScripts.WATCHDOG_PID_PRIMARY}")
+        val killCmdIdx = script.indexOf("kill -9 \"\$WPID\"")
+        val cleanupOkIdx = script.indexOf("echo FGA_CLEANUP_OK")
+
+        assertTrue(chainCheckIdx >= 0, "Chain check must be present")
+        assertTrue(failStepIdx > chainCheckIdx, "Fail marker must be inside chain check")
+        assertTrue(failExitIdx > failStepIdx, "Failure branch must exit")
+        assertTrue(killLoopIdx > failExitIdx, "Watchdog kill loop must appear after failure exit")
+        assertTrue(killCmdIdx > killLoopIdx, "kill -9 must appear inside watchdog kill loop after chain check")
+        assertTrue(cleanupOkIdx > killCmdIdx, "echo FGA_CLEANUP_OK must appear after watchdog kill")
+
+        val beforeFailExit = script.substring(0, failExitIdx)
+        assertFalse(beforeFailExit.contains("kill -9"), "Failure branch must exit before any kill command")
+        assertFalse(beforeFailExit.contains("fga_cap_watchdog"), "Failure branch must exit before touching watchdog")
     }
 
     @Test

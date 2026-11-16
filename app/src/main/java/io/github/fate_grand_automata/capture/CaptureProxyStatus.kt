@@ -116,6 +116,7 @@ object CaptureProxyStatus {
     fun setRootCleanupRetrying(retrying: Boolean, errorMessage: String? = null) {
         _state.update {
             it.copy(
+                reading = if (retrying) false else it.reading,
                 rootCleanupRetrying = retrying,
                 rootLastError = errorMessage ?: it.rootLastError,
             )

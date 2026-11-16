@@ -135,13 +135,13 @@ internal object RootRedirectScripts {
         appendLine("done")
         appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
         appendLine("\"\$IP6T\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
-        if (killWatchdog) {
-            append(killWatchdogCommands())
-        }
         appendLine("if \"\$IPT\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1; then")
         appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
         appendLine("  exit 1")
         appendLine("fi")
+        if (killWatchdog) {
+            append(killWatchdogCommands())
+        }
         appendLine("echo $MARKER_CLEANUP_OK")
     }
 

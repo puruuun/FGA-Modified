@@ -55,10 +55,14 @@ class CaptureProxyService : Service() {
     private var ownsSaveGuard = false
     private var readingActive = false
     private var shuttingDown = false
+    private var rootShuttingDown = false
     private var startupDisableSent = false
     private var ensureCleanupRanThisStart = false
     private var activeServiceMode: CaptureConnectionMode? = null
     private var pendingRootStopReason: CaptureStopReason = CaptureStopReason.User
+
+    @Volatile
+    private var lastRootListenPortConflict: Boolean = false
 
     private val rootAutoRetreat = RootAutoRetreat()
     private val retreatTriggered = AtomicBoolean(false)
@@ -96,10 +100,13 @@ class CaptureProxyService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForegroundNotification()
-
         val action = intent?.action
         val mode = prefs.captureConnectionMode.get()
+        if (activeServiceMode == null) {
+            activeServiceMode = mode
+        }
+
+        startForegroundNotification()
 
         if (action == ACTION_SHUTDOWN) {
             shutdownAndStopSelf(CaptureStopReason.User)
@@ -108,6 +115,11 @@ class CaptureProxyService : Service() {
 
         if (mode == CaptureConnectionMode.Root) {
             return handleRootStartCommand(action, intent)
+        }
+
+        if (rootShuttingDown || CaptureProxyStatus.state.value.rootCleanupRetrying) {
+            updateNotification()
+            return START_NOT_STICKY
         }
 
         if (!CaptureController.shouldEnsureProxy(prefs)) {
@@ -270,6 +282,7 @@ class CaptureProxyService : Service() {
 
     private fun startRootReading(targetPort: Int) {
         if (readingActive && CaptureTracker.running.value) return
+        rootShuttingDown = false
         retreatTriggered.set(false)
         rootAutoRetreat.reset()
         CaptureProxyStatus.setRootError(null)
@@ -347,6 +360,9 @@ class CaptureProxyService : Service() {
             override fun startListening(preferredPort: Int): RootCaptureRunner.ListenerInfo? =
                 startRootProxyListener(preferredPort)
 
+            override fun isLastListenErrorPortConflict(): Boolean =
+                lastRootListenPortConflict
+
             override fun stopAccepting() {
                 runCatching { proxy?.stopAccepting() }
             }
@@ -370,6 +386,7 @@ class CaptureProxyService : Service() {
                 ipv6Unsupported: Boolean,
             ) {
                 mainHandler.post {
+                    rootShuttingDown = false
                     readingActive = true
                     CaptureProxyStatus.setRootApplied(
                         port = port,
@@ -385,34 +402,47 @@ class CaptureProxyService : Service() {
                 }
             }
 
-            override fun onApplyFailed(errorMessage: String, toastMessage: String) {
+            override fun onApplyFailed(
+                errorMessage: String,
+                toastMessage: String,
+                cleanupRetrying: Boolean,
+            ) {
                 mainHandler.post {
                     readingActive = false
                     unregisterNetworkCallback()
-                    releaseSaveGuard()
                     CaptureTracker.starting = false
                     if (CaptureTracker.running.value) {
                         CaptureTracker.setRunning(false, CaptureStopReason.Error)
                     }
-                    val localizedError = if (errorMessage == RootCaptureRunner.ERROR_NAT_UNSUPPORTED) {
-                        getString(R.string.capture_root_nat_unsupported)
-                    } else {
-                        errorMessage
+                    val localizedError = when (errorMessage) {
+                        RootCaptureRunner.ERROR_NAT_UNSUPPORTED -> getString(R.string.capture_root_nat_unsupported)
+                        RootCaptureRunner.ERROR_START_FAILED -> getString(R.string.capture_start_failed)
+                        else -> errorMessage
                     }
-                    val localizedToast = if (toastMessage == RootCaptureRunner.TOAST_APPLY_FAILED) {
-                        getString(R.string.capture_root_apply_failed_toast)
-                    } else {
-                        toastMessage
+                    val localizedToast = when (toastMessage) {
+                        RootCaptureRunner.TOAST_APPLY_FAILED -> getString(R.string.capture_root_apply_failed_toast)
+                        RootCaptureRunner.TOAST_START_FAILED -> getString(R.string.capture_start_failed)
+                        else -> toastMessage
                     }
-                    CaptureProxyStatus.setRootCleanedUp(preserveError = false)
-                    CaptureProxyStatus.setRootError(localizedError)
+                    if (cleanupRetrying) {
+                        CaptureProxyStatus.setRootCleanupRetrying(
+                            true,
+                            getString(R.string.capture_root_cleanup_retry_warning),
+                        )
+                    } else {
+                        releaseSaveGuard()
+                        CaptureProxyStatus.setRootCleanedUp(preserveError = false)
+                        CaptureProxyStatus.setRootError(localizedError)
+                    }
                     if (localizedToast.isNotEmpty()) {
                         Toast.makeText(applicationContext, localizedToast, Toast.LENGTH_LONG).show()
                     }
                     updateNotification()
-                    if (!CaptureProxyStatus.state.value.rootCleanupRetrying &&
-                        activeServiceMode == CaptureConnectionMode.Root
+                    if (!cleanupRetrying &&
+                        !CaptureProxyStatus.state.value.rootCleanupRetrying &&
+                        (activeServiceMode == CaptureConnectionMode.Root || rootShuttingDown)
                     ) {
+                        rootShuttingDown = false
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                     }
@@ -421,15 +451,30 @@ class CaptureProxyService : Service() {
 
             override fun onCleanupSucceeded() {
                 mainHandler.post {
+                    val wasRootShuttingDown = rootShuttingDown
+                    rootShuttingDown = false
                     readingActive = false
                     unregisterNetworkCallback()
                     releaseSaveGuard()
                     if (CaptureTracker.running.value || CaptureTracker.starting) {
                         CaptureTracker.setRunning(false, pendingRootStopReason)
                     }
-                    CaptureProxyStatus.setRootCleanedUp(preserveError = true)
+                    if (!shuttingDown && CaptureController.shouldEnsureProxy(prefs)) {
+                        activeServiceMode = CaptureConnectionMode.AdGuard
+                        CaptureProxyStatus.reset()
+                        val targetPort = prefs.captureProxyPort.get()
+                        dispatchAdGuardSwitch(AdGuardSwitchEvent.ServiceStartEnsureOrSticky, targetPort)
+                        ensureListening(targetPort)
+                        updateNotification()
+                        return@post
+                    }
+                    if (wasRootShuttingDown || shuttingDown || activeServiceMode != CaptureConnectionMode.Root) {
+                        CaptureProxyStatus.reset()
+                    } else {
+                        CaptureProxyStatus.setRootCleanedUp(preserveError = true)
+                    }
                     updateNotification()
-                    if (activeServiceMode == CaptureConnectionMode.Root || shuttingDown) {
+                    if (activeServiceMode == CaptureConnectionMode.Root || wasRootShuttingDown || shuttingDown) {
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                     }
@@ -442,7 +487,10 @@ class CaptureProxyService : Service() {
                     if (CaptureTracker.running.value || CaptureTracker.starting) {
                         CaptureTracker.setRunning(false, pendingRootStopReason)
                     }
-                    CaptureProxyStatus.setRootCleanupRetrying(true, message)
+                    CaptureProxyStatus.setRootCleanupRetrying(
+                        true,
+                        getString(R.string.capture_root_cleanup_retry_warning),
+                    )
                     updateNotification()
                 }
             }
@@ -466,9 +514,13 @@ class CaptureProxyService : Service() {
     )
 
     private fun startRootProxyListener(preferredPort: Int): RootCaptureRunner.ListenerInfo? {
+        lastRootListenPortConflict = false
         return try {
             if (!ownsSaveGuard) {
-                check(CertificateSaveGuard.beginVpn()) { "Certificate save in progress" }
+                if (!CertificateSaveGuard.beginVpn()) {
+                    Timber.w("Capture: certificate save in progress; cannot start root proxy")
+                    return null
+                }
                 ownsSaveGuard = true
             }
             val jpEnabled = prefs.captureJpRoot.get()
@@ -507,7 +559,13 @@ class CaptureProxyService : Service() {
                     CaptureProxyStatus.incrementNonGameUpstreamFailure()
                 },
             )
-            val actualPort = created.start(preferredPort = preferredPort, allowFallback = false)
+            val actualPort = try {
+                created.start(preferredPort = preferredPort, allowFallback = false)
+            } catch (t: Throwable) {
+                lastRootListenPortConflict = true
+                runCatching { created.stop() }
+                throw t
+            }
             val oldProxy = proxy
             proxy = created
             boundPort = actualPort
@@ -735,15 +793,31 @@ class CaptureProxyService : Service() {
     }
 
     private fun shutdownAndStopSelf(reason: CaptureStopReason) {
+        val isRootPath = activeServiceMode == CaptureConnectionMode.Root ||
+            rootShuttingDown ||
+            rootFlag.isSet() ||
+            rootRunner.isReadingWanted() ||
+            CaptureProxyStatus.state.value.rootRulesActive ||
+            CaptureProxyStatus.state.value.rootCleanupRetrying
+        if (isRootPath) {
+            pendingRootStopReason = reason
+            unregisterNetworkCallback()
+            readingActive = false
+            if (CaptureTracker.running.value || CaptureTracker.starting) {
+                CaptureTracker.setRunning(false, reason)
+            }
+            CaptureProxyStatus.setReading(false)
+            if (!rootShuttingDown) {
+                rootShuttingDown = true
+                rootRunner.requestShutdown()
+            }
+            updateNotification()
+            return
+        }
         if (shuttingDown) return
         shuttingDown = true
         unregisterNetworkCallback()
-        if (activeServiceMode == CaptureConnectionMode.Root || rootFlag.isSet() || rootRunner.isReadingWanted()) {
-            pendingRootStopReason = reason
-            rootRunner.onDestroyCleanup(maxWaitMs = 2_000L)
-        } else {
-            dispatchAdGuardSwitch(AdGuardSwitchEvent.LeavingOrShutdown)
-        }
+        dispatchAdGuardSwitch(AdGuardSwitchEvent.LeavingOrShutdown)
         turnReadingOff(reason)
         stopCurrentProxy()
         CaptureProxyStatus.reset()
@@ -832,25 +906,44 @@ class CaptureProxyService : Service() {
             is CaptureProxyState.PortError -> st.port
             CaptureProxyState.Idle -> prefs.captureProxyPort.get()
         }
-        val text = when {
-            snap.rootCleanupRetrying -> getString(R.string.capture_root_cleanup_retry_warning)
-            snap.state is CaptureProxyState.PortError -> getString(R.string.capture_proxy_notification_port_error, displayPort)
-            snap.reading -> getString(R.string.capture_proxy_notification_collecting, displayPort)
-            else -> getString(R.string.capture_proxy_notification_waiting, displayPort)
+        val isRootMode = (activeServiceMode ?: prefs.captureConnectionMode.get()) == CaptureConnectionMode.Root ||
+            rootShuttingDown ||
+            snap.rootRulesActive ||
+            snap.rootCleanupRetrying
+        val text = if (isRootMode) {
+            when {
+                snap.rootCleanupRetrying -> getString(R.string.capture_root_notification_cleanup)
+                snap.state is CaptureProxyState.PortError -> getString(R.string.capture_root_notification_port_error, displayPort)
+                snap.reading -> getString(R.string.capture_root_notification_collecting, displayPort)
+                else -> getString(R.string.capture_root_notification_cleanup)
+            }
+        } else {
+            when {
+                snap.state is CaptureProxyState.PortError -> getString(R.string.capture_proxy_notification_port_error, displayPort)
+                snap.reading -> getString(R.string.capture_proxy_notification_collecting, displayPort)
+                else -> getString(R.string.capture_proxy_notification_waiting, displayPort)
+            }
         }
         val actionTitle = getString(
             if (snap.reading) R.string.capture_proxy_notification_action_stop
             else R.string.capture_proxy_notification_action_start
         )
 
-        return Notification.Builder(this, CHANNEL)
+        val builder = Notification.Builder(this, CHANNEL)
             .setContentTitle(getString(R.string.capture_notification_title))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_key)
             .setContentIntent(open)
             .addAction(Notification.Action.Builder(null, actionTitle, toggle).build())
             .setOngoing(true)
-            .build()
+        if (snap.rootCleanupRetrying) {
+            builder.setStyle(
+                Notification.BigTextStyle().bigText(
+                    "$text\n${getString(R.string.capture_root_cleanup_retry_warning)}"
+                )
+            )
+        }
+        return builder.build()
     }
 
     companion object {

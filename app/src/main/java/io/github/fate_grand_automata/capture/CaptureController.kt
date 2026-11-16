@@ -195,7 +195,11 @@ object CaptureController {
     private fun shutdownProxyQ(context: Context) {
         val intent = Intent(context, CaptureProxyService::class.java)
             .setAction(CaptureProxyService.ACTION_SHUTDOWN)
-        val running = CaptureProxyStatus.state.value.state != CaptureProxyState.Idle || isProxyAlive()
+        val snap = CaptureProxyStatus.state.value
+        val running = snap.state != CaptureProxyState.Idle ||
+            snap.rootRulesActive ||
+            snap.rootCleanupRetrying ||
+            isProxyAlive()
         if (!running) {
             if (RootRulesActiveFlag.from(context).isSet()) {
                 CaptureProxyService.cleanupLeftoverRootRulesAsync(context.applicationContext)

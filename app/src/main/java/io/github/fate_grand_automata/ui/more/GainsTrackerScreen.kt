@@ -379,9 +379,10 @@ class GainsTrackerViewModel @Inject constructor(
         ) {
             CaptureController.shutdownProxy(context)
             val gone = withTimeoutOrNull(5_000) {
-                while (CaptureController.isProxyAlive() ||
+                while ((CaptureController.isProxyAlive() ||
                     CaptureProxyStatus.state.value.state != CaptureProxyState.Idle ||
-                    CaptureProxyStatus.state.value.rootRulesActive
+                    CaptureProxyStatus.state.value.rootRulesActive) &&
+                    !CaptureProxyStatus.state.value.rootCleanupRetrying
                 ) {
                     delay(50)
                 }
@@ -763,7 +764,10 @@ fun GainsTrackerContent(
                                 stringResource(R.string.capture_connection_mode_label),
                                 style = MaterialTheme.typography.labelLarge,
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 FilterChip(
                                     selected = state.connectionMode == CaptureConnectionMode.Vpn,
                                     enabled = !state.modeSwitching,
@@ -863,6 +867,14 @@ fun GainsTrackerContent(
                                     )
                                 }
                             }
+                        }
+
+                        if (state.connectionMode != CaptureConnectionMode.Root && state.proxyStatus.rootCleanupRetrying) {
+                            Text(
+                                text = stringResource(R.string.capture_root_cleanup_retry_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
                         }
 
                         val showTlsWarning = state.tlsFailures > 0 &&

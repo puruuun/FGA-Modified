@@ -1378,6 +1378,9 @@
     <string name="capture_adguard_battery_button">"배터리 최적화 제외"</string>
     <!-- 루트 수집 모드 (#419) -->
     <string name="capture_connection_mode_root">"루트"</string>
+    <string name="capture_root_notification_collecting">"루트 모드 · 수집 중 · 포트 %d"</string>
+    <string name="capture_root_notification_cleanup">"루트 모드 · 규칙 정리 중"</string>
+    <string name="capture_root_notification_port_error">"루트 모드 · 포트 %d 사용 중"</string>
     <string name="capture_root_checking">"루트 권한 확인 중 — 허용 팝업을 눌러 주세요"</string>
     <string name="capture_root_unavailable_toast">"루트 권한을 확인할 수 없습니다"</string>
     <string name="capture_root_apply_failed_toast">"루트 규칙을 설정하지 못했습니다"</string>

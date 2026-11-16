@@ -39,7 +39,7 @@
 
 FGO 앱의 모든 TCP 443 연결이 리다이렉트되므로, 프록시는 TLS ClientHello의 SNI(Server Name Indication, 3초 제한·최대 16 KiB)를 먼저 확인합니다.
 
-- **게임 서버 호스트 (`game.fate-go.jp`, `fgo.netmarble.com`)**:
+- **게임 서버 호스트 (`yfgo-game.netmarble.com`, `game.fate-go.jp`)**:
   - 해당 서버의 인증서 컨텍스트가 있으면 복호화하여 읽기 전용으로 응답을 수집하고 원본 바이트 그대로 전달합니다.
 - **게임 서버 외 호스트 (로그인, 인게임 공지 웹뷰, 리소스·데이터 다운로드 CDN 등)**:
   - SNI가 존재하지만 게임 서버가 아닌 경우, 복호화나 기록을 하지 않고 `SNI:443`으로 그대로 연결하는 **블라인드 터널**로 통과시킵니다.
