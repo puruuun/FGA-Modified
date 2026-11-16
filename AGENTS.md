@@ -22,10 +22,10 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Deliver **code changes** through a pull request (owner decision, 2026-10-23). Branch from the latest remote `main` (for example `feat/…`, `fix/…`), commit there, push the branch, and open a PR against `main`. A change is a code change if it touches anything other than documentation: source, tests, resources, assets, build files, version files or workflows.
 - **Documentation-only changes** — design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files — are pushed directly to `main` without a PR (owner decision, 2026-10-23). Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
-- Keep the long-lived integration branch (`feat/capture-tracker` for 1.8.0) on the same rules as `main` (owner decision, 2026-11-16). Agents working from it read its copy of `AGENTS.md`, `docs/agents/` and the workflows.
-  - After each documentation push to `main`, merge `main` into the integration branch, one way only.
-  - If the merge brings only documentation, push it directly. If it also brings workflows or code, it goes through a PR into the integration branch.
-  - The integration branch is merged into `main` at its stable promotion. After that, new work branches from `main` again.
+- No long-lived integration branches (owner decision, 2026-11-17; `feat/capture-tracker` was merged into `main` that day). Each feature or fix is a short branch from `main` and comes back through its own PR as soon as it is done.
+  - Betas are built from `main` and contain everything merged so far. A stable release is a tag on `main`, so unreleased work on `main` never reaches stable users.
+  - A large feature that is not finished lands behind a setting that is off by default.
+  - A hotfix for a stable release that cannot wait for the next `main` beta is made on `release/X.Y.x`, cut from that stable tag, and the same fix is also merged into `main`.
 - Rebase a work branch onto its latest base before its first push. Once it is pushed, merge the base into it instead, because force pushes are not allowed.
 - Images in the repository (owner decision, 2026-11-16):
   - Commit only app assets (`app/src/main/assets/`) and QA regression samples that a device QA case file uses (`docs/reference-images/`).
