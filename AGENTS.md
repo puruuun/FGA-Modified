@@ -14,6 +14,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
 - **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`. Korean and Japanese are the owner's and are edited in the repo; other languages follow upstream. The fork does not use POEditor.
 - **Any user-facing feature or change, `README.md`, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated. `README.md` and `README.en.md` describe the latest stable release only: feature and beta changes never edit them, and the planner updates both at stable promotion. The GitHub Pages manual is republished from the stable tag when a stable Release is published.
+- **Choosing, starting or running other agents (the planner only)** — [`docs/agents/agent-team.md`](docs/agents/agent-team.md). Models and tiers, the Gemini runner, Sonnet's fallback, and design reviews.
 - **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, curate built-in CEs with the owner, and record each sync in the log table.
 - **Any `adb` command, device QA run, APK install, or look at a live game screen** — [`docs/agents/devices-and-safety.md`](docs/agents/devices-and-safety.md). Agents never operate the game, never unlock appends or spend apples or quartz, and never run adb server commands; BlueStacks is `127.0.0.1:5555`.
 - **`version.properties`, `docs/releases/`, `wiki/releases/`, or building Beta/Stable APKs** — [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md). Use Semantic Versioning (`X.Y.(Z+1)` for refinements/fixes/syncs, `X.(Y+1).0` for new features) and always build/verify a Beta APK (`beta.*`, `./gradlew :app:assembleBeta`) on BlueStacks/tablet before promoting `stable.*` and publishing a GitHub Release.
@@ -64,27 +65,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 ## Agent team
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
-- Agent models (owner decision, 2026-11-13; replaces the 2026-11-12 order). Codex is not used.
-  - Tiers, by capability and cost (owner, 2026-11-13): **Gemini 4 Argon** is the strongest and much the most expensive; **Gemini 4 Hydrogen** and **Sonnet 5.5** are the same tier; **Haiku 5.5** is one tier lower and cheap.
-  - **Gemini first:** Gemini is the default implementer, and also a verifier or reviewer when a different model helps. The planner runs it itself (see "Gemini runs" below) with two Gemini models only (the runner also allows `claude-sonnet-5-5-medium`, see Sonnet below):
-    - `gemini-4-hydrogen-high`: the normal choice for implementation, fixes and checks;
-    - `gemini-4-argon-medium`: only for hard tasks, or when a different model from the other agents is wanted (for example a verifier that should differ from the implementer).
-  - **Sonnet 5.5 (medium):** same tier as Hydrogen. Use it when Gemini's work on a task is sent back twice by review, verification or device QA (Sonnet continues on the same branch), and as the usual verifier of Gemini's work.
-    - **Antigravity Sonnet first** (owner decision, 2026-11-13): run Sonnet through the same runner with the model `claude-sonnet-5-5-medium`, with the same role and the same rules as the Claude subagent (implementation and fixes in `accept-edits`, review and verification with `--readonly`).
-    - Use the Claude Code Sonnet subagent instead when an Antigravity Sonnet run ends with `usage_limit`. After the owner says the Antigravity weekly limit is used up, use the Claude Code subagent directly and do not call Antigravity Sonnet. Go back to Antigravity Sonnet only when the owner says the limit is available again.
-    - The planner tells the owner which of the two ran each Sonnet task.
-  - **Haiku 5.5 (medium, Claude subagent):** light or simple work, such as small edits, lookups and mechanical checks, and a second model next to Sonnet or Gemini, for example as the second verifier.
-  - When Gemini's usage limit is reached, the planner does not switch to Sonnet automatically: it picks Sonnet, Haiku, or waiting for the limit by the task's difficulty and risk.
-  - Claude subagents are started with the Agent tool at **medium** effort. The planner picks the agent for each task by its difficulty and risk, and tells the owner which agent and model did each task, and why when it was not the usual choice.
-- Gemini runs (owner decision, 2026-11-13; replaces the owner-run Antigravity hand-off of the same day):
-  - The planner files the issue, creates the branch and its own worktree from the latest base, and writes the prompt to `build/orchestration/prompts/` (and, if useful, as an untracked `TASK-<issue>.md` at the worktree root, never committed).
-  - Implementation: `py -3 build/orchestration/gemini-run.py <role> <prompt-file> <model> <worktree>` (local runner, run in the background). It calls `agy -p` in `--mode accept-edits` with an allow-list (owner decision, 2026-11-13, tested on a scratch repository):
-    - Gemini may run only exact command lines: the Gradle test/build commands from Build & test, and `git status`/`diff`/`log`/`pull --ff-only`/`add -A`/`commit -F COMMIT_MSG.txt`/`push origin HEAD`. Anything else (adb, `git push origin main`, force push, other flags) is denied and ends the run.
-    - Gemini's file tools cannot write in the home config folders, the main checkout's source folders or the other worktrees, and cannot read `.fga-signing`.
-    - Commits get the `puruuun` identity from the runner's environment; `COMMIT_MSG.txt`, `TASK-*.md` and `REPORT-*.md` are git-excluded.
-  - The prompt is self-contained: the issue, the requirements, the files to touch, the tests to write, and the guards. Gemini runs the full unit tests and `:app:assembleBeta`, commits and pushes; the planner opens the PR (no `gh` here) and checks the commit identity and trailers.
-  - Review or verification by Gemini: the same runner with `--readonly` (no writes, no commands), asking for the same evidence table as any verifier.
-- The same choice applies to implementers, verification agents, design reviews and research agents. An agent that only reads (review, research) is told not to change files. An implementer works only inside its own worktree.
+- Which models do which work, and how the planner runs them, is in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), which only the planner needs.
 - Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
   - **Risky changes:**
@@ -101,15 +82,14 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
     - checks that the tests cover the requirements and the failure and guard cases;
     - looks for missed edge cases and effects outside the stated scope;
     - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
+    - takes evidence from the code, not from comments (owner decision, 2026-11-17, #458). It never accepts a behaviour because a comment claims it. It traces the code, and reports a comment that the code contradicts.
+    - checks that the fakes and mocks in the tests return only values, states and exceptions that the real implementation can return in that situation (#455 slipped through a fake that did not).
+    - checks that each new guard or regression test fails without its guard. It briefly disables or reverts the protected line, runs only that test, confirms that it fails, and restores the line. The report names the tests checked this way. A test that still passes protects nothing and is a finding. The implementer does the same check before it reports.
     - for capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
   - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
   - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on two different models from Sonnet, Haiku and Gemini, chosen so that at least one differs from the implementer. Both must pass.
   - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
   - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
-- Design stays with the planner (owner decision, 2026-11-11). The planner designs in the conversation with the owner; design is not handed to a separate agent.
-  - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
-  - **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a subagent with a fresh context (usually Sonnet) reviews the issue and the prompt for gaps. Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format. The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
-  - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.
 - Automation first, log tracking second (owner decision, 2026-11-11). Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
 - Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
 
@@ -145,6 +125,10 @@ app  ──▶ scripts ──▶ libautomata
 
 - Target servers (owner decision, 2026-11-08): new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`) only**. Do not add branches, tests or walkthrough steps for BetterFGO, NA, CN or TW, and do not ask the owner about them. Existing upstream code for those servers stays, and upstream syncs keep merging it.
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
+- Comments (owner decision, 2026-11-17, #458):
+  - Write comments for *why*: constraints, external facts (for example 1440p coordinates or the 1px `fillText` border) and owner decisions.
+  - Do not restate what the code does, and do not explain inside a test why it passes.
+  - When code changes, update or delete the comments next to it in the same commit.
 - Hilt + KSP for DI; Compose (BOM-managed) with several `ExperimentalX` opt-ins already enabled in `app/build.gradle.kts`.
 - Dependencies live in `gradle/libs.versions.toml` — always add/bump there, never inline coordinates.
 - `wiki/` is the source of the GitHub Pages manual (`.github/workflows/pages.yml`); the GitHub wiki is not used — detailed user-facing docs go there, while `README.md` (Korean) and `README.en.md` (English) are separate files that describe the latest stable release. Their feature tables and release links are updated together, at stable promotion only.

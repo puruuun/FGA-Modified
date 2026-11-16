@@ -17,3 +17,5 @@ The vendor files are stubs: a glob, a one-line reason, a pointer here. Adding a 
 a stub in each vendor directory and a trigger line in the root router; adding an agent
 (Cursor's `.cursor/rules/*.mdc`, Windsurf's `.windsurf/rules/`) means copying a stub and
 renaming the glob key.
+
+`agent-team.md` is the one guide without vendor stubs. It covers how the planner chooses and runs other agents, which no file path triggers, so only the root router points at it.
