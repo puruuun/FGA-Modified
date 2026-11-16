@@ -131,14 +131,18 @@ class SupportScoreReader @Inject constructor(
         private fun isNormalizedGrandTail416(text: String, profile: SupportScoreReadProfile): Boolean =
             profile.grandTail416AsPlus16 && '/' in text && text.filterNot(Char::isWhitespace).substringAfter('/') == "416"
 
+        // A Grand tail source must itself show Class 62: exactly "62/<grand>" with an optional leading plus.
+        private val class62GrandTail = Regex("""\+?62/(\+?)(\d+)""")
+
         private fun grandTailValue(text: String, profile: SupportScoreReadProfile): Int? {
-            if ('/' !in text) return null
-            // Only a full read counts: at least one digit before the slash and an in-range Grand tail.
-            if (!text.substringBefore('/').any(Char::isDigit)) return null
-            if (isNormalizedGrandTail416(text, profile)) return 16
-            return grandTail.matchEntire(text.filterNot(Char::isWhitespace))
-                ?.groupValues?.get(1)?.toIntOrNull()
-                ?.takeIf { it in 0..16 }
+            val match = class62GrandTail.matchEntire(text.filterNot(Char::isWhitespace)) ?: return null
+            val hasPlus = match.groupValues[1].isNotEmpty()
+            val digits = match.groupValues[2]
+            if (digits == "416") {
+                // "+416" is a plus misread plus a stray 4: no tail. A raw "416" is a plus read as 4.
+                return if (!hasPlus && profile.grandTail416AsPlus16) 16 else null
+            }
+            return digits.toIntOrNull()?.takeIf { it in 0..16 }
         }
 
         private fun ordinaryValue(text: String): Int? {

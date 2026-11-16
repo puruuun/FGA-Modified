@@ -699,14 +699,16 @@ class SupportScoreReaderTest {
         fTail416.show(Images.SupportCompactClass62A)
         assertThat(fTail416.reader.read(fTail416.bounds, true, false).classScore).isNull()
 
-        // A plain /16 tail (no plus) is a tail, so "+16" is ignored; but 58/16 at confidence 40 is below the
-        // veto confidence, so nothing vetoes and the Class62 template is accepted.
-        val fLow = Fixture()
-        every { fLow.ocr.detectTextLine(fLow.crop, any()) } returnsMany listOf(
-            OcrText("58/16", 40), OcrText("+16", 92), OcrText("", 0), OcrText("", 0)
-        )
-        fLow.show(Images.SupportCompactClass62A)
-        assertThat(fLow.reader.read(fLow.bounds, true, false).classScore).isEqualTo(62)
+        // A slash read that does not show Class 62 is no Grand-tail source, so the "+16" keeps its veto
+        // and a false-positive Class62 template cannot make Class 62.
+        for (garbage in listOf("58/16" to 40, "S9/+16" to 90, "16+/+16" to 90, "16//16" to 90)) {
+            val fVeto = Fixture()
+            every { fVeto.ocr.detectTextLine(fVeto.crop, any()) } returnsMany listOf(
+                OcrText(garbage.first, garbage.second), OcrText("+16", 92), OcrText("", 0), OcrText("", 0)
+            )
+            fVeto.show(Images.SupportCompactClass62A)
+            assertThat(fVeto.reader.read(fVeto.bounds, true, false).classScore).isNull()
+        }
 
         // Two strong plain /16 reads are used as a tail: "+16" is ignored, so 62/16 resolves.
         val fPlain = Fixture()
@@ -815,22 +817,54 @@ class SupportScoreReaderTest {
         kotlin.test.assertTrue(recordedJson.contains("\"grand16\":\"Positive\""))
         kotlin.test.assertTrue(recordedJson.contains("\"clipped\":true"))
 
-        // C2 guard: no-glyph inks with OCR /+16 tail but no Grand16 template -> not exempt, grand unknown.
+        // Exemption proof: blank ink + Class62 + a verified Grand16 template -> noGlyphExempt=true, clipped=false.
+        fun diagRead(fx: Fixture): Pair<SupportScores, String> {
+            var json = ""
+            val d = object : io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics {
+                override val enabled = true
+                override val runId = "test"
+                override fun record(reader: String, stem: String, images: Map<String, Pattern>, json: String) {
+                    recorded = json
+                }
+                var recorded = ""
+            }
+            val scores = SupportScoreReader(fx.api, fx.ocr, d).read(fx.bounds, true, true, screen = 0, row = 0)
+            json = d.recorded
+            return scores to json
+        }
+        val fExempt = Fixture()
+        every { fExempt.prepared.grayPixels() } returns blankInk
+        every { fExempt.ocr.detectTextLine(fExempt.crop, any()) } returns OcrText("", 0)
+        fExempt.show(Images.SupportCompactClass62A)
+        fExempt.show(Images.SupportGrand16A)
+        val (exemptScores, exemptJson) = diagRead(fExempt)
+        assertThat(exemptScores).isEqualTo(SupportScores(62, 16))
+        kotlin.test.assertTrue(exemptJson.contains("\"noGlyphExempt\":true"))
+        kotlin.test.assertTrue(exemptJson.contains("\"clipped\":false"))
+
+        // No Grand16 template: not exempt, clipped=true, and the OCR /+16 tail does not rescue Grand.
         val fTailNoGrandTpl = Fixture()
         every { fTailNoGrandTpl.prepared.grayPixels() } returns blankInk
-        every { fTailNoGrandTpl.ocr.detectTextLine(fTailNoGrandTpl.crop, any()) } returns OcrText("S9/+16", 90)
-        assertThat(fTailNoGrandTpl.reader.read(fTailNoGrandTpl.bounds, false, true).grandScore).isNull()
+        every { fTailNoGrandTpl.ocr.detectTextLine(fTailNoGrandTpl.crop, any()) } returns OcrText("62/+16", 90)
+        fTailNoGrandTpl.show(Images.SupportCompactClass62A)
+        val (tailScores, tailJson) = diagRead(fTailNoGrandTpl)
+        assertThat(tailScores.grandScore).isNull()
+        kotlin.test.assertTrue(tailJson.contains("\"noGlyphExempt\":false"))
+        kotlin.test.assertTrue(tailJson.contains("\"clipped\":true"))
 
-        // Stronger: four strong /+16 reads would confirm Grand 16 by tail agreement if the no-glyph ink were
-        // not treated as clipped. Without a Grand16 template there is no exemption, so Grand stays unknown.
-        val fTailStrong = Fixture()
-        every { fTailStrong.prepared.grayPixels() } returns blankInk
-        every { fTailStrong.ocr.detectTextLine(fTailStrong.crop, any()) } returns OcrText("S9/+16", 90)
-        assertThat(fTailStrong.reader.read(fTailStrong.bounds, false, true).grandScore).isNull()
-        // Control: the same reads with real glyph ink confirm Grand 16 (so the null above comes from clipping).
-        val fTailStrongInk = Fixture()
-        every { fTailStrongInk.ocr.detectTextLine(fTailStrongInk.crop, any()) } returns OcrText("S9/+16", 90)
-        assertThat(fTailStrongInk.reader.read(fTailStrongInk.bounds, false, true).grandScore).isEqualTo(16)
+        // Grand16 A has a wrong final digit while Grand16 B matches with the right one: the template
+        // check is true (B) and differentGrandDigit is true (A), so no exemption and Grand stays unknown.
+        val fTwoTpl = Fixture()
+        every { fTwoTpl.prepared.grayPixels() } returns blankInk
+        every { fTwoTpl.ocr.detectTextLine(fTwoTpl.crop, any()) } returns OcrText("", 0)
+        fTwoTpl.show(Images.SupportCompactClass62A)
+        fTwoTpl.show(Images.SupportGrand16A, correctLastDigit = false)
+        fTwoTpl.show(Images.SupportGrand16B)
+        val (twoScores, twoJson) = diagRead(fTwoTpl)
+        assertThat(twoScores.grandScore).isNull()
+        kotlin.test.assertTrue(twoJson.contains("\"differentGrandDigit\":true"))
+        kotlin.test.assertTrue(twoJson.contains("\"noGlyphExempt\":false"))
+        kotlin.test.assertTrue(twoJson.contains("\"clipped\":true"))
 
         // C2 guard: Grand16 prefix found with a different final digit -> no-glyph exemption does NOT apply (clipped=true, grandScore=null).
         val fDiffGrandDigit = Fixture()
