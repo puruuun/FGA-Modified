@@ -48,8 +48,48 @@ class RootRedirectScriptsTest {
         )
         assertTrue(script.contains("\"\$IPT\" -w 3 -t nat -C OUTPUT -j FGA_CAP >/dev/null 2>&1 || \"\$IPT\" -w 3 -t nat -I OUTPUT 1 -j FGA_CAP"))
         assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -C OUTPUT -j FGA_CAP >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -I OUTPUT 1 -j FGA_CAP"))
-        assertFalse(script.contains(" -d "))
+        val redirectLines = script.lines().filter { it.contains("-j REDIRECT") }
+        assertEquals(4, redirectLines.size)
+        assertTrue(redirectLines.none { it.contains(" -d ") })
         assertTrue(script.contains("echo FGA_APPLY_OK"))
+    }
+
+    @Test
+    fun applyAddsLoopbackReturnRulesBeforeRedirectsInBothChains() {
+        val script = RootRedirectScripts.apply(
+            fgoUids = listOf(10123, 10456),
+            port = 8899,
+            ipv6 = true,
+        )
+        val lines = script.lines()
+
+        val v4FlushIdx = lines.indexOf("\"\$IPT\" -w 3 -t nat -F FGA_CAP >/dev/null 2>&1 || { echo FGA_FAIL_STEP=1; exit 1; }")
+        val v4Return1 = "\"\$IPT\" -w 3 -t nat -A FGA_CAP -d 127.0.0.0/8 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }"
+        val v4Return2 = "\"\$IPT\" -w 3 -t nat -A FGA_CAP -d 0.0.0.0/32 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }"
+        val v4RedirectIdx = lines.indexOfFirst { it.startsWith("\"\$IPT\"") && it.contains("-j REDIRECT") }
+        assertTrue(v4FlushIdx >= 0)
+        assertTrue(lines.indexOf(v4Return1) in (v4FlushIdx + 1) until v4RedirectIdx)
+        assertTrue(lines.indexOf(v4Return2) in (v4FlushIdx + 1) until v4RedirectIdx)
+
+        val v6FlushIdx = lines.indexOf("\"\$IP6T\" -w 3 -t nat -F FGA_CAP >/dev/null 2>&1 || { echo FGA_FAIL_STEP=4; exit 1; }")
+        val v6Return1 = "\"\$IP6T\" -w 3 -t nat -A FGA_CAP -d ::1/128 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=5; exit 1; }"
+        val v6Return2 = "\"\$IP6T\" -w 3 -t nat -A FGA_CAP -d ::/128 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=5; exit 1; }"
+        val v6RedirectIdx = lines.indexOfFirst { it.startsWith("\"\$IP6T\"") && it.contains("-j REDIRECT") }
+        assertTrue(v6FlushIdx >= 0)
+        assertTrue(lines.indexOf(v6Return1) in (v6FlushIdx + 1) until v6RedirectIdx)
+        assertTrue(lines.indexOf(v6Return2) in (v6FlushIdx + 1) until v6RedirectIdx)
+
+        val redirectLines = lines.filter { it.contains("-j REDIRECT") }
+        assertEquals(
+            listOf(
+                "\"\$IPT\" -w 3 -t nat -A FGA_CAP -p tcp --dport 443 -m owner --uid-owner 10123 -j REDIRECT --to-ports 8899 >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }",
+                "\"\$IPT\" -w 3 -t nat -A FGA_CAP -p tcp --dport 443 -m owner --uid-owner 10456 -j REDIRECT --to-ports 8899 >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }",
+                "\"\$IP6T\" -w 3 -t nat -A FGA_CAP -p tcp --dport 443 -m owner --uid-owner 10123 -j REDIRECT --to-ports 8899 >/dev/null 2>&1 || { echo FGA_FAIL_STEP=5; exit 1; }",
+                "\"\$IP6T\" -w 3 -t nat -A FGA_CAP -p tcp --dport 443 -m owner --uid-owner 10456 -j REDIRECT --to-ports 8899 >/dev/null 2>&1 || { echo FGA_FAIL_STEP=5; exit 1; }",
+            ),
+            redirectLines,
+        )
+        assertTrue(redirectLines.none { it.contains("127.0.0.0/8") || it.contains("0.0.0.0/32") || it.contains("::1/128") || it.contains("::/128") })
     }
 
     @Test
@@ -63,6 +103,10 @@ class RootRedirectScriptsTest {
         // H6: no IPv6 rule is added, but an IPv6 jump and chain left by an earlier apply are removed.
         assertFalse(script.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
         assertFalse(script.contains("\"\$IP6T\" -w 3 -t nat -N FGA_CAP"))
+        assertFalse(script.contains("::1/128"))
+        assertFalse(script.contains("::/128"))
+        assertTrue(script.contains("\"\$IPT\" -w 3 -t nat -A FGA_CAP -d 127.0.0.0/8 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }"))
+        assertTrue(script.contains("\"\$IPT\" -w 3 -t nat -A FGA_CAP -d 0.0.0.0/32 -j RETURN >/dev/null 2>&1 || { echo FGA_FAIL_STEP=2; exit 1; }"))
         assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -D OUTPUT -j FGA_CAP"))
         assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -F FGA_CAP >/dev/null 2>&1 || true"))
         assertTrue(script.contains("\"\$IP6T\" -w 3 -t nat -X FGA_CAP >/dev/null 2>&1 || true"))

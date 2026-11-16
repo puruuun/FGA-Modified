@@ -70,6 +70,21 @@ internal object RootRedirectScripts {
         appendLine("fi")
     }
 
+    private val IPV4_LOOPBACK_CIDRS = listOf("127.0.0.0/8", "0.0.0.0/32")
+    private val IPV6_LOOPBACK_CIDRS = listOf("::1/128", "::/128")
+
+    private fun StringBuilder.appendLoopbackReturnRules(
+        toolVar: String,
+        cidrs: List<String>,
+        failStep: Int,
+    ) {
+        for (cidr in cidrs) {
+            appendLine(
+                "\"\$$toolVar\" -w 3 -t nat -A $CHAIN_NAME -d $cidr -j RETURN >/dev/null 2>&1 || { echo $MARKER_FAIL_STEP_PREFIX$failStep; exit 1; }"
+            )
+        }
+    }
+
     fun apply(fgoUids: List<Int>, port: Int, ipv6: Boolean): String {
         val uids = validateTargetUids(fgoUids)
         validatePort(port)
@@ -78,6 +93,7 @@ internal object RootRedirectScripts {
             appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
             appendLine("\"\$IPT\" -w 3 -t nat -N $CHAIN_NAME >/dev/null 2>&1 || true")
             appendLine("\"\$IPT\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
+            appendLoopbackReturnRules("IPT", IPV4_LOOPBACK_CIDRS, failStep = 2)
             for (uid in uids) {
                 appendLine(
                     "\"\$IPT\" -w 3 -t nat -A $CHAIN_NAME -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }"
@@ -91,6 +107,7 @@ internal object RootRedirectScripts {
                 appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
                 appendLine("\"\$IP6T\" -w 3 -t nat -N $CHAIN_NAME >/dev/null 2>&1 || true")
                 appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}4; exit 1; }")
+                appendLoopbackReturnRules("IP6T", IPV6_LOOPBACK_CIDRS, failStep = 5)
                 for (uid in uids) {
                     appendLine(
                         "\"\$IP6T\" -w 3 -t nat -A $CHAIN_NAME -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}5; exit 1; }"

@@ -104,4 +104,34 @@ class CaptureProxyStatusTest {
         assertEquals(0, snap.rootIpv6RuleCount)
         CaptureProxyStatus.reset()
     }
+
+    @Test
+    fun resetNonGameUpstreamFailuresZeroesOnlyThatCounterAndPreservesAllOtherFields() {
+        CaptureProxyStatus.reset()
+        try {
+            CaptureProxyStatus.setRootApplied(8899, 2, 2, false, watchdogActive = true)
+            CaptureProxyStatus.recordGameHostConnected(5678L)
+            CaptureProxyStatus.incrementUpstreamFailure()
+            CaptureProxyStatus.incrementUnexpectedConnection()
+            CaptureProxyStatus.incrementUnexpectedConnection()
+            repeat(4) { CaptureProxyStatus.incrementNonGameUpstreamFailure() }
+            CaptureProxyStatus.setRootError("auto retreat")
+
+            val before = CaptureProxyStatus.state.value
+            assertEquals(4, before.nonGameUpstreamFailureCount)
+
+            CaptureProxyStatus.resetNonGameUpstreamFailures()
+
+            val after = CaptureProxyStatus.state.value
+            assertEquals(before.copy(nonGameUpstreamFailureCount = 0), after)
+            assertEquals(0, after.nonGameUpstreamFailureCount)
+            assertEquals(2, after.unexpectedConnectionCount)
+            assertEquals(1, after.gameConnectionsSinceApply)
+            assertEquals(1, after.upstreamFailureCount)
+            assertEquals(5678L, after.lastGameHostConnectedAt)
+            assertEquals("auto retreat", after.rootLastError)
+        } finally {
+            CaptureProxyStatus.reset()
+        }
+    }
 }

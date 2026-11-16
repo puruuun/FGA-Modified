@@ -146,6 +146,10 @@ object CaptureProxyStatus {
         _state.update { it.copy(nonGameUpstreamFailureCount = it.nonGameUpstreamFailureCount + 1) }
     }
 
+    fun resetNonGameUpstreamFailures() {
+        _state.update { it.copy(nonGameUpstreamFailureCount = 0) }
+    }
+
     fun setRootApplied(
         port: Int,
         ipv4Rules: Int,

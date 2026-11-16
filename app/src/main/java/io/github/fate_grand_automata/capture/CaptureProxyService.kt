@@ -297,6 +297,7 @@ class CaptureProxyService : Service() {
         rootShuttingDown = false
         retreatTriggered.set(false)
         rootAutoRetreat.reset()
+        CaptureProxyStatus.resetNonGameUpstreamFailures()
         CaptureProxyStatus.setRootError(null)
 
         JpCaptureStart.start(
