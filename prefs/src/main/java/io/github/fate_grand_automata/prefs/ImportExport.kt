@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.prefs
 
 import android.content.SharedPreferences
+import io.github.fate_grand_automata.prefs.core.BattleConfigCore
+import io.github.fate_grand_automata.prefs.core.PrefType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -42,13 +44,70 @@ object BattleConfigFile {
         return json.encodeToString(JsonObject.serializer(), JsonObject(entries.toMap()))
     }
 
-    /** @throws kotlinx.serialization.SerializationException if [text] is not a JSON object. */
-    fun decode(text: String): Map<String, Any> =
-        json.parseToJsonElement(text).jsonObject
-            .mapNotNull { (key, element) ->
-                element.toPrefValue()?.let { key to it }
+    /**
+     * Decodes a `.fga` JSON object and validates every known battle-config preference against
+     * its declared type in [BattleConfigCore].
+     *
+     * @throws kotlinx.serialization.SerializationException if [text] is not a JSON object.
+     * @throws IllegalArgumentException if any known preference has an incompatible value type.
+     */
+    fun decode(text: String): Map<String, Any> {
+        val rawObject = json.parseToJsonElement(text).jsonObject
+        val schema = BattleConfigCore.prefTypes
+        val decoded = LinkedHashMap<String, Any>(rawObject.size)
+
+        for ((key, element) in rawObject) {
+            if (schema[key] == PrefType.StringSet && element is JsonArray) {
+                if (!element.all { it is JsonPrimitive && it.isString }) {
+                    throw IllegalArgumentException("Expected array of strings for '$key'")
+                }
             }
-            .toMap()
+            val value = element.toPrefValue() ?: continue
+            decoded[key] = value
+        }
+
+        return validate(decoded, schema)
+    }
+
+    internal fun validate(
+        values: Map<String, Any>,
+        schema: Map<String, PrefType> = BattleConfigCore.prefTypes
+    ): Map<String, Any> {
+        val validated = LinkedHashMap<String, Any>(values.size)
+        for ((key, value) in values) {
+            val expectedType = schema[key]
+            validated[key] = if (expectedType != null) {
+                normalizeForType(key, value, expectedType)
+            } else {
+                value
+            }
+        }
+        return validated
+    }
+
+    private fun normalizeForType(key: String, value: Any, expectedType: PrefType): Any =
+        when (expectedType) {
+            PrefType.String -> value as? String
+                ?: throw IllegalArgumentException("Expected String for '$key', got ${value::class.simpleName}")
+
+            PrefType.Boolean -> value as? Boolean
+                ?: throw IllegalArgumentException("Expected Boolean for '$key', got ${value::class.simpleName}")
+
+            PrefType.Int -> when (value) {
+                is Int -> value
+                is Long -> {
+                    if (value in Int.MIN_VALUE..Int.MAX_VALUE) value.toInt()
+                    else throw IllegalArgumentException("Expected Int in range for '$key', got Long $value")
+                }
+
+                else -> throw IllegalArgumentException("Expected Int for '$key', got ${value::class.simpleName}")
+            }
+
+            PrefType.StringSet -> {
+                if (value is Collection<*> && value.all { it is String }) value
+                else throw IllegalArgumentException("Expected StringSet for '$key', got ${value::class.simpleName}")
+            }
+        }
 
     private fun Any?.toJson(): JsonElement? = when (this) {
         is String -> JsonPrimitive(this)
