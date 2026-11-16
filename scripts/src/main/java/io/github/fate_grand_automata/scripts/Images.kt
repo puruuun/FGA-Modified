@@ -171,6 +171,7 @@ enum class Images(val path: String, val masked: Boolean = false) {
     GrandCeLabel("grand_ce_label.png"),
     BondCeEffectDefault("bond_ce_effect_default.png"),
     BondCeEffectNP("bond_ce_effect_np.png"),
+    /** Kept for upstream syncs; no longer used by the command spell flow. */
     CommandSpell("command_spell.png"),
     Cancel("cancel.png")
 }

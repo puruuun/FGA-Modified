@@ -257,8 +257,10 @@ class SupportImageLookupTest {
         val file = java.io.File("src/main/assets/servant-names-ko.json")
         assertTrue(file.isFile, file.absolutePath)
         val parsed = SupportKoreanNames.parse(file.readText(Charsets.UTF_8))
-        assertEquals(44, parsed.size)
+        assertEquals(48, parsed.size)
         assertTrue(parsed.getValue(2301100).containsAll(listOf("옥토끼", "료기 시키", "옥토끼 카구야")))
+        assertTrue(parsed.getValue(705500).containsAll(listOf("마츠나가 단죠", "마츠나가 히사히데", "버미육")))
+        assertTrue(parsed.getValue(2501700).containsAll(listOf("큐티 코마")))
     }
 
     @Test fun `missing JP images fall back to KR and stop before NA`() = runBlocking {
