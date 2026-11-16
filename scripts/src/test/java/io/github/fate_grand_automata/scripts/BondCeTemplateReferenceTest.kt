@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 /**
  * Real Grand support frames scored with the bundled bond templates, the way CESelection scores them
  * (one grayscale 720p crop of the bond region, TM_CCOEFF_NORMED, best match per template, threshold
- * [CESelection.BOND_EFFECT_SIMILARITY] and "higher than the opposite icon").
+ * [CESelection.BOND_EFFECT_SIMILARITY]; the opposite icon must stay below it).
  *
  * Frames: the owner's JP 2560x1080 capture (1706x720 game area, as the device QA does) and upstream's
  * 16:9 and wide JP captures (upstream sync v3070, `bond_ce_effect_np.png` replaced upstream).
@@ -86,7 +86,7 @@ class BondCeTemplateReferenceTest {
         return Scores(best(crop, np), best(crop, default))
     }
 
-    @Test fun `bundled bond templates classify every Grand reference row at the default min similarity`() {
+    @Test fun `bundled bond templates classify every Grand reference row at the bond effect similarity`() {
         val np = gray("../app/src/main/assets/En/bond_ce_effect_np.png")
         val default = gray("../app/src/main/assets/En/bond_ce_effect_default.png")
         assertEquals(55, SupportScreenLocations(transforms(2560)).bondCeRegion.height)
@@ -94,12 +94,8 @@ class BondCeTemplateReferenceTest {
             val s = score(row, np, default)
             val label = "${row.file}@${row.boundY} NP=${"%.4f".format(s.np)} Default=${"%.4f".format(s.default)}"
             println("BOND_ROW $label")
-            assertEquals(row.expected == "NP", s.np >= MIN_SIMILARITY, label)
-            assertEquals(row.expected == "Default", s.default >= MIN_SIMILARITY, label)
+            assertEquals(row.expected == "NP", s.np >= CESelection.BOND_EFFECT_SIMILARITY, label)
+            assertEquals(row.expected == "Default", s.default >= CESelection.BOND_EFFECT_SIMILARITY, label)
         }
-    }
-
-    private companion object {
-        const val MIN_SIMILARITY = 0.80
     }
 }

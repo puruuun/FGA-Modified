@@ -78,15 +78,15 @@ class CESelectionTest {
         fun check() = selection.check(listOf("Foreign God", "Chaldea Teatime"), bounds)
     }
 
-    @Test fun `NP and Default use the plain find at the global min similarity`() {
-        for ((np, default) in listOf(0.844 to 0.20, 0.987 to 0.362, 0.80 to 0.79, 0.79 to 0.80, 0.55 to 0.20, 0.20 to 0.20)) {
+    @Test fun `NP and Default match at the bond effect similarity`() {
+        for ((np, default) in listOf(0.844 to 0.20, 0.987 to 0.362, 0.60 to 0.59, 0.59 to 0.60, 0.55 to 0.20, 0.20 to 0.20)) {
             val f = Fixture()
             f.npScore = np
             f.defaultScore = default
             f.effect = BondCEEffectEnum.NP
-            assertEquals(np >= 0.80, f.check(), "NP=$np Default=$default")
+            assertEquals(np >= 0.60, f.check(), "NP=$np Default=$default")
             f.effect = BondCEEffectEnum.Default
-            assertEquals(default >= 0.80, f.check(), "NP=$np Default=$default")
+            assertEquals(default >= 0.60, f.check(), "NP=$np Default=$default")
             f.effect = BondCEEffectEnum.Ignore
             assertTrue(f.check())
         }
@@ -102,13 +102,13 @@ class CESelectionTest {
         assertTrue(f.check())
     }
 
-    @Test fun `bond find passes no similarity so the global min similarity applies`() {
+    @Test fun `bond find uses the bond effect similarity`() {
         val f = Fixture()
         assertTrue(f.check())
-        verify { with(f.api) { any<Region>().find(f.np, null) } }
+        verify { with(f.api) { any<Region>().find(f.np, 0.6) } }
         f.effect = BondCEEffectEnum.Default
         f.check()
-        verify { with(f.api) { any<Region>().find(f.default, null) } }
+        verify { with(f.api) { any<Region>().find(f.default, 0.6) } }
     }
 
     @Test fun `CE similarity and MLB gates remain unchanged`() {
@@ -161,7 +161,7 @@ class CESelectionTest {
         }) }
         assertEquals(0, openScans)
         f.effect = BondCEEffectEnum.Default
-        assertFalse(f.check()) // find says Default 0.20 < 0.80 even though the log score is 0.95
+        assertFalse(f.check())
     }
 
     @Test fun `non Grand support ignores leftover bond settings`() {
