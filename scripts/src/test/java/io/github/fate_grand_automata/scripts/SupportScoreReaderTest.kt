@@ -665,6 +665,60 @@ class SupportScoreReaderTest {
     }
 
     @Test
+    fun `Grand tails for the slashless filter need a Class digit and an in-range tail on JP`() {
+        // Finding 1: "/+16" has no digit before the slash, so it gives no tail and "+16" keeps vetoing Class.
+        val fNoPrefix = Fixture()
+        every { fNoPrefix.ocr.detectTextLine(fNoPrefix.crop, any()) } returnsMany listOf(
+            OcrText("/+16", 90), OcrText("+16", 92), OcrText("", 0), OcrText("", 0)
+        )
+        fNoPrefix.show(Images.SupportCompactClass62A)
+        assertThat(fNoPrefix.reader.read(fNoPrefix.bounds, true, false).classScore).isNull()
+
+        // KR with the same input: same result as before (Class unknown).
+        val fNoPrefixKr = Fixture()
+        every { fNoPrefixKr.api.prefs.gameServer } returns GameServer.Kr
+        every { fNoPrefixKr.ocr.detectTextLine(fNoPrefixKr.crop, any()) } returnsMany listOf(
+            OcrText("/+16", 90), OcrText("+16", 92), OcrText("", 0), OcrText("", 0), OcrText("", 0), OcrText("", 0)
+        )
+        fNoPrefixKr.show(Images.SupportCompactClass62A)
+        assertThat(fNoPrefixKr.reader.read(fNoPrefixKr.bounds, true, false).classScore).isNull()
+
+        // Finding 2: a +56 tail is outside the Grand range, so "+56" is not ignored and vetoes Class.
+        val fTail56 = Fixture()
+        every { fTail56.ocr.detectTextLine(fTail56.crop, any()) } returnsMany listOf(
+            OcrText("62/+56", 90), OcrText("+56", 90), OcrText("", 0), OcrText("", 0)
+        )
+        fTail56.show(Images.SupportCompactClass62A)
+        assertThat(fTail56.reader.read(fTail56.bounds, true, false).classScore).isNull()
+
+        // An out-of-range raw +416 tail is not a tail either.
+        val fTail416 = Fixture()
+        every { fTail416.ocr.detectTextLine(fTail416.crop, any()) } returnsMany listOf(
+            OcrText("62/+416", 90), OcrText("+416", 90), OcrText("", 0), OcrText("", 0)
+        )
+        fTail416.show(Images.SupportCompactClass62A)
+        assertThat(fTail416.reader.read(fTail416.bounds, true, false).classScore).isNull()
+
+        // A plain /16 tail (no plus) is a tail, so "+16" is ignored; but 58/16 at confidence 40 is below the
+        // veto confidence, so nothing vetoes and the Class62 template is accepted.
+        val fLow = Fixture()
+        every { fLow.ocr.detectTextLine(fLow.crop, any()) } returnsMany listOf(
+            OcrText("58/16", 40), OcrText("+16", 92), OcrText("", 0), OcrText("", 0)
+        )
+        fLow.show(Images.SupportCompactClass62A)
+        assertThat(fLow.reader.read(fLow.bounds, true, false).classScore).isEqualTo(62)
+
+        // Two strong plain /16 reads are used as a tail: "+16" is ignored, so 62/16 resolves.
+        val fPlain = Fixture()
+        every { fPlain.ocr.detectTextLine(fPlain.crop, any()) } returnsMany listOf(
+            OcrText("62/16", 60), OcrText("62/16", 60), OcrText("+16", 92), OcrText("", 0)
+        )
+        fPlain.show(Images.SupportCompactClass62A)
+        fPlain.show(Images.SupportGrand16A)
+        assertThat(fPlain.reader.read(fPlain.bounds, true, true)).isEqualTo(SupportScores(62, 16))
+    }
+
+    @Test
     fun `Fix B normalizes grand tail 416 as neutral on JP only`() {
         // JP: 62/416 from several profiles, with the Grand16 template verified -> grand 16
         val f024 = Fixture()
@@ -766,6 +820,17 @@ class SupportScoreReaderTest {
         every { fTailNoGrandTpl.prepared.grayPixels() } returns blankInk
         every { fTailNoGrandTpl.ocr.detectTextLine(fTailNoGrandTpl.crop, any()) } returns OcrText("S9/+16", 90)
         assertThat(fTailNoGrandTpl.reader.read(fTailNoGrandTpl.bounds, false, true).grandScore).isNull()
+
+        // Stronger: four strong /+16 reads would confirm Grand 16 by tail agreement if the no-glyph ink were
+        // not treated as clipped. Without a Grand16 template there is no exemption, so Grand stays unknown.
+        val fTailStrong = Fixture()
+        every { fTailStrong.prepared.grayPixels() } returns blankInk
+        every { fTailStrong.ocr.detectTextLine(fTailStrong.crop, any()) } returns OcrText("S9/+16", 90)
+        assertThat(fTailStrong.reader.read(fTailStrong.bounds, false, true).grandScore).isNull()
+        // Control: the same reads with real glyph ink confirm Grand 16 (so the null above comes from clipping).
+        val fTailStrongInk = Fixture()
+        every { fTailStrongInk.ocr.detectTextLine(fTailStrongInk.crop, any()) } returns OcrText("S9/+16", 90)
+        assertThat(fTailStrongInk.reader.read(fTailStrongInk.bounds, false, true).grandScore).isEqualTo(16)
 
         // C2 guard: Grand16 prefix found with a different final digit -> no-glyph exemption does NOT apply (clipped=true, grandScore=null).
         val fDiffGrandDigit = Fixture()
