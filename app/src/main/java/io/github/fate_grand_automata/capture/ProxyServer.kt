@@ -35,14 +35,16 @@ data class ProxyOptions(
     val ipSniff: Boolean = false,
     val maxConnections: Int? = null,
     val tunnelIdleTimeout: Duration? = null,
+    val transparent: Boolean = false,
+    val ipv6Loopback: Boolean = false,
 )
 
 /**
  * Local proxy on 127.0.0.1 supporting HTTP CONNECT and (optionally) SOCKS5 + TLS SNI sniffing
- * for IP targets. Intercepts KR and enabled JP game hosts with their own TLS contexts. Hosts
- * without a context (or when reading is off) are blind tunnels. Read-only: requests and responses
- * are forwarded byte for byte. Requests are never stored. Logs show the method, path (no query),
- * status and size only, never bodies, tokens or headers.
+ * for IP targets, or transparent TLS redirect (Root mode). Intercepts KR and enabled JP game
+ * hosts with their own TLS contexts. Hosts without a context (or when reading is off) are blind
+ * tunnels. Read-only: requests and responses are forwarded byte for byte. Requests are never
+ * stored. Logs show the method, path (no query), status and size only, never bodies, tokens or headers.
  */
 class ProxyServer(
     sslContexts: Map<String, SSLContext> = emptyMap(),
@@ -50,6 +52,10 @@ class ProxyServer(
     private val onGameHostConnected: ((Long) -> Unit)? = null,
     private val onUpstreamFailure: ((String) -> Unit)? = null,
     private val onTlsFailure: () -> Unit = { CaptureTracker.addTlsFailure() },
+    private val onGameTlsSuccess: (() -> Unit)? = null,
+    private val onGameUpstreamSuccess: (() -> Unit)? = null,
+    private val onUnexpectedConnection: (() -> Unit)? = null,
+    private val onNonGameUpstreamFailure: ((String) -> Unit)? = null,
     private val onGameResponse: (String, ByteArray, String?) -> Unit = { target, payload, encoding ->
         CaptureTracker.onGameResponse(target, payload, encoding)
     },
@@ -63,16 +69,28 @@ class ProxyServer(
     // A core-size-0 ThreadPoolExecutor hung the spike (the accept loop held its only worker), so
     // connections go to a cached pool and the accept loop has its own thread.
     private val pool = Executors.newCachedThreadPool()
+    @Volatile
     private var server: ServerSocket? = null
+
+    @Volatile
+    private var server6: ServerSocket? = null
     private val live = java.util.Collections.synchronizedSet(mutableSetOf<Socket>())
     private val activeConnections = AtomicInteger(0)
 
     @Volatile
     private var running = false
 
+    @Volatile
+    var isIpv6Listening: Boolean = false
+        private set
+
+    /** True while the accept loop is running (listener not closed by [stopAccepting] or [stop]). */
+    val isAccepting: Boolean get() = running
+
     internal var handleHookForTesting: ((Socket) -> Unit)? = null
     internal var upstreamSslFactoryForTesting: SSLSocketFactory? = null
     internal var upstreamHostnameVerifierForTesting: HostnameVerifier? = null
+    internal var transparentUpstreamOverrideForTesting: ((String, Int) -> InetSocketAddress)? = null
 
     fun setContexts(contexts: Map<String, SSLContext>) {
         val filtered = contexts.filterKeys { it in CaptureNames.HOST_SERVERS }
@@ -91,19 +109,66 @@ class ProxyServer(
             ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
         }
         server = s
+        val actualPort = s.localPort
+        val s6 = if (options.ipv6Loopback) {
+            try {
+                ServerSocket().apply {
+                    reuseAddress = true
+                    bind(InetSocketAddress(InetAddress.getByName("::1"), actualPort))
+                }
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+        server6 = s6
+        isIpv6Listening = s6 != null
         running = true
         Thread({ acceptLoop(s) }, "capture-accept").apply { isDaemon = true }.start()
-        return s.localPort
+        if (s6 != null) {
+            Thread({ acceptLoop(s6) }, "capture-accept-v6").apply { isDaemon = true }.start()
+        }
+        return actualPort
+    }
+
+    fun stopAccepting() {
+        running = false
+        runCatching { server?.close() }
+        runCatching { server6?.close() }
+    }
+
+    fun awaitOpenConnections(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs.coerceAtLeast(0L)
+        while (System.currentTimeMillis() < deadline) {
+            val empty = synchronized(live) { live.isEmpty() } && activeConnections.get() == 0
+            if (empty) return true
+            try {
+                Thread.sleep(50)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+        return synchronized(live) { live.isEmpty() } && activeConnections.get() == 0
     }
 
     fun stop() {
-        running = false
-        runCatching { server?.close() }
+        stopAccepting()
         synchronized(live) { live.toList() }.forEach { runCatching { it.close() } }
         pool.shutdownNow()
     }
 
     private fun acceptLoop(s: ServerSocket) {
+        try {
+            acceptConnections(s)
+        } finally {
+            // H7: an accept loop that ends by an exception must not leave the listener looking usable.
+            if (running) stopAccepting()
+        }
+    }
+
+    private fun acceptConnections(s: ServerSocket) {
         while (running) {
             val c = try {
                 s.accept()
@@ -118,9 +183,7 @@ class ProxyServer(
             try {
                 pool.execute { handle(c) }
             } catch (_: Exception) {
-                if (options.maxConnections != null) {
-                    activeConnections.decrementAndGet()
-                }
+                activeConnections.decrementAndGet()
                 live -= c
                 runCatching { c.close() }
             }
@@ -128,7 +191,11 @@ class ProxyServer(
     }
 
     private fun tryAcquireConnectionSlot(): Boolean {
-        val cap = options.maxConnections ?: return true
+        val cap = options.maxConnections
+        if (cap == null) {
+            activeConnections.incrementAndGet()
+            return true
+        }
         while (true) {
             val current = activeConnections.get()
             if (current >= cap) return false
@@ -141,6 +208,10 @@ class ProxyServer(
             handleHookForTesting?.invoke(client)
             client.soTimeout = 60_000
             val contexts = sslContexts
+            if (options.transparent) {
+                handleTransparent(client, contexts)
+                return
+            }
             if (!options.socks5) {
                 val reader = HttpReader(client.getInputStream())
                 val head = reader.readHead() ?: return
@@ -192,10 +263,46 @@ class ProxyServer(
             Timber.w("Capture: out of memory in connection handler")
         } finally {
             live -= client
-            if (options.maxConnections != null) {
-                activeConnections.decrementAndGet()
-            }
+            activeConnections.decrementAndGet()
             runCatching { client.close() }
+        }
+    }
+
+    private fun handleTransparent(client: Socket, contexts: Map<String, SSLContext>) {
+        val clientInput = client.getInputStream()
+        val peeked = peekClientHello(client, clientInput)
+        val rawSni = peeked.sni?.trim()?.takeIf { it.isNotEmpty() }
+        if (rawSni == null) {
+            onUnexpectedConnection?.invoke()
+            return
+        }
+        val lowerSni = rawSni.lowercase()
+        if (lowerSni in CaptureNames.HOST_SERVERS) {
+            onGameHostConnected?.invoke(System.currentTimeMillis())
+        }
+        val sslContext = contexts[lowerSni]
+        if (sslContext != null) {
+            val combinedInput = SequenceInputStream(ByteArrayInputStream(peeked.bytes), clientInput)
+            val replayClient = ReplaySocket(client, combinedInput)
+            interceptGame(
+                client = replayClient,
+                connectHost = lowerSni,
+                tlsHost = lowerSni,
+                port = 443,
+                sslContext = sslContext,
+                alreadyReplied = true,
+            )
+        } else {
+            tunnel(
+                client = client,
+                clientInput = clientInput,
+                connectHost = rawSni,
+                statsHost = lowerSni,
+                port = 443,
+                alreadyReplied = true,
+                isSocks5 = false,
+                initialUpstreamBytes = peeked.bytes,
+            )
         }
     }
 
@@ -396,10 +503,15 @@ class ProxyServer(
         live += up
         try {
             try {
-                up.connect(InetSocketAddress(connectHost, port), 15_000)
+                val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
+                    ?: InetSocketAddress(connectHost, port)
+                up.connect(targetAddress, 15_000)
             } catch (e: IOException) {
-                if (statsHost.lowercase() in CaptureNames.HOST_SERVERS) {
-                    onUpstreamFailure?.invoke(statsHost.lowercase())
+                val lowerStats = statsHost.lowercase()
+                if (lowerStats in CaptureNames.HOST_SERVERS) {
+                    onUpstreamFailure?.invoke(lowerStats)
+                } else {
+                    onNonGameUpstreamFailure?.invoke(lowerStats)
                 }
                 if (!alreadyReplied && isSocks5) {
                     val code = if (e is ConnectException) {
@@ -418,6 +530,7 @@ class ProxyServer(
             }
 
             if (statsHost.lowercase() in CaptureNames.HOST_SERVERS) {
+                onGameUpstreamSuccess?.invoke()
                 onGameHostConnected?.invoke(System.currentTimeMillis())
             }
             if (!alreadyReplied) {
@@ -510,6 +623,7 @@ class ProxyServer(
             tls.sslParameters = tls.sslParameters.apply { applicationProtocols = arrayOf("http/1.1") }
             tls.soTimeout = 120_000
             tls.startHandshake()
+            onGameTlsSuccess?.invoke()
         } catch (e: Exception) {
             // The game rejected our certificate: the CA is not installed as a CA certificate.
             onTlsFailure()
@@ -521,7 +635,9 @@ class ProxyServer(
             val factory = upstreamSslFactoryForTesting ?: (SSLSocketFactory.getDefault() as SSLSocketFactory)
             val plain = Socket()
             try {
-                plain.connect(InetSocketAddress(connectHost, port), 15_000)
+                val targetAddress = transparentUpstreamOverrideForTesting?.invoke(connectHost, port)
+                    ?: InetSocketAddress(connectHost, port)
+                plain.connect(targetAddress, 15_000)
                 val s = factory.createSocket(plain, tlsHost, port, true) as SSLSocket
                 try {
                     s.sslParameters = s.sslParameters.apply {
@@ -534,6 +650,7 @@ class ProxyServer(
                     if (!verifier.verify(tlsHost, s.session)) {
                         throw IOException("upstream hostname verification failed")
                     }
+                    onGameUpstreamSuccess?.invoke()
                     s
                 } catch (t: Throwable) {
                     runCatching { s.close() }
