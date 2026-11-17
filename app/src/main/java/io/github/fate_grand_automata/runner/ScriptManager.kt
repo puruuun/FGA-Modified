@@ -359,7 +359,13 @@ class ScriptManager @Inject constructor(
             is SkillLevelScript.ExitException -> {
                 val msg = when (val reason = e.reason) {
                     is SkillLevelScript.ExitReason.Done ->
-                        context.getString(if (reason.results.any { it.stop == SlotStop.Stuck }) R.string.skill_level_stopped else R.string.skill_level_done) + "\n" + skillLevelSummary(context, reason.results)
+                        context.getString(
+                            if (reason.results.any { it.stop == SlotStop.Stuck || it.stop == SlotStop.ConnectionError }) {
+                                R.string.skill_level_stopped
+                            } else {
+                                R.string.skill_level_done
+                            }
+                        ) + "\n" + skillLevelSummary(context, reason.results)
 
                     SkillLevelScript.ExitReason.NoServantSelected -> context.getString(R.string.skill_level_select_servant)
                     SkillLevelScript.ExitReason.WrongScreen -> context.getString(R.string.skill_level_wrong_screen)

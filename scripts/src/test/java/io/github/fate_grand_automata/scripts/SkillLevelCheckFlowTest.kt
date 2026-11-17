@@ -71,7 +71,7 @@ class SkillLevelCheckFlowTest {
         }
         override fun cancel(): Boolean { cancels++; check(!cancelThrows); return cancelWorks }
         override fun confirm() { confirms++; fail("check mode must never confirm") }
-        override fun skipToScreen(): SkipResult = fail("check mode must never skip enhancement results")
+        override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult = fail("check mode must never skip enhancement results")
     }
 
     private fun run(panel: Panel): List<SlotResult> = SkillLevelCheckFlow(panel).runAll(SkillLevelMode.Skill).also {

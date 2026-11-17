@@ -12,7 +12,8 @@ class SkillLevelDevice(
     private val screens: SkillLevelScreens,
     private val digits: SkillLevelDigits,
     private val panelReader: SkillLevelPanelReader,
-    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default,
+    private val connectionRetry: ConnectionRetry = ConnectionRetry(api)
 ) : SkillLevelPanel, IFgoAutomataApi by api {
     /** The padlock only exists on append slots. */
     override fun isLocked(slot: Int) = mode == SkillLevelMode.Append && screens.slotLocked(mode, slot)
@@ -57,27 +58,49 @@ class SkillLevelDevice(
         return poll(SkillLevelTiming.CLOSE_POLLS) { !screens.dialogVisible() }
     }
 
+    override var lastSkipRetries: Int = 0
+        private set
+
     /**
      * Skip taps on the title area every 0.5 s. The screen counts as back when the skill title and the re-select
      * button show and the dialog is gone, after the animation was seen to leave (or a few taps without seeing it).
      * In skill mode, the label without the re-select button and without the dialog on two polls in a row (under the
      * same condition) means the game deselected the servant because all three skills reached 10.
+     * On each poll, checks [ConnectionRetry.needsToRetry] first in the same snapshot; if shown, taps Retry (up to
+     * [SkillLevelTiming.SKIP_RETRIES] times), skips the skip tap on that poll, and restarts the 20 s poll window.
      */
-    override fun skipToScreen(): SkipResult {
+    override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult {
+        lastSkipRetries = 0
+        var tap = 0
         var left = false
         var deselectedPolls = 0
-        for (tap in 1..SkillLevelTiming.SKIP_POLLS) {
-            loc.skipClick.click()
+        while (tap < SkillLevelTiming.SKIP_POLLS) {
+            tap++
             SkillLevelTiming.SKIP_INTERVAL.wait()
             val frame = useSameSnapIn {
-                val label = screens.onLabel(mode)
-                val selected = screens.servantSelected()
-                val dialog = screens.dialogVisible()
-                when {
-                    label && selected && !dialog -> SkipFrame.Back
-                    mode == SkillLevelMode.Skill && label && !selected && !dialog -> SkipFrame.Deselected
-                    else -> SkipFrame.Other
+                if (connectionRetry.needsToRetry()) {
+                    SkipFrame.Retry
+                } else {
+                    val label = screens.onLabel(mode)
+                    val selected = screens.servantSelected()
+                    val dialog = screens.dialogVisible()
+                    when {
+                        label && selected && !dialog -> SkipFrame.Back
+                        mode == SkillLevelMode.Skill && label && !selected && !dialog -> SkipFrame.Deselected
+                        else -> SkipFrame.Other
+                    }
                 }
+            }
+            if (frame == SkipFrame.Retry) {
+                if (lastSkipRetries >= SkillLevelTiming.SKIP_RETRIES) return SkipResult.ConnectionFailed
+                lastSkipRetries++
+                onRetry(lastSkipRetries)
+                connectionRetry.retry()
+                // Restart the post-confirm poll window and return-state counters so the screen is judged fresh.
+                tap = 0
+                left = false
+                deselectedPolls = 0
+                continue
             }
             val counts = left || tap >= SkillLevelTiming.SKIP_MIN_POLLS
             if (frame != SkipFrame.Back) left = true
@@ -87,11 +110,12 @@ class SkillLevelDevice(
             }
             deselectedPolls = if (frame == SkipFrame.Deselected && counts) deselectedPolls + 1 else 0
             if (deselectedPolls >= SkillLevelTiming.DESELECT_POLLS) return SkipResult.Deselected
+            loc.skipClick.click()
         }
         return SkipResult.Timeout
     }
 
-    private enum class SkipFrame { Back, Deselected, Other }
+    private enum class SkipFrame { Retry, Back, Deselected, Other }
 
     private fun poll(polls: Int, signal: () -> Boolean): Boolean {
         repeat(polls) {

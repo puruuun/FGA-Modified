@@ -27,6 +27,8 @@ private class FakePanel(
     private val dialogOpens: Boolean = true,
     private val enhanceTitle: Boolean = true,
     private val skipReturns: Boolean = true,
+    private val skipConnectionFailed: Boolean = false,
+    private val skipRetries: Int = 0,
     /** The game deselects the servant once every skill is 10. */
     private val skipDeselectsAtTen: Boolean = false,
     private val cancelCloses: Boolean = true,
@@ -93,10 +95,17 @@ private class FakePanel(
         if (cancelCloses) dialogOpen = false
         return !dialogOpen
     }
-    override fun skipToScreen() = when {
-        !skipReturns -> SkipResult.Timeout
-        skipDeselectsAtTen && levels.all { it == 10 } -> SkipResult.Deselected
-        else -> SkipResult.Back
+    override var lastSkipRetries: Int = 0
+        private set
+    override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult {
+        lastSkipRetries = skipRetries
+        repeat(skipRetries) { onRetry(it + 1) }
+        return when {
+            skipConnectionFailed -> SkipResult.ConnectionFailed
+            !skipReturns -> SkipResult.Timeout
+            skipDeselectsAtTen && levels.all { it == 10 } -> SkipResult.Deselected
+            else -> SkipResult.Back
+        }
     }
 }
 
@@ -637,7 +646,7 @@ class SkillLevelFlowTest {
                 override fun awaitDialog(): Boolean { fail(SkillLevelStep.Dialog);return base.awaitDialog() }
                 override fun readLevels(): SkillLevelReading { fail(SkillLevelStep.Ocr);return base.readLevels() }
                 override fun confirm() { fail(SkillLevelStep.Confirm);base.confirm() }
-                override fun skipToScreen(): SkipResult { fail(SkillLevelStep.Skip);return base.skipToScreen() }
+                override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult { fail(SkillLevelStep.Skip);return base.skipToScreen(onRetry) }
             }
             val logs = mutableListOf<String>()
             val flow = SkillLevelFlow(panel, logs::add)
@@ -652,7 +661,7 @@ class SkillLevelFlowTest {
     @Test fun `manual stop during skip retains the enhanced slot and writes its summary`() {
         val base = FakePanel(mutableListOf(3))
         val panel = object : SkillLevelPanel by base {
-            override fun skipToScreen(): SkipResult = throw io.github.lib_automata.ScriptAbortException()
+            override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult = throw io.github.lib_automata.ScriptAbortException()
         }
         val logs = mutableListOf<String>()
         val flow = SkillLevelFlow(panel, logs::add)
@@ -678,7 +687,7 @@ class SkillLevelFlowTest {
         assertEquals(listOf(SlotStop.Reached, SlotStop.Reached, SlotStop.Deselected), results.map { it.stop })
         assertEquals(SlotResult(2, 10, 9, 10, SlotStop.Deselected, SkillLevelStep.Skip), results[2])
         assertEquals(3, panel.confirms)
-        assertTrue(logs.any { it.endsWith("return=deselected") })
+        assertTrue(logs.any { it.endsWith("return=deselected retries=0") })
     }
 
     @Test fun `a deselection on the first slot stops before the remaining slots are selected`() {
@@ -693,11 +702,46 @@ class SkillLevelFlowTest {
         val back = FakePanel(mutableListOf(3, 3), skipDeselectsAtTen = true)
         val backLogs = mutableListOf<String>()
         assertEquals(listOf(SlotStop.Reached, SlotStop.Reached), SkillLevelFlow(back, backLogs::add).runAll(listOf(4, 4)).map { it.stop })
-        assertTrue(backLogs.any { it.endsWith("return=true") })
+        assertTrue(backLogs.any { it.endsWith("return=true retries=0") })
         val timeout = FakePanel(mutableListOf(3, 3), skipReturns = false, skipDeselectsAtTen = true)
         val timeoutLogs = mutableListOf<String>()
         assertEquals(listOf(SlotStop.Stuck), SkillLevelFlow(timeout, timeoutLogs::add).runAll(listOf(4, 4)).map { it.stop })
-        assertTrue(timeoutLogs.any { it.endsWith("return=false") })
+        assertTrue(timeoutLogs.any { it.endsWith("return=false retries=0") })
         assertEquals(listOf(0), timeout.selectedSlots)
+    }
+
+    @Test fun `connection failed stops the slot and run without touching later slots`() {
+        val panel = FakePanel(mutableListOf(3, 3), skipConnectionFailed = true, skipRetries = 3)
+        val logs = mutableListOf<String>()
+        val results = SkillLevelFlow(panel, logs::add).runAll(listOf(8, 8))
+        assertEquals(listOf(SlotResult(0, 8, 3, 4, SlotStop.ConnectionError, SkillLevelStep.Skip)), results)
+        assertEquals(listOf(0), panel.selectedSlots)
+        assertEquals(1, panel.confirms)
+        for (k in 1..3) assertTrue(logs.any { it == "slot=1 step=skip retry=$k" }, logs.toString())
+        assertTrue(logs.any { it == "slot=1 step=skip return=connection-error retries=3" }, logs.toString())
+        assertTrue(logs.any { it == "stop slot=1 step=skip reason=ConnectionError" }, logs.toString())
+    }
+
+    @Test fun `retry then back without level increase stops as no increase without confirming again`() {
+        val panel = FakePanel(mutableListOf(3), confirmWorks = false, skipRetries = 1)
+        val logs = mutableListOf<String>()
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(8)).single()
+        assertEquals(SlotStop.NoIncrease, result.stop)
+        assertEquals(1, panel.confirms)
+        assertEquals(1, panel.cancels)
+        assertEquals(3, panel.levels[0])
+        assertTrue(logs.any { it == "slot=1 step=skip retry=1" }, logs.toString())
+        assertTrue(logs.any { it == "slot=1 step=skip return=true retries=1" }, logs.toString())
+    }
+
+    @Test fun `retry then back with level plus one continues to the target`() {
+        val panel = FakePanel(mutableListOf(3), skipRetries = 1)
+        val logs = mutableListOf<String>()
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(5)).single()
+        assertEquals(SlotStop.Reached, result.stop)
+        assertEquals(2, panel.confirms)
+        assertEquals(5, panel.levels[0])
+        assertTrue(logs.any { it == "slot=1 step=skip retry=1" }, logs.toString())
+        assertTrue(logs.any { it == "slot=1 step=skip return=true retries=1" }, logs.toString())
     }
 }
