@@ -56,13 +56,18 @@ internal object RootRedirectScripts {
         appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
         appendLine("  exit 1")
         appendLine("fi")
-        // -C is read-only and exits 0 (rule exists) or 1 (rule absent) when xt_owner is supported; 2+ means unsupported.
+        // -C is read-only: 0 (rule exists) or 1 (rule absent) when xt_owner is supported, 2 when iptables cannot
+        // load the match ("Couldn't find match 'owner'", measured on a MuMu Android 12 kernel). Other codes, such as
+        // 4 for an xtables lock timeout, are not evidence about the kernel and keep the generic failure.
         appendLine("\"\$$toolVar\" -w 3 -t nat -C OUTPUT -p tcp --dport 443 -m owner --uid-owner 0 -j RETURN >/dev/null 2>&1")
         appendLine("rc=\$?")
         appendLine("if [ \"\$rc\" -eq 0 ] || [ \"\$rc\" -eq 1 ]; then")
         appendLine("  echo $MARKER_APPLY_OK")
-        appendLine("else")
+        appendLine("elif [ \"\$rc\" -eq 2 ]; then")
         appendLine("  echo $MARKER_FAIL_OWNER")
+        appendLine("  exit 1")
+        appendLine("else")
+        appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
         appendLine("  exit 1")
         appendLine("fi")
     }

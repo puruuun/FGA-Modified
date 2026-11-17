@@ -235,6 +235,13 @@ class RootRedirectScriptsTest {
             assertTrue(script.contains("echo ${RootRedirectScripts.MARKER_FAIL_OWNER}"))
             assertTrue(script.contains("echo ${RootRedirectScripts.MARKER_APPLY_OK}"))
             assertTrue(script.contains("[ \"\$rc\" -eq 0 ] || [ \"\$rc\" -eq 1 ]"))
+            val ownerMarkerIdx = script.indexOf("echo ${RootRedirectScripts.MARKER_FAIL_OWNER}")
+            val rc2Idx = script.indexOf("elif [ \"\$rc\" -eq 2 ]; then")
+            assertTrue(rc2Idx in 0 until ownerMarkerIdx, "only exit code 2 may report the owner marker for $toolVar")
+            assertTrue(
+                script.indexOf("echo ${RootRedirectScripts.MARKER_FAIL_STEP_PREFIX}1", ownerMarkerIdx) > ownerMarkerIdx,
+                "other owner-check exit codes must fall back to the generic failure for $toolVar",
+            )
             for (flag in mutatingFlags) {
                 assertFalse(script.contains(flag), "Precheck for $toolVar must not contain $flag")
             }
