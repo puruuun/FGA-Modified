@@ -95,7 +95,7 @@ class CaptureAccountsLazyTest {
         first.applyFriends("7001", kr("friend/top"), top(7001), 25)
         first.save()
         val expected = first.accounts(100).map { it.copy(revision = 0) }
-        // Today's code wrote only account-state.json, account.json, friends.json and current.
+        // Pre-#258 builds wrote only account-state.json, account.json, friends.json and current (without summary.json).
         directory.walkTopDown().filter { it.name == "summary.json" }.toList().forEach { assertTrue(it.delete()) }
         val widget = store(migrate = false)
         assertTrue(widget.accounts(100).isEmpty(), "the widget path never parses a state")

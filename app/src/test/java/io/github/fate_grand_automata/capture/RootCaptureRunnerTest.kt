@@ -1149,7 +1149,7 @@ class RootCaptureRunnerTest {
             executor = executor,
         )
 
-        // Pause retry by inspecting state immediately after the first batch completes
+        // Inspect state immediately after the first batch completes before the retry timer fires
         runner.requestStartReading(8899)
         val firstBatch = CountDownLatch(1)
         executor.execute { firstBatch.countDown() }

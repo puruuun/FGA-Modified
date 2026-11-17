@@ -54,8 +54,8 @@ fun shouldEnsureCaptureProxy(
 ): Boolean = supported && enabled && consentAgreed && mode == CaptureConnectionMode.AdGuard
 
 /**
- * Starts and stops the capture transport (VPN or resident AdGuard proxy).
- * Never calls [CaptureProxyService] directly; communicates solely via service intents.
+ * Starts and stops the capture transport (VPN, resident AdGuard proxy, or Root mode).
+ * Communicates via service intents, [CaptureProxyService.alive], and [CaptureProxyService.cleanupLeftoverRootRulesAsync].
  */
 object CaptureController {
     @Volatile
@@ -89,7 +89,7 @@ object CaptureController {
         return shouldEnsureProxy(prefs)
     }
 
-    /** The consent intent, or null when permission is already granted or AdGuard proxy mode is active. */
+    /** The consent intent, or null when permission is already granted or AdGuard/Root mode is active. */
     fun consentIntent(context: Context): Intent? {
         init(context)
         return when (captureConsentMode(connectionMode(context))) {
@@ -100,7 +100,7 @@ object CaptureController {
 
     /**
      * Starts capture (or turns reading on in AdGuard mode). Returns true if the start command could
-     * be dispatched, or false if startup is blocked (e.g. proxy port conflict or FGS restriction).
+     * be dispatched, or false if startup is blocked (e.g. missing consent, proxy port conflict, or FGS restriction).
      */
     fun start(context: Context): Boolean {
         init(context)

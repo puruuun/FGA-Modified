@@ -60,7 +60,7 @@ class ChaldeaRuntimeToggleTest {
         assertNotNull(ChaldeaSyncManager.hooks)
     }
 
-    /** R8 removes write-only fields; without @Keep the settings collector is garbage collected in the beta build. */
+    /** R8 removes write-only fields; without a ProGuard keep rule the settings collector is garbage collected in the beta build. */
     @Test fun theSettingsCollectorFieldsHaveAKeepRule() {
         val rules = java.io.File("proguard-rules.pro").readText()
         for (name in listOf("settingsScope", "settingsJob")) {

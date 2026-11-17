@@ -82,7 +82,6 @@ class ApWidgetAllAccountsTest {
     // --- how many cells fit ------------------------------------------------------------------------
 
     @Test fun cellCountFollowsTheWidthAndTheTiles() {
-        // Phones share the age label's width with the tiles.
         assertEquals(1, allAccountsCellCount(150, showLog = false, showService = true, accountCount = 5))
         assertEquals(2, allAccountsCellCount(272, showLog = false, showService = true, accountCount = 5))
         assertEquals(3, allAccountsCellCount(350, showLog = false, showService = true, accountCount = 5))

@@ -442,7 +442,6 @@ class ProxyServerTest {
         proxy.setContexts(emptyMap())
         val port = proxy.start(0)
         try {
-            // Domain in HOST_SERVERS pointing to invalid port or unreachable? Wait: use non-routable host or hook:
             // Non-game host failure must NOT increment game upstream failure counter
             Socket("127.0.0.1", port).use { s ->
                 s.soTimeout = 3000
