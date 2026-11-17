@@ -866,7 +866,7 @@ class ChaldeaSyncLogicTest {
                 "userCommandCode" to """[{"id":10,"commandCodeId":80001},{"id":11,"commandCodeId":99999}]""",
                 // 3-element list: [10 (-> cc 1), -1 (-> null), 11 (unmapped -> null)], slots 3 & 4 missing -> null
                 "userSvtCommandCode" to """[{"svtId":100100,"userCommandCodeIds":[10,-1,11]}]""",
-                // 3-element commandCardParam: [0, 39, 500, 600, ...] missing index -> 0, >500 clamped 25
+                // 4-element commandCardParam: [0, 39, 500, 600] missing index 4 -> 0, >500 clamped 25
                 "userSvtCommandCard" to """[{"svtId":100100,"commandCardParam":[0,39,500,600]}]""",
             )
             val s = ChaldeaPatch.from(st, ChaldeaServer.Kr, stage3Numbers).servants!![2L]!!
@@ -1012,7 +1012,7 @@ class ChaldeaSyncLogicTest {
         )
         val p = ChaldeaPatch.from(st, ChaldeaServer.Jp, stage3Numbers, gd)
         assertEquals(mapOf(505740L to 1L, 505630L to 1L), p.servants!![401L]!!.costumes)
-        // Verify partner inserted before own in key order when serialized
+        // Serialized costumes contains both own and partner battleCharaIds (keys sorted by toJson())
         val pJson = Json.parseToJsonElement(p.toJson()).jsonObject
         assertEquals(
             JsonObject(mapOf("505630" to JsonPrimitive(1), "505740" to JsonPrimitive(1))),
@@ -1020,7 +1020,7 @@ class ChaldeaSyncLogicTest {
         )
         assertEquals(mapOf(800140L to 1L), p.servants!![2L]!!.costumes)
 
-        // Verify merge order explicitly when partner and own share a battleCharaId key
+        // Verify in-memory map insertion order places transform partner costumes before own
         val sameBcGd = ChaldeaGameData(
             version = "v2",
             costumes = mapOf(505600L to mapOf(1L to 900L, 2L to 902L), 505700L to mapOf(3L to 901L)),

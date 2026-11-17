@@ -81,8 +81,8 @@ object FriendTopStream {
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Returns the reduced body, or null when the stream has no object at the top. Malformed JSON, or a slice with
-     * an unexpected type, throws; the caller drops the response.
+     * Returns the reduced body, or an empty object when the stream has no `cache` object. Malformed JSON, a
+     * non-object top-level JSON value, or a slice with an unexpected type throws; the caller drops the response.
      */
     @OptIn(ExperimentalSerializationApi::class)
     fun parse(input: InputStream): JsonObject {
