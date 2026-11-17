@@ -53,10 +53,10 @@ Configured in the **KR server** section without requiring root access. This sect
 3. Tap **KR server → Create certificate**. The certificate is saved to **FGA folder → `capture` → `fga-capture-ca.crt`** (the FGA folder chosen during initial setup), and the saved folder and filename are shown on screen. Any existing file with the same name is overwritten; if that filename cannot be written, a fallback copy is saved as `fga-capture-ca-<date>-<time>.crt`. If the FGA folder is unavailable, the system save dialog opens so you can choose where to save. Files created in `Download` by older versions are left untouched.
 4. Tap **How to install → Open security settings** to open Android Settings. Go to **Security → Encryption & credentials → Install a certificate → CA certificate**, and select `fga-capture-ca.crt` from the `capture` subfolder inside your FGA folder. Menu names vary slightly by device; if it is hard to find, search for **CA certificate** in the Settings search bar.
 5. Returning to FGA updates the **KR server** status to **KR certificate: Installed as a CA certificate.**
-6. Tap **VPN → Start**. On the first run, approve Android's VPN connection request.
+6. Start collection in the **VPN** section. With FGA VPN, tap **Start** and approve Android's VPN connection request the first time. With an external proxy app or root, finish that mode's setup ([External Proxy App Mode](Capture-AdGuard-EN.md), [Root Capture Mode](Capture-Root-EN.md)) and tap **Turn reading on**.
 7. Launch the game (if it was already open, close it completely and launch it again). Once a login response is received, the account summary card is populated. Before any snapshot is captured, **Start the game while log collection is on** is shown.
 
-If the game rejects the certificate, the VPN row shows the rejection count and guidance; make sure you installed it as a CA certificate.
+If the game rejects the certificate, the **VPN** section shows the rejection count and guidance; make sure you installed it as a CA certificate.
 
 If a response body is too large, cannot be copied due to low memory, or fails to parse, the screen displays the count of unrecorded responses and the last path while collecting. Game traffic still passes through untouched, so gameplay and auto-farming are completely unaffected—only that response is omitted from the log.
 
@@ -77,9 +77,9 @@ Your agreement is saved. Users who have already agreed are not asked again. If t
 
 When log collection is enabled on Android 10+ and either the KR game or the official JP game (with the JP option on) is installed, a **Start log collection** button appears to the left of the service button. If both buttons do not fit on one row, it stacks above the service button.
 
-- **Blue · Start log collection**: Collection is off. If you haven't agreed yet, the notice opens first. If no certificate exists, a brief prompt opens Log collection settings. If Android VPN permission is required, the connection dialog appears and starts collection once allowed.
-- **Yellow · Stop log collection**: The VPN is running. Tapping it stops only the log collection VPN while keeping the FGA service running.
-- If another VPN takes over, you tap Stop from the notification, or the system closes the VPN, the button immediately turns blue again.
+- **Blue · Start log collection**: Collection is off. If you haven't agreed yet, the notice opens first. If no certificate exists, a brief prompt opens Log collection settings. In FGA VPN mode, if Android VPN permission is required, the connection dialog appears and starts collection once allowed.
+- **Yellow · Stop log collection**: Collection is running. Tapping it stops only log collection while keeping the FGA service running. In external proxy app mode the proxy stays open, so FGO keeps its connection.
+- If you stop it from the notification, the system ends collection, or (in FGA VPN mode) another VPN takes over, the button immediately turns blue again.
 
 When log collection is enabled (Android 10+) and at least one login snapshot exists, **profile cards** appear near the top of the main screen. Each card shows the Master name, a small **KR / JP** server badge, current/max AP, and full recovery time (or **Full** if already full). Cards appear in a fixed-width horizontal row below the build/accessibility status line, with the current (last-played) account first; swipe horizontally if they overflow. AP updates every minute while viewing the screen. Tapping a card opens that account's dashboard.
 
@@ -103,15 +103,15 @@ Battle logs record the name of the account that ran them. A run belongs to the a
 
 ## Using with the FGA Service
 
-If log collection is enabled and either the KR or JP path is ready when you tap **Start Service** on the main screen, FGA starts the service and then starts the log collection VPN too. If VPN permission has not been granted yet, the Android connection prompt opens on the spot and starts the VPN once approved. If no certificate exists, a brief notice is shown and the FGA service still starts normally.
+If log collection is enabled and either the KR or JP path is ready when you tap **Start Service** on the main screen, FGA starts the service and then starts log collection too. In FGA VPN mode, if VPN permission has not been granted yet, the Android connection prompt opens on the spot and collection starts once approved. If no certificate exists, a brief notice is shown and the FGA service still starts normally.
 
-When **Stop log collection when the service stops** (off by default; existing saved choices are preserved) is enabled, stopping the FGA service from the main screen, notification, or system shutdown also stops log collection—including a VPN you started manually. When disabled, log collection keeps running even after the FGA service stops.
+When **Stop log collection when the service stops** (off by default; existing saved choices are preserved) is enabled, stopping the FGA service from the main screen, notification, or system shutdown also stops log collection—including collection you started manually. When disabled, log collection keeps running even after the FGA service stops.
 
-When starting a script while log collection is off, if you are on the KR server or on the official JP server with its JP path ready—and log collection is enabled with VPN consent and a certificate ready—FGA restarts log collection automatically. If consent or a certificate is missing, only a notice is shown and the script still runs. **Ending a script alone does not stop the VPN.** Per-run gain tracking still spans from script start to script end.
+When starting a script while log collection is off, if you are on the KR server or on the official JP server with its JP path ready—and log collection is enabled with a certificate (and, in FGA VPN mode, VPN permission) ready—FGA restarts log collection automatically. If consent or a certificate is missing, only a notice is shown and the script still runs. **Ending a script does not stop log collection.** Per-run gain tracking still spans from script start to script end.
 
 ## Material Tracking and Bond Stop in Battle
 
-At Battle script start, **if the server is KR and the log collection VPN is running**, that run gets its bond **numbers** from log collection responses. If the VPN is auto-starting at script launch, FGA waits up to 3 seconds before deciding. This decision does not change mid-run: turning the VPN on mid-run keeps using screen recognition, and turning it off mid-run keeps the response mode. JP runs and runs started without collection keep the existing behavior.
+At Battle script start, **if the server is KR and log collection is running**, that run gets its bond **numbers** from log collection responses. If log collection is auto-starting at script launch, FGA waits up to 3 seconds before deciding. This decision does not change mid-run: turning collection on mid-run keeps using screen recognition, and turning it off mid-run keeps the response mode. JP runs and runs started without collection keep the existing behavior.
 
 - **Materials**: Regardless of log collection, selected materials are counted via template matching on the drop screen. Material run limits and automatic deduction continue using screen-recognition results. Battle logs may show both screen-counted materials and log-collection gains together.
 - **Bond**: Bond gain numbers come from log collection responses. Check per-Servant points under **Gains (log collection)** in the log rather than per-character bond totals on the exit screen. If only **Track bond point gains** is enabled (without MAX stop), OCR and its read wait are skipped, and result screens advance in the same number of taps as when bond tracking is off.
@@ -137,7 +137,7 @@ To browse friends' support Servants in one view, see [Friend Manager](Friend-Man
 
 ## Viewing Gains in the Battle Log
 
-While the VPN runs, battle results from scripts are aggregated—whether you started the VPN manually or let the script start it. When the script ends, **Tracked** appears on the record in **Main → Log**, and **Gains (log collection)** is added below the detail summary.
+While log collection runs, battle results from scripts are aggregated—whether you started collection manually or let the script start it. When the script ends, **Tracked** appears on the record in **Main → Log**, and **Gains (log collection)** is added below the detail summary.
 
 - **Items**: Aggregates server-reported drops sorted from highest gain downward, including Craft Essences and other drops. Ending holdings are also shown when an account snapshot is available.
 - **QP**: Sums quest-clear QP, QP drops, and first-clear QP.
@@ -148,7 +148,7 @@ While the VPN runs, battle results from scripts are aggregated—whether you sta
 - **Fruits used**: Calculates `start holdings − end holdings + gains` for each of Golden, Silver, Bronzed Cobalt, and Bronze Fruits. Shows **Unknown** if either snapshot is missing.
 - **Show battles**: Collapsed by default. Expanding shows each battle's timestamp, quest ID, drops, QP, EXP, and bond.
 
-If log collection stops mid-script because you toggled VPN, switched to another VPN, revoked permission, etc., gains collected so far are preserved. If fewer battles were captured than completed runs, a notice (`%1$s battles were not captured`) is displayed; gains may be partial, and changes after stopping are not included. Ending holdings and fruit usage reflect the last captured point. Even without an account snapshot, drops, QP, EXP, and bond visible in battle responses are recorded; missing values show **Unknown** or are omitted.
+If you turn log collection on mid-script, or it stops mid-script (for example, in FGA VPN mode, because you switched to another VPN or revoked permission), gains collected so far are preserved. If fewer battles were captured than completed runs, a notice (`%1$s battles were not captured`) is displayed; gains may be partial, and changes after stopping are not included. Ending holdings and fruit usage reflect the last captured point. Even without an account snapshot, drops, QP, EXP, and bond visible in battle responses are recorded; missing values show **Unknown** or are omitted.
 
 Runs that never used log collection and legacy logs show only the standard summary. Paused status checks and 0-run exits do not save a battle log. Battles played manually outside scripts appear under **Changes outside scripts** below. Retention limits for battle logs and outside-script logs can be set to 50, 100, 200, or 500 under **Log → Filter icon → Records to keep (per type)** (default 200 each).
 
@@ -221,15 +221,16 @@ Deleting an account discards its open period, and **Delete log collection data**
 
 ## Limitations
 
-- Android allows only **one active VPN** at a time. Enabling another VPN app stops log collection and displays the stop reason. To run alongside apps like AdGuard or WireGuard, switch Connection mode to **External proxy app** ([External Proxy App Mode](Capture-AdGuard-EN.md)) or, on rooted devices, **Root** ([Root Capture Mode](Capture-Root-EN.md)).
-- While log collection is running, a **Stop** button appears in the persistent notification.
+- FGA VPN mode: Android allows only **one active VPN** at a time. Enabling another VPN app stops log collection and displays the stop reason. To run alongside apps like AdGuard or WireGuard, switch Connection mode to **External proxy app** ([External Proxy App Mode](Capture-AdGuard-EN.md)) or, on rooted devices, **Root** ([Root Capture Mode](Capture-Root-EN.md)).
+- While log collection is running, a **Stop** button (**Turn reading off** in external proxy app and root modes) appears in the persistent notification.
+- In all three modes FGA sends and receives FGO's traffic, so the game's data usage is counted under FGA. If mobile data is blocked for FGA in the phone settings, the game connects on Wi-Fi but not on cellular (LTE/5G).
 - Only responses received while log collection was running are reflected. Changes occurring while the game wasn't tracked update via the next login snapshot.
 
 ## Deleting Data and Certificates
 
 - Tapping and confirming **Delete log collection data** removes captured data and open periods for **all accounts**, as well as Chaldea files FGA created inside the FGA folder's `capture` subfolder. Legacy files saved under `Download/FGA/` are untouched—delete them manually if needed. **Delete** on an account card deletes only that account. Saved battle logs and outside-script logs are deleted separately in **Main → Log**. Public name lists and cached icons are kept.
 - If a certificate already exists, **Save certificate file** re-exports the same certificate to `capture`. To generate a new one, tap **Create new certificate** separately, which first warns that any previously installed certificate must be replaced. If saving fails, the existing certificate stays intact. After creating a new certificate, remove the old one from Security settings and install the new one.
-- **Create new certificate** is available only after stopping the log collection VPN, whereas an existing certificate can be re-exported while the VPN runs. Both buttons lock during saving, and canceling the system save dialog leaves the existing certificate and key unchanged.
+- **Create new certificate** is available only after stopping log collection, whereas an existing certificate can be re-exported while collection runs. Both buttons lock during saving, and canceling the system save dialog leaves the existing certificate and key unchanged.
 - Saving via the system save dialog displays the parent/selected folder name reported by the storage provider along with the actual filename (or **Selected location/filename** if the folder name cannot be resolved).
 - Chaldea exports saved via the system save dialog are also tracked per account: after saving a new file, the previous one is removed, and account/full deletions clean them up too. Files already deleted via a file manager are dropped from tracking without error on the next export or deletion. If an old file remains and cannot be deleted (missing permission or provider refusal), **Could not delete the exported Chaldea files** is shown and tracking is kept. The same message appears if FGA folder permissions were revoked while internal app data is cleared; re-grant permission and retry, or delete remaining files manually. Canceling the save dialog keeps the existing Chaldea file.
 - To remove the certificate completely, delete `FGA-Modified log collection` (or `FGA-Modified gains tracker` for legacy certs) under **Settings → Security → Encryption & credentials → User credentials** (or the User tab under Trusted credentials). Optionally delete `fga-capture-ca.crt` in `capture` (or `Download/fga-capture-ca.cer` for legacy builds).
