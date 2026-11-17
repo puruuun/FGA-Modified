@@ -286,14 +286,12 @@ class SupportNpLevelReaderTest {
     }
 
     @Test
-    fun `width-only recovery match stretches OCR crop by inverse scale and closes all resized copies`() {
+    fun `width-only recovery match OCRs unresized crop and closes all resized template copies`() {
         val f = Fixture()
         val widthScale = 0.85
         val widthOnlySize = Size((f.white.width * widthScale).roundToInt(), f.white.height)
         val widthScaledWhite = mockk<Pattern>(relaxed = true)
-        val stretched = mockk<Pattern>(relaxed = true)
         val templateResizeSizes = mutableListOf<Size>()
-        val cropResizeSizes = mutableListOf<Size>()
 
         every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
         every { f.white.resize(any()) } answers {
@@ -303,17 +301,14 @@ class SupportNpLevelReaderTest {
         }
         val squeezedPrefix = Match(Region(1300, 680, 52, 48), 0.88)
         every { with(f.api) { f.search.findAll(widthScaledWhite, any()) } } returns listOf(squeezedPrefix)
-        every { f.captured.resize(any()) } answers {
-            cropResizeSizes += firstArg<Size>()
-            stretched
-        }
-        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("", 0)
-        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.4", 91)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.4", 91)
 
         assertThat(f.reader.read(f.bounds)).isEqualTo(4)
         assertThat(templateResizeSizes.contains(widthOnlySize)).isEqualTo(true)
-        assertThat(cropResizeSizes).isEqualTo(listOf(Size((f.captured.width / widthScale).roundToInt(), f.captured.height)))
-        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 0) { f.captured.resize(any()) }
+        SupportNpLevelReader.RECOVERY_OCR_OPTIONS.forEach {
+            verify(exactly = 1) { f.ocr.detectTextLine(f.captured, it) }
+        }
         verify(exactly = 1) { f.captured.close() }
         verify(exactly = 1) { widthScaledWhite.close() }
         verify(exactly = 21) { f.scaledWhite.close() }
@@ -328,7 +323,6 @@ class SupportNpLevelReaderTest {
         val f = Fixture()
         val widthOnlySize = Size((f.white.width * 0.90).roundToInt(), f.white.height)
         val widthScaledWhite = mockk<Pattern>(relaxed = true)
-        val stretched = mockk<Pattern>(relaxed = true)
 
         every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
         every { f.white.resize(any()) } answers {
@@ -336,11 +330,10 @@ class SupportNpLevelReaderTest {
         }
         every { with(f.api) { f.search.findAll(widthScaledWhite, any()) } } returns
             listOf(Match(Region(1300, 680, 56, 48), 0.87))
-        every { f.captured.resize(any()) } returns stretched
-        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.4", 84)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.4", 84)
 
         assertThat(f.reader.read(f.bounds)).isNull()
-        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 0) { f.captured.resize(any()) }
         verify(exactly = 1) { f.captured.close() }
         verify(exactly = 1) { widthScaledWhite.close() }
         verify(exactly = 21) { f.scaledWhite.close() }
@@ -348,15 +341,13 @@ class SupportNpLevelReaderTest {
     }
 
     @Test
-    fun `heavily squeezed prefix at 0_65 width and 0_95 height scales digit width, stretches crop and closes copies`() {
+    fun `heavily squeezed prefix at 0_65 width and 0_95 height scales digit width, OCRs unresized crop and closes copies`() {
         val f = Fixture()
         val widthScale = 0.65
         val heightScale = 0.95
         val targetSize = Size((f.gold.width * widthScale).roundToInt(), (f.gold.height * heightScale).roundToInt())
         val widthScaledGold = mockk<Pattern>(relaxed = true)
-        val stretched = mockk<Pattern>(relaxed = true)
         val templateResizeSizes = mutableListOf<Size>()
-        val cropResizeSizes = mutableListOf<Size>()
 
         every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
         every { f.gold.resize(any()) } answers {
@@ -366,12 +357,7 @@ class SupportNpLevelReaderTest {
         }
         val squeezedPrefix = Match(Region(1542, 680, 40, 46), 0.78)
         every { with(f.api) { f.search.findAll(widthScaledGold, any()) } } returns listOf(squeezedPrefix)
-        every { f.captured.resize(any()) } answers {
-            cropResizeSizes += firstArg<Size>()
-            stretched
-        }
-        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("", 0)
-        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.5", 91)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.5", 91)
 
         val expectedDigitWidth = (SupportNpLayout.DIGIT_WIDTH * widthScale).roundToInt()
         val expectedSuffix = SupportNpLayout.suffixRegion(squeezedPrefix.region, expectedDigitWidth)
@@ -382,10 +368,10 @@ class SupportNpLevelReaderTest {
         verify(exactly = 0) {
             with(f.api) { SupportNpLayout.suffixRegion(squeezedPrefix.region).getPattern(any()) }
         }
-        assertThat(cropResizeSizes).isEqualTo(
-            listOf(Size((f.captured.width / widthScale).roundToInt(), f.captured.height))
-        )
-        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 0) { f.captured.resize(any()) }
+        SupportNpLevelReader.RECOVERY_OCR_OPTIONS.forEach {
+            verify(exactly = 1) { f.ocr.detectTextLine(f.captured, it) }
+        }
         verify(exactly = 1) { f.captured.close() }
         verify(exactly = 1) { widthScaledGold.close() }
         verify(exactly = 21) { f.scaledGold.close() }
@@ -405,7 +391,6 @@ class SupportNpLevelReaderTest {
         val f = Fixture()
         val targetSize = Size((f.gold.width * widthScale).roundToInt(), (f.gold.height * heightScale).roundToInt())
         val widthScaledGold = mockk<Pattern>(relaxed = true)
-        val stretched = mockk<Pattern>(relaxed = true)
         every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
         every { f.gold.resize(any()) } answers {
             if (firstArg<Size>() == targetSize) widthScaledGold else f.scaledGold
@@ -414,10 +399,10 @@ class SupportNpLevelReaderTest {
         val maxInsideX = f.search.right + SupportNpLayout.SUFFIX_RIGHT_OVERHANG - (prefixWidth + scaledDigitWidth)
         val insidePrefix = Match(Region(maxInsideX, 680, prefixWidth, 46), 0.78)
         every { with(f.api) { f.search.findAll(widthScaledGold, any()) } } returns listOf(insidePrefix)
-        every { f.captured.resize(any()) } returns stretched
-        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.5", 92)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.5", 92)
 
         assertThat(f.reader.read(f.bounds)).isEqualTo(5)
+        verify(exactly = 0) { f.captured.resize(any()) }
         verify(exactly = 1) {
             with(f.api) {
                 SupportNpLayout.suffixRegion(insidePrefix.region, scaledDigitWidth).getPattern("support_np_level")
@@ -444,32 +429,28 @@ class SupportNpLevelReaderTest {
         val weak = Fixture()
         val targetSize = Size((weak.gold.width * widthScale).roundToInt(), (weak.gold.height * heightScale).roundToInt())
         val weakScaledGold = mockk<Pattern>(relaxed = true)
-        val weakStretched = mockk<Pattern>(relaxed = true)
         every { with(weak.api) { weak.search.findAll(weak.white, any()) } } returns emptyList()
         every { weak.gold.resize(any()) } answers {
             if (firstArg<Size>() == targetSize) weakScaledGold else weak.scaledGold
         }
         every { with(weak.api) { weak.search.findAll(weakScaledGold, any()) } } returns
             listOf(Match(Region(1542, 680, 40, 46), 0.78))
-        every { weak.captured.resize(any()) } returns weakStretched
-        every { weak.ocr.detectTextLine(weakStretched, any()) } returns OcrText("Lv.5", 84)
+        every { weak.ocr.detectTextLine(weak.captured, any()) } returns OcrText("Lv.5", 84)
 
         assertThat(weak.reader.read(weak.bounds)).isNull()
-        verify(exactly = 1) { weakStretched.close() }
+        verify(exactly = 0) { weak.captured.resize(any()) }
         verify(exactly = 1) { weak.captured.close() }
         verify(exactly = 1) { weakScaledGold.close() }
 
         val conflicting = Fixture()
         val conflictingScaledGold = mockk<Pattern>(relaxed = true)
-        val conflictingStretched = mockk<Pattern>(relaxed = true)
         every { with(conflicting.api) { conflicting.search.findAll(conflicting.white, any()) } } returns emptyList()
         every { conflicting.gold.resize(any()) } answers {
             if (firstArg<Size>() == targetSize) conflictingScaledGold else conflicting.scaledGold
         }
         every { with(conflicting.api) { conflicting.search.findAll(conflictingScaledGold, any()) } } returns
             listOf(Match(Region(1542, 680, 40, 46), 0.78))
-        every { conflicting.captured.resize(any()) } returns conflictingStretched
-        every { conflicting.ocr.detectTextLine(conflictingStretched, any()) } returnsMany listOf(
+        every { conflicting.ocr.detectTextLine(conflicting.captured, any()) } returnsMany listOf(
             OcrText("Lv.5", 92),
             OcrText("Lv.5", 91),
             OcrText("Lv.3", 75),
@@ -477,7 +458,7 @@ class SupportNpLevelReaderTest {
         )
 
         assertThat(conflicting.reader.read(conflicting.bounds)).isNull()
-        verify(exactly = 1) { conflictingStretched.close() }
+        verify(exactly = 0) { conflicting.captured.resize(any()) }
         verify(exactly = 1) { conflicting.captured.close() }
         verify(exactly = 1) { conflictingScaledGold.close() }
     }

@@ -169,10 +169,7 @@ class SupportNpLevelReader @Inject constructor(
             // Script coordinates are 1440p; matching patterns are 720p. A screen-edge crop
             // must not silently remove part of the number after the prefix has matched.
             if (cropped.width * 2 < suffix.width - 1 || cropped.height * 2 < suffix.height - 1) null
-            else if (widthScale == null) profiles.map { options -> ocr.detectTextLine(cropped, options) }
-            else cropped.resize(Size((cropped.width / widthScale).roundToInt(), cropped.height)).use { stretched ->
-                profiles.map { options -> ocr.detectTextLine(stretched, options) }
-            }
+            else profiles.map { options -> ocr.detectTextLine(cropped, options) }
         }
     }
 }
