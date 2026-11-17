@@ -77,27 +77,38 @@ class BackupRulesTest {
         return elements
     }
 
+    private val certificateFiles = listOf(
+        "leaf.p12", "leaf.p12.bak", "leaf.p12.tmp", "ca.cer", "ca.cer.bak", "ca.cer.tmp", "leaf-jp.p12", "ca-jp.cer",
+    )
+
+    private fun excludedCapturePaths(rules: List<RuleElement>, section: String?) =
+        rules.filter { it.section == section && it.tag == "exclude" && it.domain == "file" }.map { it.path }.toSet()
+
     @Test
-    fun fullBackupRulesExcludeCaptureDirectoryWithoutIncludes() {
+    fun fullBackupRulesExcludeOnlyTheCaptureCertificates() {
         val rules = parseXmlRules(R.xml.backup_rules, "full-backup-content")
         assertTrue(rules.none { it.tag == "include" })
-        assertTrue(rules.any { it.tag == "exclude" && it.domain == "file" && it.path == "capture/" })
+        assertEquals(certificateFiles.map { "capture/$it" }.toSet(), excludedCapturePaths(rules, null))
     }
 
     @Test
-    fun dataExtractionRulesExcludeCaptureDirectoryForCloudAndTransferWithoutIncludes() {
+    fun dataExtractionRulesExcludeOnlyTheCaptureCertificatesForCloudAndTransfer() {
         val rules = parseXmlRules(R.xml.data_extraction_rules, "data-extraction-rules")
         assertTrue(rules.none { it.tag == "include" })
-        assertTrue(
-            rules.any {
-                it.section == "cloud-backup" && it.tag == "exclude" && it.domain == "file" && it.path == "capture/"
-            },
-        )
-        assertTrue(
-            rules.any {
-                it.section == "device-transfer" && it.tag == "exclude" && it.domain == "file" && it.path == "capture/"
-            },
-        )
+        for (section in listOf("cloud-backup", "device-transfer")) {
+            assertEquals(certificateFiles.map { "capture/$it" }.toSet(), excludedCapturePaths(rules, section), section)
+        }
+    }
+
+    @Test
+    fun excludedNamesAreTheFilesCertStoreWrites() {
+        val dir = CertStore.directory(context)
+        assertEquals(File(context.filesDir, "capture"), dir)
+        CertStore.commit(context, CertStore.prepare())
+        CertStore.ensureJp(context)
+        val written = dir.listFiles().orEmpty().map { it.name }.filter { it.endsWith(".p12") || it.endsWith(".cer") }
+        assertTrue(written.isNotEmpty())
+        assertTrue(certificateFiles.containsAll(written), "unlisted certificate file: $written")
     }
 
     @Test
