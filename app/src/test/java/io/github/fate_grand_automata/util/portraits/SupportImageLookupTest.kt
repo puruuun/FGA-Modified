@@ -35,9 +35,9 @@ class SupportImageLookupTest {
         val catalogs = mutableMapOf<String, List<SupportCatalogRecord>>()
         val details = mutableMapOf<String, String?>()
         val names = mutableMapOf<String, Map<Int, Set<String>>>()
-        var dictionary: Map<Int, Set<String>> = emptyMap()
+        var dictionary = SupportKoreanDictionary()
         var failKr = false
-        override suspend fun koreanNames(): Map<Int, Set<String>> { calls += "ko-names"; return dictionary }
+        override suspend fun koreanNames(): SupportKoreanDictionary { calls += "ko-names"; return dictionary }
         override suspend fun servantNames(region: String): Map<Int, Set<String>> {
             calls += "names:$region"; return names[region].orEmpty()
         }
@@ -191,65 +191,98 @@ class SupportImageLookupTest {
         val source = Source()
         source.catalogs["JP"] = listOf(jp, record(tamamo, 448, "玉兎", "foreigner"))
         source.catalogs["KR"] = listOf(kr)
-        source.dictionary = mapOf(tamamo to setOf("옥토끼", "료기 시키", "옥토끼 카구야"), 100600 to setOf("사전전용이름"))
+        source.dictionary = SupportKoreanDictionary(
+            names = mapOf(tamamo to setOf("옥토끼", "료기 시키", "옥토끼 카구야"), 100600 to setOf("사전전용이름")),
+            aliases = mapOf(tamamo to setOf("미실장별명"), 100600 to setOf("지속별명")),
+        )
         return source
     }
-    @Test fun `KR-missing servant is found by every dictionary name and keeps its JP display`() = runBlocking {
+    @Test fun `KR-missing servant is found by both dictionary names and aliases and keeps its JP display`() = runBlocking {
         val lookup = SupportImageLookup(dictSource())
-        for (query in listOf("카구야", "옥토", "료기", "료기시키", "옥토끼 카구야")) {
+        for (query in listOf("카구야", "옥토", "료기", "료기시키", "옥토끼 카구야", "미실장별명")) {
             val hit = lookup.search(SupportCatalogKind.Servant, query, "ko-KR").single()
             assertEquals(tamamo, hit.id); assertEquals(448, hit.number)
             assertEquals("玉兎", hit.name); assertEquals("No.448 玉兎", hit.folderName)
             assertNull(hit.sourceRegion)
         }
     }
-    @Test fun `dictionary names are ignored once the servant exists in the KR catalog`() = runBlocking {
+    @Test fun `KR-released servant is found by aliases while dictionary names are ignored`() = runBlocking {
         val lookup = SupportImageLookup(dictSource())
         assertTrue(lookup.search(SupportCatalogKind.Servant, "사전전용", "ko-KR").isEmpty())
+        assertEquals(90, lookup.search(SupportCatalogKind.Servant, "지속별명", "ko-KR").single().number)
         assertEquals(90, lookup.search(SupportCatalogKind.Servant, "네로", "ko-KR").single().number)
+        val aliasesOnly = dictSource().apply { dictionary = SupportKoreanDictionary(aliases = dictionary.aliases) }
+        assertEquals(90, SupportImageLookup(aliasesOnly).search(SupportCatalogKind.Servant, "지속별명", "ko-KR").single().number)
     }
     @Test fun `number and CE searches do not use the dictionary`() = runBlocking {
         val source = dictSource()
         assertEquals(448, SupportImageLookup(source).search(SupportCatalogKind.Servant, "448", "ko-KR").single().number)
         assertFalse("ko-names" in source.calls)
         source.calls.clear()
-        source.dictionary = mapOf(2301100 to setOf("옥토끼"))
+        source.dictionary = SupportKoreanDictionary(names = mapOf(2301100 to setOf("옥토끼")), aliases = mapOf(2301100 to setOf("미실장별명")))
         assertTrue(SupportImageLookup(source).search(SupportCatalogKind.CE, "옥토끼", "ko-KR").isEmpty())
+        assertTrue(SupportImageLookup(source).search(SupportCatalogKind.CE, "미실장별명", "ko-KR").isEmpty())
         assertFalse("ko-names" in source.calls)
     }
     @Test fun `empty dictionary does not break search`() = runBlocking {
-        val source = dictSource(); source.dictionary = emptyMap()
+        val source = dictSource(); source.dictionary = SupportKoreanDictionary()
         assertEquals(90, SupportImageLookup(source).search(SupportCatalogKind.Servant, "ネロ", "ko-KR").single().number)
         assertTrue(SupportImageLookup(source).search(SupportCatalogKind.Servant, "옥토끼", "ko-KR").isEmpty())
     }
-    @Test fun `non-Korean language with a failing KR catalog still searches and applies the dictionary`() = runBlocking {
+    @Test fun `non-Korean language with a failing KR catalog still searches and applies dictionary names and aliases`() = runBlocking {
         val source = dictSource(); source.failKr = true
-        val hit = SupportImageLookup(source).search(SupportCatalogKind.Servant, "카구야", "ja").single()
-        assertEquals(tamamo, hit.id)
-        // With KR unknown, the dictionary applies to every entry.
-        assertEquals(90, SupportImageLookup(source).search(SupportCatalogKind.Servant, "사전전용", "ja").single().number)
+        val lookup = SupportImageLookup(source)
+        assertEquals(tamamo, lookup.search(SupportCatalogKind.Servant, "카구야", "ja").single().id)
+        assertEquals(tamamo, lookup.search(SupportCatalogKind.Servant, "미실장별명", "ja").single().id)
+        // With KR unknown, both dictionary names and aliases apply to every entry.
+        assertEquals(90, lookup.search(SupportCatalogKind.Servant, "사전전용", "ja").single().number)
+        assertEquals(90, lookup.search(SupportCatalogKind.Servant, "지속별명", "ja").single().number)
     }
-    @Test fun `non-Korean language checks the KR catalog before applying the dictionary`() = runBlocking {
+    @Test fun `non-Korean language checks the KR catalog before applying dictionary names`() = runBlocking {
         val lookup = SupportImageLookup(dictSource())
         assertTrue(lookup.search(SupportCatalogKind.Servant, "사전전용", "ja").isEmpty())
+        assertEquals(90, lookup.search(SupportCatalogKind.Servant, "지속별명", "ja").single().number)
         assertEquals(tamamo, lookup.search(SupportCatalogKind.Servant, "옥토끼", "ja").single().id)
     }
 
-    @Test fun `dictionary parser reads valid input and ignores unknown fields`() {
+    @Test fun `dictionary parser reads valid input with ko-only and aliases rows and ignores unknown fields`() {
         val parsed = SupportKoreanNames.parse("""{"source":"x","extra":1,"servants":[
             {"id":2301100,"no":448,"jp":"玉兎","note":true,"ko":["옥토끼","료기 시키"]},
+            {"id":406100,"ko":["사이카 마고이치"],"aliases":["김충선"]},
             {"id":306000,"ko":["미유"]}]}""")
-        assertEquals(mapOf(2301100 to setOf("옥토끼", "료기 시키"), 306000 to setOf("미유")), parsed)
+        assertEquals(
+            SupportKoreanDictionary(
+                names = mapOf(2301100 to setOf("옥토끼", "료기 시키"), 406100 to setOf("사이카 마고이치"), 306000 to setOf("미유")),
+                aliases = mapOf(406100 to setOf("김충선")),
+            ),
+            parsed,
+        )
     }
-    @Test fun `dictionary parser skips bad ids and blank names`() {
+    @Test fun `dictionary parser skips bad ids and blank names or aliases`() {
         val parsed = SupportKoreanNames.parse("""{"servants":[
-            {"id":0,"ko":["영"]},{"id":-5,"ko":["음수"]},{"id":10,"ko":["", "  ", "좋음"]},{"id":11,"ko":[]}]}""")
-        assertEquals(mapOf(10 to setOf("좋음")), parsed)
+            {"id":0,"ko":["영"],"aliases":["영별명"]},{"id":-5,"ko":["음수"]},
+            {"id":10,"ko":["", "  ", "좋음"],"aliases":["", "  ", "별명"]},
+            {"id":11,"ko":[],"aliases":["", "  "]}] }""")
+        assertEquals(
+            SupportKoreanDictionary(
+                names = mapOf(10 to setOf("좋음")),
+                aliases = mapOf(10 to setOf("별명")),
+            ),
+            parsed,
+        )
     }
     @Test fun `dictionary parser rejects invalid structure`() {
         for (bad in listOf("", "not json", "[]", "{}", """{"servants":{}}""", """{"servants":[1]}""",
             """{"servants":[{"ko":["a"]}]}""", """{"servants":[{"id":"x","ko":["a"]}]}""",
-            """{"servants":[{"id":1}]}""", """{"servants":[{"id":1,"ko":[3]}]}""")) {
+            """{"servants":[{"id":1}]}""", """{"servants":[{"id":1,"aliases":["a"]}]}""",
+            """{"servants":[{"id":1,"ko":[3]}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":"bad"}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":123}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":null}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":{}}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":[3]}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":[null]}]}""",
+            """{"servants":[{"id":1,"ko":["a"],"aliases":[true]}]}""")) {
             assertEquals(PortraitImportError.Metadata, assertFailsWith<PortraitImportException> { SupportKoreanNames.parse(bad) }.reason, bad)
         }
     }
@@ -257,10 +290,14 @@ class SupportImageLookupTest {
         val file = java.io.File("src/main/assets/servant-names-ko.json")
         assertTrue(file.isFile, file.absolutePath)
         val parsed = SupportKoreanNames.parse(file.readText(Charsets.UTF_8))
-        assertEquals(48, parsed.size)
-        assertTrue(parsed.getValue(2301100).containsAll(listOf("옥토끼", "료기 시키", "옥토끼 카구야")))
-        assertTrue(parsed.getValue(705500).containsAll(listOf("마츠나가 단죠", "마츠나가 히사히데", "버미육")))
-        assertTrue(parsed.getValue(2501700).containsAll(listOf("큐티 코마")))
+        assertEquals(48, parsed.names.size)
+        assertEquals(setOf(406100, 705500), parsed.aliases.keys)
+        assertEquals(setOf("김충선"), parsed.aliases.getValue(406100))
+        assertEquals(setOf("버미육"), parsed.aliases.getValue(705500))
+        assertEquals(setOf("사이카 마고이치"), parsed.names.getValue(406100))
+        assertEquals(setOf("마츠나가 단죠", "마츠나가 히사히데"), parsed.names.getValue(705500))
+        assertTrue(parsed.names.getValue(2301100).containsAll(listOf("옥토끼", "료기 시키", "옥토끼 카구야")))
+        assertTrue(parsed.names.getValue(2501700).containsAll(listOf("다이너마이트 리큐", "큐티 코마")))
     }
 
     @Test fun `missing JP images fall back to KR and stop before NA`() = runBlocking {

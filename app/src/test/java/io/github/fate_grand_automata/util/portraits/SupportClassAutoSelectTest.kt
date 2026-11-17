@@ -22,7 +22,7 @@ class SupportClassAutoSelectTest {
         }
         override suspend fun detail(kind: SupportCatalogKind, region: String, id: Int): String? = null
         override suspend fun servantNames(region: String) = emptyMap<Int, Set<String>>()
-        override suspend fun koreanNames() = emptyMap<Int, Set<String>>()
+        override suspend fun koreanNames() = SupportKoreanDictionary()
     }
 
     private val builtins = listOf(
