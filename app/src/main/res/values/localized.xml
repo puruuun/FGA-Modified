@@ -852,6 +852,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="skill_level_stop_no_increase">level did not go up, stopped</string>
     <string name="skill_level_stop_dialog">unexpected dialog, canceled</string>
     <string name="skill_level_stop_stuck">the game did not return to the enhancement screen. Check it: an enhancement may have happened.</string>
+    <string name="skill_level_stop_connection_error">connection errors kept happening, stopped. Check it: an enhancement may have happened.</string>
     <string name="skill_level_step_select">Select</string>
     <string name="skill_level_step_enhance">Enhance</string>
     <string name="skill_level_step_dialog">Dialog</string>

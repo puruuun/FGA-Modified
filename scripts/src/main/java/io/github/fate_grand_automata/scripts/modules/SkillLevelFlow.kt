@@ -52,6 +52,8 @@ enum class SlotStop {
     UnexpectedDialog,
     /** The game did not return to the skill screen. */
     Stuck,
+    /** Connection errors persisted after confirm. */
+    ConnectionError,
     /** All three skills reached 10 and the game deselected the servant. */
     Deselected,
     Aborted,
@@ -99,14 +101,17 @@ interface SkillLevelPanel {
     fun confirm()
     /** Taps cancel and waits for the dialog to close. Returns false when it stayed open. */
     fun cancel(): Boolean
+    /** Number of connection retries performed during the last [skipToScreen] call. */
+    val lastSkipRetries: Int get() = 0
     /**
      * Taps through the animation and the result until the skill screen is back ([SkipResult.Back]), the game deselected
-     * the servant ([SkipResult.Deselected], skill mode only), or 20 s passed ([SkipResult.Timeout]).
+     * the servant ([SkipResult.Deselected], skill mode only), connection errors persisted ([SkipResult.ConnectionFailed]),
+     * or 20 s passed ([SkipResult.Timeout]).
      */
-    fun skipToScreen(): SkipResult
+    fun skipToScreen(onRetry: (Int) -> Unit = {}): SkipResult
 }
 
-enum class SkipResult { Back, Deselected, Timeout }
+enum class SkipResult { Back, Deselected, Timeout, ConnectionFailed }
 
 /**
  * D-11 / D-14. Safety, in the order the checks run for every slot:
@@ -144,7 +149,7 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             }
             done += result
             summary(result)
-            if (result.stop == SlotStop.Stuck || result.stop == SlotStop.Deselected) break
+            if (result.stop == SlotStop.Stuck || result.stop == SlotStop.ConnectionError || result.stop == SlotStop.Deselected) break
         }
         return results
     }
@@ -256,13 +261,15 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
             known = current + 1
             remember()
             activeStep = SkillLevelStep.Skip
-            val back = panel.skipToScreen()
+            val back = panel.skipToScreen { line("retry=$it") }
             line("return=" + when (back) {
                 SkipResult.Back -> "true"
                 SkipResult.Timeout -> "false"
                 SkipResult.Deselected -> "deselected"
-            })
+                SkipResult.ConnectionFailed -> "connection-error"
+            } + " retries=${panel.lastSkipRetries}")
             if (back == SkipResult.Timeout) return finish(SlotStop.Stuck)
+            if (back == SkipResult.ConnectionFailed) return finish(SlotStop.ConnectionError)
             if (back == SkipResult.Deselected) return finish(SlotStop.Deselected)
         }
         return finish(SlotStop.CannotEnhance)

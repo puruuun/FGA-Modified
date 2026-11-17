@@ -678,6 +678,7 @@
     <string name="turn_limit_retreat_failed">"ターン制限での撤退に失敗しました。他の操作をする前に停止しました。"</string>
     <string name="turn_limit_retreat_streak_stop">"%d回連続して撤退したため停止しました。"</string>
     <string name="skill_level_stop_deselected">"すべてのスキルがLv.10に達したため、選択が解除されました。"</string>
+    <string name="skill_level_stop_connection_error">通信エラーが続いたため停止しました。画面を確認してください。強化がすでに行われた可能性があります。</string>
     <string name="battle_config_folder_move">"フォルダへ移動"</string>
     <string name="battle_config_folder_new">"新しいフォルダ…"</string>
     <string name="battle_config_folder_remove">"フォルダから外す"</string>

@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
+import io.github.fate_grand_automata.scripts.modules.ConnectionRetry
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDevice
 import io.github.fate_grand_automata.scripts.modules.SkillLevelDigits
 import io.github.fate_grand_automata.scripts.modules.SkillLevelFlow
@@ -33,7 +34,8 @@ abstract class SkillLevelScript(
     private val digits: SkillLevelDigits,
     private val panelReader: SkillLevelPanelReader,
     val mode: SkillLevelMode,
-    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
+    private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default,
+    private val connectionRetry: ConnectionRetry = ConnectionRetry(api)
 ) : EntryPoint(exitManager), IFgoAutomataApi by api {
 
     sealed class ExitReason(
@@ -89,7 +91,7 @@ abstract class SkillLevelScript(
         val (onScreen, selected) = useSameSnapIn { screens.onLabel(mode) to screens.servantSelected() }
         if (!onScreen) return logScores(ExitReason.WrongScreen)
         if (!selected) return logScores(ExitReason.NoServantSelected)
-        val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader, addedTuning)
+        val device = SkillLevelDevice(api, mode, loc, screens, digits, panelReader, addedTuning, connectionRetry)
         if (checkOnly) {
             log("check-only=true targets=ignored")
             val run = SkillLevelCheckFlow(device, ::log).also { flow = it }
@@ -104,12 +106,14 @@ abstract class SkillLevelScript(
 class AutoSkillLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
     screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader,
-    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
-) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Skill, addedTuning)
+    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default,
+    connectionRetry: ConnectionRetry = ConnectionRetry(api)
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Skill, addedTuning, connectionRetry)
 
 @ScriptScope
 class AutoAppendLevel @Inject constructor(
     exitManager: ExitManager, api: IFgoAutomataApi, loc: SkillLevelLocations,
     screens: SkillLevelScreens, digits: SkillLevelDigits, panelReader: SkillLevelPanelReader,
-    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
-) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Append, addedTuning)
+    addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default,
+    connectionRetry: ConnectionRetry = ConnectionRetry(api)
+) : SkillLevelScript(exitManager, api, loc, screens, digits, panelReader, SkillLevelMode.Append, addedTuning, connectionRetry)
