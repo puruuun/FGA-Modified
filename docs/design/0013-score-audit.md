@@ -454,3 +454,5 @@ D-1 네 규칙만 적용했습니다. D-2는 소유자 별도 원본 자료를 �
 행별 원시 비교: [0014-d1-audit-results.json](0014-d1-audit-results.json). `200.webp` 1행은 원래 라벨을 유지하고 `protectiveUnknown=["grand"]`로 null 반환을 엄격히 검증합니다. unknown은 숫자 검출 성공으로 세지 않습니다.
 
 기존 support crop QA에서도 D-1 차단을 명시한 9건이 있습니다. Class는 `Jp-score-010/029/048.png`, Grand는 `Jp-score-024/040/041/045/046/056.png`입니다. 원래 라벨·policy·활성 상태를 유지하고 `protectiveUnknown`으로 해당 필드가 정확히 null이고 조건이 거부되는지 검사합니다. 새 skip은 없으며, 이 검사 통과를 검출 성공으로 계산하지 않습니다. 자릿수 불일치는 OCR과 tail 재시도를 폐기하지만 끝자리까지 검증된 독립 템플릿은 허용합니다. 값 충돌·범위·잘림 veto는 템플릿보다 우선합니다.
+
+> **2026-11-17 갱신 (#431):** 위 목록은 작성 당시 기준입니다. `0df0a2d4`에서 Class 대상이 `Jp-score-010/048/061.png`로 다시 정해졌고(029는 읽을 수 있는 행으로 재라벨), `81b90fb2`(PR #459, JP 전용 판독 프로필)부터는 JP 판독기가 9건을 모두 읽으므로 `support.json`에서 `protectiveUnknown`이 모두 빠졌습니다. 현재 support QA는 BlueStacks·MuMu 모두 204/204이며, D-1 차단 검사는 `support-score-audit.json`(Grand 1건)과 `support-score-d2.json`(Class 1건)에만 남아 있습니다.
