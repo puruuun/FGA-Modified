@@ -945,9 +945,9 @@
     <string name="capture_cert_failed">"인증서를 저장하지 못했습니다"</string>
     <string name="capture_guide_button">"설치 방법"</string>
     <string name="capture_guide_title">"인증서 설치"</string>
-    <string name="capture_guide_body">"1. 인증서를 만들거나 다시 저장합니다. FGA 폴더의 capture 폴더에 fga-capture-ca.crt로 저장됩니다. 그 폴더를 쓸 수 없으면 저장 창이 열리니 저장할 위치를 고르세요.\n2. 보안 설정 → 암호화 및 사용자 인증 정보 → 인증서 설치를 엽니다. 메뉴를 찾기 어려우면 설정 검색창에서 \"CA 인증서\"를 검색하세요.\n3. CA 인증서를 선택하고 FGA 폴더의 capture 폴더에서 fga-capture-ca.crt를 고릅니다.\n4. 이 화면으로 돌아와 VPN을 시작하거나, 메인 화면에서 서비스를 시작합니다."</string>
+    <string name="capture_guide_body">"1. 인증서를 만들거나 다시 저장합니다. FGA 폴더의 capture 폴더에 fga-capture-ca.crt로 저장됩니다. 그 폴더를 쓸 수 없으면 저장 창이 열리니 저장할 위치를 고르세요.\n2. 보안 설정 → 암호화 및 사용자 인증 정보 → 인증서 설치를 엽니다. 메뉴를 찾기 어려우면 설정 검색창에서 \"CA 인증서\"를 검색하세요.\n3. CA 인증서를 선택하고 FGA 폴더의 capture 폴더에서 fga-capture-ca.crt를 고릅니다.\n4. 이 화면으로 돌아와 수집을 시작하거나(FGA VPN은 시작, 외부 앱 프록시·루트는 수집 켜기), 메인 화면에서 서비스를 시작합니다."</string>
     <string name="capture_open_security">"보안 설정 열기"</string>
-    <string name="capture_vpn_header">"VPN"</string>
+    <string name="capture_vpn_header">"수집 연결"</string>
     <string name="capture_vpn_running">"VPN 실행 중"</string>
     <string name="capture_vpn_stopped">"VPN 중지됨"</string>
     <string name="capture_vpn_start">"시작"</string>
@@ -1256,7 +1256,7 @@
     <string name="capture_log_source">출처</string>
     <string name="capture_log_all_sources">전체</string>
     <string name="capture_source_script">스크립트</string>
-    <string name="capture_cert_stop_first">"새 인증서를 만들려면 먼저 로그 수집 VPN을 중지하세요."</string>
+    <string name="capture_cert_stop_first">"새 인증서를 만들려면 먼저 로그 수집을 중지하세요."</string>
     <string name="capture_selected_location">"선택한 위치"</string>
     <string name="chaldea_sync_header">"Chaldea 자동 반영"</string>
     <string name="chaldea_sync_enable">"Chaldea에 자동으로 반영"</string>

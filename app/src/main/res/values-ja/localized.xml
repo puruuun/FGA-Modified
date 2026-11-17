@@ -701,9 +701,9 @@
     <string name="capture_cert_failed">"証明書を保存できませんでした"</string>
     <string name="capture_guide_button">"インストール方法"</string>
     <string name="capture_guide_title">"証明書のインストール"</string>
-    <string name="capture_guide_body">"1. 証明書を作成するか、もう一度保存します。FGAフォルダのcaptureフォルダにfga-capture-ca.crtとして保存されます。そのフォルダを使えない場合は保存ダイアログが開くので、保存先を選んでください。\n2. セキュリティ設定 → 暗号化と認証情報 → 証明書のインストールを開きます。メニューが見つからない場合は、設定の検索で「CA 証明書」を検索してください。\n3. CA証明書を選び、FGAフォルダのcaptureフォルダからfga-capture-ca.crtを選びます。\n4. この画面に戻ってVPNを開始するか、メイン画面でサービスを開始します。"</string>
+    <string name="capture_guide_body">"1. 証明書を作成するか、もう一度保存します。FGAフォルダのcaptureフォルダにfga-capture-ca.crtとして保存されます。そのフォルダを使えない場合は保存ダイアログが開くので、保存先を選んでください。\n2. セキュリティ設定 → 暗号化と認証情報 → 証明書のインストールを開きます。メニューが見つからない場合は、設定の検索で「CA 証明書」を検索してください。\n3. CA証明書を選び、FGAフォルダのcaptureフォルダからfga-capture-ca.crtを選びます。\n4. この画面に戻って収集を開始するか（FGA VPNは開始、外部アプリのプロキシ・ルートは収集をオン）、メイン画面でサービスを開始します。"</string>
     <string name="capture_open_security">"セキュリティ設定を開く"</string>
-    <string name="capture_vpn_header">"VPN"</string>
+    <string name="capture_vpn_header">"接続"</string>
     <string name="capture_vpn_running">"VPN 実行中"</string>
     <string name="capture_vpn_stopped">"VPN 停止中"</string>
     <string name="capture_vpn_start">"開始"</string>
@@ -1014,7 +1014,7 @@
     <string name="capture_log_source">出所</string>
     <string name="capture_log_all_sources">すべての出所</string>
     <string name="capture_source_script">スクリプト</string>
-    <string name="capture_cert_stop_first">"新しい証明書を作る前にログ収集VPNを停止してください。"</string>
+    <string name="capture_cert_stop_first">"新しい証明書を作る前にログ収集を停止してください。"</string>
     <string name="capture_selected_location">"選択した場所"</string>
     <string name="chaldea_sync_header">"Chaldea自動反映"</string>
     <string name="chaldea_sync_enable">"Chaldeaへ自動で反映"</string>

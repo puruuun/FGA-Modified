@@ -97,5 +97,5 @@ Available on Android 10+ devices with **More options → Advanced → Widget set
 
 - **Tapping from ON** stops log collection immediately without opening the FGA screen.
 - **Tapping from OFF** starts log collection without opening FGA if current-version consent, a certificate, and VPN permission are all already ready.
-- If consent or a permission is missing, FGA opens and runs the same sequence as the main screen's log-collection button: consent → certificate check → VPN permission → start. If no certificate exists, it opens the certificate guide screen in Log collection settings.
+- If consent or a permission is missing, FGA opens and runs the same sequence as the main screen's log-collection button: consent → certificate check → VPN permission (FGA VPN mode only) → start. If no certificate exists, it opens the certificate guide screen in Log collection settings.
 - Once collection starts successfully, the FGA screen closes automatically. If you cancel consent or VPN permission, or if no certificate exists, the prompted screen stays open.

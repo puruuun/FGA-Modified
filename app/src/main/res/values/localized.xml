@@ -1015,9 +1015,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_cert_failed">"Could not save the certificate"</string>
     <string name="capture_guide_button">"How to install"</string>
     <string name="capture_guide_title">"Install the certificate"</string>
-    <string name="capture_guide_body">"1. Create the certificate, or save it again. It is saved in the FGA folder: capture → fga-capture-ca.crt. If that folder cannot be used, a save dialog opens and you choose where to save it.\n2. Open Security settings, then Encryption &amp; credentials, then Install a certificate. If you cannot find the menu, search for \"CA certificate\" in the Settings search.\n3. Choose CA certificate and pick fga-capture-ca.crt from the FGA folder's capture folder.\n4. Come back here and start the VPN, or start the FGA service from the main screen."</string>
+    <string name="capture_guide_body">"1. Create the certificate, or save it again. It is saved in the FGA folder: capture → fga-capture-ca.crt. If that folder cannot be used, a save dialog opens and you choose where to save it.\n2. Open Security settings, then Encryption &amp; credentials, then Install a certificate. If you cannot find the menu, search for \"CA certificate\" in the Settings search.\n3. Choose CA certificate and pick fga-capture-ca.crt from the FGA folder's capture folder.\n4. Come back here and start collection (Start with FGA VPN, Turn reading on with an external proxy app or root), or start the FGA service from the main screen."</string>
     <string name="capture_open_security">"Open security settings"</string>
-    <string name="capture_vpn_header">"VPN"</string>
+    <string name="capture_vpn_header">"Connection"</string>
     <string name="capture_vpn_running">"VPN is running"</string>
     <string name="capture_vpn_stopped">"VPN is stopped"</string>
     <string name="capture_vpn_start">"Start"</string>
@@ -1326,7 +1326,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_source">Source</string>
     <string name="capture_log_all_sources">All sources</string>
     <string name="capture_source_script">Script</string>
-    <string name="capture_cert_stop_first">"Stop the capture VPN before making a new certificate."</string>
+    <string name="capture_cert_stop_first">"Stop log collection before making a new certificate."</string>
     <string name="capture_selected_location">"Selected location"</string>
     <string name="chaldea_sync_header">"Chaldea auto sync"</string>
     <string name="chaldea_sync_enable">"Sync into Chaldea automatically"</string>
