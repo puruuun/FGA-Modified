@@ -65,7 +65,8 @@
             android:name=".capture.CaptureVpnService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
-            android:permission="android.permission.BIND_VPN_SERVICE">
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            tools:targetApi="q">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>

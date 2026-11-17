@@ -284,4 +284,15 @@ class ChaldeaSyncServiceTimeoutTest {
         assertNull(streamResult)
         assertNoReaderThreadAlive()
     }
+
+    @Test
+    fun awaitProcessExitHandlesImmediateAndTimedOutProcesses() {
+        val exited = FakeProcess(closeStdoutImmediately = true, initialExitCode = 0)
+        assertTrue(awaitProcessExit(exited, 0L))
+
+        val hung = FakeProcess()
+        assertFalse(awaitProcessExit(hung, TimeUnit.MILLISECONDS.toNanos(50)))
+        destroyProcessCompat(hung)
+        assertTrue(hung.destroyed)
+    }
 }

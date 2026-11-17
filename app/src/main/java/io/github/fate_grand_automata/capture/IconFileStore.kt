@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -8,8 +9,6 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 
 /** Result of looking for one icon. [Missing] means the Atlas host has no image (HTTP 404). */
@@ -49,7 +48,7 @@ class IconFileStore(
                 val temp = File(directory, "$id.tmp")
                 try {
                     temp.outputStream().use { it.write(bytes); it.fd.sync() }
-                    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                    replaceFile(temp, file)
                 } finally { temp.delete() }
                 attempt.delete()
                 missing.delete()

@@ -1,20 +1,20 @@
 package io.github.fate_grand_automata.capture
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Naming policy only. Callers must first restrict entries to files owned by this app. */
 object ChaldeaFiles {
     private val pattern = Regex("chaldea-(?:account|kr)-([a-zA-Z0-9_-]+)-(\\d{8}-\\d{4}(?:-\\d{2})?)\\.json")
     private val legacy = Regex("chaldea-kr-\\d{8}-\\d{4}\\.json")
-    private val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm", java.util.Locale.ROOT)
 
-    fun name(userId: String, time: LocalDateTime): String = "chaldea-account-$userId-${time.format(timestamp)}.json"
-
-    private val secondStamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm-ss", java.util.Locale.ROOT)
+    fun name(userId: String, timeMillis: Long): String =
+        "chaldea-account-$userId-${SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(Date(timeMillis))}.json"
 
     /** Retry name when the fixed [name] cannot be written: the same pattern with the second added. */
-    fun fallbackName(userId: String, time: LocalDateTime): String = "chaldea-account-$userId-${time.format(secondStamp)}.json"
+    fun fallbackName(userId: String, timeMillis: Long): String =
+        "chaldea-account-$userId-${SimpleDateFormat("yyyyMMdd-HHmm-ss", Locale.ROOT).format(Date(timeMillis))}.json"
 
     private fun stamp(name: String): String = pattern.matchEntire(name)?.groupValues?.get(2) ?: ""
 

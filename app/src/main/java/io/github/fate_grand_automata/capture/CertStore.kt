@@ -8,9 +8,9 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.KeyStore
 import java.security.MessageDigest
-import java.util.Base64
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
+import kotlin.io.encoding.Base64
 
 /**
  * Holds the leaf key and the public CA certificate under `filesDir/capture/` (app-private). The exported copy goes to `<FGA folder>/capture/`. The CA private key is
@@ -63,7 +63,7 @@ object CertStore {
     }
 
     fun pem(cert: X509Certificate): String = "-----BEGIN CERTIFICATE-----\n" +
-        Base64.getMimeEncoder(64, byteArrayOf(10)).encodeToString(cert.encoded) + "\n-----END CERTIFICATE-----\n"
+        Base64.Default.encode(cert.encoded).chunked(64).joinToString("\n") + "\n-----END CERTIFICATE-----\n"
 
     /** A new CA and leaf held in memory. Nothing replaces the stored ones until [commit]. */
     class Pending(internal val leaf: ByteArray, val caDer: ByteArray)
@@ -98,9 +98,9 @@ object CertStore {
         if (pairFiles(ctx).recover()) File(directory(ctx), CA).readBytes() else null
 
     /** Saves the CA to `<FGA folder>/capture/fga-capture-ca.crt` (three layers, see [CaptureFileSaver]). */
-    fun save(folder: CaptureFolder?, der: ByteArray, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): SaveOutcome =
+    fun save(folder: CaptureFolder?, der: ByteArray, nowMillis: Long = System.currentTimeMillis()): SaveOutcome =
         CaptureFileSaver.save(
-            folder, EXPORT_NAME, CaptureFileSaver.timestamped(EXPORT_NAME, now), EXPORT_MIME, der,
+            folder, EXPORT_NAME, CaptureFileSaver.timestamped(EXPORT_NAME, nowMillis), EXPORT_MIME, der,
         )
 
     /** Saves the existing CA again. The CA itself is never touched. Null when there is none. */

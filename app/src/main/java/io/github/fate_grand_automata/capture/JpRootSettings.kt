@@ -31,7 +31,7 @@ data class JpRootState(
 
 fun jpRootVisible(api: Int, installed: Boolean) = api >= 29 && installed
 fun jpGameInstalled(context: Context) = runCatching {
-    context.packageManager.getPackageInfo(CaptureVpnService.JP_GAME_PACKAGE, 0)
+    context.packageManager.getPackageInfo(JP_GAME_PACKAGE, 0)
 }.isSuccess
 
 /** State shared by the real settings UI and fake-backed Robolectric tests. All installer work is IO. */

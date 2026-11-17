@@ -5,12 +5,11 @@ import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.FriendRoster
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import java.io.File
 import java.io.OutputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 data class CaptureAccount(
     val id: String,
@@ -492,7 +491,7 @@ internal class CaptureAccounts(
         check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
         val temp = File(file.parentFile, file.name + ".tmp")
         temp.outputStream().buffered().use(write)
-        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        replaceFile(temp, file)
     }
 
     private companion object {

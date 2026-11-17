@@ -7,12 +7,15 @@ import androidx.annotation.RequiresApi
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 
+internal const val GAME_PACKAGE = "com.netmarble.fgok"
+internal const val JP_GAME_PACKAGE = "com.aniplex.fategrandorder"
+
 internal fun allowedGamePackages(installed: Set<String>, jpEnabled: Boolean): List<String> =
-    listOfNotNull(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE.takeIf { jpEnabled })
+    listOfNotNull(GAME_PACKAGE, JP_GAME_PACKAGE.takeIf { jpEnabled })
         .filter { it in installed }
 
 internal fun installedGamePackages(context: Context): Set<String> =
-    listOf(CaptureVpnService.GAME_PACKAGE, CaptureVpnService.JP_GAME_PACKAGE).filter { name ->
+    listOf(GAME_PACKAGE, JP_GAME_PACKAGE).filter { name ->
         try {
             context.packageManager.getPackageInfo(name, 0)
             true
@@ -37,8 +40,8 @@ internal data class CaptureReadiness(
 internal fun captureReadiness(context: Context, prefs: PrefsCore): CaptureReadiness {
     val installed = installedGamePackages(context)
     return CaptureReadiness(
-        CaptureVpnService.GAME_PACKAGE in installed, CertStore.exists(context),
-        CaptureVpnService.JP_GAME_PACKAGE in installed, prefs.captureJpRoot.get(), CertStore.existsJp(context),
+        GAME_PACKAGE in installed, CertStore.exists(context),
+        JP_GAME_PACKAGE in installed, prefs.captureJpRoot.get(), CertStore.existsJp(context),
     )
 }
 
@@ -69,9 +72,9 @@ internal fun packageUid(context: Context, packageName: String): Int? =
 @RequiresApi(Build.VERSION_CODES.Q)
 internal fun resolveRootTargetUids(context: Context, prefs: PrefsCore): List<Int> =
     rootTargetUids(
-        krUid = packageUid(context, CaptureVpnService.GAME_PACKAGE),
+        krUid = packageUid(context, GAME_PACKAGE),
         krCertificate = CertStore.exists(context),
-        jpUid = packageUid(context, CaptureVpnService.JP_GAME_PACKAGE),
+        jpUid = packageUid(context, JP_GAME_PACKAGE),
         jpEnabled = prefs.captureJpRoot.get(),
         jpCertificate = CertStore.existsJp(context),
     )

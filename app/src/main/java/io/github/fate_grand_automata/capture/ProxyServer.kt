@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.capture
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.HttpReader
 import io.github.fate_grand_automata.scripts.capture.Socks5
@@ -46,6 +48,7 @@ data class ProxyOptions(
  * tunnels. Read-only: requests and responses are forwarded byte for byte. Requests are never
  * stored. Logs show the method, path (no query), status and size only, never bodies, tokens or headers.
  */
+@RequiresApi(Build.VERSION_CODES.Q)
 class ProxyServer(
     sslContexts: Map<String, SSLContext> = emptyMap(),
     private val options: ProxyOptions = ProxyOptions(),

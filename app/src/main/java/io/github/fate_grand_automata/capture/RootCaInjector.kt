@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.capture
 
 import android.content.Context
 import android.os.Build
+import io.github.fate_grand_automata.capture.chaldea.awaitProcessExit
+import io.github.fate_grand_automata.capture.chaldea.destroyProcessCompat
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
@@ -66,7 +68,7 @@ class ProcessRootShell : RootShell {
                     }
                 }
             }
-            if (!process.waitFor(maxOf(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS)) {
+            if (!awaitProcessExit(process, maxOf(1, deadline - System.nanoTime()))) {
                 return RootShellOutput(-1, emptyList(), true)
             }
             try {
@@ -74,7 +76,7 @@ class ProcessRootShell : RootShell {
             } catch (_: TimeoutException) { return RootShellOutput(-1, emptyList(), true) }
             return RootShellOutput(process.exitValue(), synchronized(lines) { lines.toList() })
         } finally {
-            process.destroyForcibly()
+            destroyProcessCompat(process)
             workers.shutdownNow()
         }
     }
@@ -137,7 +139,7 @@ class RootCaInjector(
 
     override fun isGameRunning(): Boolean = runCatching {
         val out = shell.run(listOf("su", "-c", "sh"),
-            "if pidof ${CaptureVpnService.JP_GAME_PACKAGE} >/dev/null 2>&1; then echo FGA_GAME_RUNNING; fi\n", 5)
+            "if pidof $JP_GAME_PACKAGE >/dev/null 2>&1; then echo FGA_GAME_RUNNING; fi\n", 5)
         !out.timedOut && out.exitCode == 0 && "FGA_GAME_RUNNING" in out.lines
     }.getOrDefault(false)
 
