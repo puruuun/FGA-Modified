@@ -99,8 +99,9 @@ object CaptureController {
     }
 
     /**
-     * Starts capture (or turns reading on in AdGuard mode). Returns true if the start command could
-     * be dispatched, or false if startup is blocked (e.g. missing consent, proxy port conflict, or FGS restriction).
+     * Starts capture (or turns reading on in AdGuard and Root mode). Returns false below Android 10
+     * or when the start command cannot be sent (e.g. an FGS start restriction); a proxy port
+     * conflict is reported by the service after dispatch.
      */
     fun start(context: Context): Boolean {
         init(context)
