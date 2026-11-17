@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import io.github.fate_grand_automata.capture.GameNames
 import io.github.fate_grand_automata.capture.RootShellOutput
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
@@ -21,6 +22,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -69,6 +71,8 @@ class ChaldeaRootManagerTest {
     @Before
     fun setup() {
         ChaldeaSyncManager.resetForTest()
+        ChaldeaSyncManager.settingsDispatcher = Dispatchers.Unconfined
+        ChaldeaSyncManager.gameNamesFactory = { GameNames(File(it.filesDir, "test_names"), download = { error("offline") }) }
         val store = context.getSharedPreferences("chaldea-root-manager-test", Context.MODE_PRIVATE)
         store.edit().clear().commit()
         prefs = PrefsCore(PrefMaker(store), context)
@@ -112,21 +116,28 @@ class ChaldeaRootManagerTest {
         initWithSyncOn()
 
         val callerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val job = callerScope.launch { ChaldeaSyncManager.syncNow(null) }
-        assertTrue(started.await(5, TimeUnit.SECONDS), "slow probe never started")
-        assertTrue(ChaldeaSyncManager.isProbeBusy)
+        try {
+            val job = callerScope.launch { ChaldeaSyncManager.syncNow(null) }
+            assertTrue(started.await(5, TimeUnit.SECONDS), "slow probe never started")
+            assertTrue(ChaldeaSyncManager.isProbeBusy)
 
-        job.cancelAndJoin()
-        release.countDown()
+            job.cancelAndJoin()
+            release.countDown()
 
-        assertTrue(waitFor { !ChaldeaSyncManager.isProbeBusy }, "cancelled syncNow left policy busy")
-        assertEquals(RootState.Unavailable, ChaldeaSyncManager.access.value.root)
+            assertTrue(
+                waitFor { !ChaldeaSyncManager.isProbeBusy && ChaldeaSyncManager.access.value.root == RootState.Unavailable },
+                "cancelled syncNow left policy busy",
+            )
+            assertEquals(RootState.Unavailable, ChaldeaSyncManager.access.value.root)
 
-        // A new probe can start right after.
-        ChaldeaSyncManager.syncNow(null)
-        assertEquals(2, calls.get())
-        assertFalse(ChaldeaSyncManager.isProbeBusy)
-        assertEquals(RootState.Granted, ChaldeaSyncManager.access.value.root)
+            // A new probe can start right after.
+            ChaldeaSyncManager.syncNow(null)
+            assertEquals(2, calls.get())
+            assertFalse(ChaldeaSyncManager.isProbeBusy)
+            assertEquals(RootState.Granted, ChaldeaSyncManager.access.value.root)
+        } finally {
+            callerScope.cancel()
+        }
     }
 
     @Test

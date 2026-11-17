@@ -13,6 +13,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import android.os.Looper
+import io.github.fate_grand_automata.capture.GameNames
+import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
+import kotlinx.coroutines.Dispatchers
+import java.io.File
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -25,6 +29,9 @@ class ChaldeaRuntimeToggleTest {
 
     @Before fun setup() {
         ChaldeaSyncManager.resetForTest()
+        ChaldeaSyncManager.settingsDispatcher = Dispatchers.Unconfined
+        ChaldeaSyncManager.probeRunner = { RootState.Unavailable }
+        ChaldeaSyncManager.gameNamesFactory = { GameNames(File(it.filesDir, "test_names"), download = { error("offline") }) }
         store = context.getSharedPreferences("chaldea-toggle-test", Context.MODE_PRIVATE)
         store.edit().clear().commit()
     }

@@ -6,9 +6,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
+import io.github.fate_grand_automata.capture.CaptureTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -34,16 +37,28 @@ class WidgetRefreshTest {
 
     /** Runs every launched refresh inline on the calling thread, so the tests never wait on the clock. */
     @Before fun inlineScopes() {
+        // Stop background refresh work started by AutomataApplication.onCreate before swapping scopes.
+        WidgetSettingsObserver.stop()
+        runBlocking {
+            originalScope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+            originalApScope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+        }
+        CaptureTracker.setRunning(false)
         WidgetRefresh.scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         ApWidgetRefresh.scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     }
 
     @After fun restore() {
+        runBlocking {
+            WidgetRefresh.scope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+            ApWidgetRefresh.scope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+        }
         WidgetRefresh.updateService = originalService
         WidgetRefresh.updateAp = originalAp
         ApWidgetRefresh.launcher = originalLauncher
         WidgetRefresh.scope = originalScope
         ApWidgetRefresh.scope = originalApScope
+        CaptureTracker.setRunning(false)
     }
 
     private fun place(id: Int, receiver: Class<*>) {
@@ -62,7 +77,7 @@ class WidgetRefreshTest {
         val receiver = WidgetRestoreReceiver()
         receiver.onReceive(context, Intent(action))
         assertEquals(0L, done.count)
-        assertEquals(setOf("service", "ap"), updated.toSet())
+        assertEquals(setOf("service", "ap"), synchronized(updated) { updated.toSet() })
     }
 
     @Test fun bootRestoresBothPlacedWidgets() = broadcast(Intent.ACTION_BOOT_COMPLETED)
