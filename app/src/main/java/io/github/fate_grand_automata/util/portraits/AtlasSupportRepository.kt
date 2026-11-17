@@ -27,8 +27,8 @@ interface SupportCatalogSource {
     suspend fun catalog(kind: SupportCatalogKind, region: String): List<SupportCatalogRecord>
     suspend fun detail(kind: SupportCatalogKind, region: String, id: Int): String?
     suspend fun servantNames(region: String): Map<Int, Set<String>>
-    /** Bundled Korean names for servants that are not released on KR yet, keyed by internal servant ID. */
-    suspend fun koreanNames(): Map<Int, Set<String>>
+    /** Bundled Korean names (pre-KR-release only) and persistent nickname aliases, keyed by internal servant ID. */
+    suspend fun koreanNames(): SupportKoreanDictionary
 }
 
 /** Pure coordinator, also exercised with deterministic regional fixtures in unit tests. */
@@ -63,14 +63,14 @@ class SupportImageLookup(private val source: SupportCatalogSource) {
         }
         includeNames("JP")
         includeNames(nameRegion)
-        // The bundled dictionary only covers servants that have no KR record yet.
-        val dictionary = if (nameSearch) source.koreanNames() else emptyMap()
-        val krIds: Set<Int>? = if (dictionary.isEmpty()) emptySet() else try {
+        // Pre-release names apply only before KR release; aliases stay searchable regardless of KR status.
+        val dictionary = if (nameSearch) source.koreanNames() else SupportKoreanDictionary()
+        val krIds: Set<Int>? = if (dictionary.names.isEmpty()) emptySet() else try {
             catalog("KR").map { it.id }.toSet()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            null // KR catalog unavailable: apply the dictionary to every entry rather than failing.
+            null // KR catalog unavailable: apply pre-release names to every entry rather than failing.
         }
         for (region in SupportImageCatalog.lookupRegions) {
             val records = catalog(region)
@@ -78,8 +78,9 @@ class SupportImageLookup(private val source: SupportCatalogSource) {
             val names = SupportServantNames.merge(nameTables.values)
             val entries = SupportImageCatalog.merge(kind, records, localized, jp)
             val results = SupportImageCatalog.search(entries.map {
-                val unreleased = if (krIds == null || it.id !in krIds) dictionary[it.id].orEmpty() else emptySet()
-                it.copy(aliases = it.aliases + names[it.id].orEmpty() + unreleased,
+                val unreleased = if (krIds == null || it.id !in krIds) dictionary.names[it.id].orEmpty() else emptySet()
+                val nicknames = dictionary.aliases[it.id].orEmpty()
+                it.copy(aliases = it.aliases + names[it.id].orEmpty() + unreleased + nicknames,
                     sourceRegion = if (it.id in jpIds) null else region)
             }, query)
             if (results.isNotEmpty()) return results
@@ -120,21 +121,21 @@ class AtlasSupportRepository internal constructor(
     )
 
     private val fileMutexes = ConcurrentHashMap<String, Mutex>()
-    @Volatile private var koreanNamesCache: Map<Int, Set<String>>? = null
+    @Volatile private var koreanNamesCache: SupportKoreanDictionary? = null
 
-    override suspend fun koreanNames(): Map<Int, Set<String>> {
+    override suspend fun koreanNames(): SupportKoreanDictionary {
         koreanNamesCache?.let { return it }
         return withContext(Dispatchers.IO) {
-            val names = try {
+            val dictionary = try {
                 SupportKoreanNames.parse(openAsset(SupportKoreanNames.ASSET).use { it.readBytes().toString(Charsets.UTF_8) })
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Bundled Korean servant names unavailable")
-                emptyMap()
+                SupportKoreanDictionary()
             }
-            koreanNamesCache = names
-            names
+            koreanNamesCache = dictionary
+            dictionary
         }
     }
 

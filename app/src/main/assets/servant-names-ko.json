@@ -1,5 +1,5 @@
 {
-  "source": "namu.wiki servant pages (per-ascension artwork captions), checked 2026-11-01; No.484-487 from the namu.wiki servant ID list plus owner nicknames, 2026-11-16",
+  "source": "namu.wiki servant pages (per-ascension artwork captions), checked 2026-11-01; No.484-487 from the namu.wiki servant ID list, 2026-11-16; aliases are owner-reviewed nicknames used after KR release, 2026-11-17",
   "servants": [
     {"id": 901900, "no": 438, "jp": "メタトロン・ジャンヌ", "ko": ["메타트론 잔느"]},
     {"id": 305800, "no": 439, "jp": "アショカ王", "ko": ["아소카 왕"]},
@@ -46,8 +46,8 @@
     {"id": 705400, "no": 482, "jp": "ダイダロス", "ko": ["다이달로스"]},
     {"id": 406000, "no": 483, "jp": "タマモアリア", "ko": ["타마모아리아"]},
     {"id": 2801400, "no": 484, "jp": "卑弥呼＆壱与", "ko": ["히미코&이요"]},
-    {"id": 406100, "no": 485, "jp": "雑賀孫一", "ko": ["사이카 마고이치", "김충선"]},
-    {"id": 705500, "no": 486, "jp": "松永久秀", "ko": ["마츠나가 단죠", "마츠나가 히사히데", "버미육"]},
+    {"id": 406100, "no": 485, "jp": "雑賀孫一", "ko": ["사이카 마고이치"], "aliases": ["김충선"]},
+    {"id": 705500, "no": 486, "jp": "松永久秀", "ko": ["마츠나가 단죠", "마츠나가 히사히데"], "aliases": ["버미육"]},
     {"id": 2501700, "no": 487, "jp": "ダイナマイト利休", "ko": ["다이너마이트 리큐", "큐티 코마"]}
   ]
 }
