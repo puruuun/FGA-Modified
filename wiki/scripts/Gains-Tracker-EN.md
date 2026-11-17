@@ -4,9 +4,17 @@
 
 Supports the KR server (`com.netmarble.fgok`) and the official JP server (`com.aniplex.fategrandorder`) on rooted devices running Android 10 or later. Menus are hidden on Android 9 and earlier. The main-screen account cards, **Storage → Download log icon data**, **Additional features → Export Chaldea file**, and **Friend manager** appear only on Android 10+ with **Enable log collection** turned on, appearing or disappearing immediately as you toggle the switch without leaving the screen. Saved data is not deleted. The **Log collection** settings entry (where the switch lives) and **Main → Log** remain visible regardless of the switch. When a Battle script runs while log collection is active, bond numbers come from server responses, while material counts and bond MAX stops still use screen recognition. See the exact conditions below.
 
-## JP Server (Root) — In Development for 1.9.0
+## Connection Modes
 
-On Android 10+ with the official FGO JP app installed, **Log collection → JP server (root)** is shown. Configure it with the **Automatically install the JP CA with root access** toggle in this section. Root access is required; if unavailable or denied, the toggle cannot be turned on. KR and JP are configured separately, and each server is collected only when its certificate is ready. When both are ready, tapping **Start** under VPN collects both together. You can also use JP alone without the KR game or KR certificate. The JP toggle must be on, and both the official JP app and JP certificate must be ready.
+Log collection sends FGO traffic to FGA's proxy in one of three ways. KR and JP are collected the same way.
+
+- **FGA VPN** (default): FGA creates a VPN on this device. It cannot run alongside another VPN app. This page describes this mode.
+- **External proxy app**: an app you already use, such as AdGuard, passes FGO traffic to FGA through its proxy setting. See [External proxy app mode](Capture-AdGuard-EN.md).
+- **Root**: root access sends only FGO traffic to FGA. It can run alongside another VPN. See [Root capture mode](Capture-Root-EN.md).
+
+## JP Server (Root)
+
+On Android 10+ with the official FGO JP app installed, **Log collection → JP server (root)** is shown. Configure it with the **Automatically install the JP CA with root access** toggle in this section. Root access is required; if unavailable or denied, the toggle cannot be turned on. KR and JP are configured separately, and each server is collected only when its certificate is ready. When both are ready, one start of log collection collects both together. Root access is needed to install the JP certificate; any of the three connection modes above can be used. You can also use JP alone without the KR game or KR certificate. The JP toggle must be on, and both the official JP app and JP certificate must be ready.
 
 - Below the **Create certificate / How to install** buttons in the **KR server** section, a separate **JP server (root)** section appears. Turning the toggle on creates a JP-specific certificate and automatically installs it in the system CA store. The **KR server** certificate must still be created and installed separately. **JP certificate: installed** indicates the current installation state of the JP certificate.
 - Accounts added from JP responses are labeled **JP** in the main cards, Account dashboard, and Friend manager account selector, while KR accounts are labeled **KR**. Accounts are stored separately by `userId`. JP Chaldea export uses the same response structure, with Chaldea's default region detection set to JP.
