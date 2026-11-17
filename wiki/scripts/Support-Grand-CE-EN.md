@@ -8,6 +8,6 @@ For Grand supports, FGA checks both the free slot and the bonus-up (reward) slot
 
 **Bond CE effect preference** and **Match both free slot & bonus-up (Bond/FP/QP/EXP) slot** are displayed and applied only when **Grand Servant** is enabled under **Preferred Servants**. When **Grand Servant** is off, both options are hidden and treated as ignored (no effect condition, and matching either slot passes) even if previously saved values remain. As a result, non-Grand supports will never be rejected by leftover NP settings.
 
-Bond CE effect icons use the same template images and the same matching threshold (global Min Similarity) as the original FGA.
+Bond CE effect icons use the same template images and the same matching threshold as the original FGA. The icons are small, so a half-pixel shift in the screen lowers the score; since original FGA v3071 the check uses 0.60 instead of the global Min Similarity. On the JP reference screens the right icon scores 0.84 or higher and the opposite icon 0.37 or lower.
 
 In the beta, when inspecting a Grand support row, the `FGA.SupportCe` log prints a single line with the CE scores and regions for the free and reward slots, MLB results, the bond-effect setting and NP/default-effect scores, and the final decision. If a support is not being picked, check this log together with your support settings.
