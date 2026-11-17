@@ -194,6 +194,23 @@ class SkillLevelDeviceTest {
         assertEquals(SkipResult.Back, outcome.result)
         assertEquals(1, outcome.retries)
     }
+    @Test fun `every poll taps skip, waits, then reads the screen, with or without a retry`() {
+        val run = Run()
+        val device = SkillLevelDevice(run.api, SkillLevelMode.Skill, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
+        val events = mutableListOf<String>()
+        var poll = 0
+        every { with(run.api) { run.retryPattern in run.retryRegion } } answers { events += "read"; poll == 2 }
+        every { run.screens.onLabel(any()) } answers { poll >= 4 }
+        every { run.screens.servantSelected() } answers { poll >= 4 }
+        every { run.screens.dialogVisible() } returns false
+        every { with(run.api) { run.skipClick.click(any()) } } answers { events += "tap" }
+        every { with(run.api) { run.retryRegion.click(any()) } } answers { events += "retry" }
+        every { with(run.api) { SkillLevelTiming.SKIP_INTERVAL.wait(any()) } } answers { events += "wait"; poll++ }
+        assertEquals(SkipResult.Back, device.skipToScreen())
+        val polls = listOf("tap", "wait", "read")
+        // The last wait is the AFTER_SKIP settle, which has the same 0.5 s value as the poll interval.
+        assertEquals(polls + polls + "retry" + polls + polls + "wait", events)
+    }
     @Test fun `retry is checked before back and deselected on the same poll`() {
         val run = Run()
         val device = SkillLevelDevice(run.api, SkillLevelMode.Skill, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
