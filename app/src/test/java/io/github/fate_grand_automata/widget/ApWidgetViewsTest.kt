@@ -353,7 +353,7 @@ class ApWidgetViewsTest {
     @Test fun updateAllDrawsEveryPlacedWidgetThroughAHostView() = runBlocking {
         val manager = AppWidgetManager.getInstance(context)
         val shadow = shadowOf(manager)
-        // Set loader before createWidget so ApWidgetReceiver.onUpdate never dispatches loadApWidgetState onto Dispatchers.IO.
+        // createWidget triggers onUpdate, which renders with the current loader; the real loader reads account state.
         ApWidgetRenderer.loader = { data(3) }
         val id = shadow.createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         ApWidgetRenderer.updateAll(context)
