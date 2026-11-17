@@ -42,14 +42,16 @@ If a response body is too large, cannot be copied due to low memory, or fails to
 
 ## Notice on First Use
 
-**Before using log collection** explains how it works (an on-device VPN/proxy and a user-installed CA certificate), required permissions, and the limitation against running alongside another VPN. On small screens, the notice scrolls vertically.
+**Before using log collection** explains how it works (three connection modes: FGA VPN, external proxy app, and root) and what KR, JP and each mode need. On small screens, the notice scrolls vertically.
 
-- Game updates may break this feature. If you cannot log in, turn off log collection.
-- Some screens (such as event notices) may load slowly at first.
+- Game updates may stop this feature from working. If you cannot log in, turn off log collection.
 - Changes made while log collection was off are not reflected until you log in again with it on.
+- External proxy app: while FGA is closed, FGO cannot connect. Start FGA again, or turn off the proxy in the proxy app. (With AdGuard proxy auto-switch, this applies only while collecting.)
+- Root: recording starts when FGO opens a new connection after collection is turned on (for example on the title screen).
+- JP: the first time collection starts after the device boots, restart the JP game once.
 - **You are responsible for using this feature and for the consequences.**
 
-Your agreement is saved. If the consent version of the notice text changes later, FGA may ask for agreement again. You can re-read the notice anytime via **Show notice again** in settings; reviewing it alone does not turn log collection on.
+Your agreement is saved. Users who have already agreed are not asked again. If the consent version of the notice text changes later, FGA may ask for agreement again. You can re-read the notice anytime via **Show notice again** in settings; reviewing it alone does not turn log collection on.
 
 ## Using from the Main Screen
 

@@ -773,11 +773,11 @@
     <string name="capture_chaldea_freshness">"ファイルにはログ収集の実行中に受信した内容だけが反映されます。停止中にプレイした場合は、ログ収集を有効にしてゲームを再起動し、スナップショットを更新してください。"</string>
     <string name="capture_consent_title">"ログ収集の使用前のご案内"</string>
     <string name="capture_consent_how_title">"動作の仕組み:"</string>
-    <string name="capture_consent_how">"この端末内にVPNを作成し、FGO(KR)アプリの通信だけを端末内のプロキシに送ります。ご自身でインストールした証明書でゲームサーバーの応答を読み取り、アイテムや資源の変化を記録します。通信内容は変更せず、収集したデータは端末外に送信しません。"</string>
+    <string name="capture_consent_how">"FGO(KR・JP)アプリの通信を端末内のFGAプロキシに送り、ゲームサーバーの応答からアイテムや資源の変化を読み取って記録します。通信内容は変更せず、収集したデータは端末外に送信しません。\n接続方式は次の3つから選びます。\n• FGA VPN: FGAが端末内にVPNを作成します。他のアプリやルートは不要です。\n• 外部アプリのプロキシ: AdGuardなど、すでに使っているアプリのプロキシ設定でFGOの通信をFGAに渡します。\n• ルート: ルート権限でFGOの通信だけをFGAに送ります。他のVPNと同時に使えます。"</string>
     <string name="capture_consent_needs_title">"必要なもの:"</string>
-    <string name="capture_consent_needs">"CA証明書のインストールとVPNの許可。他のVPN（広告ブロックアプリなど）とは同時に使えません。"</string>
+    <string name="capture_consent_needs">"• KR: FGA証明書をCA証明書としてインストール\n• JP: ルート権限(JP証明書はFGAが自動でインストールします)\n• FGA VPN: VPNの許可。他のVPN（広告ブロックアプリなど）とは同時に使えません。\n• 外部アプリのプロキシ: プロキシアプリにFGAのアドレスを入力、FGAをバッテリー最適化の対象外に設定\n• ルート: ルート権限"</string>
     <string name="capture_consent_risks_title">"起こり得る問題:"</string>
-    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• 一部の画面（イベントのお知らせなど）が最初は表示に時間がかかる場合があります。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。"</string>
+    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。\n• 外部アプリのプロキシ: FGAが終了しているとFGOは接続できません。FGAを再び起動するか、プロキシアプリのプロキシ設定をオフにしてください。(AdGuard プロキシ自動切り替えを使う場合は、収集中のみ該当します。)\n• ルート: 収集をオンにした後、FGOが新しく接続したとき（タイトル画面など）から記録されます。\n• JP: 端末の起動後に初めて収集を開始するときは、JPのゲームを一度再起動してください。"</string>
     <string name="capture_consent_responsibility">"この機能の使用とその結果に対する責任は、ユーザーご本人にあります。"</string>
     <string name="capture_consent_agree">"同意して使用"</string>
     <string name="capture_consent_review">"案内をもう一度見る"</string>
