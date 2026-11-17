@@ -46,7 +46,7 @@ If a response body is too large, cannot be copied due to low memory, or fails to
 
 - Game updates may stop this feature from working. If you cannot log in, turn off log collection.
 - Changes made while log collection was off are not reflected until you log in again with it on.
-- External proxy app: while FGA is not running, FGO cannot connect. Start FGA again, or turn off the proxy in the proxy app.
+- External proxy app: while FGA is closed, FGO cannot connect. Start FGA again, or turn off the proxy in the proxy app. (With AdGuard proxy auto-switch, this applies only while collecting.)
 - Root: recording starts when FGO opens a new connection after collection is turned on (for example on the title screen).
 - JP: the first time collection starts after the device boots, restart the JP game once.
 - **You are responsible for using this feature and for the consequences.**

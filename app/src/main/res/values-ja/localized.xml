@@ -777,7 +777,7 @@
     <string name="capture_consent_needs_title">"必要なもの:"</string>
     <string name="capture_consent_needs">"• KR: FGA証明書をCA証明書としてインストール\n• JP: ルート権限(JP証明書はFGAが自動でインストールします)\n• FGA VPN: VPNの許可。他のVPN（広告ブロックアプリなど）とは同時に使えません。\n• 外部アプリのプロキシ: プロキシアプリにFGAのアドレスを入力、FGAをバッテリー最適化の対象外に設定\n• ルート: ルート権限"</string>
     <string name="capture_consent_risks_title">"起こり得る問題:"</string>
-    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。\n• 外部アプリのプロキシ: FGAが動いていないとFGOは接続できません。FGAを再び起動するか、プロキシアプリのプロキシ設定をオフにしてください。\n• ルート: 収集をオンにした後、FGOが新しく接続したとき（タイトル画面など）から記録されます。\n• JP: 端末の起動後に初めて収集を開始するときは、JPのゲームを一度再起動してください。"</string>
+    <string name="capture_consent_risks">"• ゲームの更新により機能が動作しなくなる場合があります。ログインできない場合はログ収集をオフにしてください。\n• ログ収集がオフだった間の変化は、オンにして再度ログインするまで反映されません。\n• 外部アプリのプロキシ: FGAが終了しているとFGOは接続できません。FGAを再び起動するか、プロキシアプリのプロキシ設定をオフにしてください。(AdGuard プロキシ自動切り替えを使う場合は、収集中のみ該当します。)\n• ルート: 収集をオンにした後、FGOが新しく接続したとき（タイトル画面など）から記録されます。\n• JP: 端末の起動後に初めて収集を開始するときは、JPのゲームを一度再起動してください。"</string>
     <string name="capture_consent_responsibility">"この機能の使用とその結果に対する責任は、ユーザーご本人にあります。"</string>
     <string name="capture_consent_agree">"同意して使用"</string>
     <string name="capture_consent_review">"案内をもう一度見る"</string>
