@@ -77,11 +77,11 @@ class AccountStateCompactTest {
     }
 
     private fun oldExport(state: OldAccountState) = buildJsonObject {
-        put("response", state.loginResponse)
+        put("response", Json.parseToJsonElement("""[{"nid":"login","resCode":"00"}]"""))
         putJsonObject("cache") {
             put("updated", JsonObject(emptyMap()))
             put("deleted", JsonObject(emptyMap()))
-            put("replaced", JsonObject(state.tables))
+            put("replaced", JsonObject(state.tables.filterKeys { it in ChaldeaExport.CHALDEA_TABLES }))
             put("serverTime", state.serverTime ?: JsonNull)
         }
     }.toString()

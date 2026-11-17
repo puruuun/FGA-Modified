@@ -139,4 +139,68 @@ class AccountStateTest {
         assertEquals(s.tables, back.tables)
         assertEquals(s.loginResponse, back.loginResponse)
     }
+
+    @Test fun userLoginUpdatedRowIsStoredAndReplacedBySameUserId() {
+        val loginBodyText = """{"response":[{"nid":"login","resCode":"00","success":{"x":1}}],
+            "cache":{"replaced":{"userGame":[{"userId":"7","name":"M","lv":10}]},
+            "updated":{"userLogin":[{"userId":"7","seqLoginCount":3,"totalLoginCount":120,"lastLoginAt":1700000000}]},
+            "serverTime":1000}}"""
+        val fromReduce = assertNotNull(AccountState.reduce(null, "/login/top", obj(loginBodyText), 50))
+        val fromStream = assertNotNull(AccountState.readLogin(loginBodyText.byteInputStream(), "/login/top").reducer(null, 50))
+        assertEquals(fromReduce, fromStream)
+        val loginRows = fromReduce.tables.getValue("userLogin")
+        assertEquals(1, loginRows.size)
+        assertEquals("7", loginRows[0].jsonObject["userId"]?.jsonPrimitive?.content)
+        assertEquals("3", loginRows[0].jsonObject["seqLoginCount"]?.jsonPrimitive?.content)
+        assertEquals("120", loginRows[0].jsonObject["totalLoginCount"]?.jsonPrimitive?.content)
+        assertEquals("1700000000", loginRows[0].jsonObject["lastLoginAt"]?.jsonPrimitive?.content)
+
+        val updateBodyText = """{"response":[{"nid":"home","resCode":"00"}],
+            "cache":{"updated":{"userLogin":[{"userId":"7","seqLoginCount":4,"totalLoginCount":121,"lastLoginAt":1700086400}]},
+            "serverTime":2000}}"""
+        val updatedReduce = assertNotNull(AccountState.reduce(fromReduce, "/home/top", obj(updateBodyText), 60))
+        val updatedStream = assertNotNull(AccountState.readLogin(updateBodyText.byteInputStream(), "/home/top").reducer(fromStream, 60))
+        assertEquals(updatedReduce, updatedStream)
+        val updatedRows = updatedReduce.tables.getValue("userLogin")
+        assertEquals(1, updatedRows.size)
+        assertEquals("4", updatedRows[0].jsonObject["seqLoginCount"]?.jsonPrimitive?.content)
+        assertEquals("121", updatedRows[0].jsonObject["totalLoginCount"]?.jsonPrimitive?.content)
+        assertEquals("1700086400", updatedRows[0].jsonObject["lastLoginAt"]?.jsonPrimitive?.content)
+    }
+
+    @Test fun userGameCommonRowsWithoutIdAreNotMergedByUserId() {
+        val row1 = """{"userId":"7","no":1,"value":"a"}"""
+        val row2 = """{"userId":"7","no":2,"value":"b"}"""
+        assertNull(AccountState.rowKey("userGameCommon", obj(row1)))
+        assertNull(AccountState.rowKey("userGameCommon", obj(row2)))
+
+        val withReplaced = assertNotNull(
+            AccountState.reduce(
+                null,
+                "/login/top",
+                login("""{"userGame":[{"userId":"7"}],"userGameCommon":[$row1,$row2]}"""),
+                50,
+            ),
+        )
+        val afterUpdate = assertNotNull(
+            AccountState.reduce(
+                withReplaced,
+                "/home/top",
+                obj("""{"cache":{"updated":{"userGameCommon":[{"userId":"7","no":1,"value":"x"},{"userId":"7","no":2,"value":"y"}]}}}"""),
+                60,
+            ),
+        )
+        assertEquals(withReplaced.tables.getValue("userGameCommon"), afterUpdate.tables.getValue("userGameCommon"))
+
+        val base = start()
+        val createdEmpty = assertNotNull(
+            AccountState.reduce(
+                base,
+                "/home/top",
+                obj("""{"cache":{"updated":{"userGameCommon":[$row1,$row2]}}}"""),
+                60,
+            ),
+        )
+        assertEquals(0, createdEmpty.tables.getValue("userGameCommon").size)
+    }
 }

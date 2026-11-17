@@ -271,7 +271,7 @@ class AccountState(
         fun rowKey(table: String, row: JsonElement): List<Pair<String, String>>? {
             val obj = row as? JsonObject ?: return null
             val fields = when (table) {
-                "userGame", "tblUserGame" -> listOf("userId")
+                "userGame", "tblUserGame", "userLogin" -> listOf("userId")
                 "userItem" -> listOf("itemId")
                 "userSvtCollection", "userSvtCoin", "userSvtVoicePlayed" -> listOf("svtId")
                 "userSvtAppendPassiveSkillLv" -> listOf("userSvtId")
