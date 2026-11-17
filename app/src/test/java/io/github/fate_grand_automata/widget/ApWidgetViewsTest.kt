@@ -16,8 +16,14 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.WidgetTheme
 import io.github.fate_grand_automata.runner.ScriptRunnerService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -37,7 +43,19 @@ class ApWidgetViewsTest {
     private val originalLoader = ApWidgetRenderer.loader
     private val originalScope = WidgetRefresh.scope
 
+    @Before fun setup() {
+        // Drain any background WidgetRefresh work started by AutomataApplication.onCreate and run receiver updates inline.
+        WidgetSettingsObserver.stop()
+        runBlocking {
+            originalScope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+        }
+        WidgetRefresh.scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+    }
+
     @After fun restore() {
+        runBlocking {
+            WidgetRefresh.scope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+        }
         ApWidgetRenderer.loader = originalLoader
         WidgetRefresh.scope = originalScope
         (ScriptRunnerService.serviceStarted as androidx.compose.runtime.MutableState<Boolean>).value = false
@@ -282,9 +300,9 @@ class ApWidgetViewsTest {
 
     @Test fun stepUpdatesOnlyItsOwnWidgetAndSurvivesAFullRender() = runBlocking {
         val manager = AppWidgetManager.getInstance(context)
+        ApWidgetRenderer.loader = { data(3) }
         val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         val b = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
-        ApWidgetRenderer.loader = { data(3) }
         ApWidgetRenderer.step(context, a, ApWidgetNavReceiver.NEXT)
         assertEquals("7002", ApWidgetShown.get(context, a))
         assertNull(ApWidgetShown.get(context, b))
@@ -296,11 +314,10 @@ class ApWidgetViewsTest {
 
     @Test fun theReceiverRunsTheStepForTheIdInTheIntentOnly() {
         val manager = AppWidgetManager.getInstance(context)
+        ApWidgetRenderer.loader = { data(3) }
         val a = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         val b = shadowOf(manager).createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
-        ApWidgetRenderer.loader = { data(3) }
         // The receiver's work runs inline, so the step is done when onReceive returns.
-        WidgetRefresh.scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined)
         ApWidgetNavReceiver().onReceive(
             context,
             android.content.Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, b).putExtra(ApWidgetNavReceiver.EXTRA_DIRECTION, -1),
@@ -336,8 +353,9 @@ class ApWidgetViewsTest {
     @Test fun updateAllDrawsEveryPlacedWidgetThroughAHostView() = runBlocking {
         val manager = AppWidgetManager.getInstance(context)
         val shadow = shadowOf(manager)
-        val id = shadow.createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
+        // createWidget triggers onUpdate, which renders with the current loader; the real loader reads account state.
         ApWidgetRenderer.loader = { data(3) }
+        val id = shadow.createWidget(ApWidgetReceiver::class.java, R.layout.widget_ap_root)
         ApWidgetRenderer.updateAll(context)
         val hostView = shadow.getViewFor(id)
         settleMainLooperAndAsyncTasks()

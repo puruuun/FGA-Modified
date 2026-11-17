@@ -22,6 +22,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStore
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -50,6 +51,7 @@ class ChaldeaSyncManagerCollectionTest {
     @Before
     fun setUp() {
         ChaldeaSyncManager.resetForTest()
+        ChaldeaSyncManager.settingsDispatcher = Dispatchers.Unconfined
         app = ApplicationProvider.getApplicationContext()
         val sp = app.getSharedPreferences("chaldea_collection_test", Context.MODE_PRIVATE)
         sp.edit().clear().commit()
@@ -516,5 +518,35 @@ class ChaldeaSyncManagerCollectionTest {
         runBlocking { ChaldeaSyncManager.collectionJob?.join() }
         assertEquals(6, urls.size)
         assertFalse(ChaldeaSyncManager.isCollectionDownloadDeferred)
+    }
+
+    @Test
+    fun resetForTestWaitsForAndIgnoresInFlightApply() {
+        ChaldeaSyncManager.settingsDispatcher = Dispatchers.Default
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val resetDone = CountDownLatch(1)
+        ChaldeaSyncManager.gameNamesFactory = {
+            GameNames(namesDir, download = { error("offline") }) { 1_000L }
+        }
+        ChaldeaSyncManager.onSettingsChangedForTest = {
+            entered.countDown()
+            assertTrue(release.await(5, TimeUnit.SECONDS))
+        }
+        prefsCore.chaldeaSyncEnabled.set(true)
+        ChaldeaSyncManager.init(app, prefsCore)
+        assertTrue(entered.await(5, TimeUnit.SECONDS))
+
+        val resetThread = Thread {
+            ChaldeaSyncManager.resetForTest()
+            resetDone.countDown()
+        }.apply { start() }
+
+        val finishedEarly = resetDone.await(50, TimeUnit.MILLISECONDS)
+        release.countDown()
+        resetThread.join(5_000)
+        assertFalse(finishedEarly, "resetForTest returned while apply() was still running")
+        assertEquals(0, ChaldeaSyncManager.applyCount)
+        assertFalse(ChaldeaSyncManager.isOn)
     }
 }
