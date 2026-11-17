@@ -120,7 +120,7 @@ class ChaldeaSyncEngineTest {
         val flaky = Flaky(JavaChaldeaFileAccess(dir))
         assertEquals(ChaldeaSyncCode.NotFound, engine(flaky).prepare().result.code)
         put("userdata.json", "not json"); put("userdata.json.bak", "also not")
-        assertEquals(ChaldeaSyncCode.Unreadable, engine(flaky).prepare().result.code)
+        assertEquals(ChaldeaSyncCode.InvalidJson, engine(flaky).prepare().result.code)
         assertTrue(flaky.writes.isEmpty())
         assertEquals("not json", String(get("userdata.json")))
     }
@@ -185,10 +185,23 @@ class ChaldeaSyncEngineTest {
         put("userdata.json", "{broken"); put("userdata.json.bak", """{"version":3,"users":[]}""")
         val flaky = Flaky(JavaChaldeaFileAccess(dir))
         val prep = engine(flaky).prepare()
-        assertEquals(ChaldeaSyncCode.Unreadable, prep.result.code)
+        assertEquals(ChaldeaSyncCode.InvalidJson, prep.result.code)
         assertNull(prep.baseBytes)
-        assertEquals(ChaldeaSyncCode.Unreadable, engine(flaky).commit(patch().toJson(), "x", true).code)
+        assertEquals(ChaldeaSyncCode.InvalidJson, engine(flaky).commit(patch().toJson(), "x", true).code)
         assertTrue(flaky.writes.isEmpty())
+    }
+
+    @Test fun ioReadErrorsStayUnreadableAndNoAccess() {
+        put("userdata.json", fileText())
+        val unreadable = object : ChaldeaFileAccess by JavaChaldeaFileAccess(dir) {
+            override fun read(name: String): ByteArray = throw ChaldeaIoException(ChaldeaIoException.Kind.Unreadable)
+        }
+        assertEquals(ChaldeaSyncCode.Unreadable, engine(unreadable).prepare().result.code)
+
+        val noAccess = object : ChaldeaFileAccess by JavaChaldeaFileAccess(dir) {
+            override fun read(name: String): ByteArray = throw ChaldeaIoException(ChaldeaIoException.Kind.NoAccess)
+        }
+        assertEquals(ChaldeaSyncCode.NoAccess, engine(noAccess).prepare().result.code)
     }
 
     @Test fun oversizeIsRefused() {

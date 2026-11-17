@@ -93,6 +93,18 @@ private class Fx(val ts: TestScope, val tmp: File) {
 
         override suspend fun prepare(sink: OutputStream): ChaldeaSyncSession.PrepareOutcome {
             log += "prepare"
+            if (prepareCode != ChaldeaSyncCode.Ok) {
+                if (prepareCode == ChaldeaSyncCode.InvalidJson) {
+                    check(ChaldeaUserdataEditor.selectBase(base, bak) == ChaldeaBase.Refused(ChaldeaRefusal.InvalidJson)) {
+                        "Fake prepare cannot return InvalidJson when selectBase(base, bak) does not"
+                    }
+                }
+                return ChaldeaSyncSession.PrepareOutcome(
+                    ChaldeaSyncResult(prepareCode, packageName = preparePackage),
+                    received = null,
+                    backupMatches = false,
+                )
+            }
             val bundle = ChaldeaBackupBundle.encode(base, bak)
             sink.write(bundle)
             sink.flush()
@@ -755,6 +767,7 @@ class ChaldeaSyncSchedulerTest {
 
     @Test fun interruptedWriteWithDamagedFileIsRestoredFromTheBackup() = fx {
         inflight()
+        base = "{broken".toByteArray()
         prepareCode = ChaldeaSyncCode.InvalidJson
         start()
         advance(1_000)
@@ -781,6 +794,7 @@ class ChaldeaSyncSchedulerTest {
 
     @Test fun failedRestoreIsReportedWithTheBackupPath() = fx {
         val f = inflight()
+        base = "{broken".toByteArray()
         prepareCode = ChaldeaSyncCode.InvalidJson
         restoreCode = ChaldeaSyncCode.RestoreFailed
         start()
@@ -2199,6 +2213,7 @@ class ChaldeaSyncSchedulerTest {
         assertFalse(store.clearInflight("some-id"))
         assertNotNull(store.readInflight())
 
+        base = "{broken".toByteArray()
         prepareCode = ChaldeaSyncCode.InvalidJson
         start()
         advance(1_000)

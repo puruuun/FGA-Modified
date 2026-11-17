@@ -20,6 +20,14 @@ class CESelection @Inject constructor(
     private val starChecker: SupportSelectionStarChecker,
     private val grandChecker: SupportSelectionGrandChecker
 ) : IFgoAutomataApi by api {
+    companion object {
+        /*
+         * Bond CE effect images are pretty small, so we need to lower the similarity threshold to
+         * avoid false negatives when images are offset by half a pixel (upstream v3071).
+         */
+        const val BOND_EFFECT_SIMILARITY = 0.6
+    }
+
     // These options are only shown in the UI while Grand Servant is enabled
     private val bondCEEffect
         get() = if (supportPrefs.grandServant) supportPrefs.bondCEEffect else BondCEEffectEnum.Ignore
@@ -61,8 +69,8 @@ class CESelection @Inject constructor(
             }
 
             val bondEffectMatch = when (bondCEEffect) {
-                BondCEEffectEnum.Default -> bondRegion.find(images[Images.BondCeEffectDefault]) != null
-                BondCEEffectEnum.NP -> bondRegion.find(images[Images.BondCeEffectNP]) != null
+                BondCEEffectEnum.Default -> bondRegion.find(images[Images.BondCeEffectDefault], BOND_EFFECT_SIMILARITY) != null
+                BondCEEffectEnum.NP -> bondRegion.find(images[Images.BondCeEffectNP], BOND_EFFECT_SIMILARITY) != null
                 BondCEEffectEnum.Ignore -> true
             }
 
@@ -112,7 +120,6 @@ class CESelection @Inject constructor(
         ces: List<String>, search: Region, normal: Region, reward: Region, bond: Region,
         bondMatched: Boolean, decision: Boolean
     ) {
-        // Scores are for the log only; the decision above is the plain find.
         val (np, default) = bond.getPattern().use { crop ->
             bestMatch(bond, crop, images[Images.BondCeEffectNP]) to bestMatch(bond, crop, images[Images.BondCeEffectDefault])
         }
@@ -135,7 +142,7 @@ class CESelection @Inject constructor(
                 "${slot("normal", normal)} ${slot("reward", reward)} mlbRequired=${supportPrefs.mlb} " +
                 "bothSlots=${requireBothNormalAndRewardMatch} " +
                 "bond={setting=${bondCEEffect} best=${describe(selected)} search=$bond " +
-                "np=${describe(np)} default=${describe(default)} threshold=${prefs.platformPrefs.minSimilarity} matched=$bondMatched} " +
+                "np=${describe(np)} default=${describe(default)} threshold=$BOND_EFFECT_SIMILARITY matched=$bondMatched} " +
                 "decision=$decision",
             np, default, decision
         ))

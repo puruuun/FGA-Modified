@@ -28,7 +28,7 @@ enum class ChaldeaRefusal {
     VerifyFailed,
     TooLarge,
 
-    /** `userdata.json` and `.bak` are both unusable. */
+    /** Neither `userdata.json` nor `.bak` was provided. */
     Unreadable,
 }
 
@@ -101,7 +101,9 @@ object ChaldeaUserdataEditor {
         }
         val bakText = bak?.let(::decodeUtf8)
         if (bakText != null && parse(bakText) is Parsed.Ok) return ChaldeaBase.Selected(ChaldeaBaseSource.Bak, bakText)
-        return ChaldeaBase.Refused(ChaldeaRefusal.Unreadable)
+        // Existing files without a valid base fail as InvalidJson so crash recovery treats them as damaged,
+        // leaving Unreadable for real I/O read failures in ChaldeaSyncEngine.
+        return ChaldeaBase.Refused(if (json == null && bak == null) ChaldeaRefusal.Unreadable else ChaldeaRefusal.InvalidJson)
     }
 
     private fun decodeUtf8(bytes: ByteArray): String? = try {

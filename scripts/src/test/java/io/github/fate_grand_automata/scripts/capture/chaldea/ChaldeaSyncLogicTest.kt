@@ -324,14 +324,37 @@ class ChaldeaSyncLogicTest {
     }
 
     @Test fun bothInvalidIsRefused() {
-        val refused = ChaldeaBase.Refused(ChaldeaRefusal.Unreadable)
-        assertEquals(refused, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("{")))
-        assertEquals(refused, ChaldeaUserdataEditor.selectBase(null, null))
-        assertEquals(refused, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("""{"version":3,"users":[]}""")))
+        val broken = ChaldeaBase.Refused(ChaldeaRefusal.InvalidJson)
+        assertEquals(broken, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("{")))
+        assertEquals(broken, ChaldeaUserdataEditor.selectBase(bytes("{"), bytes("""{"version":3,"users":[]}""")))
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.Unreadable), ChaldeaUserdataEditor.selectBase(null, null))
+    }
+
+    @Test fun selectBaseCoversBrokenContentAndMissingFilesWithoutReturningUnreadable() {
+        val broken = ChaldeaBase.Refused(ChaldeaRefusal.InvalidJson)
+        val badUtf8 = byteArrayOf(-1, -2, 0)
+        val wrongVersion = bytes("""{"version":3,"users":[]}""")
+        val empty = ByteArray(0)
+        val cut = bytes(valid.take(40))
+
+        // Main broken (cut, empty, invalid UTF-8) + .bak missing or invalid
+        for (main in listOf(cut, empty, badUtf8)) {
+            assertEquals(broken, ChaldeaUserdataEditor.selectBase(main, null))
+            for (bak in listOf(cut, empty, badUtf8, wrongVersion)) {
+                assertEquals(broken, ChaldeaUserdataEditor.selectBase(main, bak))
+            }
+        }
+
+        // Main missing + .bak invalid
+        for (bak in listOf(cut, empty, badUtf8, wrongVersion)) {
+            assertEquals(broken, ChaldeaUserdataEditor.selectBase(null, bak))
+        }
     }
 
     @Test fun validJsonWithWrongShapeIsNotReplacedByBak() {
         assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.UnknownVersion), ChaldeaUserdataEditor.selectBase(bytes("{}"), bytes(valid)))
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.NotObject), ChaldeaUserdataEditor.selectBase(bytes("[]"), bytes(valid)))
+        assertEquals(ChaldeaBase.Refused(ChaldeaRefusal.MissingUsers), ChaldeaUserdataEditor.selectBase(bytes("""{"version":4}"""), bytes(valid)))
     }
 
     @Test fun oversizedFilesAreRefused() {
