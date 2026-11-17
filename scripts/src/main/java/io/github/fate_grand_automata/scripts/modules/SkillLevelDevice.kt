@@ -66,8 +66,8 @@ class SkillLevelDevice(
      * button show and the dialog is gone, after the animation was seen to leave (or a few taps without seeing it).
      * In skill mode, the label without the re-select button and without the dialog on two polls in a row (under the
      * same condition) means the game deselected the servant because all three skills reached 10.
-     * On each poll, checks [ConnectionRetry.needsToRetry] first in the same snapshot; if shown, taps Retry (up to
-     * [SkillLevelTiming.SKIP_RETRIES] times), skips the skip tap on that poll, and restarts the 20 s poll window.
+     * The connection error dialog is checked first in the same snapshot. Its Retry is tapped up to
+     * [SkillLevelTiming.SKIP_RETRIES] times per confirm, and each retry restarts the 20 s window.
      */
     override fun skipToScreen(onRetry: (Int) -> Unit): SkipResult {
         lastSkipRetries = 0
@@ -76,6 +76,7 @@ class SkillLevelDevice(
         var deselectedPolls = 0
         while (tap < SkillLevelTiming.SKIP_POLLS) {
             tap++
+            loc.skipClick.click()
             SkillLevelTiming.SKIP_INTERVAL.wait()
             val frame = useSameSnapIn {
                 if (connectionRetry.needsToRetry()) {
@@ -96,7 +97,6 @@ class SkillLevelDevice(
                 lastSkipRetries++
                 onRetry(lastSkipRetries)
                 connectionRetry.retry()
-                // Restart the post-confirm poll window and return-state counters so the screen is judged fresh.
                 tap = 0
                 left = false
                 deselectedPolls = 0
@@ -110,7 +110,6 @@ class SkillLevelDevice(
             }
             deselectedPolls = if (frame == SkipFrame.Deselected && counts) deselectedPolls + 1 else 0
             if (deselectedPolls >= SkillLevelTiming.DESELECT_POLLS) return SkipResult.Deselected
-            loc.skipClick.click()
         }
         return SkipResult.Timeout
     }

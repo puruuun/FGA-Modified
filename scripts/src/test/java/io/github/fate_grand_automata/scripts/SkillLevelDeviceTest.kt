@@ -166,14 +166,13 @@ class SkillLevelDeviceTest {
     @Test fun `append mode never reports a deselection`() {
         assertEquals(SkipResult.Timeout, skip("D".repeat(60), SkillLevelMode.Append).first)
     }
-    @Test fun `retry showing once taps retry without tapping skip on that poll then returns back`() {
-        // Polls: 1=O (skip tap), 2=R (retry tap, no skip tap), 3=O (skip tap), 4=O (skip tap), 5=B (back)
+    @Test fun `retry showing once taps retry once and keeps one skip tap per poll`() {
         val outcome = skipWithFrames("OROOB")
         assertEquals(SkipResult.Back, outcome.result)
         assertEquals(1, outcome.retries)
         assertEquals(listOf(1), outcome.retryCallbacks)
         assertEquals(1, outcome.retryTaps)
-        assertEquals(3, outcome.skipTaps)
+        assertEquals(5, outcome.skipTaps)
     }
     @Test fun `retry showing four times returns connection failed with three retry taps`() {
         val outcome = skipWithFrames("OROROROR")
@@ -181,7 +180,7 @@ class SkillLevelDeviceTest {
         assertEquals(3, outcome.retries)
         assertEquals(listOf(1, 2, 3), outcome.retryCallbacks)
         assertEquals(3, outcome.retryTaps)
-        assertEquals(4, outcome.skipTaps)
+        assertEquals(8, outcome.skipTaps)
     }
     @Test fun `retry restarts the twenty second poll count from zero`() {
         val frames = "O".repeat(38) + "R" + "O".repeat(19) + "B"
@@ -191,7 +190,6 @@ class SkillLevelDeviceTest {
         assertEquals(1, outcome.retryTaps)
     }
     @Test fun `retry resets left and deselected counters so the screen is judged fresh`() {
-        // Without reset on R, D before R and D after R would trigger Deselected before B.
         val outcome = skipWithFrames("OODRDDB")
         assertEquals(SkipResult.Back, outcome.result)
         assertEquals(1, outcome.retries)
