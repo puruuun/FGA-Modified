@@ -76,8 +76,8 @@ object SupportNpLayout {
         return Region(left, top, right - left, bottom - top)
     }
 
-    fun suffixRegion(prefix: Region) = Region(
+    fun suffixRegion(prefix: Region, digitWidth: Int = DIGIT_WIDTH) = Region(
         prefix.x - SUFFIX_MARGIN, prefix.y - SUFFIX_MARGIN,
-        prefix.width + DIGIT_WIDTH + SUFFIX_MARGIN, prefix.height + SUFFIX_MARGIN * 2
+        prefix.width + digitWidth + SUFFIX_MARGIN, prefix.height + SUFFIX_MARGIN * 2
     )
 }

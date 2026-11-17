@@ -5885,6 +5885,42 @@
           "np": 5
         }
       ]
+    },
+    {
+      "name": "Jp-np-tablet-20261118-solomon (TB322FC 3040x1904, #495)",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-np-tablet-20261118-solomon.png",
+      "region720": [
+        362,
+        450,
+        460,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 320,
+          "np": 5
+        }
+      ]
+    },
+    {
+      "name": "Jp-np-tablet-20261118-douman (TB322FC 3040x1904, #495)",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-np-tablet-20261118-douman.png",
+      "region720": [
+        362,
+        650,
+        460,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 520,
+          "np": 5
+        }
+      ]
     }
   ]
 }

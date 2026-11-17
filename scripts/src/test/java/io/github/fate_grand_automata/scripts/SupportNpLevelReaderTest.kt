@@ -154,8 +154,8 @@ class SupportNpLevelReaderTest {
             verify(exactly = 1) { f.ocr.detectTextLine(f.captured, it) }
         }
         verify(exactly = 1) { f.captured.close() }
-        verify(exactly = 10) { f.scaledWhite.close() }
-        verify(exactly = 10) { f.scaledGold.close() }
+        verify(exactly = 22) { f.scaledWhite.close() }
+        verify(exactly = 22) { f.scaledGold.close() }
         verify(exactly = 0) { f.white.close() }
         verify(exactly = 0) { f.gold.close() }
     }
@@ -239,8 +239,8 @@ class SupportNpLevelReaderTest {
             listOf(Match(f.prefix.region.copy(x = 1100), 0.78))
         assertThat(f.reader.read(f.bounds)).isNull()
         verify(exactly = 0) { f.ocr.detectTextLine(any(), any()) }
-        verify(exactly = 10) { f.scaledWhite.close() }
-        verify(exactly = 10) { f.scaledGold.close() }
+        verify(exactly = 22) { f.scaledWhite.close() }
+        verify(exactly = 22) { f.scaledGold.close() }
     }
 
     @Test
@@ -316,8 +316,8 @@ class SupportNpLevelReaderTest {
         verify(exactly = 1) { stretched.close() }
         verify(exactly = 1) { f.captured.close() }
         verify(exactly = 1) { widthScaledWhite.close() }
-        verify(exactly = 9) { f.scaledWhite.close() }
-        verify(exactly = 10) { f.scaledGold.close() }
+        verify(exactly = 21) { f.scaledWhite.close() }
+        verify(exactly = 22) { f.scaledGold.close() }
         verify(exactly = 0) { f.white.close() }
         verify(exactly = 0) { f.gold.close() }
         assertThat(f.reader.findLevelPrefix(f.bounds)).isEqualTo(squeezedPrefix.region)
@@ -343,7 +343,142 @@ class SupportNpLevelReaderTest {
         verify(exactly = 1) { stretched.close() }
         verify(exactly = 1) { f.captured.close() }
         verify(exactly = 1) { widthScaledWhite.close() }
-        verify(exactly = 9) { f.scaledWhite.close() }
-        verify(exactly = 10) { f.scaledGold.close() }
+        verify(exactly = 21) { f.scaledWhite.close() }
+        verify(exactly = 22) { f.scaledGold.close() }
+    }
+
+    @Test
+    fun `heavily squeezed prefix at 0_65 width and 0_95 height scales digit width, stretches crop and closes copies`() {
+        val f = Fixture()
+        val widthScale = 0.65
+        val heightScale = 0.95
+        val targetSize = Size((f.gold.width * widthScale).roundToInt(), (f.gold.height * heightScale).roundToInt())
+        val widthScaledGold = mockk<Pattern>(relaxed = true)
+        val stretched = mockk<Pattern>(relaxed = true)
+        val templateResizeSizes = mutableListOf<Size>()
+        val cropResizeSizes = mutableListOf<Size>()
+
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        every { f.gold.resize(any()) } answers {
+            val size = firstArg<Size>()
+            templateResizeSizes += size
+            if (size == targetSize) widthScaledGold else f.scaledGold
+        }
+        val squeezedPrefix = Match(Region(1542, 680, 40, 46), 0.78)
+        every { with(f.api) { f.search.findAll(widthScaledGold, any()) } } returns listOf(squeezedPrefix)
+        every { f.captured.resize(any()) } answers {
+            cropResizeSizes += firstArg<Size>()
+            stretched
+        }
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("", 0)
+        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.5", 91)
+
+        val expectedDigitWidth = (SupportNpLayout.DIGIT_WIDTH * widthScale).roundToInt()
+        val expectedSuffix = SupportNpLayout.suffixRegion(squeezedPrefix.region, expectedDigitWidth)
+
+        assertThat(f.reader.read(f.bounds)).isEqualTo(5)
+        assertThat(templateResizeSizes.contains(targetSize)).isEqualTo(true)
+        verify(exactly = 1) { with(f.api) { expectedSuffix.getPattern("support_np_level") } }
+        verify(exactly = 0) {
+            with(f.api) { SupportNpLayout.suffixRegion(squeezedPrefix.region).getPattern(any()) }
+        }
+        assertThat(cropResizeSizes).isEqualTo(
+            listOf(Size((f.captured.width / widthScale).roundToInt(), f.captured.height))
+        )
+        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 1) { f.captured.close() }
+        verify(exactly = 1) { widthScaledGold.close() }
+        verify(exactly = 21) { f.scaledGold.close() }
+        verify(exactly = 22) { f.scaledWhite.close() }
+        verify(exactly = 0) { f.white.close() }
+        verify(exactly = 0) { f.gold.close() }
+        assertThat(f.reader.findLevelPrefix(f.bounds)).isEqualTo(squeezedPrefix.region)
+    }
+
+    @Test
+    fun `width-only recovery match scales digit width to stay within right overhang`() {
+        val widthScale = 0.65
+        val heightScale = 0.95
+        val scaledDigitWidth = (SupportNpLayout.DIGIT_WIDTH * widthScale).roundToInt()
+        val prefixWidth = 40
+
+        val f = Fixture()
+        val targetSize = Size((f.gold.width * widthScale).roundToInt(), (f.gold.height * heightScale).roundToInt())
+        val widthScaledGold = mockk<Pattern>(relaxed = true)
+        val stretched = mockk<Pattern>(relaxed = true)
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        every { f.gold.resize(any()) } answers {
+            if (firstArg<Size>() == targetSize) widthScaledGold else f.scaledGold
+        }
+        // Unscaled DIGIT_WIDTH would extend past search.right + SUFFIX_RIGHT_OVERHANG, while scaledDigitWidth fits.
+        val maxInsideX = f.search.right + SupportNpLayout.SUFFIX_RIGHT_OVERHANG - (prefixWidth + scaledDigitWidth)
+        val insidePrefix = Match(Region(maxInsideX, 680, prefixWidth, 46), 0.78)
+        every { with(f.api) { f.search.findAll(widthScaledGold, any()) } } returns listOf(insidePrefix)
+        every { f.captured.resize(any()) } returns stretched
+        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.5", 92)
+
+        assertThat(f.reader.read(f.bounds)).isEqualTo(5)
+        verify(exactly = 1) {
+            with(f.api) {
+                SupportNpLayout.suffixRegion(insidePrefix.region, scaledDigitWidth).getPattern("support_np_level")
+            }
+        }
+
+        val outside = Fixture()
+        val outsideScaledGold = mockk<Pattern>(relaxed = true)
+        every { with(outside.api) { outside.search.findAll(outside.white, any()) } } returns emptyList()
+        every { outside.gold.resize(any()) } answers {
+            if (firstArg<Size>() == targetSize) outsideScaledGold else outside.scaledGold
+        }
+        val outsidePrefix = Match(Region(maxInsideX + 1, 680, prefixWidth, 46), 0.78)
+        every { with(outside.api) { outside.search.findAll(outsideScaledGold, any()) } } returns listOf(outsidePrefix)
+        assertThat(outside.reader.read(outside.bounds)).isNull()
+        verify(exactly = 0) { outside.ocr.detectTextLine(any(), any()) }
+    }
+
+    @Test
+    fun `weak or conflicting OCR on a heavily squeezed width-only match is rejected`() {
+        val widthScale = 0.65
+        val heightScale = 0.95
+
+        val weak = Fixture()
+        val targetSize = Size((weak.gold.width * widthScale).roundToInt(), (weak.gold.height * heightScale).roundToInt())
+        val weakScaledGold = mockk<Pattern>(relaxed = true)
+        val weakStretched = mockk<Pattern>(relaxed = true)
+        every { with(weak.api) { weak.search.findAll(weak.white, any()) } } returns emptyList()
+        every { weak.gold.resize(any()) } answers {
+            if (firstArg<Size>() == targetSize) weakScaledGold else weak.scaledGold
+        }
+        every { with(weak.api) { weak.search.findAll(weakScaledGold, any()) } } returns
+            listOf(Match(Region(1542, 680, 40, 46), 0.78))
+        every { weak.captured.resize(any()) } returns weakStretched
+        every { weak.ocr.detectTextLine(weakStretched, any()) } returns OcrText("Lv.5", 84)
+
+        assertThat(weak.reader.read(weak.bounds)).isNull()
+        verify(exactly = 1) { weakStretched.close() }
+        verify(exactly = 1) { weak.captured.close() }
+        verify(exactly = 1) { weakScaledGold.close() }
+
+        val conflicting = Fixture()
+        val conflictingScaledGold = mockk<Pattern>(relaxed = true)
+        val conflictingStretched = mockk<Pattern>(relaxed = true)
+        every { with(conflicting.api) { conflicting.search.findAll(conflicting.white, any()) } } returns emptyList()
+        every { conflicting.gold.resize(any()) } answers {
+            if (firstArg<Size>() == targetSize) conflictingScaledGold else conflicting.scaledGold
+        }
+        every { with(conflicting.api) { conflicting.search.findAll(conflictingScaledGold, any()) } } returns
+            listOf(Match(Region(1542, 680, 40, 46), 0.78))
+        every { conflicting.captured.resize(any()) } returns conflictingStretched
+        every { conflicting.ocr.detectTextLine(conflictingStretched, any()) } returnsMany listOf(
+            OcrText("Lv.5", 92),
+            OcrText("Lv.5", 91),
+            OcrText("Lv.3", 75),
+            OcrText("Lv.5", 93)
+        )
+
+        assertThat(conflicting.reader.read(conflicting.bounds)).isNull()
+        verify(exactly = 1) { conflictingStretched.close() }
+        verify(exactly = 1) { conflicting.captured.close() }
+        verify(exactly = 1) { conflictingScaledGold.close() }
     }
 }

@@ -49,8 +49,10 @@ class SupportNpLevelReader @Inject constructor(
         const val RECOVERY_DARK_THRESHOLD = 80.0 / 255.0
         const val RECOVERY_OCR_SCALE = 6
         val RECOVERY_PREFIX_SCALES = listOf(0.80, 0.85, 0.90, 0.95, 1.00, 1.05, 1.10)
-        // Horizontally squeezed long NP lines keep their font height while shrinking width.
-        val RECOVERY_PREFIX_WIDTH_SCALES = listOf(0.80, 0.85, 0.90, 0.95)
+        // Horizontally squeezed long NP lines keep their line height near 1.00 or 0.95 while
+        // shrinking width down to ~65% (measured on JP Solomon, #495).
+        val RECOVERY_PREFIX_WIDTH_SCALES = listOf(0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
+        val RECOVERY_PREFIX_WIDTH_SCALE_HEIGHTS = listOf(1.00, 0.95)
         val RECOVERY_OCR_OPTIONS = listOf(
             OCR_OPTIONS,
             OCR_OPTIONS.copy(threshold = RECOVERY_BRIGHT_THRESHOLD),
@@ -131,10 +133,12 @@ class SupportNpLevelReader @Inject constructor(
                 }
                 matches.map { RecoveryMatch(it) }
             }
-            val widthOnly = RECOVERY_PREFIX_WIDTH_SCALES.flatMap { scale ->
-                val widthSize = Size((template.width * scale).roundToInt(), template.height)
-                template.resize(widthSize).use {
-                    search.findAll(it, similarity = similarity).map { match -> RecoveryMatch(match, widthScale = scale) }
+            val widthOnly = RECOVERY_PREFIX_WIDTH_SCALES.flatMap { sx ->
+                RECOVERY_PREFIX_WIDTH_SCALE_HEIGHTS.flatMap { sy ->
+                    val widthSize = Size((template.width * sx).roundToInt(), (template.height * sy).roundToInt())
+                    template.resize(widthSize).use {
+                        search.findAll(it, similarity = similarity).map { match -> RecoveryMatch(match, widthScale = sx) }
+                    }
                 }
             }
             uniform + widthOnly
@@ -156,7 +160,9 @@ class SupportNpLevelReader @Inject constructor(
         profiles: List<TextLineOcrOptions>,
         widthScale: Double? = null
     ): List<OcrText>? {
-        val suffix = SupportNpLayout.suffixRegion(prefix.region)
+        val digitWidth = widthScale?.let { (SupportNpLayout.DIGIT_WIDTH * it).roundToInt() }
+            ?: SupportNpLayout.DIGIT_WIDTH
+        val suffix = SupportNpLayout.suffixRegion(prefix.region, digitWidth)
         val allowed = search.copy(width = search.width + SupportNpLayout.SUFFIX_RIGHT_OVERHANG)
         if (suffix !in allowed) return null
         return suffix.getPattern("support_np_level").use { cropped ->
