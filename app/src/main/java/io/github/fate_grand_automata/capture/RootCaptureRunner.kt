@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import timber.log.Timber
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -114,6 +115,16 @@ internal class RootCaptureRunner(
     fun isIdle(): Boolean = !readingWanted.get() && !listenerOpen && activePort == null && !flag.isSet() &&
         cleanupRetryFuture == null
 
+    private inline fun executeSafely(action: String, crossinline block: () -> Unit) {
+        executor.execute {
+            try {
+                block()
+            } catch (t: Throwable) {
+                Timber.w("Capture: root %s failed: %s", action, t.javaClass.simpleName)
+            }
+        }
+    }
+
     /**
      * Requests starting Root capture reading on [preferredPort].
      * Queued onto the single-thread root executor; dropped if a stop/cleanup supersedes it.
@@ -122,7 +133,7 @@ internal class RootCaptureRunner(
         val gen = generation.incrementAndGet()
         lastStartGeneration = gen
         readingWanted.set(true)
-        executor.execute {
+        executeSafely("start") {
             cancelCleanupRetryOnExecutor()
             runStart(preferredPort, gen, skipIfSamePort = false)
         }
@@ -137,7 +148,7 @@ internal class RootCaptureRunner(
         val gen = generation.incrementAndGet()
         lastStartGeneration = gen
         readingWanted.set(true)
-        executor.execute {
+        executeSafely("portChange") {
             cancelCleanupRetryOnExecutor()
             runStart(newPort, gen, skipIfSamePort = true)
         }
@@ -153,7 +164,7 @@ internal class RootCaptureRunner(
         val gen = generation.incrementAndGet()
         readingWanted.set(false)
         lastStopDrainMs = drainMs
-        executor.execute {
+        executeSafely("stop") {
             cancelPeriodicCheckOnExecutor()
             cancelCleanupRetryOnExecutor()
             runStopReadingOnExecutor(gen, drainMs)
@@ -186,7 +197,7 @@ internal class RootCaptureRunner(
             onDone?.invoke()
             return
         }
-        executor.execute {
+        executeSafely("cleanupIfFlagSet") {
             if (!readingWanted.get() && flag.isSet()) {
                 val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
                 if (isCleanupOk(res)) {
@@ -235,7 +246,7 @@ internal class RootCaptureRunner(
      */
     internal fun requestPeriodicCheck() {
         val expectedGen = generation.get()
-        executor.execute {
+        executeSafely("periodicCheck") {
             runPeriodicCheckOnExecutor(expectedGen)
         }
     }

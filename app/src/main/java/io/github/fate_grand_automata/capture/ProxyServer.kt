@@ -129,9 +129,9 @@ class ProxyServer(
         server6 = s6
         isIpv6Listening = s6 != null
         running = true
-        Thread({ acceptLoop(s) }, "capture-accept").apply { isDaemon = true }.start()
+        startAcceptThread(s, "capture-accept")
         if (s6 != null) {
-            Thread({ acceptLoop(s6) }, "capture-accept-v6").apply { isDaemon = true }.start()
+            startAcceptThread(s6, "capture-accept-v6")
         }
         return actualPort
     }
@@ -163,9 +163,18 @@ class ProxyServer(
         pool.shutdownNow()
     }
 
+    // Visible to tests so the accept loop thread can be run against a failing ServerSocket.
+    internal fun startAcceptThread(s: ServerSocket, name: String): Thread =
+        Thread({ acceptLoop(s) }, name).apply {
+            isDaemon = true
+            start()
+        }
+
     private fun acceptLoop(s: ServerSocket) {
         try {
             acceptConnections(s)
+        } catch (t: Throwable) {
+            if (running) Timber.w("Capture: accept loop error %s", t.javaClass.simpleName)
         } finally {
             // H7: an accept loop that ends by an exception must not leave the listener looking usable.
             if (running) stopAccepting()
@@ -589,10 +598,8 @@ class ProxyServer(
             up.soTimeout = soTimeout
             val lastActivity = AtomicLong(System.currentTimeMillis())
 
-            val t = Thread { pump(up.getInputStream(), client.getOutputStream(), client, up, idleMs, lastActivity) }
-            t.isDaemon = true
-            t.start()
-            pump(clientInput, up.getOutputStream(), client, up, idleMs, lastActivity)
+            val t = startPumpThread(up, client, idleMs, lastActivity)
+            pump({ clientInput }, { up.getOutputStream() }, client, up, idleMs, lastActivity)
             t.join(2000)
         } finally {
             live -= up
@@ -600,19 +607,34 @@ class ProxyServer(
         }
     }
 
+    // Visible to tests so the second pump thread can be started directly with closed sockets.
+    internal fun startPumpThread(
+        up: Socket,
+        client: Socket,
+        idleMs: Long,
+        lastActivity: AtomicLong,
+    ): Thread = Thread {
+        pump({ up.getInputStream() }, { client.getOutputStream() }, client, up, idleMs, lastActivity)
+    }.apply {
+        isDaemon = true
+        start()
+    }
+
     private fun pump(
-        from: InputStream,
-        to: OutputStream,
+        from: () -> InputStream,
+        to: () -> OutputStream,
         a: Socket,
         b: Socket,
         idleTimeoutMs: Long,
         lastActivity: AtomicLong,
     ) {
         try {
+            val fromStream = from()
+            val toStream = to()
             val buf = ByteArray(16 * 1024)
             while (true) {
                 val n = try {
-                    from.read(buf)
+                    fromStream.read(buf)
                 } catch (e: SocketTimeoutException) {
                     if (idleTimeoutMs > 0L && System.currentTimeMillis() - lastActivity.get() < idleTimeoutMs) {
                         continue
@@ -623,8 +645,8 @@ class ProxyServer(
                 if (n > 0) {
                     lastActivity.set(System.currentTimeMillis())
                 }
-                to.write(buf, 0, n)
-                to.flush()
+                toStream.write(buf, 0, n)
+                toStream.flush()
             }
         } catch (_: IOException) {
         } catch (e: OutOfMemoryError) {

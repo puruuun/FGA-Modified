@@ -11,12 +11,15 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.channels.ServerSocketChannel
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SNIHostName
@@ -27,6 +30,8 @@ import javax.net.ssl.TrustManagerFactory
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -1685,6 +1690,78 @@ class ProxyServerTest {
             proxy.stop()
             echoServer.close()
             echoThread.join(1000)
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun secondPumpThreadWithClosedSocketsEndsQuietlyWithoutUncaughtException() {
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        val uncaught = AtomicReference<Throwable?>(null)
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> uncaught.compareAndSet(null, e) }
+        val proxy = ProxyServer(emptyMap())
+        val server = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val accepted = CopyOnWriteArrayList<Socket>()
+        try {
+            // 1. Both sockets already closed.
+            val closedUp = Socket().apply { close() }
+            val closedClient = Socket().apply { close() }
+            val tBothClosed = proxy.startPumpThread(closedUp, closedClient, 0L, AtomicLong(0))
+            tBothClosed.join(5000)
+            assertFalse(tBothClosed.isAlive)
+            assertNull(uncaught.get())
+            assertTrue(closedUp.isClosed)
+            assertTrue(closedClient.isClosed)
+
+            // 2. Upstream open, client already closed (matches Socket.getOutputStream crash in #479).
+            val openUp = Socket("127.0.0.1", server.localPort)
+            accepted += server.accept()
+            val closedClient2 = Socket().apply { close() }
+            val tClientClosed = proxy.startPumpThread(openUp, closedClient2, 0L, AtomicLong(0))
+            tClientClosed.join(5000)
+            assertFalse(tClientClosed.isAlive)
+            assertNull(uncaught.get())
+            assertTrue(openUp.isClosed)
+            assertTrue(closedClient2.isClosed)
+
+            // 3. Upstream already closed, client open (matches Socket.getInputStream crash).
+            val closedUp3 = Socket().apply { close() }
+            val openClient = Socket("127.0.0.1", server.localPort)
+            accepted += server.accept()
+            val tUpClosed = proxy.startPumpThread(closedUp3, openClient, 0L, AtomicLong(0))
+            tUpClosed.join(5000)
+            assertFalse(tUpClosed.isAlive)
+            assertNull(uncaught.get())
+            assertTrue(closedUp3.isClosed)
+            assertTrue(openClient.isClosed)
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
+            accepted.forEach { runCatching { it.close() } }
+            runCatching { server.close() }
+            proxy.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun acceptLoopCatchesNonIoExceptionStopsAcceptingAndLeavesNoUncaughtException() {
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        val uncaught = AtomicReference<Throwable?>(null)
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> uncaught.compareAndSet(null, e) }
+        val proxy = ProxyServer(emptyMap())
+        val channel = ServerSocketChannel.open()
+        try {
+            proxy.start(0)
+            assertTrue(proxy.isAccepting)
+            channel.bind(InetSocketAddress("127.0.0.1", 0))
+            channel.configureBlocking(false)
+            val t = proxy.startAcceptThread(channel.socket(), "test-accept-failure")
+            t.join(5000)
+            assertFalse(t.isAlive)
+            assertNull(uncaught.get())
+            assertFalse(proxy.isAccepting)
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
+            runCatching { channel.close() }
+            proxy.stop()
         }
     }
 
