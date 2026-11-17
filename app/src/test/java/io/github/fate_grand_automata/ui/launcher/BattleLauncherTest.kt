@@ -11,6 +11,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -230,5 +232,43 @@ class BattleLauncherTest {
 
         composeRule.onAllNodesWithTag("${LauncherFolderBoxItemTagPrefix}lancer").assertCountEquals(0)
         composeRule.onNode(hasText("Lancer · Alpha") and hasTestTag(headerTag)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `config and settings lists leave room for their scrollbars`() {
+        val (prefsCore, prefs) = setupLauncherPrefs(
+            specs = listOf(
+                ConfigSpec("f1", "Alpha", folder = "Lancer"),
+                ConfigSpec("f2", "Beta", folder = "Lancer"),
+                ConfigSpec("u1", "SoloOne")
+            ),
+            selectedId = "f1"
+        )
+
+        composeRule.setContent {
+            FGATheme {
+                battleLauncher(
+                    prefs = prefs,
+                    modifier = Modifier.fillMaxSize(),
+                    prefsCore = prefsCore
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val configListBounds = composeRule.onNodeWithTag(LauncherConfigListTag).getBoundsInRoot()
+        val headerBounds = composeRule.onNodeWithTag("${LauncherFolderBoxTagPrefix}lancer").getBoundsInRoot()
+        val itemBounds = composeRule.onNode(
+            hasText("Alpha") and hasTestTag("${LauncherFolderBoxItemTagPrefix}lancer")
+        ).getBoundsInRoot()
+        val unfiledBounds = composeRule.onNodeWithText("SoloOne").getBoundsInRoot()
+
+        assertDpClose(configListBounds.right - headerBounds.right, 15.dp)
+        assertDpClose(configListBounds.right - itemBounds.right, 15.dp)
+        assertDpClose(configListBounds.right - unfiledBounds.right, 11.dp)
+
+        val settingsListBounds = composeRule.onNodeWithTag(LauncherSettingsListTag).getBoundsInRoot()
+        val refillPlusBounds = composeRule.onAllNodesWithText("+").onFirst().getBoundsInRoot()
+        assertDpClose(settingsListBounds.right - refillPlusBounds.right, 28.dp)
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -253,12 +254,16 @@ fun battleLauncher(
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
+                    .testTag(LauncherConfigListTag)
                     .scrollbar(
                         state = configListState,
                         hiddenAlpha = 0.3f,
                         horizontal = false,
+                        thickness = LauncherScrollbarThickness,
                         knobColor = MaterialTheme.colorScheme.secondary
                     ),
+                // Reserve the scrollbar track plus a small gap so folder borders and rows stay uncovered
+                contentPadding = PaddingValues(end = LauncherScrollbarThickness + LauncherScrollbarGap),
                 state = configListState
             ) {
                 items(visibleRows, key = { it.key }) { row ->
@@ -327,15 +332,18 @@ fun battleLauncher(
         LazyColumn(
             modifier = Modifier
                 .weight(1.5f)
+                .testTag(LauncherSettingsListTag)
                 .scrollbar(
                     state = mainConfigState,
                     hiddenAlpha = 0.3f,
                     horizontal = false,
+                    thickness = LauncherScrollbarThickness,
                     knobColor = MaterialTheme.colorScheme.secondary,
                     // needs to be adjusted when adding new items
                     fixedKnobRatio = 0.55f
                 )
                 .padding(start = 5.dp),
+            contentPadding = PaddingValues(end = LauncherScrollbarThickness + LauncherScrollbarGap),
             state = mainConfigState
         ) {
             item {
@@ -568,9 +576,13 @@ fun battleLauncher(
     )
 }
 
+internal const val LauncherConfigListTag = "launcher-config-list"
+internal const val LauncherSettingsListTag = "launcher-settings-list"
 internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"
 internal const val LauncherFolderBoxItemTagPrefix = "launcher-folder-box-item:"
 
+private val LauncherScrollbarThickness = 4.dp
+private val LauncherScrollbarGap = 4.dp
 private val LauncherFolderBoxCornerRadius = 12.dp
 private val LauncherFolderBoxBorderWidth = 1.dp
 private val LauncherFolderBoxHorizontalPadding = 4.dp
