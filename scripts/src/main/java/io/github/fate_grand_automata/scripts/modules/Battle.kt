@@ -125,7 +125,7 @@ class Battle @Inject constructor(
 
         var (cards, result) = checkStartHand(clickAttack())
         // Only a reliably recognized, insufficient first-turn hand can trigger this mode.
-        // Recheck both targets before spending a turn or selecting an execution profile.
+        // Recheck all configured targets before spending a turn or selecting an execution profile.
         if (result is CommandStartGate.Result.Wait &&
             execution.shuffleCards == ShuffleCardsEnum.FirstTurnStartCondition &&
             state.stage == 0 && state.turn == 0 && !state.shuffled

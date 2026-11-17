@@ -32,12 +32,15 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.RootProbePolicy
 import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuPermissionRequester
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -47,6 +50,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import timber.log.Timber
@@ -101,6 +105,7 @@ object ChaldeaSyncManager {
     private var collectionDownloadDeferred = false
     @Volatile internal var collectionJob: Job? = null
     @Volatile internal var applyCount: Int = 0
+    internal var settingsDispatcher: CoroutineDispatcher = Dispatchers.Default
     internal val isCollectionDownloadDeferred: Boolean get() = synchronized(lock) { collectionDownloadDeferred }
     @Volatile private var scriptRunningNow = false
     internal val isScriptRunning: Boolean get() = scriptRunningNow
@@ -194,9 +199,15 @@ object ChaldeaSyncManager {
 
     /** Tests only: forgets everything [init] set up so the next test can start from a clean process state. */
     internal fun resetForTest() {
-        settingsJob?.cancel()
-        settingsJob = null
-        settingsScope = null
+        val previousSettingsJob: Job?
+        synchronized(lock) {
+            previousSettingsJob = settingsJob
+            settingsJob = null
+            settingsScope = null
+        }
+        if (previousSettingsJob != null) {
+            runBlocking { previousSettingsJob.cancelAndJoin() }
+        }
         statusJob?.cancel()
         statusJob = null
         scriptJob?.cancel()
@@ -215,6 +226,7 @@ object ChaldeaSyncManager {
         shizukuStateReader = ShizukuStateReader::current
         probeShell = ProcessRootShell()
         probeRunner = defaultProbeRunner
+        settingsDispatcher = Dispatchers.Default
         synchronized(lock) {
             permission.disarm()
             collectionJobRunning = false
@@ -254,7 +266,7 @@ object ChaldeaSyncManager {
         // Undo the runtime "disabled" state an earlier beta left on the provider. No Shizuku API is involved.
         ShizukuProviderReset.resetToDefault(application)
         // The settings flows are plain preference listeners: no timer, thread or Shizuku call.
-        val settings = CoroutineScope(SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        val settings = CoroutineScope(SupervisorJob() + settingsDispatcher)
         settingsScope = settings
         settingsJob = settings.launch {
             combine(
@@ -349,7 +361,8 @@ object ChaldeaSyncManager {
             }
         }
         if (!shouldLaunch) return
-        collectionJob = probeScope.launch(Dispatchers.IO) {
+        // Assign collectionJob before starting so callers waking on a download latch never observe null.
+        val job = probeScope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
             val deferredAgain = synchronized(lock) {
                 if (gen != collectionGen) {
                     true
@@ -396,6 +409,8 @@ object ChaldeaSyncManager {
                 if (resumeAfterEarlyStop) startCollectionDownload(application, fromScriptEnd = true)
             }
         }
+        collectionJob = job
+        job.start()
     }
 
     private fun apply(syncOn: Boolean) {
