@@ -3,7 +3,7 @@ package io.github.fate_grand_automata.scripts.capture.chaldea
 import kotlinx.serialization.json.*
 import java.io.File
 
-/** What FGA persists between runs of the sync: a few hundred bytes in two small JSON files. */
+/** What FGA persists between runs of the sync: state, inflight tracking, and cached game data JSON files. */
 class ChaldeaSyncStore(private val dir: File) {
     /** [backupPath] is the folder holding both original files; [bundleSize]/[bundleSha256] describe their bundle. */
     data class Inflight(

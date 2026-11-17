@@ -1321,7 +1321,7 @@ class ChaldeaSyncSchedulerTest {
     }
 
     @Test fun patchExceedingBinderLimitRefusedBeforePrepareAndSettledWithoutStoringHash() = fx {
-        // Build an oversized patch (> 350,000 chars) via a large items map (~25,000 items * ~15 chars = ~375,000 chars)
+        // Build an oversized patch (> ChaldeaPatch.MAX_JSON_CHARS) using 28,000 items.
         val itemsJson = buildString {
             append('[')
             for (i in 1..28_000) {

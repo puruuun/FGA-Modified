@@ -710,7 +710,7 @@ class SupportScoreReaderTest {
             assertThat(fVeto.reader.read(fVeto.bounds, true, false).classScore).isNull()
         }
 
-        // Two strong plain /16 reads are used as a tail: "+16" is ignored, so 62/16 resolves.
+        // Low-confidence "62/16" reads still supply the tail for ignoring "+16", so templates resolve 62/16.
         val fPlain = Fixture()
         every { fPlain.ocr.detectTextLine(fPlain.crop, any()) } returnsMany listOf(
             OcrText("62/16", 60), OcrText("62/16", 60), OcrText("+16", 92), OcrText("", 0)
@@ -915,9 +915,6 @@ class SupportScoreReaderTest {
         every { f.prepared.grayPixels() } returnsMany (List(4) { scoreInk() } + List(2) { blankInk })
         f.show(Images.SupportGrand16A)
 
-        // With noGlyphDark set by the dark inspect, (compound && clipped) blocks Grand just as pre-#431 did.
-        // Before this fix (when inspect(..., null) ignored !ink.hasGlyphs), noGlyphProfiles stayed empty,
-        // clipped stayed false, and this exact input returned SupportScores(null, 16, Compound) unblocked.
         assertThat(f.reader.read(f.bounds, false, true)).isEqualTo(SupportScores(null, null, SupportScoreDisplay.Compound))
         verify(exactly = 6) { f.ocr.detectTextLine(f.crop, any()) }
         verify(exactly = 6) { f.crop.resize(any()) }

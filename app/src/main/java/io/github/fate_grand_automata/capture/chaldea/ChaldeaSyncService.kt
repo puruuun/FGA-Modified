@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.capture.chaldea
 
+import android.annotation.SuppressLint
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.Os
 import androidx.annotation.Keep
@@ -18,10 +20,158 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncResult
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaUserdataEditor
 import io.github.fate_grand_automata.scripts.capture.chaldea.JavaChaldeaFileAccess
 import java.io.File
+import java.io.InputStream
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.system.exitProcess
+
+private const val COMMAND_TIMEOUT_MS = 10_000L
+private const val READER_JOIN_MS = 1_000L
+
+private fun defaultProcess(cmd: Array<out String>): Process =
+    ProcessBuilder(*cmd).redirectErrorStream(true).start()
+
+private fun remainingNs(deadlineNs: Long): Long =
+    (deadlineNs - System.nanoTime()).coerceAtLeast(0L)
+
+private sealed interface ProcessOutcome<out T> {
+    data class Completed<T>(val exitCode: Int, val value: T) : ProcessOutcome<T>
+    data object TimedOut : ProcessOutcome<Nothing>
+    data object Failed : ProcessOutcome<Nothing>
+}
+
+@SuppressLint("NewApi")
+private fun destroyProcess(p: Process) {
+    // Capture/Chaldea sync targets API 29+, and JVM tests run with SDK_INT == 0.
+    if (Build.VERSION.SDK_INT in 1 until Build.VERSION_CODES.O) {
+        p.destroy()
+    } else {
+        p.destroyForcibly()
+    }
+}
+
+@SuppressLint("NewApi")
+private fun <T> executeBounded(
+    cmd: Array<out String>,
+    timeoutMs: Long,
+    processFactory: (Array<out String>) -> Process,
+    read: (InputStream) -> T,
+): ProcessOutcome<T> {
+    val deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs)
+    val p = try {
+        processFactory(cmd)
+    } catch (_: Exception) {
+        return ProcessOutcome.Failed
+    }
+
+    val done = CountDownLatch(1)
+    val readValue = AtomicReference<T?>()
+    val readError = AtomicReference<Throwable?>()
+
+    val readerThread = Thread({
+        try {
+            p.inputStream.use { stream ->
+                readValue.set(read(stream))
+            }
+        } catch (t: Throwable) {
+            readError.set(t)
+        } finally {
+            done.countDown()
+        }
+    }, "chaldea-shell-io").apply {
+        isDaemon = true
+        start()
+    }
+
+    var completedNormally = false
+    var interrupted = false
+    try {
+        val readFinished = try {
+            done.await(remainingNs(deadlineNs), TimeUnit.NANOSECONDS)
+        } catch (_: InterruptedException) {
+            interrupted = true
+            false
+        }
+        if (!readFinished) return ProcessOutcome.TimedOut
+
+        val err = readError.get()
+        if (err != null) {
+            if (err is Error) throw err
+            return ProcessOutcome.Failed
+        }
+
+        val exited = try {
+            p.waitFor(remainingNs(deadlineNs), TimeUnit.NANOSECONDS)
+        } catch (_: InterruptedException) {
+            interrupted = true
+            false
+        }
+        if (!exited) return ProcessOutcome.TimedOut
+
+        completedNormally = true
+        @Suppress("UNCHECKED_CAST")
+        return ProcessOutcome.Completed(p.exitValue(), readValue.get() as T)
+    } catch (_: Exception) {
+        return ProcessOutcome.Failed
+    } finally {
+        if (!completedNormally) {
+            runCatching { destroyProcess(p) }
+            // Close the raw InputStream rather than any Reader wrapper to avoid Reader.lock deadlocks.
+            runCatching { p.inputStream.close() }
+            readerThread.interrupt()
+        }
+        try {
+            readerThread.join(READER_JOIN_MS)
+        } catch (_: InterruptedException) {
+            interrupted = true
+        }
+        if (interrupted) Thread.currentThread().interrupt()
+    }
+}
+
+internal class Shell(val exit: Int?, val out: String)
+
+internal fun runShell(
+    cmd: Array<out String>,
+    timeoutMs: Long = COMMAND_TIMEOUT_MS,
+    processFactory: (Array<out String>) -> Process = ::defaultProcess,
+): Shell {
+    val buf = StringBuilder()
+    val bufLock = Any()
+    return when (
+        val outcome = executeBounded(cmd, timeoutMs, processFactory) { stream ->
+            stream.reader().use { reader ->
+                val chunk = CharArray(4096)
+                while (true) {
+                    val n = reader.read(chunk)
+                    if (n < 0) break
+                    synchronized(bufLock) { buf.append(chunk, 0, n) }
+                }
+            }
+        }
+    ) {
+        is ProcessOutcome.Completed -> Shell(outcome.exitCode, synchronized(bufLock) { buf.toString() })
+        ProcessOutcome.TimedOut -> Shell(null, synchronized(bufLock) { buf.toString() })
+        ProcessOutcome.Failed -> Shell(null, "")
+    }
+}
+
+internal fun <T> streamShell(
+    cmd: Array<out String>,
+    scan: (Sequence<String>) -> T,
+    timeoutMs: Long = COMMAND_TIMEOUT_MS,
+    processFactory: (Array<out String>) -> Process = ::defaultProcess,
+): T? = when (
+    val outcome = executeBounded(cmd, timeoutMs, processFactory) { stream ->
+        stream.bufferedReader().use { scan(it.lineSequence()) }
+    }
+) {
+    is ProcessOutcome.Completed -> if (outcome.exitCode == 0) outcome.value else null
+    ProcessOutcome.TimedOut, ProcessOutcome.Failed -> null
+}
 
 /**
  * Shizuku UserService: runs in a separate shell (or root) process and is the only code that touches Chaldea's files.
@@ -35,24 +185,15 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
     /** Held by every write sequence and by destroy(), so the process never exits in the middle of a write. */
     private val lock = ReentrantLock()
 
-    private class Shell(val exit: Int?, val out: String)
+    internal var processFactory: (Array<out String>) -> Process = ::defaultProcess
+    internal var timeoutMs: Long = COMMAND_TIMEOUT_MS
 
-    private fun run(vararg cmd: String): Shell = try {
-        val p = ProcessBuilder(*cmd).redirectErrorStream(true).start()
-        val out = p.inputStream.bufferedReader().use { it.readText() }
-        Shell(if (p.waitFor(10, TimeUnit.SECONDS)) p.exitValue() else null, out)
-    } catch (e: Exception) {
-        Shell(null, "")
-    }
+    private fun run(vararg cmd: String): Shell =
+        runShell(cmd, timeoutMs, processFactory)
 
     /** Streams a command's stdout line by line through [scan]; null when the command failed. */
-    private fun <T> stream(scan: (Sequence<String>) -> T, vararg cmd: String): T? = try {
-        val p = ProcessBuilder(*cmd).redirectErrorStream(true).start()
-        val result = p.inputStream.bufferedReader().use { scan(it.lineSequence()) }
-        if (p.waitFor(10, TimeUnit.SECONDS) && p.exitValue() == 0) result else null
-    } catch (e: Exception) {
-        null
-    }
+    private fun <T> stream(scan: (Sequence<String>) -> T, vararg cmd: String): T? =
+        streamShell(cmd, scan, timeoutMs, processFactory)
 
     private fun userDir(pkg: String) = File(ChaldeaPackages.userDir(pkg))
 

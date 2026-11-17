@@ -73,7 +73,7 @@ interface ChaldeaAccountSource {
     /** The current account of each server. */
     fun currentIds(): Map<ChaldeaServer, String>
 
-    /** Cached Atlas collection number mappings for CEs and command codes. */
+    /** Cached Atlas collection number mappings for CEs, command codes, and servants. */
     fun collectionNumbers(): ChaldeaCollectionNumbers = ChaldeaCollectionNumbers.EMPTY
 }
 
