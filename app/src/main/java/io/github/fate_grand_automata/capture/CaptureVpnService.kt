@@ -125,16 +125,9 @@ class CaptureVpnService : VpnService() {
     private fun drainTun(fd: ParcelFileDescriptor) {
         val input = FileInputStream(fd.fileDescriptor)
         val output = FileOutputStream(fd.fileDescriptor)
-        val buf = ByteArray(32 * 1024)
-        try {
-            while (!Thread.currentThread().isInterrupted) {
-                val n = input.read(buf)
-                if (n <= 0) {
-                    Thread.sleep(20)
-                    continue
-                }
-                // Everything but DNS to the fake resolver is dropped.
-                val query = DnsPackets.parse(buf, n) ?: continue
+        runTunDrainLoop(
+            readPacket = { buf -> input.read(buf) },
+            submitDns = { query ->
                 dnsPool.execute {
                     runCatching {
                         val answer = forwardDns(query.payload) ?: return@runCatching
@@ -142,9 +135,16 @@ class CaptureVpnService : VpnService() {
                         synchronized(output) { output.write(reply) }
                     }
                 }
-            }
-        } catch (_: Exception) {
-        }
+            },
+            onFatal = {
+                // Stop on the main thread only if this drain's fd is still active; stopAll mutates service state.
+                Handler(Looper.getMainLooper()).post {
+                    if (tun === fd) {
+                        stopAll(CaptureStopReason.Error)
+                    }
+                }
+            },
+        )
     }
 
     /** Sends one DNS payload through a protected socket to the underlying network's resolvers. */
@@ -244,5 +244,34 @@ class CaptureVpnService : VpnService() {
         @Volatile
         var instance: CaptureVpnService? = null
             private set
+    }
+}
+
+/**
+ * Drains packets from the VPN tun until the fd is closed or an unhandled [Throwable] escapes.
+ * Non-[Exception] throwables (such as [OutOfMemoryError] from the DNS pool) are reported via [onFatal]
+ * so the caller can tear down the VPN cleanly instead of leaving DNS dead.
+ */
+internal fun runTunDrainLoop(
+    readPacket: (ByteArray) -> Int,
+    submitDns: (DnsPackets.Query) -> Unit,
+    onFatal: (Throwable) -> Unit,
+) {
+    val buf = ByteArray(32 * 1024)
+    try {
+        while (!Thread.currentThread().isInterrupted) {
+            val n = readPacket(buf)
+            if (n <= 0) {
+                Thread.sleep(20)
+                continue
+            }
+            // Everything but DNS to the fake resolver is dropped.
+            val query = DnsPackets.parse(buf, n) ?: continue
+            submitDns(query)
+        }
+    } catch (_: Exception) {
+    } catch (t: Throwable) {
+        Timber.w("Capture: VPN drain error %s", t.javaClass.simpleName)
+        onFatal(t)
     }
 }

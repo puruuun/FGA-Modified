@@ -274,6 +274,8 @@ class ProxyServer(
             if (running) Timber.d("Capture: connection error %s", e.javaClass.simpleName)
         } catch (e: OutOfMemoryError) {
             Timber.w("Capture: out of memory in connection handler")
+        } catch (t: Throwable) {
+            Timber.w("Capture: connection handler error %s", t.javaClass.simpleName)
         } finally {
             live -= client
             activeConnections.decrementAndGet()

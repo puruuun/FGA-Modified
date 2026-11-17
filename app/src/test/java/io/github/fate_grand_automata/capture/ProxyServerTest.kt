@@ -11,7 +11,6 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
-import java.nio.channels.ServerSocketChannel
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArrayList
@@ -70,6 +69,58 @@ class ProxyServerTest {
             assertTrue(response.startsWith("HTTP/1.1 501"))
             client2.close()
         } finally {
+            server.stop()
+        }
+    }
+
+    @Test(timeout = 10000)
+    fun nonOomErrorInHandlerClosesClientReleasesSlotAndKeepsAccepting() {
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        val uncaught = AtomicReference<Throwable?>(null)
+        val uncaughtLatch = CountDownLatch(1)
+        Thread.setDefaultUncaughtExceptionHandler { _, e ->
+            uncaught.compareAndSet(null, e)
+            uncaughtLatch.countDown()
+        }
+        val server = ProxyServer(emptyMap(), ProxyOptions(maxConnections = 1))
+        val port = server.start(0)
+        val firstClientSocket = AtomicReference<Socket?>(null)
+        var throwError = true
+        server.handleHookForTesting = { client ->
+            if (throwError) {
+                throwError = false
+                firstClientSocket.set(client)
+                throw StackOverflowError("synthetic error in handle")
+            }
+        }
+
+        try {
+            val client1 = Socket()
+            client1.connect(InetSocketAddress("127.0.0.1", port), 5000)
+            client1.soTimeout = 3000
+            client1.getOutputStream().write("CONNECT dummy:443 HTTP/1.1\r\n\r\n".toByteArray())
+            client1.getOutputStream().flush()
+            assertEquals(-1, client1.getInputStream().read())
+            runCatching { client1.close() }
+
+            assertTrue(server.awaitOpenConnections(2000))
+            assertTrue(firstClientSocket.get()?.isClosed == true)
+
+            val client2 = Socket()
+            client2.connect(InetSocketAddress("127.0.0.1", port), 5000)
+            client2.soTimeout = 3000
+            client2.getOutputStream().write("GET / HTTP/1.1\r\n\r\n".toByteArray())
+            client2.getOutputStream().flush()
+            val buf = ByteArray(1024)
+            val n = client2.getInputStream().read(buf)
+            assertTrue(n > 0)
+            assertTrue(String(buf, 0, n).startsWith("HTTP/1.1 501"))
+            client2.close()
+
+            assertFalse(uncaughtLatch.await(100, TimeUnit.MILLISECONDS))
+            assertNull(uncaught.get())
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
             server.stop()
         }
     }
@@ -1747,20 +1798,22 @@ class ProxyServerTest {
         val uncaught = AtomicReference<Throwable?>(null)
         Thread.setDefaultUncaughtExceptionHandler { _, e -> uncaught.compareAndSet(null, e) }
         val proxy = ProxyServer(emptyMap())
-        val channel = ServerSocketChannel.open()
+        val failingSocket = object : ServerSocket() {
+            override fun accept(): Socket {
+                throw OutOfMemoryError("synthetic OOM in accept")
+            }
+        }
         try {
             proxy.start(0)
             assertTrue(proxy.isAccepting)
-            channel.bind(InetSocketAddress("127.0.0.1", 0))
-            channel.configureBlocking(false)
-            val t = proxy.startAcceptThread(channel.socket(), "test-accept-failure")
+            val t = proxy.startAcceptThread(failingSocket, "test-accept-failure")
             t.join(5000)
             assertFalse(t.isAlive)
             assertNull(uncaught.get())
             assertFalse(proxy.isAccepting)
         } finally {
             Thread.setDefaultUncaughtExceptionHandler(previousHandler)
-            runCatching { channel.close() }
+            runCatching { failingSocket.close() }
             proxy.stop()
         }
     }
