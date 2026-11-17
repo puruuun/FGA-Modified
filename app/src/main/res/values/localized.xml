@@ -1087,11 +1087,23 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_chaldea_freshness">"The file reflects only what was received while log collection ran. After playing without it, restart the game with log collection on to refresh the snapshot."</string>
     <string name="capture_consent_title">"Before using log collection"</string>
     <string name="capture_consent_how_title">"How it works:"</string>
-    <string name="capture_consent_how">"A VPN is created on this device to route only the FGO (KR) app traffic through a proxy on this device. A certificate you install lets it read game server responses and record changes to items and resources. Traffic is not modified, and collected data is not sent off this device."</string>
+    <string name="capture_consent_how">"FGO (KR and JP) app traffic is sent to FGA's proxy on this device, which reads the game server's responses and records changes to items and resources. Traffic is not modified, and collected data is not sent off this device.
+Choose one of three connection modes.
+• FGA VPN: FGA creates a VPN on this device. No other app or root is needed.
+• External proxy app: an app you already use, such as AdGuard, passes FGO traffic to FGA through its proxy setting.
+• Root: root access sends only FGO traffic to FGA. It can run alongside another VPN."</string>
     <string name="capture_consent_needs_title">"What is needed:"</string>
-    <string name="capture_consent_needs">"CA certificate installation and VPN permission. It cannot run alongside another VPN, such as an ad blocker."</string>
+    <string name="capture_consent_needs">"• KR: install the FGA certificate as a CA certificate
+• JP: root access (FGA installs the JP certificate itself)
+• FGA VPN: VPN permission. It cannot run alongside another VPN, such as an ad blocker.
+• External proxy app: enter FGA's address in the proxy app, and exclude FGA from battery optimization
+• Root: root access"</string>
     <string name="capture_consent_risks_title">"Possible problems:"</string>
-    <string name="capture_consent_risks">"• Game updates may stop this feature from working. If you cannot log in, turn off log collection.\n• Some screens, such as event notices, may load slowly at first.\n• Changes made while log collection was off are not reflected until you log in again with it on."</string>
+    <string name="capture_consent_risks">"• Game updates may stop this feature from working. If you cannot log in, turn off log collection.
+• Changes made while log collection was off are not reflected until you log in again with it on.
+• External proxy app: while FGA is not running, FGO cannot connect. Start FGA again, or turn off the proxy in the proxy app.
+• Root: recording starts when FGO opens a new connection after collection is turned on (for example on the title screen).
+• JP: the first time collection starts after the device boots, restart the JP game once."</string>
     <string name="capture_consent_responsibility">"You are responsible for using this feature and for the consequences."</string>
     <string name="capture_consent_agree">"Agree and use"</string>
     <string name="capture_consent_review">"Show notice again"</string>

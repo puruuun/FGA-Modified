@@ -1017,11 +1017,23 @@
     <string name="capture_chaldea_freshness">"파일에는 로그 수집이 실행 중일 때 받은 내용만 반영됩니다. 로그 수집 없이 플레이했다면 로그 수집을 켜고 게임을 다시 시작해 스냅샷을 갱신하세요."</string>
     <string name="capture_consent_title">"로그 수집 사용 전 안내"</string>
     <string name="capture_consent_how_title">"작동 방식:"</string>
-    <string name="capture_consent_how">"이 기기 안에 VPN을 만들어 FGO(KR) 앱의 통신만 기기 안의 프록시로 보냅니다. 직접 설치한 인증서로 게임 서버의 응답을 읽어 아이템과 재화의 변화를 기록합니다. 통신 내용은 바꾸지 않으며, 모은 데이터는 기기 밖으로 보내지 않습니다."</string>
+    <string name="capture_consent_how">"FGO(KR·JP) 앱의 통신을 기기 안의 FGA 프록시로 보내, 게임 서버의 응답에서 아이템과 재화의 변화를 읽어 기록합니다. 통신 내용은 바꾸지 않으며, 모은 데이터는 기기 밖으로 보내지 않습니다.
+연결 방식은 셋 중 하나를 고릅니다.
+• FGA VPN: FGA가 기기 안에 VPN을 만듭니다. 다른 앱이나 루트가 필요 없습니다.
+• 외부 앱 프록시: AdGuard 등 이미 쓰는 앱의 프록시 설정으로 FGO 통신을 FGA에 넘깁니다.
+• 루트: 루트 권한으로 FGO 통신만 FGA로 돌립니다. 다른 VPN과 함께 쓸 수 있습니다."</string>
     <string name="capture_consent_needs_title">"필요한 것:"</string>
-    <string name="capture_consent_needs">"CA 인증서 설치와 VPN 허용. 다른 VPN(광고 차단 앱 등)과 동시에 쓸 수 없습니다."</string>
+    <string name="capture_consent_needs">"• KR: FGA 인증서를 CA 인증서로 설치
+• JP: 루트 권한 (JP 인증서는 FGA가 자동으로 설치합니다)
+• FGA VPN: VPN 허용. 다른 VPN(광고 차단 앱 등)과 동시에 쓸 수 없습니다.
+• 외부 앱 프록시: 프록시 앱에 FGA 주소 입력, FGA 배터리 최적화 제외
+• 루트: 루트 권한"</string>
     <string name="capture_consent_risks_title">"생길 수 있는 문제:"</string>
-    <string name="capture_consent_risks">"• 게임 업데이트로 기능이 동작하지 않을 수 있습니다. 로그인이 안 되면 로그 수집을 끄면 됩니다.\n• 일부 화면(이벤트 안내 등)이 처음에 늦게 뜰 수 있습니다.\n• 로그 수집이 꺼져 있던 동안의 변화는, 켠 상태로 다시 로그인하기 전까지 반영되지 않습니다."</string>
+    <string name="capture_consent_risks">"• 게임 업데이트로 기능이 동작하지 않을 수 있습니다. 로그인이 안 되면 로그 수집을 끄면 됩니다.
+• 로그 수집이 꺼져 있던 동안의 변화는, 켠 상태로 다시 로그인하기 전까지 반영되지 않습니다.
+• 외부 앱 프록시: FGA가 꺼져 있으면 FGO가 접속하지 못합니다. FGA를 다시 켜거나, 프록시 앱의 프록시 설정을 끄세요.
+• 루트: 수집을 켠 뒤 FGO가 새로 연결할 때(타이틀 화면 등)부터 기록됩니다.
+• JP: 기기를 켠 뒤 처음 수집을 시작할 때 JP 게임을 한 번 다시 실행해야 합니다."</string>
     <string name="capture_consent_responsibility">"이 기능의 사용과 그 결과에 대한 책임은 사용자 본인에게 있습니다."</string>
     <string name="capture_consent_agree">"동의하고 사용"</string>
     <string name="capture_consent_review">"안내 다시 보기"</string>
