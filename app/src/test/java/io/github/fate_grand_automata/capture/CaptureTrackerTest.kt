@@ -24,7 +24,11 @@ class CaptureTrackerTest {
             io.github.fate_grand_automata.scripts.capture.ChaldeaExport.body(jp)) as kotlinx.serialization.json.JsonObject
         val cache = body["cache"] as kotlinx.serialization.json.JsonObject
         assertEquals(kotlinx.serialization.json.JsonObject(jp.tables), cache["replaced"])
-        assertEquals(jp.loginResponse, body["response"])
+        assertEquals(2, jp.loginResponse.size)
+        assertEquals(
+            kotlinx.serialization.json.Json.parseToJsonElement("""[{"nid":"login","resCode":"00"}]"""),
+            body["response"],
+        )
         assertFalse(body.containsKey("region"))
     }
 
