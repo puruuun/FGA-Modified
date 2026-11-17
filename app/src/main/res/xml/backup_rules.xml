@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the capture certificates (#457). The rest of capture/, such as the captured accounts, keeps backing up. -->
+<full-backup-content>
+    <exclude domain="file" path="capture/leaf.p12" />
+    <exclude domain="file" path="capture/leaf.p12.bak" />
+    <exclude domain="file" path="capture/leaf.p12.tmp" />
+    <exclude domain="file" path="capture/ca.cer" />
+    <exclude domain="file" path="capture/ca.cer.bak" />
+    <exclude domain="file" path="capture/ca.cer.tmp" />
+    <exclude domain="file" path="capture/leaf-jp.p12" />
+    <exclude domain="file" path="capture/ca-jp.cer" />
+</full-backup-content>
