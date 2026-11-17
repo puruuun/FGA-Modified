@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.time.LocalDateTime
 
 /**
  * Serializes exports and deletion from both screens. Files live in `<FGA folder>/capture/`.
@@ -40,7 +39,7 @@ object ChaldeaExportStore {
                     out.bufferedWriter(Charsets.UTF_8).use { ChaldeaExport.write(state, it) }
                 }.toByteArray()
                 val destination = folder ?: CaptureFolders.open(context)
-                when (val result = saveExport(destination, id, bytes, LocalDateTime.now())) {
+                when (val result = saveExport(destination, id, bytes, System.currentTimeMillis())) {
                     is Result.Written -> {
                         val removed = runCatching { PickedChaldeaFiles(context).delete(id, keep = destination?.documentUri(result.name)) }.getOrDefault(false)
                         result.copy(cleanupFailed = result.cleanupFailed || !removed)
@@ -54,9 +53,9 @@ object ChaldeaExportStore {
     }
 
     /** Three-layer save, then keeps only the newest export per account. */
-    internal fun saveExport(folder: CaptureFolder?, id: String, bytes: ByteArray, now: LocalDateTime): Result =
+    internal fun saveExport(folder: CaptureFolder?, id: String, bytes: ByteArray, nowMillis: Long): Result =
         when (val outcome = CaptureFileSaver.save(
-            folder, ChaldeaFiles.name(id, now), ChaldeaFiles.fallbackName(id, now), MIME, bytes,
+            folder, ChaldeaFiles.name(id, nowMillis), ChaldeaFiles.fallbackName(id, nowMillis), MIME, bytes,
         )) {
             is SaveOutcome.NeedsDialog -> Result.NeedsSaveDialog(outcome.name, outcome.bytes, id)
             is SaveOutcome.Saved -> {

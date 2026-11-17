@@ -11,8 +11,8 @@ import androidx.documentfile.provider.DocumentFile
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import java.io.OutputStream
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 /** What the capture exports need from `<FGA folder>/capture/`. Kept small so tests can fake failures. */
@@ -82,14 +82,13 @@ sealed interface SaveOutcome {
 }
 
 object CaptureFileSaver {
-    private val stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm", Locale.ROOT)
-
     /** `fga-capture-ca.crt` becomes `fga-capture-ca-20261111-0234.crt`. */
-    fun timestamped(name: String, time: LocalDateTime): String {
+    fun timestamped(name: String, timeMillis: Long): String {
         val dot = name.lastIndexOf('.')
         val base = if (dot > 0) name.substring(0, dot) else name
         val ext = if (dot > 0) name.substring(dot) else ""
-        return "$base-${time.format(stamp)}$ext"
+        val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(Date(timeMillis))
+        return "$base-$stamp$ext"
     }
 
     /**

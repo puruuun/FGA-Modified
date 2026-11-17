@@ -389,4 +389,22 @@ class CaptureOutsideSessionTest {
         response(jpLogin, outsideLogin("fictionalJp2"))
         assertEquals(listOf("fictionalJp", "fictionalA"), logs.entries.map { it.accountId })
     }
+
+    @Test fun corruptOutsideLogIsPreservedAndAtomicReplaceOverwritesExistingFile() {
+        val logDir = File(directory, "outside-store-replace").apply { mkdirs() }
+        val logFile = File(logDir, "outside-log.json").apply { writeText("{corrupt") }
+        val store = OutsideLogStore(logDir)
+        store.load()
+        assertTrue(store.entries.isEmpty())
+        assertFalse(logFile.exists())
+        assertTrue(logDir.listFiles().orEmpty().any { it.name.startsWith("outside-log.corrupt-") })
+
+        val period = io.github.fate_grand_automata.scripts.capture.OutsidePeriod("acc1", 10L)
+            .add(ChangeSource.of("item/recover"), AccountDelta(items = mapOf(100L to -1L)), 11L)
+        store.add(OutsideLogEntry("e1", "acc1", "Master", 10_000L, 11_000L, period))
+        store.add(OutsideLogEntry("e2", "acc1", "Master", 12_000L, 13_000L, period))
+        assertEquals(listOf("e2", "e1"), OutsideLogStore(logDir).apply { load() }.entries.map { it.id })
+        store.clear()
+        assertTrue(OutsideLogStore(logDir).apply { load() }.entries.isEmpty())
+    }
 }

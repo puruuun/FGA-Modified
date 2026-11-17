@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.capture.chaldea
 
-import android.annotation.SuppressLint
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.Os
@@ -22,7 +21,10 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.JavaChaldeaFileAcce
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -43,17 +45,38 @@ private sealed interface ProcessOutcome<out T> {
     data object Failed : ProcessOutcome<Nothing>
 }
 
-@SuppressLint("NewApi")
-private fun destroyProcess(p: Process) {
-    // Capture/Chaldea sync targets API 29+, and JVM tests run with SDK_INT == 0.
-    if (Build.VERSION.SDK_INT in 1 until Build.VERSION_CODES.O) {
-        p.destroy()
-    } else {
+internal fun destroyProcessCompat(p: Process) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         p.destroyForcibly()
+    } else {
+        p.destroy()
     }
 }
 
-@SuppressLint("NewApi")
+internal fun awaitProcessExit(p: Process, timeoutNs: Long): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        return p.waitFor(timeoutNs, TimeUnit.NANOSECONDS)
+    }
+    try {
+        p.exitValue()
+        return true
+    } catch (_: IllegalThreadStateException) {
+    }
+    val waiter = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "fga-process-wait").apply { isDaemon = true }
+    }
+    return try {
+        waiter.submit { p.waitFor() }.get(timeoutNs, TimeUnit.NANOSECONDS)
+        true
+    } catch (_: TimeoutException) {
+        false
+    } catch (_: ExecutionException) {
+        false
+    } finally {
+        waiter.shutdownNow()
+    }
+}
+
 private fun <T> executeBounded(
     cmd: Array<out String>,
     timeoutMs: Long,
@@ -104,7 +127,7 @@ private fun <T> executeBounded(
         }
 
         val exited = try {
-            p.waitFor(remainingNs(deadlineNs), TimeUnit.NANOSECONDS)
+            awaitProcessExit(p, remainingNs(deadlineNs))
         } catch (_: InterruptedException) {
             interrupted = true
             false
@@ -118,7 +141,7 @@ private fun <T> executeBounded(
         return ProcessOutcome.Failed
     } finally {
         if (!completedNormally) {
-            runCatching { destroyProcess(p) }
+            runCatching { destroyProcessCompat(p) }
             // Close the raw InputStream rather than any Reader wrapper to avoid Reader.lock deadlocks.
             runCatching { p.inputStream.close() }
             readerThread.interrupt()

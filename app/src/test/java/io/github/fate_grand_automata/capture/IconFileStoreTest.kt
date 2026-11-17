@@ -64,4 +64,13 @@ class IconFileStoreTest {
         assertTrue(files.all { it != null && it.isFile })
         assertEquals(setOf("1.png", "2.png"), files.map { it!!.name }.toSet())
     }
+
+    @Test fun overwritesExistingEmptyIconFile() = runBlocking {
+        val target = File(directory, "1.png").apply { writeBytes(byteArrayOf()) }
+        val store = IconFileStore(directory, { byteArrayOf(4, 5, 6) })
+        val resolved = store.resolve(1, url)
+        assertEquals(target, resolved)
+        assertContentEquals(byteArrayOf(4, 5, 6), target.readBytes())
+        assertFalse(File(directory, "1.tmp").exists())
+    }
 }

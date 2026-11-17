@@ -26,7 +26,8 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
-import java.time.LocalDateTime
+import java.util.Calendar
+import java.util.GregorianCalendar
 
 /** In-memory capture folder whose failures can be switched on one by one. */
 private class FakeFolder : CaptureFolder {
@@ -68,7 +69,7 @@ class CaptureFolderExportTest {
     private val compose = createComposeRule()
     @get:Rule val rules = io.github.fate_grand_automata.ui.screenshotRules(compose)
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
-    private val now = LocalDateTime.of(2026, 11, 11, 2, 34, 5)
+    private val now = GregorianCalendar(2026, Calendar.NOVEMBER, 11, 2, 34, 5).timeInMillis
 
     private fun leaf() = File(CertStore.directory(context), "leaf.p12")
     private fun clear() {
@@ -234,7 +235,7 @@ class CaptureFolderExportTest {
         assertArrayEquals(byteArrayOf(1), blocked.files["chaldea-account-7001-20261111-0234-05.json"])
         assertEquals(2, blocked.names().size)
         blocked.failWrite = true
-        assertTrue(ChaldeaExportStore.saveExport(blocked, "7001", byteArrayOf(2), now.plusSeconds(1)) is ChaldeaExportStore.Result.NeedsSaveDialog)
+        assertTrue(ChaldeaExportStore.saveExport(blocked, "7001", byteArrayOf(2), now + 1_000L) is ChaldeaExportStore.Result.NeedsSaveDialog)
         assertArrayEquals(byteArrayOf(0), blocked.files["chaldea-account-7001-20261111-0234.json"])
 
         val none = ChaldeaExportStore.saveExport(null, "7001", byteArrayOf(1), now)

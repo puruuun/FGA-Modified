@@ -1,10 +1,8 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption.ATOMIC_MOVE
-import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 /** Two-file transaction. Validated backups survive both renames and any interrupted recovery. */
 internal class CertificatePairFiles(
@@ -14,8 +12,7 @@ internal class CertificatePairFiles(
         FileOutputStream(file).use { it.write(bytes); it.fd.sync() }
     },
     private val rename: (File, File) -> Unit = { from, to ->
-        Files.move(from.toPath(), to.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
-        Unit
+        replaceFile(from, to)
     },
 ) {
     private fun file(name: String) = File(directory, name)

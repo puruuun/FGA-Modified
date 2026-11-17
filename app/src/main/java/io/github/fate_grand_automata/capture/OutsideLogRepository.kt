@@ -1,14 +1,13 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
+import io.github.fate_grand_automata.scripts.util.replaceFile
 import io.github.fate_grand_automata.prefs.core.LogRetentionPrefsCore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.UUID
 import timber.log.Timber
 
@@ -64,7 +63,7 @@ internal class OutsideLogStore(
             json.decodeFromString<List<OutsideLogEntry>>(file.readText()).sortedByDescending { it.endedAt }.take(retention())
         } catch (e: kotlinx.serialization.SerializationException) {
             // Preserve unreadable history before starting a new file; I/O failures remain retryable.
-            Files.move(file.toPath(), File(directory, "outside-log.corrupt-${UUID.randomUUID()}.json").toPath())
+            replaceFile(file, File(directory, "outside-log.corrupt-${UUID.randomUUID()}.json"))
             emptyList()
         }
         loaded = true
@@ -95,7 +94,7 @@ internal fun writeCaptureFile(file: File, text: String) {
         it.write(text.toByteArray(Charsets.UTF_8))
         it.fd.sync()
     }
-    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    replaceFile(temp, file)
 }
 
 /** Same atomic replace as [writeCaptureFile], streamed so a large file never exists as a String (issue #258). */
@@ -106,5 +105,5 @@ internal fun writeCaptureStream(file: File, write: (java.io.OutputStream) -> Uni
         write(it)
         it.flush()
     }
-    Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    replaceFile(temp, file)
 }
