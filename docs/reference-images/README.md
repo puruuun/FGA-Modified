@@ -10,7 +10,7 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 
 | File | Suite | Labels from | Cases |
 |---|---|---|---|
-| `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), the device-side full screens (20), `Jp/wide-2340/` 0013 (2340x1080 score crops 2, full frame 1) | 191 |
+| `cases/support.json` | support | `Jp/support-scores/manifest.json` (101), `Kr/support-scores/manifest.json` (26), `Kr/support-np-20261017/manifest.json` (38), `support-np-*.png` extras (3), full screens (26), `Jp/wide-2340/` 0013 (3), `support-score-holdout` (27), `Jp/support-scores-live` (24), #23 Grand CE (1), #495 Logress NP crop (1) | 250 |
 | `cases/bond.json` | bond | `tools/bond-image-cases.json` (20) | 20 |
 | `cases/questItems.json` | questItems | `quest-items-crops.json` (38 crops, 13 screens) | 13 |
 | `cases/noblePhantasm.json` | noblePhantasm | `Jp/np-20261018/`, `Jp/np-20261018-r3/` (owner JP screens, names/comments masked; existing 3x3 and NP-only cases, eight normal rows, Grand/normal Olga cross-layout matches and production maker crop checks) | 18 |

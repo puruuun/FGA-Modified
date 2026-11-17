@@ -12,9 +12,11 @@ import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
+import io.github.lib_automata.Size
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlin.math.roundToInt
 import kotlin.test.Test
 
 class SupportNpLevelReaderTest {
@@ -134,6 +136,8 @@ class SupportNpLevelReaderTest {
         verify(exactly = 1) { f.ocr.detectTextLine(any(), any()) }
         verify(exactly = 0) { f.white.resize(any()) }
         verify(exactly = 0) { f.gold.resize(any()) }
+        verify(exactly = 0) { f.captured.resize(any()) }
+        verify(exactly = 1) { f.captured.close() }
         verify(exactly = 0) { f.white.close() }
         verify(exactly = 0) { f.gold.close() }
     }
@@ -150,8 +154,8 @@ class SupportNpLevelReaderTest {
             verify(exactly = 1) { f.ocr.detectTextLine(f.captured, it) }
         }
         verify(exactly = 1) { f.captured.close() }
-        verify(exactly = 6) { f.scaledWhite.close() }
-        verify(exactly = 6) { f.scaledGold.close() }
+        verify(exactly = 10) { f.scaledWhite.close() }
+        verify(exactly = 10) { f.scaledGold.close() }
         verify(exactly = 0) { f.white.close() }
         verify(exactly = 0) { f.gold.close() }
     }
@@ -235,8 +239,8 @@ class SupportNpLevelReaderTest {
             listOf(Match(f.prefix.region.copy(x = 1100), 0.78))
         assertThat(f.reader.read(f.bounds)).isNull()
         verify(exactly = 0) { f.ocr.detectTextLine(any(), any()) }
-        verify(exactly = 6) { f.scaledWhite.close() }
-        verify(exactly = 6) { f.scaledGold.close() }
+        verify(exactly = 10) { f.scaledWhite.close() }
+        verify(exactly = 10) { f.scaledGold.close() }
     }
 
     @Test
@@ -256,5 +260,90 @@ class SupportNpLevelReaderTest {
             IllegalStateException("recovery OCR failed")
         kotlin.test.assertFailsWith<IllegalStateException> { f.reader.read(f.bounds) }
         verify(exactly = 2) { f.captured.close() }
+    }
+
+    @Test
+    fun `recovery suffix within right overhang is read while 1px past overhang is rejected without OCR`() {
+        val f = Fixture()
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        val prefixWidth = 58
+        val maxInsideX = f.search.right + SupportNpLayout.SUFFIX_RIGHT_OVERHANG -
+            (prefixWidth + SupportNpLayout.DIGIT_WIDTH)
+        val insidePrefix = Match(Region(maxInsideX, 680, prefixWidth, 46), 0.78)
+        every { with(f.api) { f.search.findAll(f.scaledWhite, any()) } } returns listOf(insidePrefix)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.5", 92)
+        assertThat(f.reader.read(f.bounds)).isEqualTo(5)
+        verify(exactly = 1) {
+            with(f.api) { SupportNpLayout.suffixRegion(insidePrefix.region).getPattern("support_np_level") }
+        }
+
+        val outside = Fixture()
+        every { with(outside.api) { outside.search.findAll(outside.white, any()) } } returns emptyList()
+        val outsidePrefix = Match(Region(maxInsideX + 1, 680, prefixWidth, 46), 0.78)
+        every { with(outside.api) { outside.search.findAll(outside.scaledWhite, any()) } } returns listOf(outsidePrefix)
+        assertThat(outside.reader.read(outside.bounds)).isNull()
+        verify(exactly = 0) { outside.ocr.detectTextLine(any(), any()) }
+    }
+
+    @Test
+    fun `width-only recovery match stretches OCR crop by inverse scale and closes all resized copies`() {
+        val f = Fixture()
+        val widthScale = 0.85
+        val widthOnlySize = Size((f.white.width * widthScale).roundToInt(), f.white.height)
+        val widthScaledWhite = mockk<Pattern>(relaxed = true)
+        val stretched = mockk<Pattern>(relaxed = true)
+        val templateResizeSizes = mutableListOf<Size>()
+        val cropResizeSizes = mutableListOf<Size>()
+
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        every { f.white.resize(any()) } answers {
+            val size = firstArg<Size>()
+            templateResizeSizes += size
+            if (size == widthOnlySize) widthScaledWhite else f.scaledWhite
+        }
+        val squeezedPrefix = Match(Region(1300, 680, 52, 48), 0.88)
+        every { with(f.api) { f.search.findAll(widthScaledWhite, any()) } } returns listOf(squeezedPrefix)
+        every { f.captured.resize(any()) } answers {
+            cropResizeSizes += firstArg<Size>()
+            stretched
+        }
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("", 0)
+        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.4", 91)
+
+        assertThat(f.reader.read(f.bounds)).isEqualTo(4)
+        assertThat(templateResizeSizes.contains(widthOnlySize)).isEqualTo(true)
+        assertThat(cropResizeSizes).isEqualTo(listOf(Size((f.captured.width / widthScale).roundToInt(), f.captured.height)))
+        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 1) { f.captured.close() }
+        verify(exactly = 1) { widthScaledWhite.close() }
+        verify(exactly = 9) { f.scaledWhite.close() }
+        verify(exactly = 10) { f.scaledGold.close() }
+        verify(exactly = 0) { f.white.close() }
+        verify(exactly = 0) { f.gold.close() }
+        assertThat(f.reader.findLevelPrefix(f.bounds)).isEqualTo(squeezedPrefix.region)
+    }
+
+    @Test
+    fun `weak OCR on a width-only recovery match is rejected`() {
+        val f = Fixture()
+        val widthOnlySize = Size((f.white.width * 0.90).roundToInt(), f.white.height)
+        val widthScaledWhite = mockk<Pattern>(relaxed = true)
+        val stretched = mockk<Pattern>(relaxed = true)
+
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        every { f.white.resize(any()) } answers {
+            if (firstArg<Size>() == widthOnlySize) widthScaledWhite else f.scaledWhite
+        }
+        every { with(f.api) { f.search.findAll(widthScaledWhite, any()) } } returns
+            listOf(Match(Region(1300, 680, 56, 48), 0.87))
+        every { f.captured.resize(any()) } returns stretched
+        every { f.ocr.detectTextLine(stretched, any()) } returns OcrText("Lv.4", 84)
+
+        assertThat(f.reader.read(f.bounds)).isNull()
+        verify(exactly = 1) { stretched.close() }
+        verify(exactly = 1) { f.captured.close() }
+        verify(exactly = 1) { widthScaledWhite.close() }
+        verify(exactly = 9) { f.scaledWhite.close() }
+        verify(exactly = 10) { f.scaledGold.close() }
     }
 }

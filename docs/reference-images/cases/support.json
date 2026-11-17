@@ -5867,6 +5867,24 @@
           }
         }
       ]
+    },
+    {
+      "name": "Jp-np-tablet-20261117-logress-row0 (TB322FC 3040x1904, #495)",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/support-np-tablet-20261117-logress.png",
+      "region720": [
+        362,
+        309,
+        460,
+        52
+      ],
+      "rows": [
+        {
+          "rowY720": 179,
+          "np": 5
+        }
+      ]
     }
   ]
 }

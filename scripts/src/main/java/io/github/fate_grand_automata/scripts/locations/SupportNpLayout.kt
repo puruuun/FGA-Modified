@@ -10,6 +10,9 @@ object SupportNpLayout {
     const val NAME_HEIGHT = 104
     const val SUFFIX_MARGIN = 4
     const val DIGIT_WIDTH = 38
+    // Measured on JP Lord Logress (#495): squeezed NP names can push suffix right to 1622 (digit ~1608)
+    // past nameRegion right 1620, while the panel interior extends to ~1630 (border starts at 1632) at 1440p.
+    const val SUFFIX_RIGHT_OVERHANG = 12
 
     // Noble Phantasm name band (0006 D-1). Grand rows push the NP panel right by the CE column,
     // so the band starts left of the normal-row card icon and ends where the name band ends.

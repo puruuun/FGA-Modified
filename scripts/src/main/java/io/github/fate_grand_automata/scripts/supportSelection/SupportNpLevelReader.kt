@@ -11,11 +11,13 @@ import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
+import io.github.lib_automata.Size
 import io.github.lib_automata.TextLineOcrOptions
 import io.github.lib_automata.dagger.ScriptScope
 import io.github.lib_automata.size
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @ScriptScope
 class SupportNpLevelReader @Inject constructor(
@@ -47,6 +49,8 @@ class SupportNpLevelReader @Inject constructor(
         const val RECOVERY_DARK_THRESHOLD = 80.0 / 255.0
         const val RECOVERY_OCR_SCALE = 6
         val RECOVERY_PREFIX_SCALES = listOf(0.80, 0.85, 0.90, 0.95, 1.00, 1.05, 1.10)
+        // Horizontally squeezed long NP lines keep their font height while shrinking width.
+        val RECOVERY_PREFIX_WIDTH_SCALES = listOf(0.80, 0.85, 0.90, 0.95)
         val RECOVERY_OCR_OPTIONS = listOf(
             OCR_OPTIONS,
             OCR_OPTIONS.copy(threshold = RECOVERY_BRIGHT_THRESHOLD),
@@ -82,10 +86,11 @@ class SupportNpLevelReader @Inject constructor(
             parse(results.single())?.let { return it }
         }
 
-        val recoveryMatches = recoveryMatches(search, prefixes)
-        val recoveryBest = recoveryMatches.maxByOrNull { it.score } ?: return null
-        if (ambiguous(recoveryMatches, recoveryBest)) return null
-        return readSuffix(search, recoveryBest, RECOVERY_OCR_OPTIONS)?.let(::recoveryLevel)
+        val recovery = recoveryMatches(search, prefixes)
+        val recoveryBest = recovery.maxByOrNull { it.match.score } ?: return null
+        if (ambiguous(recovery.map { it.match }, recoveryBest.match)) return null
+        return readSuffix(search, recoveryBest.match, RECOVERY_OCR_OPTIONS, recoveryBest.widthScale)
+            ?.let(::recoveryLevel)
     }
 
     /**
@@ -98,9 +103,9 @@ class SupportNpLevelReader @Inject constructor(
         val matches = prefixes.flatMap { search.findAll(it, similarity = addedTuning.support.similarity(PREFIX_SIMILARITY)) }
         val best = matches.maxByOrNull { it.score }
         if (best != null) return if (ambiguous(matches, best)) null else best.region
-        val recoveryMatches = recoveryMatches(search, prefixes)
-        val recoveryBest = recoveryMatches.maxByOrNull { it.score } ?: return null
-        return if (ambiguous(recoveryMatches, recoveryBest)) null else recoveryBest.region
+        val recovery = recoveryMatches(search, prefixes)
+        val recoveryBest = recovery.maxByOrNull { it.match.score } ?: return null
+        return if (ambiguous(recovery.map { it.match }, recoveryBest.match)) null else recoveryBest.match.region
     }
 
     private fun prefixTemplates(): List<Pattern> {
@@ -111,17 +116,28 @@ class SupportNpLevelReader @Inject constructor(
         }
     }
 
-    private fun recoveryMatches(search: Region, prefixes: List<Pattern>): List<Match> {
+    private data class RecoveryMatch(val match: Match, val widthScale: Double? = null)
+
+    private fun recoveryMatches(search: Region, prefixes: List<Pattern>): List<RecoveryMatch> {
         val recoverySimilarity = if (prefs.gameServer is GameServer.Kr)
             KR_RECOVERY_PREFIX_SIMILARITY else RECOVERY_PREFIX_SIMILARITY
+        val similarity = addedTuning.support.similarity(recoverySimilarity)
         return prefixes.flatMap { template ->
-            RECOVERY_PREFIX_SCALES.flatMap { scale ->
-                if (scale == 1.0) search.findAll(template, similarity = addedTuning.support.similarity(recoverySimilarity))
+            val uniform = RECOVERY_PREFIX_SCALES.flatMap { scale ->
+                val matches = if (scale == 1.0) search.findAll(template, similarity = similarity)
                 else template.resize(template.size * scale).use {
                     // Image-loader templates are borrowed; only resized copies belong to this reader.
-                    search.findAll(it, similarity = addedTuning.support.similarity(recoverySimilarity))
+                    search.findAll(it, similarity = similarity)
+                }
+                matches.map { RecoveryMatch(it) }
+            }
+            val widthOnly = RECOVERY_PREFIX_WIDTH_SCALES.flatMap { scale ->
+                val widthSize = Size((template.width * scale).roundToInt(), template.height)
+                template.resize(widthSize).use {
+                    search.findAll(it, similarity = similarity).map { match -> RecoveryMatch(match, widthScale = scale) }
                 }
             }
+            uniform + widthOnly
         }
     }
 
@@ -134,14 +150,23 @@ class SupportNpLevelReader @Inject constructor(
         }
     }
 
-    private fun readSuffix(search: Region, prefix: Match, profiles: List<TextLineOcrOptions>): List<OcrText>? {
+    private fun readSuffix(
+        search: Region,
+        prefix: Match,
+        profiles: List<TextLineOcrOptions>,
+        widthScale: Double? = null
+    ): List<OcrText>? {
         val suffix = SupportNpLayout.suffixRegion(prefix.region)
-        if (suffix !in search) return null
-        return suffix.getPattern("support_np_level").use {
+        val allowed = search.copy(width = search.width + SupportNpLayout.SUFFIX_RIGHT_OVERHANG)
+        if (suffix !in allowed) return null
+        return suffix.getPattern("support_np_level").use { cropped ->
             // Script coordinates are 1440p; matching patterns are 720p. A screen-edge crop
             // must not silently remove part of the number after the prefix has matched.
-            if (it.width * 2 < suffix.width - 1 || it.height * 2 < suffix.height - 1) null
-            else profiles.map { options -> ocr.detectTextLine(it, options) }
+            if (cropped.width * 2 < suffix.width - 1 || cropped.height * 2 < suffix.height - 1) null
+            else if (widthScale == null) profiles.map { options -> ocr.detectTextLine(cropped, options) }
+            else cropped.resize(Size((cropped.width / widthScale).roundToInt(), cropped.height)).use { stretched ->
+                profiles.map { options -> ocr.detectTextLine(stretched, options) }
+            }
         }
     }
 }
