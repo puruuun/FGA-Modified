@@ -218,12 +218,37 @@ class RootRedirectScriptsTest {
     }
 
     @Test
+    fun precheckRunsReadOnlyNatAndOwnerChecksWithoutModifyingRules() {
+        val mutatingFlags = listOf("-A", "-I", "-D", "-N", "-F", "-X")
+        val scripts = listOf(
+            "IPT" to RootRedirectScripts.precheckIpv4(),
+            "IP6T" to RootRedirectScripts.precheckIpv6(),
+        )
+        for ((toolVar, script) in scripts) {
+            val natCheckIdx = script.indexOf("\"\$$toolVar\" -w 3 -t nat -S OUTPUT")
+            val ownerCheckIdx = script.indexOf(
+                "\"\$$toolVar\" -w 3 -t nat -C OUTPUT -p tcp --dport 443 -m owner --uid-owner 0 -j RETURN"
+            )
+            assertTrue(natCheckIdx >= 0, "nat OUTPUT check missing for $toolVar")
+            assertTrue(ownerCheckIdx > natCheckIdx, "owner -C check must follow nat check for $toolVar")
+            assertTrue(script.contains("echo ${RootRedirectScripts.MARKER_FAIL_STEP_PREFIX}1"))
+            assertTrue(script.contains("echo ${RootRedirectScripts.MARKER_FAIL_OWNER}"))
+            assertTrue(script.contains("echo ${RootRedirectScripts.MARKER_APPLY_OK}"))
+            assertTrue(script.contains("[ \"\$rc\" -eq 0 ] || [ \"\$rc\" -eq 1 ]"))
+            for (flag in mutatingFlags) {
+                assertFalse(script.contains(flag), "Precheck for $toolVar must not contain $flag")
+            }
+        }
+    }
+
+    @Test
     fun allProtocolMarkersMatchProcessRootShellFilter() {
         val markers = listOf(
             RootRedirectScripts.MARKER_APPLY_OK,
             RootRedirectScripts.MARKER_CLEANUP_OK,
             RootRedirectScripts.MARKER_WATCHDOG_OK,
             RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE,
+            RootRedirectScripts.MARKER_FAIL_OWNER,
             "${RootRedirectScripts.MARKER_FAIL_STEP_PREFIX}1",
             "${RootRedirectScripts.MARKER_FAIL_STEP_PREFIX}6",
         )

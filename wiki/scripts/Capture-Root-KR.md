@@ -14,6 +14,9 @@
 - **커널 `iptables -t nat` `REDIRECT` 지원**:
   - 수집 시작 전 `iptables -w 3 -t nat -S OUTPUT` 사전 검사를 수행합니다.
   - 기기 커널에서 `nat REDIRECT`를 사용할 수 없으면 규칙을 넣지 않고 `"이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"` 안내를 표시합니다.
+- **커널 `iptables` `owner` 매치(`xt_owner`) 지원**:
+  - 수집 시작 전 `iptables -w 3 -t nat -C OUTPUT -p tcp --dport 443 -m owner --uid-owner 0 -j RETURN` 읽기 전용 사전 검사를 수행합니다.
+  - 커널이 앱별 UID 매치(`owner`)를 지원하지 않으면 규칙을 넣지 않고 `"이 기기는 앱별 통신 규칙(iptables owner)을 지원하지 않아 루트 모드를 쓸 수 없습니다. FGA VPN이나 외부 앱 프록시를 쓰세요."` 안내를 표시합니다.
 - **CA 인증서 설정**:
   - **한그오(KR)**: KR 게임이 설치되어 있고 KR 인증서가 생성·설치되어 있어야 합니다.
   - **일그오(JP)**: `JP 서버 (루트)`가 켜져 있고 JP 게임이 설치되어 있으며 JP 인증서가 준비되어 있어야 합니다.

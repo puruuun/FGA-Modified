@@ -307,12 +307,13 @@ internal class RootCaptureRunner(
             return
         }
 
-        // B1 pre-check IPv4 nat OUTPUT
+        // B1 pre-check IPv4 nat OUTPUT and xt_owner match
         val ipv4Check = runShell(RootRedirectScripts.precheckIpv4())
         if (!isApplyOk(ipv4Check)) {
             giveUpListener()
             readingWanted.set(false)
-            callbacks.onApplyFailed(ERROR_NAT_UNSUPPORTED, TOAST_APPLY_FAILED)
+            val error = if (isOwnerUnsupported(ipv4Check)) ERROR_OWNER_UNSUPPORTED else ERROR_NAT_UNSUPPORTED
+            callbacks.onApplyFailed(error, TOAST_APPLY_FAILED)
             return
         }
 
@@ -537,6 +538,8 @@ internal class RootCaptureRunner(
 
     companion object {
         const val ERROR_NAT_UNSUPPORTED = "이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"
+        const val ERROR_OWNER_UNSUPPORTED =
+            "이 기기는 앱별 통신 규칙(iptables owner)을 지원하지 않아 루트 모드를 쓸 수 없습니다. FGA VPN이나 외부 앱 프록시를 쓰세요."
         const val ERROR_NO_TARGETS = "수집할 수 있는 FGO 대상이 없습니다 (인증서 및 게임 설치를 확인하세요)"
         const val ERROR_INVALID_FGA_UID = "FGA 앱 UID를 확인할 수 없습니다"
         const val ERROR_LISTENER_LOST = "로그 수집 수신 소켓이 닫혀 루트 규칙을 제거했습니다"
@@ -560,6 +563,9 @@ internal class RootCaptureRunner(
 
         internal fun isApplyOk(res: RootShellOutput): Boolean =
             !res.timedOut && res.exitCode == 0 && res.lines.any { it.trim() == RootRedirectScripts.MARKER_APPLY_OK }
+
+        internal fun isOwnerUnsupported(res: RootShellOutput): Boolean =
+            !res.timedOut && res.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_OWNER }
 
         internal fun isCleanupOk(res: RootShellOutput): Boolean =
             !res.timedOut && res.exitCode == 0 && res.lines.any { it.trim() == RootRedirectScripts.MARKER_CLEANUP_OK }

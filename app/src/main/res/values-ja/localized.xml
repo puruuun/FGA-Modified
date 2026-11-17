@@ -1152,6 +1152,7 @@
     <string name="capture_root_reconnect_hint">"収集をオンにした後は、FGO が新しく接続した時点(タイトル画面など)から収集が始まります。"</string>
     <string name="capture_root_ipv6_unsupported">"この端末は IPv6 ルールに対応していないため IPv6 接続は収集されません(ゲームは正常に動作します)"</string>
     <string name="capture_root_nat_unsupported">"この端末ではルートルール(nat REDIRECT)を使用できません"</string>
+    <string name="capture_root_owner_unsupported">"この端末はアプリ別の通信ルール(iptables owner)に対応していないため、ルートモードを使用できません。FGA VPNまたは外部アプリプロキシを使用してください。"</string>
     <string name="capture_root_unexpected_connections">"想定外の接続(SNI なし・非 TLS 切断): %1$d件"</string>
     <string name="capture_root_non_game_failures">"ゲーム外ホスト接続失敗: %1$d件"</string>
     <string name="capture_root_cleanup_retry_warning">"ルートルールを削除できませんでした。再試行中です。失敗が続く場合は再起動してください。"</string>

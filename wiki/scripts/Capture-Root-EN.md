@@ -14,6 +14,9 @@ While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's pro
 - **Kernel `iptables -t nat` `REDIRECT` support**:
   - Before starting collection, FGA runs a preflight check via `iptables -w 3 -t nat -S OUTPUT`.
   - If the device kernel does not support `nat REDIRECT`, no rules are added and `"Root rules (nat REDIRECT) are not supported on this device"` is shown.
+- **Kernel `iptables` `owner` match (`xt_owner`) support**:
+  - Before starting collection, FGA runs a read-only preflight check via `iptables -w 3 -t nat -C OUTPUT -p tcp --dport 443 -m owner --uid-owner 0 -j RETURN`.
+  - If the kernel does not support per-app UID matching (`owner`), no rules are added and `"This device does not support per-app rules (iptables owner), so root mode cannot be used. Use FGA VPN or the external app proxy."` is shown.
 - **CA certificate setup**:
   - **KR**: The KR game must be installed, and the KR certificate must be created and installed.
   - **JP**: `JP server (root)` must be enabled, the JP game must be installed, and the JP certificate must be ready.

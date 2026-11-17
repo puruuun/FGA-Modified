@@ -22,6 +22,7 @@ internal object RootRedirectScripts {
     const val MARKER_CLEANUP_OK = "FGA_CLEANUP_OK"
     const val MARKER_WATCHDOG_OK = "FGA_WATCHDOG_OK"
     const val MARKER_FAIL_WATCHDOG_PROBE = "FGA_FAIL_WATCHDOG_PROBE"
+    const val MARKER_FAIL_OWNER = "FGA_FAIL_OWNER"
     const val MARKER_FAIL_STEP_PREFIX = "FGA_FAIL_STEP="
 
     private fun validatePort(port: Int) {
@@ -48,27 +49,27 @@ internal object RootRedirectScripts {
         return "%04X".format(Locale.US, port)
     }
 
-    fun precheckIpv4(): String = buildString {
-        appendLine("IPT=/system/bin/iptables")
-        appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
-        appendLine("if \"\$IPT\" -w 3 -t nat -S OUTPUT >/dev/null 2>&1; then")
+    private fun precheck(toolVar: String, toolName: String): String = buildString {
+        appendLine("$toolVar=/system/bin/$toolName")
+        appendLine("[ -x \"\$$toolVar\" ] || $toolVar=$toolName")
+        appendLine("if ! \"\$$toolVar\" -w 3 -t nat -S OUTPUT >/dev/null 2>&1; then")
+        appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
+        appendLine("  exit 1")
+        appendLine("fi")
+        // -C is read-only and exits 0 (rule exists) or 1 (rule absent) when xt_owner is supported; 2+ means unsupported.
+        appendLine("\"\$$toolVar\" -w 3 -t nat -C OUTPUT -p tcp --dport 443 -m owner --uid-owner 0 -j RETURN >/dev/null 2>&1")
+        appendLine("rc=\$?")
+        appendLine("if [ \"\$rc\" -eq 0 ] || [ \"\$rc\" -eq 1 ]; then")
         appendLine("  echo $MARKER_APPLY_OK")
         appendLine("else")
-        appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
+        appendLine("  echo $MARKER_FAIL_OWNER")
         appendLine("  exit 1")
         appendLine("fi")
     }
 
-    fun precheckIpv6(): String = buildString {
-        appendLine("IP6T=/system/bin/ip6tables")
-        appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
-        appendLine("if \"\$IP6T\" -w 3 -t nat -S OUTPUT >/dev/null 2>&1; then")
-        appendLine("  echo $MARKER_APPLY_OK")
-        appendLine("else")
-        appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
-        appendLine("  exit 1")
-        appendLine("fi")
-    }
+    fun precheckIpv4(): String = precheck(toolVar = "IPT", toolName = "iptables")
+
+    fun precheckIpv6(): String = precheck(toolVar = "IP6T", toolName = "ip6tables")
 
     private val IPV4_LOOPBACK_CIDRS = listOf("127.0.0.0/8", "0.0.0.0/32")
     private val IPV6_LOOPBACK_CIDRS = listOf("::1/128", "::/128")

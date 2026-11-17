@@ -275,6 +275,82 @@ class RootCaptureRunnerTest {
     }
 
     @Test
+    fun ipv4OwnerPrecheckFailureDoesNotApplyRulesGivesUpListenerAndReportsOwnerUnsupported() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ranScripts = CopyOnWriteArrayList<String>()
+        val shell = RootShell { _, stdin, _ ->
+            ranScripts += stdin
+            assertEquals(RootRedirectScripts.precheckIpv4(), stdin)
+            RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OWNER))
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertEquals(listOf(RootRedirectScripts.precheckIpv4()), ranScripts.toList())
+        assertFalse(flag.isSet())
+        assertFalse(runner.isReadingWanted())
+        assertNull(proxy.listeningPort)
+        assertFalse(proxy.accepting)
+        assertTrue(events.contains("stopAccepting"))
+        assertTrue(events.contains("closeProxy"))
+        assertEquals(RootCaptureRunner.ERROR_OWNER_UNSUPPORTED, callbacks.lastError)
+        assertEquals(RootCaptureRunner.TOAST_APPLY_FAILED, callbacks.lastToast)
+    }
+
+    @Test
+    fun ipv6OwnerPrecheckFailureAppliesIpv4OnlyAndMarksIpv6Unsupported() {
+        val proxy = FakeProxyController()
+        val callbacks = RecordingCallbacks()
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OWNER))
+                stdin.contains("-A FGA_CAP") -> {
+                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { 10999 },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            executor = executor,
+        )
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertEquals(8899, callbacks.appliedPort)
+        assertEquals(1, callbacks.ipv4Rules)
+        assertEquals(0, callbacks.ipv6Rules)
+        assertTrue(callbacks.ipv6Unsupported)
+        assertNull(callbacks.lastError)
+    }
+
+    @Test
     fun applyStepFailureRunsCleanupClearsFlagClosesListenerAndReportsStep() {
         val events = CopyOnWriteArrayList<String>()
         val proxy = FakeProxyController(events = events)
