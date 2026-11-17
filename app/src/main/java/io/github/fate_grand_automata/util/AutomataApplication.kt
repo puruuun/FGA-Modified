@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import dagger.hilt.android.HiltAndroidApp
 import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.accessibility.TapperService
 import io.github.fate_grand_automata.capture.CaptureController
 import io.github.fate_grand_automata.capture.deleteLegacyEventCache
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.widget.WidgetRefresh
 import io.github.fate_grand_automata.widget.WidgetSettingsObserver
 import javax.inject.Inject
@@ -27,6 +29,7 @@ class AutomataApplication : Application() {
         super.onCreate()
 
         initLogging()
+        initGlobalUiState()
 
         AppCompatDelegate.setDefaultNightMode(prefsCore.appTheme.get().nightMode())
         appThemeObserver.start(prefsCore)
@@ -51,6 +54,12 @@ class AutomataApplication : Application() {
             return isFgaLoggable(tag, priority, BuildConfig.DEBUG, BuildConfig.BUILD_TYPE in setOf("beta", "deviceTest"))
         }
     }
+}
+
+// Initialize global service states on startup so background readers never create them after a composition snapshot (#360).
+internal fun initGlobalUiState() {
+    ScriptRunnerService.serviceStarted.value
+    TapperService.serviceStarted.value
 }
 
 /** Same production policy, with an explicit debug flag so non-debug logging is unit-testable. */
