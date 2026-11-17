@@ -19,7 +19,7 @@ data class SkillLevelCheckReport(
 /** A second safety boundary: even an accidental call from the check flow cannot reach the device confirm tap. */
 class SkillLevelCheckPanel(panel: SkillLevelPanel) : SkillLevelPanel by panel {
     override fun confirm(): Nothing = error("confirm is forbidden in level reading check mode")
-    override fun skipToScreen(): Nothing = error("enhancement results are unreachable in level reading check mode")
+    override fun skipToScreen(onRetry: (Int) -> Unit): Nothing = error("enhancement results are unreachable in level reading check mode")
 }
 
 /** One read per slot, independent of enhancement targets. Every opened dialog is cancelled in finally. */

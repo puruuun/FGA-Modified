@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.entrypoints.SkillLevelScript
 import io.github.fate_grand_automata.scripts.locations.SkillLevelLocations
 import io.github.fate_grand_automata.scripts.modules.*
@@ -16,11 +17,17 @@ class SkillLevelDeviceTest {
         val screens = mockk<SkillLevelScreens>(relaxed=true)
         val enhance = Location(100,200)
         val confirm = Location(300,400)
+        val skipClick = Location(720, 72)
+        val retryRegion = Region(700, 800, 100, 50)
+        val retryPattern = mockk<Pattern>(relaxed = true)
         val panelReader = mockk<SkillLevelPanelReader>()
         val device = SkillLevelDevice(api,SkillLevelMode.Skill,loc,screens,mockk(relaxed=true),panelReader)
         init {
             every { api.locations.enhancementClick } returns enhance
+            every { api.locations.retryRegion } returns retryRegion
+            every { api.images[Images.Retry] } returns retryPattern
             every { loc.dialogConfirm(SkillLevelMode.Skill) } returns confirm
+            every { loc.skipClick } returns skipClick
             every { screens.dialogVisible() } returns true
             every { api.useSameSnapIn<Any?>(any()) } answers { firstArg<() -> Any?>().invoke() }
         }
@@ -105,18 +112,41 @@ class SkillLevelDeviceTest {
         names.forEach { (reason,name) -> assertEquals(name,reason.logName) }
     }
 
-    /** One skip poll per character: B = back screen, D = label only (deselected), O = something else (animation). */
-    private fun skip(frames: String, mode: SkillLevelMode = SkillLevelMode.Skill): Pair<SkipResult, Int> {
+    /** One skip poll per character: B = back screen, D = label only (deselected), R = Retry dialog, O = something else (animation). */
+    private data class SkipOutcome(
+        val result: SkipResult,
+        val polls: Int,
+        val retries: Int,
+        val retryTaps: Int,
+        val skipTaps: Int,
+        val retryCallbacks: List<Int>
+    )
+
+    private fun skipWithFrames(
+        frames: String,
+        mode: SkillLevelMode = SkillLevelMode.Skill
+    ): SkipOutcome {
         val run = Run()
         val device = SkillLevelDevice(run.api, mode, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
         var poll = 0
+        var retryTaps = 0
+        var skipTaps = 0
         fun frame() = frames.getOrElse(poll - 1) { 'O' }
-        every { run.screens.onLabel(any()) } answers { frame() != 'O' }
+        every { with(run.api) { run.retryPattern in run.retryRegion } } answers { frame() == 'R' }
+        every { run.screens.onLabel(any()) } answers { frame() == 'B' || frame() == 'D' }
         every { run.screens.servantSelected() } answers { frame() == 'B' }
         every { run.screens.dialogVisible() } returns false
-        every { with(run.api) { any<Duration>().wait(any()) } } answers { poll++ }
-        return device.skipToScreen() to poll
+        every { with(run.api) { run.retryRegion.click(any()) } } answers { retryTaps++ }
+        every { with(run.api) { run.skipClick.click(any()) } } answers { skipTaps++ }
+        every { with(run.api) { SkillLevelTiming.SKIP_INTERVAL.wait(any()) } } answers { poll++ }
+        val callbacks = mutableListOf<Int>()
+        val result = device.skipToScreen { callbacks += it }
+        return SkipOutcome(result, poll, device.lastSkipRetries, retryTaps, skipTaps, callbacks)
     }
+
+    private fun skip(frames: String, mode: SkillLevelMode = SkillLevelMode.Skill): Pair<SkipResult, Int> =
+        skipWithFrames(frames, mode).let { it.result to it.polls }
+
     @Test fun `one deselected frame followed by the back screen is back`() {
         assertEquals(SkipResult.Back, skip("OODB").first)
     }
@@ -135,5 +165,79 @@ class SkillLevelDeviceTest {
     }
     @Test fun `append mode never reports a deselection`() {
         assertEquals(SkipResult.Timeout, skip("D".repeat(60), SkillLevelMode.Append).first)
+    }
+    @Test fun `retry showing once taps retry once and keeps one skip tap per poll`() {
+        val outcome = skipWithFrames("OROOB")
+        assertEquals(SkipResult.Back, outcome.result)
+        assertEquals(1, outcome.retries)
+        assertEquals(listOf(1), outcome.retryCallbacks)
+        assertEquals(1, outcome.retryTaps)
+        assertEquals(5, outcome.skipTaps)
+    }
+    @Test fun `retry showing four times returns connection failed with three retry taps`() {
+        val outcome = skipWithFrames("OROROROR")
+        assertEquals(SkipResult.ConnectionFailed, outcome.result)
+        assertEquals(3, outcome.retries)
+        assertEquals(listOf(1, 2, 3), outcome.retryCallbacks)
+        assertEquals(3, outcome.retryTaps)
+        assertEquals(8, outcome.skipTaps)
+    }
+    @Test fun `retry restarts the twenty second poll count from zero`() {
+        val frames = "O".repeat(38) + "R" + "O".repeat(19) + "B"
+        val outcome = skipWithFrames(frames)
+        assertEquals(SkipResult.Back, outcome.result)
+        assertEquals(1, outcome.retries)
+        assertEquals(1, outcome.retryTaps)
+    }
+    @Test fun `retry resets left and deselected counters so the screen is judged fresh`() {
+        val outcome = skipWithFrames("OODRDDB")
+        assertEquals(SkipResult.Back, outcome.result)
+        assertEquals(1, outcome.retries)
+    }
+    @Test fun `every poll taps skip, waits, then reads the screen, with or without a retry`() {
+        val run = Run()
+        val device = SkillLevelDevice(run.api, SkillLevelMode.Skill, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
+        val events = mutableListOf<String>()
+        var poll = 0
+        every { with(run.api) { run.retryPattern in run.retryRegion } } answers { events += "read"; poll == 2 }
+        every { run.screens.onLabel(any()) } answers { poll >= 4 }
+        every { run.screens.servantSelected() } answers { poll >= 4 }
+        every { run.screens.dialogVisible() } returns false
+        every { with(run.api) { run.skipClick.click(any()) } } answers { events += "tap" }
+        every { with(run.api) { run.retryRegion.click(any()) } } answers { events += "retry" }
+        every { with(run.api) { SkillLevelTiming.SKIP_INTERVAL.wait(any()) } } answers { events += "wait"; poll++ }
+        assertEquals(SkipResult.Back, device.skipToScreen())
+        val polls = listOf("tap", "wait", "read")
+        // The last wait is the AFTER_SKIP settle, which has the same 0.5 s value as the poll interval.
+        assertEquals(polls + polls + "retry" + polls + polls + "wait", events)
+    }
+    @Test fun `retry is checked before back and deselected on the same poll`() {
+        val run = Run()
+        val device = SkillLevelDevice(run.api, SkillLevelMode.Skill, run.loc, run.screens, mockk(relaxed = true), run.panelReader)
+        var poll = 0
+        every { with(run.api) { run.retryPattern in run.retryRegion } } answers { poll == 3 }
+        every { run.screens.onLabel(any()) } answers { poll >= 3 }
+        every { run.screens.servantSelected() } answers { poll >= 3 }
+        every { run.screens.dialogVisible() } returns false
+        every { with(run.api) { SkillLevelTiming.SKIP_INTERVAL.wait(any()) } } answers { poll++ }
+        assertEquals(SkipResult.Back, device.skipToScreen())
+        assertEquals(1, device.lastSkipRetries)
+        verify(exactly = 1) { with(run.api) { run.retryRegion.click(1) } }
+    }
+    @Test fun `retry is never checked outside skipToScreen`() {
+        val run = Run()
+        every { with(run.api) { run.retryPattern in run.retryRegion } } returns true
+        every { run.screens.unlockButtonVisible() } returns false
+        every { run.screens.dialogVisible() } returns true
+        every { run.panelReader.read(SkillLevelMode.Skill, 0) } returns PanelLevelEvidence(3, false, 3, 0.9, 0.2, "ok")
+        run.device.select(0)
+        run.device.readPanelLevel(0)
+        run.device.pressEnhance()
+        run.device.awaitDialog()
+        run.device.confirm()
+        every { run.screens.dialogVisible() } returns false
+        run.device.cancel()
+        verify(exactly = 0) { with(run.api) { run.retryPattern in run.retryRegion } }
+        verify(exactly = 0) { with(run.api) { run.retryRegion.click(any()) } }
     }
 }

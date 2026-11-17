@@ -803,6 +803,7 @@
     <string name="skill_level_stop_no_increase">레벨이 오르지 않아 정지</string>
     <string name="skill_level_stop_dialog">예상 밖의 확인창, 취소함</string>
     <string name="skill_level_stop_stuck">게임이 강화 화면으로 돌아오지 않았습니다. 화면을 확인하세요. 강화가 이미 일어났을 수 있습니다.</string>
+    <string name="skill_level_stop_connection_error">통신 오류가 계속되어 정지했습니다. 화면을 확인하세요. 강화가 이미 일어났을 수 있습니다.</string>
     <string name="skill_level_step_select">칸 선택</string>
     <string name="skill_level_step_enhance">강화 버튼</string>
     <string name="skill_level_step_dialog">확인창</string>
