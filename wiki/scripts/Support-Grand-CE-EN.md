@@ -2,7 +2,7 @@
 
 Under **Support → Preferred CEs** in your battle config, configure your preferred CEs along with **Max-limit broken**, **Match both free slot & bonus-up (Bond/FP/QP/EXP) slot**, and **Bond CE effect preference**.
 
-In the `1.8.0` development beta, tapping **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker opens [Search and save support images](Servant-Number-Portraits-EN.md) directly. Newly saved folders are automatically checked while preserving your existing selections, and tapping **OK** applies them to your config. Even if you tap **Cancel**, the downloaded images remain saved.
+Since 1.8.0, tapping **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker opens [Search and save support images](Servant-Number-Portraits-EN.md) directly. Newly saved folders are automatically checked while preserving your existing selections, and tapping **OK** applies them to your config. Even if you tap **Cancel**, the downloaded images remain saved.
 
 For Grand supports, FGA checks both the free slot and the bonus-up (reward) slot CEs. When **Match both free slot & bonus-up (Bond/FP/QP/EXP) slot** is enabled, each slot must hold one of your Preferred CEs. When **Max-limit broken** is enabled, it also checks MLB stars on the matching CE(s). For **Bond CE effect preference**, choose from **NP charge**, **Default effects**, or **Ignore** (`Ignore` applies no effect-icon condition).
 

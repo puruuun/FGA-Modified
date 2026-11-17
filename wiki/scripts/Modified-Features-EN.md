@@ -93,7 +93,7 @@ If the other player's friend list is full and the request prompt remains on scre
 
 ### Downloading Preferred Servant / CE Images
 
-In 1.8.0 beta builds, **Download images** at the bottom-left of the **Preferred Servants / Preferred CEs** pickers under Battle Config → Support opens the search-and-save dialog directly. Newly saved folders are automatically added to your checked selection while keeping existing checks. Tap **OK** to save into the config; downloaded images remain even if you tap **Cancel**. [Details](Servant-Number-Portraits-EN.md)
+Since 1.8.0, **Download images** at the bottom-left of the **Preferred Servants / Preferred CEs** pickers under Battle Config → Support opens the search-and-save dialog directly. Newly saved folders are automatically added to your checked selection while keeping existing checks. Tap **OK** to save into the config; downloaded images remain even if you tap **Cancel**. [Details](Servant-Number-Portraits-EN.md)
 
 ### Support Append Skills
 

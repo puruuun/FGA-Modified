@@ -14,7 +14,7 @@ Existing 0.9.0 stop behavior is preserved. Characters previously watched for sto
 
 ## Bond Stop During KR Log Collection
 
-When starting a battle script on **the KR server while the log-collection VPN is running**, that run gets bond **numbers** (points gained) from the log-collection responses. If the VPN is auto-starting at script start, it waits up to 3 seconds and decides once for the run; toggling the VPN mid-run does not change this choice.
+When starting a battle script on **the KR server while log collection is running**, that run gets bond **numbers** (points gained) from the log-collection responses. If log collection is auto-starting at script start, it waits up to 3 seconds and decides once for the run; toggling collection mid-run does not change this choice.
 
 **Stop when bond MAX is confirmed** and level 10+ bond level-up stops still use **screen reading (OCR)** even during log collection, exactly the same as when log collection is off. Per-character MAX labels are confirmed on two consecutive frames, and the 1.2-second wait and result-advancing speed are unchanged. Slots checked in **Ignore MAX for checked characters** are excluded. Log-collection responses are not used for stop decisions. In this mode, bond point numbers are not read from the screen, and per-character bond totals are not shown on the exit screen; check per-Servant bond gains under **Log → Gains (log collection)**. The Screenshot Bond setting still applies as usual.
 

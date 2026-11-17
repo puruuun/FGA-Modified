@@ -9,7 +9,7 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 ## Download and updates
 
 - [Latest APK](https://github.com/puruuun/FGA-Modified/releases/latest)
-- [Release notes for 1.7.5 (Korean)](wiki/releases/1.7.5-KR.md)
+- [Release notes for 1.8.0](wiki/releases/1.8.0-EN.md)
 - [Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D)
 - [Details](wiki/scripts/Modified-Features-EN.md#installation)
 
@@ -21,23 +21,30 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 
 | Feature | Summary |
 |---|---|
+| [Log collection](wiki/scripts/Gains-Tracker-EN.md) | Records each script run's gains and changes outside scripts from the game server's responses (Android 10+, KR and JP), with FGA VPN, an external proxy app or root as the connection mode. |
+| [Account dashboard](wiki/scripts/Modified-Features-EN.md) | Shows AP, currencies, Servants, items and formations from the account cards on the main screen. |
+| [Friend manager](wiki/scripts/Friend-Manager-EN.md) | Collects the Servants and CEs in your friends' formations, with filters. |
+| [Chaldea auto sync](wiki/scripts/Chaldea-Sync-EN.md) | Writes collected account data into Chaldea through Shizuku or root. |
+| [Home screen widgets](wiki/scripts/Widgets-EN.md) | A service start/stop widget and a per-account AP widget. |
+| [Clear mission popups before Repeat](wiki/scripts/Mission-Popup-Clear-EN.md) | Clears piled-up mission popups so they do not cover the wave and turn display. |
+| [Fixed command spell tap](wiki/scripts/Command-Spell-Tap-EN.md) | Taps the command spell button at a fixed position for each screen shape. |
 | [FP summon auto-sell](wiki/scripts/FP-Auto-Sell-KR.md) | Sells unlocked cards when the Servant box is full, returns to the set banner position and continues summoning. |
 | [Skill / Append Skill auto-upgrade](wiki/scripts/Auto-Skill-Level-KR.md) | Upgrades each skill to its target level, cross-checking the panel and dialog levels. |
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-KR.md) | Runs the chosen missions on the lowest-AP route, Treasure Vault Beginner included, and repeats it. |
 | [CE auto-enhance](wiki/scripts/CE-Auto-Enhance-KR.md) | Turns on auto-select with the recommended filter and repeats enhancement. |
 | [Hakuno Shuffle](wiki/scripts/Hakuno-Shuffle-KR.md) | Repeats an NP-cost first skill until the card condition is met. |
-| [Card priority extensions](wiki/scripts/Card-Priority-KR.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. |
-| [Battle config folders](wiki/scripts/Battle-Config-Folders-KR.md) | Groups battle configs into folders you can fold in the list and the launcher. |
+| [Card priority extensions](wiki/scripts/Card-Priority-KR.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. Aoko card change detection can be turned on. |
+| [Battle config folders](wiki/scripts/Battle-Config-Folders-KR.md) | Groups battle configs into folder boxes you can fold in the list and the launcher. |
 | [Turn-limit retreat](wiki/scripts/Turn-Limit-Retreat-KR.md) | Retreats and restarts on a wipe or at turn N, and stops after a set number of retreats in a row. |
 | [Enemy layout targets](wiki/scripts/Enemy-Layout-Targets-KR.md) | Targets enemies in six-enemy and raid layouts. |
 | [Game area](wiki/scripts/Game-Area-Preview-KR.md) | Previews the split-screen game area while adjusting it, with auto-fit from a screenshot. |
 | [Added-features fine tune](wiki/scripts/Added-Features-Fine-Tune-KR.md) | Adjusts waits and match similarity of the fork's features per area. |
 | [Friend request after quest](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | Sends a friend request after using a non-friend support. |
 | [Grand support CE](wiki/scripts/Support-Grand-CE-KR.md) | Checks the normal and reward slot CEs and the bond CE effect of Grand supports. |
-| [Servant number images](wiki/scripts/Servant-Number-Portraits-KR.md) | Creates and saves support images by Servant number. |
+| [Servant number images](wiki/scripts/Servant-Number-Portraits-KR.md) | Creates and saves support images by number or name, also straight from the Preferred Servant / CE picker. |
 | [Import original FGA data](wiki/scripts/Original-FGA-Import-EN.md) | Imports scripts and support images from the original FGA. |
 | [Chaldea command import](wiki/scripts/Chaldea-Import-KR.md) | Converts a Chaldea share link into script commands, splitting waves and turns by the quest's wave count. |
-| [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when the per-colour condition rows (AND/OR) are met. |
+| [Card-count command start](wiki/scripts/Card-Count-Start-KR.md) | Starts the command only when the per-colour condition rows (AND/OR) are met; Servant conditions take up to three targets. |
 | [First-turn shuffle](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | Shuffles and rechecks when first-turn conditions are not met. |
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-KR.md) | Picks supports whose Append Skills are level 10. |
 | [Support scores](wiki/scripts/Support-Score-62-KR.md) | Picks Class +62 / Grand +16 supports. |
@@ -46,7 +53,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Fixed attack order](wiki/scripts/Direct-Cards-KR.md) | Sets the order of cards and NPs for a turn. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-KR.md) | Sets ON/OFF before the quest starts. |
 | [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-KR.md) | Adds up bond gains and stops at MAX. |
-| [Battle log](wiki/scripts/Battle-Log-KR.md) | Keeps the results of the last 200 finished runs, viewed from Main → Log. |
+| [Battle log](wiki/scripts/Battle-Log-KR.md) | Keeps up to 200 finished runs and outside-script changes per kind, filtered by date, source and resource. |
 
 The detailed guides are written in Korean. See the [full guide](wiki/scripts/Modified-Features-KR.md) for setup and behavior.
 

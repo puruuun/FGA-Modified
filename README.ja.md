@@ -10,7 +10,7 @@
 
 ## ダウンロード・アップデート
 
-**正式版 1.7.5** — 概念礼装の自動強化で、フィルターに★4・★5や強化済み礼装が含まれる場合に表示される確認ダイアログを自動で進めます。[変更内容（韓国語）](wiki/releases/1.7.5-KR.md)
+**正式版 1.8.0** — ログ収集（KR・JP）、アカウントダッシュボード、フレンド管理、Chaldea 自動反映、ホーム画面ウィジェットを追加しました。[変更内容](wiki/releases/1.8.0-JA.md)
 
 | 配布版 | APK | Obtainium |
 |---|---|---|
@@ -28,23 +28,30 @@ Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています
 
 | 機能 | 説明 |
 |---|---|
+| [ログ収集](wiki/scripts/Gains-Tracker-JA.md) | ゲームサーバーの応答から、スクリプトごとの獲得量とスクリプト外の変化を記録します（Android 10+、KR・JP）。接続方式は FGA VPN・外部アプリのプロキシ・ルートから選びます。 |
+| [アカウントダッシュボード](wiki/scripts/Modified-Features-JA.md) | メイン画面のアカウントカードから AP・通貨・サーヴァント・アイテム・編成を確認します。 |
+| [フレンド管理](wiki/scripts/Friend-Manager-JA.md) | フレンドの編成サーヴァント・礼装をまとめて表示し、条件で絞り込みます。 |
+| [Chaldea 自動反映](wiki/scripts/Chaldea-Sync-JA.md) | 収集したアカウントデータを Shizuku・root で Chaldea に自動で書き込みます。 |
+| [ホーム画面ウィジェット](wiki/scripts/Widgets-JA.md) | サービス開始・停止ウィジェットとアカウントごとの AP ウィジェットを置けます。 |
+| [連続出撃前のミッションポップアップ消去](wiki/scripts/Mission-Popup-Clear-JA.md) | 溜まったミッションポップアップがウェーブ・ターン表示を隠さないよう先に消します。 |
+| [令呪ボタンの固定位置タップ](wiki/scripts/Command-Spell-Tap-JA.md) | 令呪ボタンを画面比率ごとの固定位置で直接タップします。 |
 | [フレンドポイント召喚・自動売却](wiki/scripts/FP-Auto-Sell-KR.md) | サーヴァント枠がいっぱいになるとロックされていないカードを売却し、設定したバナー位置に戻って召喚を続けます。 |
 | [スキル・アペンドスキル自動強化](wiki/scripts/Auto-Skill-Level-KR.md) | 強化パネルと確認ダイアログのレベルを照合しながら、各枠で設定した目標レベルまで強化します。 |
 | [ウィークリーミッション自動周回](wiki/scripts/Weekly-Mission-Route-KR.md) | 選択したミッションの最小APルートを計算し、宝物庫・初級を含めて全ルートを周回します。 |
 | [概念礼装の自動強化](wiki/scripts/CE-Auto-Enhance-KR.md) | おすすめ選択フィルターで自動セットを有効にし、強化を繰り返します。 |
 | [ハクノシャッフル](wiki/scripts/Hakuno-Shuffle-KR.md) | NPを消費するスキル1を、カード条件を満たすまで繰り返します。 |
-| [カードの優先順位の拡張](wiki/scripts/Card-Priority-KR.md) | 最大10項目、ウェーブ・ターン単位の指定、サーヴァント方式に対応し、項目ごとに方式とサーヴァントの優先順位を設定します。 |
-| [バトル設定フォルダー](wiki/scripts/Battle-Config-Folders-KR.md) | バトル設定をフォルダーにまとめて、一覧やランチャーで開閉できます。 |
+| [カードの優先順位の拡張](wiki/scripts/Card-Priority-KR.md) | 最大10項目、ウェーブ・ターン単位の指定、サーヴァント方式に対応し、項目ごとに方式とサーヴァントの優先順位を設定します。青子カード変化の検知をオンにできます。 |
+| [バトル設定フォルダー](wiki/scripts/Battle-Config-Folders-KR.md) | バトル設定をフォルダー枠にまとめて、一覧やランチャーで開閉できます。 |
 | [ターン制限撤退](wiki/scripts/Turn-Limit-Retreat-KR.md) | 全滅するかNターン目に到達すると撤退してやり直し、設定した連続撤退回数に達すると停止します。 |
 | [敵配置ごとのターゲット指定](wiki/scripts/Enemy-Layout-Targets-KR.md) | 6体配置・レイド配置の敵を指定します。 |
 | [ゲームエリア](wiki/scripts/Game-Area-Preview-KR.md) | 分割画面のゲームエリアをプレビューしながら調整し、スクリーンショットから自動調整します。 |
 | [追加機能の微調整](wiki/scripts/Added-Features-Fine-Tune-KR.md) | 修正版機能の待機時間と認識の類似度を機能ごとに調整します。 |
 | [クエスト後のフレンド申請](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | フレンド以外のサポートを使用した後、フレンド申請を送ります。 |
 | [グランドサポート礼装](wiki/scripts/Support-Grand-CE-KR.md) | グランドサポートの通常枠・報酬枠の概念礼装と絆礼装の効果を確認します。 |
-| [サーヴァント図鑑番号での画像作成](wiki/scripts/Servant-Number-Portraits-KR.md) | 図鑑番号からサポート画像を作成して保存します。 |
+| [サーヴァント図鑑番号での画像作成](wiki/scripts/Servant-Number-Portraits-KR.md) | 図鑑番号・名前からサポート画像を作成して保存し、選択するサーヴァント・礼装の選択画面から直接取得できます。 |
 | [オリジナルFGAのデータを取り込む](wiki/scripts/Original-FGA-Import-KR.md) | オリジナルFGAのスクリプトとサポート画像を取り込みます。 |
 | [Chaldeaリンクからコマンド入力](wiki/scripts/Chaldea-Import-KR.md) | 共有リンクの戦闘行動をコマンドに変換し、クエストのウェーブ数に応じてウェーブとターンを分割します。 |
-| [カード条件でコマンド開始](wiki/scripts/Card-Count-Start-KR.md) | カード色別の条件行（AND/OR）を満たしたときのみコマンドを開始します。 |
+| [カード条件でコマンド開始](wiki/scripts/Card-Count-Start-KR.md) | カード色別の条件行（AND/OR）を満たしたときのみコマンドを開始し、サーヴァント条件は最大3対象まで設定できます。 |
 | [1ターン目シャッフル](wiki/scripts/Modified-Features-KR.md#first-turn-shuffle) | 開始条件を満たしていない場合、シャッフルしてから再判定します。 |
 | [サポートのアペンドスキル](wiki/scripts/Support-Append-Skills-KR.md) | アペンドスキルがLv.10のサポートを選択します。 |
 | [サポートのスコア判定](wiki/scripts/Support-Score-62-KR.md) | クラス +62・グランド +16のサポートを選択します。 |
@@ -53,7 +60,7 @@ Android 7以降のARM端末（arm64-v8a / armeabi-v7a）に対応しています
 | [攻撃順の直接指定](wiki/scripts/Direct-Cards-KR.md) | そのターンのカードと宝具の攻撃順を直接指定します。 |
 | [ティーポット・ストームポッド](wiki/scripts/Quest-Items-KR.md) | クエスト開始前にON/OFFを設定します。 |
 | [絆ポイント集計・MAX停止](wiki/scripts/Bond-Tracking-KR.md) | 獲得した絆ポイントを合算し、絆MAXになると停止します。 |
-| [戦闘記録ログ](wiki/scripts/Battle-Log-KR.md) | 完了した戦闘の結果を最新200件まで保存し、メイン画面 → ログから確認できます。 |
+| [戦闘記録ログ](wiki/scripts/Battle-Log-KR.md) | 完了した戦闘とスクリプト外の変化を種類ごとに最大200件保存し、日付・入手元・資源で絞り込めます。 |
 
 詳細なガイドは韓国語で記載されています。設定方法や動作は[使用説明書（韓国語）](wiki/scripts/Modified-Features-KR.md)をご確認ください。
 

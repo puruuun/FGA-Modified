@@ -14,7 +14,7 @@ Images are saved under your chosen FGA folder at `support/servant/No.<number> <n
 
 ## Downloading images from the Preferred Servants / Preferred CEs picker
 
-In the **1.8.0 development beta**, you can open the same search-and-save dialog directly from **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker under **Battle Configs → Support**. From the Servant picker, **Servant** is preselected; from the CE picker, **Craft Essence** is preselected. This button is not present on the NP or Friend name pickers.
+Since **1.8.0**, you can open the same search-and-save dialog directly from **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker under **Battle Configs → Support**. From the Servant picker, **Servant** is preselected; from the CE picker, **Craft Essence** is preselected. This button is not present on the NP or Friend name pickers.
 
 Saving one or more images reloads the list and immediately checks the saved folder while keeping your previously checked entries in the open picker. If you switched types inside the search dialog before saving, only entries matching the current picker's type are checked. You must tap **OK** to apply the selection to your config; tapping **Cancel** discards selection changes for this dialog, though the downloaded images stay in the folder. Simply closing the search dialog, failing to save, or having no storage folder set leaves selections unchanged.
 
