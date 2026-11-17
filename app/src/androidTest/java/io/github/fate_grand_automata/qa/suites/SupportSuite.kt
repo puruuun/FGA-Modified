@@ -177,10 +177,8 @@ private fun FixtureApi.verifySupportCe(): JSONObject {
             check(matched == effects.getBoolean(effect.name)) { "CE $effect at $y: ${evidence.message}" }
             check(evidence.matched == matched)
             val expectedBond = row.getString("bondIcon")
-            // Upstream rule: the expected icon reaches the common min similarity and the other does not
-            val minSimilarity = this@verifySupportCe.prefs.platformPrefs.minSimilarity
-            check((evidence.np?.score ?: -1.0) >= minSimilarity == (expectedBond == "NP"))
-            check((evidence.default?.score ?: -1.0) >= minSimilarity == (expectedBond == "Default"))
+            check((evidence.np?.score ?: -1.0) >= CESelection.BOND_EFFECT_SIMILARITY == (expectedBond == "NP"))
+            check((evidence.default?.score ?: -1.0) >= CESelection.BOND_EFFECT_SIMILARITY == (expectedBond == "Default"))
         }
         rows.put(JSONObject().put("y", y).put("grand", isGrand).put("checks", checks))
     }

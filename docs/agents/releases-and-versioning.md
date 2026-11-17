@@ -60,10 +60,11 @@ When promoting to stable `X.Y.Z`:
 
 1. Update `version.properties`: set `stable.versionName=X.Y.Z` and increment `stable.versionCode`
    by 1 (keeping `beta.versionName=X.Y.Z-beta.N` and `beta.versionCode` aligned with `X.Y.Z`).
-2. Add `wiki/releases/<version>-KR.md`. Then bring both READMEs up to this stable release; this is the only time they change.
-   - **Feature tables** in `README.md` (Korean) and `README.en.md` (English), kept 1:1. Take the rows from the release notes and from `git diff v<last-stable>..HEAD -- wiki/scripts`.
+2. Add `wiki/releases/<version>-KR.md`. Then bring all three READMEs up to this stable release; this is the only time they change.
+   - **Feature tables** in `README.md` (Korean), `README.en.md` (English), and `README.ja.md` (Japanese), kept 1:1. Take the rows from the release notes and from `git diff v<last-stable>..HEAD -- wiki/scripts`.
    - **Korean latest-release line:** `**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`
    - **English release-notes link:** `- [Release notes (Korean)](wiki/releases/<version>-KR.md)`.
+   - **Japanese latest-release line:** `**正式版 <version>** — ... [変更内容（韓国語）](wiki/releases/<version>-KR.md).`
 
    Publishing the non-prerelease GitHub Release in step 4 rebuilds the user manual from that tag automatically. Check that the `Publish manual site` run succeeded.
 3. Deliver via PR (`release/<version>`), wait for `Main CI` to pass, and fast-forward merge into

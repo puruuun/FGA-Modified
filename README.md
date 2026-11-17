@@ -1,6 +1,6 @@
 # FGA(mod)
 
-[한국어](README.md) | [English](README.en.md)
+[한국어](README.md) | [English](README.en.md) | [日本語](README.ja.md)
 
 **KR(한국)·JP(일본) 서버에 한정해 테스트했습니다. 다른 서버의 동작은 확인하지 않았습니다.**
 
