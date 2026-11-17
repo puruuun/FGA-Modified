@@ -18,11 +18,23 @@ On Android 10+ with the official FGO JP app installed, **Log collection → JP s
 
 ## Safety and Privacy
 
-- The VPN routes **only the game app's traffic** through a local proxy on this device. No other app's traffic passes through it.
+- FGA VPN and root modes send **only the game app's traffic** to FGA's proxy on this device. In external proxy app mode, traffic comes from the apps you choose in the proxy app (AdGuard and others).
 - The proxy forwards requests and responses **unmodified** and only reads responses from the game servers (`yfgo-game.netmarble.com`, and `game.fate-go.jp` when the JP option is enabled). All other addresses pass through untouched.
 - Account and login token endpoints are neither read nor saved. Request bodies, tokens, and headers are never logged.
 - Collected account summaries are stored solely on this device (in app-private storage) and are **never sent anywhere**.
-- The certificate private key is never saved; it is used once to sign the CA certificate during generation and discarded.
+- The certificate private key is never saved; it is used once to sign the CA certificate during generation and discarded. See below for details.
+
+### Is the installed certificate safe?
+
+Installing a CA certificate is normally something to be careful with: whoever holds that CA's private key could make a **fake certificate for any site**, such as a bank or a search site, and read this device's traffic. FGA's certificate is made so that this risk does not arise.
+
+- **The CA private key is thrown away at once.** When you make the certificate, FGA creates a new CA on this device, uses it to sign **a certificate for one game server address only**, and then discards the CA private key without saving it. Nobody, FGA included, can use this CA to make a certificate for any other site. That is why the certificate name says "single-use".
+- **Only the public part of the CA certificate is installed on the device.** The public part cannot make new certificates; it is only used to check signatures.
+- **The signed certificate works only for the game server address**: `yfgo-game.netmarble.com` for KR and `game.fate-go.jp` for JP.
+- **Each device makes its own.** Users do not share one certificate, so someone else's certificate cannot be used against this device.
+- **The game server key stays in FGA's app-private storage only.** It is also left out of cloud backups and device transfers.
+- After installing the certificate, Android may show a notice such as "Network may be monitored". It appears for every CA certificate a user installs.
+- Pressing **Create new certificate** creates a new CA. You can remove the old CA certificate in the Settings app under **Trusted credentials → User**, and do the same when you stop using log collection.
 
 ## KR Server Setup Steps
 
