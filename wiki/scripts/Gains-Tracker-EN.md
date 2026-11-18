@@ -199,7 +199,7 @@ List cards use two lines: the first line shows the title, a small account name n
 
 - **Totals**: Sums net changes across items, Servants, CEs, Embers, Fou, and Command Codes during the period, split into **Gains (+)** and **Uses (−)** sorted by magnitude. QP, Mana prisms, Rare prisms, and free/paid Saint Quartz appear as signed numbers.
 - **Fruits used**: Sums decreases in Golden, Silver, Bronzed Cobalt, and Bronze Fruits across each response. Receiving fruits later does not erase fruits used earlier.
-- **By source**: Groups changes by Gift box, Shop, Summon, Lottery, Enhancement, AP recovery, Quests played by hand, and Missions. Collapsed by default; expanding shows the same resource tile layout. Unclassified responses show **Other** and the API path without query strings.
+- **By source**: Groups changes by Gift box, Shop, Summon, Lottery, Enhancement, AP recovery, Quests played by hand, Missions, and Login. Friend points you receive at login (from other players borrowing your support servants) are recorded under **Login**. Collapsed by default; expanding shows the same resource tile layout. Unclassified responses show **Other** and the API path without query strings.
 
 For Servants, CEs, Embers, and Fou, FGA combines regular inventory and Second Storage counts per template ID. Spending 12 Embers on enhancement logs `−12`; selling 3 copies of a CE in the shop logs `−3`. Moving cards between storages or changing level, ascension, or lock state does not alter counts. Command Codes compare counts per ID as well.
 

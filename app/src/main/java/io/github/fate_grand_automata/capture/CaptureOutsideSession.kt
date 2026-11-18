@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.capture
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.LoginGrant
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -122,7 +123,14 @@ internal class CaptureOutsideSession(
         val matchesScript = scriptServer == null || server == scriptServer
         if (scriptActive && matchesScript) return
         if (CaptureNames.classify(target) == CaptureNames.ApiPath.Login) {
+            // A login replaces the account, so it is never diffed; the grant the server reports is the one change kept.
             checkpoint(response)
+            val state = response.next
+            // Only a replacing login builds a new rawLoginResponse. Every other path, even one that builds a new state
+            // (a failed login with cache.serverTime or updated tables), carries the previous String over, so reference
+            // identity tells this login apart from an inherited one. snapshotTime would miss two logins in one second.
+            val grant = if (state != null && state.rawLoginResponse !== response.previous?.rawLoginResponse) LoginGrant.friendPoints(state.rawLoginResponse) else 0L
+            if (grant > 0) record(response, ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = grant))
             return
         }
         val delta = AccountDelta.between(response.previous, response.next)
@@ -130,10 +138,14 @@ internal class CaptureOutsideSession(
             checkpoint(response)
             return
         }
+        record(response, ChangeSource.of(target).copy(script = scriptMade && matchesScript), delta)
+    }
+
+    private fun record(response: CaptureAccounts.Response, source: ChangeSource, delta: AccountDelta) {
         val time = now()
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
-            period = previous.period.add(ChangeSource.of(target).copy(script = scriptMade && matchesScript), delta, time),
+            period = previous.period.add(source, delta, time),
             resourceBaseline = response.next!!.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = response.next.lastUpdateTime,
         )

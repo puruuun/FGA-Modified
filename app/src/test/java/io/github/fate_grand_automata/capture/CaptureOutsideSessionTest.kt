@@ -221,6 +221,97 @@ class CaptureOutsideSessionTest {
         assertTrue(logs.entries.single().period.sources.none { it.source.path == "login/top" })
     }
 
+    private val loginSource = ChangeSource(ChangeSource.Group.Login)
+
+    @Test fun loginGrantOpensPeriodUnderLoginSourceAndStaysInTheTotals() {
+        response("login/top", outsideLogin(grant = 370))
+        val entry = session.openEntries.value.single()
+        assertEquals(AccountDelta(friendPoint = 370), entry.period.total)
+        assertEquals(loginSource, entry.period.sources.single().source)
+        session.setRunning(false)
+        assertEquals(AccountDelta(friendPoint = 370), logs.entries.single().period.sources.single().delta)
+    }
+
+    @Test fun loginWithoutGrantRecordsNothingButStillCheckpoints() {
+        feed()
+        response("login/top", outsideLogin(fruit = 50, grant = 0))
+        assertEquals(listOf(100L to -2L), session.openEntries.value.single().period.total.items.toList())
+        feed(num = 49)
+        session.setRunning(false)
+        val period = logs.entries.single().period
+        assertEquals(-3, period.total.items[100])
+        assertTrue(period.sources.none { it.source.group == ChangeSource.Group.Login })
+    }
+
+    @Test fun loginGrantIsIgnoredWhenNotRunning() {
+        session.setRunning(false)
+        response("login/top", outsideLogin(grant = 370))
+        assertTrue(session.openEntries.value.isEmpty())
+        assertFalse(pending.exists())
+    }
+
+    @Test fun loginGrantDuringBattleScriptOnTheSameServerIsDropped() {
+        session.scriptStart(battle = true, server = "KR")
+        response("login/top", outsideLogin(grant = 370))
+        session.scriptEnd()
+        session.setRunning(false)
+        assertTrue(logs.entries.isEmpty())
+    }
+
+    @Test fun failedLoginDoesNotRecordTheGrant() {
+        response("login/top", outsideLogin(grant = 370, resCode = "01"))
+        assertTrue(session.openEntries.value.isEmpty())
+    }
+
+    @Test fun loginThatDoesNotReplaceTheSnapshotDoesNotRepeatThePreviousGrant() {
+        response("login/top", outsideLogin(grant = 370))
+        // Without its own userGame the login leaves the stored snapshot, and its old login response, in place.
+        response("login/top", Json.parseToJsonElement("""{"response":[{"nid":"login","resCode":"00","success":{"addFriendPoint":500}}],"cache":{"replaced":{}}}""").jsonObject)
+        assertEquals(370, session.openEntries.value.single().period.total.friendPoint)
+    }
+
+    @Test fun failedLoginWithCacheDoesNotRepeatThePreviousGrant() {
+        response("login/top", outsideLogin(grant = 370))
+        session.setRunning(false)
+        session.setRunning(true)
+        val failedWithTime = """{"response":[{"nid":"login","resCode":"01"}],"cache":{"serverTime":12345}}"""
+        response("login/top", Json.parseToJsonElement(failedWithTime).jsonObject)
+        val failedWithTable = """{"response":[{"nid":"login","resCode":"01"}],"cache":{"updated":{"userItem":[{"userId":"fictionalA","itemId":100,"num":10}]}}}"""
+        response("login/top", Json.parseToJsonElement(failedWithTable).jsonObject)
+        assertTrue(session.openEntries.value.isEmpty())
+        session.setRunning(false)
+        assertEquals(1, logs.entries.size)
+    }
+
+    @Test fun twoSuccessfulLoginsEachRecordTheirOwnGrant() {
+        response("login/top", outsideLogin(grant = 370))
+        response("login/top", outsideLogin(grant = 50))
+        assertEquals(420, session.openEntries.value.single().period.total.friendPoint)
+    }
+
+    @Test fun zeroGrantLoginWithNoOpenPeriodCreatesNothing() {
+        response("login/top", outsideLogin(grant = 0))
+        assertTrue(session.openEntries.value.isEmpty())
+        assertFalse(pending.exists())
+    }
+
+    @Test fun loginGrantThenOrdinaryFriendPointChangeIsNotCountedTwice() {
+        response("login/top", outsideLogin(grant = 370))
+        response("gacha/draw", outsideFriendPointSummon(friendPoint = 9800, includeCards = false))
+        session.setRunning(false)
+        val period = logs.entries.single().period
+        assertEquals(170, period.total.friendPoint)
+        assertEquals(setOf(370L, -200L), period.sources.map { it.delta.friendPoint }.toSet())
+    }
+
+    @Test fun loginGrantsOfTwoServersKeepSeparatePeriods() {
+        response("login/top", outsideLogin(grant = 370))
+        response("https://game.fate-go.jp/login/top", outsideLogin("fictionalJp", grant = 50))
+        val byAccount = session.openEntries.value.associateBy { it.accountId }
+        assertEquals(370, byAccount.getValue("fictionalA").period.total.friendPoint)
+        assertEquals(50, byAccount.getValue("fictionalJp").period.total.friendPoint)
+    }
+
     @Test fun collectionOffDoesNotOpenPeriodAndRepeatedStopsWriteNothingExtra() {
         session.setRunning(false)
         feed(num = 9)

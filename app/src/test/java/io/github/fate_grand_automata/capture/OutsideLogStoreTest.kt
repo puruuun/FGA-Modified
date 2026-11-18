@@ -33,6 +33,16 @@ class OutsideLogStoreTest {
         assertTrue(loaded.period.sources.none { it.source.script })
     }
 
+    @Test fun loginGroupRoundTripsThroughTheStoreFile() {
+        val period = io.github.fate_grand_automata.scripts.capture.OutsidePeriod("fictionalA", 100)
+            .add(io.github.fate_grand_automata.scripts.capture.ChangeSource(io.github.fate_grand_automata.scripts.capture.ChangeSource.Group.Login),
+                io.github.fate_grand_automata.scripts.capture.AccountDelta(friendPoint = 370), 200)
+        val entry = OutsideLogEntry("login-entry", "fictionalA", "Sample", 100_000, 200_000, period)
+        OutsideLogStore(directory).add(entry)
+        assertTrue(File(directory, "outside-log.json").readText().contains("\"Login\""))
+        assertEquals(listOf(entry), OutsideLogStore(directory).apply { load() }.entries)
+    }
+
     @Test fun keepsNewest200AndReplayReplacesSameId() {
         File(directory, "outside-log.json").writeText(Json.encodeToString((1..200).map { outsideFixture("$it", it * 1000L) }))
         val store = OutsideLogStore(directory)
