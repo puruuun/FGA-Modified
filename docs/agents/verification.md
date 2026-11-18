@@ -16,7 +16,7 @@ Read this when you verify a PR, when you implement a risky change (the guard-che
 
 ## Who verifies
 
-- A separate agent run with a fresh context, preferably a different model from the implementer. It may be the same model as the implementer, but never the same session. Which model verifies whose work is in [`agent-team.md`](agent-team.md).
+- A separate agent run with a fresh context, preferably a different model from the implementer. It may be the same model as the implementer, but never the same session. Which model verifies whose work is the planner's choice.
 - If no agent is available, the planner does a full line-by-line review and says so in the PR record.
 - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on two different models, chosen so that at least one differs from the implementer. Both must pass. In `native/` this also covers `fga-ffi` and moving a unit to its next lifecycle stage (see [`rust-native.md`](rust-native.md)).
 

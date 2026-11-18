@@ -1,6 +1,6 @@
 # Planner procedures and agent team operations
 
-This guide is for the planner: how it prepares, reviews and merges work, and how it chooses, starts and runs other agents. Read it at the start of a planner session. An implementing or verifying agent does not need it: the rules every agent follows are in [`AGENTS.md`](../../AGENTS.md), and the planner's prompt says the rest. Model choices change often, so they live here and not in `AGENTS.md` (owner decision, 2026-11-17, #458).
+This guide is for the planner: how it prepares, reviews and merges work, and how it chooses, starts and runs other agents. Read it at the start of a planner session. An implementing or verifying agent does not need it: the rules every agent follows are in [`AGENTS.md`](../../AGENTS.md), and the planner's prompt says the rest.
 
 ## Planner procedures
 
@@ -34,7 +34,8 @@ Owner decision, 2026-11-01. A green CI and the implementer's report are not enou
 
 ### Merging
 
-- The planner merges a code PR once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged.
+- Every change reaches `main` through a PR (owner decision, 2026-11-19, which ends the direct push of documentation). `main` has a ruleset with the required status check `Main CI gate`: GitHub rejects a push of a commit on which that check did not pass. The owner can switch the ruleset off in the repository settings if GitHub Actions is down and a merge cannot wait.
+- The planner merges a PR once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged.
 - **No shortcut for a branch that fell behind `main`** (owner decision, 2026-11-18). Before a merge, the PR branch contains the latest `main` and `Main CI` (and `Native CI` when it runs) passed on exactly that commit. When `main` moves during the CI run, merge it into the branch and wait again, however small or unrelated the new commits are. An exception for Rust-only PRs was written down earlier the same day and withdrawn before it was ever used: the owner prefers a slower merge to finding a broken combination on `main` afterwards.
 - Check each step: never chain a push or merge behind a command whose exit code does not reflect the CI result, and check ancestry before the fast-forward (2026-11-17 incident).
 - After merging, check the `Main CI` run on `main` too.
@@ -64,33 +65,22 @@ Owner decision, 2026-10-26, for `tools/device-qa/run.py` on any connected app pl
 
 Owner decision, 2026-11-11. Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
 
-## Models and tiers
+## Choosing agents
 
-Owner decision, 2026-11-18, which replaces the 2026-11-13 "Gemini first" order. Codex is not used.
+Owner decision, 2026-11-19: which model does which work is the owner's preference and changes often, so it is kept in the planner's memory (`agent-team-defaults`), not in the repository. The rules that do not depend on a model name stay here.
 
-- **Claude Code models first.** The planner starts them as Claude subagents with the Agent tool, at **medium** effort.
-- **Sonnet 5.5 (medium): the main worker.** It is the default implementer, and the default for fixes, verification, design review and research.
-- **Haiku 5.5 (medium): one tier lower and cheap.**
-  - light or simple work, such as small edits, lookups and mechanical checks;
-  - a second model next to Sonnet, for example as the verifier of Sonnet's work or the second verifier.
-- **Opus 5.5 (medium): the top tier, used sparingly.**
-  - very hard tasks;
-  - a task that keeps failing review, verification or device QA: after Sonnet's work is sent back twice, Opus continues on the same branch.
-- **Gemini: still available, but not the first choice.** The planner runs it itself (see "Gemini runs") with two models only: `gemini-4-hydrogen-high` (Sonnet's tier) and `gemini-4-argon-medium` (strong and much the most expensive). Use it when:
-  - a model from outside the Claude family helps, for example as a verifier that should differ from the implementer;
-  - Claude Code's usage limit is reached and the task should not wait.
-- **Sonnet through Antigravity** (the runner model `claude-sonnet-5-5-medium`) is no longer the first choice. Sonnet runs as a Claude Code subagent.
-- **Verifiers:** Sonnet's work is usually verified by Haiku. When two verifiers are needed, the usual pair is a fresh Sonnet session and Haiku; Opus or Gemini replaces one of them when the change is hard or an outside model is wanted.
-- Pick the agent for each task by its difficulty and risk. The same choice applies to implementers, verifiers, design reviewers and researchers.
+- Pick the agent for each task by its difficulty and risk. The same applies to implementers, verifiers, design reviewers and researchers.
+- A verifier is a separate run with a fresh context, preferably on a different model from the implementer ([`verification.md`](verification.md)).
+- A task that keeps failing review, verification or device QA moves to a stronger model after its work was sent back twice; that model continues on the same branch.
 - Tell the owner which agent and model did each task, and why when it was not the usual choice.
 
 ## Rust work (`native/`)
 
 Planner decision under the owner's delegation, 2026-11-18 ([design 0025](../design/0025-rust-engine-migration.md) §10). The owner does not read Rust, so the choices lean on stronger models and an outside verifier.
 
-- **Foundation and `fga-ffi`:** Opus. The build setup and the Kotlin boundary are hard to change later and everything depends on them.
-- **Readers, capture features, automation flow:** Sonnet, as for Kotlin work.
-- **Verification:** at least one verifier of every Rust PR is Gemini, a model from outside the Claude family. Same-family reviewers can miss the same thing, and the owner cannot catch it.
+- **Foundation and `fga-ffi`:** the strongest tier. The build setup and the Kotlin boundary are hard to change later and everything depends on them.
+- **Readers, capture features, automation flow:** the main worker, as for Kotlin work.
+- **Verification:** at least one verifier of every Rust PR is a model from outside the Claude family (Gemini). Same-family reviewers can miss the same thing, and the owner cannot catch it.
 - **Gemini runner:** its allow-list needs the Rust commands from [`rust-native.md`](rust-native.md) before Gemini can implement Rust work. Read-only verification works without them, but then Gemini cannot run the tests, so a Claude verifier runs them.
 - The planner reads the first Rust PRs line by line, whoever verified them.
 
@@ -143,7 +133,7 @@ Owner decision, 2026-11-11.
 
 - The planner designs in the conversation with the owner. Design is not handed to a separate agent.
 - **Code research:** the planner may give read-only code research to a research agent and work from its conclusions.
-- **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a subagent with a fresh context (usually Sonnet) reviews the issue and the prompt for gaps.
+- **Design review for large features:** before the agent prompt for a large feature goes to the implementer, a subagent with a fresh context reviews the issue and the prompt for gaps.
   - Large features are a new automation flow, a change to the battle or screen-reading flow, or a new stored-data format.
   - The reviewer looks for missing end states and guards, unclear requirements, and effects on existing OCR and tap behaviour. It changes nothing.
 - The planner amends the prompt and tells the owner about anything that changes the approved walkthrough.

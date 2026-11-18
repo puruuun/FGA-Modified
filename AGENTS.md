@@ -30,8 +30,8 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 ## Delivery
 
-- **Code changes go through a pull request.** Branch from the latest remote `main` (for example `feat/…`, `fix/…`), commit there, push the branch, and open a PR against `main`. A change is a code change if it touches anything other than documentation: source, tests, resources, assets, build files, version files or workflows.
-- **Documentation-only changes are pushed directly to `main` without a PR**: design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files. Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
+- **Every change goes through a pull request, documentation included.** Branch from the latest remote `main` (for example `feat/…`, `fix/…`, `docs/…`), commit there, push the branch, and open a PR against `main`. `main` accepts only commits on which the `Main CI gate` check passed, so a direct push of an unchecked commit is rejected.
+- **A documentation-only PR takes a fast path.** When every changed file is documentation (`docs/`, `wiki/`, root `*.md`, `AGENTS.md`, `.claude/`, `.github/instructions/`), `Main CI` skips the build and the gate passes within a minute or two. The exact list is in `tools/ci/ci_gate.py`. A validation record or manual page may ride in the same PR as the code it belongs to.
 - **Short branches only.** Each feature or fix is a short branch from `main` and comes back through its own PR as soon as it is done. Betas are built from `main`, so a large feature that is not finished lands behind a setting that is off by default.
 - **Rust migration work goes to the `rust` branch, not to `main`**, through PRs that target `rust`, including its Kotlin-side preparation. A finished, owner-approved unit comes to `main` in its own PR. The details are in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), "Branches and releases".
 - **Never force push**, and never bypass branch protection or execution-environment restrictions. Rebase a work branch onto its latest base before its first push; once it is pushed, merge the base into it instead. Preserve existing `main` changes and skip changes that are already applied. Stop and report a rejected push or a conflict that cannot be resolved safely.
@@ -40,7 +40,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - Never stash, reset, rebase or check out over changes you did not make. Stage only your own paths, and check `git show --stat HEAD` before pushing.
   - Sessions do not share their conversations. What another session needs to know goes into the repository (issues, PRs, `docs/qa/` records).
 - **Commit with the Git identity already configured on this PC (`puruuun`).** Do not set another author or committer, and preserve authorship on existing published commits.
-- **Tests before a push.** Run the full unit test command from Build & test and confirm it passes. Commits that change only documentation are exempt.
+- **Tests before a push.** Run the full unit test command from Build & test and confirm it passes. A PR that changes only documentation is exempt.
 - **CI after a push.** After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work.
 - **Device QA** runs only when the planner assigns it; the planner names the suites, and the report gives the suites that ran and their counts.
 - **Images in the repository:**

@@ -33,7 +33,7 @@ features, so every sync follows the same rules instead of being decided again ea
 6. Deliver it like any code change: full unit suite, PR, `Main CI`, `--ff-only` merge
    (see `AGENTS.md`). Device QA on BlueStacks covers the upstream behaviour changes that touch
    KR/JP play.
-7. Add a row to the sync log below (documentation-only, pushed directly to `main`).
+7. Add a row to the sync log below (in the sync PR, or in a documentation-only PR).
 
 ## Ownership
 
