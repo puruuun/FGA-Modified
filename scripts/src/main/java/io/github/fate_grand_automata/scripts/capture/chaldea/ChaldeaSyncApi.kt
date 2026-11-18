@@ -112,11 +112,20 @@ sealed interface ChaldeaSyncStatus {
     data object BackupFailed : ChaldeaSyncStatus
     data object AccountNotIdentified : ChaldeaSyncStatus
     data object PatchTooLarge : ChaldeaSyncStatus
+    /**
+     * A write was undone from the backup. Reported for one server when its own failed write was restored (the
+     * result of that target), and globally when the recovery of an interrupted write found at start restored the file:
+     * Chaldea keeps one `userdata.json` for every user, so that recovery concerns the file, not a server.
+     */
     data object FailedRestored : ChaldeaSyncStatus
     data class RestoreFailed(val backupPath: String) : ChaldeaSyncStatus
     data class Failed(val code: ChaldeaSyncCode) : ChaldeaSyncStatus
 
-    /** A write that was interrupted earlier could not be checked or undone; nothing is written until that is resolved. */
+    /**
+     * A write that was interrupted earlier could not be checked or undone; nothing is written until that is resolved.
+     * Only the recovery path reports it, and always globally: the one `userdata.json` holds every user, so the whole
+     * file is unsafe, not one server.
+     */
     data class RecoveryBlocked(val code: ChaldeaSyncCode) : ChaldeaSyncStatus
 
     /** Failures that stay shown until the next success or a switch toggle. */

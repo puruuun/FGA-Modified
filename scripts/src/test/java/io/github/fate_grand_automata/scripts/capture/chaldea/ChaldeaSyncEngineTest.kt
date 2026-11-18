@@ -51,7 +51,7 @@ class ChaldeaSyncEngineTest {
     private fun commitAfterPrepare(e: ChaldeaSyncEngine, p: ChaldeaPatch = patch(), allowCreate: Boolean = true): ChaldeaSyncResult {
         val prep = e.prepare()
         assertEquals(ChaldeaSyncCode.Ok, prep.result.code)
-        return e.commit(p.toJson(), prep.result.sha256!!, allowCreate)
+        return e.commit(p.toJson(), prep.result.sha256!!, allowCreate, prep.result.bundleSha256!!)
     }
 
     @Test fun successWritesBothFilesIdenticallyAndReportsCounts() {
@@ -87,7 +87,7 @@ class ChaldeaSyncEngineTest {
         val before = get("userdata.json")
         for (s in listOf(ChaldeaRunState.Visible, ChaldeaRunState.Background)) {
             assertEquals(ChaldeaSyncCode.ChaldeaRunning, engine(state = { s }).prepare().result.code)
-            assertEquals(ChaldeaSyncCode.ChaldeaRunning, engine(state = { s }).commit(patch().toJson(), "x", true).code)
+            assertEquals(ChaldeaSyncCode.ChaldeaRunning, engine(state = { s }).commit(patch().toJson(), "x", true, "y").code)
         }
         assertEquals(ChaldeaSyncCode.StateUnknown, engine(state = { ChaldeaRunState.Unknown }).prepare().result.code)
         assertContentEquals(before, get("userdata.json"))
@@ -100,7 +100,7 @@ class ChaldeaSyncEngineTest {
         val e = engine(flaky) { state }
         val prep = e.prepare()
         state = ChaldeaRunState.Visible
-        assertEquals(ChaldeaSyncCode.ChaldeaRunning, e.commit(patch().toJson(), prep.result.sha256!!, true).code)
+        assertEquals(ChaldeaSyncCode.ChaldeaRunning, e.commit(patch().toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!).code)
         assertTrue(flaky.writes.isEmpty())
     }
 
@@ -111,9 +111,23 @@ class ChaldeaSyncEngineTest {
         val prep = e.prepare()
         put("userdata.json", fileText("[${userJson("""{"100":99}""")}]"))
         val changed = get("userdata.json")
-        assertEquals(ChaldeaSyncCode.FileChanged, e.commit(patch().toJson(), prep.result.sha256!!, true).code)
+        assertEquals(ChaldeaSyncCode.FileChanged, e.commit(patch().toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!).code)
         assertTrue(flaky.writes.isEmpty())
         assertContentEquals(changed, get("userdata.json"))
+    }
+
+    @Test fun aBundleHashThatIsBlankOrNotTheBackedUpOneIsFileChangedAndNothingIsWritten() {
+        put("userdata.json", fileText()); put("userdata.json.bak", fileText())
+        val flaky = Flaky(JavaChaldeaFileAccess(dir))
+        val e = engine(flaky)
+        val prep = e.prepare()
+        val before = get("userdata.json")
+        for (wrong in listOf("", " ", "0".repeat(64))) {
+            assertEquals(ChaldeaSyncCode.FileChanged, e.commit(patch().toJson(), prep.result.sha256!!, true, wrong).code)
+        }
+        assertTrue(flaky.writes.isEmpty())
+        assertContentEquals(before, get("userdata.json"))
+        assertEquals(ChaldeaSyncCode.Ok, e.commit(patch().toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!).code)
     }
 
     @Test fun prepareFailureLeavesFilesAlone() {
@@ -164,7 +178,7 @@ class ChaldeaSyncEngineTest {
         val prep = engine().prepare()
         assertEquals(ChaldeaBaseSource.Bak, prep.result.base)
         assertContentEquals(good.toByteArray(), prep.baseBytes)
-        val r = engine().commit(patch().toJson(), prep.result.sha256!!, true)
+        val r = engine().commit(patch().toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!)
         assertEquals(ChaldeaSyncCode.Ok, r.code)
         assertEquals(ChaldeaBaseSource.Bak, r.base)
         assertContentEquals(get("userdata.json"), get("userdata.json.bak"))
@@ -187,7 +201,7 @@ class ChaldeaSyncEngineTest {
         val prep = engine(flaky).prepare()
         assertEquals(ChaldeaSyncCode.InvalidJson, prep.result.code)
         assertNull(prep.baseBytes)
-        assertEquals(ChaldeaSyncCode.InvalidJson, engine(flaky).commit(patch().toJson(), "x", true).code)
+        assertEquals(ChaldeaSyncCode.InvalidJson, engine(flaky).commit(patch().toJson(), "x", true, "y").code)
         assertTrue(flaky.writes.isEmpty())
     }
 
@@ -217,7 +231,7 @@ class ChaldeaSyncEngineTest {
         val e = engine()
         val prep = e.prepare()
         assertEquals(ChaldeaSyncCode.Ok, prep.result.code)
-        assertEquals(ChaldeaSyncCode.NotFound, e.commit(patch().toJson(), prep.result.sha256!!, true).code)
+        assertEquals(ChaldeaSyncCode.NotFound, e.commit(patch().toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!).code)
         assertFalse(File(dir, "userdata.json").exists())
     }
 
@@ -233,10 +247,12 @@ class ChaldeaSyncEngineTest {
         put("userdata.json", fileText()); put("userdata.json.bak", fileText())
         val flaky = Flaky(JavaChaldeaFileAccess(dir))
         val e = engine(flaky)
-        val sha = e.prepare().result.sha256!!
-        assertEquals(ChaldeaSyncCode.AccountNotIdentified, e.commit(patch(friend = " ").toJson(), sha, true).code)
-        assertEquals(ChaldeaSyncCode.NoMatchingUser, e.commit(patch(friend = "other").toJson(), sha, false).code)
-        assertEquals(ChaldeaSyncCode.BadPatch, e.commit("not a patch", sha, true).code)
+        val prepared = e.prepare().result
+        val sha = prepared.sha256!!
+        val bundle = prepared.bundleSha256!!
+        assertEquals(ChaldeaSyncCode.AccountNotIdentified, e.commit(patch(friend = " ").toJson(), sha, true, bundle).code)
+        assertEquals(ChaldeaSyncCode.NoMatchingUser, e.commit(patch(friend = "other").toJson(), sha, false, bundle).code)
+        assertEquals(ChaldeaSyncCode.BadPatch, e.commit("not a patch", sha, true, bundle).code)
         assertTrue(flaky.writes.isEmpty())
         put("userdata.json", """{"version":5,"users":[]}""")
         assertEquals(ChaldeaSyncCode.UnknownVersion, e.prepare().result.code)

@@ -17,6 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.LockSupport
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -78,12 +79,22 @@ class ChaldeaRootClientTest {
     // ---- F5: bind + cancel / timeout / close unbind guarantees ----
 
     private fun pumpMainUntil(condition: () -> Boolean) {
-        repeat(100) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+        while (System.nanoTime() < deadline) {
             shadowOf(Looper.getMainLooper()).idle()
             if (condition()) return
-            Thread.sleep(10)
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1))
         }
         error("condition not reached")
+    }
+
+    /** Waits for the real condition (a message queued on the paused main looper), not for a guessed time. */
+    private fun awaitMainMessageQueued() {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+        while (shadowOf(Looper.getMainLooper()).isIdle) {
+            check(System.nanoTime() < deadline) { "the bind never reached the main looper" }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1))
+        }
     }
 
     @Test
@@ -127,8 +138,8 @@ class ChaldeaRootClientTest {
         )
         val job = launch(Dispatchers.Default) { client.open(timeoutMs = 5_000) }
         shellDone.await()
-        // Wait briefly so withContext(Dispatchers.Main + NonCancellable) posts to the main looper before it idles.
-        Thread.sleep(50)
+        // The bind must already be queued on the main looper when the cancel arrives; that is the case being guarded.
+        awaitMainMessageQueued()
         job.cancel()
         pumpMainUntil { job.isCompleted }
         shadowOf(Looper.getMainLooper()).idle()

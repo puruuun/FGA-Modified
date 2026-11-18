@@ -813,6 +813,65 @@ class ChaldeaSyncSchedulerTest {
         assertNotNull(store.readInflight())
     }
 
+    @Test fun recoveryKeepsPollingWhenChaldeaComesBackBetweenThePollAndPrepare() = fx {
+        inflight()
+        // The state poll says NotRunning, but prepare finds Chaldea running (it was opened in between).
+        prepareCode = ChaldeaSyncCode.ChaldeaRunning
+        start()
+        advance(5 * MIN)
+        assertTrue(count("prepare") >= 4, "the attempt must keep polling, was ${count("prepare")} prepares")
+        assertEquals(0, restores)
+        assertNotNull(store.readInflight())
+        assertEquals(ChaldeaSyncStatus.WaitingVisible, sch.status.value)
+
+        // Chaldea is closed and the file is damaged: recovery runs on the next poll. Waiting did not count as a
+        // failed attempt, so the cap (three failures) is not reached by the polls above.
+        base = "{broken".toByteArray()
+        prepareCode = ChaldeaSyncCode.InvalidJson
+        advance(MIN + 1_000)
+        assertEquals(1, restores)
+        assertEquals(ChaldeaSyncStatus.FailedRestored, sch.status.value)
+        assertNull(store.readInflight())
+    }
+
+    @Test fun theFinalPassKeepsPollingWhenRecoveryHasToWaitForChaldea() = fx {
+        inflight()
+        prepareCode = ChaldeaSyncCode.ChaldeaRunning
+        start()
+        // Past the stop minutes the session is inactive and endSession runs its final pass.
+        advance(12 * MIN)
+        assertTrue(sch.status.value !is ChaldeaSyncStatus.Stopped, "the session was stopped with the recovery pending")
+        assertEquals(0, restores)
+        assertNotNull(store.readInflight())
+        val prepares = count("prepare")
+
+        base = "{broken".toByteArray()
+        prepareCode = ChaldeaSyncCode.InvalidJson
+        advance(6 * MIN)
+        assertTrue(count("prepare") > prepares)
+        assertEquals(1, restores)
+        assertEquals(ChaldeaSyncStatus.FailedRestored, sch.status.value)
+        assertNull(store.readInflight())
+    }
+
+    @Test fun manualSyncThatMeetsARunningChaldeaLeavesThePendingRecoveryPolled() = fx {
+        inflight()
+        prepareCode = ChaldeaSyncCode.ChaldeaRunning
+        start()
+        assertEquals(ChaldeaSyncNowOutcome.Done, sch.syncNow(null))
+        assertEquals(0, commits.size)
+        assertEquals(0, restores)
+        assertNotNull(store.readInflight())
+        assertEquals(ChaldeaSyncStatus.WaitingVisible, sch.status.value)
+
+        // Chaldea is closed and the file is damaged: no further trigger is sent, the recovery still runs.
+        base = "{broken".toByteArray()
+        prepareCode = ChaldeaSyncCode.InvalidJson
+        advance(2 * MIN)
+        assertEquals(1, restores)
+        assertNull(store.readInflight())
+    }
+
     // ---- robustness ----
 
     @Test fun anExceptionInAnAttemptNeverEscapesAndTheNextAttemptRuns() = fx {

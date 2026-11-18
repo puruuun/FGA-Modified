@@ -18,9 +18,8 @@ workspace = true
 [dependencies]
 jni = "0.21.1"
 
-# These crates compile C or assembly. The owner's Windows PC has no host C compiler, so they are
-# left out of host builds there; Android cross-builds use the NDK's clang and CI runs on Linux.
-[target.'cfg(not(all(windows, target_env = "gnu")))'.dependencies]
+# ring and tract compile C or assembly, so every host that builds this crate needs a C compiler;
+# Android cross-builds use the NDK's clang.
 ring = "0.17.14"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }

@@ -598,7 +598,7 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
                 ui = chaldeaUi,
                 onEnabled = { on ->
                     vm.prefsCore.chaldeaSyncEnabled.set(on)
-                    if (on) ChaldeaSyncManager.onUserTurnedOn()
+                    if (on) ChaldeaSyncManager.onUserTurnedOn() else ChaldeaSyncManager.onUserTurnedOff()
                 },
                 onCloseMinutes = { vm.prefsCore.chaldeaSyncCloseMinutes.set(it) },
                 onStopMinutes = { vm.prefsCore.chaldeaSyncStopMinutes.set(it) },
