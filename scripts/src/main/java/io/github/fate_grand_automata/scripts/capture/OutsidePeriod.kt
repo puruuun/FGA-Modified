@@ -19,14 +19,19 @@ data class OutsidePeriod(
 
     fun add(source: ChangeSource, delta: AccountDelta, now: Long): OutsidePeriod {
         if (delta.isEmpty) return this
-        val previous = sources.find { it.source == source }
+        // Unknown stored groups all read as Other, so a loaded period can hold several entries under one key.
+        val same = sources.filter { it.source == source }
+        val previousDelta = same.fold(AccountDelta()) { sum, it -> sum + it.delta }
+        val previousFruit = same.fold(emptyMap<Long, Long>()) { sum, it ->
+            (sum.keys + it.fruitUsed.keys).associateWith { k -> (sum[k] ?: 0L) + (it.fruitUsed[k] ?: 0L) }
+        }
         fun fruitUsage(prior: Map<Long, Long>) = RunGains.FRUIT_IDS.associateWith {
             (prior[it] ?: 0L) + (-(delta.items[it] ?: 0L)).coerceAtLeast(0L)
         }
         return copy(
             endedAt = maxOf(endedAt, now),
             sources = sources.filterNot { it.source == source } +
-                SourceDelta(source, (previous?.delta ?: AccountDelta()) + delta, fruitUsage(previous?.fruitUsed.orEmpty())),
+                SourceDelta(source, previousDelta + delta, fruitUsage(previousFruit)),
             total = total + delta,
             // Count each observed decrease, so claiming fruit later cannot erase fruit already used.
             fruitUsed = fruitUsage(fruitUsed),

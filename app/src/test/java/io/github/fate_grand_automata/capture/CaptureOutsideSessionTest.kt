@@ -498,4 +498,24 @@ class CaptureOutsideSessionTest {
         store.clear()
         assertTrue(OutsideLogStore(logDir).apply { load() }.entries.isEmpty())
     }
+
+    @Test fun pendingPeriodWithUnknownSourceGroupResumesAsOther() {
+        feed()
+        assertTrue(pending.readText().contains("\"ApRecovery\""))
+        pending.writeText(pending.readText().replace("\"ApRecovery\"", "\"FutureGroup\""))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        val period = session.openEntries.value.single().period
+        assertEquals(AccountDelta(items = mapOf(100L to -2L)), period.total)
+        assertEquals(ChangeSource.Group.Other, period.sources.single().source.group)
+        assertEquals(AccountDelta(items = mapOf(100L to -2L)), period.sources.single().delta)
+    }
+
+    @Test fun pendingPeriodWithNonStringGroupIsStillSkipped() {
+        feed()
+        pending.writeText(pending.readText().replace("\"ApRecovery\"", "7"))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        assertTrue(session.openEntries.value.isEmpty())
+    }
 }
