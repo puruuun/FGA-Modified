@@ -32,6 +32,18 @@ Planner decision under the owner's delegation, 2026-11-18 ([design 0025](../desi
 - **Gemini runner:** its allow-list needs the Rust commands from [`rust-native.md`](rust-native.md) before Gemini can implement Rust work. Read-only verification works without them, but then Gemini cannot run the tests, so a Claude verifier runs them.
 - The planner reads the first Rust PRs line by line, whoever verified them.
 
+## Two planner sessions
+
+Planner decision under the owner's delegation, 2026-11-18. The owner runs two planner sessions so that Kotlin work and Rust work are easy to follow separately. Both work on `main` of this repository, so each owns different things.
+
+- **Kotlin session:** bug fixes, small features, upstream syncs, and everything about releases: `version.properties`, beta and stable builds, GitHub Releases, validation records for a version.
+- **Rust session:** design 0025: everything under `native/`, the Kotlin interfaces and bindings that 0025 adds, the Rust CI job, and the lifecycle records of each unit.
+- **The Rust session never bumps a version, builds a release APK or publishes a Release.** Its merged work ships in the Kotlin session's next beta. When a Rust change must be in a particular beta, the Rust session says so in the PR.
+- **A Rust-session PR that touches existing Kotlin files** (wrapping a reader or the proxy behind an interface) is kept small, one unit per PR, and names the files in its issue before work starts, so the Kotlin session can see the overlap. If the Kotlin session has an open PR on the same file, the Rust PR waits and rebases.
+- **A Kotlin-session fix to a unit that Rust already owns** ("beta default" or later in 0025) is filed as an issue for the Rust session instead of being fixed in Kotlin.
+- Each session merges only its own PRs, and checks `git fetch` and `git show --stat HEAD` before every push, as `AGENTS.md` already requires for a shared checkout. Neither touches the other's worktrees or uncommitted files.
+- Both label their issues and PRs: `rust` for the Rust session's.
+
 ## Gemini runs
 
 Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of the same day. Since 2026-11-18 Gemini is an optional agent, not the default.
