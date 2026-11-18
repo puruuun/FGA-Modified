@@ -85,7 +85,7 @@ Rules:
 - A Kotlin-only change needs no Rust tools. Building with the Gradle property `fga.native` off must always work.
 - BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed there with SIGILL (see the comment at the top of `app/build.gradle.kts`). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
 - `native/target/` is never committed.
-- The owner's PC has Rust on the GNU host toolchain (`stable-x86_64-pc-windows-gnu`), `cargo-ndk`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. There is no Visual Studio and no host C compiler, so a crate with C code may not build for PC tests there. Report that instead of installing anything.
+- The owner's PC has Rust on the GNU host toolchain (`stable-x86_64-pc-windows-gnu`), `cargo-ndk`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. There is no Visual Studio, no host C compiler and no `dlltool`, so a crate with C code, or one that needs `windows-sys` 0.61 or later on the host, may not build for PC tests there, and `cargo-deny` cannot be installed (CI runs it). Report that instead of installing anything.
 
 ## Test data
 
