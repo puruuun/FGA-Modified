@@ -389,10 +389,13 @@ dependencies = [
 name = "fga-ffi"
 version = "0.1.0"
 dependencies = [
+ "fga-sensing",
  "jni",
+ "png",
  "rcgen",
  "ring",
  "rustls",
+ "serde_json",
  "tract-core",
 ]
 

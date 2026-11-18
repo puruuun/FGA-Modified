@@ -21,4 +21,14 @@ object NativeProbe {
     external fun rustlsProbe(): String
     external fun tractProbe(): String
     external fun cpuProbe(): String
+
+    // Issue #530: the PP-OCRv6 recogniser with the tract backend. `OK: ` is followed by a JSON object.
+    /** Loads the model (replacing any loaded one): `{"loadMs":…,"classes":…}`. */
+    external fun ocrLoad(modelPath: String): String
+    /** One grayscale crop, one byte per pixel; empty [allowed] means no restriction: `{"text":…,"confidence":…,"micros":…}`. */
+    external fun ocrRead(pixels: ByteArray, width: Int, height: Int, allowed: String): String
+    /** `{"dropped":true|false}`. */
+    external fun ocrUnload(): String
+    /** `/proc/self/status`: `{"vmRssKb":…,"vmHwmKb":…,"vmSizeKb":…}`. */
+    external fun memoryStatus(): String
 }

@@ -24,3 +24,12 @@ ring = "0.17.14"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
 tract-core = "0.23"
+# Issue #530 measures the PP-OCRv6 recogniser on devices. tract is the pure-Rust backend, so the
+# Android build gains no prebuilt runtime.
+# The version keeps cargo-deny's wildcard ban satisfied for a path dependency.
+fga-sensing = { path = "../fga-sensing", version = "0.1.0", features = ["tract"] }
+
+[dev-dependencies]
+# Tests only: the JSON shape checks and the model test on local samples.
+png = "0.18"
+serde_json = "1"

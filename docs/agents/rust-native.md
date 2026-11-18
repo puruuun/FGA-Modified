@@ -89,6 +89,22 @@ py -3 tools/device-qa/run.py --build --native --suite nativeProbe
 
 `-Pfga.native=true` registers `cargoNdkBuild`, which runs the `cargo ndk` build above into `app/build/generated/rustJniLibs` and adds it to every variant's native libraries. Without the property no task looks at `native/`, and the APKs carry no Rust library. The `nativeProbe` device suite runs the probe tests in `app/src/androidTest`; on an APK built without the library they report themselves skipped and their results are logged under the logcat tag `FgaNativeProbe`.
 
+The `ocrProbe` device suite (issue #530) runs the PP-OCRv6 recogniser through `libfga_ffi.so` with the `tract` backend and, for comparison, the app's Tesseract engine, on the labelled samples from "Test data". It reports agreement with the Python text, time per crop and process memory (`/proc/self/status` and Android PSS). The model and the samples are not committed, so they are pushed to these device paths first:
+
+- `/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx`
+- `/sdcard/Download/fga-device-qa/ocr/samples/index.json` and `0000.png` to `0369.png`
+
+`--local-fixtures` pushes every device path listed in the case file `docs/reference-images/cases/ocrProbe.json` (under `imports`) from the same relative path inside a local folder, so that folder must hold `ocr/PP-OCRv6_rec_small.onnx` and `ocr/samples/`. Keep it under `build/`:
+
+```bash
+mkdir -p build/ocr-device-fixtures/ocr
+cp build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx build/ocr-device-fixtures/ocr/
+cp -r build/orchestration/rust/ocr/samples build/ocr-device-fixtures/ocr/
+py -3 tools/device-qa/run.py --build --native --suite ocrProbe --local-fixtures build/ocr-device-fixtures
+```
+
+Without the library the suite reports itself skipped; with it, a missing model or sample fails the case and names the path. The cases share one process, so the case file runs the Tesseract case first and the tract memory case before the other tract cases. Results are logged under the logcat tag `FgaOcrProbe`.
+
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:

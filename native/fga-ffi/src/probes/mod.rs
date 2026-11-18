@@ -6,9 +6,11 @@ mod cpu;
 mod crypto;
 mod hex;
 mod inference;
+mod ocr;
 mod tls;
 
 pub use cpu::cpu_probe;
+pub use ocr::{NOT_LOADED, memory_status, ocr_load, ocr_read, ocr_unload};
 
 pub fn ping() -> Result<String, String> {
     Ok(format!(
