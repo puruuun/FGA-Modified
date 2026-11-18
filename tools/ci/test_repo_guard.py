@@ -46,6 +46,14 @@ class RuleTest(unittest.TestCase):
         for p in ('build/x.txt', 'app/build/x.txt', 'native/target/debug/x', 'a/b/build/c/d.kt'):
             self.assertEqual(refused([(p, 1)]), [p], p)
 
+    def test_build_and_target_directories_in_any_case(self):
+        for p in ('Build/x.txt', 'app/BUILD/x.txt', 'native/TARGET/x', 'a/Target/b/c'):
+            self.assertEqual(refused([(p, 1)]), [p], p)
+
+    def test_allow_list_entry_is_anchored(self):
+        self.assertEqual(refused([('evil/m/model.onnx', 1)], ['m/model.onnx']), ['evil/m/model.onnx'])
+        self.assertEqual(refused([('m/model.onnx.bak.onnx', 1)], ['m/model.onnx']), ['m/model.onnx.bak.onnx'])
+
     def test_similar_names_are_not_build_dirs(self):
         self.assertEqual(refused([('rebuild/x.txt', 1), ('a/targets/x', 1), ('docs/build', 1)]), [])
 
@@ -100,9 +108,26 @@ class CommandLineTest(unittest.TestCase):
         code, out = run(record('a/b.kt', 10), '--allow', allow)
         self.assertEqual(code, 0, out)
 
-    def test_empty_input_passes(self):
+    def test_empty_listing_fails(self):
         allow = self.write('allow.txt', b'')
-        self.assertEqual(run(b'', '--allow', allow)[0], 0)
+        self.assertEqual(run(b'', '--allow', allow)[0], 1)
+        only = self.write('only.txt', b'')
+        self.assertEqual(run(b'', '--allow', allow, '--only', only)[0], 1)
+
+    def test_label_names_the_commit(self):
+        allow = self.write('allow.txt', b'')
+        code, out = run(record('x/m.onnx', 1), '--allow', allow, '--label', 'abc1234')
+        self.assertEqual(code, 1)
+        self.assertIn('REFUSED x/m.onnx (in commit abc1234)', out)
+
+    def test_path_with_line_break_cannot_forge_a_log_line(self):
+        allow = self.write('allow.txt', b'')
+        path = 'a' + chr(10) + '::warning::forged.onnx'
+        code, out = run(record(path, 1), '--allow', allow)
+        self.assertEqual(code, 1)
+        for line in out.splitlines():
+            self.assertTrue(line.startswith(('REFUSED ', '::error title=repo_guard::REFUSED ', 'repo_guard:')), line)
+        self.assertIn('a' + chr(92) + 'x0a::warning::forged.onnx', out)
 
     def test_big_model_fails_and_allow_list_fixes_it(self):
         data = record('x/model.onnx', 21 * MB)
@@ -184,7 +209,12 @@ class StepScriptTest(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout.decode().strip()
 
-    def commit(self, files):
+    def commit(self, files, seed_allow_list=True):
+        # The head commit carries the allow-list, as the real repository does.
+        files = dict(files)
+        if seed_allow_list and not os.path.exists(os.path.join(self.repo, 'tools', 'ci', 'large-files-allow.txt')):
+            os.makedirs(os.path.join(self.repo, 'tools', 'ci'))
+            shutil.copy(os.path.join(HERE, 'large-files-allow.txt'), os.path.join(self.repo, 'tools', 'ci'))
         for name, size in files.items():
             path = os.path.join(self.repo, name)
             os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -235,6 +265,56 @@ class StepScriptTest(unittest.TestCase):
         code, out = self.step(third, second + '..' + third)
         self.assertEqual(code, 1, out)
         self.assertIn('REFUSED new/big.bin', out)
+
+    def delete_commit(self, name):
+        os.remove(os.path.join(self.repo, name))
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', 'delete')
+        return self.git('rev-parse', 'HEAD')
+
+    def test_file_added_and_deleted_inside_the_range_is_refused(self):
+        base = self.commit({'ok.txt': 1})
+        added = self.commit({'tmp/big.bin': g.MAX_BYTES + 1})
+        head = self.delete_commit('tmp/big.bin')
+        for range_, event in ((base + '..' + head, 'push'), (base + '...' + head, 'pull_request')):
+            code, out = self.step(head, range_, event, pr_head=head)
+            self.assertEqual(code, 1, (range_, out))
+            self.assertIn('REFUSED tmp/big.bin', out)
+            self.assertIn('(in commit %s)' % self.git('rev-parse', '--short', added), out)
+
+    def test_normal_multi_commit_range_passes(self):
+        base = self.commit({'ok.txt': 1})
+        self.commit({'a/one.txt': 10})
+        head = self.commit({'a/two.txt': 10})
+        for range_, event in ((base + '..' + head, 'push'), (base + '...' + head, 'pull_request')):
+            code, out = self.step(head, range_, event, pr_head=head)
+            self.assertEqual(code, 0, (range_, out))
+
+    def test_merge_of_the_base_does_not_recheck_the_base_files(self):
+        root = self.commit({'ok.txt': 1})
+        self.git('checkout', '-q', '-b', 'topic')
+        self.commit({'topic/a.txt': 1})
+        self.git('checkout', '-q', '-')
+        # The base moves on and holds a file the guard would refuse; it is not part of this change.
+        base = self.commit({'oldbase/legacy.onnx': 1})
+        self.git('checkout', '-q', 'topic')
+        self.git('merge', '-q', '--no-edit', base)
+        head = self.git('rev-parse', 'HEAD')
+        code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
+        self.assertEqual(code, 0, out)
+        self.assertNotEqual(root, head)
+
+    def test_head_without_an_allow_list_fails(self):
+        head = self.commit({'ok.txt': 1}, seed_allow_list=False)
+        code, out = self.step(head, '', 'push')
+        self.assertNotEqual(code, 0, out)
+
+    def test_invalid_head_commit_fails(self):
+        self.commit({'ok.txt': 1})
+        code, out = self.step('0' * 40, '', 'push')
+        self.assertNotEqual(code, 0, out)
+        code, out = self.step('0' * 40, 'a..b', 'pull_request', pr_head='f' * 40)
+        self.assertNotEqual(code, 0, out)
 
     def test_deletion_in_range_is_ignored(self):
         first = self.commit({'old/model.onnx': 1, 'a.txt': 1})

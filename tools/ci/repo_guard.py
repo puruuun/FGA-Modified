@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse model files, dumps, oversized files and build output in a change.
 
-  repo_guard.py [--allow FILE] [--only FILE]   reads `git ls-tree -r -l -z <head commit>` on stdin.
+  repo_guard.py [--allow FILE] [--only FILE] [--label TEXT]   reads `git ls-tree -r -l -z <head commit>` on stdin.
 
 The listing comes from the committed head commit, so sizes are those of the blobs, not of a
 working tree after a checkout filter. With --only FILE (NUL-separated paths, as printed by
@@ -90,7 +90,8 @@ def parse_only(data):
 def refusal_reasons(path, size, allow_regexes):
     """Reasons to refuse one file; empty when it may be committed."""
     parts = path.split('/')
-    if any(d in FORBIDDEN_DIRS for d in parts[:-1]):
+    # Case-insensitive: Build/ and TARGET/ are the same output on a case-insensitive checkout.
+    if any(d.casefold() in FORBIDDEN_DIRS for d in parts[:-1]):
         return ['build output (a build/ or target/ directory) is never committed']
     if any(r.match(path) for r in allow_regexes):
         return []
@@ -115,6 +116,13 @@ def check_files(entries, allow_patterns):
     return refused
 
 
+def printable(path):
+    # Ascii only and no control characters: a path with a line break must not forge a log line or a
+    # workflow command such as ::warning::.
+    text = path.encode('utf-8', 'backslashreplace').decode('ascii', 'backslashreplace')
+    return ''.join(c if 32 <= ord(c) < 127 else chr(92) + 'x%02x' % ord(c) for c in text)
+
+
 def annotation_escape(text):
     # A path may hold a newline; unescaped it would end the annotation and start another command.
     return text.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
@@ -123,21 +131,26 @@ def annotation_escape(text):
 def main(argv):
     allow_file = DEFAULT_ALLOW_FILE
     only_file = None
+    label = ''
     args = list(argv[1:])
     while args:
         flag = args.pop(0)
-        if flag in ('--allow', '--only') and args:
+        if flag in ('--allow', '--only', '--label') and args:
             value = args.pop(0)
             if flag == '--allow':
                 allow_file = value
-            else:
+            elif flag == '--only':
                 only_file = value
+            else:
+                label = value
         else:
-            print('usage: repo_guard.py [--allow FILE] [--only FILE] < ls-tree-output', file=sys.stderr)
+            print('usage: repo_guard.py [--allow FILE] [--only FILE] [--label TEXT] < ls-tree-output', file=sys.stderr)
             return 2
     try:
         allow = load_allow_list(allow_file)
         entries = parse_ls_tree(sys.stdin.buffer.read())
+        if not entries:  # a failed git command leaves an empty listing; it must not count as a pass
+            raise GuardError('the file listing is empty')
         if only_file is not None:
             try:
                 with open(only_file, 'rb') as f:
@@ -153,7 +166,7 @@ def main(argv):
         print('repo_guard: FAIL: %s: %s' % (type(e).__name__, e))
         return 1
     for path, reasons in refused:
-        shown = path.encode('utf-8', 'backslashreplace').decode('ascii', 'backslashreplace')
+        shown = printable(path) + (' (in commit %s)' % printable(label) if label else '')
         if reasons[0].startswith('build output'):
             line = 'REFUSED %s: %s. The allow-list cannot allow it; keep the file local.' % (shown, reasons[0])
         else:
