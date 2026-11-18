@@ -69,5 +69,5 @@
 ## 결정과 남은 일
 
 - **TLS 암호화 라이브러리: `ring`.** `aws-lc-rs`는 소유자 PC에서 안드로이드용 빌드가 되지 않아(`dlltool` 없음, cmake 필요) 후보에서 뺐고, `ring`은 MuMu에서 동작했습니다. 블루스택과 태블릿 결과가 다르면 다시 봅니다.
-- **소유자 PC의 도구 제약이 예상보다 큽니다.** C 컴파일러뿐 아니라 `dlltool`이 없어 `windows-sys` 0.61 계열을 쓰는 크레이트가 PC에서 빌드되지 않습니다. 이번에는 `Cargo.lock`에서 `winapi-util`을 0.1.9로 내려 우회했고, `cargo-deny`는 PC에 설치하지 못해 CI에서만 돕니다. 2단계 전에 Visual Studio Build Tools 설치를 소유자에게 묻습니다.
+- **소유자 PC의 도구 제약은 해결했습니다.** 처음에는 C 컴파일러와 `dlltool`이 없어 일부 크레이트와 `cargo-deny`가 PC에서 빌드되지 않았습니다. 2026-11-18에 소유자 승인으로 Visual Studio 2022 Build Tools를 설치하고 Rust를 MSVC 계열로 바꾼 뒤, PC에서 테스트 17개와 `cargo deny check`가 통과했습니다. 코드에 남은 우회 두 가지(`windows-gnu`에서 크레이트 제외, `winapi-util` 0.1.9 고정)는 다음 Rust PR에서 걷어냅니다.
 - 다음 Rust PR에서 같이 고칠 것: Native CI의 안드로이드 clippy에 `--platform 24` 추가, `compare.rs` 테스트 보강, `run.py` 사용법 표기.

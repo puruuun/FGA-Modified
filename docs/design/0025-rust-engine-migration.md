@@ -155,7 +155,8 @@
   - Rust 1.100.0 (`stable-x86_64-pc-windows-gnu`), `clippy`, `rustfmt`, 타깃 `aarch64-linux-android`와 `armv7-linux-androideabi`
   - `cargo-ndk` 4.1.2, NDK 28.2.13676358 (`%LOCALAPPDATA%/Android/Sdk/ndk/`)
   - 확인: 시험 라이브러리의 PC 테스트가 통과했고 두 ABI용 `.so`가 빌드됐습니다. arm64 `.so`는 16KB 정렬(0x4000)입니다.
-  - 제약: PC에 Visual Studio가 없어서 GNU 계열 도구로 설치했습니다. C 코드를 포함한 크레이트는 PC에서 테스트를 빌드하지 못할 수 있습니다. 안드로이드용 빌드와 CI(리눅스)는 영향이 없습니다. 실행 확인에서 문제가 되면 C 컴파일러 설치를 소유자에게 묻습니다.
+  - 처음에는 PC에 Visual Studio가 없어 GNU 계열 도구로 설치했는데, C 코드가 든 크레이트와 `cargo-deny`가 PC에서 빌드되지 않았습니다.
+  - **2026-11-18 추가 설치(소유자 승인):** Visual Studio 2022 Build Tools 17.14(C++ 빌드 도구)를 설치하고 Rust를 MSVC 계열(`1.100.0-x86_64-pc-windows-msvc`)로 바꿨습니다. 그 뒤 PC에서 Rust 테스트 17개(암호화, TLS, 추론 포함), 안드로이드용 clippy, `cargo deny check`가 모두 통과했습니다.
 - 빈 Rust 함수 하나를 앱에서 부르는 최소 PR을 만들어 블루스택과 실제 폰에서 실행합니다.
 - 같은 PR에서 TLS 암호화 라이브러리 후보(`ring`, `aws-lc-rs`)와 추론 런타임(`tract`)도 한 번씩 실행합니다.
   - 앱은 ARM용 라이브러리(`armeabi-v7a`, `arm64-v8a`)만 넣고, 블루스택은 이를 변환해 실행합니다. OpenCV가 이 변환에서 죽은 적이 있습니다(`app/build.gradle.kts` 머리 주석).
