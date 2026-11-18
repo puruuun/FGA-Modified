@@ -126,7 +126,7 @@ A classifier model changes what a reader returns, so it is handled like a templa
 
 ## What a Rust PR must show
 
-On top of the checks in `AGENTS.md` ("What the planner's PR review checks" and the verification agent rules):
+On top of the planner's PR review in [`agent-team.md`](agent-team.md) and the rules in [`verification.md`](verification.md):
 
 - `unsafe` appears only in `fga-ffi`, each block with its `// SAFETY:` comment;
 - every Kotlin-callable function catches panics;

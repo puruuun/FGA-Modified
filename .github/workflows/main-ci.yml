@@ -2,40 +2,11 @@ name: Main CI
 
 on:
   push:
-    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    # rust is the long-lived branch of design 0025 (docs/agents/agent-team.md, "Branches and releases").
     branches: [main, rust]
-    # Same list as pr-build.yml. .github/workflows/** is deliberately not ignored so
-    # commits that change a workflow are still checked.
-    paths-ignore:
-      - '.idea/**'
-      - '.github/instructions/**'
-      - '.github/copilot-instructions.md'
-      - '.gitattributes'
-      - '.gitignore'
-      - '*.md'
-      - 'LICENSE'
-      - 'custom-game-area/**'
-      - 'wiki/**'
-      - 'docs/**'
-      - '.claude/**'
-      - '**/AGENTS.md'
   pull_request:
-    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    # Same branches as push.
     branches: [main, rust]
-    # Same paths-ignore as push.
-    paths-ignore:
-      - '.idea/**'
-      - '.github/instructions/**'
-      - '.github/copilot-instructions.md'
-      - '.gitattributes'
-      - '.gitignore'
-      - '*.md'
-      - 'LICENSE'
-      - 'custom-game-area/**'
-      - 'wiki/**'
-      - 'docs/**'
-      - '.claude/**'
-      - '**/AGENTS.md'
   workflow_dispatch:
 
 permissions:
@@ -49,7 +20,55 @@ env:
   GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Decide whether the change needs the build
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          # Any failure must end in code=true: an error never skips the build.
+          code=true
+          list="$RUNNER_TEMP/changed-files"
+          range=""
+          case "$EVENT_NAME" in
+            pull_request) [ -n "$PR_BASE" ] && [ -n "$PR_HEAD" ] && range="$PR_BASE...$PR_HEAD" ;;
+            push)
+              case "$PUSH_BEFORE" in
+                ''|*[!0-9a-f]*|0000000000000000000000000000000000000000) ;;
+                *) range="$PUSH_BEFORE..$PUSH_AFTER" ;;
+              esac ;;
+          esac
+          if [ -n "$range" ]; then
+            # --no-renames lists both the old and the new path of a rename.
+            if git diff --name-only --no-renames -z "$range" > "$list" 2> "$RUNNER_TEMP/diff-err"; then
+              code=$(python3 tools/ci/ci_gate.py classify < "$list") || code=true
+            else
+              echo "git diff failed for $range; building."
+              cat "$RUNNER_TEMP/diff-err"
+            fi
+          else
+            echo "No usable diff range for $EVENT_NAME; building."
+          fi
+          [ "$code" = false ] || code=true
+          echo "code=$code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   test-and-build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -69,3 +88,20 @@ jobs:
           name: main-ci-test-reports
           path: '**/build/test-results/**/*.xml'
           retention-days: 14
+
+  gate:
+    name: Main CI gate
+    needs: [changes, test-and-build]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Evaluate the results
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          BUILD_RESULT: ${{ needs.test-and-build.result }}
+        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$BUILD_RESULT"
