@@ -1,0 +1,4 @@
+# Play requires 16 KB page alignment for 64-bit libraries. NDK r28 already links that way,
+# but stating it keeps the result independent of the NDK in use.
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]

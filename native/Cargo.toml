@@ -1,0 +1,25 @@
+[workspace]
+resolver = "3"
+members = ["fga-ffi"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.100"
+license = "MIT"
+publish = false
+
+[workspace.lints.clippy]
+# A panic that escapes into the JVM kills the app (docs/agents/rust-native.md).
+# clippy.toml lifts these four inside tests.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+undocumented_unsafe_blocks = "deny"
+
+[profile.release]
+# catch_unwind at the JNI boundary only works with unwinding; abort would take the app down.
+panic = "unwind"
+
+[profile.dev]
+panic = "unwind"

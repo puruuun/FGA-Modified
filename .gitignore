@@ -22,3 +22,6 @@ signing.properties
 # Roborazzi screenshots are local review images, never committed
 /app/build/outputs/roborazzi/
 /app/screenshots/
+
+# Rust build output (docs/agents/rust-native.md)
+native/target/

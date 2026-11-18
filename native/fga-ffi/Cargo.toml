@@ -1,0 +1,27 @@
+[package]
+name = "fga-ffi"
+version = "0.1.0"
+description = "The Kotlin boundary of the FGA Rust core"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "fga_ffi"
+# cdylib for the APK, rlib so `cargo test` can link the probes on the host.
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+jni = "0.21.1"
+
+# These crates compile C or assembly. The owner's Windows PC has no host C compiler, so they are
+# left out of host builds there; Android cross-builds use the NDK's clang and CI runs on Linux.
+[target.'cfg(not(all(windows, target_env = "gnu")))'.dependencies]
+ring = "0.17.14"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
+tract-core = "0.23"
