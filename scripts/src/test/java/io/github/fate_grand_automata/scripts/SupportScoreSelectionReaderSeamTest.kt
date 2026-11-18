@@ -53,7 +53,8 @@ class SupportScoreSelectionReaderSeamTest {
 
     @Test
     fun `ordinary display cannot satisfy a Grand condition`() {
-        val reader = FakeReader(SupportScores(62))
+        val reader = FakeReader(SupportScores(62, null, SupportScoreDisplay.Ordinary))
         assertThat(selection(reader, class62 = false, grand16 = true).check(bounds)).isEqualTo(false)
+        assertThat(reader.calls).isEqualTo(1)
     }
 }
