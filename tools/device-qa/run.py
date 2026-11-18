@@ -3,7 +3,7 @@
 Development aid. The authoritative check is `tools/device-qa/run.py`.
 
 Usage:
-    py -3 tools/device-qa/run.py [--build [--native]] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
+    py -3 tools/device-qa/run.py [--build] [--native] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
 
 Python only moves files and calls adb/gradle. Reader logic stays in the app's androidTest code.
 """

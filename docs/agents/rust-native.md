@@ -49,10 +49,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo deny check
 cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 -o ../build/rustJniLibs build --release -p fga-ffi
-cargo ndk -t armeabi-v7a -t arm64-v8a clippy --workspace --all-targets -- -D warnings
+cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets -- -D warnings
 ```
 
-The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports. The last line checks the code that only builds for Android, which the PC test run leaves out (see below).
+The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports, and the Android lint run uses it too so it checks the same build. The last line checks the code that only builds for Android and ARM, which the PC runs leave out.
 
 In the app, Gradle builds the library only when asked:
 
@@ -73,12 +73,7 @@ export ANDROID_NDK_HOME="$LOCALAPPDATA/Android/Sdk/ndk/28.2.13676358"
 export ANDROID_HOME="$LOCALAPPDATA/Android/Sdk"   # Gradle only, when there is no local.properties
 ```
 
-Since 2026-11-18 that PC has Visual Studio 2022 Build Tools (the C++ workload), and Rust uses the MSVC host toolchain (`1.100.0-x86_64-pc-windows-msvc`). All of the commands above run there, including the crypto, TLS and inference tests and `cargo deny check`.
-
-Two workarounds from the earlier GNU host toolchain are still in the code and are removed in the next Rust PR:
-
-- `fga-ffi` declares `ring`, `rustls`, `rcgen` and `tract` only for targets other than `windows-gnu`, and the probes that use them return an error there.
-- `Cargo.lock` keeps `winapi-util` at 0.1.9, because newer versions pull a `windows-sys` that needs `dlltool` on the GNU host.
+Since 2026-11-18 that PC has Visual Studio 2022 Build Tools (the C++ workload), and Rust uses the MSVC host toolchain (`1.100.0-x86_64-pc-windows-msvc`). Every command above runs there: formatting, both lint runs, all tests including the crypto, TLS and inference probes, `cargo deny check`, and the Android build.
 
 Rules:
 

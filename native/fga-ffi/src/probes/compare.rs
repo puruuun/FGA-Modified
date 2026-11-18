@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 ///
 /// A broken SIMD kernel tends to produce NaN or infinity, and NaN slips through ordinary `>` and
 /// `max` comparisons, so each element must be finite and provably within the tolerance.
-#[cfg_attr(all(windows, target_env = "gnu"), allow(dead_code))]
 pub fn within_tolerance(actual: &[f32], expected: &[f32], tolerance: f32) -> Result<f32, String> {
     if actual.len() != expected.len() {
         return Err(format!(
@@ -57,6 +56,26 @@ mod tests {
     fn infinity_fails() {
         assert!(within_tolerance(&[f32::INFINITY], &[1.0], 1e-4).is_err());
         assert!(within_tolerance(&[1.0], &[f32::NEG_INFINITY], 1e-4).is_err());
+    }
+
+    #[test]
+    fn nan_in_expected_fails() {
+        assert!(within_tolerance(&[1.0, 2.0], &[1.0, f32::NAN], 1e-4).is_err());
+    }
+
+    #[test]
+    fn same_infinity_on_both_sides_fails() {
+        // inf - inf is NaN, which must not count as a zero difference.
+        assert!(within_tolerance(&[1.0, f32::INFINITY], &[1.0, f32::INFINITY], 1e-4).is_err());
+    }
+
+    #[test]
+    fn difference_inside_tolerance_passes_and_is_reported() {
+        let worst = within_tolerance(&[1.0, 2.00005], &[1.0, 2.0], 1e-4);
+        let Ok(worst) = worst else {
+            panic!("expected a pass, got {worst:?}");
+        };
+        assert!((worst - 0.00005).abs() < 1e-6, "{worst}");
     }
 
     #[test]

@@ -52,10 +52,12 @@ jobs:
       - name: Licences and advisories
         run: cargo deny check
       - name: Android clippy
-        # The crypto, TLS and inference code is linted here too; the Windows host build leaves it out.
+        # The host clippy step already lints the crypto, TLS and inference code; this one adds the
+        # code that only compiles for Android and ARM targets, such as the aarch64 and arm branches
+        # of probes/cpu.rs.
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
-          cargo ndk -t armeabi-v7a -t arm64-v8a clippy --workspace --all-targets -- -D warnings
+          cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets -- -D warnings
       - name: Android build
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
