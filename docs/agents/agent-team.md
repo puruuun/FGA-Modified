@@ -66,6 +66,7 @@ Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of
 ## Agents that only read
 
 - An agent that only reads (review, research) is told not to change files.
+- A read-only reviewer does not share a worktree with an agent that runs guard checks or edits files (planner decision, 2026-11-18, #514: a reviewer saw another verifier's temporary guard-check edit and reported it as an unexplained change). Give it its own worktree at the same commit, or run it after the others have finished.
 - An implementer works only inside its own worktree.
 
 ## Design stays with the planner
