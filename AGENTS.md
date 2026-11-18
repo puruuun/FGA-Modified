@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Path-specific guidance lives in [`docs/agents/`](docs/agents) so it is loaded only when relevant: read a guide when its trigger below matches. Copilot and Claude Code pick the same guides up automatically via stubs in `.github/instructions/` and `.claude/rules/` — see [`docs/agents/README.md`](docs/agents/README.md).
+This file holds what every agent in this repository must follow. Path-specific and role-specific guidance lives in [`docs/agents/`](docs/agents) so it is loaded only when relevant: read a guide when its trigger below matches. Copilot and Claude Code pick the path-specific guides up automatically via stubs in `.github/instructions/` and `.claude/rules/` — see [`docs/agents/README.md`](docs/agents/README.md).
 
 ## What this is
 
@@ -14,94 +14,55 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **Any file in `app/src/main/assets/`** — [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Template images are per-server with an `En` fallback; server choice and app language are independent.
 - **Strings under `app/src/main/res/`** — [`docs/agents/translations.md`](docs/agents/translations.md). English strings live in `values/localized.xml`. Korean and Japanese are the owner's and are edited in the repo; other languages follow upstream. The fork does not use POEditor.
 - **Any user-facing feature or change, `README.md`, anything in `wiki/`, `mkdocs.yml`, `tools/docs-site/`** — [`docs/agents/docs-site.md`](docs/agents/docs-site.md). A feature is not done until its Korean manual page in `wiki/scripts/` is added or updated. `README.md`, `README.en.md`, and `README.ja.md` describe the latest stable release only: feature and beta changes never edit them, and the planner updates all three at stable promotion. The GitHub Pages manual is republished from the stable tag when a stable Release is published.
-- **Choosing, starting or running other agents (the planner only)** — [`docs/agents/agent-team.md`](docs/agents/agent-team.md). Models and tiers (Claude Code models first), the Gemini runner, and design reviews.
+- **Verifying a PR, or implementing a risky change (see "Risky changes need verification" below)** — [`docs/agents/verification.md`](docs/agents/verification.md). What the verifier checks, the guard check that the implementer also does, and the evidence table of the report.
+- **Planner work: walkthroughs, issues, agent prompts, PR review, merging, branches, device QA scope, choosing and running other agents (the planner only)** — [`docs/agents/agent-team.md`](docs/agents/agent-team.md). A planner session reads it at its start.
 - **Merging updates from upstream `Fate-Grand-Automata/FGA`** — [`docs/agents/upstream-sync.md`](docs/agents/upstream-sync.md). Always merge (`--no-ff`), keep the fork's workflows and translations, curate built-in CEs with the owner, and record each sync in the log table.
 - **Anything under `native/` (the Rust core), the Kotlin bindings to it, or the Gradle and CI steps that build it** — [`docs/agents/rust-native.md`](docs/agents/rust-native.md). No `unsafe` outside `fga-ffi`, no `unwrap` outside tests, every Kotlin-callable function catches panics, and a build with `fga.native` off must always work. The plan is [design 0025](docs/design/0025-rust-engine-migration.md).
 - **Any `adb` command, device QA run, APK install, or look at a live game screen** — [`docs/agents/devices-and-safety.md`](docs/agents/devices-and-safety.md). Agents never operate the game, never unlock appends or spend apples or quartz, and never run adb server commands; BlueStacks is `127.0.0.1:5555`.
-- **`version.properties`, `docs/releases/`, `wiki/releases/`, or building Beta/Stable APKs** — [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md). Use Semantic Versioning (`X.Y.(Z+1)` for refinements/fixes/syncs, `X.(Y+1).0` for new features) and always build/verify a Beta APK (`beta.*`, `./gradlew :app:assembleBeta`) on BlueStacks/tablet before promoting `stable.*` and publishing a GitHub Release.
+- **`version.properties`, `docs/releases/`, `wiki/releases/`, or building Beta/Stable APKs** — [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md). Semantic Versioning and the beta-first workflow: a Beta APK is built and verified on a device before `stable.*` is promoted and a GitHub Release is published.
 
-## Delivery for this repository
+## Roles
 
-- Deliver **code changes** through a pull request (owner decision, 2026-10-23). Branch from the latest remote `main` (for example `feat/…`, `fix/…`), commit there, push the branch, and open a PR against `main`. A change is a code change if it touches anything other than documentation: source, tests, resources, assets, build files, version files or workflows.
-- **Documentation-only changes** — design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files — are pushed directly to `main` without a PR (owner decision, 2026-10-23). Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
-- No long-lived integration branches (owner decision, 2026-11-17; `feat/capture-tracker` was merged into `main` that day). Each feature or fix is a short branch from `main` and comes back through its own PR as soon as it is done.
-  - Betas are built from `main` and contain everything merged so far. A stable release is a tag on `main`, so unreleased work on `main` never reaches stable users.
-  - A large feature that is not finished lands behind a setting that is off by default.
-  - A hotfix for a stable release that cannot wait for the next `main` beta is made on `release/X.Y.x`, cut from that stable tag, and the same fix is also merged into `main`.
-  - **Exception: the `rust` branch** (owner decision, 2026-11-18). The Rust migration of design 0025 is kept apart from the regular work until each unit is finished, so that betas and stable releases built from `main` hold no unfinished Rust-related change.
-    - Rust migration work goes to `rust` through PRs that target `rust`. That includes its Kotlin-side preparation: reader and proxy interfaces, bindings, DI wiring and engine-selection settings.
-    - A unit (one reader, one capture feature, one script) comes to `main` in its own PR only after it passed its switch criteria in 0025 and the owner approved it. From then on it ships in the regular betas.
-    - `main` is merged into `rust` regularly. Nothing goes from `rust` to `main` outside those per-unit PRs.
-    - `native/`, the `fga.native` Gradle switch and `Native CI` are already on `main` and stay: they do not change the app that is built without the switch.
-- Rebase a work branch onto its latest base before its first push. Once it is pushed, merge the base into it instead, because force pushes are not allowed.
-- Images in the repository (owner decision, 2026-11-16):
+- **The planner (Claude)** writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases.
+- **An implementing agent** implements, tests, opens the PR and stops. It does not merge.
+- **A verifying agent** checks a risky change and reports. It does not change code, push or merge.
+- Every agent follows the same rules: its own worktree and branch, the delivery rules below, the configured commit identity, and no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch.
+
+## Delivery
+
+- **Code changes go through a pull request.** Branch from the latest remote `main` (for example `feat/…`, `fix/…`), commit there, push the branch, and open a PR against `main`. A change is a code change if it touches anything other than documentation: source, tests, resources, assets, build files, version files or workflows.
+- **Documentation-only changes are pushed directly to `main` without a PR**: design docs and validation records under `docs/`, the manual under `wiki/`, `AGENTS.md` and other agent-instruction files, and other `*.md` files. Commit them with explicit pathspecs so no code rides along; if a commit would mix documentation and code, it goes through a PR.
+- **Short branches only.** Each feature or fix is a short branch from `main` and comes back through its own PR as soon as it is done. Betas are built from `main`, so a large feature that is not finished lands behind a setting that is off by default.
+- **Rust migration work goes to the `rust` branch, not to `main`**, through PRs that target `rust`, including its Kotlin-side preparation. A finished, owner-approved unit comes to `main` in its own PR. The details are in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), "Branches and releases".
+- **Never force push**, and never bypass branch protection or execution-environment restrictions. Rebase a work branch onto its latest base before its first push; once it is pushed, merge the base into it instead. Preserve existing `main` changes and skip changes that are already applied. Stop and report a rejected push or a conflict that cannot be resolved safely.
+- **The checkout is shared with other agents and sessions.**
+  - Edit in your own worktree, not in the main checkout. Uncommitted files left in the main checkout block another session's merges. Keep the main checkout clean and on `main`.
+  - Never stash, reset, rebase or check out over changes you did not make. Stage only your own paths, and check `git show --stat HEAD` before pushing.
+  - Sessions do not share their conversations. What another session needs to know goes into the repository (issues, PRs, `docs/qa/` records).
+- **Commit with the Git identity already configured on this PC (`puruuun`).** Do not set another author or committer, and preserve authorship on existing published commits.
+- **Tests before a push.** Run the full unit test command from Build & test and confirm it passes. Commits that change only documentation are exempt.
+- **CI after a push.** After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work.
+- **Device QA** runs only when the planner assigns it; the planner names the suites, and the report gives the suites that ran and their counts.
+- **Images in the repository:**
   - Commit only app assets (`app/src/main/assets/`) and QA regression samples that a device QA case file uses (`docs/reference-images/`).
   - One-off measurement crops, debugging screenshots and audit images stay local under `build/` or go on the issue as attachments.
   - Captures with account data are never committed.
-- The local checkout can be shared with another agent at the same time. Never stash, reset, rebase or check out over changes you did not make, stage only your own paths, and check `git show --stat HEAD` before pushing.
-  - Edit in your own worktree, not in the main checkout (owner decision, 2026-11-18). Uncommitted files left in the main checkout block the other session's merges. Keep the main checkout clean and on `main`.
-  - Sessions do not share their conversations. What another session needs to know goes into the repository (issues, PRs, `docs/qa/` records). A direct message is needed only in the few cases listed in "Two planner sessions" in [`docs/agents/agent-team.md`](docs/agents/agent-team.md).
-- The planner (Claude) reviews each code PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
-- No shortcut for a branch that fell behind `main` (owner decision, 2026-11-18). Before a merge, the PR branch contains the latest `main` and `Main CI` (and `Native CI` when it runs) passed on exactly that commit. When `main` moves during the CI run, merge it into the branch and wait again, however small or unrelated the new commits are. An exception for Rust-only PRs was written down earlier the same day and withdrawn before it was ever used: the owner prefers a slower merge to finding a broken combination on `main` afterwards.
-- What the planner's PR review checks (owner decision, 2026-11-01). A green CI and the implementer's report are not enough; check the diff against these points before merging:
-  - **Matches the spec:** every requirement in the issue and in the approved walkthrough is implemented, and nothing outside the agent prompt rides along.
-  - **Tests mean something:** the tests check the actual requirements, including the failure and guard cases, and are not written just to pass.
-  - **Every screen shape:** coordinate and template changes hold at 16:9 and 21:9, per [`docs/agents/coordinates.md`](docs/agents/coordinates.md).
-  - **Recorded:** write what was checked, and anything sent back to the implementer, in a PR comment or in the version's validation record under `docs/qa/`.
-- After merging and confirming `Main CI` on `main`, delete the PR branch on GitHub (`git push origin --delete <branch>`) and locally (owner decision, 2026-10-26). The fast-forward merge does not trigger GitHub's automatic branch deletion. Delete only a branch whose commits are all in `main` (`git merge-base --is-ancestor origin/<branch> origin/main`). The remote branch list should show only `main` and work that is still in progress, for example a feature kept open on purpose to be merged later.
-- Write PR titles and descriptions in English (owner request, 2026-10-23).
-- The backlog lives in GitHub issues on `puruuun/FGA-Modified` (owner decision, 2026-10-26). When the owner reports a bug or an idea, file it as an issue in English with the `bug` or `enhancement` label.
-  - Each issue covers the symptom, the reproduction conditions (server, device, resolution, settings), the evidence (logs and measurements; captures are not committed, so give their local path), the suspected cause with file names, and the proposed work.
-  - Filing an issue does not start the work. Start only when the owner asks.
-  - A PR that resolves an issue says `Closes #N` in its description.
-- Workflow review before development (owner decision, 2026-10-26). When the owner proposes a feature or a behaviour change and asks for an analysis, the planner answers with a step-by-step walkthrough of the planned logic before any implementation starts:
-  - the trigger (how the script is chosen and started) and the start checks;
-  - each step in order: what is tapped, how long it waits, which screen region is read and how (template and threshold, OCR, colour, sample bank), and what each result leads to;
-  - the safety guards and every end state (stop reasons), plus what changes against the current behaviour.
-  - Write it in Korean, in the owner's terms. Start development (issue, agent prompt, branch) only after the owner approves the walkthrough or after the amendments they ask for.
-- Commit with the Git identity already configured on this PC (`puruuun`). Do not set another author or committer, and preserve authorship on existing published commits.
-- Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
-- Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
-- After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
-- Device QA scope (owner decision, 2026-10-26) for `tools/device-qa/run.py` on any connected app player that meets the check's needs (owner decision, 2026-11-16; see [`docs/agents/devices-and-safety.md`](docs/agents/devices-and-safety.md)):
-  - **Beta:** run only the suites that cover the changed area, for example `--suite skillLevel,skillLevelPanel` for a skill-level reader change. The full unit tests and PR `Main CI` still run every time.
-  - **Full device QA (every suite, including `skillLevelPanel`):** before promoting `stable.*`, and also on a beta that changes shared code: `libautomata`, coordinate or wide-screen transforms, the battle flow (`AutoBattle`, `Battle`), templates used by several scripts, or an upstream sync.
-  - The planner names the suites in each agent prompt; report the suites that ran and their counts.
-- Do not build beta or stable APKs from a commit whose `Main CI` run failed. Build release and beta APKs from `main` after the merge.
+- **Language.** Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues are in English. A PR that resolves an issue says `Closes #N` in its description.
 
-- Follow the **Beta-First QA & Semantic Versioning** workflow in [`docs/agents/releases-and-versioning.md`](docs/agents/releases-and-versioning.md) (owner decision, 2026-10-24): bump `beta.versionName`/`beta.versionCode` first (`X.Y.(Z+1)-beta.N` for refinements/fixes/syncs, `X.(Y+1).0-beta.N` for new features), build and install the Beta APK (`./gradlew :app:assembleBeta`) for BlueStacks/tablet verification, and only bump `stable.*` and publish a GitHub Release after the owner approves.
+## Risky changes need verification
 
-## Agent team
+Before the planner merges a PR with a risky change, a separate verification agent with a fresh context reviews it. The highest-risk changes (automation logic and stored-data formats) get two verifiers on different models. The procedure is in [`docs/agents/verification.md`](docs/agents/verification.md).
 
-- Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
-- Which models do which work, and how the planner runs them, is in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), which only the planner needs.
-- Every agent follows the same rules: its own worktree and branch, the PR flow, the configured commit identity, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
-- Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
-  - **Risky changes:**
-    - automation logic, screen reading, taps, coordinates or templates (`scripts/`, `libautomata/`, `app/` runner and imaging);
-    - capture, logging and stored-data formats (including migrations of saved files);
-    - file storage and export, certificates and security;
-    - services, permissions and the manifest;
-    - build, signing and versioning;
-    - upstream syncs;
-    - anything under `native/` (the Rust core) and its Kotlin bindings.
-  - **Not risky:** UI layout, strings, the manual and test-only changes. The planner reviews these alone, as before.
-  - **Who verifies:** a separate agent run with a fresh context, preferably a different model from the implementer: usually Haiku for Sonnet's work, and Sonnet for Haiku's or Gemini's work. It may be the same model as the implementer, but never the same session. If no agent is available, the planner does a full line-by-line review and says so in the PR record.
-  - **What the verifier does:**
-    - compares the diff with every requirement in the issue;
-    - checks that the tests cover the requirements and the failure and guard cases;
-    - looks for missed edge cases and effects outside the stated scope;
-    - re-runs the full unit tests and re-records the screenshots itself instead of trusting the implementer's report.
-    - takes evidence from the code, not from comments (owner decision, 2026-11-17, #458). It never accepts a behaviour because a comment claims it. It traces the code, and reports a comment that the code contradicts.
-    - checks that the fakes and mocks in the tests return only values, states and exceptions that the real implementation can return in that situation (#455 slipped through a fake that did not).
-    - checks that each new guard or regression test fails without its guard. It briefly disables or reverts the protected line, runs only that test, confirms that it fails, and restores the line. The report names the tests checked this way. A test that still passes protects nothing and is a finding. The implementer does the same check before it reports.
-    - for capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
-  - **Evidence for a pass:** the report has a table with one row per requirement: the code location that implements it, the test that covers it, and how the verifier confirmed it (ran, read, or not confirmed). The planner reviews every row marked "not confirmed" or left without a test before merging.
-  - **Two verifiers for the highest-risk changes:** changes to automation logic (battle flow, screen reading, taps, coordinates, templates) and to stored-data formats or their migrations get two independent verification runs on two different models from Sonnet, Haiku, Opus and Gemini, chosen so that at least one differs from the implementer. Both must pass. In `native/` this also covers `fga-ffi` and moving a unit to its next lifecycle stage (see [`docs/agents/rust-native.md`](docs/agents/rust-native.md)).
-  - **What it must not do:** change code, push or merge. It reports findings in Korean with a clear pass or send-back verdict.
-  - **After the report:** the planner decides to merge or send back, and records the verifier's findings in the PR comment.
-- Automation first, log tracking second (owner decision, 2026-11-11). Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
-- Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues stay in English.
+- **Risky changes:**
+  - automation logic, screen reading, taps, coordinates or templates (`scripts/`, `libautomata/`, `app/` runner and imaging);
+  - capture, logging and stored-data formats (including migrations of saved files);
+  - file storage and export, certificates and security;
+  - services, permissions and the manifest;
+  - build, signing and versioning;
+  - upstream syncs;
+  - anything under `native/` (the Rust core) and its Kotlin bindings.
+- **Not risky:** UI layout, strings, the manual and test-only changes.
+- **For every implementer:** each new guard or regression test must fail without its guard. Disable the protected line, run that test, confirm that it fails, restore the line, and name the tests checked this way in the report. Fakes and mocks return only what the real implementation can return in that situation.
 
 ## Build & test
 
@@ -135,13 +96,13 @@ app  ──▶ scripts ──▶ libautomata
 
 ## Repo conventions
 
-- Target servers (owner decision, 2026-11-08): new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`) only**. Do not add branches, tests or walkthrough steps for BetterFGO, NA, CN or TW, and do not ask the owner about them. Existing upstream code for those servers stays, and upstream syncs keep merging it.
+- Target servers: new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`) only**. Do not add branches, tests or walkthrough steps for BetterFGO, NA, CN or TW, and do not ask the owner about them. Existing upstream code for those servers stays, and upstream syncs keep merging it.
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
-- Comments (owner decision, 2026-11-17, #458):
+- Comments:
   - Write comments for *why*: constraints, external facts (for example 1440p coordinates or the 1px `fillText` border) and owner decisions.
   - Do not restate what the code does, and do not explain inside a test why it passes.
   - When code changes, update or delete the comments next to it in the same commit.
 - Hilt + KSP for DI; Compose (BOM-managed) with several `ExperimentalX` opt-ins already enabled in `app/build.gradle.kts`.
 - Dependencies live in `gradle/libs.versions.toml` — always add/bump there, never inline coordinates.
 - `wiki/` is the source of the GitHub Pages manual (`.github/workflows/pages.yml`); the GitHub wiki is not used — detailed user-facing docs go there, while `README.md` (Korean), `README.en.md` (English), and `README.ja.md` (Japanese) are separate files that describe the latest stable release. Their feature tables and release links are updated together, at stable promotion only.
-- Agent guidance: keep this file to what's true repo-wide and put path-specific rules in [`docs/agents/`](docs/agents), following [`docs/agents/README.md`](docs/agents/README.md).
+- Agent guidance: keep this file to what every agent must follow, without dates or history. Path-specific rules, planner procedures and the reasons behind a decision go in [`docs/agents/`](docs/agents), following [`docs/agents/README.md`](docs/agents/README.md).

@@ -1,6 +1,68 @@
-# Agent team operations (planner)
+# Planner procedures and agent team operations
 
-This guide is for the planner when it chooses, starts or runs other agents. An implementing or verifying agent does not need it: the rules every agent follows are in [`AGENTS.md`](../../AGENTS.md), and the planner's prompt says the rest. Model choices change often, so they live here and not in `AGENTS.md` (owner decision, 2026-11-17, #458).
+This guide is for the planner: how it prepares, reviews and merges work, and how it chooses, starts and runs other agents. Read it at the start of a planner session. An implementing or verifying agent does not need it: the rules every agent follows are in [`AGENTS.md`](../../AGENTS.md), and the planner's prompt says the rest. Model choices change often, so they live here and not in `AGENTS.md` (owner decision, 2026-11-17, #458).
+
+## Planner procedures
+
+These were in `AGENTS.md` until 2026-11-19 and moved here because only the planner carries them out. The rules every agent follows stay in `AGENTS.md`.
+
+### Before development: workflow review
+
+Owner decision, 2026-10-26. When the owner proposes a feature or a behaviour change and asks for an analysis, the planner answers with a step-by-step walkthrough of the planned logic before any implementation starts:
+
+- the trigger (how the script is chosen and started) and the start checks;
+- each step in order: what is tapped, how long it waits, which screen region is read and how (template and threshold, OCR, colour, sample bank), and what each result leads to;
+- the safety guards and every end state (stop reasons), plus what changes against the current behaviour.
+- Write it in Korean, in the owner's terms. Start development (issue, agent prompt, branch) only after the owner approves the walkthrough or after the amendments they ask for.
+
+### The backlog
+
+Owner decision, 2026-10-26. The backlog lives in GitHub issues on `puruuun/FGA-Modified`. When the owner reports a bug or an idea, file it as an issue in English with the `bug` or `enhancement` label.
+
+- Each issue covers the symptom, the reproduction conditions (server, device, resolution, settings), the evidence (logs and measurements; captures are not committed, so give their local path), the suspected cause with file names, and the proposed work.
+- Filing an issue does not start the work. Start only when the owner asks.
+
+### PR review
+
+Owner decision, 2026-11-01. A green CI and the implementer's report are not enough; check the diff against these points before merging:
+
+- **Matches the spec:** every requirement in the issue and in the approved walkthrough is implemented, and nothing outside the agent prompt rides along.
+- **Tests mean something:** the tests check the actual requirements, including the failure and guard cases, and are not written just to pass.
+- **Every screen shape:** coordinate and template changes hold at 16:9 and 21:9, per [`coordinates.md`](coordinates.md).
+- **Recorded:** write what was checked, and anything sent back to the implementer, in a PR comment or in the version's validation record under `docs/qa/`.
+- A risky change also needs its verification run first: [`verification.md`](verification.md).
+
+### Merging
+
+- The planner merges a code PR once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged.
+- **No shortcut for a branch that fell behind `main`** (owner decision, 2026-11-18). Before a merge, the PR branch contains the latest `main` and `Main CI` (and `Native CI` when it runs) passed on exactly that commit. When `main` moves during the CI run, merge it into the branch and wait again, however small or unrelated the new commits are. An exception for Rust-only PRs was written down earlier the same day and withdrawn before it was ever used: the owner prefers a slower merge to finding a broken combination on `main` afterwards.
+- Check each step: never chain a push or merge behind a command whose exit code does not reflect the CI result, and check ancestry before the fast-forward (2026-11-17 incident).
+- After merging, check the `Main CI` run on `main` too.
+- **Delete the PR branch** on GitHub (`git push origin --delete <branch>`) and locally after that (owner decision, 2026-10-26). The fast-forward merge does not trigger GitHub's automatic branch deletion. Delete only a branch whose commits are all in `main` (`git merge-base --is-ancestor origin/<branch> origin/main`). The remote branch list should show only `main`, `rust` and work that is still in progress.
+
+### Branches and releases
+
+- No long-lived integration branches (owner decision, 2026-11-17; `feat/capture-tracker` was merged into `main` that day).
+- Betas are built from `main` and contain everything merged so far. A stable release is a tag on `main`, so unreleased work on `main` never reaches stable users. A large feature that is not finished lands behind a setting that is off by default.
+- A hotfix for a stable release that cannot wait for the next `main` beta is made on `release/X.Y.x`, cut from that stable tag, and the same fix is also merged into `main`.
+- Build release and beta APKs from `main` after the merge, never from a commit whose `Main CI` run failed. The version and beta-first steps are in [`releases-and-versioning.md`](releases-and-versioning.md).
+- **The `rust` branch** (owner decision, 2026-11-18). The Rust migration of design 0025 is kept apart from the regular work until each unit is finished, so that betas and stable releases built from `main` hold no unfinished Rust-related change.
+  - Rust migration work goes to `rust` through PRs that target `rust`. That includes its Kotlin-side preparation: reader and proxy interfaces, bindings, DI wiring and engine-selection settings.
+  - A unit (one reader, one capture feature, one script) comes to `main` in its own PR only after it passed its switch criteria in 0025 and the owner approved it. From then on it ships in the regular betas.
+  - `main` is merged into `rust` regularly. Nothing goes from `rust` to `main` outside those per-unit PRs.
+  - `native/`, the `fga.native` Gradle switch and `Native CI` are already on `main` and stay: they do not change the app that is built without the switch.
+
+### Device QA scope
+
+Owner decision, 2026-10-26, for `tools/device-qa/run.py` on any connected app player that meets the check's needs (owner decision, 2026-11-16; see [`devices-and-safety.md`](devices-and-safety.md)):
+
+- **Beta:** run only the suites that cover the changed area, for example `--suite skillLevel,skillLevelPanel` for a skill-level reader change. The full unit tests and PR `Main CI` still run every time.
+- **Full device QA (every suite, including `skillLevelPanel`):** before promoting `stable.*`, and also on a beta that changes shared code: `libautomata`, coordinate or wide-screen transforms, the battle flow (`AutoBattle`, `Battle`), templates used by several scripts, or an upstream sync.
+- The planner names the suites in each agent prompt; the report gives the suites that ran and their counts.
+
+### Automation first, log tracking second
+
+Owner decision, 2026-11-11. Log and capture features are built as designed, not trimmed in advance for performance. When a log feature conflicts with automation safety, or has a real memory or performance cost, the planner reports the trade-off and the owner decides.
 
 ## Models and tiers
 
@@ -34,7 +96,7 @@ Planner decision under the owner's delegation, 2026-11-18 ([design 0025](../desi
 
 ## Two planner sessions
 
-Planner decision under the owner's delegation, 2026-11-18. The owner runs two planner sessions so that Kotlin work and Rust work are easy to follow separately. The Kotlin session works on `main`; the Rust session works on the `rust` branch and brings a unit to `main` only when it is finished and the owner approved it (owner decision, 2026-11-18; see `AGENTS.md`, "Exception: the `rust` branch"). Each owns different things.
+Planner decision under the owner's delegation, 2026-11-18. The owner runs two planner sessions so that Kotlin work and Rust work are easy to follow separately. The Kotlin session works on `main`; the Rust session works on the `rust` branch and brings a unit to `main` only when it is finished and the owner approved it (owner decision, 2026-11-18; see "Branches and releases" above). Each owns different things.
 
 - **Kotlin session:** bug fixes, small features, upstream syncs, and everything about releases: `version.properties`, beta and stable builds, GitHub Releases, validation records for a version.
 - **Rust session:** design 0025: everything under `native/`, the Kotlin interfaces and bindings that 0025 adds, the Rust CI job, and the lifecycle records of each unit.

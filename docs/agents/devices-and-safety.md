@@ -37,7 +37,7 @@ Several agents share one adb server. Never run `adb kill-server`, `start-server`
 - Never use apples or Saint Quartz, never spend servant coins, and never unlock a locked append
   skill, not even in a test.
 - Device QA (`tools/device-qa/run.py`) replays recorded frames through the product code and does not
-  touch the game. Its scope per beta is set in `AGENTS.md`.
+  touch the game. Its scope per beta is set in [`agent-team.md`](agent-team.md).
 
 ## Screen shapes
 
