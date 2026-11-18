@@ -306,6 +306,8 @@
     <string name="p_fine_tune_click_delay">"반복 터치 사이 딜레이 (ms)"</string>
     <string name="p_fine_tune_click_duration">"터치 지속 시간 (ms)"</string>
     <string name="p_fine_tune_clicks">"터치"</string>
+    <string name="p_fine_tune_master_skill_menu_delay">"마스터 스킬 메뉴 대기시간 (ms)"</string>
+    <string name="p_fine_tune_master_skill_menu_delay_hint">"마스터 스킬 버튼을 누른 뒤 메뉴가 열릴 때까지 기다리는 시간입니다. 너무 낮추면 느린 기기에서 마스터 스킬이 사용되지 않을 수 있습니다."</string>
     <string name="p_fine_tune_min_similarity">"최소 유사도 (%)"</string>
     <string name="p_fine_tune_mlb_similarity">"최대해방 / 풀돌 유사도 (%)"</string>
     <string name="p_fine_tune_similarity">"유사도"</string>

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "suite": "nativeProbe",
+  "cases": [
+    { "name": "ping", "suite": "nativeProbe", "test": "ping" },
+    { "name": "cpuProbe", "suite": "nativeProbe", "test": "cpuProbe" },
+    { "name": "panicProbe", "suite": "nativeProbe", "test": "panicProbe" },
+    { "name": "ringProbe", "suite": "nativeProbe", "test": "ringProbe" },
+    { "name": "rustlsProbe", "suite": "nativeProbe", "test": "rustlsProbe" },
+    { "name": "tractProbe", "suite": "nativeProbe", "test": "tractProbe" }
+  ]
+}

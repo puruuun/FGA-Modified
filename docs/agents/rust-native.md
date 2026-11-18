@@ -1,6 +1,6 @@
 # Rust core (`native/`)
 
-In force since 2026-11-18, when the owner approved [design 0025](../design/0025-rust-engine-migration.md). "Still to apply" at the end lists the parts that wait for the first code PR.
+In force since 2026-11-18, when the owner approved [design 0025](../design/0025-rust-engine-migration.md). "Still to apply" at the end lists the parts that wait for later work.
 
 Read this before touching anything under `native/`, the Kotlin bindings to it, or the Gradle and CI steps that build it.
 
@@ -41,13 +41,44 @@ The owner does not read Rust (owner statement, 2026-11-18). So the rules here ar
 
 ## Build and test
 
-Fill in the exact commands when the foundation PR lands. The set is:
+Run these from `native/`. `rust-toolchain.toml` there pins the compiler, so rustup switches to it on its own.
 
-- `cargo fmt --check`
-- `cargo clippy --workspace --all-targets -- -D warnings`
-- `cargo test --workspace`
-- `cargo deny check`
-- the Android build for every ABI the app ships (`armeabi-v7a`, `arm64-v8a` at the time of writing; check `abiFilters` in `app/build.gradle.kts`)
+```bash
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo deny check
+cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 -o ../build/rustJniLibs build --release -p fga-ffi
+cargo ndk -t armeabi-v7a -t arm64-v8a clippy --workspace --all-targets -- -D warnings
+```
+
+The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports. The last line checks the code that only builds for Android, which the PC test run leaves out (see below).
+
+In the app, Gradle builds the library only when asked:
+
+```bash
+./gradlew -Pfga.native=true -PfgaDeviceTests=true :app:assembleDeviceTest :app:assembleDeviceTestAndroidTest
+py -3 tools/device-qa/run.py --build --native --suite nativeProbe
+```
+
+`-Pfga.native=true` registers `cargoNdkBuild`, which runs the `cargo ndk` build above into `app/build/generated/rustJniLibs` and adds it to every variant's native libraries. Without the property no task looks at `native/`, and the APKs carry no Rust library. The `nativeProbe` device suite runs the probe tests in `app/src/androidTest`; on an APK built without the library they report themselves skipped and their results are logged under the logcat tag `FgaNativeProbe`.
+
+CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
+
+On the owner's PC, each shell needs:
+
+```bash
+export PATH="$USERPROFILE/.cargo/bin:$PATH"
+export ANDROID_NDK_HOME="$LOCALAPPDATA/Android/Sdk/ndk/28.2.13676358"
+export ANDROID_HOME="$LOCALAPPDATA/Android/Sdk"   # Gradle only, when there is no local.properties
+```
+
+Since 2026-11-18 that PC has Visual Studio 2022 Build Tools (the C++ workload), and Rust uses the MSVC host toolchain (`1.100.0-x86_64-pc-windows-msvc`). All of the commands above run there, including the crypto, TLS and inference tests and `cargo deny check`.
+
+Two workarounds from the earlier GNU host toolchain are still in the code and are removed in the next Rust PR:
+
+- `fga-ffi` declares `ring`, `rustls`, `rcgen` and `tract` only for targets other than `windows-gnu`, and the probes that use them return an error there.
+- `Cargo.lock` keeps `winapi-util` at 0.1.9, because newer versions pull a `windows-sys` that needs `dlltool` on the GNU host.
 
 Rules:
 
@@ -55,7 +86,7 @@ Rules:
 - A Kotlin-only change needs no Rust tools. Building with the Gradle property `fga.native` off must always work.
 - BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed there with SIGILL (see the comment at the top of `app/build.gradle.kts`). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
 - `native/target/` is never committed.
-- The owner's PC has Rust on the GNU host toolchain (`stable-x86_64-pc-windows-gnu`), `cargo-ndk`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. There is no Visual Studio and no host C compiler, so a crate with C code may not build for PC tests there. Report that instead of installing anything.
+- The owner's PC has Rust on the MSVC host toolchain, Visual Studio 2022 Build Tools, `cargo-ndk`, `cargo-deny`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. If something still does not build there, report it instead of installing anything.
 
 ## Test data
 
@@ -111,6 +142,5 @@ Each Rust PR gets a Korean summary from the planner:
 
 ## Still to apply
 
-1. In the first code PR (stage 1-0 of 0025): add `native/target/` to `.gitignore` and the Rust job to `main-ci.yml` with actions pinned by commit hash, and fill in the exact commands under "Build and test".
-2. Before Gemini implements Rust work: add the Rust commands to the Gemini runner allow-list.
-3. When the first Rust unit reaches a stable release: update "What this is" and "Module layout" in `AGENTS.md`.
+1. Before Gemini implements Rust work: add the Rust commands to the Gemini runner allow-list.
+2. When the first Rust unit reaches a stable release: update "What this is" and "Module layout" in `AGENTS.md`.

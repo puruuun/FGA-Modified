@@ -5,6 +5,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.prefs.core.MASTER_SKILL_MENU_DELAY_MAX_MS
+import io.github.fate_grand_automata.prefs.core.MASTER_SKILL_MENU_DELAY_MIN_MS
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.ui.icon
 import javax.inject.Inject
@@ -137,6 +139,15 @@ class FineTuneSettingsViewModel @Inject constructor(
                     step = 50,
                     valueRepresentation = { "${it}ms" },
                     hint = R.string.p_fine_tune_skill_delay_hint
+                ),
+                FineTuneItem(
+                    pref = prefs.masterSkillMenuDelay,
+                    name = R.string.p_fine_tune_master_skill_menu_delay,
+                    icon = icon(R.drawable.ic_wand),
+                    valueRange = MASTER_SKILL_MENU_DELAY_MIN_MS..MASTER_SKILL_MENU_DELAY_MAX_MS,
+                    step = 100,
+                    valueRepresentation = { "${it}ms" },
+                    hint = R.string.p_fine_tune_master_skill_menu_delay_hint
                 ),
                 FineTuneItem(
                     pref = prefs.waitBeforeTurn,

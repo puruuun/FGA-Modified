@@ -119,6 +119,58 @@ androidComponents {
     }
 }
 
+/*
+ * Rust core (design 0025, docs/agents/rust-native.md). Off unless `-Pfga.native=true`: then
+ * cargo-ndk builds native/ and libfga_ffi.so is packaged. Off, nothing here touches native/,
+ * so a Kotlin-only build needs no Rust tools and its APKs carry no Rust library.
+ */
+val nativeEnabled = providers.gradleProperty("fga.native").orNull == "true"
+val shippedAbis = listOf("armeabi-v7a", "arm64-v8a")
+
+abstract class CargoNdkBuild : Exec() {
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+}
+
+if (nativeEnabled) {
+    val cargoNdkBuild = tasks.register<CargoNdkBuild>("cargoNdkBuild") {
+        description = "Builds native/ with cargo-ndk for the shipped ABIs."
+        val workspace = rootProject.layout.projectDirectory.dir("native")
+        val output = layout.buildDirectory.dir("generated/rustJniLibs")
+        outputDir.set(output)
+        workingDir(workspace)
+        inputs.files(fileTree(workspace) { exclude("target/**") })
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+            .withPropertyName("nativeSources")
+        // A local copy: a lambda that reached a script-level val could not be stored in the configuration cache.
+        val abis = shippedAbis.toList()
+        inputs.property("abis", abis)
+
+        // rustup installs into ~/.cargo/bin, which is often not on the PATH of a Gradle daemon
+        // started by Android Studio.
+        val homeCargo = File(System.getProperty("user.home"), ".cargo/bin/" + if (File.separatorChar == '\\') "cargo.exe" else "cargo")
+        executable(if (homeCargo.isFile) homeCargo.path else "cargo")
+
+        // cargo-ndk finds the NDK under ANDROID_HOME when ANDROID_NDK_HOME is not set.
+        if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
+            environment("ANDROID_HOME", androidComponents.sdkComponents.sdkDirectory.get().asFile.path)
+        }
+        argumentProviders.add(
+            CommandLineArgumentProvider {
+                listOf("ndk") + abis.flatMap { listOf("-t", it) } +
+                    // minSdk, so the library links against no newer libc than the app supports.
+                    listOf("--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi")
+            },
+        )
+    }
+
+    androidComponents {
+        onVariants { variant ->
+            variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoNdkBuild, CargoNdkBuild::outputDir)
+        }
+    }
+}
+
 // Release versions come from version.properties. FGA_VERSION_NAME / FGA_VERSION_CODE override them
 // (PR builds set them to run_number). A malformed file fails the build here, not in CI.
 val versionProperties = Properties().apply {
@@ -363,8 +415,7 @@ android {
 
             ndk {
                 //noinspection ChromeOsAbiSupport
-                abiFilters.add("armeabi-v7a")
-                abiFilters.add("arm64-v8a")
+                abiFilters.addAll(shippedAbis)
             }
         }
         create("beta") {
@@ -453,6 +504,8 @@ dependencies {
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
+    // The nativeProbe device suite runs its test class through JUnitCore inside the custom runner.
+    androidTestImplementation(libs.junit4)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling)
     implementation(libs.compose.foundation)

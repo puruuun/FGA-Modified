@@ -269,6 +269,8 @@
     <string name="p_fine_tune_wait_after_clicking">"クリック後の待機秒数"</string>
     <string name="p_fine_tune_wait_after_swiping">"スワイプ後の待機秒数"</string>
     <string name="p_fine_tune_wait_before_cards">"カード選択後の待機時間"</string>
+    <string name="p_fine_tune_master_skill_menu_delay">"マスタースキルメニューの待機時間"</string>
+    <string name="p_fine_tune_master_skill_menu_delay_hint">"マスタースキルのボタンを押してからメニューが開くまで待つ時間です。短くしすぎると、動作の遅い端末でマスタースキルが使われないことがあります。"</string>
     <string name="p_fine_tune_wait_before_turn">"ターン経過後の待機時間"</string>
     <string name="p_fine_tune_wait_multiplier">"待機時間倍率"</string>
     <string name="p_folder">"サポート画像、ドロップ画像などに使用するフォルダを変更する。"</string>
