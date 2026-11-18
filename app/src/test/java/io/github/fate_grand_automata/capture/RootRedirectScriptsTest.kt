@@ -940,6 +940,24 @@ class RootRedirectScriptsTest {
     }
 
     @Test
+    fun aForeignChainWithALiveWatchdogThatAppearsDuringTheWaitStopsTheGuardAndRemovesNothing() {
+        val fake = FakeNat()
+        val stale = listOf("-N FGA_CAP_10256", "-A OUTPUT -j FGA_CAP_10256")
+        fake.v4 = stale
+        // The first chain stays stale; a second chain starts during the wait with its watchdog already live.
+        val appended = listOf("-N FGA_CAP_777", "-A OUTPUT -j FGA_CAP_777")
+        fake.onSleep(
+            appended.joinToString("") { "echo '$it' >> '${fake.v4File().posix()}'\n" } +
+                fake.liveWatchdogScript("fga_cap_watchdog_777", pid = 4343),
+        )
+        val res = fake.runGuard(1025, ipv6 = false) ?: return
+        assertEquals(1, res.first, res.second)
+        assertTrue(res.second.contains(RootRedirectScripts.MARKER_FAIL_OTHER_APP), res.second)
+        assertFalse(res.second.contains(RootRedirectScripts.MARKER_GUARD_OK), res.second)
+        assertEquals(stale + appended, fake.v4, "no chain may be removed when another app is live")
+    }
+
+    @Test
     fun detectionReportsALiveOtherAppAndNeverRemovesAnything() {
         val script = RootRedirectScripts.detectOtherApp(1025, ipv6 = true)
         for (forbidden in listOf(" -D ", " -F ", " -X ", " -I ", " -A ", " -N ", "rm ", "sleep")) {
