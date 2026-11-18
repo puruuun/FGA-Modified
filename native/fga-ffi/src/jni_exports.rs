@@ -8,13 +8,32 @@ use jni::sys::{jint, jstring};
 use crate::guard::run_guarded;
 use crate::probes;
 
+/// A failed `get_string` or `convert_byte_array` (for example an OutOfMemoryError) returns with
+/// the Java exception still pending. jni 0.21's `new_string` calls NewStringUTF without looking,
+/// and with a pending exception that aborts the process under CheckJNI (debuggable builds) or
+/// returns null. So the exception is cleared first and the result says so.
+///
 /// A null return reaches Kotlin as an exception at the call site, which a test reports; it is
 /// the only way left once the JVM cannot allocate the string.
 fn to_java(env: &mut JNIEnv, text: String) -> jstring {
+    let text = match env.exception_check() {
+        Ok(false) => text,
+        // An Err cannot say whether one is pending; clearing when none is is harmless.
+        Ok(true) | Err(_) => {
+            // Nothing is left to report if clearing fails: the string below then fails too.
+            let _ = env.exception_clear();
+            after_pending_exception(&text)
+        }
+    };
     match env.new_string(text) {
         Ok(string) => string.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
+}
+
+/// The probe's own text is kept, since it usually says which argument failed.
+fn after_pending_exception(text: &str) -> String {
+    format!("ERR: a Java exception was pending and has been cleared ({text})")
 }
 
 macro_rules! export_probe {
@@ -63,8 +82,9 @@ export_probe!(
     probes::memory_status
 );
 
-/// Reading the Java arguments can fail (a null string, a pending exception), so it happens inside
-/// the guard and comes back as `ERR` like any other failure.
+/// Reading the Java arguments can fail, so it happens inside the guard and comes back as `ERR`. A
+/// null argument fails before any JNI call and leaves no exception; a JNI failure leaves one
+/// pending, which `to_java` clears and names in the text.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrLoad<'local>(
     mut env: JNIEnv<'local>,
@@ -91,6 +111,8 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrRe
     allowed: JString<'local>,
 ) -> jstring {
     let text = run_guarded(|| {
+        // Test-only probe: a product function checks `get_array_length` against the crop limits
+        // before copying, so a huge array is refused instead of allocated.
         let pixels = env
             .convert_byte_array(&pixels)
             .map_err(|e| format!("pixels: {e}"))?;
@@ -101,4 +123,20 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrRe
         probes::ocr_read(pixels, width, height, &allowed)
     });
     to_java(&mut env, text)
+}
+
+// Clearing a pending exception needs a JVM, which host tests do not have. The device suite
+// nativeProbe covers the null-argument path (NativeProbeTest.ocrLoadNullPath).
+#[cfg(test)]
+mod tests {
+    use super::after_pending_exception;
+
+    #[test]
+    fn pending_exception_turns_any_result_into_an_error() {
+        assert_eq!(
+            after_pending_exception("ERR: pixels: Java exception was thrown"),
+            "ERR: a Java exception was pending and has been cleared (ERR: pixels: Java exception was thrown)"
+        );
+        assert!(after_pending_exception("OK: {}").starts_with("ERR: "));
+    }
 }

@@ -54,7 +54,7 @@ cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-tar
 
 The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports, and the Android lint run uses it too so it checks the same build. The last line checks the code that only builds for Android and ARM, which the PC runs leave out.
 
-The inference backends of `fga-sensing` are Cargo features that are off by default, so the commands above build neither runtime, and the Android lint run stays free of them until one is chosen for the device. Lint and test each one on its own:
+The inference backends of `fga-sensing` are Cargo features that are off by default in that crate. Since issue #530, `fga-ffi` turns on `tract` for its device probes, so every `--workspace` command above, the Android lint run and the Android build compile `tract`; `ort` stays off in all of them. Lint and test each backend on `fga-sensing` alone with (for `tract` this now repeats what the workspace commands do):
 
 ```bash
 cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings
@@ -103,7 +103,9 @@ cp -r build/orchestration/rust/ocr/samples build/ocr-device-fixtures/ocr/
 py -3 tools/device-qa/run.py --build --native --suite ocrProbe --local-fixtures build/ocr-device-fixtures
 ```
 
-Without the library the suite reports itself skipped; with it, a missing model or sample fails the case and names the path. The cases share one process, so the case file runs the Tesseract case first and the tract memory case before the other tract cases. Results are logged under the logcat tag `FgaOcrProbe`.
+Without the library the suite reports itself skipped; with it, a missing model or sample fails the case and names the path. The model copy the suite makes in the app's cache folder is removed when the run ends; the pushed files under `/sdcard/Download/fga-device-qa/` stay.
+
+`tract-recognise` passes with at least 360 of 370 texts equal to Python, `tract-recognise-allowed` with at least 356. The PC gives 370 and 366. The floor leaves room for floating-point differences between CPU builds on the first device measurement; the report and the `FgaOcrProbe` log line give the exact count, and the PR that records the device results raises the floor to the measured value. The cases share one process, so the case file runs the Tesseract case first and the tract memory case before the other tract cases. Results are logged under the logcat tag `FgaOcrProbe`.
 
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 

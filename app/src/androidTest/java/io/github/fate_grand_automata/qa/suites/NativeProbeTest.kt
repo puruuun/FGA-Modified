@@ -50,6 +50,13 @@ class NativeProbeTest {
         assertTrue(result, result.startsWith("OK:"))
     }
 
+    /** A failed argument read must come back as text with no Java exception left pending (#533). */
+    @Test
+    fun ocrLoadNullPath() {
+        val result = probe("ocrLoadNullPath") { NativeProbe.ocrLoad(null) }
+        assertTrue(result, result.startsWith("ERR: modelPath: "))
+    }
+
     /** Evidence for diagnosing a crash elsewhere, not a pass/fail check. */
     @Test
     fun cpuProbe() {

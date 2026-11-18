@@ -48,7 +48,8 @@ jobs:
       - name: Test
         run: cargo test --workspace
       - name: Clippy and test, fga-sensing with tract
-        # The inference backends are off by default, so the two steps above never build them.
+        # fga-ffi turns on the tract feature (issue #530), so the two workspace steps above already
+        # lint and test fga-sensing with tract and this step repeats them.
         # The model tests skip themselves here: the model and the samples are local only.
         run: |
           cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings

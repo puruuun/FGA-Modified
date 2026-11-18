@@ -15,12 +15,25 @@ static RECOGNIZER: Mutex<Option<Recognizer<TractBackend>>> = Mutex::new(None);
 
 pub const NOT_LOADED: &str = "no model is loaded; call ocrLoad first";
 
+pub const POISONED: &str =
+    "the recogniser lock is poisoned: an earlier call panicked while holding it";
+
 /// A panic while the lock was held (caught by the guard) leaves it poisoned. The recogniser may
 /// then be half-updated, so every later call reports that instead of using it.
 fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>, String> {
-    RECOGNIZER.lock().map_err(|_| {
-        "the recogniser lock is poisoned: an earlier call panicked while holding it".to_owned()
-    })
+    RECOGNIZER.lock().map_err(|_| POISONED.to_owned())
+}
+
+/// Only for tests/ocr_poisoned.rs: no recogniser call panics on demand, and the poisoned-lock
+/// path must still be exercised. It has no JNI export, so Kotlin cannot reach it.
+#[doc(hidden)]
+#[expect(
+    clippy::panic,
+    reason = "a panic while holding the lock is what poisons it"
+)]
+pub fn poison_lock_for_tests() -> Result<String, String> {
+    let _held = RECOGNIZER.lock();
+    panic!("poisoning the recogniser lock")
 }
 
 pub fn ocr_load(model_path: &str) -> Result<String, String> {
@@ -236,9 +249,10 @@ mod tests {
         assert_eq!(text, "ERR: invalid crop size -1x30");
     }
 
+    // Unloading a loaded model is checked in tests/ocr_model.rs, which has the model.
     #[test]
-    fn read_after_unload_is_an_error() {
-        assert!(run_guarded(ocr_unload).starts_with("OK: "));
+    fn unload_without_a_model_drops_nothing() {
+        assert_eq!(run_guarded(ocr_unload), "OK: {\"dropped\":false}");
         let text = run_guarded(|| ocr_read(vec![0; 6], 3, 2, ""));
         assert_eq!(text, format!("ERR: {NOT_LOADED}"));
     }

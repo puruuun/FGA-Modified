@@ -7,6 +7,7 @@
     { "name": "panicProbe", "suite": "nativeProbe", "test": "panicProbe" },
     { "name": "ringProbe", "suite": "nativeProbe", "test": "ringProbe" },
     { "name": "rustlsProbe", "suite": "nativeProbe", "test": "rustlsProbe" },
-    { "name": "tractProbe", "suite": "nativeProbe", "test": "tractProbe" }
+    { "name": "tractProbe", "suite": "nativeProbe", "test": "tractProbe" },
+    { "name": "ocrLoadNullPath", "suite": "nativeProbe", "test": "ocrLoadNullPath" }
   ]
 }

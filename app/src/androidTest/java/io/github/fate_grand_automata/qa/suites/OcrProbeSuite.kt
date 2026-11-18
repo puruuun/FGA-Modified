@@ -79,13 +79,16 @@ private fun decodeGray(file: String, pyText: String, png: ByteArray): Sample {
     try {
         check(!mat.empty() && mat.depth() == CvType.CV_8U) { "$file is not an 8-bit PNG" }
         val channels = mat.channels()
+        check(channels == 1 || channels == 3 || channels == 4) { "$file has $channels channels; expected 1, 3 or 4" }
         val raw = ByteArray((mat.total() * channels).toInt())
         mat.get(0, 0, raw)
         val gray = ByteArray(mat.rows() * mat.cols()) { i ->
             if (channels == 1) raw[i] else {
                 // OpenCV orders colour channels B, G, R(, A): index 2 is the PNG's first channel.
                 val b = raw[i * channels]; val g = raw[i * channels + 1]; val r = raw[i * channels + 2]
-                check(r == g && g == b) { "$file pixel $i is not gray ($r, $g, $b)" }
+                check(r == g && g == b) {
+                    "$file pixel $i is not gray (R ${r.toInt() and 0xFF}, G ${g.toInt() and 0xFF}, B ${b.toInt() and 0xFF})"
+                }
                 r
             }
         }
@@ -93,17 +96,33 @@ private fun decodeGray(file: String, pyText: String, png: ByteArray): Sample {
     } finally { mat.release() }
 }
 
-/** Rust opens the model by path, and the app process cannot read /sdcard/Download directly. */
+private fun copyDir(runner: SupportDeviceTestRunner) = File(runner.targetContext.cacheDir, "ocr-probe")
+
+/**
+ * Rust opens the model by path, and the app process cannot read /sdcard/Download directly. The
+ * copy is shared by the tract cases of one run and removed by [removeOcrProbeCopies].
+ */
 private fun modelFile(runner: SupportDeviceTestRunner, devicePath: String): File {
     copiedModel?.let { (path, file) -> if (path == devicePath && file.isFile) return file }
-    val target = File(runner.targetContext.cacheDir, "ocr-probe/${devicePath.substringAfterLast('/')}")
+    val target = File(copyDir(runner), devicePath.substringAfterLast('/'))
     checkNotNull(target.parentFile).mkdirs()
-    if (runner.copyFixture(devicePath, target) == 0L) {
+    val copied = try { runner.copyFixture(devicePath, target) } catch (error: Throwable) { target.delete(); throw error }
+    if (copied == 0L) {
         target.delete()
         error("$devicePath is missing on the device; push the OCR model first (docs/agents/rust-native.md)")
     }
     copiedModel = devicePath to target
     return target
+}
+
+/**
+ * Files copied for a check are removed afterwards (docs/agents/devices-and-safety.md). The runner
+ * calls this once when its whole run ends, pass, fail or exception, so the tract cases share one
+ * copy; the fixtures under /sdcard/Download/fga-device-qa/ stay.
+ */
+internal fun removeOcrProbeCopies(runner: SupportDeviceTestRunner) {
+    copiedModel = null
+    copyDir(runner).deleteRecursively()
 }
 
 private fun okJson(call: String, result: String): JSONObject {
@@ -208,6 +227,7 @@ private fun tractMemory(runner: SupportDeviceTestRunner, case: JSONObject): JSON
     collectGarbage()
     readings += memory("afterUnloadAndGc")
     return JSONObject()
+        .put("note", "vmHwmKb is the process-wide peak; an earlier case (tesseract-baseline) may already have set it, so it moves only when this case goes higher")
         .put("samples", samples.size)
         .put("loadMs", load.getLong("loadMs"))
         .put("readErrors", errors)
@@ -254,6 +274,8 @@ private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): J
         NativeProbe.ocrUnload()
     }
     val report = JSONObject()
+        .put("note", "perCrop is timed inside Rust around recognize only; perJniCall is the whole call from Kotlin and is the one to compare with tesseract-baseline perCall (whole detectTextLine with its preprocessing)" +
+            if (allowed.isEmpty()) "" else ". The allowed set is rebuilt on every call, outside the perCrop span but inside perJniCall")
         .put("allowed", allowed)
         .put("samples", samples.size)
         .put("equalToPyText", equal)
@@ -267,6 +289,8 @@ private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): J
         // Inside Rust around recognize only; the JNI figure adds the array copy and the string round trip.
         .put("perCrop", timing(engineMicros))
         .put("perJniCall", timing(callMicros))
+    // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
+    Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount)")
     if (errorCount > 0 || equal < minEqual) {
         throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR. $report")
     }

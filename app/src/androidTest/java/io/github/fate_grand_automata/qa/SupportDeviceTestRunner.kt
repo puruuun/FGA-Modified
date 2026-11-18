@@ -22,6 +22,7 @@ import io.github.fate_grand_automata.qa.suites.verifyHakunoShuffle
 import io.github.fate_grand_automata.qa.suites.verifyCEEnhance
 import io.github.fate_grand_automata.qa.suites.verifyCardSwap
 import io.github.fate_grand_automata.qa.suites.runNativeProbeCase
+import io.github.fate_grand_automata.qa.suites.removeOcrProbeCopies
 import io.github.fate_grand_automata.qa.suites.runOcrProbeCase
 import org.json.JSONArray
 import org.json.JSONObject
@@ -105,6 +106,10 @@ class SupportDeviceTestRunner : Instrumentation() {
             }
             report.put("results", results).put("passed", (0 until results.length()).all { results.getJSONObject(it).getBoolean("passed") })
         } catch (error: Throwable) { report.put("passed", false).put("error", error.stackTraceToString()) }
+        finally {
+            // ocrProbe's model copy is shared by its cases, so it is removed only when the whole run ends.
+            try { removeOcrProbeCopies(this) } catch (error: Throwable) { report.put("cleanupError", error.toString()) }
+        }
         finish(Activity.RESULT_OK, Bundle().apply { putString("report", report.toString()) })
     }
 }

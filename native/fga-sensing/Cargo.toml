@@ -12,8 +12,9 @@ workspace = true
 
 [features]
 default = []
-# Each backend pulls in an inference runtime, so neither is on by default: the default build and
-# the Android lint run stay free of both until one is chosen for the device.
+# Each backend pulls in an inference runtime, so neither is on by default; a crate that needs one
+# turns it on. fga-ffi turns on `tract` for the device probes of issue #530, so every workspace
+# build, the Android one included, compiles tract. `ort` stays off outside its own commands.
 tract = ["dep:tract-onnx", "_backend"]
 ort = ["dep:ort", "_backend"]
 # Internal: lets the evaluation tool require "any backend", which Cargo cannot express directly.
