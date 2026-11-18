@@ -1,0 +1,63 @@
+name: Native CI
+
+# Rust checks run only when the Rust core or this workflow changes, so Kotlin-only work never
+# waits on them (design 0025, D-7).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_DENY_VERSION: 0.21.0
+  CARGO_NDK_VERSION: 4.1.2
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned toolchain
+        # Reads native/rust-toolchain.toml: compiler version, clippy, rustfmt and Android targets.
+        run: rustup toolchain install
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Install cargo-deny and cargo-ndk
+        run: |
+          cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
+          cargo install cargo-ndk --locked --version "$CARGO_NDK_VERSION"
+      - name: Licences and advisories
+        run: cargo deny check
+      - name: Android build
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 -o "$RUNNER_TEMP/jniLibs" build --release -p fga-ffi
+      - name: arm64 library is 16 KB aligned
+        run: |
+          readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          aligns=$("$readelf" -lW "$RUNNER_TEMP/jniLibs/arm64-v8a/libfga_ffi.so" | awk '$1 == "LOAD" { print $NF }' | sort -u)
+          echo "LOAD alignment: $aligns"
+          test "$aligns" = "0x4000"
