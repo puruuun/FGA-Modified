@@ -179,20 +179,25 @@ def instrument(adb_path: str, serial: str, package: str, device_case: str) -> di
     return json.loads(raw)
 
 
-def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str]) -> bool:
+def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str], require_native: bool = False) -> bool:
     results = report.get("results", [])
     failed = [r for r in results if not r.get("passed")]
+    native_skipped = [r for r in results if r.get("passed") and "skipped" in (r.get("actual") or {})]
+    # With --native a skipped probe means the library was not packaged, so the run proved nothing.
+    native_missing = require_native and bool(native_skipped)
     lines = [
         f"# 기기 판독 검증 결과 ({suite})",
         "",
         f"- 기기: {serial}",
         f"- adb: {adb_version}",
-        f"- 케이스: {len(results)}개, 통과 {len(results) - len(failed)}개, 실패 {len(failed)}개, skip {len(skipped)}개",
-        f"- 전체 결과: {'통과' if report.get('passed') and not failed else '실패'}",
+        f"- 케이스: {len(results)}개, 통과 {len(results) - len(failed) - len(native_skipped)}개, 실패 {len(failed)}개, skip {len(skipped) + len(native_skipped)}개",
+        f"- 전체 결과: {'통과' if report.get('passed') and not failed and not native_missing else '실패'}",
         "",
     ]
     if report.get("error"):
         lines += ["## 실행 오류", "", "```", report["error"], "```", ""]
+    if native_missing:
+        lines += ["## 실행 오류", "", "--native로 실행했지만 APK에 libfga_ffi.so가 없어 네이티브 프로브가 skip됐습니다.", ""]
     if failed:
         lines += ["## 실패 케이스", ""]
         for r in failed:
@@ -212,7 +217,6 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
             default_score = (check.get("bondDefault") or {}).get("score")
             lines.append(f"| {name} / {y} | {check['effect']} | {np_score} | {default_score} | {check['matched']} |")
         lines.append("")
-    native_skipped = [r for r in results if "skipped" in (r.get("actual") or {})]
     if native_skipped:
         lines += ["## Skip 케이스 (네이티브 라이브러리 없음)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
@@ -220,14 +224,14 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
     for r in top:
         lines.append(f"| {r['name']} | {r.get('ocrCalls', '-')} | {r.get('ocrMs', '-')} | {r.get('elapsedMs', '-')} |")
     (out_dir / f"summary-{suite}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return not report.get("error") and not failed and bool(report.get("passed"))
+    return not report.get("error") and not failed and not native_missing and bool(report.get("passed"))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--serial", default=DEFAULT_SERIAL)
     parser.add_argument("--build", action="store_true", help="build the deviceTest APKs first")
-    parser.add_argument("--native", action="store_true", help="with --build: also build and package the Rust library (needs cargo-ndk)")
+    parser.add_argument("--native", action="store_true", help="build and package the Rust library with --build (needs cargo-ndk); a skipped native probe then fails the run")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
@@ -262,7 +266,9 @@ def main() -> int:
             sys.exit(f"no case file for suite {suite}: {case_file.relative_to(REPO)}")
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped)
+        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped, require_native=args.native)
+        if args.native and any("skipped" in (r.get("actual") or {}) for r in report.get("results", [])):
+            print(f"{suite}: --native was given but the APK has no libfga_ffi.so; the native probes were skipped")
         print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / f'summary-{suite}.md'}")
         overall = overall and ok
     # summary.md joins every suite summary so one file shows the whole run.
