@@ -18,8 +18,8 @@ def record(path, size, kind='blob'):
     return ('100644 %s %s %7s\t%s\0' % (kind, 'a' * 40, size, path)).encode('utf-8')
 
 
-def run(stdin, *args, **env):
-    p = subprocess.run([sys.executable, SCRIPT, *args], input=stdin, capture_output=True,
+def run(stdin, *args, cwd=None, **env):
+    p = subprocess.run([sys.executable, SCRIPT, *args], input=stdin, capture_output=True, cwd=cwd,
                        env=dict(os.environ, **env))
     return p.returncode, p.stdout.decode('utf-8', 'replace')
 
@@ -369,6 +369,30 @@ class StepScriptTest(unittest.TestCase):
         code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
         self.assertEqual(code, 0, out)
 
+    def test_file_named_like_a_commit_id_is_a_path_of_its_commit(self):
+        base = self.commit({'ok.txt': 1})
+        # A file named with the id of a commit outside the range, as the verifier constructed it.
+        for name, size in ((base + 'z-evil.onnx', 1), (base + 'z-big.bin', g.MAX_BYTES + 1)):
+            added = self.commit({name: size})
+            head = self.delete_commit(name)
+            code, out = self.step(head, base + '..' + head)
+            self.assertEqual(code, 1, (name, out))
+            self.assertIn('REFUSED ' + name, out)
+            self.assertIn('(in commit %s)' % added[:7], out)
+            base = head
+
+    def test_file_named_like_a_commit_inside_the_range_is_a_path(self):
+        base = self.commit({'ok.txt': 1})
+        inside = self.commit({'a.txt': 1})
+        for name, size in ((inside + 'x.onnx', 1), (inside, g.MAX_BYTES + 1)):
+            added = self.commit({name: size})
+            head = self.delete_commit(name)
+            code, out = self.step(head, base + '..' + head)
+            self.assertEqual(code, 1, (name, out))
+            self.assertIn('(in commit %s)' % added[:7], out)
+            base = head
+            inside = head
+
     def test_head_without_an_allow_list_fails(self):
         head = self.commit({'ok.txt': 1}, seed_allow_list=False)
         code, out = self.step(head, '', 'push')
@@ -394,6 +418,153 @@ class StepScriptTest(unittest.TestCase):
         bad = self.commit({'bad/model.onnx': 1})
         code, out = self.step(clean, clean + '..' + bad, 'pull_request', pr_head=bad)
         self.assertEqual(code, 1, out)
+
+
+def meta(mode, blob, status=b'A'):
+    return b':000000 ' + mode + b' ' + b'0' * 40 + b' ' + blob + b' ' + status
+
+
+class ParseHistoryTest(unittest.TestCase):
+    BLOB = b'a' * 40
+    C1 = 'c1' * 20
+    C2 = 'd2' * 20
+
+    def out(self, *tokens):
+        return b''.join(t + bytes([0]) for t in tokens)
+
+    def test_paths_that_look_like_headers_or_metadata_are_paths(self):
+        out = self.out(self.C1.encode(), meta(b'100644', self.BLOB), self.C2.encode(),
+                       self.C1.encode(), meta(b'100644', self.BLOB), self.C1.encode(),
+                       meta(b'100644', self.BLOB), b':000000 fake')
+        records = g.parse_diff_tree(out)
+        self.assertEqual([(r[0], r[3]) for r in records],
+                         [(self.C1, self.C2.encode()), (self.C1, self.C1.encode()),
+                          (self.C1, b':000000 fake')])
+        # The same name after a header of another commit stays a path of the commit it follows.
+        out = self.out(self.C1.encode(), meta(b'100644', self.BLOB), b'p',
+                       self.C2.encode(), meta(b'100644', self.BLOB), self.C1.encode() + b'z-evil.onnx')
+        self.assertEqual([(r[0], r[3]) for r in g.parse_diff_tree(out)],
+                         [(self.C1, b'p'), (self.C2, self.C1.encode() + b'z-evil.onnx')])
+
+    def test_path_with_line_break_is_handled_and_escaped(self):
+        path = b'x' + chr(10).encode() + b'::warning::y.onnx'
+        records = g.parse_diff_tree(self.out(self.C1.encode(), meta(b'100644', self.BLOB), path))
+        self.assertEqual(records[0][3], path)
+        shown = g.printable(path.decode())
+        self.assertNotIn(chr(10), shown)
+
+    def test_deletion_is_skipped_and_gitlink_is_kept(self):
+        gone = b':100644 000000 ' + self.BLOB + b' ' + b'0' * 40 + b' D'
+        out = self.out(self.C1.encode(), gone, b'old', meta(b'160000', self.BLOB), b'sub')
+        self.assertEqual([(r[1], r[3]) for r in g.parse_diff_tree(out)], [(b'160000', b'sub')])
+
+    def test_combined_merge_record(self):
+        combined = b'::000000 000000 100644 ' + b'0' * 40 + b' ' + b'0' * 40 + b' ' + self.BLOB + b' AA'
+        records = g.parse_diff_tree(self.out(self.C1.encode(), combined, b'evil.bin'))
+        self.assertEqual([(r[1], r[2], r[3]) for r in records], [(b'100644', self.BLOB, b'evil.bin')])
+
+    def test_malformed_output_fails(self):
+        for bad in (self.out(meta(b'100644', self.BLOB), b'p'),  # a record before any header
+                    self.out(self.C1.encode(), meta(b'100644', self.BLOB)),  # metadata without a path
+                    self.out(self.C1.encode(), meta(b'100644', self.BLOB), b''),
+                    self.out(self.C1.encode(), b':too few fields', b'p'),
+                    self.out(self.C1.encode(), b'', b'p')):
+            with self.assertRaises(g.GuardError, msg=bad):
+                g.parse_diff_tree(bad)
+
+    def test_missing_object_is_a_failure_not_a_skipped_file(self):
+        ident = self.BLOB
+        with self.assertRaises(g.GuardError):
+            g.parse_batch_check([ident], ident + b' missing' + chr(10).encode(), b'blob')
+
+    def test_batch_check_answers_are_checked(self):
+        nl = chr(10).encode()
+        a, b = b'a' * 40, b'b' * 40
+        self.assertEqual(g.parse_batch_check([a, b], a + b' blob 5' + nl + b + b' blob 7' + nl, b'blob'), [5, 7])
+        for answers in (a + b' blob 5' + nl,  # too few
+                        a + b' blob 5' + nl + b + b' blob 7' + nl + a + b' blob 1' + nl,  # too many
+                        a + b' tree 5' + nl + b + b' blob 7' + nl,  # wrong type
+                        a + b' blob x' + nl + b + b' blob 7' + nl,  # size is not a number
+                        b + b' blob 5' + nl + a + b' blob 7' + nl):  # answers for other ids
+            with self.assertRaises(g.GuardError, msg=answers):
+                g.parse_batch_check([a, b], answers, b'blob')
+
+    def test_a_failing_git_fails(self):
+        with self.assertRaises(g.GuardError):
+            g.git_output(['no-such-subcommand'], b'')
+
+
+class HistoryCommandTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = os.path.join(self.tmp.name, 'repo')
+        os.mkdir(self.repo)
+        self.git('init', '-q')
+        self.allow = os.path.join(self.tmp.name, 'allow.txt')
+        open(self.allow, 'wb').close()
+
+    def git(self, *args):
+        p = subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.com',
+                            '-c', 'commit.gpgsign=false', *args], cwd=self.repo, capture_output=True)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return p.stdout.decode().strip()
+
+    def commit(self, files):
+        for name, size in files.items():
+            with open(os.path.join(self.repo, name), 'wb') as f:
+                f.write(b'x' * size)
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', 'c')
+        return self.git('rev-parse', 'HEAD')
+
+    def history(self, *commits, cwd=None):
+        path = os.path.join(self.tmp.name, 'commits')
+        with open(path, 'w') as f:
+            f.write(chr(10).join(commits))
+        return run(b'', '--allow', self.allow, '--history', path, cwd=cwd or self.repo)
+
+    def test_root_commit_is_checked(self):
+        root = self.commit({'model.onnx': 1})
+        code, out = self.history(root)
+        self.assertEqual(code, 1, out)
+        self.assertIn('REFUSED model.onnx (in commit %s)' % root[:7], out)
+
+    def test_clean_history_passes(self):
+        first = self.commit({'a.txt': 1})
+        second = self.commit({'b.txt': 2})
+        self.assertEqual(self.history(first, second)[0], 0)
+
+    def test_commit_id_format_is_checked(self):
+        self.commit({'a.txt': 1})
+        for bad in ('xyz', 'A' * 40, 'a' * 39, 'a' * 41, 'HEAD'):
+            self.assertEqual(self.history(bad)[0], 1, bad)
+
+    def test_unknown_commit_id_fails(self):
+        self.commit({'a.txt': 1})
+        code, out = self.history('0123456789abcdef' * 2 + '01234567')
+        self.assertEqual(code, 1, out)
+
+    def test_git_failure_fails_the_guard(self):
+        root = self.commit({'a.txt': 1})
+        outside = os.path.join(self.tmp.name, 'not-a-repo')
+        os.mkdir(outside)
+        code, out = self.history(root, cwd=outside)
+        self.assertEqual(code, 1, out)
+        self.assertIn('git', out)
+
+    def test_submodule_entry_is_size_zero_and_the_path_rules_apply(self):
+        root = self.commit({'a.txt': 1})
+        self.git('update-index', '--add', '--cacheinfo', '160000,%s,sub' % root)
+        self.git('commit', '-q', '-m', 'gitlink')
+        ok = self.git('rev-parse', 'HEAD')
+        code, out = self.history(ok)
+        self.assertEqual(code, 0, out)
+        self.git('update-index', '--add', '--cacheinfo', '160000,%s,sub.onnx' % root)
+        self.git('commit', '-q', '-m', 'gitlink model')
+        code, out = self.history(self.git('rev-parse', 'HEAD'))
+        self.assertEqual(code, 1, out)
+        self.assertIn('REFUSED sub.onnx', out)
 
 
 if __name__ == '__main__':

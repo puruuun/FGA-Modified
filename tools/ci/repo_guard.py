@@ -144,6 +144,8 @@ def emit(text):
 
 
 NEWLINE = bytes([10])
+ZERO_MODE = b'000000'
+GITLINK_MODE = b'160000'
 
 
 def git_output(args, data):
@@ -153,46 +155,90 @@ def git_output(args, data):
     return p.stdout
 
 
+def parse_diff_tree(out):
+    """Parse `git diff-tree --stdin -c --root -r --no-renames -z` output.
+
+    Returns [(commit, mode, blob id, path)] for what each commit itself adds or modifies.
+
+    The output is a sequence of NUL-terminated tokens: a header (the commit id) and, for each changed
+    file, a metadata token that always starts with ':' followed by exactly one path token. The parser
+    consumes the token after a metadata token as a path without looking at it, so no path, whatever
+    its name (a commit id, text starting with ':', ...), can be taken for a header or a metadata
+    token. A path cannot hold a NUL, so the tokens cannot run into each other.
+    """
+    tokens = out.split(bytes([0]))
+    if tokens and tokens[-1] == b'':
+        tokens.pop()
+    records = []
+    commit = None
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.startswith(b':'):
+            if commit is None or i + 1 >= len(tokens) or tokens[i + 1] == b'':
+                raise GuardError('unexpected output of git diff-tree')
+            parents = len(token) - len(token.lstrip(b':'))  # one ':' per parent in a merge
+            fields = token[parents:].split(b' ')
+            if len(fields) != 2 * parents + 3:
+                raise GuardError('unexpected metadata of git diff-tree: %r' % token[:200])
+            mode, blob = fields[parents], fields[2 * parents + 1]
+            if mode != ZERO_MODE:  # a zero mode is a deletion; the file is not in that commit
+                records.append((commit, mode, blob, tokens[i + 1]))
+            i += 2
+        elif token == b'':
+            raise GuardError('unexpected empty token in the output of git diff-tree')
+        else:
+            commit = token.decode('ascii', 'replace')
+            i += 1
+    return records
+
+
+def parse_batch_check(wanted, answers, kind):
+    """Sizes from `git cat-file --batch-check` for the ids in `wanted`; fail on anything unexpected.
+
+    A missing object is a failure, never a skipped file: every id comes from git itself, so an
+    object that git cannot find means that parser and git disagree.
+    """
+    lines = answers.split(NEWLINE)
+    if lines and lines[-1] == b'':
+        lines.pop()
+    if len(lines) != len(wanted):
+        raise GuardError('git cat-file answered %d of %d questions' % (len(lines), len(wanted)))
+    sizes = []
+    for ident, answer in zip(wanted, lines):
+        fields = answer.split()
+        if len(fields) != 3 or fields[0] != ident or fields[1] != kind or not fields[2].isdigit():
+            raise GuardError('unexpected answer of git cat-file for %s: %r' % (
+                ident.decode('ascii', 'replace'), answer[:200]))
+        sizes.append(int(fields[2]))
+    return sizes
+
+
 def history_entries(commits):
     """(path, size, short hash) of every file that each commit itself adds or modifies.
 
     One git process lists the changes of all commits and one reads the blob sizes, so the cost does
     not grow with a process per commit. -c lists a merge only for what differs from every parent, so
-    the files a clean merge brings in from the base are not listed again.
+    the files a clean merge brings in from the base are not listed again. Sizes are asked for by blob
+    id, so the path never goes into a question to git.
     """
-    known = set(c.encode('ascii') for c in commits)
-    out = git_output(['diff-tree', '--stdin', '-c', '--root', '-r', '--no-renames', '--name-only', '-z'],
-                     ''.join(c + chr(10) for c in commits).encode('ascii'))
-    current = None
-    pairs = []
-    for token in out.split(bytes([0])):
-        if token == b'':
-            continue
-        # A header is the id of one of the commits; a path equal to the id of a commit that does not
-        # exist yet cannot be written.
-        if token in known:
-            current = token.decode('ascii')
-        elif current is None:
-            raise GuardError('unexpected output of git diff-tree')
-        else:
-            pairs.append((current, token))
-    if any(NEWLINE in path for _, path in pairs):
-        raise GuardError('a path with a line break in the history cannot be checked')
-    request = b''.join(c.encode('ascii') + b':' + path + NEWLINE for c, path in pairs)
-    sizes = git_output(['cat-file', '--batch-check'], request).split(NEWLINE)
-    if sizes and sizes[-1] == b'':
-        sizes.pop()
-    if len(sizes) != len(pairs):
-        raise GuardError('git cat-file answered %d of %d questions' % (len(sizes), len(pairs)))
-    entries = []
-    for (c, path), answer in zip(pairs, sizes):
-        fields = answer.split()
-        if answer.endswith(b' missing'):  # deleted by that commit
-            continue
-        if len(fields) != 3 or fields[1] != b'blob' or not fields[2].isdigit():
-            raise GuardError('unexpected answer of git cat-file: %r' % answer[:200])
-        entries.append((path.decode('utf-8', errors='surrogateescape'), int(fields[2]), c[:7]))
-    return entries
+    wanted = [c.encode('ascii') for c in commits]
+    # diff-tree prints an id it does not know as if it were a commit, so ask for the commits first.
+    parse_batch_check(wanted, git_output(['cat-file', '--batch-check'], NEWLINE.join(wanted) + NEWLINE),
+                      b'commit')
+    out = git_output(['diff-tree', '--stdin', '-c', '--root', '-r', '--no-renames', '-z'],
+                     NEWLINE.join(wanted) + NEWLINE)
+    records = parse_diff_tree(out)
+    known = set(wanted)
+    if any(r[0].encode('ascii', 'replace') not in known for r in records):
+        raise GuardError('git diff-tree named a commit that was not asked for')
+    blobs = sorted({r[2] for r in records if r[1] != GITLINK_MODE})
+    size_of = dict(zip(blobs, parse_batch_check(
+        blobs, git_output(['cat-file', '--batch-check'], b''.join(b + NEWLINE for b in blobs)), b'blob')))
+    # A submodule has no blob here; as in the tree listing it counts as size 0 and the path rules apply.
+    return [(path.decode('utf-8', errors='surrogateescape'),
+             0 if mode == GITLINK_MODE else size_of[blob], commit[:7])
+            for commit, mode, blob, path in records]
 
 
 def annotation_escape(text):
