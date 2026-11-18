@@ -79,6 +79,9 @@ class ChaldeaSyncScheduler(
 
     private enum class Phase { Idle, Quiet, Grace, Waiting, Writing }
     private enum class Pass { Done, Retry, Abort }
+
+    /** [Wait]: Chaldea is running or its state is unknown, so nothing was recovered yet; poll again. */
+    private enum class Recovery { Proceed, Stop, Wait }
     private class Target(
         val id: String, val server: ChaldeaServer, val patch: ChaldeaPatch, val hash: String,
         val jsonLength: Int, val allowCreate: Boolean, val gen: Long,
@@ -620,7 +623,13 @@ class ChaldeaSyncScheduler(
         try {
             writeMutex.withLock {
                 resetBackground()
-                if (!recoverInflight(session)) return Step(true)
+                when (recoverInflight(session)) {
+                    Recovery.Proceed -> {}
+                    Recovery.Stop -> return Step(true)
+                    // The state poll said NotRunning, but Chaldea came back before prepare: keep polling like any
+                    // waiting attempt, or the interrupted write would wait for the next trigger.
+                    Recovery.Wait -> return Step(false, interval)
+                }
                 val gameData = refreshGameData(session)
                 val targets = resolveTargets(null, false, gameData)
                 for (t in targets) {
@@ -740,10 +749,11 @@ class ChaldeaSyncScheduler(
 
     /**
      * Undoes or settles a write that was interrupted. The backup folder it points at is never deleted unless the
-     * files are known to be fine or were restored. @return false when the attempt must stop.
+     * files are known to be fine or were restored. @return [Recovery.Stop] when the attempt must end, [Recovery.Wait]
+     * when it must poll again.
      */
-    private suspend fun recoverInflight(session: ChaldeaSyncSession): Boolean {
-        val inflight = store.readInflight() ?: return true
+    private suspend fun recoverInflight(session: ChaldeaSyncSession): Recovery {
+        val inflight = store.readInflight() ?: return Recovery.Proceed
         val temp = backups.incoming()
         val curDir = backups.currentCheckDir()
         try {
@@ -751,7 +761,7 @@ class ChaldeaSyncScheduler(
                 FileOutputStream(temp).use { session.prepare(it) }
             } catch (e: IOException) {
                 recoveryFailed(ChaldeaSyncCode.Unreadable)
-                return false
+                return Recovery.Stop
             }
             val r = outcome.result
             val damaged = r.code in setOf(
@@ -760,12 +770,16 @@ class ChaldeaSyncScheduler(
             ) || (r.ok && r.base == ChaldeaBaseSource.Bak)
             if (!r.ok && !damaged) {
                 // Chaldea running or unknown: wait, this is not a failure. Anything else is counted and shown.
-                if (r.code != ChaldeaSyncCode.ChaldeaRunning && r.code != ChaldeaSyncCode.StateUnknown) recoveryFailed(r.code)
-                return false
+                if (r.code == ChaldeaSyncCode.ChaldeaRunning || r.code == ChaldeaSyncCode.StateUnknown) {
+                    setTransient(if (r.code == ChaldeaSyncCode.ChaldeaRunning) ChaldeaSyncStatus.WaitingVisible else ChaldeaSyncStatus.StateUnknown)
+                    return Recovery.Wait
+                }
+                recoveryFailed(r.code)
+                return Recovery.Stop
             }
             if (r.packageName != inflight.packageName) {
                 recoveryFailed(ChaldeaSyncCode.FileChanged)
-                return false
+                return Recovery.Stop
             }
             if (!damaged) {
                 // userdata.json is valid, but the interrupted write also covers .bak (written second): it must be
@@ -773,16 +787,16 @@ class ChaldeaSyncScheduler(
                 val consistent = bakConsistent(inflight, outcome, temp, curDir)
                 if (consistent == null) {
                     recoveryFailed(ChaldeaSyncCode.Unreadable)
-                    return false
+                    return Recovery.Stop
                 }
                 if (consistent) {
                     // The write finished; the account is synced again to be sure.
                     recoveryDone()
                     backups.release(inflight.packageName)
-                    return true
+                    return Recovery.Proceed
                 }
             }
-            return restoreFromBundle(session, inflight)
+            return if (restoreFromBundle(session, inflight)) Recovery.Proceed else Recovery.Stop
         } finally {
             temp.delete()
             curDir.deleteRecursively()
@@ -1083,7 +1097,7 @@ class ChaldeaSyncScheduler(
             try {
                 writeMutex.withLock {
                     resetBackground()
-                    if (!recoverInflight(session)) return ChaldeaSyncNowOutcome.Done
+                    if (recoverInflight(session) != Recovery.Proceed) return ChaldeaSyncNowOutcome.Done
                     val gameData = refreshGameData(session)
                     val gameDataChanged = gameData != null && (cachedGameData == null || !gameData.sameContentAs(cachedGameData))
                     val targets = if (gameDataChanged) {

@@ -103,6 +103,7 @@ On rooted devices, FGA performs the same sync via root without needing Shizuku.
 - After writing via root, FGA verifies that Chaldea's file owner and permissions match their originals and restores them if changed; if restoring fails, `"The owner or permissions of the Chaldea files changed and could not be restored. The backup is kept."` is shown.
 - While a script is running, FGA neither checks nor connects to root.
 - If root is absent or denied, FGA falls back to Shizuku as described above.
+- If root connections fail repeatedly and FGA stops using root for the rest of the run, the saved "root granted" record is kept on purpose, so the next time the app process starts FGA runs one silent root check again.
 
 ## Status Line Messages
 

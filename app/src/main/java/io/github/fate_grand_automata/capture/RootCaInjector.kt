@@ -48,11 +48,20 @@ class RootCaRunner(private val shell: RootShell) {
     } catch (_: Exception) { RootCaResult.Failed("Shell error") }
 }
 
-/** Timeout includes stdin writes and output draining. Never logs arbitrary shell output. */
-class ProcessRootShell : RootShell {
+/**
+ * Timeout includes stdin writes and output draining. Never logs arbitrary shell output.
+ *
+ * Interrupting the calling thread ends the wait at once: the `finally` destroys the process on every exit path
+ * (result, timeout, interrupt), so a cancelled caller never leaves `su` waiting for its dialog until the timeout.
+ */
+class ProcessRootShell internal constructor(
+    private val start: (List<String>) -> Process,
+) : RootShell {
+    constructor() : this({ command -> ProcessBuilder(command).redirectErrorStream(true).start() })
+
     override fun run(command: List<String>, stdin: String, timeoutSeconds: Long): RootShellOutput {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds)
-        val process = ProcessBuilder(command).redirectErrorStream(true).start()
+        val process = start(command)
         val workers = Executors.newFixedThreadPool(2) { Thread(it, "capture-root-io").apply { isDaemon = true } }
         val lines = ArrayDeque<String>()
         try {

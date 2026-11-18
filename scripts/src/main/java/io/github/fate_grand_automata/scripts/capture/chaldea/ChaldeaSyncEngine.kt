@@ -53,7 +53,7 @@ class ChaldeaSyncEngine(
         patchJson: String,
         expectedSha256: String,
         allowCreate: Boolean,
-        expectedBundleSha256: String? = null,
+        expectedBundleSha256: String,
     ): ChaldeaSyncResult = lock.withLock {
         notRunningFailure()?.let { return fail(it) }
         val patch = ChaldeaPatch.fromJson(patchJson) ?: return fail(ChaldeaSyncCode.BadPatch)
@@ -64,9 +64,7 @@ class ChaldeaSyncEngine(
         val baseHash = sha256Hex(loaded.base)
         if (baseHash != expectedSha256) return fail(ChaldeaSyncCode.FileChanged)
         // The other file too: FGA's backup holds what `prepare` saw of both, so both must still be that.
-        if (expectedBundleSha256 != null &&
-            sha256Hex(ChaldeaBackupBundle.encode(loaded.json, loaded.bak)) != expectedBundleSha256
-        ) {
+        if (sha256Hex(ChaldeaBackupBundle.encode(loaded.json, loaded.bak)) != expectedBundleSha256) {
             return fail(ChaldeaSyncCode.FileChanged)
         }
         // In place only: a missing userdata.json (base came from .bak) cannot be written without creating it.

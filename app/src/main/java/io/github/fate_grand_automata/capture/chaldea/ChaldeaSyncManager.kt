@@ -23,6 +23,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncEnv
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncNowOutcome
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncScheduler
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncSession
+import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncCode
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStatus
 import io.github.fate_grand_automata.scripts.capture.chaldea.ChaldeaSyncStore
 import io.github.fate_grand_automata.scripts.capture.chaldea.ProbeKind
@@ -32,6 +33,7 @@ import io.github.fate_grand_automata.scripts.capture.chaldea.RootProbePolicy
 import io.github.fate_grand_automata.scripts.capture.chaldea.RootState
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuPermissionRequester
 import io.github.fate_grand_automata.scripts.capture.chaldea.ShizukuState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -51,6 +53,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.runInterruptible
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import timber.log.Timber
@@ -155,6 +158,12 @@ object ChaldeaSyncManager {
     /** Runs su -c id; replaced in tests. Blocking: only call it off the main thread. */
     internal var probeRunner: (ProbeKind) -> RootState = defaultProbeRunner
     private val probeScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
+
+    /**
+     * Only the root probes run here, apart from [probeScope], so that switching off can cancel them (and with them
+     * the waiting `su` process, see [runProbe]) without also cancelling a collection download.
+     */
+    private val rootProbeScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     private val _status = MutableStateFlow<ChaldeaSyncStatus>(ChaldeaSyncStatus.Idle)
     val status: StateFlow<ChaldeaSyncStatus> = _status.asStateFlow()
     private val _results = MutableStateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>>(emptyMap())
@@ -162,6 +171,9 @@ object ChaldeaSyncManager {
     /** The last result of each server (KR / JP). */
     val serverResults: StateFlow<Map<ChaldeaServer, ChaldeaSyncStatus>> = _results.asStateFlow()
     private val permission = ShizukuPermissionRequester()
+
+    /** Tests only: whether the permission wish is still armed. */
+    internal val permissionRequester: ShizukuPermissionRequester get() = permission
     private val _scriptRunning = MutableStateFlow(false)
     val scriptRunning: StateFlow<Boolean> = _scriptRunning.asStateFlow()
 
@@ -216,6 +228,7 @@ object ChaldeaSyncManager {
         resultsJob = null
         scope.coroutineContext[Job]?.cancelChildren()
         probeScope.coroutineContext[Job]?.cancelChildren()
+        rootProbeScope.coroutineContext[Job]?.cancelChildren()
         app = null
         prefs = null
         client = null
@@ -413,11 +426,13 @@ object ChaldeaSyncManager {
         job.start()
     }
 
-    private fun apply(syncOn: Boolean) {
+    internal fun apply(syncOn: Boolean) {
         val application = app ?: return
         // Only the flags are changed under the lock. The package-manager and Shizuku binder calls below run outside
         // it, so the main thread (the resume callback takes the same lock) never waits on a binder call.
         val change = synchronized(lock) {
+            // Every off clears the permission wish, also one recorded by onUserTurnedOn before apply(true) ever ran.
+            if (!syncOn) permission.disarm()
             when {
                 syncOn && !enabledNow -> {
                     enabledNow = true
@@ -426,35 +441,58 @@ object ChaldeaSyncManager {
                 !syncOn && enabledNow -> {
                     enabledNow = false
                     collectionDownloadDeferred = false
-                    permission.disarm()
                     2
                 }
                 else -> 0
             }
         }
         if (change == 1) {
-            // Silent, and only when root was granted before; waits for a running script to end.
-            startProbe(rootPolicy?.onSettingsOn())
-            runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
-            runCatching { Shizuku.addBinderDeadListener(binderDead) }
-            runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
-            application.registerActivityLifecycleCallbacks(resumeCallback)
-            runCatching { ShizukuProvider.requestBinderForNonProviderProcess(application) }
-            refreshShizuku()
-            synchronized(lock) { if (scheduler == null) createScheduler(application) }
-            startCollectionDownload(application)
+            try {
+                setUp(application)
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                // Half set up (enabledNow true, no scheduler) would stay that way until the next process: go back to
+                // off so that a later toggle starts from scratch.
+                Timber.w("Chaldea sync: switching on failed: %s", t.javaClass.simpleName)
+                synchronized(lock) {
+                    enabledNow = false
+                    collectionDownloadDeferred = false
+                    permission.disarm()
+                }
+                tearDown(application)
+                _status.value = ChaldeaSyncStatus.Failed(ChaldeaSyncCode.ServiceError)
+            }
         } else if (change == 2) {
-            rootPolicy?.onSwitchedOff()
-            publishAccess()
-            probeScope.launch { ChaldeaRootClient.closeShell() }
-            application.unregisterActivityLifecycleCallbacks(resumeCallback)
-            runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
-            runCatching { Shizuku.removeBinderDeadListener(binderDead) }
-            runCatching { Shizuku.removeRequestPermissionResultListener(permissionResult) }
+            tearDown(application)
         }
         // Also covers log collection or consent changing while the sync switch stays on.
         notifySettingsChanged()
         applyCount++
+    }
+
+    private fun setUp(application: Application) {
+        // Silent, and only when root was granted before; waits for a running script to end.
+        startProbe(rootPolicy?.onSettingsOn())
+        runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceived) }
+        runCatching { Shizuku.addBinderDeadListener(binderDead) }
+        runCatching { Shizuku.addRequestPermissionResultListener(permissionResult) }
+        application.registerActivityLifecycleCallbacks(resumeCallback)
+        runCatching { ShizukuProvider.requestBinderForNonProviderProcess(application) }
+        refreshShizuku()
+        synchronized(lock) { if (scheduler == null) createScheduler(application) }
+        startCollectionDownload(application)
+    }
+
+    private fun tearDown(application: Application) {
+        rootPolicy?.onSwitchedOff()
+        // A probe may still be waiting for the su dialog (up to 30 s): cancelling destroys its process.
+        rootProbeScope.coroutineContext[Job]?.cancelChildren()
+        publishAccess()
+        probeScope.launch { ChaldeaRootClient.closeShell() }
+        runCatching { application.unregisterActivityLifecycleCallbacks(resumeCallback) }
+        runCatching { Shizuku.removeBinderReceivedListener(binderReceived) }
+        runCatching { Shizuku.removeBinderDeadListener(binderDead) }
+        runCatching { Shizuku.removeRequestPermissionResultListener(permissionResult) }
     }
 
     private fun notifySettingsChanged() {
@@ -520,6 +558,15 @@ object ChaldeaSyncManager {
      * The user turned the switch on. The preference flow may already have run [apply] or may not have yet, so the
      * wish is recorded first and acted on from both places (see [ShizukuPermissionRequester]).
      */
+    fun onUserTurnedOff() {
+        synchronized(lock) { permission.disarm() }
+        // With the sync on, apply(false) does the rest. Without it the wish and its interactive probe are still pending.
+        if (!enabledNow) {
+            rootPolicy?.onSwitchedOff()
+            rootProbeScope.coroutineContext[Job]?.cancelChildren()
+        }
+    }
+
     fun onUserTurnedOn() {
         synchronized(lock) { permission.arm() }
         // The Magisk / KernelSU dialog may appear; the Shizuku dialog waits for this probe.
@@ -532,7 +579,13 @@ object ChaldeaSyncManager {
         // Root is not Granted yet in this process: ask now (interactive), and use the answer for this sync.
         // Run inside probeScope so cancelling the UI caller does not drop finishProbe and wedge the policy.
         rootPolicy?.onSyncNow()?.let { ticket ->
-            probeScope.async { runProbe(ticket) }.await()
+            try {
+                rootProbeScope.async { runProbe(ticket) }.await()
+            } catch (e: CancellationException) {
+                // The switch was turned off and cancelled the probe; only a cancelled caller is rethrown.
+                currentCoroutineContext().ensureActive()
+                return ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
+            }
         }
         return scheduler?.syncNow(confirmed) ?: ChaldeaSyncNowOutcome.Unavailable(ChaldeaSyncStatus.Idle)
     }
@@ -548,14 +601,16 @@ object ChaldeaSyncManager {
     /** Runs the probe the policy allowed, on a background thread. */
     private fun startProbe(ticket: ProbeTicket?) {
         if (ticket == null) return
-        probeScope.launch { runProbe(ticket) }
+        rootProbeScope.launch { runProbe(ticket) }
     }
 
-    private fun runProbe(ticket: ProbeTicket) {
+    private suspend fun runProbe(ticket: ProbeTicket) {
         var result = RootState.Unavailable
         try {
             result = captureSafely("chaldeaRootProbe", RootState.Unavailable) {
-                probeRunner(ticket.kind)
+                // Interruptible so that cancelling interrupts the blocking wait; ProcessRootShell destroys its
+                // process when interrupted instead of leaving `su` waiting for its timeout.
+                runInterruptible(Dispatchers.IO) { probeRunner(ticket.kind) }
             }
         } finally {
             finishProbe(ticket, result)

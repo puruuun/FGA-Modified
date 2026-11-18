@@ -61,7 +61,7 @@ class ChaldeaRestoreAndStoreTest {
         val (json, bak) = ChaldeaBackupBundle.decode(prep.bundle!!)!!
         assertContentEquals(origJson, json)
         assertContentEquals(origBak, bak)
-        assertEquals(sha256Hex(prep.bundle!!), prep.result.bundleSha256)
+        assertEquals(sha256Hex(prep.bundle!!), prep.result.bundleSha256!!)
         assertEquals(prep.bundle!!.size.toLong(), prep.result.bundleSize)
         assertEquals(sha256Hex(origJson), prep.result.sha256, "the base hash is still the edited file's")
         assertTrue(ChaldeaBackupReceiver.matches(ChaldeaBackupReceiver.Received(prep.bundle!!.size.toLong(), sha256Hex(prep.bundle!!)), prep.result))
@@ -93,7 +93,7 @@ class ChaldeaRestoreAndStoreTest {
         val e = engine()
         val prep = e.prepare()
         File(dir, "userdata.json.bak").writeText("changed by someone else")
-        val r = e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256)
+        val r = e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!)
         assertEquals(ChaldeaSyncCode.FileChanged, r.code)
         assertEquals("changed by someone else", File(dir, "userdata.json.bak").readText(), "nothing was written")
         assertEquals(fileText(), File(dir, "userdata.json").readText())
@@ -104,7 +104,7 @@ class ChaldeaRestoreAndStoreTest {
         File(dir, "userdata.json.bak").writeText("old bak")
         val e = engine()
         val prep = e.prepare()
-        assertEquals(ChaldeaSyncCode.Ok, e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256).code)
+        assertEquals(ChaldeaSyncCode.Ok, e.commit(patch.toJson(), prep.result.sha256!!, true, prep.result.bundleSha256!!).code)
         assertTrue(File(dir, "userdata.json").readText().contains(""""100":5"""))
     }
 

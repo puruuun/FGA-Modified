@@ -101,6 +101,8 @@ class RootProbePolicy(
             bindFailures++
             if (bindFailures >= MAX_BIND_FAILURES) {
                 // Stop silent re-probes for this process until switched off/on or an interactive probe grants root.
+                // The stored "root granted" flag is kept on purpose: the next process start runs one silent probe
+                // again, so a transient bind failure (root manager restarting, say) does not lose root for good.
                 _state = RootState.Unavailable
                 reprobeAfterBindFailure = false
             } else {

@@ -357,7 +357,9 @@ class ChaldeaSyncService : IChaldeaSyncService.Stub() {
         expectedBundleSha256: String?,
     ): String = try {
         val pkg = choosePackage()
-        val r = if (patchJson == null || expectedSha256 == null) {
+        // A missing bundle hash would skip the check that the .bak is still what prepare backed up. The AIDL
+        // signature stays as it is (an older client process may still call it), so the refusal lives here.
+        val r = if (patchJson == null || expectedSha256 == null || expectedBundleSha256.isNullOrBlank()) {
             ChaldeaSyncResult(ChaldeaSyncCode.BadPatch, packageName = pkg)
         } else if (expectedPackage != pkg) {
             // The newest-file rule now points to another package than prepare backed up.
