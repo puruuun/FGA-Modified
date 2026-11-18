@@ -26,7 +26,7 @@ A change that adds or changes something a user sees (a setting, a script, a stop
 The site publishes Korean at `/` (`-KR.md`), English at `/en/` (`-EN.md`), and Japanese at `/ja/` (`-JA.md`), switched via the header language dropdown (`extra.alternate`).
 
 `tools/docs-site/hooks.py` builds the menu for each language from the files at build time:
-- **시작하기 / Getting Started / はじめに**: the fixed list `GETTING_STARTED` in the hook (`Installation` and `Original-FGA-Import`, keeping feature guides separate).
+- **시작하기 / Getting Started / はじめに**: the fixed list `GETTING_STARTED` in the hook (`Installation`, `Log-Collection-Setup`, and `Original-FGA-Import`, keeping feature guides separate).
 - **기능 설명서 / Guides / 機能ガイド**: categorized into sidebar sections via `GUIDE_GROUPS` (`전투 · 카드`, `서포트 선택`, `소환 · 강화 · 주회`, `로그 · Chaldea 연동`, `화면 · 기타 기능`). Unlisted `scripts/*` pages automatically fall into the last category. Names containing `Study` or `Research` are research notes and are left out of navigation and search.
 - **릴리스 노트 / Release Notes / リリースノート**: `wiki/releases/*`.
 
