@@ -77,6 +77,11 @@ interface SkillLevelRun {
 interface SkillLevelPanel {
     /** Append only: the padlock on the slot icon. Always false for skills. */
     fun isLocked(slot: Int): Boolean
+    /**
+     * The slot icon shows the selection glow and no other slot does. False whenever the read is unsure, so the default
+     * (never selected) keeps the tap.
+     */
+    fun isSelected(slot: Int): Boolean = false
     /** Taps the slot icon and lets the screen settle. */
     fun select(slot: Int)
     /** The bottom-right button reads "unlock". */
@@ -170,14 +175,22 @@ class SkillLevelFlow(private val panel: SkillLevelPanel, private val log: (Strin
         fun reachedByLastConfirm() = known?.let { it >= target } == true
         remember()
         if (target <= 0) return finish(SlotStop.Off)
+        var firstPass = true
         repeat(MAX_PASSES) {
             activeStep = SkillLevelStep.Select
             if (panel.isLocked(slot)) {
                 readings("locked")
                 return finish(SlotStop.Locked)
             }
-            panel.select(slot)
-            line("action=select")
+            // The game keeps the slot selected after an enhancement; the first pass always taps, because nothing was
+            // verified yet. A later pass skips the tap only when the glow is read (#504).
+            if (!firstPass && panel.isSelected(slot)) {
+                line("action=select-skip")
+            } else {
+                panel.select(slot)
+                line("action=select")
+            }
+            firstPass = false
             activeStep = SkillLevelStep.Enhance
             val panelLevel = panel.readPanelLevel(slot)?.takeIf { it in 1..10 }
             val evidence = panel.panelLevelEvidence

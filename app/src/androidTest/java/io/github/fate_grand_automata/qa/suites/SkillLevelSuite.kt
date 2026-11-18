@@ -12,7 +12,8 @@ import org.json.JSONObject
  * Offline fixtures of the 0008 skill / append level screens: production readers on the owner captures, no gestures.
  * Views: mode (centre label + servant selected), button (bottom-right button label), dialog (confirm dialog),
  * levels (OCR of `Lv.current > Lv.next`), locks (padlock per append slot), result,
- * notice (temporarily joined servant notice execute button).
+ * notice (temporarily joined servant notice execute button), selected (#504: 1-based slot whose icon shows the selection
+ * glow, 0 for none, plus how many glow sides each slot has).
  */
 internal fun FixtureApi.verifySkillLevel(): JSONObject {
     check(!live) { "skill level QA must never operate a live game" }
@@ -58,6 +59,13 @@ internal fun FixtureApi.verifySkillLevel(): JSONObject {
         }
         "locks" -> JSONObject().put("locks", JSONArray((0 until mode().slots).map { screens.slotLocked(mode(), it) }))
         "result" -> JSONObject().put("result", screens.onResult())
+        "selected" -> {
+            val means = screens.slotGlowMeans(mode())
+            val selected = SkillLevelScreens.selectedSlotOf(means)
+            val glowSides = means.map { sides -> sides?.count { it >= SkillLevelScreens.SELECTED_GLOW_BLUE_MINUS_RED } ?: -1 }
+            JSONObject().put("selectedSlot", (selected ?: -1) + 1).put("glowSides", JSONArray(glowSides))
+                .put("means", JSONArray(means.map { sides -> JSONArray(sides?.map { Math.round(it) } ?: emptyList<Long>()) }))
+        }
         else -> error("unknown skillLevel view")
     }
     val expected = case.getJSONObject("expected")
