@@ -52,6 +52,11 @@ Owner decision, 2026-11-01. A green CI and the implementer's report are not enou
   - Rust migration work goes to `rust` through PRs that target `rust`. That includes its Kotlin-side preparation: reader and proxy interfaces, bindings, DI wiring and engine-selection settings.
   - A unit (one reader, one capture feature, one script) comes to `main` in its own PR only after it passed its switch criteria in 0025 and the owner approved it. From then on it ships in the regular betas.
   - `main` is merged into `rust` regularly. Nothing goes from `rust` to `main` outside those per-unit PRs.
+  - **Everything in "Merging" above holds for `rust` as the base** (owner decision, 2026-11-19): a PR for every change, documentation included; the branch contains the latest `rust`; CI passed on exactly that commit; no shortcut when `rust` moved. The Rust session merges by pushing the verified head commit to the remote branch (`git push origin <sha>:refs/heads/rust`) after an ancestry check, which is a fast-forward and leaves the shared main checkout alone.
+  - **Both directions are verified** (owner decision, 2026-11-19; the checks are in [`verification.md`](verification.md), "Merges between `main` and `rust`"):
+    - a sync of `main` into `rust` is a PR into `rust` with one verifier, every time, and the device QA suites of an area that both sides changed;
+    - a unit's PR into `main` needs its switch criteria recorded under `docs/qa/`, two verifiers, the full device QA and the owner's approval. After it merges, `main` is synced back into `rust` before other Rust work continues.
+  - Why the split is worth its cost: `main` stays equal to what was tested and released, and a half-built engine never ships. The cost is that `rust` drifts from `main`; the syncs keep that small, and the per-unit PR is where the two are checked together.
   - `native/`, the `fga.native` Gradle switch and `Native CI` are already on `main` and stay: they do not change the app that is built without the switch.
 
 ### Device QA scope
@@ -125,6 +130,7 @@ Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of
 ## Agents that only read
 
 - An agent that only reads (review, research) is told not to change files.
+- A reviewer that cannot run commands can read only inside its own folder. Copy the diff, the spec and any reference material into that worktree as untracked `TASK-*` files and give it relative paths; a path outside the folder is refused and the run returns nothing (2026-11-19, #525). Its permissions are not widened to get around this.
 - A read-only reviewer does not share a worktree with an agent that runs guard checks or edits files (planner decision, 2026-11-18, #514: a reviewer saw another verifier's temporary guard-check edit and reported it as an unexplained change). Give it its own worktree at the same commit, or run it after the others have finished.
 - An implementer works only inside its own worktree.
 

@@ -27,26 +27,33 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 - **An implementing agent** implements, tests, opens the PR and stops. It does not merge.
 - **A verifying agent** checks a risky change and reports. It does not change code, push or merge.
 - Every agent follows the same rules: its own worktree and branch, the delivery rules below, the configured commit identity, and no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch.
+- **When something is in the way, stop and report it; do not work around it.**
+  - A denied tool, a refused file read, a missing permission or a blocked command is reported with its exact message. Never change permission settings or allow-lists, and never use a flag that switches permission checks off.
+  - A missing tool or library is reported. Do not install software; the planner asks the owner.
+  - A command that made a device, an emulator or a service unresponsive is not tried again in another form. Report what was run and what happened.
+  - A requirement that cannot be met is reported with the numbers as they are. Do not tune a threshold, a test or a comparison to make a result look like a pass.
+- **Run builds and tests in the foreground and report once.** Leave no background job running, and remove temporary files you made outside your task's output.
 
 ## Delivery
 
 - **Every change goes through a pull request, documentation included.** Branch from the latest remote `main` (for example `feat/…`, `fix/…`, `docs/…`), commit there, push the branch, and open a PR against `main`. `main` accepts only commits on which the `Main CI gate` check passed, so a direct push of an unchecked commit is rejected.
 - **A documentation-only PR takes a fast path.** When every changed file is documentation (`docs/`, `wiki/`, root `*.md`, `AGENTS.md`, `.claude/`, `.github/instructions/`), `Main CI` skips the build and the gate passes within a minute or two. The exact list is in `tools/ci/ci_gate.py`. A validation record or manual page may ride in the same PR as the code it belongs to.
 - **Short branches only.** Each feature or fix is a short branch from `main` and comes back through its own PR as soon as it is done. Betas are built from `main`, so a large feature that is not finished lands behind a setting that is off by default.
-- **Rust migration work goes to the `rust` branch, not to `main`**, through PRs that target `rust`, including its Kotlin-side preparation. A finished, owner-approved unit comes to `main` in its own PR. The details are in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), "Branches and releases".
+- **Rust migration work goes to the `rust` branch, not to `main`**, through PRs that target `rust`, including its Kotlin-side preparation and its documentation. Every rule in this section holds there with `rust` as the base: a PR for every change, tests before a push, CI after it. A finished, owner-approved unit comes to `main` in its own PR. The details are in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), "Branches and releases".
 - **Never force push**, and never bypass branch protection or execution-environment restrictions. Rebase a work branch onto its latest base before its first push; once it is pushed, merge the base into it instead. Preserve existing `main` changes and skip changes that are already applied. Stop and report a rejected push or a conflict that cannot be resolved safely.
 - **The checkout is shared with other agents and sessions.**
   - Edit in your own worktree, not in the main checkout. Uncommitted files left in the main checkout block another session's merges. Keep the main checkout clean and on `main`.
   - Never stash, reset, rebase or check out over changes you did not make. Stage only your own paths, and check `git show --stat HEAD` before pushing.
   - Sessions do not share their conversations. What another session needs to know goes into the repository (issues, PRs, `docs/qa/` records).
 - **Commit with the Git identity already configured on this PC (`puruuun`).** Do not set another author or committer, and preserve authorship on existing published commits.
-- **Tests before a push.** Run the full unit test command from Build & test and confirm it passes. A PR that changes only documentation is exempt.
+- **Tests before a push.** Run the full unit test command from Build & test and confirm it passes. A PR that changes only documentation is exempt. A PR that changes only Rust code under `native/` is not: it runs the unit test command as well as the Rust checks in [`docs/agents/rust-native.md`](docs/agents/rust-native.md).
 - **CI after a push.** After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work.
 - **Device QA** runs only when the planner assigns it; the planner names the suites, and the report gives the suites that ran and their counts.
 - **Images in the repository:**
   - Commit only app assets (`app/src/main/assets/`) and QA regression samples that a device QA case file uses (`docs/reference-images/`).
   - One-off measurement crops, debugging screenshots and audit images stay local under `build/` or go on the issue as attachments.
   - Captures with account data are never committed.
+  - Model files, measurement samples and captured traffic stay local under `build/` unless the planner says a named file is to be committed.
 - **Language.** Talk to the owner, and write agent reports and validation records, in Korean. PR titles and descriptions and GitHub issues are in English. A PR that resolves an issue says `Closes #N` in its description.
 
 ## Risky changes need verification
