@@ -73,11 +73,12 @@ export ANDROID_NDK_HOME="$LOCALAPPDATA/Android/Sdk/ndk/28.2.13676358"
 export ANDROID_HOME="$LOCALAPPDATA/Android/Sdk"   # Gradle only, when there is no local.properties
 ```
 
-That PC has no host C compiler and no working `dlltool`, which limits what runs there:
+Since 2026-11-18 that PC has Visual Studio 2022 Build Tools (the C++ workload), and Rust uses the MSVC host toolchain (`1.100.0-x86_64-pc-windows-msvc`). All of the commands above run there, including the crypto, TLS and inference tests and `cargo deny check`.
 
-- `ring`, `rustls`, `rcgen` and `tract` compile C or assembly, so `fga-ffi` declares them only for targets other than `windows-gnu`. On the PC, `cargo test` runs the panic guard, `ping`, the panic probe and the CPU probe; the crypto, TLS and inference probes return an error that says why and are tested on Linux CI and on devices.
-- Host-side build scripts that link a `windows-sys` using `raw-dylib` (0.60 and later) fail with "error calling dlltool". `Cargo.lock` keeps `winapi-util` at 0.1.9 for this reason; do not let `cargo update` raise it without checking the Android build on that PC.
-- `cargo deny check` does not run there, because `cargo install cargo-deny` fails on the same `dlltool` error. CI is the check.
+Two workarounds from the earlier GNU host toolchain are still in the code and are removed in the next Rust PR:
+
+- `fga-ffi` declares `ring`, `rustls`, `rcgen` and `tract` only for targets other than `windows-gnu`, and the probes that use them return an error there.
+- `Cargo.lock` keeps `winapi-util` at 0.1.9, because newer versions pull a `windows-sys` that needs `dlltool` on the GNU host.
 
 Rules:
 
@@ -85,7 +86,7 @@ Rules:
 - A Kotlin-only change needs no Rust tools. Building with the Gradle property `fga.native` off must always work.
 - BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed there with SIGILL (see the comment at the top of `app/build.gradle.kts`). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
 - `native/target/` is never committed.
-- The owner's PC has Rust on the GNU host toolchain (`stable-x86_64-pc-windows-gnu`), `cargo-ndk`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. There is no Visual Studio, no host C compiler and no `dlltool`, so a crate with C code, or one that needs `windows-sys` 0.61 or later on the host, may not build for PC tests there, and `cargo-deny` cannot be installed (CI runs it). Report that instead of installing anything.
+- The owner's PC has Rust on the MSVC host toolchain, Visual Studio 2022 Build Tools, `cargo-ndk`, `cargo-deny`, and NDK 28.2.13676358 under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. If something still does not build there, report it instead of installing anything.
 
 ## Test data
 
