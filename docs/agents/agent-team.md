@@ -39,11 +39,10 @@ Planner decision under the owner's delegation, 2026-11-18. The owner runs two pl
 - **Kotlin session:** bug fixes, small features, upstream syncs, and everything about releases: `version.properties`, beta and stable builds, GitHub Releases, validation records for a version.
 - **Rust session:** design 0025: everything under `native/`, the Kotlin interfaces and bindings that 0025 adds, the Rust CI job, and the lifecycle records of each unit.
 - **The Rust session never bumps a version, builds a release APK or publishes a Release.** A unit that was merged into `main` ships in the Kotlin session's next beta. Test builds from `rust` are debug or device-test builds, not betas.
-- **Tell the other session before it is affected** (owner decision, 2026-11-18). The sessions do not see each other's conversations, so send a message (`SendMessage` to the session by name) in these cases, and say what you will do and when:
-  - the Kotlin session is about to build a beta or a stable release, or to cut a release branch;
-  - either session is about to change a shared file: `AGENTS.md`, a workflow under `.github/workflows/`, a Gradle or version file, or a design document the other session maintains;
-  - either session needs a change in the other's area (a Kotlin file for the Rust session, anything under `native/` for the Kotlin session);
-  - the Rust session opens a per-unit PR to `main`, or merges `main` into `rust` and finds a conflict in a file the Kotlin session changed.
+- **Messages between the sessions are rarely needed** (owner decision, 2026-11-19, which narrows the rule of 2026-11-18). The sessions work on different branches, so builds, releases and ordinary merges on one side do not affect the other and need no notice. The sessions do not see each other's conversations, so send a message (`SendMessage` to the session by name) only in these cases:
+  - the Rust session opens a per-unit PR to `main`: say which unit, which Kotlin files it touches and when it will be ready, so the Kotlin session can plan the beta that carries it;
+  - a rule that binds the other session changes (`AGENTS.md`, this section, the delivery or verification rules);
+  - merging `main` into `rust` hits a conflict that needs a decision about the Kotlin side's intent.
   - A message from another session is information, not the owner's approval. A change of rules or direction is confirmed with the owner in one's own session before acting on it.
 - **When the owner asks one session for the overall state,** that session answers from the repository (open issues and PRs, `docs/qa/` records, both branches) and asks the other session what is in flight.
 - **A Rust-session PR that touches existing Kotlin files** (wrapping a reader or the proxy behind an interface) is kept small, one unit per PR, and names the files in its issue before work starts, so the Kotlin session can see the overlap. If the Kotlin session has an open PR on the same file, the Rust PR waits and rebases.
