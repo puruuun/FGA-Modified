@@ -555,8 +555,9 @@ object ChaldeaSyncManager {
     }
 
     /**
-     * The user turned the switch on. The preference flow may already have run [apply] or may not have yet, so the
-     * wish is recorded first and acted on from both places (see [ShizukuPermissionRequester]).
+     * The user turned the switch off. The preference flow skips a value it never saw change (on and off in quick
+     * succession), so [apply] may not run with false; the wish and an interactive probe waiting for the su dialog
+     * must still be dropped here.
      */
     fun onUserTurnedOff() {
         synchronized(lock) { permission.disarm() }
@@ -567,6 +568,10 @@ object ChaldeaSyncManager {
         }
     }
 
+    /**
+     * The user turned the switch on. The preference flow may already have run [apply] or may not have yet, so the
+     * wish is recorded first and acted on from both places (see [ShizukuPermissionRequester]).
+     */
     fun onUserTurnedOn() {
         synchronized(lock) { permission.arm() }
         // The Magisk / KernelSU dialog may appear; the Shizuku dialog waits for this probe.
@@ -577,7 +582,7 @@ object ChaldeaSyncManager {
     suspend fun syncNow(confirmed: ChaldeaRunState?): ChaldeaSyncNowOutcome {
         currentCoroutineContext().ensureActive()
         // Root is not Granted yet in this process: ask now (interactive), and use the answer for this sync.
-        // Run inside probeScope so cancelling the UI caller does not drop finishProbe and wedge the policy.
+        // Run inside rootProbeScope so cancelling the UI caller does not drop finishProbe and wedge the policy.
         rootPolicy?.onSyncNow()?.let { ticket ->
             try {
                 rootProbeScope.async { runProbe(ticket) }.await()

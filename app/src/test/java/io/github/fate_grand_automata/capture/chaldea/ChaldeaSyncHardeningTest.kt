@@ -137,4 +137,32 @@ class ChaldeaSyncHardeningTest {
         assertTrue(destroyed.await(5, TimeUnit.SECONDS), "the waiting probe process was left running")
         assertTrue(waitFor { !ChaldeaSyncManager.isProbeBusy })
     }
+
+    @Test
+    fun turningOffBeforeTheSyncWasAppliedCancelsTheWaitingInteractiveProbe() {
+        val started = CountDownLatch(1)
+        val destroyed = CountDownLatch(1)
+        ChaldeaSyncManager.probeShell = RootShell { _, _, _ ->
+            started.countDown()
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(30))
+                RootShellOutput(-1, emptyList(), true)
+            } finally {
+                destroyed.countDown()
+            }
+        }
+        ChaldeaSyncManager.probeRunner = { kind ->
+            val out = ChaldeaSyncManager.probeShell.run(listOf("su", "-c", "id"), "", ChaldeaSyncManager.probeTimeoutSeconds(kind))
+            if (out.timedOut) RootState.Unavailable else RootState.Granted
+        }
+        ChaldeaSyncManager.init(context, prefs)
+        ChaldeaSyncManager.onUserTurnedOn()
+        assertTrue(started.await(5, TimeUnit.SECONDS), "the probe never started")
+        assertFalse(ChaldeaSyncManager.isOn)
+
+        ChaldeaSyncManager.onUserTurnedOff()
+
+        assertTrue(destroyed.await(5, TimeUnit.SECONDS), "the waiting probe process was left running")
+        assertTrue(waitFor { !ChaldeaSyncManager.isProbeBusy })
+    }
 }

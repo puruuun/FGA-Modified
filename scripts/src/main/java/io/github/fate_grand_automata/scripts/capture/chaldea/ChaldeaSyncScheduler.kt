@@ -130,6 +130,9 @@ class ChaldeaSyncScheduler(
     private var savedDuringAttempt = false
     private var recoveryFailures = 0
     private var recoveryGaveUp = false
+
+    /** A manual sync found an interrupted write it could not recover yet; a normal attempt must poll for it. */
+    @Volatile private var manualRecoveryWait = false
     private var lastRecoveryCode: ChaldeaSyncCode? = null
 
     @Volatile private var active = false
@@ -471,7 +474,8 @@ class ChaldeaSyncScheduler(
         }
     }
 
-    private class Step(val finished: Boolean, val delay: Long = 0)
+    /** [recoveryWait]: an interrupted write could not be recovered yet because Chaldea runs; the caller must not stop. */
+    private class Step(val finished: Boolean, val delay: Long = 0, val recoveryWait: Boolean = false)
 
     private fun noteObservation(interval: Long) {
         synchronized(lock) {
@@ -557,14 +561,19 @@ class ChaldeaSyncScheduler(
         stopMin: Int,
     ): Step {
         val activeBefore = synchronized(lock) { lastActive }
+        var recoveryWait: Step? = null
+        suspend fun finalPass() {
+            val step = writePass(session, gen, interval)
+            if (step.recoveryWait) recoveryWait = step
+        }
         when (state) {
-            ChaldeaRunState.NotRunning -> writePass(session, gen, interval)
+            ChaldeaRunState.NotRunning -> finalPass()
             ChaldeaRunState.Background -> if (env.closeMinutes() > 0) {
                 when (session.state().state) {
-                    ChaldeaRunState.NotRunning -> writePass(session, gen, interval)
+                    ChaldeaRunState.NotRunning -> finalPass()
                     ChaldeaRunState.Background -> {
                         if (session.forceStop().state == ChaldeaRunState.NotRunning) {
-                            writePass(session, gen, interval)
+                            finalPass()
                         }
                     }
                     else -> Unit
@@ -576,6 +585,8 @@ class ChaldeaSyncScheduler(
             setTransient(ChaldeaSyncStatus.WaitingScript)
             return Step(true)
         }
+        // Stopping the session here would leave the interrupted write without a poller until the next trigger.
+        recoveryWait?.let { return it }
         return stopSessionIfNotReactivated(activeBefore, stopMin, interval)
     }
 
@@ -626,9 +637,10 @@ class ChaldeaSyncScheduler(
                 when (recoverInflight(session)) {
                     Recovery.Proceed -> {}
                     Recovery.Stop -> return Step(true)
-                    // The state poll said NotRunning, but Chaldea came back before prepare: keep polling like any
-                    // waiting attempt, or the interrupted write would wait for the next trigger.
-                    Recovery.Wait -> return Step(false, interval)
+                    // The state poll said NotRunning, but Chaldea came back before prepare. The callers must keep
+                    // polling (the attempt loop, the final pass of endSession) or the interrupted write would wait
+                    // for the next trigger; manualSync starts such an attempt itself.
+                    Recovery.Wait -> return Step(false, interval, recoveryWait = true)
                 }
                 val gameData = refreshGameData(session)
                 val targets = resolveTargets(null, false, gameData)
@@ -749,8 +761,9 @@ class ChaldeaSyncScheduler(
 
     /**
      * Undoes or settles a write that was interrupted. The backup folder it points at is never deleted unless the
-     * files are known to be fine or were restored. @return [Recovery.Stop] when the attempt must end, [Recovery.Wait]
-     * when it must poll again.
+     * files are known to be fine or were restored. @return [Recovery.Proceed] when nothing is left to recover,
+     * [Recovery.Stop] when the attempt must end (the failure is counted and shown), [Recovery.Wait] when Chaldea runs or
+     * its state is unknown: nothing was touched, it is no failure, and the caller must keep polling.
      */
     private suspend fun recoverInflight(session: ChaldeaSyncSession): Recovery {
         val inflight = store.readInflight() ?: return Recovery.Proceed
@@ -1005,15 +1018,22 @@ class ChaldeaSyncScheduler(
                     myGen = ++generation
                     phase = Phase.Waiting
                     val created = scope.async(start = CoroutineStart.LAZY) {
+                        manualRecoveryWait = false
                         try {
                             manualSync(confirmed, myGen)
                         } finally {
-                            synchronized(lock) {
+                            val pollRecovery = synchronized(lock) {
                                 if (myGen == generation) {
                                     attemptJob = null
                                     phase = Phase.Idle
+                                    manualRecoveryWait && active && env.enabled()
+                                } else {
+                                    false
                                 }
                             }
+                            // Same start as a Saved or Foreground event; its loop polls until Chaldea is closed, and
+                            // it ends on switch off, lost access or a running script like every attempt.
+                            if (pollRecovery) scheduleAttempt(0, Phase.Quiet)
                         }
                     }
                     job = created
@@ -1097,7 +1117,16 @@ class ChaldeaSyncScheduler(
             try {
                 writeMutex.withLock {
                     resetBackground()
-                    if (recoverInflight(session) != Recovery.Proceed) return ChaldeaSyncNowOutcome.Done
+                    when (recoverInflight(session)) {
+                        Recovery.Proceed -> {}
+                        Recovery.Stop -> return ChaldeaSyncNowOutcome.Done
+                        Recovery.Wait -> {
+                            // Done, with the status recoverInflight set (waiting for Chaldea to close): the manual
+                            // sync did what it could. A background attempt is started once this one has ended.
+                            manualRecoveryWait = true
+                            return ChaldeaSyncNowOutcome.Done
+                        }
+                    }
                     val gameData = refreshGameData(session)
                     val gameDataChanged = gameData != null && (cachedGameData == null || !gameData.sameContentAs(cachedGameData))
                     val targets = if (gameDataChanged) {
