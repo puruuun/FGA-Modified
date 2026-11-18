@@ -147,4 +147,23 @@ class OutsideLogStoreTest {
             assertEquals(1, corruptFiles(dir).size)
         }
     }
+
+    @Test fun twoUnknownGroupsInOnePeriodLoadAsOneOtherEntryWithSummedAmounts() {
+        val entry = outsideFixture()
+        val sources = entry.period.sources
+        val summon = sources.first { it.source.group == io.github.fate_grand_automata.scripts.capture.ChangeSource.Group.Summon }
+        val shop = io.github.fate_grand_automata.scripts.capture.SourceDelta(
+            io.github.fate_grand_automata.scripts.capture.ChangeSource(io.github.fate_grand_automata.scripts.capture.ChangeSource.Group.Shop),
+            io.github.fate_grand_automata.scripts.capture.AccountDelta(qp = 3))
+        val twin = summon.copy(delta = io.github.fate_grand_automata.scripts.capture.AccountDelta(qp = 4))
+        val text = Json.encodeToString(listOf(entry.copy(period = entry.period.copy(sources = listOf(summon, shop, twin)))))
+            .replace("\"group\":\"Summon\"", "\"group\":\"FutureGroup\"").replace("\"group\":\"Shop\"", "\"group\":\"FutureShop\"")
+        File(directory, "outside-log.json").writeText(text)
+        val loaded = OutsideLogStore(directory).apply { load() }.entries.single().period.sources
+        assertEquals(1, loaded.size)
+        assertEquals(io.github.fate_grand_automata.scripts.capture.ChangeSource.Group.Other, loaded.single().source.group)
+        assertEquals(summon.delta.freeStone, loaded.single().delta.freeStone)
+        assertEquals(summon.delta.qp + 3 + 4, loaded.single().delta.qp)
+        assertTrue(corruptFiles(directory).isEmpty())
+    }
 }

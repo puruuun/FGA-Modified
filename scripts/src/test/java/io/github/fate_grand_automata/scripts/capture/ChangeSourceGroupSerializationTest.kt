@@ -46,4 +46,25 @@ class ChangeSourceGroupSerializationTest {
         assertEquals(13, next.total.qp)
         assertEquals(1, next.sources.size)
     }
+
+    private val duplicated = """{"accountId":"a","startedAt":1,"sources":[
+        {"source":{"group":"Shop"},"delta":{"qp":1}},
+        {"source":{"group":"FutureA"},"delta":{"qp":5},"fruitUsed":{"100":2}},
+        {"source":{"group":"FutureB"},"delta":{"qp":7},"fruitUsed":{"100":3}}],"total":{"qp":13}}"""
+
+    @Test fun duplicateSourcesMergeKeepingFirstAppearanceOrder() {
+        val merged = Json.decodeFromString<OutsidePeriod>(duplicated).mergeDuplicateSources()
+        assertEquals(listOf(ChangeSource.Group.Shop, ChangeSource.Group.Other), merged.sources.map { it.source.group })
+        assertEquals(12, merged.sources[1].delta.qp)
+        assertEquals(5L, merged.sources[1].fruitUsed[100L])
+        assertEquals(13, merged.total.qp)
+    }
+
+    @Test fun periodWithoutDuplicatesIsUnchanged() {
+        val period = OutsidePeriod("a", 1).add(ChangeSource(ChangeSource.Group.Shop), AccountDelta(qp = 1), 2)
+            .add(ChangeSource(ChangeSource.Group.Other, "x"), AccountDelta(qp = 2), 3)
+        val before = Json.encodeToString(period)
+        assertEquals(before, Json.encodeToString(period.mergeDuplicateSources()))
+        assertEquals(period, period.mergeDuplicateSources())
+    }
 }

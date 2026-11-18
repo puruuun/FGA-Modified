@@ -178,4 +178,10 @@ class OutsideLogUiTest {
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("outside-source:Other:home/top"))
         composeRule.onNode(hasText("기타 · home/top") and hasAnyAncestor(hasTestTag("outside-source:Other:home/top"))).assertIsDisplayed()
     }
+
+    @Test fun sourceItemKeysAreUniqueEvenWhenEntriesShareGroupPathAndScript() {
+        val same = ChangeSource(ChangeSource.Group.Other)
+        val keys = listOf(same, same, ChangeSource(ChangeSource.Group.Shop)).mapIndexed(::outsideSourceItemKey)
+        org.junit.Assert.assertEquals(keys.size, keys.toSet().size)
+    }
 }

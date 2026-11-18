@@ -73,8 +73,10 @@ internal fun LazyListScope.outsideLogDetailItems(entry: OutsideLogEntry, names: 
             Text(stringResource(R.string.capture_outside_sources), style = MaterialTheme.typography.titleMedium)
         }
     }
-    orderedLogSources(entry.period.sources, source).forEach { source ->
-        item(key = "source:${source.source.group}:${source.source.path.orEmpty()}:${source.source.script}") {
+    val ordered = orderedLogSources(entry.period.sources, source)
+    ordered.forEachIndexed { index, source ->
+        val key = outsideSourceItemKey(index, source.source)
+        item(key = key) {
             var expanded by rememberSaveable(entry.id, source.source) { mutableStateOf(false) }
             Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 .testTag("outside-source:${source.source.group}:${source.source.path.orEmpty()}${if (source.source.script) ":script" else ""}")) {
@@ -119,3 +121,7 @@ internal fun OutsideLogDetail(entry: OutsideLogEntry, onBack: () -> Unit, names:
         }
     }
 }
+
+/** The index keeps keys unique even if two entries ever share group, path and script. */
+internal fun outsideSourceItemKey(index: Int, source: ChangeSource) =
+    "source:$index:${source.group}:${source.path.orEmpty()}:${source.script}"

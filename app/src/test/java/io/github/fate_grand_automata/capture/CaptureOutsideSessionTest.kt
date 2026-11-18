@@ -6,6 +6,9 @@ import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import kotlin.test.*
@@ -517,5 +520,24 @@ class CaptureOutsideSessionTest {
         accounts = CaptureAccounts().apply { load(directory) }
         session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
         assertTrue(session.openEntries.value.isEmpty())
+    }
+
+    @Test fun pendingPeriodWithTwoUnknownGroupsResumesAsOneOtherEntry() {
+        feed()
+        val root = Json.parseToJsonElement(pending.readText()).jsonObject
+        val period = root.getValue("period").jsonObject
+        val first = period.getValue("sources").jsonArray.single().jsonObject
+        fun named(group: String, qp: Long) = JsonObject(first + mapOf(
+            "source" to JsonObject(mapOf("group" to JsonPrimitive(group))),
+            "delta" to JsonObject(mapOf("qp" to JsonPrimitive(qp))),
+            "fruitUsed" to JsonObject(emptyMap())))
+        val sources = JsonArray(listOf(named("FutureA", 4), named("FutureB", 9)))
+        pending.writeText(JsonObject(root + ("period" to JsonObject(period + ("sources" to sources)))).toString())
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        val loaded = session.openEntries.value.single().period.sources
+        assertEquals(1, loaded.size)
+        assertEquals(ChangeSource.Group.Other, loaded.single().source.group)
+        assertEquals(13, loaded.single().delta.qp)
     }
 }

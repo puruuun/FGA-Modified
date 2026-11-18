@@ -60,7 +60,7 @@ internal class OutsideLogStore(
     fun load() {
         if (loaded) return
         entries = if (!file.exists()) emptyList() else try {
-            json.decodeFromString<List<OutsideLogEntry>>(file.readText()).sortedByDescending { it.endedAt }.take(retention())
+            json.decodeFromString<List<OutsideLogEntry>>(file.readText()).map { it.copy(period = it.period.mergeDuplicateSources()) }.sortedByDescending { it.endedAt }.take(retention())
         } catch (e: kotlinx.serialization.SerializationException) {
             // Preserve unreadable history before starting a new file; I/O failures remain retryable.
             replaceFile(file, File(directory, "outside-log.corrupt-${UUID.randomUUID()}.json"))

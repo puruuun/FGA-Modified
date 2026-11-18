@@ -85,7 +85,7 @@ internal class CaptureOutsideSession(
             val file = file(id)!!
             if (file.isFile) {
                 runCatching {
-                    val saved = file.inputStream().buffered().use { Json.decodeFromStream<Pending>(it) }
+                    val saved = file.inputStream().buffered().use { Json.decodeFromStream<Pending>(it) }.let { it.copy(period = it.period.mergeDuplicateSources()) }
                     check(saved.period.accountId == id)
                     periods[id] = saved
                     if (saved.resourceBaseline.isNotEmpty()) accounts.restoreResourceBaseline(id, saved.resourceBaseline.mapValues { it.value.json }, saved.baselineTime)

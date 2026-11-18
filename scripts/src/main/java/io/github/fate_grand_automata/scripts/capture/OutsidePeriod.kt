@@ -17,6 +17,23 @@ data class OutsidePeriod(
 ) {
     val isEmpty get() = sources.all { it.delta.isEmpty } && fruitUsed.values.all { it == 0L }
 
+    /**
+     * Stored groups this version does not know all read as Other, so two stored entries can share one source key.
+     * Merging them on read keeps the keys unique; a period without duplicates is returned as is.
+     */
+    fun mergeDuplicateSources(): OutsidePeriod {
+        if (sources.map { it.source }.toSet().size == sources.size) return this
+        return copy(sources = sources.groupBy { it.source }.map { (source, same) ->
+            same.singleOrNull() ?: SourceDelta(
+                source,
+                same.fold(AccountDelta()) { sum, it -> sum + it.delta },
+                same.fold(emptyMap()) { sum, it ->
+                    (sum.keys + it.fruitUsed.keys).associateWith { k -> (sum[k] ?: 0L) + (it.fruitUsed[k] ?: 0L) }
+                },
+            )
+        })
+    }
+
     fun add(source: ChangeSource, delta: AccountDelta, now: Long): OutsidePeriod {
         if (delta.isEmpty) return this
         // Unknown stored groups all read as Other, so a loaded period can hold several entries under one key.
