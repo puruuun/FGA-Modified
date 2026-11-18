@@ -22,6 +22,16 @@ Owner decision, 2026-11-18, which replaces the 2026-11-13 "Gemini first" order. 
 - Pick the agent for each task by its difficulty and risk. The same choice applies to implementers, verifiers, design reviewers and researchers.
 - Tell the owner which agent and model did each task, and why when it was not the usual choice.
 
+## Rust work (`native/`)
+
+Planner decision under the owner's delegation, 2026-11-18 ([design 0025](../design/0025-rust-engine-migration.md) §10). The owner does not read Rust, so the choices lean on stronger models and an outside verifier.
+
+- **Foundation and `fga-ffi`:** Opus. The build setup and the Kotlin boundary are hard to change later and everything depends on them.
+- **Readers, capture features, automation flow:** Sonnet, as for Kotlin work.
+- **Verification:** at least one verifier of every Rust PR is Gemini, a model from outside the Claude family. Same-family reviewers can miss the same thing, and the owner cannot catch it.
+- **Gemini runner:** its allow-list needs the Rust commands from [`rust-native.md`](rust-native.md) before Gemini can implement Rust work. Read-only verification works without them, but then Gemini cannot run the tests, so a Claude verifier runs them.
+- The planner reads the first Rust PRs line by line, whoever verified them.
+
 ## Gemini runs
 
 Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of the same day. Since 2026-11-18 Gemini is an optional agent, not the default.

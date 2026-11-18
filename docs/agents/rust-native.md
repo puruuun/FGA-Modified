@@ -1,6 +1,6 @@
 # Rust core (`native/`)
 
-**Status: draft, 2026-11-18. Not in force yet.** It takes effect when the owner approves [design 0025](../design/0025-rust-engine-migration.md). Until then `AGENTS.md` does not link here and there are no vendor stubs. "Applying this guide" at the end lists what to change at approval.
+In force since 2026-11-18, when the owner approved [design 0025](../design/0025-rust-engine-migration.md). "Still to apply" at the end lists the parts that wait for the first code PR.
 
 Read this before touching anything under `native/`, the Kotlin bindings to it, or the Gradle and CI steps that build it.
 
@@ -92,13 +92,7 @@ Risk classes:
 
 ## Agents for Rust work
 
-To be moved into `agent-team.md` at approval.
-
-- **Foundation and `fga-ffi`:** Opus. The build setup and the boundary are hard to change later and everything depends on them.
-- **Readers, capture features, automation flow:** Sonnet, as for Kotlin work.
-- **Verification:** at least one verifier of every Rust PR is a model from outside the Claude family (Gemini). The owner cannot catch what same-family reviewers both miss.
-- **Gemini runner:** its allow-list needs the Rust commands above before Gemini can implement or verify Rust work.
-- The planner reads the first Rust PRs line by line, whoever verified them.
+Which models implement and verify Rust work is in [`agent-team.md`](agent-team.md), which only the planner needs.
 
 ## Reports to the owner
 
@@ -114,12 +108,8 @@ Each Rust PR gets a Korean summary from the planner:
 - For every beta and stable build, keep the unstripped `.so` files outside the APK, named by version code, so a crash trace from a user's device can be read.
 - "Native crashes: 0" is a condition for every lifecycle move in 0025.
 
-## Applying this guide
+## Still to apply
 
-When the owner approves 0025:
-
-1. Add the trigger line for `native/**` to the router in `AGENTS.md`, and stubs in `.claude/rules/` and `.github/instructions/` (see [`README.md`](README.md)).
-2. Move "Agents for Rust work" into [`agent-team.md`](agent-team.md).
-3. Add the Rust risk classes to the verification agent section of `AGENTS.md`.
-4. Add `native/target/` to `.gitignore`, the Rust job to `main-ci.yml` with actions pinned by commit hash, and the Rust commands to the Gemini runner allow-list. These are code changes and go through a PR.
-5. Update "What this is" and "Module layout" in `AGENTS.md` when the first Rust unit reaches a stable release.
+1. In the first code PR (stage 1-0 of 0025): add `native/target/` to `.gitignore` and the Rust job to `main-ci.yml` with actions pinned by commit hash, and fill in the exact commands under "Build and test".
+2. Before Gemini implements Rust work: add the Rust commands to the Gemini runner allow-list.
+3. When the first Rust unit reaches a stable release: update "What this is" and "Module layout" in `AGENTS.md`.
