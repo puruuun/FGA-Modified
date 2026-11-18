@@ -142,8 +142,8 @@ class CommandLineTest(unittest.TestCase):
         allow = self.write('allow.txt', b'')
         self.assertEqual(run(b'', '--allow', allow, '--only', os.path.join(self.tmp.name, 'x'))[0], 1)
 
-    def test_real_origin_main_tree_passes_with_committed_allow_list(self):
-        listing = subprocess.run(['git', 'ls-tree', '-r', '-l', '-z', 'origin/main'],
+    def test_head_tree_passes_with_the_allow_list_committed_with_it(self):
+        listing = subprocess.run(['git', 'ls-tree', '-r', '-l', '-z', 'HEAD'],
                                  cwd=REPO, capture_output=True)
         self.assertEqual(listing.returncode, 0, listing.stderr)
         self.assertTrue(listing.stdout)
@@ -201,13 +201,13 @@ class StepScriptTest(unittest.TestCase):
         p = subprocess.run([self.sh, script], cwd=cwd or self.repo, env=env, capture_output=True)
         return p.returncode, (p.stdout + p.stderr).decode('utf-8', 'replace')
 
-    def origin_main(self):
-        p = subprocess.run(['git', 'rev-parse', 'origin/main'], cwd=REPO, capture_output=True)
+    def head_commit(self):
+        p = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout.decode().strip()
 
     def test_no_range_cases_check_the_whole_tree_and_pass_on_the_current_tree(self):
-        head = self.origin_main()
+        head = self.head_commit()
         # workflow_dispatch, a push whose before is forty zeros: classify leaves the range empty.
         for event in ('workflow_dispatch', 'push'):
             code, out = self.step(head, '', event, cwd=REPO)
