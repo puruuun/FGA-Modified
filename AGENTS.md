@@ -28,12 +28,19 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - Betas are built from `main` and contain everything merged so far. A stable release is a tag on `main`, so unreleased work on `main` never reaches stable users.
   - A large feature that is not finished lands behind a setting that is off by default.
   - A hotfix for a stable release that cannot wait for the next `main` beta is made on `release/X.Y.x`, cut from that stable tag, and the same fix is also merged into `main`.
+  - **Exception: the `rust` branch** (owner decision, 2026-11-18). The Rust migration of design 0025 is kept apart from the regular work until each unit is finished, so that betas and stable releases built from `main` hold no unfinished Rust-related change.
+    - Rust migration work goes to `rust` through PRs that target `rust`. That includes its Kotlin-side preparation: reader and proxy interfaces, bindings, DI wiring and engine-selection settings.
+    - A unit (one reader, one capture feature, one script) comes to `main` in its own PR only after it passed its switch criteria in 0025 and the owner approved it. From then on it ships in the regular betas.
+    - `main` is merged into `rust` regularly. Nothing goes from `rust` to `main` outside those per-unit PRs.
+    - `native/`, the `fga.native` Gradle switch and `Native CI` are already on `main` and stay: they do not change the app that is built without the switch.
 - Rebase a work branch onto its latest base before its first push. Once it is pushed, merge the base into it instead, because force pushes are not allowed.
 - Images in the repository (owner decision, 2026-11-16):
   - Commit only app assets (`app/src/main/assets/`) and QA regression samples that a device QA case file uses (`docs/reference-images/`).
   - One-off measurement crops, debugging screenshots and audit images stay local under `build/` or go on the issue as attachments.
   - Captures with account data are never committed.
 - The local checkout can be shared with another agent at the same time. Never stash, reset, rebase or check out over changes you did not make, stage only your own paths, and check `git show --stat HEAD` before pushing.
+  - Edit in your own worktree, not in the main checkout (owner decision, 2026-11-18). Uncommitted files left in the main checkout block the other session's merges. Keep the main checkout clean and on `main`.
+  - Sessions do not share their conversations. What another session needs to know goes into the repository (issues, PRs, `docs/qa/` records) or into a message to that session; see "Two planner sessions" in [`docs/agents/agent-team.md`](docs/agents/agent-team.md).
 - The planner (Claude) reviews each code PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
 - No shortcut for a branch that fell behind `main` (owner decision, 2026-11-18). Before a merge, the PR branch contains the latest `main` and `Main CI` (and `Native CI` when it runs) passed on exactly that commit. When `main` moves during the CI run, merge it into the branch and wait again, however small or unrelated the new commits are. An exception for Rust-only PRs was written down earlier the same day and withdrawn before it was ever used: the owner prefers a slower merge to finding a broken combination on `main` afterwards.
 - What the planner's PR review checks (owner decision, 2026-11-01). A green CI and the implementer's report are not enough; check the diff against these points before merging:
