@@ -35,6 +35,13 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - Captures with account data are never committed.
 - The local checkout can be shared with another agent at the same time. Never stash, reset, rebase or check out over changes you did not make, stage only your own paths, and check `git show --stat HEAD` before pushing.
 - The planner (Claude) reviews each code PR and merges it once `Main CI` passes on the PR. Merge by fast-forwarding `main` to the PR branch locally (`git merge --ff-only`) and pushing `main`, so the commits keep `puruuun` as committer; GitHub then marks the PR merged. Rebase the branch on `main` first if needed. Implementing agents open the PR and stop; they do not merge.
+- Merging a Rust-only PR while `main` keeps moving (owner decision, 2026-11-18). Native CI takes over ten minutes, and the Kotlin session merges to `main` in the meantime, so a Rust PR could wait for CI again and again (#509 waited three times for changes that never touched its files). The planner may merge `main` into the branch and fast-forward `main` without waiting for the PR's CI a second time when all of these hold:
+  - the PR changes nothing under `app/`, `scripts/`, `libautomata/` or `prefs/`, and no Gradle or version file;
+  - `Main CI` and `Native CI` passed on the PR head, and the verification agents passed, before `main` was merged into it;
+  - the new commits on `main` change no file that the PR changes, and nothing under `native/` or in `native-ci.yml`;
+  - the merge of `main` into the branch has no conflict.
+  - After the push, check `Main CI` and `Native CI` on `main` as usual. If either fails, fixing or reverting it comes before any other work, and the planner tells the owner.
+  - A PR that touches Kotlin or Gradle files, such as wrapping a reader behind an interface, never uses this exception.
 - What the planner's PR review checks (owner decision, 2026-11-01). A green CI and the implementer's report are not enough; check the diff against these points before merging:
   - **Matches the spec:** every requirement in the issue and in the approved walkthrough is implemented, and nothing outside the agent prompt rides along.
   - **Tests mean something:** the tests check the actual requirements, including the failure and guard cases, and are not written just to pass.

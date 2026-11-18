@@ -1397,6 +1397,7 @@
     <string name="capture_root_ipv6_unsupported">"이 기기는 IPv6 규칙을 지원하지 않아 IPv6 연결은 수집되지 않습니다(게임은 정상)"</string>
     <string name="capture_root_nat_unsupported">"이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"</string>
     <string name="capture_root_owner_unsupported">"이 기기는 앱별 통신 규칙(iptables owner)을 지원하지 않아 루트 모드를 쓸 수 없습니다. FGA VPN이나 외부 앱 프록시를 쓰세요."</string>
+    <string name="capture_root_other_app_active">"다른 FGA 앱이 루트 수집 중입니다. 그 앱에서 수집을 먼저 꺼 주세요."</string>
     <string name="capture_root_unexpected_connections">"예상 밖 연결(SNI 없음·비TLS 닫힘): %1$d건"</string>
     <string name="capture_root_non_game_failures">"게임 외 호스트 연결 실패: %1$d건"</string>
     <string name="capture_root_cleanup_retry_warning">"루트 규칙을 지우지 못했습니다. 다시 시도 중이며, 계속 실패하면 재부팅하세요."</string>

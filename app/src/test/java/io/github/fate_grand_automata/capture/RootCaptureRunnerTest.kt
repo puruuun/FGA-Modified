@@ -15,6 +15,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private const val FGA_UID = 10999
+
 class RootCaptureRunnerTest {
     private lateinit var tempDir: File
     private lateinit var flag: RootRulesActiveFlag
@@ -160,11 +162,11 @@ class RootCaptureRunnerTest {
                     events += "shell:precheckIpv6"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     events += "shell:apply"
                     assertTrue(flag.isSet(), "Flag must be set before apply runs")
                     // K2: one script, apply first and the watchdog start after it.
-                    assertTrue(stdin.indexOf("-A FGA_CAP") < stdin.indexOf("setsid nohup sh"))
+                    assertTrue(stdin.indexOf("-A FGA_CAP_10999") < stdin.indexOf("setsid nohup sh"))
                     events += "shell:startWatchdog"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
@@ -214,8 +216,8 @@ class RootCaptureRunnerTest {
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
-                stdin.contains("-A FGA_CAP") -> {
-                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
+                stdin.contains("-A FGA_CAP_10999") -> {
+                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP_10999"))
                     assertFalse(stdin.contains("00000000000000000000000001000000:"))
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
@@ -321,8 +323,8 @@ class RootCaptureRunnerTest {
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
                 stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OWNER))
-                stdin.contains("-A FGA_CAP") -> {
-                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP"))
+                stdin.contains("-A FGA_CAP_10999") -> {
+                    assertFalse(stdin.contains("\"\$IP6T\" -w 3 -t nat -A FGA_CAP_10999"))
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
                 else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
@@ -359,11 +361,11 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     events += "shell:applyFail"
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=2"))
                 }
-                stdin.contains("-X FGA_CAP") -> {
+                stdin.contains("-X FGA_CAP_10999") -> {
                     events += "shell:cleanup"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -401,11 +403,11 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     events += "shell:watchdogProbeFail"
                     RootShellOutput(1, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE))
                 }
-                stdin.contains("-X FGA_CAP") -> {
+                stdin.contains("-X FGA_CAP_10999") -> {
                     events += "shell:cleanup"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -443,15 +445,15 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") ->
+                stdin.contains("-A FGA_CAP_10999") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin.contains("setsid nohup sh") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = false) -> {
                     events += "shell:cleanupRules"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     events += "shell:killWatchdog"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -506,11 +508,11 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") ->
+                stdin.contains("-A FGA_CAP_10999") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin.contains("setsid nohup sh") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = false) -> {
                     cleanupAttempts += 1
                     if (cleanupAttempts == 1) {
                         RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
@@ -518,7 +520,7 @@ class RootCaptureRunnerTest {
                         RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                     }
                 }
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     retryDone.countDown()
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -640,12 +642,14 @@ class RootCaptureRunnerTest {
     private fun portChangeShell(events: MutableList<String>, flagCleanupCalls: MutableList<String>? = null) =
         RootShell { _, stdin, _ ->
             when {
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     events += "shell:killWatchdog"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                stdin.contains("echo ${RootRedirectScripts.MARKER_GUARD_OK}") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
                 stdin.contains("--to-ports 8899") -> {
                     events += "apply:8899"
                     events += "watchdog:8899"
@@ -767,7 +771,7 @@ class RootCaptureRunnerTest {
         var failCleanup = false
         val base = portChangeShell(events)
         val shell = RootShell { c, stdin, t ->
-            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP")) {
+            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP_10999")) {
                 RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
             } else {
                 base.run(c, stdin, t)
@@ -953,7 +957,7 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     // A failing apply exits before the watchdog part of the script, so no watchdog marker appears.
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=3"))
                 }
@@ -981,7 +985,7 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     runner.requestShutdown()
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 }
@@ -1021,7 +1025,7 @@ class RootCaptureRunnerTest {
         var failCleanup = false
         val base = portChangeShell(events)
         val shell = RootShell { c, stdin, t ->
-            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP")) {
+            if (failCleanup && stdin.contains("-D OUTPUT") && !stdin.contains("-A FGA_CAP_10999")) {
                 RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
             } else {
                 base.run(c, stdin, t)
@@ -1133,7 +1137,7 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.checkChains(ipv6 = true) -> {
+                stdin == RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true) -> {
                     events += "checkChains:$chainPresent"
                     if (chainPresent) {
                         RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
@@ -1141,7 +1145,7 @@ class RootCaptureRunnerTest {
                         RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
                     }
                 }
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     events += "apply"
                     chainPresent = true
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
@@ -1191,19 +1195,19 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") -> {
+                stdin.contains("-A FGA_CAP_10999") -> {
                     events += "shell:applyFail"
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=2"))
                 }
-                stdin == RootRedirectScripts.cleanup(killWatchdog = true) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true) -> {
                     events += "shell:rollbackCleanupFail"
                     RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
                 }
-                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = false) -> {
                     events += "shell:retryCleanupOk"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     events += "shell:killWatchdog"
                     retryDone.countDown()
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
@@ -1260,15 +1264,15 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") ->
+                stdin.contains("-A FGA_CAP_10999") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin.contains("setsid nohup sh") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = false) -> {
                     events += "shell:cleanupRules"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     events += "shell:killWatchdog"
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -1323,11 +1327,11 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") ->
+                stdin.contains("-A FGA_CAP_10999") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin.contains("setsid nohup sh") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.cleanup(killWatchdog = false) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = false) -> {
                     cleanupAttempts += 1
                     if (cleanupAttempts == 1) {
                         RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
@@ -1335,7 +1339,7 @@ class RootCaptureRunnerTest {
                         RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                     }
                 }
-                stdin == RootRedirectScripts.killWatchdog() -> {
+                stdin == RootRedirectScripts.killWatchdog(FGA_UID) -> {
                     retryDone.countDown()
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                 }
@@ -1391,11 +1395,11 @@ class RootCaptureRunnerTest {
             when {
                 stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin.contains("-A FGA_CAP") ->
+                stdin.contains("-A FGA_CAP_10999") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
                 stdin.contains("setsid nohup sh") ->
                     RootShellOutput(0, listOf(RootRedirectScripts.MARKER_WATCHDOG_OK))
-                stdin == RootRedirectScripts.cleanup(killWatchdog = true) -> {
+                stdin == RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true) -> {
                     when (cleanupMode) {
                         "ok" -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
                         "fail" -> RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
@@ -1492,7 +1496,7 @@ class RootCaptureRunnerTest {
         var applyCalled = false
 
         val shell = RootShell { _, stdin, _ ->
-            if (stdin.contains("-A FGA_CAP")) {
+            if (stdin.contains("-A FGA_CAP_10999")) {
                 applyCalled = true
             }
             RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_CLEANUP_OK))
@@ -1565,5 +1569,425 @@ class RootCaptureRunnerTest {
         assertFalse(flag.isSet())
         assertEquals(RootCaptureRunner.ERROR_NO_TARGETS, callbacks.lastError)
         assertEquals(RootCaptureRunner.TOAST_APPLY_FAILED, callbacks.lastToast)
+    }
+
+    private fun guardRunner(
+        shell: RootShell,
+        proxy: FakeProxyController,
+        callbacks: RecordingCallbacks,
+        fgaUid: () -> Int = { FGA_UID },
+    ) = RootCaptureRunner(
+        rootShell = shell,
+        flag = flag,
+        fgaUidProvider = fgaUid,
+        targetUidsProvider = { listOf(10123) },
+        proxyController = proxy,
+        callbacks = callbacks,
+        periodicCheckIntervalMs = 0L,
+        executor = executor,
+    )
+
+    @Test
+    fun anotherAppsLiveWatchdogStopsTheStartBeforeAnyRuleAndALaterStartWorks() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        var otherApp = true
+        var flagSetDuringGuard = false
+        val shell = RootShell { _, stdin, _ ->
+            ran += stdin
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin == RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true) -> {
+                    flagSetDuringGuard = flagSetDuringGuard || flag.isSet()
+                    if (otherApp) {
+                        RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OTHER_APP))
+                    } else {
+                        RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+                    }
+                }
+                stdin.contains("-A FGA_CAP_$FGA_UID") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+        val runner = guardRunner(shell, proxy, callbacks)
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertEquals(
+            listOf(
+                RootRedirectScripts.precheckIpv4(),
+                RootRedirectScripts.precheckIpv6(),
+                RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true),
+            ),
+            ran.toList(),
+            "nothing may run after the guard reports another app",
+        )
+        assertFalse(flagSetDuringGuard)
+        assertFalse(flag.isSet())
+        assertFalse(runner.isReadingWanted())
+        assertNull(proxy.listeningPort)
+        assertTrue(events.contains("stopAccepting"))
+        assertTrue(events.contains("closeProxy"))
+        assertEquals(RootCaptureRunner.ERROR_OTHER_APP_ACTIVE, callbacks.lastError)
+        assertEquals(RootCaptureRunner.TOAST_APPLY_FAILED, callbacks.lastToast)
+        assertFalse(callbacks.lastApplyFailedRetrying)
+        assertNull(callbacks.appliedPort)
+        assertTrue(runner.isIdle())
+
+        otherApp = false
+        ran.clear()
+        runner.requestStartReading(8899)
+        drainExecutor()
+        assertEquals(8899, callbacks.appliedPort)
+        assertTrue(flag.isSet())
+        assertTrue(ran.any { it.contains("-A FGA_CAP_$FGA_UID") })
+    }
+
+    @Test
+    fun guardUsesTheIpv4OnlyScriptWhenIpv6WillNotBeUsed() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(
+            listenResult = RootCaptureRunner.ListenerInfo(8899, ipv6Listening = false),
+            events = events,
+        )
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = RootShell { _, stdin, _ ->
+            ran += stdin
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("-A FGA_CAP_$FGA_UID") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+            }
+        }
+        val runner = guardRunner(shell, proxy, callbacks)
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        assertTrue(ran.contains(RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = false)))
+        assertFalse(ran.contains(RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true)))
+        assertEquals(8899, callbacks.appliedPort)
+    }
+
+    @Test
+    fun aGuardThatFailsWithoutTheOtherAppMarkerOrTimesOutAlsoStopsTheStart() {
+        for (res in listOf(
+            RootShellOutput(1, listOf("FGA_FAIL_STEP=1")),
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_FAIL_OTHER_APP), timedOut = true),
+        )) {
+            val events = CopyOnWriteArrayList<String>()
+            val proxy = FakeProxyController(events = events)
+            val callbacks = RecordingCallbacks(events = events)
+            val ran = CopyOnWriteArrayList<String>()
+            val shell = RootShell { _, stdin, _ ->
+                ran += stdin
+                when {
+                    stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                        RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                    stdin == RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true) -> res
+                    else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+                }
+            }
+            val runner = guardRunner(shell, proxy, callbacks)
+
+            runner.requestStartReading(8899)
+            drainExecutor()
+
+            assertFalse(ran.any { it.contains("-A FGA_CAP_$FGA_UID") })
+            assertFalse(flag.isSet())
+            assertNull(proxy.listeningPort)
+            assertFalse(runner.isReadingWanted())
+            assertTrue(callbacks.lastError?.startsWith("루트 규칙 설정 실패") == true, callbacks.lastError)
+            assertTrue(runner.isIdle())
+        }
+    }
+
+    @Test
+    fun cleanupPathsRunNothingWhenTheOwnUidIsUnknown() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = RootShell { _, stdin, _ ->
+            ran += stdin
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+        }
+        val runner = guardRunner(shell, proxy, callbacks, fgaUid = { 0 })
+        flag.markMaybeActive()
+
+        runner.cleanupIfFlagSet()
+        drainExecutor()
+        runner.onDestroyCleanup(maxWaitMs = 1_000L)
+
+        assertTrue(ran.isEmpty(), "no script may be built from a guessed name: $ran")
+        assertTrue(flag.isSet(), "the flag stays so that a later cleanup with a valid uid still runs")
+    }
+
+    @Test
+    fun periodicCheckRunsTheScriptThatCarriesThePortAndReappliesWhenTheRedirectIsMissing() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val checked = CopyOnWriteArrayList<String>()
+        var redirectPresent = true
+        val shell = RootShell { _, stdin, _ ->
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("echo ${RootRedirectScripts.MARKER_GUARD_OK}") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+                stdin.contains("-A FGA_CAP_$FGA_UID") -> {
+                    events += "apply"
+                    redirectPresent = true
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                }
+                stdin.contains("--to-ports 8899( |") -> {
+                    checked += stdin
+                    if (redirectPresent) {
+                        RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                    } else {
+                        RootShellOutput(1, listOf("FGA_FAIL_STEP=5"))
+                    }
+                }
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+        val runner = guardRunner(shell, proxy, callbacks)
+        runner.requestStartReading(8899)
+        drainExecutor()
+        events.clear()
+
+        runner.requestPeriodicCheck()
+        drainExecutor()
+        assertEquals(listOf(RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true)), checked.toList())
+        assertFalse(events.contains("apply"))
+
+        redirectPresent = false
+        runner.requestPeriodicCheck()
+        drainExecutor()
+        assertTrue(events.contains("apply"), "a chain without the REDIRECT must be applied again")
+        assertEquals("onApplied:8899:1:1:false", events.last())
+    }
+
+    @Test
+    fun stopWithAnUnknownOwnUidKeepsTheListenerAndRulesFlagAndRetries() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        var uid = FGA_UID
+        val shell = RootShell { _, stdin, _ ->
+            ran += stdin
+            when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin.contains("echo ${RootRedirectScripts.MARKER_GUARD_OK}") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+                stdin.contains("-A FGA_CAP_$FGA_UID") ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+        val runner = RootCaptureRunner(
+            rootShell = shell,
+            flag = flag,
+            fgaUidProvider = { uid },
+            targetUidsProvider = { listOf(10123) },
+            proxyController = proxy,
+            callbacks = callbacks,
+            periodicCheckIntervalMs = 0L,
+            cleanupRetryDelayMs = 60_000L,
+            executor = executor,
+        )
+        runner.requestStartReading(8899)
+        drainExecutor()
+        ran.clear()
+        events.clear()
+
+        uid = 0
+        runner.requestStopReading(drainMs = 0L)
+        drainExecutor()
+
+        assertTrue(ran.isEmpty(), "no cleanup script may be built without the uid: $ran")
+        assertTrue(events.contains("onCleanupRetryScheduled"))
+        assertFalse(events.contains("closeProxy"))
+        assertTrue(flag.isSet())
+    }
+
+    /** Fake shell for the conflict-check tests; each script kind answers from the settings below. */
+    private inner class ConflictShell(val ran: MutableList<String>) : RootShell {
+        var detect: RootShellOutput = RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+        var check: RootShellOutput = RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+        var applyAndWatchdog: RootShellOutput =
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+
+        override fun run(command: List<String>, stdin: String, timeoutSeconds: Long): RootShellOutput {
+            ran += stdin
+            return when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin == RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true) ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+                stdin == RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = true) -> detect
+                stdin == RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true) -> check
+                stdin.contains("-A FGA_CAP_$FGA_UID") -> applyAndWatchdog
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+    }
+
+    private val otherAppLive = RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OTHER_APP))
+
+    @Test
+    fun anotherAppFoundAfterApplyRollsBackOwnRulesListenerAndWatchdog() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran).apply { detect = otherAppLive }
+        val runner = guardRunner(shell, proxy, callbacks)
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        val applyIdx = ran.indexOfFirst { it.contains("-A FGA_CAP_$FGA_UID") }
+        val detectIdx = ran.indexOf(RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = true))
+        val cleanupIdx = ran.indexOf(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true))
+        assertTrue(applyIdx >= 0 && detectIdx > applyIdx && cleanupIdx > detectIdx, "order was $ran")
+        assertEquals(RootCaptureRunner.ERROR_OTHER_APP_ACTIVE, callbacks.lastError)
+        assertFalse(events.any { it.startsWith("onApplied") })
+        assertNull(callbacks.appliedPort)
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+        assertTrue(events.contains("closeProxy"))
+        assertFalse(runner.isReadingWanted())
+        assertTrue(runner.isIdle())
+    }
+
+    @Test
+    fun aFailedConflictCheckAfterApplyAlsoRollsBackWithTheGenericRuleError() {
+        for (res in listOf(
+            RootShellOutput(1, listOf("FGA_FAIL_STEP=1")),
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK), timedOut = true),
+        )) {
+            val events = CopyOnWriteArrayList<String>()
+            val proxy = FakeProxyController(events = events)
+            val callbacks = RecordingCallbacks(events = events)
+            val ran = CopyOnWriteArrayList<String>()
+            val shell = ConflictShell(ran).apply { detect = res }
+            val runner = guardRunner(shell, proxy, callbacks)
+
+            runner.requestStartReading(8899)
+            drainExecutor()
+
+            assertTrue(callbacks.lastError?.startsWith("루트 규칙 설정 실패") == true, callbacks.lastError)
+            assertFalse(events.any { it.startsWith("onApplied") })
+            assertFalse(flag.isSet())
+            assertNull(proxy.listeningPort)
+        }
+    }
+
+    @Test
+    fun periodicCheckStopsThisAppWhenAnotherAppIsLiveAndDoesNotReapply() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran)
+        val runner = guardRunner(shell, proxy, callbacks)
+        runner.requestStartReading(8899)
+        drainExecutor()
+        ran.clear()
+        events.clear()
+
+        shell.detect = otherAppLive
+        // The chain is gone too, so a re-apply would follow if the conflict were not decided first.
+        shell.check = RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        assertEquals(RootCaptureRunner.ERROR_OTHER_APP_ACTIVE, callbacks.lastError)
+        assertFalse(ran.any { it.contains("-A FGA_CAP_$FGA_UID") }, "no re-apply against the other app: $ran")
+        assertFalse(ran.contains(RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true)))
+        assertTrue(ran.contains(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true)))
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+        assertFalse(runner.isReadingWanted())
+    }
+
+    @Test
+    fun periodicCheckKeepsCollectingWhenTheConflictDetectionItselfFails() {
+        for (res in listOf(
+            RootShellOutput(1, listOf("FGA_FAIL_STEP=1")),
+            RootShellOutput(0, emptyList(), timedOut = true),
+        )) {
+            val events = CopyOnWriteArrayList<String>()
+            val proxy = FakeProxyController(events = events)
+            val callbacks = RecordingCallbacks(events = events)
+            val ran = CopyOnWriteArrayList<String>()
+            val shell = ConflictShell(ran)
+            val runner = guardRunner(shell, proxy, callbacks)
+            runner.requestStartReading(8899)
+            drainExecutor()
+            ran.clear()
+            events.clear()
+
+            shell.detect = res
+            runner.requestPeriodicCheck()
+            drainExecutor()
+
+            assertTrue(ran.contains(RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true)), "checkChains must still run")
+            assertNull(callbacks.lastError)
+            assertTrue(flag.isSet())
+            assertEquals(8899, proxy.listeningPort)
+            assertTrue(runner.isReadingWanted())
+            assertFalse(events.contains("closeProxy"))
+        }
+    }
+
+    @Test
+    fun periodicReapplyStartsTheWatchdogAgainAndRollsBackWhenItFails() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran)
+        val runner = guardRunner(shell, proxy, callbacks)
+        runner.requestStartReading(8899)
+        drainExecutor()
+        ran.clear()
+        events.clear()
+
+        shell.check = RootShellOutput(1, listOf("FGA_FAIL_STEP=5"))
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        val expected = RootRedirectScripts.applyAndStartWatchdog(listOf(10123), 8899, FGA_UID, ipv6 = true)
+        assertTrue(ran.contains(expected), "the re-apply must carry the watchdog start: $ran")
+        assertEquals("onApplied:8899:1:1:false", events.last())
+
+        // The watchdog does not come up after the re-apply: rules never stay without their watchdog (K2).
+        ran.clear()
+        events.clear()
+        shell.applyAndWatchdog = RootShellOutput(
+            1,
+            listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE),
+        )
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        assertTrue(callbacks.lastError?.contains("재시작 실패") == true, callbacks.lastError)
+        assertFalse(events.any { it.startsWith("onApplied") })
+        assertTrue(ran.contains(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true)))
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
     }
 }

@@ -1,5 +1,4 @@
 /// Decodes the fixed test vectors. Kept local so the probe adds no crate for it.
-#[cfg_attr(all(windows, target_env = "gnu"), allow(dead_code))]
 pub fn decode(text: &str) -> Result<Vec<u8>, String> {
     if !text.len().is_multiple_of(2) {
         return Err(format!("odd hex length {}", text.len()));

@@ -178,6 +178,20 @@ internal class RootCaptureRunner(
     }
 
     /**
+     * Chain and watchdog names carry the FGA uid, so a script cannot be built without a valid one. Without a uid
+     * nothing is run and the result is a failed cleanup: the flag stays set and the stop retries, rather than
+     * guessing a name that could belong to another FGA app (#493).
+     */
+    private fun runForOwnUid(build: (Int) -> String): RootShellOutput {
+        val fgaUid = fgaUidProvider()
+        if (fgaUid <= 0) return RootShellOutput(-1, emptyList(), false)
+        return runShell(build(fgaUid))
+    }
+
+    private fun runCleanup(killWatchdog: Boolean): RootShellOutput =
+        runForOwnUid { RootRedirectScripts.cleanup(it, killWatchdog) }
+
+    /**
      * R5 / B8 startup cleanup: only runs `su` if the persisted flag file is set.
      * Never invokes `su` when the flag is clear.
      */
@@ -188,7 +202,7 @@ internal class RootCaptureRunner(
         }
         executor.execute {
             if (!readingWanted.get() && flag.isSet()) {
-                val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
+                val res = runCleanup(killWatchdog = true)
                 if (isCleanupOk(res)) {
                     flag.clear()
                 }
@@ -209,7 +223,7 @@ internal class RootCaptureRunner(
             cancelPeriodicCheckOnExecutor()
             cancelCleanupRetryOnExecutor()
             if (flag.isSet() || activePort != null) {
-                val res = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
+                val res = runCleanup(killWatchdog = true)
                 if (isCleanupOk(res)) {
                     flag.clear()
                     giveUpListener()
@@ -336,6 +350,30 @@ internal class RootCaptureRunner(
             return
         }
 
+        // #493: stable and beta share the nat table; a live watchdog of another app means it is collecting.
+        val guardRes = runShell(RootRedirectScripts.guardOtherApp(fgaUid, useIpv6))
+        if (isOtherAppActive(guardRes)) {
+            giveUpListener()
+            readingWanted.set(false)
+            callbacks.onApplyFailed(ERROR_OTHER_APP_ACTIVE, TOAST_APPLY_FAILED)
+            return
+        }
+        if (guardRes.timedOut || guardRes.exitCode != 0) {
+            giveUpListener()
+            readingWanted.set(false)
+            val step = parseFailStep(guardRes.lines)
+            callbacks.onApplyFailed(
+                if (step != null) "루트 규칙 설정 실패 (단계 $step)" else "루트 규칙 설정 실패",
+                TOAST_APPLY_FAILED,
+            )
+            return
+        }
+
+        if (!shouldProceed(expectedGen)) {
+            giveUpListener()
+            return
+        }
+
         // R5 / B8: synchronously set flag before apply
         flag.markMaybeActive()
 
@@ -374,6 +412,21 @@ internal class RootCaptureRunner(
             return
         }
 
+        // Two apps that started at the same moment both passed the start guard; the one that notices the other's
+        // watchdog now takes its own rules back.
+        val conflict = runShell(RootRedirectScripts.detectOtherApp(fgaUid, useIpv6))
+        if (isOtherAppActive(conflict)) {
+            rollbackFailedApply(ERROR_OTHER_APP_ACTIVE)
+            return
+        }
+        if (conflict.timedOut || conflict.exitCode != 0) {
+            val step = parseFailStep(conflict.lines)
+            rollbackFailedApply(
+                if (step != null) "루트 규칙 설정 실패 (단계 $step)" else "루트 규칙 설정 실패",
+            )
+            return
+        }
+
         activePort = listener.port
         activeIpv6 = useIpv6
         activeUids = targetUids
@@ -402,7 +455,7 @@ internal class RootCaptureRunner(
     private fun rollbackFailedApply(errorMessage: String) {
         readingWanted.set(false)
         cancelPeriodicCheckOnExecutor()
-        val cleanupRes = runShell(RootRedirectScripts.cleanup(killWatchdog = true))
+        val cleanupRes = runCleanup(killWatchdog = true)
         if (isCleanupOk(cleanupRes)) {
             flag.clear()
             giveUpListener()
@@ -426,7 +479,7 @@ internal class RootCaptureRunner(
     private fun stopRulesAndListener(expectedGen: Long, drainMs: Long, announceRulesRemoved: Boolean): Boolean {
         val rulesMaybe = flag.isSet() || activePort != null
         if (rulesMaybe) {
-            val cleanupRes = runShell(RootRedirectScripts.cleanup(killWatchdog = false))
+            val cleanupRes = runCleanup(killWatchdog = false)
             if (!isCleanupOk(cleanupRes)) return false
             proxyController.clearContexts()
             if (announceRulesRemoved) callbacks.onRulesRemoved()
@@ -435,7 +488,7 @@ internal class RootCaptureRunner(
         drain(drainMs, expectedGen) { proxyController.awaitOpenConnections(it) }
         closeListener()
         if (rulesMaybe) {
-            runShell(RootRedirectScripts.killWatchdog())
+            runForOwnUid { RootRedirectScripts.killWatchdog(it) }
             flag.clear()
         }
         activePort = null
@@ -491,6 +544,10 @@ internal class RootCaptureRunner(
         val port = activePort ?: return
         val uids = activeUids.ifEmpty { return }
         val useIpv6 = activeIpv6
+        val fgaUid = fgaUidProvider().takeIf { it > 0 } ?: run {
+            rollbackFailedApply(ERROR_INVALID_FGA_UID)
+            return
+        }
 
         // H7: a dead accept loop is a lost listener; take the rules away at once so FGO connects directly.
         if (!proxyController.isListenerAlive()) {
@@ -498,17 +555,31 @@ internal class RootCaptureRunner(
             return
         }
 
-        val checkRes = runShell(RootRedirectScripts.checkChains(useIpv6))
+        // Another FGA app taking over must stop this app, or the two would keep re-applying against each other.
+        // A detection that fails or times out (for example an xtables lock timeout) says nothing about the other
+        // app, so it is skipped for this round: a working capture is not torn down by a transient failure.
+        val conflict = runShell(RootRedirectScripts.detectOtherApp(fgaUid, useIpv6))
+        if (isOtherAppActive(conflict)) {
+            rollbackFailedApply(ERROR_OTHER_APP_ACTIVE)
+            return
+        }
+        if (!shouldProceed(expectedGen)) return
+
+        val checkRes = runShell(RootRedirectScripts.checkChains(fgaUid, port, useIpv6))
         if (isApplyOk(checkRes)) {
             return
         }
 
         if (!shouldProceed(expectedGen)) return
 
-        // Chain or jump missing while reading -> re-apply idempotently
+        // Chain, jump or REDIRECT missing while reading -> re-apply idempotently. The watchdog is started again
+        // in the same script (K2); startWatchdog first kills this app's previous watchdog, which only removes
+        // rules when its own checks fail, so the new rules are not taken away by it.
         flag.markMaybeActive()
-        val applyRes = runShell(RootRedirectScripts.apply(uids, port, useIpv6))
-        if (!isApplyOk(applyRes)) {
+        val applyRes = runShell(RootRedirectScripts.applyAndStartWatchdog(uids, port, fgaUid, useIpv6))
+        val applyDone = !applyRes.timedOut &&
+            applyRes.lines.any { it.trim() == RootRedirectScripts.MARKER_APPLY_OK }
+        if (!applyDone) {
             val step = parseFailStep(applyRes.lines)
             val errMsg = if (step != null) {
                 "루트 규칙 재적용 실패 (단계 $step)"
@@ -516,6 +587,10 @@ internal class RootCaptureRunner(
                 "루트 규칙 재적용 실패"
             }
             rollbackFailedApply(errMsg)
+            return
+        }
+        if (!isWatchdogOk(applyRes)) {
+            rollbackFailedApply("루트 감시 프로그램 재시작 실패")
             return
         }
         callbacks.onApplied(
@@ -540,6 +615,7 @@ internal class RootCaptureRunner(
         const val ERROR_NAT_UNSUPPORTED = "이 기기에서는 루트 규칙(nat REDIRECT)을 쓸 수 없습니다"
         const val ERROR_OWNER_UNSUPPORTED =
             "이 기기는 앱별 통신 규칙(iptables owner)을 지원하지 않아 루트 모드를 쓸 수 없습니다. FGA VPN이나 외부 앱 프록시를 쓰세요."
+        const val ERROR_OTHER_APP_ACTIVE = "다른 FGA 앱이 루트 수집 중입니다. 그 앱에서 수집을 먼저 꺼 주세요."
         const val ERROR_NO_TARGETS = "수집할 수 있는 FGO 대상이 없습니다 (인증서 및 게임 설치를 확인하세요)"
         const val ERROR_INVALID_FGA_UID = "FGA 앱 UID를 확인할 수 없습니다"
         const val ERROR_LISTENER_LOST = "로그 수집 수신 소켓이 닫혀 루트 규칙을 제거했습니다"
@@ -566,6 +642,9 @@ internal class RootCaptureRunner(
 
         internal fun isOwnerUnsupported(res: RootShellOutput): Boolean =
             !res.timedOut && res.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_OWNER }
+
+        internal fun isOtherAppActive(res: RootShellOutput): Boolean =
+            !res.timedOut && res.lines.any { it.trim() == RootRedirectScripts.MARKER_FAIL_OTHER_APP }
 
         internal fun isCleanupOk(res: RootShellOutput): Boolean =
             !res.timedOut && res.exitCode == 0 && res.lines.any { it.trim() == RootRedirectScripts.MARKER_CLEANUP_OK }

@@ -1,22 +1,14 @@
-//! Stage 1-0 probes. Each returns plain text so the JNI layer only converts, and each can run
-//! as a host test where its crates build.
+//! Stage 1-0 probes. Each returns plain text so the JNI layer only converts, and each also runs
+//! as a host test.
 
 mod compare;
 mod cpu;
-mod hex;
-
-#[cfg(not(all(windows, target_env = "gnu")))]
 mod crypto;
-#[cfg(not(all(windows, target_env = "gnu")))]
+mod hex;
 mod inference;
-#[cfg(not(all(windows, target_env = "gnu")))]
 mod tls;
 
 pub use cpu::cpu_probe;
-
-/// The text a probe returns when its crates are not built for this target.
-#[cfg(all(windows, target_env = "gnu"))]
-const NOT_BUILT_HERE: &str = "not built on windows-gnu hosts: the crate needs a C compiler";
 
 pub fn ping() -> Result<String, String> {
     Ok(format!(
@@ -33,24 +25,15 @@ pub fn panic_probe() -> Result<String, String> {
 }
 
 pub fn ring_probe() -> Result<String, String> {
-    #[cfg(not(all(windows, target_env = "gnu")))]
-    return crypto::ring_checks();
-    #[cfg(all(windows, target_env = "gnu"))]
-    return Err(NOT_BUILT_HERE.to_owned());
+    crypto::ring_checks()
 }
 
 pub fn rustls_probe() -> Result<String, String> {
-    #[cfg(not(all(windows, target_env = "gnu")))]
-    return tls::handshake_in_memory();
-    #[cfg(all(windows, target_env = "gnu"))]
-    return Err(NOT_BUILT_HERE.to_owned());
+    tls::handshake_in_memory()
 }
 
 pub fn tract_probe() -> Result<String, String> {
-    #[cfg(not(all(windows, target_env = "gnu")))]
-    return inference::tiny_model();
-    #[cfg(all(windows, target_env = "gnu"))]
-    return Err(NOT_BUILT_HERE.to_owned());
+    inference::tiny_model()
 }
 
 #[cfg(test)]
@@ -74,32 +57,21 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(all(windows, target_env = "gnu")))]
     fn ring_probe_passes() {
         let text = run_guarded(ring_probe);
         assert!(text.starts_with("OK: "), "{text}");
     }
 
     #[test]
-    #[cfg(not(all(windows, target_env = "gnu")))]
     fn rustls_probe_passes() {
         let text = run_guarded(rustls_probe);
         assert!(text.starts_with("OK: "), "{text}");
     }
 
     #[test]
-    #[cfg(not(all(windows, target_env = "gnu")))]
     fn tract_probe_passes() {
         let text = run_guarded(tract_probe);
         assert!(text.starts_with("OK: "), "{text}");
-    }
-
-    #[test]
-    #[cfg(all(windows, target_env = "gnu"))]
-    fn probes_left_out_of_this_host_say_so() {
-        for probe in [ring_probe, rustls_probe, tract_probe] {
-            assert_eq!(run_guarded(probe), format!("ERR: {NOT_BUILT_HERE}"));
-        }
     }
 
     #[test]
