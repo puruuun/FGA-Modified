@@ -2,7 +2,7 @@
 
 - 설계: [0025](../design/0025-rust-engine-migration.md) 1-0
 - 이슈와 PR: [#500](https://github.com/puruuun/FGA-Modified/issues/500), [#501](https://github.com/puruuun/FGA-Modified/pull/501) (병합 `4d5fa330`, 2026-11-18)
-- 상태: **MuMu 확인 완료. 블루스택, 태블릿, 32비트는 아직 확인하지 못했습니다.**
+- 상태: **MuMu, 블루스택, 태블릿에서 64비트 ARM 확인 완료. 32비트 `armeabi-v7a`는 실행하지 못했습니다.**
 
 ## 누가 무엇을 했는지
 
@@ -42,13 +42,26 @@
 - 이 기기는 SVE를 지원한다고 알리지 않습니다. OpenCV를 죽였던 조건(SVE2를 알리지만 구현하지 않음)은 여기서 재현되지 않습니다.
 - `/proc/self/auxv`는 읽히지 않아 hwcap 값은 얻지 못했습니다.
 
-### 아직 실행하지 못한 곳
+### 블루스택 (`127.0.0.1:5555`, Android 9, ABI 목록 `x86_64,x86,arm64-v8a,armeabi-v7a,armeabi`, ARM은 변환 실행)
 
-| 대상 | 이유 | 필요한 것 |
-|---|---|---|
-| 블루스택 (`127.0.0.1:5555`) | 연결 거부. 꺼져 있었습니다 | 소유자가 블루스택을 켠 뒤 같은 명령 실행 |
-| 소유자 태블릿 (Legion Y700) | 연결되어 있지 않았습니다 | 소유자가 연결 |
-| 32비트 `armeabi-v7a` | MuMu는 64비트 ARM만 변환합니다. 빌드와 clippy는 통과했지만 실행된 적이 없습니다 | 32비트 ARM을 실행하는 기기 |
+2026-11-18, 커밋 `9c2f5a4e`. 앱은 `arm64-v8a`로 설치됐고 6개 모두 기대대로 동작했습니다. 결과 문자열은 MuMu와 같고, 다른 점은 CPU 정보뿐입니다.
+
+- cpuProbe: `OK: arch=aarch64 neon=true aes=true sha2=true sve=false sve2=false hwcap=0xfb hwcap2=0x0`
+- 소요: ping 31ms, cpuProbe 3ms, panicProbe 3ms, ringProbe 12ms, rustlsProbe 35ms, tractProbe 42ms
+
+### 소유자 태블릿 (`HA29GCWH`, TB322FC, Android 16, ABI 목록 `arm64-v8a`, 실제 ARM 기기)
+
+2026-11-18, 커밋 `9c2f5a4e`. 6개 모두 기대대로 동작했습니다. 결과 문자열은 MuMu와 같습니다.
+
+- cpuProbe: `OK: arch=aarch64 neon=true aes=true sha2=true sve=false sve2=false auxv=unreadable`
+- 소요: ping 4ms, panicProbe 1ms, rustlsProbe 1ms, tractProbe 2ms, 나머지는 1ms 미만
+
+### 32비트 `armeabi-v7a`: 실행하지 못함
+
+- 태블릿과 MuMu는 32비트 ARM을 지원하지 않습니다. 블루스택만 지원합니다.
+- 블루스택에 기기 검사용 앱을 `--abi armeabi-v7a`로 설치하려고 세 번 시도했고(`adb install` 한 번, `pm install` 두 번), 세 번 모두 `Failure calling service package: Broken pipe`로 실패했습니다. 세 번째 뒤에는 패키지 서비스가 잠시 사라졌다가(`Can't find service: package`) 약 10초 뒤 돌아왔습니다. 블루스택의 시스템 서비스가 재시작된 것으로 보이고, 그 뒤 화면은 런처였습니다.
+- **블루스택에서 ABI를 강제한 설치는 다시 시도하지 않습니다.** 에뮬레이터를 불안정하게 만듭니다. 앱은 그대로 `arm64-v8a`로 남아 있고, 옮겨 둔 임시 APK는 지웠습니다.
+- 32비트는 "빌드와 clippy는 통과, 실행은 미확인"으로 둡니다. 32비트 ARM을 실행하는 실제 기기가 생기면 확인합니다.
 
 ## 그 밖의 확인
 
@@ -68,7 +81,7 @@
 
 ## 결정과 남은 일
 
-- **TLS 암호화 라이브러리: `ring`.** `aws-lc-rs`는 소유자 PC에서 안드로이드용 빌드가 되지 않아(`dlltool` 없음, cmake 필요) 후보에서 뺐고, `ring`은 MuMu에서 동작했습니다. 블루스택과 태블릿 결과가 다르면 다시 봅니다.
+- **TLS 암호화 라이브러리: `ring`.** `aws-lc-rs`는 당시 소유자 PC에서 안드로이드용 빌드가 되지 않아(`dlltool` 없음, cmake 필요) 후보에서 뺐고, `ring`은 MuMu, 블루스택, 태블릿에서 모두 동작했습니다.
 - **소유자 PC의 도구 제약은 해결했습니다.** 처음에는 C 컴파일러와 `dlltool`이 없어 일부 크레이트와 `cargo-deny`가 PC에서 빌드되지 않았습니다. 2026-11-18에 소유자 승인으로 Visual Studio 2022 Build Tools를 설치하고 Rust를 MSVC 계열로 바꾼 뒤, PC에서 테스트 17개와 `cargo deny check`가 통과했습니다. 코드에 남아 있던 우회 두 가지(`windows-gnu`에서 크레이트 제외, `winapi-util` 0.1.9 고정)는 PR #509에서 걷어냈습니다.
 - **정리 PR [#509](https://github.com/puruuun/FGA-Modified/pull/509) (병합 `f8cad42f`, 2026-11-18):** 위 우회 제거, Native CI의 안드로이드 clippy에 `--platform 24` 추가, `compare.rs` 테스트 3개 보강, `run.py` 사용법 표기 수정.
   - 구현 Opus, 검증 Sonnet(직접 실행)과 Gemini(읽기 전용), 둘 다 통과. PC에서 Rust 테스트 20개 통과.
