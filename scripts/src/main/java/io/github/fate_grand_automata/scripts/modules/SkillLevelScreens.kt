@@ -39,8 +39,8 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
 
         /**
          * A side of the slot icon shows the selection glow when its mean (blue - red) reaches this value (#504). Owner captures
-         * (16 icon-row crops KR and JP, plus 19 full frames incl. 21:9): every side of a selected slot is at least 93 on a
-         * 73 px line 60 px (720p) from the icon centre, every side of an unselected slot at most 26.
+         * (16 icon-row crops KR and JP, plus 19 full frames incl. 21:9): every side of a selected slot is at least 92 on a
+         * 73 px line 60 px (720p) from the icon centre, every side of an unselected slot at most 27.
          */
         const val SELECTED_GLOW_BLUE_MINUS_RED = 60.0
 
