@@ -7,7 +7,7 @@ import io.github.fate_grand_automata.scripts.capture.SourceDelta
 import java.util.Calendar
 import java.util.TimeZone
 
-internal enum class LogSourceFilter { Script, GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Other }
+internal enum class LogSourceFilter { Script, GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Login, Other }
 
 internal fun ChangeSource.logSource(): LogSourceFilter =
     if (script) LogSourceFilter.Script else when (group) {
@@ -19,6 +19,7 @@ internal fun ChangeSource.logSource(): LogSourceFilter =
         ChangeSource.Group.ApRecovery -> LogSourceFilter.ApRecovery
         ChangeSource.Group.ManualQuest -> LogSourceFilter.ManualQuest
         ChangeSource.Group.Missions -> LogSourceFilter.Missions
+        ChangeSource.Group.Login -> LogSourceFilter.Login
         ChangeSource.Group.Other -> LogSourceFilter.Other
     }
 

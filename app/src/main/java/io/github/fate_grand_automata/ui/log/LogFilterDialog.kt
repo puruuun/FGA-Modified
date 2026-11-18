@@ -43,6 +43,7 @@ internal fun sourceFilterLabel(source: LogSourceFilter): String = stringResource
     LogSourceFilter.ApRecovery -> R.string.capture_source_ap_recovery
     LogSourceFilter.ManualQuest -> R.string.capture_source_manual_quest
     LogSourceFilter.Missions -> R.string.capture_source_missions
+    LogSourceFilter.Login -> R.string.capture_source_login
     LogSourceFilter.Other -> R.string.capture_source_other
 })
 

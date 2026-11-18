@@ -7,8 +7,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
 /** Entirely handwritten fictional account/resource data. */
-internal fun outsideLogin(id: String = "fictionalA", fruit: Long = 10, svts: String = "[]") = Json.parseToJsonElement("""
-    {"response":[{"nid":"login","resCode":"00"}],"cache":{"replaced":{
+internal fun outsideLogin(id: String = "fictionalA", fruit: Long = 10, svts: String = "[]", grant: Long = 0, resCode: String = "00") = Json.parseToJsonElement("""
+    {"response":[{"nid":"login","resCode":"$resCode","success":{"addFriendPoint":$grant,"addFollowFriendPoint":0}}],"cache":{"replaced":{
       "userGame":[{"userId":"$id","name":"Sample Master","qp":20000000,"mana":20,"rarePri":3,"freeStone":90,"chargeStone":10}],
       "tblUserGame":[{"userId":"$id","friendPoint":10000,"createdAt":5,"flag":0}],
       "userItem":[{"userId":"$id","itemId":100,"num":$fruit}],

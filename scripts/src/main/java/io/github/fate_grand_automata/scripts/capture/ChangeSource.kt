@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ChangeSource(val group: Group, val path: String? = null, val script: Boolean = false) {
     @Serializable
-    enum class Group { GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Other }
+    enum class Group { GiftBox, Shop, Summon, Lottery, Enhancement, ApRecovery, ManualQuest, Missions, Login, Other }
 
     companion object {
         fun of(target: String): ChangeSource {
