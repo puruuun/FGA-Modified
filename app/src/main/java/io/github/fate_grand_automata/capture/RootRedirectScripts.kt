@@ -232,10 +232,28 @@ internal object RootRedirectScripts {
      * Looks at nat `OUTPUT` for jumps to the legacy `FGA_CAP` chain (1.8.0 and older) or to another app's
      * `FGA_CAP_<uid>` chain. A chain whose watchdog is alive belongs to a collecting app: the script prints
      * [MARKER_FAIL_OTHER_APP] and exits 1 without touching anything. Rules never exist without their watchdog
-     * (K2), so a chain without a live watchdog is stale and is removed. A chain nothing jumps to is not looked at.
-     * Another app's PID and OK files are never removed. `PROC_ROOT` is overridable for tests, as `PROC_NET_TCP` is.
+     * (K2), but an app that is just starting has applied its rules before its watchdog wrote the PID file, so a
+     * chain without a live watchdog is removed only after a second look [waitSeconds] later still finds no
+     * watchdog; only chains present in both looks are removed. A chain nothing jumps to is not looked at.
+     *
+     * Worst case with a foreign chain is [waitSeconds] plus four `iptables -w 3` calls; they return at once unless
+     * the xtables lock is held, and a script that outlives the runner's shell timeout fails the start closed.
      */
-    fun guardOtherApp(fgaUid: Int, ipv6: Boolean): String {
+    fun guardOtherApp(fgaUid: Int, ipv6: Boolean, waitSeconds: Int = GUARD_WAIT_SECONDS): String {
+        require(waitSeconds >= 0) { "Invalid waitSeconds: $waitSeconds" }
+        return foreignChainScript(fgaUid, ipv6, removeStale = true, waitSeconds = waitSeconds)
+    }
+
+    /**
+     * Read-only form of [guardOtherApp] for after the apply and for the periodic check: the same detection,
+     * one look, nothing is removed. Prints [MARKER_FAIL_OTHER_APP] and exits 1 when another app is live.
+     */
+    fun detectOtherApp(fgaUid: Int, ipv6: Boolean): String =
+        foreignChainScript(fgaUid, ipv6, removeStale = false, waitSeconds = 0)
+
+    const val GUARD_WAIT_SECONDS = 2
+
+    private fun foreignChainScript(fgaUid: Int, ipv6: Boolean, removeStale: Boolean, waitSeconds: Int): String {
         val own = chainName(fgaUid)
         return buildString {
             appendLine("IPT=/system/bin/iptables")
@@ -244,8 +262,20 @@ internal object RootRedirectScripts {
             appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
             appendLine("PROC_ROOT=\"\${PROC_ROOT:-/proc}\"")
             appendLine("OWN=$own")
+            // The listing status is checked on its own: a failing iptables (lock timeout, ...) must not read as an
+            // empty list. sed has no interval expressions; the exact chain names are filtered in is_fga_chain.
             appendLine("list_chains() {")
-            appendLine("  \"\$1\" -w 3 -t nat -S OUTPUT 2>/dev/null | sed -n 's/^-A OUTPUT .*-j \\(FGA_CAP\\(_[0-9][0-9]*\\)\\{0,1\\}\\)[[:space:]]*\$/\\1/p'")
+            appendLine("  OUT=\$(\"\$1\" -w 3 -t nat -S OUTPUT 2>/dev/null) || return 1")
+            appendLine("  printf '%s\\n' \"\$OUT\" | sed -n 's/^-A OUTPUT .*-j \\(FGA_CAP[A-Za-z0-9_]*\\)[[:space:]]*\$/\\1/p'")
+            appendLine("}")
+            appendLine("is_fga_chain() {")
+            appendLine("  case \"\$1\" in")
+            appendLine("    $LEGACY_CHAIN_NAME) return 0 ;;")
+            appendLine("    ${CHAIN_PREFIX}) return 1 ;;")
+            appendLine("    ${CHAIN_PREFIX}*[!0-9]*) return 1 ;;")
+            appendLine("    ${CHAIN_PREFIX}*) return 0 ;;")
+            appendLine("  esac")
+            appendLine("  return 1")
             appendLine("}")
             appendLine("watchdog_live() {")
             appendLine("  for PF in $PRIMARY_DIR\$1.pid $FALLBACK_DIR\$1.pid; do")
@@ -268,33 +298,56 @@ internal object RootRedirectScripts {
             appendLine("    *) echo \"$WATCHDOG_BASE_PREFIX\${1#$CHAIN_PREFIX}\" ;;")
             appendLine("  esac")
             appendLine("}")
-            if (ipv6) {
-                appendLine("CHAINS=\$(list_chains \"\$IPT\"; list_chains \"\$IP6T\")")
-            } else {
-                appendLine("CHAINS=\$(list_chains \"\$IPT\")")
-            }
-            appendLine("for C in \$CHAINS; do")
-            appendLine("  [ \"\$C\" = \"\$OWN\" ] && continue")
-            appendLine("  if watchdog_live \"\$(watchdog_base \"\$C\")\"; then")
-            appendLine("    echo $MARKER_FAIL_OTHER_APP")
-            appendLine("    exit 1")
-            appendLine("  fi")
-            appendLine("done")
-            appendLine("for C in \$CHAINS; do")
-            appendLine("  [ \"\$C\" = \"\$OWN\" ] && continue")
-            appendLine("  for T in \"\$IPT\" \"\$IP6T\"; do")
-            appendLine("    k=0")
-            appendLine("    while [ \"\$k\" -lt 16 ] && \"\$T\" -w 3 -t nat -D OUTPUT -j \"\$C\" >/dev/null 2>&1; do")
-            appendLine("      k=\$((k + 1))")
-            appendLine("    done")
-            appendLine("    \"\$T\" -w 3 -t nat -F \"\$C\" >/dev/null 2>&1 || true")
-            appendLine("    \"\$T\" -w 3 -t nat -X \"\$C\" >/dev/null 2>&1 || true")
+            appendLine("scan() {")
+            appendLine("  CHAINS=")
+            appendLine("  L=\$(list_chains \"\$IPT\") || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
+            appendLine("  for C in \$L; do")
+            appendLine("    if is_fga_chain \"\$C\" && [ \"\$C\" != \"\$OWN\" ]; then CHAINS=\"\$CHAINS \$C\"; fi")
             appendLine("  done")
-            appendLine("  if \"\$IPT\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1; then")
-            appendLine("    echo ${MARKER_FAIL_STEP_PREFIX}1")
-            appendLine("    exit 1")
-            appendLine("  fi")
-            appendLine("done")
+            if (ipv6) {
+                // The IPv6 pre-check already passed, so a failing listing here is not a missing nat table.
+                appendLine("  L=\$(list_chains \"\$IP6T\") || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }")
+                appendLine("  for C in \$L; do")
+                appendLine("    if is_fga_chain \"\$C\" && [ \"\$C\" != \"\$OWN\" ]; then CHAINS=\"\$CHAINS \$C\"; fi")
+                appendLine("  done")
+            }
+            appendLine("}")
+            appendLine("fail_if_live() {")
+            appendLine("  for C in \$CHAINS; do")
+            appendLine("    if watchdog_live \"\$(watchdog_base \"\$C\")\"; then")
+            appendLine("      echo $MARKER_FAIL_OTHER_APP")
+            appendLine("      exit 1")
+            appendLine("    fi")
+            appendLine("  done")
+            appendLine("}")
+            appendLine("scan")
+            appendLine("fail_if_live")
+            if (removeStale) {
+                appendLine("if [ -n \"\$CHAINS\" ]; then")
+                appendLine("  FIRST=\"\$CHAINS\"")
+                appendLine("  sleep $waitSeconds")
+                appendLine("  scan")
+                appendLine("  fail_if_live")
+                appendLine("  for C in \$CHAINS; do")
+                appendLine("    case \" \$FIRST \" in")
+                appendLine("      *\" \$C \"*) ;;")
+                appendLine("      *) continue ;;")
+                appendLine("    esac")
+                appendLine("    for T in \"\$IPT\" \"\$IP6T\"; do")
+                appendLine("      k=0")
+                appendLine("      while [ \"\$k\" -lt 16 ] && \"\$T\" -w 3 -t nat -D OUTPUT -j \"\$C\" >/dev/null 2>&1; do")
+                appendLine("        k=\$((k + 1))")
+                appendLine("      done")
+                appendLine("      \"\$T\" -w 3 -t nat -F \"\$C\" >/dev/null 2>&1 || true")
+                appendLine("      \"\$T\" -w 3 -t nat -X \"\$C\" >/dev/null 2>&1 || true")
+                appendLine("    done")
+                appendLine("    if \"\$IPT\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1; then")
+                appendLine("      echo ${MARKER_FAIL_STEP_PREFIX}3")
+                appendLine("      exit 1")
+                appendLine("    fi")
+                appendLine("  done")
+                appendLine("fi")
+            }
             appendLine("echo $MARKER_GUARD_OK")
         }
     }

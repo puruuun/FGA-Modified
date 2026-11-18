@@ -28,7 +28,7 @@ While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's pro
 
 ### Turning Reading On (`Turn reading on` / `Start log collection` on Main Screen)
 
-> Only one FGA app (stable or beta) can run root collection at a time. If another FGA app is already collecting through root, the second app shows an "another FGA app is collecting through root" message and does not start; it never touches the other app's rules.
+> Only one FGA app (stable or beta) can run root collection at a time. If another FGA app is already collecting through root, the second app shows an "another FGA app is collecting through root" message and does not start; it never touches the other app's rules. If two apps start at nearly the same moment, or another app starts while this one is collecting, the app that notices shows the same message and stops its own collection.
 
 1. **Start proxy listener**: FGA opens the transparent TLS proxy on `127.0.0.1:<port>` and `[::1]:<port>` first.
 2. **Apply kernel rules (`FGA_CAP_<app UID>` chain)**:

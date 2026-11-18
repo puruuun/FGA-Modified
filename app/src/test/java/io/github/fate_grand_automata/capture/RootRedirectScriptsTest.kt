@@ -284,6 +284,8 @@ class RootRedirectScriptsTest {
             "killWatchdog" to RootRedirectScripts.killWatchdog(FGA_UID),
             "guard_v4" to RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = false),
             "guard_v6" to RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true),
+            "detect_v4" to RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = false),
+            "detect_v6" to RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = true),
             "watchdog_v4" to RootRedirectScripts.watchdogScript(8899, 10999, ipv6 = false),
             "watchdog_v6" to RootRedirectScripts.watchdogScript(8899, 10999, ipv6 = true),
             "startWatchdog" to RootRedirectScripts.startWatchdog(8899, 10999, ipv6 = true),
@@ -512,6 +514,7 @@ class RootRedirectScriptsTest {
             assertFailsWith<IllegalArgumentException> { RootRedirectScripts.watchdogScript(8899, uid, true) }
             assertFailsWith<IllegalArgumentException> { RootRedirectScripts.startWatchdog(8899, uid, true) }
             assertFailsWith<IllegalArgumentException> { RootRedirectScripts.guardOtherApp(uid, true) }
+            assertFailsWith<IllegalArgumentException> { RootRedirectScripts.detectOtherApp(uid, true) }
         }
     }
 
@@ -749,7 +752,7 @@ class RootRedirectScriptsTest {
             return null
         }
         process.outputStream.bufferedWriter(Charsets.UTF_8).use { it.write(script) }
-        val finished = process.waitFor(10, TimeUnit.SECONDS)
+        val finished = process.waitFor(30, TimeUnit.SECONDS)
         val output = process.inputStream.bufferedReader(Charsets.UTF_8).readText()
         process.destroyForcibly()
         assertTrue(finished, "sh timed out: $output")
@@ -772,7 +775,7 @@ class RootRedirectScriptsTest {
                 shift 4
                 case "${'$'}1" in
                   -S)
-                    if [ "${'$'}2" = OUTPUT ]; then grep '^-A OUTPUT ' "${'$'}STATE"; exit 0; fi
+                    if [ "${'$'}2" = OUTPUT ]; then [ -f "${'$'}STATE.fail" ] && exit 4; grep '^-A OUTPUT ' "${'$'}STATE"; exit 0; fi
                     grep -qx -- "-N ${'$'}2" "${'$'}STATE" || exit 1
                     grep -- "^-A ${'$'}2 " "${'$'}STATE"
                     exit 0 ;;
@@ -790,6 +793,11 @@ class RootRedirectScriptsTest {
                 esac
                 exit 1
             """.trimIndent() + "\n"
+            File(bin, "sleep").apply {
+                // The guard's second look waits here; a test can change the nat state or the watchdogs meanwhile.
+                writeText("#!/bin/sh\n[ -f \"${'$'}FAKE_DIR/on_sleep\" ] && sh \"${'$'}FAKE_DIR/on_sleep\"\nexit 0\n")
+                setExecutable(true)
+            }
             for (name in listOf("iptables", "ip6tables")) {
                 File(bin, name).apply {
                     writeText(fake)
@@ -811,6 +819,21 @@ class RootRedirectScriptsTest {
             "PROC_ROOT" to File(root, "proc").posix(),
         )
 
+        fun v4File() = v4File
+
+        fun failListing(ipv6: Boolean) {
+            File(dir, if (ipv6) "v6.fail" else "v4.fail").writeText("")
+        }
+
+        fun onSleep(script: String) {
+            File(dir, "on_sleep").writeText(script)
+        }
+
+        fun liveWatchdogScript(base: String, pid: Int): String =
+            "mkdir -p '${File(root, "proc/$pid").posix()}'\n" +
+                "printf 'sh\\000/data/local/tmp/$base.sh\\000' > '${File(root, "proc/$pid/cmdline").posix()}'\n" +
+                "echo $pid > '${pidFile(base).posix()}'\n"
+
         fun pidFile(base: String, fallbackDir: Boolean = false) =
             File(dir, (if (fallbackDir) "dev_" else "") + "$base.pid")
 
@@ -825,10 +848,127 @@ class RootRedirectScriptsTest {
         }
 
         fun runGuard(ownUid: Int, ipv6: Boolean): Pair<Int, String>? {
-            val script = RootRedirectScripts.guardOtherApp(ownUid, ipv6)
+            return runScript(RootRedirectScripts.guardOtherApp(ownUid, ipv6, waitSeconds = 0))
+        }
+
+        fun runDetect(ownUid: Int, ipv6: Boolean): Pair<Int, String>? =
+            runScript(RootRedirectScripts.detectOtherApp(ownUid, ipv6))
+
+        private fun runScript(raw: String): Pair<Int, String>? {
+            val script = raw
                 .replace("/data/local/tmp/", dir.posix() + "/")
                 .replace("/dev/\$1", dir.posix() + "/dev_\$1")
             return runSh(script, env())
         }
+    }
+
+    @Test
+    fun guardAndDetectionFailClosedWhenTheOutputListingFails() {
+        for (ipv6 in listOf(false, true)) {
+            val v4 = FakeNat()
+            v4.v4 = listOf("-A OUTPUT -j FGA_CAP_10256")
+            v4.failListing(ipv6 = false)
+            for (res in listOf(v4.runGuard(1025, ipv6), v4.runDetect(1025, ipv6))) {
+                val r = res ?: return
+                assertEquals(1, r.first, r.second)
+                assertTrue(r.second.contains("FGA_FAIL_STEP=1"), r.second)
+                assertFalse(r.second.contains(RootRedirectScripts.MARKER_GUARD_OK), r.second)
+            }
+        }
+        val v6 = FakeNat()
+        v6.failListing(ipv6 = true)
+        for (res in listOf(v6.runGuard(1025, ipv6 = true), v6.runDetect(1025, ipv6 = true))) {
+            val r = res ?: return
+            assertEquals(1, r.first, r.second)
+            assertTrue(r.second.contains("FGA_FAIL_STEP=2"), r.second)
+            assertFalse(r.second.contains(RootRedirectScripts.MARKER_GUARD_OK), r.second)
+        }
+        // IPv6 is not asked about when it will not be used, so a missing IPv6 nat table cannot fail the start.
+        for (res in listOf(v6.runGuard(1025, ipv6 = false), v6.runDetect(1025, ipv6 = false))) {
+            val r = res ?: return
+            assertEquals(0, r.first, r.second)
+        }
+    }
+
+    @Test
+    fun chainNamesWithANonDigitSuffixAreNotAnotherFgaApp() {
+        val fake = FakeNat()
+        val state = listOf(
+            "-N FGA_CAP_x", "-A OUTPUT -j FGA_CAP_x",
+            "-N FGA_CAP_12ab", "-A OUTPUT -j FGA_CAP_12ab",
+            "-A OUTPUT -j FGA_CAP_",
+            "-A OUTPUT -j FGA_CAPX",
+        )
+        fake.v4 = state
+        fake.liveWatchdog("fga_cap_watchdog_x", pid = 4242)
+        fake.liveWatchdog("fga_cap_watchdog_12ab", pid = 4243)
+        for (res in listOf(fake.runGuard(1025, ipv6 = false), fake.runDetect(1025, ipv6 = false))) {
+            val r = res ?: return
+            assertEquals(0, r.first, r.second)
+        }
+        assertEquals(state, fake.v4, "names outside FGA_CAP and FGA_CAP_<digits> are never touched")
+    }
+
+    @Test
+    fun aWatchdogThatAppearsOnTheSecondLookStopsTheRemovalOfTheChain() {
+        val fake = FakeNat()
+        val state = listOf("-N FGA_CAP_10256", "-A OUTPUT -j FGA_CAP_10256")
+        fake.v4 = state
+        // The other app was just starting: its rules were in place, its watchdog was not yet.
+        fake.onSleep(fake.liveWatchdogScript("fga_cap_watchdog_10256", pid = 4242))
+        val res = fake.runGuard(1025, ipv6 = false) ?: return
+        assertEquals(1, res.first, res.second)
+        assertTrue(res.second.contains(RootRedirectScripts.MARKER_FAIL_OTHER_APP), res.second)
+        assertEquals(state, fake.v4, "a chain whose watchdog shows up must not be removed")
+    }
+
+    @Test
+    fun aChainThatAppearsOnlyOnTheSecondLookOrVanishesBetweenLooksIsNotRemovedAsStale() {
+        val appears = FakeNat()
+        appears.v4 = listOf("-N FGA_CAP_10256", "-A OUTPUT -j FGA_CAP_10256")
+        appears.onSleep("echo '-N FGA_CAP_777' >> '${appears.v4File().posix()}'\necho '-A OUTPUT -j FGA_CAP_777' >> '${appears.v4File().posix()}'\n")
+        val r1 = appears.runGuard(1025, ipv6 = false) ?: return
+        assertEquals(0, r1.first, r1.second)
+        assertTrue(appears.v4.contains("-A OUTPUT -j FGA_CAP_777"), "seen only once, so not removed")
+        assertFalse(appears.v4.contains("-A OUTPUT -j FGA_CAP_10256"), "seen twice without a watchdog, so removed")
+
+        val vanishes = FakeNat()
+        vanishes.v4 = listOf("-N FGA_CAP_10256", "-A OUTPUT -j FGA_CAP_10256")
+        vanishes.onSleep("echo > '${vanishes.v4File().posix()}'\n")
+        val r2 = vanishes.runGuard(1025, ipv6 = false) ?: return
+        assertEquals(0, r2.first, r2.second)
+    }
+
+    @Test
+    fun detectionReportsALiveOtherAppAndNeverRemovesAnything() {
+        val script = RootRedirectScripts.detectOtherApp(1025, ipv6 = true)
+        for (forbidden in listOf(" -D ", " -F ", " -X ", " -I ", " -A ", " -N ", "rm ", "sleep")) {
+            assertFalse(script.contains(forbidden), "detection must be read-only, found '$forbidden'")
+        }
+
+        val live = FakeNat()
+        val state = listOf("-N FGA_CAP_10256", "-A OUTPUT -j FGA_CAP_10256")
+        live.v4 = state
+        live.liveWatchdog("fga_cap_watchdog_10256", pid = 4242)
+        val r1 = live.runDetect(1025, ipv6 = true) ?: return
+        assertEquals(1, r1.first, r1.second)
+        assertTrue(r1.second.contains(RootRedirectScripts.MARKER_FAIL_OTHER_APP))
+        assertEquals(state, live.v4)
+
+        val stale = FakeNat()
+        stale.v4 = state
+        val r2 = stale.runDetect(1025, ipv6 = true) ?: return
+        assertEquals(0, r2.first, r2.second)
+        assertTrue(r2.second.contains(RootRedirectScripts.MARKER_GUARD_OK))
+        assertEquals(state, stale.v4, "a stale chain is left to the start guard")
+    }
+
+    @Test
+    fun theGuardWaitIsAParameterAndBothScriptsPassTheSyntaxCheck() {
+        assertTrue(RootRedirectScripts.guardOtherApp(FGA_UID, true).contains("sleep 2\n"))
+        assertTrue(RootRedirectScripts.guardOtherApp(FGA_UID, true, waitSeconds = 0).contains("sleep 0\n"))
+        assertFailsWith<IllegalArgumentException> { RootRedirectScripts.guardOtherApp(FGA_UID, true, waitSeconds = -1) }
+        assertFailsWith<IllegalArgumentException> { RootRedirectScripts.detectOtherApp(0, true) }
+        assertTrue(markerRegex.matches(RootRedirectScripts.MARKER_FAIL_OTHER_APP))
     }
 }

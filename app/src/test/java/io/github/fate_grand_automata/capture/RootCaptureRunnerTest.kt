@@ -1821,4 +1821,173 @@ class RootCaptureRunnerTest {
         assertFalse(events.contains("closeProxy"))
         assertTrue(flag.isSet())
     }
+
+    /** Fake shell for the conflict-check tests; each script kind answers from the settings below. */
+    private inner class ConflictShell(val ran: MutableList<String>) : RootShell {
+        var detect: RootShellOutput = RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+        var check: RootShellOutput = RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+        var applyAndWatchdog: RootShellOutput =
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_WATCHDOG_OK))
+
+        override fun run(command: List<String>, stdin: String, timeoutSeconds: Long): RootShellOutput {
+            ran += stdin
+            return when {
+                stdin == RootRedirectScripts.precheckIpv4() || stdin == RootRedirectScripts.precheckIpv6() ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_APPLY_OK))
+                stdin == RootRedirectScripts.guardOtherApp(FGA_UID, ipv6 = true) ->
+                    RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK))
+                stdin == RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = true) -> detect
+                stdin == RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true) -> check
+                stdin.contains("-A FGA_CAP_$FGA_UID") -> applyAndWatchdog
+                else -> RootShellOutput(0, listOf(RootRedirectScripts.MARKER_CLEANUP_OK))
+            }
+        }
+    }
+
+    private val otherAppLive = RootShellOutput(1, listOf(RootRedirectScripts.MARKER_FAIL_OTHER_APP))
+
+    @Test
+    fun anotherAppFoundAfterApplyRollsBackOwnRulesListenerAndWatchdog() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran).apply { detect = otherAppLive }
+        val runner = guardRunner(shell, proxy, callbacks)
+
+        runner.requestStartReading(8899)
+        drainExecutor()
+
+        val applyIdx = ran.indexOfFirst { it.contains("-A FGA_CAP_$FGA_UID") }
+        val detectIdx = ran.indexOf(RootRedirectScripts.detectOtherApp(FGA_UID, ipv6 = true))
+        val cleanupIdx = ran.indexOf(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true))
+        assertTrue(applyIdx >= 0 && detectIdx > applyIdx && cleanupIdx > detectIdx, "order was $ran")
+        assertEquals(RootCaptureRunner.ERROR_OTHER_APP_ACTIVE, callbacks.lastError)
+        assertFalse(events.any { it.startsWith("onApplied") })
+        assertNull(callbacks.appliedPort)
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+        assertTrue(events.contains("closeProxy"))
+        assertFalse(runner.isReadingWanted())
+        assertTrue(runner.isIdle())
+    }
+
+    @Test
+    fun aFailedConflictCheckAfterApplyAlsoRollsBackWithTheGenericRuleError() {
+        for (res in listOf(
+            RootShellOutput(1, listOf("FGA_FAIL_STEP=1")),
+            RootShellOutput(0, listOf(RootRedirectScripts.MARKER_GUARD_OK), timedOut = true),
+        )) {
+            val events = CopyOnWriteArrayList<String>()
+            val proxy = FakeProxyController(events = events)
+            val callbacks = RecordingCallbacks(events = events)
+            val ran = CopyOnWriteArrayList<String>()
+            val shell = ConflictShell(ran).apply { detect = res }
+            val runner = guardRunner(shell, proxy, callbacks)
+
+            runner.requestStartReading(8899)
+            drainExecutor()
+
+            assertTrue(callbacks.lastError?.startsWith("루트 규칙 설정 실패") == true, callbacks.lastError)
+            assertFalse(events.any { it.startsWith("onApplied") })
+            assertFalse(flag.isSet())
+            assertNull(proxy.listeningPort)
+        }
+    }
+
+    @Test
+    fun periodicCheckStopsThisAppWhenAnotherAppIsLiveAndDoesNotReapply() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran)
+        val runner = guardRunner(shell, proxy, callbacks)
+        runner.requestStartReading(8899)
+        drainExecutor()
+        ran.clear()
+        events.clear()
+
+        shell.detect = otherAppLive
+        // The chain is gone too, so a re-apply would follow if the conflict were not decided first.
+        shell.check = RootShellOutput(1, listOf("FGA_FAIL_STEP=1"))
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        assertEquals(RootCaptureRunner.ERROR_OTHER_APP_ACTIVE, callbacks.lastError)
+        assertFalse(ran.any { it.contains("-A FGA_CAP_$FGA_UID") }, "no re-apply against the other app: $ran")
+        assertFalse(ran.contains(RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true)))
+        assertTrue(ran.contains(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true)))
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+        assertFalse(runner.isReadingWanted())
+    }
+
+    @Test
+    fun periodicCheckKeepsCollectingWhenTheConflictDetectionItselfFails() {
+        for (res in listOf(
+            RootShellOutput(1, listOf("FGA_FAIL_STEP=1")),
+            RootShellOutput(0, emptyList(), timedOut = true),
+        )) {
+            val events = CopyOnWriteArrayList<String>()
+            val proxy = FakeProxyController(events = events)
+            val callbacks = RecordingCallbacks(events = events)
+            val ran = CopyOnWriteArrayList<String>()
+            val shell = ConflictShell(ran)
+            val runner = guardRunner(shell, proxy, callbacks)
+            runner.requestStartReading(8899)
+            drainExecutor()
+            ran.clear()
+            events.clear()
+
+            shell.detect = res
+            runner.requestPeriodicCheck()
+            drainExecutor()
+
+            assertTrue(ran.contains(RootRedirectScripts.checkChains(FGA_UID, 8899, ipv6 = true)), "checkChains must still run")
+            assertNull(callbacks.lastError)
+            assertTrue(flag.isSet())
+            assertEquals(8899, proxy.listeningPort)
+            assertTrue(runner.isReadingWanted())
+            assertFalse(events.contains("closeProxy"))
+        }
+    }
+
+    @Test
+    fun periodicReapplyStartsTheWatchdogAgainAndRollsBackWhenItFails() {
+        val events = CopyOnWriteArrayList<String>()
+        val proxy = FakeProxyController(events = events)
+        val callbacks = RecordingCallbacks(events = events)
+        val ran = CopyOnWriteArrayList<String>()
+        val shell = ConflictShell(ran)
+        val runner = guardRunner(shell, proxy, callbacks)
+        runner.requestStartReading(8899)
+        drainExecutor()
+        ran.clear()
+        events.clear()
+
+        shell.check = RootShellOutput(1, listOf("FGA_FAIL_STEP=5"))
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        val expected = RootRedirectScripts.applyAndStartWatchdog(listOf(10123), 8899, FGA_UID, ipv6 = true)
+        assertTrue(ran.contains(expected), "the re-apply must carry the watchdog start: $ran")
+        assertEquals("onApplied:8899:1:1:false", events.last())
+
+        // The watchdog does not come up after the re-apply: rules never stay without their watchdog (K2).
+        ran.clear()
+        events.clear()
+        shell.applyAndWatchdog = RootShellOutput(
+            1,
+            listOf(RootRedirectScripts.MARKER_APPLY_OK, RootRedirectScripts.MARKER_FAIL_WATCHDOG_PROBE),
+        )
+        runner.requestPeriodicCheck()
+        drainExecutor()
+
+        assertTrue(callbacks.lastError?.contains("재시작 실패") == true, callbacks.lastError)
+        assertFalse(events.any { it.startsWith("onApplied") })
+        assertTrue(ran.contains(RootRedirectScripts.cleanup(FGA_UID, killWatchdog = true)))
+        assertFalse(flag.isSet())
+        assertNull(proxy.listeningPort)
+    }
 }

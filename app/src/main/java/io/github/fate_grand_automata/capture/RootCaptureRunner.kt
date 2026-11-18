@@ -412,6 +412,21 @@ internal class RootCaptureRunner(
             return
         }
 
+        // Two apps that started at the same moment both passed the start guard; the one that notices the other's
+        // watchdog now takes its own rules back.
+        val conflict = runShell(RootRedirectScripts.detectOtherApp(fgaUid, useIpv6))
+        if (isOtherAppActive(conflict)) {
+            rollbackFailedApply(ERROR_OTHER_APP_ACTIVE)
+            return
+        }
+        if (conflict.timedOut || conflict.exitCode != 0) {
+            val step = parseFailStep(conflict.lines)
+            rollbackFailedApply(
+                if (step != null) "루트 규칙 설정 실패 (단계 $step)" else "루트 규칙 설정 실패",
+            )
+            return
+        }
+
         activePort = listener.port
         activeIpv6 = useIpv6
         activeUids = targetUids
@@ -540,6 +555,16 @@ internal class RootCaptureRunner(
             return
         }
 
+        // Another FGA app taking over must stop this app, or the two would keep re-applying against each other.
+        // A detection that fails or times out (for example an xtables lock timeout) says nothing about the other
+        // app, so it is skipped for this round: a working capture is not torn down by a transient failure.
+        val conflict = runShell(RootRedirectScripts.detectOtherApp(fgaUid, useIpv6))
+        if (isOtherAppActive(conflict)) {
+            rollbackFailedApply(ERROR_OTHER_APP_ACTIVE)
+            return
+        }
+        if (!shouldProceed(expectedGen)) return
+
         val checkRes = runShell(RootRedirectScripts.checkChains(fgaUid, port, useIpv6))
         if (isApplyOk(checkRes)) {
             return
@@ -547,10 +572,14 @@ internal class RootCaptureRunner(
 
         if (!shouldProceed(expectedGen)) return
 
-        // Chain or jump missing while reading -> re-apply idempotently
+        // Chain, jump or REDIRECT missing while reading -> re-apply idempotently. The watchdog is started again
+        // in the same script (K2); startWatchdog first kills this app's previous watchdog, which only removes
+        // rules when its own checks fail, so the new rules are not taken away by it.
         flag.markMaybeActive()
-        val applyRes = runShell(RootRedirectScripts.apply(fgaUid, uids, port, useIpv6))
-        if (!isApplyOk(applyRes)) {
+        val applyRes = runShell(RootRedirectScripts.applyAndStartWatchdog(uids, port, fgaUid, useIpv6))
+        val applyDone = !applyRes.timedOut &&
+            applyRes.lines.any { it.trim() == RootRedirectScripts.MARKER_APPLY_OK }
+        if (!applyDone) {
             val step = parseFailStep(applyRes.lines)
             val errMsg = if (step != null) {
                 "루트 규칙 재적용 실패 (단계 $step)"
@@ -558,6 +587,10 @@ internal class RootCaptureRunner(
                 "루트 규칙 재적용 실패"
             }
             rollbackFailedApply(errMsg)
+            return
+        }
+        if (!isWatchdogOk(applyRes)) {
+            rollbackFailedApply("루트 감시 프로그램 재시작 실패")
             return
         }
         callbacks.onApplied(
