@@ -12,7 +12,7 @@ import javax.inject.Inject
 class SupportScoreSelection @Inject constructor(
     api: IFgoAutomataApi,
     private val supportPrefs: ISupportPreferences,
-    private val reader: SupportScoreReader
+    private val reader: ISupportScoreReader
 ) : IFgoAutomataApi by api {
     companion object {
         const val SCORE_SIMILARITY = 0.90

@@ -15,6 +15,8 @@ import io.github.fate_grand_automata.scripts.locations.IScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.locations.ScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.modules.RealSupportScreen
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
+import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
 import io.github.lib_automata.GameAreaManager
 import io.github.lib_automata.GestureService
 import io.github.lib_automata.OcrService
@@ -68,6 +70,11 @@ abstract class ScriptsModule {
     @ScriptScope
     @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
+
+    // Binds to the one scoped SupportScoreReader so a script run still has a single instance.
+    @ScriptScope
+    @Binds
+    abstract fun bindSupportScoreReader(reader: SupportScoreReader): ISupportScoreReader
 
     @ScriptScope
     @Binds
