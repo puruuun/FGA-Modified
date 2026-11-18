@@ -28,6 +28,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Test the CI scripts
+        # Before any script is used: a broken script must fail the gate, not misclassify.
+        run: python3 -m unittest discover -s tools/ci -p 'test_*.py'
       - name: Decide whether the change needs the build
         id: classify
         env:
@@ -63,6 +66,15 @@ jobs:
           [ "$code" = false ] || code=true
           echo "code=$code"
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          # The guard below checks the same range.
+          echo "range=$range" >> "$GITHUB_OUTPUT"
+      - name: Refuse model files, large files and build output
+        env:
+          RANGE: ${{ steps.classify.outputs.range }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: sh tools/ci/run_repo_guard.sh
 
   test-and-build:
     needs: changes
@@ -80,6 +92,13 @@ jobs:
         run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
+      - name: The APK holds no Rust library
+        # Design 0025, D-6 and D-7: only a build with the fga.native switch carries libfga_ffi.so.
+        run: |
+          set -eu
+          set -- app/build/outputs/apk/ci/*.apk
+          [ -e "$1" ] || { echo "No CI APK under app/build/outputs/apk/ci"; exit 1; }
+          python3 tools/ci/apk_check.py "$@"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:

@@ -24,6 +24,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # native-advisories.yml pins the same version; change both together.
   CARGO_DENY_VERSION: 0.21.0
   CARGO_NDK_VERSION: 4.1.2
 
