@@ -270,6 +270,31 @@ class CaptureOutsideSessionTest {
         assertEquals(370, session.openEntries.value.single().period.total.friendPoint)
     }
 
+    @Test fun failedLoginWithCacheDoesNotRepeatThePreviousGrant() {
+        response("login/top", outsideLogin(grant = 370))
+        session.setRunning(false)
+        session.setRunning(true)
+        val failedWithTime = """{"response":[{"nid":"login","resCode":"01"}],"cache":{"serverTime":12345}}"""
+        response("login/top", Json.parseToJsonElement(failedWithTime).jsonObject)
+        val failedWithTable = """{"response":[{"nid":"login","resCode":"01"}],"cache":{"updated":{"userItem":[{"userId":"fictionalA","itemId":100,"num":10}]}}}"""
+        response("login/top", Json.parseToJsonElement(failedWithTable).jsonObject)
+        assertTrue(session.openEntries.value.isEmpty())
+        session.setRunning(false)
+        assertEquals(1, logs.entries.size)
+    }
+
+    @Test fun twoSuccessfulLoginsEachRecordTheirOwnGrant() {
+        response("login/top", outsideLogin(grant = 370))
+        response("login/top", outsideLogin(grant = 50))
+        assertEquals(420, session.openEntries.value.single().period.total.friendPoint)
+    }
+
+    @Test fun zeroGrantLoginWithNoOpenPeriodCreatesNothing() {
+        response("login/top", outsideLogin(grant = 0))
+        assertTrue(session.openEntries.value.isEmpty())
+        assertFalse(pending.exists())
+    }
+
     @Test fun loginGrantThenOrdinaryFriendPointChangeIsNotCountedTwice() {
         response("login/top", outsideLogin(grant = 370))
         response("gacha/draw", outsideFriendPointSummon(friendPoint = 9800, includeCards = false))

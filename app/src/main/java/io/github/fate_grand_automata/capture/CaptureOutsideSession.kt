@@ -126,8 +126,10 @@ internal class CaptureOutsideSession(
             // A login replaces the account, so it is never diffed; the grant the server reports is the one change kept.
             checkpoint(response)
             val state = response.next
-            // A login that did not replace the snapshot leaves the old rawLoginResponse in place, which would repeat an old grant.
-            val grant = if (state != null && state !== response.previous) LoginGrant.friendPoints(state.rawLoginResponse) else 0L
+            // Only a replacing login builds a new rawLoginResponse. Every other path, even one that builds a new state
+            // (a failed login with cache.serverTime or updated tables), carries the previous String over, so reference
+            // identity tells this login apart from an inherited one. snapshotTime would miss two logins in one second.
+            val grant = if (state != null && state.rawLoginResponse !== response.previous?.rawLoginResponse) LoginGrant.friendPoints(state.rawLoginResponse) else 0L
             if (grant > 0) record(response, ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = grant))
             return
         }
