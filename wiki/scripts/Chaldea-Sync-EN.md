@@ -7,7 +7,7 @@ Uses Shizuku to read and write Chaldea's data directory (`/sdcard/Android/data/c
 ## Preparation
 
 1. Install and start **Shizuku** on your device (via Wireless debugging or root). Shizuku 13 or later is required.
-2. Turn on log collection on FGA's **Log collection** screen.
+2. Turn on log collection under **More options → Additional features → Log collection** ([Log Collection Setup](Log-Collection-Setup-EN.md)).
 3. Below on the same screen, under **Chaldea auto sync**, turn on **Sync into Chaldea automatically**.
 4. Turning the switch on brings up Shizuku's permission prompt for FGA—tap **Allow**. If Shizuku is not running yet, the prompt appears once Shizuku starts. If the prompt does not appear or no result returns, FGA rechecks when you return to FGA (up to twice per toggle); if it is still not allowed, grant permission inside the Shizuku app.
 5. Open Chaldea at least once so `userdata.json` exists. If the file is absent, FGA does not create it and displays `"Chaldea's data file was not found."`.

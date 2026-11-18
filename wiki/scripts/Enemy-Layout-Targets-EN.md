@@ -20,7 +20,7 @@ There are two Raid layouts:
 
 `tA`–`tC` are positioned on the overlapping area so they tap enemies in both layouts. The second row (`tD`–`tF`) is used only in the 6-slot layout.
 
-- `t10`, `t11`, and `t12` from earlier beta builds are read as `tA`, `tB`, and `tC`, and re-saving in the Skill Maker converts them to `tA`, `tB`, and `tC`. Combinations where another digit follows `t1`, such as `t14`, keep their original meaning (`t1` followed by Servant 4 NP).
+- `t10`, `t11`, and `t12` from earlier versions are read as `tA`, `tB`, and `tC`, and re-saving in the Skill Maker converts them to `tA`, `tB`, and `tC`. Combinations where another digit follows `t1`, such as `t14`, keep their original meaning (`t1` followed by Servant 4 NP).
 - Unknown codes (`t0`, `tX`, etc.) stop with a skill command parse error.
 - The same codes work on wide screens such as 21:9; positions shift automatically to match the aspect ratio.
 

@@ -1,8 +1,8 @@
-# Root Capture Mode (Per-App Transparent Redirect + Root Watchdog)
+# Root Capture Mode
 
-**More options → Additional features → Log collection → Connection mode → Root** is a capture mode for rooted devices that avoids occupying Android's VPN slot by redirecting TCP 443 traffic from the FGO app (UID) into FGA's internal transparent proxy (`127.0.0.1:<port>` and `[::1]:<port>`) **only while reading is turned on**.
+**More options → Additional features → Log collection → Connection mode → Root** uses per-app transparent redirection and a root watchdog on rooted devices to avoid occupying Android's VPN slot, redirecting TCP 443 traffic from the FGO app (UID) into FGA's internal transparent proxy (`127.0.0.1:<port>` and `[::1]:<port>`) **only while reading is turned on**.
 
-While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's proxy does not open a listening port, so FGO communicates directly without passing through FGA at all.
+For initial setup steps, see [Log Collection Setup](Log-Collection-Setup-EN.md). While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's proxy does not open a listening port, so FGO communicates directly without passing through FGA at all.
 
 ---
 
@@ -28,7 +28,8 @@ While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's pro
 
 ### Turning Reading On (`Turn reading on` / `Start log collection` on Main Screen)
 
-> Only one FGA app (stable or beta) can run root collection at a time. If another FGA app is already collecting through root, the second app shows an "another FGA app is collecting through root" message and does not start; it never touches the other app's rules. If two apps start at nearly the same moment, or another app starts while this one is collecting, the app that notices shows the same message and stops its own collection.
+!!! note "One FGA app at a time"
+    Only one FGA app (stable or beta) can run root collection at a time. If another FGA app is already collecting through root, the second app shows an "another FGA app is collecting through root" message and does not start; it never touches the other app's rules. If two apps start at nearly the same moment, or another app starts while this one is collecting, the app that notices shows the same message and stops its own collection.
 
 1. **Start proxy listener**: FGA opens the transparent TLS proxy on `127.0.0.1:<port>` and `[::1]:<port>` first.
 2. **Apply kernel rules (`FGA_CAP_<app UID>` chain)**:

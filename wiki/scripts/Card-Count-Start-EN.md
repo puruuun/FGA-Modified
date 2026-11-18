@@ -1,4 +1,6 @@
-# FGA(mod) Servant Condition Mode (up to three targets)
+# Servant Condition Mode
+
+Starts commands only when the hand satisfies the face-card conditions configured for up to three target frontline Servants.
 
 ## How to configure
 
@@ -7,7 +9,6 @@
    - **Any** counts all usable face cards belonging to that Servant; `B/A/Q` count Buster, Arts, and Quick cards respectively. Each color can only be added once, and tapping the color chip (`B` red, `A` blue, `Q` green) switches it to an unused color.
    - **Add condition** appends the first unused color with a count of 1. Tap `✕` to remove a row (`✕` is hidden when only one row remains).
    - The **AND / OR** toggle appears in the header only when there are 2 or more rows. Below the rows, a one-line summary such as `"Start when Buster 2+ and Arts 1+"` is displayed.
-   - Settings from the previous version (`beta.9`) are shown directly as rows: any non-zero card count `N` or color minimum becomes its own row, and if there is no `Any` row, no total-card-count condition is used.
 3. To also use a second target, select a Servant under **Second condition: target Servant** and configure its condition rows independently in the same way. Choosing **Not used** runs with a single condition.
    - A third target option (**Third condition: target Servant**) appears **only while the second condition is in use**. Configure its rows the same way; if the second condition is switched back to **Not used**, the third condition row is hidden and treated as off during execution (saved values are preserved).
    - Conditions are checked in the order **1st → 2nd → 3rd**, starting with the first setting whose condition is met. If any two active targets are set to the same Servant, the script stops instead of starting.
@@ -24,9 +25,9 @@
 
 The basic setting and setting 1 are not shown twice. Setting 2 appears when a second target is selected. In Basic mode, only the original settings appear. You can check each command's summary and priority state at its respective location.
 
-The original basic setting and setting 1 share the same stored data. Setting 2's command and priorities are stored separately, and setting 1's command is not copied automatically. Turning off the mode toggle or switching the second target to **Not used** preserves your saved settings. Previous setting 1 Spam and shuffle values remain as the shared settings, and old setting 2 Spam and shuffle values are no longer used.
+The original basic setting and setting 1 share the same stored data. Setting 2 and 3 commands and priorities are stored separately, and setting 1's command is not copied automatically. Turning off the mode toggle or switching a target to **Not used** preserves your saved settings.
 
-Face-card attacks while waiting use setting 1's priority. Party, Server, Support, Auto choose target, Spam mode, and Shuffle cards are all shared. The old long description text has been removed from the settings screen.
+Face-card attacks while waiting use setting 1's priority. Party, Server, Support, Auto choose target, Spam mode, and Shuffle cards are all shared.
 
 ## Shuffle and recheck when the first-turn condition is not met
 

@@ -1,14 +1,12 @@
 # Bond Point Tracking & MAX Stop
 
-**Starting in stable release 1.6.0, this is configured in the battle launcher.** **More options → Battle → Enable bond tracking** defaults to ON. Turning it off hides the Bond points block in the launcher and skips tracking and MAX stops. Saved per-config values are preserved and restored when turned back on.
+**More options → Battle → Enable bond tracking** defaults to ON. Turning it off hides the **Bond points** block in the battle launcher and skips tracking and MAX stops. Saved per-config values are preserved and restored when turned back on.
 
-Configure it under **Play button → Battle launcher → Bond points** (below **Item auto-use**). Select a battle config on the left, choose tracking, MAX stop, and any character slots to ignore, then tap **OK** to save to that battle config. Tapping **Cancel** discards changes to bond settings. Bond settings have been removed from the battle config editor screen. Supports KR and JP servers, preserving existing storage keys, values, copying, exporting, and importing. Tracking and MAX stop default to OFF.
+Configure it under **Play button → Battle launcher → Bond points** (below **Item auto-use**). Select a battle config on the left, choose tracking, MAX stop, and any character slots to ignore, then tap **OK** to save to that battle config. Tapping **Cancel** discards changes to bond settings. Supports KR and JP servers, preserving existing storage keys, values, copying, exporting, and importing. Tracking and MAX stop default to OFF.
 
 - **Track bond point gains**: Sums base and bonus gains from left to right for **Character 1, 2, 3, 4, 5** on the post-quest bond result screen. `+4,748(+2,660)` adds `7,408`.
 - **Stop when bond MAX is confirmed**: When MAX is confirmed for an unchecked character slot, stops on that quest's bond result screen without starting the next quest.
 - **Ignore MAX for checked characters**: Check boxes below the horizontal row of character slots (**Character 1–5**). **Checking Character 2 ignores Character 2's MAX and keeps farming.** All slots default to unchecked for new configs. This option does not turn off point tracking.
-
-Existing 0.9.0 stop behavior is preserved. Characters previously watched for stopping appear unchecked in the new ignore row. The server notice and long description below bond settings have been removed from the UI.
 
 **It does not read the pre-battle party screen or link slots to support positions.** Numbers refer to the five result-screen slots, not original party slots 1–6. Even if started from a quest start screen, mid-battle, or results screen, no prior party check is required. You are responsible for keeping party/result-screen order consistent. If you swap Servants mid-run, gains continue summing into the same result slot; stop and start a new run to track separately.
 

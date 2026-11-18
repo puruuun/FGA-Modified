@@ -1,12 +1,13 @@
 # Game Area
 
-> This is an experimental feature. The menu item is **Game area (experimental)** at the bottom of **More options → Additional features**.
+!!! note
+    This is an experimental feature. The menu item is **Game area (experimental)** at the bottom of **More options → Additional features**.
 
 Configure the bounds of the game screen under **More options → Additional features → Game area (experimental)**. Choose from **Default**, **Custom**, or your saved presets. The Surface Duo-specific option has been removed; if you previously used it, it is read as Default. Existing custom offsets are kept.
 
 ## Fitting in Split Screen
 
-### Calibrate from Screenshot — 1.7.0-beta.11
+### Calibrate from Screenshot
 
 On the JP or KR main screen, you can use **Calibrate from screenshot**.
 

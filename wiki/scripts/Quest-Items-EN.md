@@ -22,7 +22,7 @@ When **Enable Teapot/Storm Pod control** is turned off, all checking and togglin
 
 The launch sequence is **Support selection → 4 seconds → Party selection → 1 second → Item settings → 1 second → Quest Start**. Party selection retains its own 1.2-second and 1-second waits. After tapping Start, the existing flow follows: 2-second wait → boost item selection → story skip preparation → 5-second wait. These waits apply to all servers and scale with the general Wait Multiplier.
 
-**Since 1.6.7-beta.2, starting directly on the party confirmation screen is no longer supported.** Use the launch flow starting from support selection. If you already opened the item settings dialog manually, close it before starting.
+**Starting directly on the party confirmation screen is not supported.** Use the launch flow starting from support selection. If you already opened the item settings dialog manually, close it before starting.
 
 The script taps the identical-looking main button once to tell whether it is a direct-toggle control or opens a dialog. If direct-toggle, it checks the changed state and sets the requested final state; a direct control that already matched the desired state is restored with a second tap. Items are consumed only when Quest Start is pressed, so this probe tap does not spend them.
 
@@ -35,5 +35,3 @@ If the party screen has no item button, it starts normally. In quests offering o
 To allow launching even if the party title image does not match, the title check, up to 3-second retry, 2-second post-check wait, and skip log were removed. All servers proceed through the 4s → 1s → 1s sequence above. On servers other than KR/JP or when auto-control is disabled, item actions are skipped while the 1-second wait is kept.
 
 If an item icon or ON/OFF button is absent or uncertain, it proceeds to start without tapping items. Dialog title, Close button, and both switch checks are kept. If a transition, restoration, or close check fails after tapping an actual item button, it stops with the existing message (`Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.`).
-
-Saved-screen Android verification and live in-game verification are separate. The owner plans to verify the new launch sequence in-game together with the next feature update.

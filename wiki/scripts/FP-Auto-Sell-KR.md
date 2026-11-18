@@ -45,7 +45,3 @@ page=2 r3c4 present=true lock=Unlocked selected=false decision=select
 ```
 
 `?`는 판별 불가입니다. 게임이 선택을 거부한 카드는 `tap-rejected`로 기록하며 선택 수에서 빠집니다.
-
-### 1.7.0-beta.5 — 판매 목록 끝
-
-원본 FGA의 스크롤바 아래 끝 기준 이미지를 작은 영역에서 확인하면 현재 페이지 선택을 마친 뒤 `scrollbar-end`로 탐색을 종료합니다. 레일 부재로 종료하지 않으며 새 탭 없는 5페이지와 500페이지 안전 한도, 거부 탭 추론은 유지합니다.

@@ -23,11 +23,11 @@ This site is the user manual for **FGA(mod)**, a modified edition of [Fate/Grand
 
 - Development betas install as a **separate app** (`io.github.fate_grand_automata.beta`). Settings from the stable build are not migrated automatically.
 - Do not install APKs downloaded from anywhere other than GitHub Releases and Obtainium.
-- See the [Installation Guide](scripts/Installation-EN.md) for detailed installation and initial permission setup.
+- See the [Installation Guide](scripts/Installation-EN.md) for installation and initial permissions, [Log Collection Setup](scripts/Log-Collection-Setup-EN.md) to enable log collection, and [Import Original FGA Data](scripts/Original-FGA-Import-EN.md) to migrate from original FGA.
 
 ## Guides
 
-Feature-by-feature instructions are available under the **Guides** tab above. New features are automatically added to this site when released.
+Initial setup guides are under the **Getting Started** tab above, and feature-by-feature instructions are under the **Guides** tab. New features are automatically added to this site when released.
 
 ## Feedback & issues
 

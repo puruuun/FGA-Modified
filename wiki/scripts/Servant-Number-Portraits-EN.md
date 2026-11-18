@@ -1,6 +1,6 @@
 # Search and Save Support Images
 
-Added in the **1.2.1 development beta**, this feature lets you search for Servants and Craft Essences by collection number or name and save their support images named in the language configured for FGA. Stable release `1.1.0` includes the earlier Servant-number importer.
+Search for Servants and Craft Essences by collection number or name and save their support recognition images named in the language configured for FGA.
 
 ## How to use
 
@@ -14,7 +14,7 @@ Images are saved under your chosen FGA folder at `support/servant/No.<number> <n
 
 ## Downloading images from the Preferred Servants / Preferred CEs picker
 
-Since **1.8.0**, you can open the same search-and-save dialog directly from **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker under **Battle Configs → Support**. From the Servant picker, **Servant** is preselected; from the CE picker, **Craft Essence** is preselected. This button is not present on the NP or Friend name pickers.
+You can open the same search-and-save dialog directly from **Download images** at the bottom left of the **Preferred Servants** or **Preferred CEs** picker under **Battle Configs → Support**. From the Servant picker, **Servant** is preselected; from the CE picker, **Craft Essence** is preselected. This button is not present on the NP or Friend name pickers.
 
 Saving one or more images reloads the list and immediately checks the saved folder while keeping your previously checked entries in the open picker. If you switched types inside the search dialog before saving, only entries matching the current picker's type are checked. You must tap **OK** to apply the selection to your config; tapping **Cancel** discards selection changes for this dialog, though the downloaded images stay in the folder. Simply closing the search dialog, failing to save, or having no storage folder set leaves selections unchanged.
 
@@ -28,7 +28,7 @@ For example, in Korean mode `No.90` is saved as `No.90 네로 클라우디우스
 
 Collection numbers **prioritize the JP version**. If there is no search result in JP, lookup falls back to KR and then NA. When the same internal ID exists in JP, the JP collection number is kept; region-exclusive entries use that region's number. Cross-region name mapping matches by internal ID rather than collection number, so names from regions with different numbering will not be attached wrongly. Search matches official names and partial names, and you can search using Japanese names as well. Whitespace, common punctuation, English case, and full-width/half-width differences are normalized. Korean names are never guessed automatically from community nicknames or machine translation.
 
-**Korean name search for KR-unreleased Servants — added in 1.7.1 beta.** Servants released on JP but not yet on KR have no official Korean name. You can still search for them using the built-in Korean name dictionary (based on Namuwiki, including Ascension-specific names)—for example, `히폴` → Hippolyta (`히폴리테`), `카구야` → `No.448`. Pre-release names in the dictionary (e.g., `큐티 코마` → Dynamite Rikyu / `다이너마이트 리큐`) are used only until the Servant is added to the KR collection; once an official KR name exists, those entries are ignored and only the official name is searched. A separate list of nicknames (`김충선` → Saika Magoichi / `사이카 마고이치`, `버미육` → Matsunaga Hisahide / `마츠나가 히사히데`) keeps working after KR release. Displayed names, collection numbers, and saved folder names still follow the official Japanese names. For Servants not yet in the dictionary, search by Japanese name or collection number. The dictionary currently covers `No.438–487` and continues to expand in later versions. It is not used for number search or Craft Essence search.
+**Korean name search for KR-unreleased Servants.** Servants released on JP but not yet on KR have no official Korean name. You can still search for them using the built-in Korean name dictionary (based on Namuwiki, including Ascension-specific names)—for example, `히폴` → Hippolyta (`히폴리테`), `카구야` → `No.448`. Pre-release names in the dictionary (e.g., `큐티 코마` → Dynamite Rikyu / `다이너마이트 리큐`) are used only until the Servant is added to the KR collection; once an official KR name exists, those entries are ignored and only the official name is searched. A separate list of nicknames (`김충선` → Saika Magoichi / `사이카 마고이치`, `버미육` → Matsunaga Hisahide / `마츠나가 히사히데`) keeps working after KR release. Displayed names, collection numbers, and saved folder names still follow the official Japanese names. For Servants not yet in the dictionary, search by Japanese name or collection number. The dictionary currently covers `No.438–487` and continues to expand in later versions. It is not used for number search or Craft Essence search.
 
 **Official names that change across Ascensions, Costumes, or True Name reveals search as the same Servant.** For example, both `Fairy Knight Lancelot` (`요정기사 랜슬롯`) and `Mélusine` (`멜뤼진`) find `No.312`, and searching `Mélusine` (`멜뤼진`) lists other classes sharing that name as separate candidates. Folders use the canonical collection name rather than your search query, so changing the search term never creates duplicate folders.
 
@@ -49,16 +49,3 @@ The KR/JP Servant and CE lists and extra name list used for search are cached in
 ## Auto-selecting Support Class from Preferred Servants
 
 When **Preferred Servants** in a battle config is set to **exactly one Servant**, that Servant's class tab is selected automatically as the Support Class (for both built-in images and `No.<number>` folders). Shielder, Ruler, Avenger, Moon Cancer, Alter Ego, Foreigner, Pretender, and Beast classes map to the **Extra** tab. It does not change when 0 or 2+ Servants are selected, for custom user folders, when the class is unknown, or when only CEs change; any class you pick manually stays until you change the Servant selection again.
-
-## Stable vs. Beta builds
-
-| Item | Stable | Beta |
-|---|---|---|
-| App name | FGA(mod) | FGA(beta) |
-| App ID | `io.github.fate_grand_automata.cardcount` | `io.github.fate_grand_automata.beta` |
-| Distribution | Stable GitHub Releases | Local APK direct install |
-| Obtainium | [Add stable](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D) | Direct install |
-
-Obtainium provides stable releases only. Download development beta APKs to your PC or install them directly on BlueStacks.
-
-[Stable Obtainium configuration](../../obtainium.json)
