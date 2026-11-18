@@ -43,6 +43,22 @@ class SkillLevelLocations @Inject constructor(transforms: IScriptAreaTransforms)
     private fun slotX(mode: SkillLevelMode) = if (mode == SkillLevelMode.Skill) skillSlotX else appendSlotX
     /** Icon centre, tapped to select the slot (icon centre y is 261 at 720p). */
     fun slotClick(mode: SkillLevelMode, slot: Int) = Location((slotX(mode)[slot] - 640) * 2, 522 - slotRise).xFromCenter()
+    /**
+     * Four sample lines around the slot icon, in the order top, bottom, left, right: each is 73 px long at 720p (146 px at 1440p),
+     * 1 px thick, centred on its side and 60 px (720p) from the icon centre, where a selected slot shows its glow (#504).
+     * Same centre as [slotClick], so they follow [slotRise] and the centre-based X.
+     */
+    fun slotGlowSides(mode: SkillLevelMode, slot: Int): List<Region> {
+        val cx = (slotX(mode)[slot] - 640) * 2
+        val cy = 522 - slotRise
+        return listOf(
+            Region(cx - 72, cy - 120, 146, 2).xFromCenter(),
+            Region(cx - 72, cy + 120, 146, 2).xFromCenter(),
+            Region(cx - 120, cy - 72, 2, 146).xFromCenter(),
+            Region(cx + 120, cy - 72, 2, 146).xFromCenter()
+        )
+    }
+
     /** The padlock sits in the icon centre. */
     fun slotLock(mode: SkillLevelMode, slot: Int) = Region((slotX(mode)[slot] - 40 - 640) * 2, 410 - slotRise, 160, 224).xFromCenter()
 

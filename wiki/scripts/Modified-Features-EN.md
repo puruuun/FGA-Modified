@@ -147,7 +147,7 @@ When using a Command Spell in battle, instead of template-matching the `"Command
 
 ### Master Skill Menu Delay
 
-When a master skill (or Order Change) is used, the wait after pressing the Master Skill button, before the menu is used, can be changed under **Fine tune → Wait → Master Skill Menu Delay**. The range is 300–3000ms in 100ms steps, and the default is 1500ms, which behaves exactly as before. Setting it too low can make master skills fail on slow devices.
+When a master skill (or Order Change) is used, the wait after pressing the Master Skill button, before the menu is used, can be changed under **Fine tune → Wait → Master Skill Menu Delay**. The range is 300–3000ms in 100ms steps, and the default is 1500ms, which behaves exactly as before. Setting it too low can make master skills fail on slow devices. The **Wait Multiplier** setting also scales this wait, as it did for the fixed 1.5 s; for example, 300 ms at 50% waits 150 ms.
 
 ## Other Features
 

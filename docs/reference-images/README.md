@@ -14,7 +14,7 @@ Device-screen fixtures for the on-device reader QA. The authoritative check is `
 | `cases/bond.json` | bond | `tools/bond-image-cases.json` (20) | 20 |
 | `cases/questItems.json` | questItems | `quest-items-crops.json` (38 crops, 13 screens) | 13 |
 | `cases/noblePhantasm.json` | noblePhantasm | `Jp/np-20261018/`, `Jp/np-20261018-r3/` (owner JP screens, names/comments masked; existing 3x3 and NP-only cases, eight normal rows, Grand/normal Olga cross-layout matches and production maker crop checks) | 18 |
-| `cases/skillLevel.json` | skillLevel | 0008 owner screens `Jp/skill-level/`, `Kr/skill-level/` (24 frames normalized to 1280x720 by `tools/device-qa/normalize_skill_level.py`; title/mode, instruction band, confirm dialog, `Lv.current` OCR, append padlocks, result) | 63 |
+| `cases/skillLevel.json` | skillLevel | 0008 owner screens `Jp/skill-level/`, `Kr/skill-level/` (24 frames normalized to 1280x720 by `tools/device-qa/normalize_skill_level.py`; title/mode, instruction band, confirm dialog, `Lv.current` OCR, append padlocks, result), plus #504 selected-slot glow: 16 icon-row crops `Jp/skill-select/`, `Kr/skill-select/` (region720 `[400, 186, 860, 150]`, file names carry mode and selected slot) and 19 full frames with a selected slot, the same files `cases/skillLevelPanel.json` uses (14 at 21:9, 5 at 16:9) | 194 |
 
 Run one suite or all of them:
 
