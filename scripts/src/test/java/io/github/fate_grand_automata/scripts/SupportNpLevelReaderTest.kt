@@ -286,6 +286,36 @@ class SupportNpLevelReaderTest {
     }
 
     @Test
+    fun `NP suffix right overhang is pinned at 12 px at 1440p`() {
+        assertThat(SupportNpLayout.SUFFIX_RIGHT_OVERHANG).isEqualTo(12)
+    }
+
+    @Test
+    fun `suffix ending exactly 12 px past the NP search right edge is read`() {
+        val f = Fixture()
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        // Search right is 1620 at 1440p. Suffix right = prefix.x + 58 + 38 = 1536 + 96 = 1632 = 1620 + 12.
+        val edgePrefix = Match(Region(1536, 680, 58, 46), 0.78)
+        every { with(f.api) { f.search.findAll(f.scaledWhite, any()) } } returns listOf(edgePrefix)
+        every { f.ocr.detectTextLine(f.captured, any()) } returns OcrText("Lv.5", 92)
+        assertThat(f.reader.read(f.bounds)).isEqualTo(5)
+        verify(exactly = 1) {
+            with(f.api) { SupportNpLayout.suffixRegion(edgePrefix.region).getPattern("support_np_level") }
+        }
+    }
+
+    @Test
+    fun `suffix ending 13 px past the NP search right edge is rejected without OCR`() {
+        val f = Fixture()
+        every { with(f.api) { f.search.findAll(f.white, any()) } } returns emptyList()
+        // Suffix right = 1537 + 58 + 38 = 1633 = 1620 + 13.
+        val pastEdgePrefix = Match(Region(1537, 680, 58, 46), 0.78)
+        every { with(f.api) { f.search.findAll(f.scaledWhite, any()) } } returns listOf(pastEdgePrefix)
+        assertThat(f.reader.read(f.bounds)).isNull()
+        verify(exactly = 0) { f.ocr.detectTextLine(any(), any()) }
+    }
+
+    @Test
     fun `width-only recovery match OCRs unresized crop and closes all resized template copies`() {
         val f = Fixture()
         val widthScale = 0.85
