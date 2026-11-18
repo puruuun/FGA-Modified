@@ -10,7 +10,7 @@
 
 - **[最新の正式版 APK](https://github.com/puruuun/FGA-Modified/releases/latest)**: GitHub Releases から `FGA-mod-<version>-arm.apk` をダウンロードしてインストールします。
 - **Obtainium**: ソース URL `https://github.com/puruuun/FGA-Modified` を追加するか、[obtainium.json](../../obtainium.json) をインポートして登録できます。Obtainium では正式版のみ提供されます（「プレリリースを含む」はオフにしてください）。
-- **開発ベータ版 APK**: [リリース一覧](https://github.com/puruuun/FGA-Modified/releases) で `beta` が付いたバージョンです。正式版（`io.github.fate_grand_automata.cardcount`）とは別のアプリ（`io.github.fate_grand_automata.beta`、アプリ名 `FGA Beta`）としてインストールされます。
+- **開発ベータ版 APK**: [リリース一覧](https://github.com/puruuun/FGA-Modified/releases) で `beta` が付いたバージョンです。正式版（`io.github.fate_grand_automata.cardcount`）とは別のアプリ（`io.github.fate_grand_automata.beta`、アプリ名 `FGA(beta)`）としてインストールされます。
 
 !!! warning "入手元に関する注意"
     GitHub Releases および Obtainium 以外から入手した APK はインストールしないでください。
@@ -31,6 +31,8 @@
 3. **保存フォルダの設定**: **その他の設定 → ストレージ** から、サポート画像やドロップ画像などを保存するフォルダを選択します。
 4. **バッテリー最適化の除外**: **その他の設定 → その他 → バッテリー使用の最適化** を開き、FGA(mod) を「制限なし（最適化しない）」に設定してください。設定しない場合、バックグラウンドで動作が停止することがあります。
 
+ログ収集機能も利用する場合は、続けて [ログ収集の初期設定](Log-Collection-Setup-JA.md) をご覧ください。
+
 ## ライセンス
 
-アプリ内の **その他の設定 → その他** からライセンス表示を確認できます。オリジナル版 FGA と同じく MIT ライセンスで配布されています。
+アプリ内の **その他の設定 → その他 → ライセンス** からライセンス表示を確認できます。オリジナル版 FGA と同じく MIT ライセンスで配布されています。

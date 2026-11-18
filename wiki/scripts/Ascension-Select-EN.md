@@ -1,6 +1,6 @@
-# Re-ascension (Servant + NP Name)
+# Re-ascension
 
-Use this when you need to distinguish a Support Servant whose Noble Phantasm changes by Ascension. For example, Mélusine (`メリュジーヌ`) switches between `"今は知らず、無垢なる湖光"` (Arts) and `"誰も知らぬ、無垢なる鼓動"` (Buster) depending on Ascension. Because the NP name alone cannot distinguish her from another Servant with the same NP name, the captured image includes **both the Servant name row and the NP name row**.
+Use this to distinguish a Support Servant whose Noble Phantasm changes by Ascension using a **Servant + NP name** image. For example, Mélusine (`メリュジーヌ`) switches between `"今は知らず、無垢なる湖光"` (Arts) and `"誰も知らぬ、無垢なる鼓動"` (Buster) depending on Ascension. Because the NP name alone cannot distinguish her from another Servant with the same NP name, the captured image includes **both the Servant name row and the NP name row**.
 
 FGA matches the screen image directly. It does not OCR the text, so the text language and NP level (`Lv.`) do not matter.
 
@@ -22,6 +22,8 @@ The cropped image spans from the top of the Servant name row to the bottom of th
 
 Open **Battle Configs → Support → Preferred**, and select the saved name under **Re-ascension (servant + NP name)** directly below **Preferred Servants**. Saved names appear as-is, such as `JP) メリュジーヌ 今は知らず`. The prefix is only for display and is not a server filter. Selecting multiple entries matches any support matching at least one of them. Leaving nothing selected disables this check.
 
+Whenever **Preferred Servants** is changed to a different set, **Re-ascension (servant + NP name)** resets to none automatically, because NP images belong to the chosen Servant. Keeping the same Servant(s) unchanged preserves your current re-ascension selection. The same rule applies when importing a support from Chaldea.
+
 ## Using together with Preferred Servants
 
 Even though the image includes the Servant's name, **it is recommended to select Preferred Servants as well**. Filtering by Preferred Servants first narrows down candidates so the re-ascension check is faster and more accurate.
@@ -41,7 +43,3 @@ The check order is Servant → Re-ascension → Score → CE → Friend → NP l
 
 - The `FGA.SupportNp` log records `NP name best score` and `matched` for each row. If a support that should match logs `matched: false` with a score near `0.85`, re-create the image.
 - If no entries appear in the naming dialog, that version of the Support Image Maker was not used. Run the maker again.
-
-## 1.6.2 — Reset re-ascension when Preferred Servants changes
-
-Whenever **Preferred Servants** is changed to a different set, **Re-ascension (servant + NP name)** resets to none, because NP images belong to the chosen Servant. Confirming the dialog with the same Servant(s) unchanged preserves your current re-ascension selection. The same rule applies when importing a support from Chaldea.

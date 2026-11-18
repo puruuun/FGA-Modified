@@ -7,7 +7,7 @@ Shizuku로 Chaldea의 데이터 폴더(`/sdcard/Android/data/cc.narumi.chaldea/f
 ## 준비
 
 1. 기기에 **Shizuku** 앱을 설치하고 실행합니다(무선 디버깅 또는 루트로 시작). Shizuku 13 이상이 필요합니다.
-2. FGA의 **로그 수집** 화면에서 로그 수집을 켭니다.
+2. FGA의 **더 많은 옵션 → 추가기능 → 로그 수집**에서 로그 수집을 켭니다([로그 수집 시작 설정](Log-Collection-Setup-KR.md)).
 3. 같은 화면 아래의 **Chaldea 자동 반영** 구역에서 **Chaldea에 자동으로 반영** 스위치를 켭니다.
 4. 스위치를 켜면 Shizuku가 FGA의 권한을 묻는 창이 뜹니다. **허용**하세요. Shizuku가 아직 실행 중이 아니면 실행된 뒤에 창이 뜹니다. 창이 뜨지 않거나 결과가 돌아오지 않으면 FGA 화면으로 돌아올 때 다시 확인하며(스위치를 켤 때마다 최대 2번), 그래도 허용되지 않았다면 Shizuku 앱에서 FGA를 허용하세요.
 5. Chaldea를 한 번 이상 실행해 `userdata.json`이 만들어져 있어야 합니다. 파일이 없으면 FGA는 새로 만들지 않고 "Chaldea 데이터 파일을 찾을 수 없습니다"를 표시합니다.

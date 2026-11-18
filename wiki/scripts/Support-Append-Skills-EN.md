@@ -4,7 +4,7 @@ Selects supports by checking whether the 5 Append Skill slots of your Preferred 
 
 ## How to configure
 
-1. Under **Support selection → Preferred Servants** in your battle config, choose your Servant and configure the 3 normal **Max Skills** slots.
+1. Under **Battle Configs → Support → Preferred Servants**, choose your Servant and configure the 3 normal **Max Skills** slots.
 2. Turn on **Check Append Skills** (off by default).
 3. From left to right, set Append Skill slots 1–5 to `10` or `x`.
 

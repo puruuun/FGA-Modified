@@ -23,11 +23,14 @@ If all slots are off, the **OK** button is disabled. Every time the setup dialog
 
 ## Behavior and Safeguards
 
-### Beta Only: Check Level Reading Only (1.6.8-beta.2)
+### Beta Only: Check Level Reading Only
 
-To compare panel and dialog level readings without spending materials, select a Servant on the Skill/Append Enhancement screen, tap the FGA Play button, and check **Check level reading only (no enhancement)**. Target levels are ignored and every slot is checked once from left to right. This option always defaults to unchecked and is not saved. It is not present in Stable builds.
+To compare panel and dialog level readings without spending materials, select a Servant on the Skill/Append Enhancement screen, tap the FGA Play button, and check **Check level reading only (no enhancement)**. Target levels are ignored and every slot—starting with slot 1—is checked once from left to right. This option always defaults to unchecked and is not saved. It is not present in Stable builds.
 
 Locked slots are never unlocked. Any slot showing a lock icon is not tapped, and if after selecting a slot the panel read detects an Unlock button or lock evidence on the panel, nothing further is tapped. For remaining slots, it taps the Enhance button, reads the confirmation dialog, and **always cancels**. Even when the panel reads 10, it still attempts the dialog comparison. Any unexpected dialog is also canceled, and if canceling fails, the entire run aborts. Confirmation of enhancement is blocked in code. If no confirmation dialog appears, it logs `max` or `no-response` depending on whether the Max Level button is visible. Insufficient materials are not distinguished separately.
+
+- **Append panel reading**: Reads each Append slot first using its own sample (requiring score 0.70, margin 0.10, two-color agreement, and no conflict with a confirmed read from another slot's sample), falling back to secondary yellow/gold digit reading if needed; if both abstain, it skips using the panel read.
+- **One-side dialog inference**: If only one side of the confirmation dialog (current or next) is reliably read, the other side is inferred as **next = current + 1** and logged as `dialog=9(inferred)` or `dialog=8(next-inferred)`. When both sides are read and non-consecutive, inference never overwrites them, and any read or inferred current level of `0` cancels to prevent unlocking.
 
 The exit dialog and `SkillLevel` log record one line per slot as shown below. `slot` is 1-based, and Append slots also show `score`/`margin`.
 
@@ -45,15 +48,7 @@ slot=1 panel=3 dialog=unread verdict=panel-only reason=cancelled score=0.9 margi
 
 `panel=abstain:<reason>` means panel reading abstained, `dialog=unread` means no valid level was read from the open dialog, and `dialog=-` means the dialog did not open or was not opened. `reason=unexpected-dialog` means the dialog was canceled because it was not an enhancement confirmation dialog, and `cancel-failed` means the run stopped because canceling failed.
 
-**If you get `mismatch` or `both-unread`**, please send: app version, KR/JP server, Skill/Append mode, slot number, actual level, screen resolution, raw screenshots of the enhancement screen showing the selected slot and (if possible) the confirmation dialog, plus the full `SkillLevel` log and exit summary from that run. Do not tap Confirm enhancement to reproduce it. Live in-game verification of check mode is performed by the owner.
-
-From 1.6.8-beta.3, panel digit reading for yellow/gold Append icons has been improved. If the two color readings disagree or score/margin is insufficient, it still abstains.
-
-From 1.6.8-beta.4, Append slots are read first using each slot's own sample. It abstains if the reading differs from a confirmed reading obtained from another slot's sample, and self-reading also requires score 0.70, margin 0.10, and agreement between the two color candidates. When self-reading abstains, the existing beta.3 reader serves as fallback, which must also pass the same two-color agreement, score, and margin criteria. Please verify KR and JP 16:9 and wide screens—especially slots 2 and 4—using **Check level reading only (no enhancement)** mode. It may still abstain on some saved screens or other unseen layouts.
-
-From 1.6.8-beta.5, text and color of the banner above the slots are not checked. Slot 1 also attempts dialog comparison in the same order as the other slots.
-
-From 1.6.8-beta.6, if only one side of the confirmation dialog (current or next) is reliably read, the other side is inferred as **next = current + 1**. Inferred current levels appear in the exit dialog and logs as `dialog=9(inferred)`, and inferred next levels as `dialog=8(next-inferred)`. If both sides are read and are not consecutive, inference never overwrites them. A read or inferred current level of 0 cancels to prevent unlocking, and normal enhancement's panel mismatch and level-increase checks still apply.
+**If you get `mismatch` or `both-unread`**, please send: app version, KR/JP server, Skill/Append mode, slot number, actual level, screen resolution, raw screenshots of the enhancement screen showing the selected slot and (if possible) the confirmation dialog, plus the full `SkillLevel` log and exit summary from that run. Do not tap Confirm enhancement to reproduce it.
 
 ### Normal Enhancement
 
@@ -63,7 +58,11 @@ For each slot, the script repeats the following:
 2. Read the selected slot's panel level and check for the Unlock button and panel lock evidence. If locked, skip the slot.
 3. If the panel reads 10 reliably, stop that slot with `"max level"`; if at or above the target, `"target reached"`; if not exactly 1 higher than the level before the previous enhancement, `"level did not go up, stopped"`. In these cases, the Enhance button is not tapped. Ambiguous panel values are not used.
 4. Check right before tapping that the button is not an Unlock button, then tap the bottom-right button **position**. After **waiting 0.4 s**, wait up to 2 s for the enhancement confirmation dialog. If none appears, finish the slot with `"max level"` if the max-level button is visible, or `"cannot enhance"` otherwise—except if the previous confirmation already reached the target, in which case `"target reached"` is kept. Insufficient materials, QP, or coins are not distinguished separately. In a dialog verified to have an enhancement title, read `Lv.<current> › Lv.<next>` and compare with the panel; if they differ, cancel. If dialog current 1–9 and next = current + 1 are confirmed, use those values. If only one side is confirmed, infer the other by ±1; if neither side can be read but the panel is reliable, use panel current and current + 1. If the panel is ambiguous, rely on the dialog alone. Confirm is tapped **only when** the chosen current level is **less than the target** and, after the first enhancement, **is exactly 1 higher than before the previous enhancement**.
-5. No extra delay is added after tapping Confirm. When **Cancel is tapped** upon reaching the target, **wait 0.4 s** before moving to the next slot. After Confirm, tap the top-right title area every 0.5 s to skip the animation and result screen, waiting up to 20 s for the skill enhancement screen to return; if exceeded, stop. If the connection error dialog's retry button (KR `다시 시도`, JP `やり直す`) appears during this wait, tap it up to 3 times and restart the 20 s count; if it appears a 4th time, stop without tapping it. In Skill mode, if during this wait the instruction text is visible while the `서번트 재선택` / `サーヴァント再選択` button is absent on two consecutive checks (0.5 s apart), it stops right there with the deselected reason below—because the game deselects the Servant once all three skills reach level 10. Append mode is unchanged.
+5. **After Confirm or Cancel**:
+   - When **Cancel is tapped** upon reaching the target, **wait 0.4 s** before moving to the next slot; no extra delay is added after tapping Confirm.
+   - After Confirm, tap the top-right title area every 0.5 s to skip the animation and result screen, waiting up to 20 s for the skill enhancement screen to return (stops if exceeded).
+   - If the connection error dialog's retry button (KR `다시 시도`, JP `やり直す`) appears during this wait, tap it up to 3 times and restart the 20 s count; if it appears a 4th time, stop without tapping it.
+   - In Skill mode, if during this wait the instruction text is visible while the `서번트 재선택` / `サーヴァント再選択` button is absent on two consecutive checks (0.5 s apart), it stops right there with the deselected reason below—because the game deselects the Servant once all three skills reach level 10. Append mode is unchanged.
 
 For temporary welfare Servants joining for a limited time, an extra notice dialog appears before the enhancement confirmation dialog. When that dialog's right button (`실행` / `実行する`) is visible, it taps it to proceed (whenever visible, same as upstream FGA's Servant enhancement), and then applies the same level checks above to the subsequent enhancement confirmation dialog. If another dialog appears without the confirm/execute button, it cancels without confirming. Verified on JP and KR servers; recognition reuses the same `실행` / `実行する` button image as limited-time Servant level-up.
 
@@ -124,21 +123,5 @@ Each round logs `panel=<level|abstain:<reason>|locked> dialog=<level|unread> sou
 
 ## Known Limitations
 
-- Verified by device QA across 16 confirmation dialogs (KR/JP) covering current levels 1–9 and next levels 2–10, including two-digit `10`. For digit `9`, when OCR fails, shape matching is used as a fallback and rejected if ambiguous. From 1.6.8-beta.1, failed dialog reads fall back to a reliable panel level (1–9); the dialog `0` check and enhancement-title check remain intact.
-- In beta.2 JP, the owner confirmed one slot upgraded by target = current + 1, though intermediate errors also occurred whose cause is not yet finalized. In beta.3, the owner confirmed normal operation on both JP and KR Skill screens. Append enhancement has not yet been run live in-game. 1.6.1-beta.2 separately checked positions of the five slots, four locks, dialog, and results on a 2560×1080 KR Append capture; locked slots are skipped and never unlocked. Device QA for this version and wide-screen live in-game runs are pending.
-
-### 1.6.2-beta.4
-
-Widened the digit region where the top of next level `10` was clipped in JP tablet Append Skill confirmation dialogs. `9→10` can now be confirmed, and it still stops as before if current and next levels are not confirmed.
-
-### 1.6.2-beta.9 — Tablet Append 2→3
-
-Narrowed the current-digit region to the digit column on KR tablet confirmation dialogs, reducing misreads of `2` as `4` caused by the `Lv.` prefix and background slot art. Confirmed reading of current/next levels and the **next = current + 1** rule remain unchanged, canceling if ambiguous.
-
-### 1.6.2 — KR/JP Append Digit Reading
-
-Added Append-specific binarization conditions where backgrounds merged into digits such as KR `7→8`. The current-digit box is shifted slightly left without increasing width to give contour margin. Checked on KR/JP wide screens from `1→2` through `9→10` and a saved BlueStacks `7→8` screen; the wide-screen samples were downscaled by upload. Normal Skill mode keeps existing thresholds. Multiple agreeing reads and the **next = current + 1** condition remain required, canceling whenever uncertain.
-
-### 1.6.8-beta.1 — Panel and Dialog Cross-Check
-
-When a semi-transparent KR confirmation dialog cannot be read, the selected slot's panel level is used as a fallback. When both readings are confirmed, they must match; otherwise it cancels without enhancing. Panel acceptance criteria were not relaxed. In particular, 16:9 Append slot 4 may still abstain, and real 16:10 captures have not yet been verified. Live in-game KR Skill/Append fallback behavior and JP regression checks still require owner verification.
+- When a semi-transparent confirmation dialog cannot be reliably read, FGA falls back to a reliable panel level (1–9) when available. When both readings are confirmed, they must agree; otherwise it cancels without enhancing. For digit `9` in the dialog, shape matching assists if OCR misses and is rejected if ambiguous.
+- Depending on screen aspect ratio and resolution (such as Append slot 4 on 16:9), panel reading may abstain; whenever readings are uncertain or disagree, the script safely cancels or stops rather than guessing.

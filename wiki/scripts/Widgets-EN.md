@@ -2,7 +2,7 @@
 
 You can place two FGA widgets on your home screen: a 1x1 widget to start and stop the FGA service, and an Account info widget that displays AP for your collected accounts. Both widgets default to a dark navy card style, and you can choose a light theme and background opacity in [Widget settings](#widget-settings).
 
-**Targets the KR (Korean) and official JP (Japanese) servers.** Account AP data appears on Android 10 and later once you enable [Log collection](Gains-Tracker-EN.md) and capture at least one account.
+**Targets the KR (Korean) and official JP (Japanese) servers.** Account AP data appears on Android 10 and later once you enable [Log collection](Gains-Tracker-EN.md) and capture at least one account. For initial setup, see [Log Collection Setup](Log-Collection-Setup-EN.md).
 
 ## Adding a Widget
 

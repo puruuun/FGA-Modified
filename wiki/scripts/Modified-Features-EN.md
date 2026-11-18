@@ -1,6 +1,6 @@
 # FGA(mod) Detailed Guide
 
-[Back to README](../../README.en.md)
+If you are new here, start with [Installation Guide](Installation-EN.md) and [Log Collection Setup](Log-Collection-Setup-EN.md).
 
 **Testing is limited to the KR (Korean) and JP (Japanese) servers. Behavior on other servers has not been verified.**
 
@@ -8,7 +8,7 @@ Check each feature's dedicated page for detailed settings. This page provides an
 
 ## Game Area
 
-Under **More options → Additional features → Game area**, you can adjust custom offsets while previewing the red configured area and green actual recognition area. In split screen, align the green border with the edges of the game image. [Details](Game-Area-Preview-EN.md)
+Under **More options → Additional features → Game area (experimental)**, you can adjust custom offsets while previewing the red configured area and green actual recognition area. In split screen, align the green border with the edges of the game image. [Details](Game-Area-Preview-EN.md)
 
 ## Hakuno Shuffle
 
@@ -49,13 +49,13 @@ You can add a second target Servant and required card count. Both conditions are
 
 Once a setting is chosen, it stays active until that battle ends; the next run rechecks conditions from scratch. Set the second target to **Not used** for single-condition mode. Selecting the same Servant for both conditions prevents starting.
 
-When the second condition is active, you can also add a third condition (checked in `1 → 2 → 3` order, starting the first setting met). The third condition has its own command and card priorities; see [Card-Count Start](Card-Count-Start-EN.md) for full details.
+When the second condition is active, you can also add a third condition (checked in `1 → 2 → 3` order, starting the first setting met). The third condition has its own command and card priorities; see [Servant Condition Mode](Card-Count-Start-EN.md) for full details.
 
 <a id="separate-settings"></a>
 
 ### Per-Condition Command and Card Settings
 
-Setting 1 and Setting 2 store separate **Command, Card Priority, Use Servant Priority, Brave Chains, and Rearrange Cards**. The default config and Setting 1 share the same values, and both settings are included in copy, export, and import.
+Each enabled start condition stores its own **Command, Card Priority, Use Servant Priority, Brave Chains, and Rearrange Cards**. Default and Setting 1 share the same values, and copy, export, and import include all condition settings.
 
 <a id="command-timing"></a>
 
@@ -89,11 +89,11 @@ Enabling **Support → Preferred → Friend → Send friend request after quest*
 
 If the other player's friend list is full and the request prompt remains on screen, FGA checks again 1 second later and declines.
 
-<a id="support-append"></a>
-
 ### Downloading Preferred Servant / CE Images
 
-Since 1.8.0, **Download images** at the bottom-left of the **Preferred Servants / Preferred CEs** pickers under Battle Config → Support opens the search-and-save dialog directly. Newly saved folders are automatically added to your checked selection while keeping existing checks. Tap **OK** to save into the config; downloaded images remain even if you tap **Cancel**. [Details](Servant-Number-Portraits-EN.md)
+**Download images** at the bottom-left of the **Preferred Servants / Preferred CEs** pickers under **Battle Configs → \<config\> → Support** opens the search-and-save dialog directly. Newly saved folders are automatically added to your checked selection while keeping existing checks. Tap **OK** to save into the config; downloaded images remain even if you tap **Cancel**. [Details](Servant-Number-Portraits-EN.md)
+
+<a id="support-append"></a>
 
 ### Support Append Skills
 
@@ -153,7 +153,7 @@ When a master skill (or Order Change) is used, the wait after pressing the Maste
 
 App language selection moved to **More options → Advanced → App Language**. Under **More options → Advanced → Dark mode**, you can pick **Follow system** (default), **Light**, or **Dark**, taking effect immediately across the app. In-battle overlays always stay dark, and the AP widget follows Widget settings.
 
-View and delete finished battle records under **Log** on the main screen (stores the newest 200 entries). [Details](Battle-Log-EN.md)
+View and delete finished battle records and outside-script changes under **Log** on the main screen (supports 50 / 100 / 200 entry retention and filters by date, profile, source, and resource gains). [Details](Battle-Log-EN.md)
 
 <a id="chaldea-import"></a>
 
@@ -167,9 +167,9 @@ Paste a Chaldea share URL into **Import from link** on the Command line and tap 
 
 Import scripts, support images, or both from the original FGA under **More options → Additional features**. [Details](Original-FGA-Import-EN.md)
 
-### FP Auto-Sell · Auto Skill Level · Weekly Missions · Servant Number Images
+### Log Collection · Friend Manager · Additional Tools
 
-[Log Collection](Gains-Tracker-EN.md) · [Friend Manager](Friend-Manager-EN.md) · [FP Auto-Sell](FP-Auto-Sell-EN.md) · [Auto Skill / Append Level](Auto-Skill-Level-EN.md) · [Weekly Mission Clear](Weekly-Mission-Route-EN.md) · [Servant Number Images](Servant-Number-Portraits-EN.md)
+[Log Collection Setup](Log-Collection-Setup-EN.md) · [Log Collection](Gains-Tracker-EN.md) · [Friend Manager](Friend-Manager-EN.md) · [FP Auto-Sell](FP-Auto-Sell-EN.md) · [Auto Skill / Append Level](Auto-Skill-Level-EN.md) · [Weekly Mission Clear](Weekly-Mission-Route-EN.md) · [Servant Number Images](Servant-Number-Portraits-EN.md)
 
 ### Check for Updates
 
@@ -199,6 +199,18 @@ Enabling **More options → Battle → Clear mission popups before Repeat** rapi
 
 Turning the screen off makes Android end screen capture. Tapping Play afterward opens the screen-capture permission prompt again and starts immediately once allowed (without restarting the service); canceling does not start. If the screen turns off while a script is running, the script pauses and stops when resumed because capture was lost—simply tap Play again. Not applicable to root screenshots.
 
+### Weekly Mission Route Settings
+
+Turning off **More options → Battle → Use weekly mission automation** hides the button in the launcher (on by default). Missions appear in their original order without checkboxes on manual missions, while unchecked missions stay grayed out. Empty routes do not execute. Treasure Vault runs last via `Main → Chaldea Gate → Daily Quest list`, verified by the left-hand button and list contents. [Details](Weekly-Mission-Route-EN.md)
+
+### More Options and Account Dashboard
+
+At the top of the **Advanced** tab are **Check for updates**, beta-only **Save support score diagnostics**, and **Weekly quest tracking settings**. At the bottom of the **Battle** tab are **Use weekly mission automation**, **Enable bond tracking**, and **Enable Teapot/Storm Pod control**. Under **Additional features**, items appear in the order: **Search and save support images → Import original FGA data → Export Chaldea file → Log collection → Friend manager → Game area (experimental)**.
+
+Tapping **More options → Advanced → Disable battery optimization** (directly below Auto-start service) opens the system battery optimization list; select FGA and set it to **Not optimized / Unrestricted**.
+
+Tapping an account card on the main screen opens that account's read-only dashboard showing **Profile, Resources and AP, Storage, Servant collection (sortable by Bond, Cost, Lv), Item inventory, Present box, Support formation, Grand formation, Mystic codes, Command code collection, Class score, Summon history, and Recent activity** (hiding missing sections). Wide screens display summary and list cards in two independent columns. The export icon left of Settings creates a Chaldea file for the current account, displays the saved filename and import instructions, and can be dismissed with **OK** or launch Chaldea directly via **Open Chaldea** if installed. [Details](Gains-Tracker-EN.md)
+
 <a id="installation"></a>
 
 ## Installation and Updates
@@ -207,21 +219,9 @@ Turning the screen off makes Android end screen capture. Tapping Play afterward 
 - **Obtainium**: Add `https://github.com/puruuun/FGA-Modified` (GitHub) as the source or import [obtainium.json](../../obtainium.json). Keep prereleases turned off.
 - Do not install APKs downloaded from anywhere other than GitHub Releases and Obtainium.
 
-The app is named **FGA(mod)** with package `io.github.fate_grand_automata.cardcount`. It installs separately from the official FGA and can update in place over earlier modified builds. Export settings from the official app as `.fga` files and [import them in FGA(mod)](Original-FGA-Import-EN.md).
+The app is named **FGA(mod)** with package `io.github.fate_grand_automata.cardcount`. It installs separately from the official FGA and can update in place over earlier modified builds. See [Installation Guide](Installation-EN.md) for installation and beta builds, [Log Collection Setup](Log-Collection-Setup-EN.md) for initial log-collection setup, and [Import Original FGA Data](Original-FGA-Import-EN.md) for importing `.fga` configs from the official app.
 
 The full MIT License text is viewable in **More options → Advanced → License**.
-
-### Weekly Mission Route Settings
-
-Turning off **More options → Battle → Use weekly mission automation** hides the button in the launcher (on by default). Missions appear in their original order without checkboxes on manual missions, while unchecked missions stay grayed out. Empty routes do not execute. Treasure Vault runs last via `Main → Chaldea Gate → Daily Quest list`, verified by the left-hand button and list contents.
-
-### More Options and Account Dashboard
-
-At the top of the **Advanced** tab are **Check for updates**, beta-only **Save support score diagnostics**, and **Weekly quest tracking settings**. At the bottom of the **Battle** tab are **Use weekly mission automation**, **Enable bond tracking**, and **Enable Teapot/Storm Pod control**. Under **Additional features**, items appear in the order: **Search and save support images → Import original FGA data → Export Chaldea file → Log collection → Game area**. Existing values and defaults are preserved.
-
-Tapping **More options → Advanced → Disable battery optimization** (directly below Auto-start service) opens the system battery optimization list; select FGA and set it to **Not optimized / Unrestricted**.
-
-Tapping an account card on the main screen opens that account's read-only dashboard showing Profile, Resources and AP, Storage, Servant collection (sortable by Bond, Cost, Lv), grouped Item inventory, Mystic codes, Recent activity, Support formation, and Grand formation (hiding missing sections). Wide screens display summary and list cards in two independent columns. The export icon left of Settings creates a Chaldea file for the current account, displays the saved filename and import instructions, and can be dismissed with **OK** or launch Chaldea directly via **Open Chaldea** if installed. [Details](Gains-Tracker-EN.md)
 
 ## Home-Screen Widgets
 

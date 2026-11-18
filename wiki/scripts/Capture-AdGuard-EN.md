@@ -4,11 +4,12 @@ Because Android allows only one active VPN at a time, local VPN-based apps (such
 
 The default Connection mode is **FGA VPN**; if you do not use another VPN or proxy app alongside FGA, you do not need to change it.
 
-> All traffic is processed solely inside this device and is never sent to external servers.
+!!! note "On-device processing"
+    All traffic is processed solely inside this device and is never sent to external servers.
 
 ## Prerequisites
 
-1. Under **More options → Additional features → Log collection**, turn on **Enable log collection** and agree to the notice.
+1. Under **More options → Additional features → Log collection**, turn on **Enable log collection** and agree to the notice ([Log Collection Setup](Log-Collection-Setup-EN.md)).
 2. Just as in VPN mode, generate the FGA certificate and install it as a **user CA certificate** on the device. (If using JP server root auto-injection, certificate and module setup remain the same.)
 3. Under **Connection mode**, select **External proxy app**.
 4. Check the **Host** (`127.0.0.1`) and **Port** (e.g., `8899`) at the top of the card. Tap **Copy** beside each field to copy host or port separately, or enter a different port in the `1024–65535` range and tap **Apply** (or Done on the keyboard) to change it.
@@ -23,7 +24,8 @@ Regardless of which external app you use, all three conditions below must be met
 2. **Exclude FGA from the external app.** Because FGA connects directly to the game servers, if the external app intercepts or proxies FGA's own HTTPS traffic, FGA cannot reach the game servers.
 3. **Do not let the external app decrypt FGO's HTTPS.** If the external app decrypts FGO traffic first, the game may show connection errors or logs may remain empty.
 
-> Other VPN or proxy apps **can work in principle** if they satisfy all three requirements above, though actual operation **must be verified on your device**.
+!!! note "Other VPN / proxy apps"
+    Other VPN or proxy apps **can work in principle** if they satisfy all three requirements above, though actual operation **must be verified on your device**.
 
 ## Setup with AdGuard
 

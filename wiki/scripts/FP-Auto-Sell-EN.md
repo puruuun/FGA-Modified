@@ -45,7 +45,3 @@ page=2 r3c4 present=true lock=Unlocked selected=false decision=select
 ```
 
 `?` means unreadable/unknown. Cards whose selection is rejected by the game are logged as `tap-rejected` and excluded from the selected count.
-
-### 1.7.0-beta.5 — End of Sell List
-
-When the bottom-end scrollbar reference image from upstream FGA is confirmed in a small region, the script finishes selecting the current page and ends scanning with `scrollbar-end`. It does not stop merely because the rail is absent, and retains the 5-page no-new-tap limit, 500-page safety cap, and rejected-tap inference.

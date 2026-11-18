@@ -1,6 +1,6 @@
 # Direct Attack Order for a Turn
 
-Since **stable version 0.4.0**, you can fix the selection order of three cards—including face cards and Noble Phantasms—for a turn. [FGA(mod) APK](https://github.com/puruuun/FGA-Modified/releases/tag/v0.4.0) installs as an update using the same package ID and signature as existing modified builds. The app name is FGA(mod) and its icon is a blue Arts card.
+Fix the selection order of three cards—including face cards and Noble Phantasms—for a turn.
 
 ## How to configure
 
@@ -43,9 +43,9 @@ A fixed attack must be the last command of that turn. Combining it with standard
 - Plain direct attacks do not apply card or Servant priority. When fallback is on, only missing face-card slots follow the current wave and the active setting 1/2 card and Servant priorities. Neither mode applies Brave Chain selection, card rearrangement, or extra automatic NPs. Subsequent turns behave normally.
 - Existing automatic skill use and shared card-shuffle settings remain active. The specified card types are searched in the actual hand after skills and shuffles; if you want to keep a skill-created hand, check your shared shuffle settings too.
 - **This feature does not add new checks for NP gauge, NP seal, or NP availability.** Just like standard NP commands, make sure skills and NP charge are configured so the target NP is ready.
-- Fixed attacks work in both first and second start-condition commands, and `.fga` copy, export, and import preserve the command string. Older `0.3.0` APKs cannot parse `&` commands.
+- Fixed attacks work in both first and second start-condition commands, and `.fga` copy, export, and import preserve the command string.
 
-## Fill missing and unselected cards by priority — 1.6.7-beta.1, Unselected 1.7.1-beta.6
+## Fill missing and unselected cards by priority
 
 When checked, FGA first reserves every specified card color that exists in the hand across all three slots, picking **Weak → Normal → Resist** and left to right on ties. If multiple slots ask for the same color, earlier slots reserve the best matching cards first. Next, all remaining empty face-card slots (**Unselected** slots and slots missing their specified color) are filled in slot order at once using the standard card and Servant priority on the remaining hand. An **Unselected** slot will never steal a card needed by a later color-specific slot. NP slots and reserved cards do not swap positions.
 
@@ -53,7 +53,7 @@ For example, with `&?b4a` (Buster → Frontline 1 NP → Arts), 1 Arts and 4 Qui
 
 With `&?pa4` and only 1 Arts in hand, that Arts is reserved in the second slot and the first slot takes the highest-priority card from the rest. If there are not enough usable cards, FGA stops without tapping.
 
-This checkbox is saved only for that turn. It is preserved across editing, copying, `.fga` export/import, and both setting 1 and setting 2. Unchecking it and tapping **Save** removes `?`, and a newly opened Attack dialog starts with it unchecked. **Dismiss** discards changes. Earlier app versions cannot parse `&?` or `p` syntax, so update the app where these commands will run.
+This checkbox is saved only for that turn. It is preserved across editing, copying, `.fga` export/import, and both setting 1 and setting 2. Unchecking it and tapping **Save** removes `?`, and a newly opened Attack dialog starts with it unchecked. **Dismiss** discards changes.
 
 Unreadable normal cards, incomplete or duplicate hands, insufficient usable cards, and empty frontline slots for a specified NP are not replaced by fallback. If `"Could not prepare the fixed attack … No cards were selected. Check the hand and deployed Servants."` appears, inspect the hand and frontline Servants and adjust the specified colors or fallback setting. Invalid command syntax must be fixed in the command itself. NP availability is still not newly read.
 
