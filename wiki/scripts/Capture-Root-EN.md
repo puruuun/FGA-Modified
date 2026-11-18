@@ -2,7 +2,7 @@
 
 **More options → Additional features → Log collection → Connection mode → Root** uses per-app transparent redirection and a root watchdog on rooted devices to avoid occupying Android's VPN slot, redirecting TCP 443 traffic from the FGO app (UID) into FGA's internal transparent proxy (`127.0.0.1:<port>` and `[::1]:<port>`) **only while reading is turned on**.
 
-For initial setup steps, see [Log Collection Setup](Log-Collection-Setup-EN.md). While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's proxy does not open a listening port, so FGO communicates directly without passing through FGA at all.
+For initial setup steps, see [Log Collection Setup](Log-Collection-Setup-EN.md). While reading is turned off, there are no kernel rules (`FGA_CAP_<app UID>`) and FGA's proxy does not open a listening port, so FGO communicates directly without passing through FGA at all.
 
 ---
 
@@ -67,7 +67,7 @@ Because all TCP 443 connections from FGO are redirected, the proxy first inspect
 
 When turning reading off, FGA executes the following steps so in-flight FGO requests are not cut off:
 
-1. Removes the `FGA_CAP` jump and chain from `iptables`/`ip6tables` first and confirms removal (`FGA_CLEANUP_OK`). All new FGO connections immediately bypass FGA and connect directly.
+1. Removes the `FGA_CAP_<app UID>` jump and chain from `iptables`/`ip6tables` first and confirms removal (`FGA_CLEANUP_OK`). All new FGO connections immediately bypass FGA and connect directly.
 2. Stops the proxy from accepting new connections.
 3. Waits up to 30 seconds for any already-open connections to finish, then closes the proxy and stops the watchdog.
 
@@ -83,7 +83,7 @@ If rule removal fails temporarily, FGA keeps the proxy listener open so FGO traf
 
 - **FGA force stop / crash / app update / swipe from Recents**:
   - The detached **watchdog** running in the root cgroup checks `/proc/net/tcp` (and `/proc/net/tcp6`) every 3 seconds for the listening socket owned by FGA's UID.
-  - Once FGA's process exits and the socket closes, the watchdog removes all `FGA_CAP` rules from `iptables` and `ip6tables` within ~3 seconds and exits on its own.
+  - Once FGA's process exits and the socket closes, the watchdog removes all `FGA_CAP_<app UID>` rules from `iptables` and `ip6tables` within ~3 seconds and exits on its own.
   - Additionally, when FGA restarts or updates, if a leftover rule flag file remains from a previous run, FGA runs one more background cleanup of rules and watchdog (without invoking `su` if no flag file exists).
 - **Wi-Fi ↔ mobile data switch / Airplane mode**:
   - Because rules match **FGO app UID + TCP 443** rather than IP addresses, network or IP changes never require recalculating rules; FGA checks every 60 seconds that the chain is intact and reapplies it if missing.
