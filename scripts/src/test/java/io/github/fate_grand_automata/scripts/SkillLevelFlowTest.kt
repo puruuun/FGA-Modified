@@ -29,6 +29,8 @@ private class FakePanel(
     private val skipReturns: Boolean = true,
     private val skipConnectionFailed: Boolean = false,
     private val skipRetries: Int = 0,
+    /** The game keeps the last tapped slot selected, so the glow read confirms it on later passes. */
+    private val keepsSelection: Boolean = false,
     /** The game deselects the servant once every skill is 10. */
     private val skipDeselectsAtTen: Boolean = false,
     private val cancelCloses: Boolean = true,
@@ -57,6 +59,8 @@ private class FakePanel(
 
     override fun isLocked(slot: Int) = slot in iconLockVisible
     val selectedSlots = mutableListOf<Int>()
+    val selectionChecks = mutableListOf<Int>()
+    override fun isSelected(slot: Int): Boolean { selectionChecks += slot; return keepsSelection && selected == slot }
     override fun select(slot: Int) { selected = slot; selectedSlots += slot }
     override fun unlockButtonVisible() = selected in unlockLabel || selected in locked
     override fun maxButtonVisible() = maxLabel
@@ -743,5 +747,74 @@ class SkillLevelFlowTest {
         assertEquals(5, panel.levels[0])
         assertTrue(logs.any { it == "slot=1 step=skip retry=1" }, logs.toString())
         assertTrue(logs.any { it == "slot=1 step=skip return=true retries=1" }, logs.toString())
+    }
+
+    // ---- #504: the slot tap is skipped on later passes only while the slot reads selected ----
+
+    @Test fun `a slot leveled several times is tapped once when it stays selected`() {
+        val logs = mutableListOf<String>()
+        val panel = FakePanel(mutableListOf(3), keepsSelection = true)
+        val result = SkillLevelFlow(panel, logs::add).runAll(listOf(6)).single()
+        assertEquals(SlotStop.Reached, result.stop)
+        assertEquals(listOf(0), panel.selectedSlots)
+        assertEquals(3, panel.confirms)
+        assertEquals(6, panel.levels[0])
+        assertEquals(3, logs.count { it == "slot=1 step=select action=select-skip" }, logs.toString())
+        assertEquals(1, logs.count { it == "slot=1 step=select action=select" }, logs.toString())
+    }
+
+    @Test fun `a slot that does not read selected is tapped on every pass as before`() {
+        val panel = FakePanel(mutableListOf(3), keepsSelection = false)
+        assertEquals(SlotStop.Reached, run(panel, 6).single().stop)
+        assertEquals(listOf(0, 0, 0, 0), panel.selectedSlots)
+        assertEquals(listOf(0, 0, 0), panel.selectionChecks)
+        assertEquals(3, panel.confirms)
+    }
+
+    @Test fun `the first pass of a slot taps without asking and the next slot taps again`() {
+        val panel = FakePanel(mutableListOf(3, 3), keepsSelection = true)
+        assertEquals(listOf(SlotStop.Reached, SlotStop.Reached), run(panel, 5, 5).map { it.stop })
+        assertEquals(listOf(0, 1), panel.selectedSlots)
+        assertEquals(listOf(0, 0, 1, 1), panel.selectionChecks)
+    }
+
+    @Test fun `a first pass is never skipped even when the slot already reads selected`() {
+        val base = FakePanel(mutableListOf(3))
+        val panel = object : SkillLevelPanel by base {
+            override fun isSelected(slot: Int) = true
+            override fun select(slot: Int) = base.select(slot)
+        }
+        assertEquals(SlotStop.Reached, SkillLevelFlow(panel).runAll(listOf(4)).single().stop)
+        assertEquals(listOf(0), base.selectedSlots)
+    }
+
+    @Test fun `the padlock check still runs before a skipped tap`() {
+        val actions = mutableListOf<String>()
+        val base = FakePanel(mutableListOf(3, 3), keepsSelection = true)
+        val panel = object : SkillLevelPanel by base {
+            override fun isLocked(slot: Int): Boolean { actions += "padlock"; return base.isLocked(slot) }
+            override fun isSelected(slot: Int): Boolean { actions += "selected"; return base.isSelected(slot) }
+            override fun select(slot: Int) { actions += "select"; base.select(slot) }
+        }
+        SkillLevelFlow(panel).runSlot(0, 5)
+        assertEquals(listOf("padlock", "select", "padlock", "selected", "padlock", "selected"), actions)
+    }
+
+    @Test fun `a pass that skipped the tap still stops on a panel and dialog mismatch`() {
+        val panel = FakePanel(mutableListOf(3), keepsSelection = true, panelRead = { it },
+            read = { if (it == 4) SkillLevelReading(5, 6) else SkillLevelReading(it, it + 1) })
+        val result = run(panel, 9).single()
+        assertEquals(SlotStop.PanelMismatch, result.stop)
+        assertEquals(listOf(0), panel.selectedSlots)
+        assertEquals(listOf(0), panel.selectionChecks)
+        assertEquals(1, panel.confirms)
+    }
+
+    @Test fun `a pass that skipped the tap still stops when the level did not go up`() {
+        val panel = FakePanel(mutableListOf(3), keepsSelection = true, panelRead = { if (it == 4) 3 else it })
+        val result = run(panel, 9).single()
+        assertEquals(SlotStop.NoIncrease, result.stop)
+        assertEquals(listOf(0), panel.selectedSlots)
+        assertEquals(1, panel.confirms)
     }
 }

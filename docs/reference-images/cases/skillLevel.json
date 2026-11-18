@@ -1932,6 +1932,743 @@
         "noticeExecute": false
       },
       "note": "Issue #259: the notice execute button must not match enhancement, unlock or absent dialogs."
+    },
+    {
+      "name": "JP-sel-append-a10-sel4",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-append-a10-sel4.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 4,
+        "glowSides": [
+          0,
+          0,
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-skill-m01-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-skill-m01-sel1.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-skill-m02-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-skill-m02-sel1.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-skill-m03-sel2",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-skill-m03-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-skill-m04-sel3",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-skill-m04-sel3.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 3,
+        "glowSides": [
+          0,
+          0,
+          4
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-skill-m05-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "frame": "crop",
+      "file": "docs/reference-images/Jp/skill-select/skill-select-jp-skill-m05-sel1.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a01-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a01-sel1.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a02-sel2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a02-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a03-sel3",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a03-sel3.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 3,
+        "glowSides": [
+          0,
+          0,
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a04-sel4",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a04-sel4.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 4,
+        "glowSides": [
+          0,
+          0,
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a05-sel5",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a05-sel5.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 5,
+        "glowSides": [
+          0,
+          0,
+          0,
+          0,
+          4
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a06-sel2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a06-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a07-sel3",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a07-sel3.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 3,
+        "glowSides": [
+          0,
+          0,
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a08-sel2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a08-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-append-a09-sel2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-append-a09-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-skill-m06-sel2",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "frame": "crop",
+      "file": "docs/reference-images/Kr/skill-select/skill-select-kr-skill-m06-sel2.png",
+      "region720": [
+        400,
+        186,
+        860,
+        150
+      ],
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: icon-row crop; the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-18-skill-sel3",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/18-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 3,
+        "glowSides": [
+          0,
+          0,
+          4
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-19-skill-sel2",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/19-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-20-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/20-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-21-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/21-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-22-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/22-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-23-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/23-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-24-append-real-sel2",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/24-append-real.png",
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 2,
+        "glowSides": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-50-skill-sel3",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/50-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 3,
+        "glowSides": [
+          0,
+          0,
+          4
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-51-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/51-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-52-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/52-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-53-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/53-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-54-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/54-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-55-append-real-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/55-append-real.png",
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-56-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/56-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-wide); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-57-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/57-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-16:9); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-58-append-real-sel1",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/58-append-real.png",
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-16:9); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "JP-sel-59-append-real-sel4",
+      "suite": "skillLevel",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/skill-level/0021/59-append-real.png",
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 4,
+        "glowSides": [
+          0,
+          0,
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-16:9); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-60-skill-sel1",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/60-skill.png",
+      "view": "selected",
+      "slotMode": "Skill",
+      "expected": {
+        "selectedSlot": 1,
+        "glowSides": [
+          4,
+          0,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-16:9); the selected slot reads selected and no other slot has a glow side."
+    },
+    {
+      "name": "KR-sel-61-append-real-sel4",
+      "suite": "skillLevel",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/skill-level/0021/61-append-real.png",
+      "view": "selected",
+      "slotMode": "Append",
+      "expected": {
+        "selectedSlot": 4,
+        "glowSides": [
+          0,
+          0,
+          0,
+          4,
+          0
+        ]
+      },
+      "note": "Issue #504: full frame (native-16:9); the selected slot reads selected and no other slot has a glow side."
     }
   ]
 }

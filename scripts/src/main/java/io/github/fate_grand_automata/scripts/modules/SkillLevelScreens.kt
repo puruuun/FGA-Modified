@@ -37,6 +37,35 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
         /** The result prompt sits on character art; 0.75-0.77 on the append results, 0.3 at most elsewhere. */
         const val RESULT_SIMILARITY = 0.7
 
+        /**
+         * A side of the slot icon shows the selection glow when its mean (blue - red) reaches this value (#504). Owner captures
+         * (16 icon-row crops KR and JP, plus 19 full frames incl. 21:9): every side of a selected slot is at least 93 on a
+         * 73 px line 60 px (720p) from the icon centre, every side of an unselected slot at most 26.
+         */
+        const val SELECTED_GLOW_BLUE_MINUS_RED = 60.0
+
+        /**
+         * [sideMeans] holds, per slot, the mean (blue - red) of its four sides (null when the colour read failed).
+         * A slot counts as selected only when all four of its sides glow and no side of any other slot does;
+         * anything else is unsure and returns null.
+         */
+        fun selectedSlotOf(sideMeans: List<List<Double>?>): Int? {
+            if (sideMeans.any { it == null || it.size != SIDES }) return null
+            val glowing = sideMeans.map { sides -> sides!!.count { it >= SELECTED_GLOW_BLUE_MINUS_RED } }
+            val selected = glowing.indexOfFirst { it == SIDES }
+            if (selected < 0) return null
+            return selected.takeIf { glowing.withIndex().all { (i, n) -> i == selected || n == 0 } }
+        }
+
+        private const val SIDES = 4
+
+        /** Mean (blue - red) of RGB triples; null for an empty or ragged buffer. */
+        fun meanBlueMinusRed(rgb: ByteArray?): Double? {
+            if (rgb == null || rgb.isEmpty() || rgb.size % 3 != 0) return null
+            var sum = 0L
+            for (i in rgb.indices step 3) sum += (rgb[i + 2].toInt() and 0xFF) - (rgb[i].toInt() and 0xFF)
+            return sum.toDouble() / (rgb.size / 3)
+        }
     }
 
     private fun template(image: Images): Pattern? = runCatching { images[image] }.getOrNull()
@@ -73,6 +102,25 @@ class SkillLevelScreens @Inject constructor(api: IFgoAutomataApi, val loc: Skill
 
     /** D-10: the re-select button only exists once a servant is selected (before that only "close" shows). */
     fun servantSelected(): Boolean = useSameSnapIn { seen(loc.reselect, Images.SkillLevelReselect, RESELECT_SIMILARITY) }
+
+    /**
+     * Per slot, the mean (blue - red) of its four glow sides ([SkillLevelLocations.slotGlowSides]), all from one colour frame;
+     * null for a slot whose colour read failed. Colour is entered before the snapshot because the product screenshot
+     * cache holds one image type.
+     */
+    fun slotGlowMeans(mode: SkillLevelMode): List<List<Double>?> = useColor {
+        useSameSnapIn {
+            (0 until mode.slots).map { slot ->
+                val sides = loc.slotGlowSides(mode, slot).map { side ->
+                    side.getPattern("slot-glow").use { meanBlueMinusRed(it.rgbPixels()) }
+                }
+                if (sides.any { it == null }) null else sides.map { it!! }
+            }
+        }
+    }
+
+    /** The slot whose icon shows the selection glow, or null when no slot, several slots or any unsure read (see [selectedSlotOf]). */
+    fun selectedSlot(mode: SkillLevelMode): Int? = selectedSlotOf(slotGlowMeans(mode))
 
     fun onScreen(mode: SkillLevelMode): Boolean = useSameSnapIn { onLabel(mode) && servantSelected() }
 

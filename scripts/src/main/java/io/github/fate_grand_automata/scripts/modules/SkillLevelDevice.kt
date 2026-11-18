@@ -18,6 +18,8 @@ class SkillLevelDevice(
     /** The padlock only exists on append slots. */
     override fun isLocked(slot: Int) = mode == SkillLevelMode.Append && screens.slotLocked(mode, slot)
 
+    override fun isSelected(slot: Int) = screens.selectedSlot(mode) == slot
+
     override fun select(slot: Int) {
         loc.slotClick(mode, slot).click()
         addedTuning.skill.delay(SkillLevelTiming.SELECT_SETTLE).wait()
