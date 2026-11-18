@@ -1,4 +1,4 @@
-# Import original FGA data
+# Import Original FGA Data
 
 Open **More options → Additional features → Import original FGA data** and choose one of the following options:
 
@@ -30,20 +30,19 @@ There is no build-number restriction. Both legacy flat JSON `.fga` files and the
 
 The importer never accesses the original app's private data directly. It only reads exported scripts and image folders granted by the user. Global app settings, AP refill settings, and Android permissions are not transferred.
 
-The three selection modes, legacy JSON handling, duplicate prevention, name preservation, per-item failures, and image conflicts are verified by automated tests. Behavior of the Android document picker and device-specific storage providers requires separate device verification.
-
 ## Exporting Modified Scripts Back to Original FGA
 
-`.fga` files exported from FGA(mod) can also be imported directly into the original FGA. Because the file format is identical and the original app simply stores unknown fields without using them, it will not crash or corrupt settings. Skill commands, card/servant priority, Brave Chains, spam settings, party, materials, and basic support settings work as usual in the original app.
+`.fga` files exported from FGA(mod) can also be imported directly into the original FGA. Because the file format is identical and the original app simply stores unknown fields without using them, it will not crash or corrupt settings. Skill commands, basic card/Servant priority, Brave Chains, spam settings, party, materials, and basic support settings work as usual in the original app.
 
 However, FGA(mod)-only settings **are not applied** in the original FGA:
 
 | FGA(mod) setting | Behavior in original FGA |
 |---|---|
-| `&` in skill commands ([Direct cards](Direct-Cards-EN.md)) | **Stops at battle start with a "Failed to parse skill command" error.** Remove `&` or replace with standard commands before using in original FGA. |
-| Support ascension select (NP image), [Append Skill check](Support-Append-Skills-EN.md), +62/+16 score checks, [NP level check](Support-NP-Level-EN.md) | Ignored. **Supports are picked without those conditions**, so double-check the support selection in original FGA. |
-| Second execution config, [Card-count start](Card-Count-Start-EN.md) | Ignored; only the first (default) config runs. |
-| [Bond gain tracking](Bond-Tracking-EN.md) | Ignored. |
+| `&` ([Direct Attack Order](Direct-Cards-EN.md)), `aH{…}` ([Hakuno Shuffle](Hakuno-Shuffle-EN.md)), and `t4`–`t9` / `tR` / `tA`–`tF` ([Enemy Layout Targeting](Enemy-Layout-Targets-EN.md)) in skill commands | **Stops at battle start with a skill command parse error.** Remove those tokens or replace them with standard commands (`t1`–`t3`, etc.) before using in original FGA. |
+| Support [Re-ascension](Ascension-Select-EN.md), [Append Skill Check](Support-Append-Skills-EN.md), +62/+16 score checks, [NP Level Check](Support-NP-Level-EN.md), Send friend request after quest | Ignored. **Supports are picked without those conditions**, so double-check the support selection in original FGA. |
+| Second/third execution configs, [Servant Condition Mode](Card-Count-Start-EN.md) | Ignored; only the first (default) config runs. |
+| [Card Priority Extensions](Card-Priority-EN.md) (Servant style, Turn mode, entries beyond wave 3, Detect Aoko card change) | Ignored; only the basic card priority and Use Servant Priority setting apply. |
+| [Retreat and Restart](Turn-Limit-Retreat-EN.md), [Bond Tracking](Bond-Tracking-EN.md), [Battle Config Folders](Battle-Config-Folders-EN.md) | Ignored (configs import without folders, and retreat follows original FGA's global withdraw setting). |
 | Shuffle "First-turn command start condition unmet" | Not recognized in original FGA and falls back to **None (no shuffle)**. |
 
 After importing into original FGA, review your support settings and skill commands before running.

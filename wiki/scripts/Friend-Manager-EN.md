@@ -2,7 +2,7 @@
 
 **Browse all support Servants and investment levels from your Regular, Event, and Grand formations in the captured friend list, and filter by friend name, Servant, CE, level, or inactivity period.** It is read-only and never touches the game or changes settings.
 
-Open via **More options → Additional features → Friend manager** (directly below **Log collection**). Shown only on Android 10 or later when **Enable log collection** is turned on; turning the switch off hides it without deleting your saved friend list. Set up [Log Collection](Gains-Tracker-EN.md) first.
+Open via **More options → Additional features → Friend manager** (directly below **Log collection**). Shown only on Android 10 or later when **Enable log collection** is turned on; turning the switch off hides it without deleting your saved friend list. Complete [Log Collection Setup](Log-Collection-Setup-EN.md) first.
 
 ## Populating the List
 

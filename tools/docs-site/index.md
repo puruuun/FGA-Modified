@@ -23,11 +23,11 @@ hide:
 
 - 개발 베타는 정규판과 **다른 앱**(`io.github.fate_grand_automata.beta`)으로 설치됩니다. 정규판의 설정은 옮겨지지 않습니다.
 - GitHub Releases와 Obtainium 외의 곳에서 받은 APK는 설치하지 마세요.
-- 자세한 설치 방법과 초기 권한 설정은 [설치 안내](scripts/Installation-KR.md)를 확인하세요.
+- 자세한 설치 방법과 초기 권한 설정은 [설치 안내](scripts/Installation-KR.md), 로그 수집 시작은 [로그 수집 시작 설정](scripts/Log-Collection-Setup-KR.md), 원본 FGA에서의 이전은 [원본 FGA 데이터 가져오기](scripts/Original-FGA-Import-KR.md)를 확인하세요.
 
 ## 기능 설명서
 
-위쪽 **기능 설명서** 탭에 기능별 사용법이 있습니다. 새 기능이 추가되면 설명서도 이 사이트에 자동으로 추가됩니다.
+위쪽 **시작하기** 탭에서 초기 설정을, **기능 설명서** 탭에서 기능별 상세 사용법을 확인할 수 있습니다. 새 기능이 추가되면 설명서도 이 사이트에 자동으로 추가됩니다.
 
 ## 문의
 

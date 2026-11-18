@@ -1,4 +1,4 @@
-# FGA(mod) Retreat and Restart
+# Retreat and Restart
 
 When the party is wiped out or the battle reaches a set turn, FGA retreats from the quest and restarts it from the beginning. This is toggled per battle config, and one switch handles both behaviors.
 
@@ -25,15 +25,7 @@ Open **Retreat and Restart** on the config screen under **Battle Configs → <co
 | Turn N | The turn `N` to retreat at (`0–99`, default `0`). At `0`, FGA only retreats when the party is wiped out. |
 | Stop after N retreats in a row | When enabled, stops the script after `N` consecutive retreats, counting both wipe retreats and turn-limit retreats. Use the stepper next to the checkbox to pick `N` from `1–99` (default `3`). Adjustable only when both the checkbox and the **Retreat and Restart** switch are on. Existing configs with the checkbox enabled keep working with `N = 3`. |
 
-The config row summary displays `Off` when off, `Retreat on wipe` when `N = 0`, and `Turn N` when `N ≥ 1`. All four settings are included when exporting and importing battle configs.
-
-### Previous "Enable Withdraw" switch
-
-The old **More options → Battle → Enable Withdraw** switch has been removed. The first time you run the app after updating, your previous setting is migrated once:
-
-- If the old switch was on, every battle config that had **Retreat and Restart** off is set to **On, N = 0**. Configs that already had it on stay unchanged.
-- If the old switch was off, nothing is changed.
-- Because migration runs only once, any config you turn off later stays off.
+The config row summary displays `Off` when off, `Retreat on wipe` when `N = 0`, and `Turn N` when `N ≥ 1`. All four settings are included when exporting and importing battle configs. (If the older **More options → Battle → Enable Withdraw** switch was enabled, the first launch after updating migrates any configs with **Retreat and Restart** off to **On, N = 0** once.)
 
 ## Behavior on party wipe
 

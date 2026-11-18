@@ -1,6 +1,6 @@
-# Card Priority Extensions (10 entries, Wave/Turn, per-entry style)
+# Card Priority Extensions
 
-The Card Priority screen lets you configure the following three features. Existing configs continue to work as before.
+The Card Priority screen lets you configure **up to 10 entries**, **Wave/Turn splitting**, **per-entry Style (Affinity/Servant)**, and **Detect Aoko card change**. Existing configs continue to work as before.
 
 ## Screen layout
 
@@ -50,20 +50,20 @@ In the Battle Config editor, the Card Priority summary shows each entry's list a
 
 ## Servant face-card check (auto)
 
-The Servant face-card check identifies which Servant owns each command card by matching face portraits. The old **Skip servant face-card check** option (**More options → Battle**) has been removed; instead, FGA decides **automatically** at script start by inspecting the battle config. It turns on if any of the following apply, and is skipped if none apply:
+The Servant face-card check identifies which Servant owns each command card by matching face portraits. FGA decides **automatically** at script start by inspecting the battle config—turning it on if any of the following apply, and skipping it if none apply:
 
 - Any entry uses **Servant** style.
 - Any Affinity-style entry has **Use Servant Priority** enabled.
 - Any Affinity-style entry has **Brave Chains** set to `With NP` or `Avoid`. Brave Chains on Servant-style entries are ignored and do not enable it.
 - **Shuffle cards** is set to **No cards matching NP**.
 - The skill command contains a Hakuno Shuffle.
-- **Command card count mode** is enabled. When a second start setting is enabled, its entries and command are checked as well.
+- **Command card count mode** is enabled. When a second or third start setting is enabled, its entries and command are checked as well.
 
-Below Card Priority in the Battle Config editor, the result appears as `Servant face-card check: auto — on (brave chains W2)` or `Servant face-card check: auto — skipped`, updating immediately when settings change. Battle runs use the same decision and write a line (`face-card check: on (…)`) to the log at start. Legacy values of the removed option in previously saved configs are ignored.
+Below Card Priority in the Battle Config editor, the result appears as `Servant face-card check: auto — on (brave chains W2)` or `Servant face-card check: auto — skipped`, updating immediately when settings change. Battle runs use the same decision and write a line (`face-card check: on (…)`) to the log at start.
 
 ### Distinguishing Support cards
 
-Support Servant cards are identified in the following order. The old **Skip support icon check** option has been removed and this behavior now always applies:
+Support Servant cards are identified in the following order:
 
 1. If the `SUPPORT` badge (the trailing `ORT` portion) is visible on a card, it is treated as a Support card and excluded from face matching.
 2. When a Support Servant appears on the frontline, FGA opens its status details screen and saves its face portrait. If this portrait is virtually identical to one of your own Servants (similarity 0.99 or higher, when two copies of the same Servant are in the party), the Support portrait is not used for face matching in that run and only the badge is checked.
