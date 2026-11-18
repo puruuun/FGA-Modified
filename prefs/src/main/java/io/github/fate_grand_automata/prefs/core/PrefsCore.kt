@@ -10,6 +10,16 @@ import io.github.fate_grand_automata.scripts.modules.FpSellPolicy
 import io.github.lib_automata.Location
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+const val MASTER_SKILL_MENU_DELAY_DEFAULT_MS = 1500
+const val MASTER_SKILL_MENU_DELAY_MIN_MS = 300
+const val MASTER_SKILL_MENU_DELAY_MAX_MS = 3000
+
+// The slider bounds the UI, but an imported or hand-edited settings file can hold any value.
+fun masterSkillMenuDelayOf(storedMs: Int): Duration =
+    storedMs.coerceIn(MASTER_SKILL_MENU_DELAY_MIN_MS, MASTER_SKILL_MENU_DELAY_MAX_MS).milliseconds
 
 @Singleton
 class PrefsCore @Inject constructor(
@@ -117,6 +127,7 @@ class PrefsCore @Inject constructor(
     val stageCounterNew = maker.bool("stage_counter_new")
 
     val skillDelay = maker.int("skill_delay", 500)
+    val masterSkillMenuDelay = maker.int("master_skill_menu_delay", MASTER_SKILL_MENU_DELAY_DEFAULT_MS)
     val waitMultiplier = maker.int("wait_multiplier", 100)
     val waitBeforeTurn = maker.int("wait_before_turn", 500)
     val waitBeforeCards = maker.int("wait_before_cards", 2000)

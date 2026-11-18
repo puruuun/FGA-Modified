@@ -20,6 +20,7 @@ interface IPreferences {
     val useRootForScreenshots: Boolean
     val recordScreen: Boolean
     val skillDelay: Duration
+    val masterSkillMenuDelay: Duration
     val screenshotDrops: Boolean
     val screenshotDropsUnmodified: Boolean
     val screenshotBond: Boolean

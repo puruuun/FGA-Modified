@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.prefs
 
 import io.github.fate_grand_automata.prefs.core.CompletedRunsHolder
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.prefs.core.masterSkillMenuDelayOf
 import io.github.fate_grand_automata.prefs.core.map
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.GameServers
@@ -84,6 +85,8 @@ class PreferencesImpl @Inject constructor(
     override val recordScreen by prefs.recordScreen
 
     override val skillDelay by prefs.skillDelay.map { it.milliseconds }
+
+    override val masterSkillMenuDelay by prefs.masterSkillMenuDelay.map { masterSkillMenuDelayOf(it) }
 
     override val screenshotDrops by prefs.screenshotDrops
 
