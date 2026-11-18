@@ -65,6 +65,7 @@ When promoting to stable `X.Y.Z`:
    - **Korean latest-release line:** `**정규판 <version>** — ... [변경 사항](wiki/releases/<version>-KR.md).`
    - **English release-notes link:** `- [Release notes (Korean)](wiki/releases/<version>-KR.md)`.
    - **Japanese latest-release line:** `**正式版 <version>** — ... [変更内容（韓国語）](wiki/releases/<version>-KR.md).`
+   - **Upstream base line** ("수정 기준: 공식 FGA v<code>" and its English and Japanese forms, with the commit link): set it to the newest upstream version in the sync log of [`upstream-sync.md`](upstream-sync.md) that this stable tag contains.
 
    Publishing the non-prerelease GitHub Release in step 4 rebuilds the user manual from that tag automatically. Check that the `Publish manual site` run succeeded.
 3. Deliver via PR (`release/<version>`), wait for `Main CI` to pass, and fast-forward merge into
