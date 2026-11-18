@@ -4,34 +4,27 @@ This guide is for the planner when it chooses, starts or runs other agents. An i
 
 ## Models and tiers
 
-Owner decision, 2026-11-13, which replaces the 2026-11-12 order. Codex is not used.
+Owner decision, 2026-11-18, which replaces the 2026-11-13 "Gemini first" order. Codex is not used.
 
-- **Tiers**, by capability and cost (owner, 2026-11-13):
-  - **Gemini 4 Argon** is the strongest and much the most expensive.
-  - **Gemini 4 Hydrogen** and **Sonnet 5.5** are the same tier.
-  - **Haiku 5.5** is one tier lower and cheap.
-- **Gemini first:** Gemini is the default implementer. It is also a verifier or reviewer when a different model helps. The planner runs it itself (see "Gemini runs") with two models only:
-  - `gemini-4-hydrogen-high`: the normal choice for implementation, fixes and checks;
-  - `gemini-4-argon-medium`: only for hard tasks, or when a model different from the other agents is wanted, for example a verifier that should differ from the implementer.
-- **Sonnet 5.5 (medium):** the same tier as Hydrogen. Use it in two cases:
-  - when Gemini's work on a task is sent back twice by review, verification or device QA; Sonnet continues on the same branch;
-  - as the usual verifier of Gemini's work.
-- **Where Sonnet runs** (owner decision, 2026-11-13):
-  - First choice is Antigravity Sonnet: the same runner with the model `claude-sonnet-5-5-medium`, in the same role and under the same rules as the Claude subagent. Implementation and fixes use `accept-edits`; review and verification use `--readonly`.
-  - Use the Claude Code Sonnet subagent when an Antigravity Sonnet run ends with `usage_limit`.
-  - After the owner says the Antigravity weekly limit is used up, use the Claude Code subagent directly. Go back to Antigravity Sonnet only when the owner says the limit is available again.
-  - Tell the owner which of the two ran each Sonnet task.
-- **Haiku 5.5 (medium, Claude subagent):**
+- **Claude Code models first.** The planner starts them as Claude subagents with the Agent tool, at **medium** effort.
+- **Sonnet 5.5 (medium): the main worker.** It is the default implementer, and the default for fixes, verification, design review and research.
+- **Haiku 5.5 (medium): one tier lower and cheap.**
   - light or simple work, such as small edits, lookups and mechanical checks;
-  - a second model next to Sonnet or Gemini, for example as the second verifier.
-- **When Gemini hits its usage limit**, do not switch to Sonnet automatically. Pick Sonnet, Haiku, or waiting for the limit, by the task's difficulty and risk.
-- **Claude subagents** start with the Agent tool at **medium** effort.
+  - a second model next to Sonnet, for example as the verifier of Sonnet's work or the second verifier.
+- **Opus 5.5 (medium): the top tier, used sparingly.**
+  - very hard tasks;
+  - a task that keeps failing review, verification or device QA: after Sonnet's work is sent back twice, Opus continues on the same branch.
+- **Gemini: still available, but not the first choice.** The planner runs it itself (see "Gemini runs") with two models only: `gemini-4-hydrogen-high` (Sonnet's tier) and `gemini-4-argon-medium` (strong and much the most expensive). Use it when:
+  - a model from outside the Claude family helps, for example as a verifier that should differ from the implementer;
+  - Claude Code's usage limit is reached and the task should not wait.
+- **Sonnet through Antigravity** (the runner model `claude-sonnet-5-5-medium`) is no longer the first choice. Sonnet runs as a Claude Code subagent.
+- **Verifiers:** Sonnet's work is usually verified by Haiku. When two verifiers are needed, the usual pair is a fresh Sonnet session and Haiku; Opus or Gemini replaces one of them when the change is hard or an outside model is wanted.
 - Pick the agent for each task by its difficulty and risk. The same choice applies to implementers, verifiers, design reviewers and researchers.
 - Tell the owner which agent and model did each task, and why when it was not the usual choice.
 
 ## Gemini runs
 
-Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of the same day.
+Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of the same day. Since 2026-11-18 Gemini is an optional agent, not the default.
 
 - **Setup:** the planner files the issue and creates the branch and its own worktree from the latest `main`.
 - **Prompt:** written to `build/orchestration/prompts/`. If useful, it is also copied as an untracked `TASK-<issue>.md` at the worktree root, which is never committed.
