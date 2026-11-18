@@ -55,6 +55,8 @@ Rules:
 - A Kotlin-only change needs no Rust tools. Building with the Gradle property `fga.native` off must always work.
 - BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed there with SIGILL (see the comment at the top of `app/build.gradle.kts`). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
 - `native/target/` is never committed.
+- The owner's PC has Rust on the GNU host toolchain (`stable-x86_64-pc-windows-gnu`), `cargo-ndk`, and NDK 28.2.13676358 under `%LOCALAPPDATA%\Android\Sdk
+dk\`; set `ANDROID_NDK_HOME` to it. There is no Visual Studio and no host C compiler, so a crate with C code may not build for PC tests there. Report that instead of installing anything.
 
 ## Test data
 
@@ -78,7 +80,7 @@ On top of the checks in `AGENTS.md` ("What the planner's PR review checks" and t
 - `unsafe` appears only in `fga-ffi`, each block with its `// SAFETY:` comment;
 - every Kotlin-callable function catches panics;
 - new dependencies, each with its reason;
-- the change in `.so` size per ABI;
+- the change in `.so` size per ABI. There is no size limit (owner, 2026-11-18): keep the APK close to its current size where that costs no performance, and tell the owner about a large jump;
 - for a reader change: the accuracy table on the evaluation samples, before and after, with false positives listed;
 - for a capture change: peak memory on the recorded-traffic test, and what stays resident;
 - for a unit in the "compare" stage: the list of cases where Rust and Kotlin differ, each explained;
