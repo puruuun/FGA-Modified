@@ -12,7 +12,7 @@ The owner does not read Rust (owner statement, 2026-11-18). So the rules here ar
 
 | Crate | Holds | `unsafe` |
 | --- | --- | --- |
-| `fga-sensing` | frame handling, template matching, classifiers | forbidden |
+| `fga-sensing` | frame handling, template matching, classifiers; since #524 the PaddleOCR text recogniser (preprocessing, CTC decoding, the `tract` and `ort` backends) | forbidden |
 | `fga-capture` | proxy, TLS, response parsing, log storage | forbidden |
 | `fga-automation` | automation flow (added in stage 6 of 0025) | forbidden |
 | `fga-ffi` | the Kotlin boundary: bindings, panic handling, frame hand-off | allowed, with rules below |
@@ -53,6 +53,32 @@ cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-tar
 ```
 
 The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports, and the Android lint run uses it too so it checks the same build. The last line checks the code that only builds for Android and ARM, which the PC runs leave out.
+
+The inference backends of `fga-sensing` are Cargo features that are off by default, so the commands above build neither runtime, and the Android lint run stays free of them until one is chosen for the device. Lint and test each one on its own:
+
+```bash
+cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings
+cargo test -p fga-sensing --features tract
+cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
+cargo test -p fga-sensing --features ort
+```
+
+`tract` is pure Rust. `ort` has its build script download a prebuilt ONNX Runtime from `cdn.pyke.io` (checked against a hash in the crate) and link it statically, so it needs network access on the first build and compiles no C++ of ours; the download is cached under the user's cache folder (`%LOCALAPPDATA%\ort.pyke.io` on Windows, `~/.cache/ort.pyke.io` on Linux).
+
+The model and the labelled samples are local only (see "Test data"), so the tests that run the real model need two environment variables and skip themselves, with one printed line, without them. They are how a change to preprocessing or decoding is checked against the Python result the model was chosen on:
+
+```bash
+export FGA_OCR_MODEL=/path/to/PP-OCRv6_rec_small.onnx   # the owner keeps it under build/orchestration/rust/ocr/models/
+export FGA_OCR_SAMPLES=/path/to/samples                  # NNNN.png and index.json, under build/orchestration/rust/ocr/samples/
+cargo test -p fga-sensing --features tract --test model -- --nocapture
+```
+
+The evaluation tool runs every sample and prints the agreement with Python, the +62 and +16 misses and false accepts, and the timings; it takes the backend, the model, the samples folder and an output file, plus an optional allowed character set. Use `--release`, since a debug build of tract is many times slower. In Git Bash, set `MSYS_NO_PATHCONV=1` for the allowed set, or the shell rewrites `+/...` into a Windows path:
+
+```bash
+cargo run --release -p fga-sensing --features tract --example ocr_eval -- \
+    tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/ocr-eval-tract.tsv --allowed "+/0123456789"
+```
 
 In the app, Gradle builds the library only when asked:
 

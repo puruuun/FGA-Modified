@@ -47,6 +47,18 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+      - name: Clippy and test, fga-sensing with tract
+        # The inference backends are off by default, so the two steps above never build them.
+        # The model tests skip themselves here: the model and the samples are local only.
+        run: |
+          cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings
+          cargo test -p fga-sensing --features tract
+      - name: Clippy and test, fga-sensing with ort
+        # ort-sys downloads a prebuilt ONNX Runtime from cdn.pyke.io at build time and checks its
+        # hash; on Linux its HTTPS client links the runner's OpenSSL.
+        run: |
+          cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
+          cargo test -p fga-sensing --features ort
       - name: Install cargo-deny and cargo-ndk
         run: |
           cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"

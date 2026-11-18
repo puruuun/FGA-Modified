@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["fga-ffi"]
+members = ["fga-ffi", "fga-sensing"]
 
 [workspace.package]
 edition = "2024"

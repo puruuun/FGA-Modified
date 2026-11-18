@@ -1,0 +1,37 @@
+[package]
+name = "fga-sensing"
+version = "0.1.0"
+description = "Frame and text recognition of the FGA Rust core"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Each backend pulls in an inference runtime, so neither is on by default: the default build and
+# the Android lint run stay free of both until one is chosen for the device.
+tract = ["dep:tract-onnx", "_backend"]
+ort = ["dep:ort", "_backend"]
+# Internal: lets the evaluation tool require "any backend", which Cargo cannot express directly.
+_backend = []
+
+[dependencies]
+tract-onnx = { version = "0.23", optional = true }
+# download-binaries fetches a prebuilt ONNX Runtime at build time, so nothing is compiled from C++.
+# The prebuilt Windows runtime comes with DirectML.dll, which copy-dylibs links next to binaries;
+# tls-native uses the OS TLS stack for that download (schannel, OpenSSL on Linux) instead of ring.
+# The version is pinned exactly because ort 2 is still a release candidate.
+ort = { version = "=2.0.0-rc.15", optional = true, default-features = false, features = ["std", "download-binaries", "copy-dylibs", "tls-native"] }
+
+[dev-dependencies]
+# Only the evaluation tool and the model tests read PNG samples and their JSON index.
+png = "0.18"
+serde_json = "1"
+
+[[example]]
+name = "ocr_eval"
+required-features = ["_backend"]
