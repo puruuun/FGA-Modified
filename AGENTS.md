@@ -108,12 +108,14 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 ```bash
 ./gradlew :app:compileDebugKotlin # Compiles the kotlin code for the android app.
 ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test # Full unit test suite, same as Main CI.
-./gradlew :scripts:test          # the only unit tests in the repo (JUnit 5 + assertk + mockk)
+./gradlew :scripts:test          # the scripts module's tests only (JUnit 5 + assertk + mockk)
 ./gradlew :scripts:test --tests '*SupportSelectionTest'          # single test class
 ./gradlew :scripts:test --tests '*SupportSelectionTest.someName' # single test method
 ./gradlew lint                   # abortOnError = false, so lint never fails the build
 ./gradlew dependencyUpdates      # ben-manes versions plugin
 ```
+
+Unit tests live in three modules, next to the code they cover: `scripts` (plain JVM; JUnit 5, assertk, mockk), `app` (Robolectric and Roborazzi; `:app:testCiUnitTest`) and `prefs` (`:prefs:testCiUnitTest`). `libautomata` has none.
 
 Device QA and APK builds need the Android SDK. If the shell has no `ANDROID_HOME` and there is no `local.properties`, set `ANDROID_HOME` to the SDK, which is `%LOCALAPPDATA%\Android\Sdk` on the owner's PC. Without it, Gradle stops with "SDK location not found".
 
@@ -127,7 +129,7 @@ app  ──▶ scripts ──▶ libautomata
 ```
 
 - **`libautomata/`** — pure JVM Kotlin (no Android deps). Game-agnostic automation primitives: `Region`, `Location`, `Size`, `Pattern`, `AutomataApi`/`StandardAutomataApi`, `ScreenshotManager`, `ImageMatcher`, `Clicker`, `Swiper`, `Waiter`, `Scale`, `GameAreaManager`, `EntryPoint`, `ExitManager`. Everything platform-specific is an interface (`ScreenshotService`, `GestureService`, `OcrService`, `PlatformImpl`, `PlatformPrefs`) implemented in `app`.
-- **`scripts/`** — pure JVM Kotlin. All FGO knowledge: entry points, per-screen modules, coordinates, image names, prefs *interfaces*. This is where automation logic belongs, and the only module with tests (it's testable precisely because it has no Android dependency — keep it that way).
+- **`scripts/`** — pure JVM Kotlin. All FGO knowledge: entry points, per-screen modules, coordinates, image names, prefs *interfaces*. This is where automation logic belongs. Its tests run on the plain JVM because the module has no Android dependency — keep it that way.
 - **`prefs/`** — Android library implementing the `I*Preferences` interfaces from `scripts` on top of `flow-preferences`. `PrefsCore` holds the raw `Pref<T>` delegates; `PreferencesImpl` adapts them to the script-facing interfaces.
 - **`app/`** — Compose UI, Hilt wiring, the two services, and the Android implementations of the `libautomata` interfaces (`imaging/`, `accessibility/`, `root/`, `util/`).
 
