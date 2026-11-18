@@ -10,9 +10,9 @@ mod ocr;
 mod tls;
 
 pub use cpu::cpu_probe;
-pub use ocr::{
-    NOT_LOADED, POISONED, memory_status, ocr_load, ocr_read, ocr_unload, poison_lock_for_tests,
-};
+#[cfg(feature = "test-hooks")]
+pub use ocr::poison_lock_for_tests;
+pub use ocr::{NOT_LOADED, POISONED, memory_status, ocr_load, ocr_read, ocr_unload};
 
 pub fn ping() -> Result<String, String> {
     Ok(format!(

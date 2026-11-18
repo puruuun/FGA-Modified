@@ -14,14 +14,16 @@ use crate::probes;
 /// returns null. So the exception is cleared first and the result says so.
 ///
 /// A null return reaches Kotlin as an exception at the call site, which a test reports; it is
-/// the only way left once the JVM cannot allocate the string.
+/// the only way left once the exception cannot be cleared or the JVM cannot allocate the string.
 fn to_java(env: &mut JNIEnv, text: String) -> jstring {
     let text = match env.exception_check() {
         Ok(false) => text,
         // An Err cannot say whether one is pending; clearing when none is is harmless.
         Ok(true) | Err(_) => {
-            // Nothing is left to report if clearing fails: the string below then fails too.
-            let _ = env.exception_clear();
+            // If clearing fails the exception may still be pending, and NewStringUTF must not run.
+            if env.exception_clear().is_err() {
+                return std::ptr::null_mut();
+            }
             after_pending_exception(&text)
         }
     };

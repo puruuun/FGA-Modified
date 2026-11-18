@@ -389,6 +389,7 @@ dependencies = [
 name = "fga-ffi"
 version = "0.1.0"
 dependencies = [
+ "fga-ffi",
  "fga-sensing",
  "jni",
  "png",

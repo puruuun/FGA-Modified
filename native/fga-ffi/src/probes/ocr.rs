@@ -25,7 +25,9 @@ fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>,
 }
 
 /// Only for tests/ocr_poisoned.rs: no recogniser call panics on demand, and the poisoned-lock
-/// path must still be exercised. It has no JNI export, so Kotlin cannot reach it.
+/// path must still be exercised. It has no JNI export, and the `test-hooks` feature keeps it out
+/// of every build but the tests.
+#[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 #[expect(
     clippy::panic,

@@ -118,11 +118,14 @@ private fun modelFile(runner: SupportDeviceTestRunner, devicePath: String): File
 /**
  * Files copied for a check are removed afterwards (docs/agents/devices-and-safety.md). The runner
  * calls this once when its whole run ends, pass, fail or exception, so the tract cases share one
- * copy; the fixtures under /sdcard/Download/fga-device-qa/ stay.
+ * copy; the fixtures under /sdcard/Download/fga-device-qa/ stay. `deleteRecursively` reports a
+ * failure only by returning false (and returns true for a missing folder), so a failure throws
+ * here and the runner records it as `cleanupError`.
  */
 internal fun removeOcrProbeCopies(runner: SupportDeviceTestRunner) {
     copiedModel = null
-    copyDir(runner).deleteRecursively()
+    val dir = copyDir(runner)
+    check(dir.deleteRecursively()) { "could not delete ${dir.path}" }
 }
 
 private fun okJson(call: String, result: String): JSONObject {
