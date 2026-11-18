@@ -10,19 +10,21 @@ import java.util.Locale
  * Markers match [ProcessRootShell]'s output filter (`FGA_[A-Z_]+(=[0-9]+)?`).
  */
 internal object RootRedirectScripts {
-    const val CHAIN_NAME = "FGA_CAP"
-    const val WATCHDOG_SCRIPT_PRIMARY = "/data/local/tmp/fga_cap_watchdog.sh"
-    const val WATCHDOG_SCRIPT_FALLBACK = "/dev/fga_cap_watchdog.sh"
-    const val WATCHDOG_PID_PRIMARY = "/data/local/tmp/fga_cap_watchdog.pid"
-    const val WATCHDOG_PID_FALLBACK = "/dev/fga_cap_watchdog.pid"
-    const val WATCHDOG_OK_PRIMARY = "/data/local/tmp/fga_cap_watchdog.ok"
-    const val WATCHDOG_OK_FALLBACK = "/dev/fga_cap_watchdog.ok"
+    /** Chain and watchdog name used by 1.8.0 and older, before names carried the app uid (#493). */
+    const val LEGACY_CHAIN_NAME = "FGA_CAP"
+    private const val CHAIN_PREFIX = "FGA_CAP_"
+    private const val WATCHDOG_BASE_PREFIX = "fga_cap_watchdog_"
+    private const val LEGACY_WATCHDOG_BASE = "fga_cap_watchdog"
+    private const val PRIMARY_DIR = "/data/local/tmp/"
+    private const val FALLBACK_DIR = "/dev/"
 
     const val MARKER_APPLY_OK = "FGA_APPLY_OK"
     const val MARKER_CLEANUP_OK = "FGA_CLEANUP_OK"
     const val MARKER_WATCHDOG_OK = "FGA_WATCHDOG_OK"
     const val MARKER_FAIL_WATCHDOG_PROBE = "FGA_FAIL_WATCHDOG_PROBE"
     const val MARKER_FAIL_OWNER = "FGA_FAIL_OWNER"
+    const val MARKER_FAIL_OTHER_APP = "FGA_FAIL_OTHER_APP"
+    const val MARKER_GUARD_OK = "FGA_GUARD_OK"
     const val MARKER_FAIL_STEP_PREFIX = "FGA_FAIL_STEP="
 
     private fun validatePort(port: Int) {
@@ -43,6 +45,24 @@ internal object RootRedirectScripts {
         distinct.forEach { validateUid(it, "fgoUid") }
         return distinct
     }
+
+    // iptables chain names are limited to 28 characters; FGA_CAP_ plus a 10-digit uid is 18.
+    fun chainName(fgaUid: Int): String {
+        validateUid(fgaUid, "fgaUid")
+        return "$CHAIN_PREFIX$fgaUid"
+    }
+
+    private fun watchdogBase(fgaUid: Int): String {
+        validateUid(fgaUid, "fgaUid")
+        return "$WATCHDOG_BASE_PREFIX$fgaUid"
+    }
+
+    fun watchdogScriptPrimary(fgaUid: Int): String = "$PRIMARY_DIR${watchdogBase(fgaUid)}.sh"
+    fun watchdogScriptFallback(fgaUid: Int): String = "$FALLBACK_DIR${watchdogBase(fgaUid)}.sh"
+    fun watchdogPidPrimary(fgaUid: Int): String = "$PRIMARY_DIR${watchdogBase(fgaUid)}.pid"
+    fun watchdogPidFallback(fgaUid: Int): String = "$FALLBACK_DIR${watchdogBase(fgaUid)}.pid"
+    fun watchdogOkPrimary(fgaUid: Int): String = "$PRIMARY_DIR${watchdogBase(fgaUid)}.ok"
+    fun watchdogOkFallback(fgaUid: Int): String = "$FALLBACK_DIR${watchdogBase(fgaUid)}.ok"
 
     fun portToProcHex(port: Int): String {
         validatePort(port)
@@ -81,57 +101,59 @@ internal object RootRedirectScripts {
 
     private fun StringBuilder.appendLoopbackReturnRules(
         toolVar: String,
+        chain: String,
         cidrs: List<String>,
         failStep: Int,
     ) {
         for (cidr in cidrs) {
             appendLine(
-                "\"\$$toolVar\" -w 3 -t nat -A $CHAIN_NAME -d $cidr -j RETURN >/dev/null 2>&1 || { echo $MARKER_FAIL_STEP_PREFIX$failStep; exit 1; }"
+                "\"\$$toolVar\" -w 3 -t nat -A $chain -d $cidr -j RETURN >/dev/null 2>&1 || { echo $MARKER_FAIL_STEP_PREFIX$failStep; exit 1; }"
             )
         }
     }
 
-    fun apply(fgoUids: List<Int>, port: Int, ipv6: Boolean): String {
+    fun apply(fgaUid: Int, fgoUids: List<Int>, port: Int, ipv6: Boolean): String {
+        val chain = chainName(fgaUid)
         val uids = validateTargetUids(fgoUids)
         validatePort(port)
         return buildString {
             appendLine("IPT=/system/bin/iptables")
             appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
-            appendLine("\"\$IPT\" -w 3 -t nat -N $CHAIN_NAME >/dev/null 2>&1 || true")
-            appendLine("\"\$IPT\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
-            appendLoopbackReturnRules("IPT", IPV4_LOOPBACK_CIDRS, failStep = 2)
+            appendLine("\"\$IPT\" -w 3 -t nat -N $chain >/dev/null 2>&1 || true")
+            appendLine("\"\$IPT\" -w 3 -t nat -F $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
+            appendLoopbackReturnRules("IPT", chain, IPV4_LOOPBACK_CIDRS, failStep = 2)
             for (uid in uids) {
                 appendLine(
-                    "\"\$IPT\" -w 3 -t nat -A $CHAIN_NAME -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }"
+                    "\"\$IPT\" -w 3 -t nat -A $chain -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }"
                 )
             }
             appendLine(
-                "\"\$IPT\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || \"\$IPT\" -w 3 -t nat -I OUTPUT 1 -j $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}3; exit 1; }"
+                "\"\$IPT\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || \"\$IPT\" -w 3 -t nat -I OUTPUT 1 -j $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}3; exit 1; }"
             )
             if (ipv6) {
                 appendLine("IP6T=/system/bin/ip6tables")
                 appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
-                appendLine("\"\$IP6T\" -w 3 -t nat -N $CHAIN_NAME >/dev/null 2>&1 || true")
-                appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}4; exit 1; }")
-                appendLoopbackReturnRules("IP6T", IPV6_LOOPBACK_CIDRS, failStep = 5)
+                appendLine("\"\$IP6T\" -w 3 -t nat -N $chain >/dev/null 2>&1 || true")
+                appendLine("\"\$IP6T\" -w 3 -t nat -F $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}4; exit 1; }")
+                appendLoopbackReturnRules("IP6T", chain, IPV6_LOOPBACK_CIDRS, failStep = 5)
                 for (uid in uids) {
                     appendLine(
-                        "\"\$IP6T\" -w 3 -t nat -A $CHAIN_NAME -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}5; exit 1; }"
+                        "\"\$IP6T\" -w 3 -t nat -A $chain -p tcp --dport 443 -m owner --uid-owner $uid -j REDIRECT --to-ports $port >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}5; exit 1; }"
                     )
                 }
                 appendLine(
-                    "\"\$IP6T\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -I OUTPUT 1 -j $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}6; exit 1; }"
+                    "\"\$IP6T\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -I OUTPUT 1 -j $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}6; exit 1; }"
                 )
             } else {
                 // H6: rules from an earlier IPv6 apply must not stay behind (errors are ignored, e.g. no ip6tables nat).
                 appendLine("IP6T=/system/bin/ip6tables")
                 appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
                 appendLine("k=0")
-                appendLine("while [ \"\$k\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+                appendLine("while [ \"\$k\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $chain >/dev/null 2>&1; do")
                 appendLine("  k=\$((k + 1))")
                 appendLine("done")
-                appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
-                appendLine("\"\$IP6T\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
+                appendLine("\"\$IP6T\" -w 3 -t nat -F $chain >/dev/null 2>&1 || true")
+                appendLine("\"\$IP6T\" -w 3 -t nat -X $chain >/dev/null 2>&1 || true")
             }
             appendLine("echo $MARKER_APPLY_OK")
         }
@@ -143,63 +165,203 @@ internal object RootRedirectScripts {
      * before the watchdog starts; output carries [MARKER_APPLY_OK] then [MARKER_WATCHDOG_OK] on success.
      */
     fun applyAndStartWatchdog(fgoUids: List<Int>, port: Int, fgaUid: Int, ipv6: Boolean): String =
-        apply(fgoUids, port, ipv6) + startWatchdog(port, fgaUid, ipv6)
+        apply(fgaUid, fgoUids, port, ipv6) + startWatchdog(port, fgaUid, ipv6)
 
-    fun checkChains(ipv6: Boolean): String = buildString {
-        appendLine("IPT=/system/bin/iptables")
-        appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
-        appendLine("\"\$IPT\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
-        appendLine("\"\$IPT\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }")
-        if (ipv6) {
-            appendLine("IP6T=/system/bin/ip6tables")
-            appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
-            appendLine("\"\$IP6T\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}3; exit 1; }")
-            appendLine("\"\$IP6T\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}4; exit 1; }")
+    /**
+     * Besides the chain and its jump, the chain must still hold the `REDIRECT` to [port]: another FGA app that
+     * flushed or rewrote it would leave the chain in place while the capture silently stopped (#493).
+     */
+    fun checkChains(fgaUid: Int, port: Int, ipv6: Boolean): String {
+        val chain = chainName(fgaUid)
+        validatePort(port)
+        return buildString {
+            appendLine("IPT=/system/bin/iptables")
+            appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
+            appendLine("\"\$IPT\" -w 3 -t nat -S $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
+            appendLine("\"\$IPT\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }")
+            appendLine("\"\$IPT\" -w 3 -t nat -S $chain 2>/dev/null | ${redirectGrep(port)} || { echo ${MARKER_FAIL_STEP_PREFIX}5; exit 1; }")
+            if (ipv6) {
+                appendLine("IP6T=/system/bin/ip6tables")
+                appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
+                appendLine("\"\$IP6T\" -w 3 -t nat -S $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}3; exit 1; }")
+                appendLine("\"\$IP6T\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || { echo ${MARKER_FAIL_STEP_PREFIX}4; exit 1; }")
+                appendLine("\"\$IP6T\" -w 3 -t nat -S $chain 2>/dev/null | ${redirectGrep(port)} || { echo ${MARKER_FAIL_STEP_PREFIX}6; exit 1; }")
+            }
+            appendLine("echo $MARKER_APPLY_OK")
         }
-        appendLine("echo $MARKER_APPLY_OK")
     }
 
-    fun cleanup(killWatchdog: Boolean = true): String = buildString {
+    private fun redirectGrep(port: Int): String = "grep -Eq -- \"--to-ports $port( |\\\$)\""
+
+    fun cleanup(fgaUid: Int, killWatchdog: Boolean = true): String = buildString {
+        val chain = chainName(fgaUid)
         appendLine("IPT=/system/bin/iptables")
         appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
         appendLine("IP6T=/system/bin/ip6tables")
         appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
         appendLine("i=0")
-        appendLine("while [ \"\$i\" -lt 16 ] && \"\$IPT\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+        appendLine("while [ \"\$i\" -lt 16 ] && \"\$IPT\" -w 3 -t nat -D OUTPUT -j $chain >/dev/null 2>&1; do")
         appendLine("  i=\$((i + 1))")
         appendLine("done")
-        appendLine("\"\$IPT\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
-        appendLine("\"\$IPT\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
+        appendLine("\"\$IPT\" -w 3 -t nat -F $chain >/dev/null 2>&1 || true")
+        appendLine("\"\$IPT\" -w 3 -t nat -X $chain >/dev/null 2>&1 || true")
         appendLine("j=0")
-        appendLine("while [ \"\$j\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+        appendLine("while [ \"\$j\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $chain >/dev/null 2>&1; do")
         appendLine("  j=\$((j + 1))")
         appendLine("done")
-        appendLine("\"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
-        appendLine("\"\$IP6T\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
-        appendLine("if \"\$IPT\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1; then")
+        appendLine("\"\$IP6T\" -w 3 -t nat -F $chain >/dev/null 2>&1 || true")
+        appendLine("\"\$IP6T\" -w 3 -t nat -X $chain >/dev/null 2>&1 || true")
+        appendLine("if \"\$IPT\" -w 3 -t nat -S $chain >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -S $chain >/dev/null 2>&1; then")
         appendLine("  echo ${MARKER_FAIL_STEP_PREFIX}1")
         appendLine("  exit 1")
         appendLine("fi")
         if (killWatchdog) {
-            append(killWatchdogCommands())
+            append(killWatchdogCommands(fgaUid))
         }
         appendLine("echo $MARKER_CLEANUP_OK")
     }
 
-    fun killWatchdog(): String = buildString {
-        append(killWatchdogCommands())
+    fun killWatchdog(fgaUid: Int): String = buildString {
+        append(killWatchdogCommands(fgaUid))
         appendLine("echo $MARKER_CLEANUP_OK")
     }
 
-    private fun killWatchdogCommands(): String = buildString {
-        appendLine("for PF in $WATCHDOG_PID_PRIMARY $WATCHDOG_PID_FALLBACK; do")
+    /**
+     * Start guard against another FGA app (stable and beta installs share the device's nat table, #493).
+     *
+     * Looks at nat `OUTPUT` for jumps to the legacy `FGA_CAP` chain (1.8.0 and older) or to another app's
+     * `FGA_CAP_<uid>` chain. A chain whose watchdog is alive belongs to a collecting app: the script prints
+     * [MARKER_FAIL_OTHER_APP] and exits 1 without touching anything. Rules never exist without their watchdog
+     * (K2), but an app that is just starting has applied its rules before its watchdog wrote the PID file, so a
+     * chain without a live watchdog is removed only after a second look [waitSeconds] later still finds no
+     * watchdog; only chains present in both looks are removed. A chain nothing jumps to is not looked at.
+     *
+     * Worst case with a foreign chain is [waitSeconds] plus four `iptables -w 3` calls; they return at once unless
+     * the xtables lock is held, and a script that outlives the runner's shell timeout fails the start closed.
+     */
+    fun guardOtherApp(fgaUid: Int, ipv6: Boolean, waitSeconds: Int = GUARD_WAIT_SECONDS): String {
+        require(waitSeconds >= 0) { "Invalid waitSeconds: $waitSeconds" }
+        return foreignChainScript(fgaUid, ipv6, removeStale = true, waitSeconds = waitSeconds)
+    }
+
+    /**
+     * Read-only form of [guardOtherApp] for after the apply and for the periodic check: the same detection,
+     * one look, nothing is removed. Prints [MARKER_FAIL_OTHER_APP] and exits 1 when another app is live.
+     */
+    fun detectOtherApp(fgaUid: Int, ipv6: Boolean): String =
+        foreignChainScript(fgaUid, ipv6, removeStale = false, waitSeconds = 0)
+
+    const val GUARD_WAIT_SECONDS = 2
+
+    private fun foreignChainScript(fgaUid: Int, ipv6: Boolean, removeStale: Boolean, waitSeconds: Int): String {
+        val own = chainName(fgaUid)
+        return buildString {
+            appendLine("IPT=/system/bin/iptables")
+            appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
+            appendLine("IP6T=/system/bin/ip6tables")
+            appendLine("[ -x \"\$IP6T\" ] || IP6T=ip6tables")
+            appendLine("PROC_ROOT=\"\${PROC_ROOT:-/proc}\"")
+            appendLine("OWN=$own")
+            // The listing status is checked on its own: a failing iptables (lock timeout, ...) must not read as an
+            // empty list. sed has no interval expressions; the exact chain names are filtered in is_fga_chain.
+            appendLine("list_chains() {")
+            appendLine("  OUT=\$(\"\$1\" -w 3 -t nat -S OUTPUT 2>/dev/null) || return 1")
+            appendLine("  printf '%s\\n' \"\$OUT\" | sed -n 's/^-A OUTPUT .*-j \\(FGA_CAP[A-Za-z0-9_]*\\)[[:space:]]*\$/\\1/p'")
+            appendLine("}")
+            appendLine("is_fga_chain() {")
+            appendLine("  case \"\$1\" in")
+            appendLine("    $LEGACY_CHAIN_NAME) return 0 ;;")
+            appendLine("    ${CHAIN_PREFIX}) return 1 ;;")
+            appendLine("    ${CHAIN_PREFIX}*[!0-9]*) return 1 ;;")
+            appendLine("    ${CHAIN_PREFIX}*) return 0 ;;")
+            appendLine("  esac")
+            appendLine("  return 1")
+            appendLine("}")
+            appendLine("watchdog_live() {")
+            appendLine("  for PF in $PRIMARY_DIR\$1.pid $FALLBACK_DIR\$1.pid; do")
+            appendLine("    [ -f \"\$PF\" ] || continue")
+            appendLine("    WPID=\$(cat \"\$PF\" 2>/dev/null)")
+            appendLine("    case \"\$WPID\" in")
+            appendLine("      ''|*[!0-9]*) continue ;;")
+            appendLine("    esac")
+            appendLine("    [ \"\$WPID\" -gt 1 ] || continue")
+            appendLine("    [ -r \"\$PROC_ROOT/\$WPID/cmdline\" ] || continue")
+            appendLine("    if tr '\\000' ' ' < \"\$PROC_ROOT/\$WPID/cmdline\" 2>/dev/null | grep -q \"\$1\\.sh\"; then")
+            appendLine("      return 0")
+            appendLine("    fi")
+            appendLine("  done")
+            appendLine("  return 1")
+            appendLine("}")
+            appendLine("watchdog_base() {")
+            appendLine("  case \"\$1\" in")
+            appendLine("    $LEGACY_CHAIN_NAME) echo $LEGACY_WATCHDOG_BASE ;;")
+            appendLine("    *) echo \"$WATCHDOG_BASE_PREFIX\${1#$CHAIN_PREFIX}\" ;;")
+            appendLine("  esac")
+            appendLine("}")
+            appendLine("scan() {")
+            appendLine("  CHAINS=")
+            appendLine("  L=\$(list_chains \"\$IPT\") || { echo ${MARKER_FAIL_STEP_PREFIX}1; exit 1; }")
+            appendLine("  for C in \$L; do")
+            appendLine("    if is_fga_chain \"\$C\" && [ \"\$C\" != \"\$OWN\" ]; then CHAINS=\"\$CHAINS \$C\"; fi")
+            appendLine("  done")
+            if (ipv6) {
+                // The IPv6 pre-check already passed, so a failing listing here is not a missing nat table.
+                appendLine("  L=\$(list_chains \"\$IP6T\") || { echo ${MARKER_FAIL_STEP_PREFIX}2; exit 1; }")
+                appendLine("  for C in \$L; do")
+                appendLine("    if is_fga_chain \"\$C\" && [ \"\$C\" != \"\$OWN\" ]; then CHAINS=\"\$CHAINS \$C\"; fi")
+                appendLine("  done")
+            }
+            appendLine("}")
+            appendLine("fail_if_live() {")
+            appendLine("  for C in \$CHAINS; do")
+            appendLine("    if watchdog_live \"\$(watchdog_base \"\$C\")\"; then")
+            appendLine("      echo $MARKER_FAIL_OTHER_APP")
+            appendLine("      exit 1")
+            appendLine("    fi")
+            appendLine("  done")
+            appendLine("}")
+            appendLine("scan")
+            appendLine("fail_if_live")
+            if (removeStale) {
+                appendLine("if [ -n \"\$CHAINS\" ]; then")
+                appendLine("  FIRST=\"\$CHAINS\"")
+                appendLine("  sleep $waitSeconds")
+                appendLine("  scan")
+                appendLine("  fail_if_live")
+                appendLine("  for C in \$CHAINS; do")
+                appendLine("    case \" \$FIRST \" in")
+                appendLine("      *\" \$C \"*) ;;")
+                appendLine("      *) continue ;;")
+                appendLine("    esac")
+                appendLine("    for T in \"\$IPT\" \"\$IP6T\"; do")
+                appendLine("      k=0")
+                appendLine("      while [ \"\$k\" -lt 16 ] && \"\$T\" -w 3 -t nat -D OUTPUT -j \"\$C\" >/dev/null 2>&1; do")
+                appendLine("        k=\$((k + 1))")
+                appendLine("      done")
+                appendLine("      \"\$T\" -w 3 -t nat -F \"\$C\" >/dev/null 2>&1 || true")
+                appendLine("      \"\$T\" -w 3 -t nat -X \"\$C\" >/dev/null 2>&1 || true")
+                appendLine("    done")
+                appendLine("    if \"\$IPT\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1 || \"\$IP6T\" -w 3 -t nat -C OUTPUT -j \"\$C\" >/dev/null 2>&1; then")
+                appendLine("      echo ${MARKER_FAIL_STEP_PREFIX}3")
+                appendLine("      exit 1")
+                appendLine("    fi")
+                appendLine("  done")
+                appendLine("fi")
+            }
+            appendLine("echo $MARKER_GUARD_OK")
+        }
+    }
+
+    private fun killWatchdogCommands(fgaUid: Int): String = buildString {
+        val base = watchdogBase(fgaUid)
+        appendLine("for PF in ${watchdogPidPrimary(fgaUid)} ${watchdogPidFallback(fgaUid)}; do")
         appendLine("  if [ -f \"\$PF\" ]; then")
         appendLine("    WPID=\$(cat \"\$PF\" 2>/dev/null)")
         appendLine("    case \"\$WPID\" in")
         appendLine("      ''|*[!0-9]*) ;;")
         appendLine("      *)")
         appendLine("        if [ \"\$WPID\" -gt 1 ] && [ -r \"/proc/\$WPID/cmdline\" ]; then")
-        appendLine("          if tr '\\000' ' ' < \"/proc/\$WPID/cmdline\" 2>/dev/null | grep -q \"fga_cap_watchdog\"; then")
+        appendLine("          if tr '\\000' ' ' < \"/proc/\$WPID/cmdline\" 2>/dev/null | grep -q \"$base\\.sh\"; then")
         appendLine("            kill -9 \"\$WPID\" >/dev/null 2>&1 || true")
         appendLine("          fi")
         appendLine("        fi")
@@ -208,7 +370,7 @@ internal object RootRedirectScripts {
         appendLine("    rm -f \"\$PF\" >/dev/null 2>&1 || true")
         appendLine("  fi")
         appendLine("done")
-        appendLine("rm -f $WATCHDOG_OK_PRIMARY $WATCHDOG_OK_FALLBACK >/dev/null 2>&1 || true")
+        appendLine("rm -f ${watchdogOkPrimary(fgaUid)} ${watchdogOkFallback(fgaUid)} >/dev/null 2>&1 || true")
     }
 
     private fun procNetListenGrep(
@@ -221,7 +383,7 @@ internal object RootRedirectScripts {
 
     fun watchdogScript(port: Int, fgaUid: Int, ipv6: Boolean): String {
         val portHex = portToProcHex(port)
-        validateUid(fgaUid, "fgaUid")
+        val chain = chainName(fgaUid)
         val ipv4Grep = procNetListenGrep("0100007F", portHex, fgaUid, "PROC_NET_TCP")
         val ipv4MappedGrep = procNetListenGrep("0000000000000000FFFF00000100007F", portHex, fgaUid, "PROC_NET_TCP6")
         val ipv6Grep = procNetListenGrep("00000000000000000000000001000000", portHex, fgaUid, "PROC_NET_TCP6")
@@ -233,13 +395,13 @@ internal object RootRedirectScripts {
             appendLine("    break")
             appendLine("  fi")
             appendLine("done")
-            appendLine("PID_FILE=$WATCHDOG_PID_PRIMARY")
+            appendLine("PID_FILE=${watchdogPidPrimary(fgaUid)}")
             appendLine("(echo \$\$ > \"\$PID_FILE\") 2>/dev/null || {")
-            appendLine("  PID_FILE=$WATCHDOG_PID_FALLBACK")
+            appendLine("  PID_FILE=${watchdogPidFallback(fgaUid)}")
             appendLine("  (echo \$\$ > \"\$PID_FILE\") 2>/dev/null || true")
             appendLine("}")
-            appendLine("OK_FILE=$WATCHDOG_OK_PRIMARY")
-            appendLine("(: > \"\$OK_FILE\") 2>/dev/null || OK_FILE=$WATCHDOG_OK_FALLBACK")
+            appendLine("OK_FILE=${watchdogOkPrimary(fgaUid)}")
+            appendLine("(: > \"\$OK_FILE\") 2>/dev/null || OK_FILE=${watchdogOkFallback(fgaUid)}")
             appendLine("IPT=/system/bin/iptables")
             appendLine("[ -x \"\$IPT\" ] || IPT=iptables")
             appendLine("IP6T=/system/bin/ip6tables")
@@ -254,32 +416,34 @@ internal object RootRedirectScripts {
             appendLine("  return 0")
             appendLine("}")
             appendLine("check_chains() {")
-            appendLine("  \"\$IPT\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || return 1")
-            appendLine("  \"\$IPT\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || return 1")
+            appendLine("  \"\$IPT\" -w 3 -t nat -S $chain >/dev/null 2>&1 || return 1")
+            appendLine("  \"\$IPT\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || return 1")
+            appendLine("  \"\$IPT\" -w 3 -t nat -S $chain 2>/dev/null | ${redirectGrep(port)} || return 1")
             if (ipv6) {
-                appendLine("  \"\$IP6T\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 || return 1")
-                appendLine("  \"\$IP6T\" -w 3 -t nat -C OUTPUT -j $CHAIN_NAME >/dev/null 2>&1 || return 1")
+                appendLine("  \"\$IP6T\" -w 3 -t nat -S $chain >/dev/null 2>&1 || return 1")
+                appendLine("  \"\$IP6T\" -w 3 -t nat -C OUTPUT -j $chain >/dev/null 2>&1 || return 1")
+                appendLine("  \"\$IP6T\" -w 3 -t nat -S $chain 2>/dev/null | ${redirectGrep(port)} || return 1")
             }
             appendLine("  return 0")
             appendLine("}")
             appendLine("cleanup_once() {")
             appendLine("  i=0")
-            appendLine("  while [ \"\$i\" -lt 16 ] && \"\$IPT\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+            appendLine("  while [ \"\$i\" -lt 16 ] && \"\$IPT\" -w 3 -t nat -D OUTPUT -j $chain >/dev/null 2>&1; do")
             appendLine("    i=\$((i + 1))")
             appendLine("  done")
-            appendLine("  \"\$IPT\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
-            appendLine("  \"\$IPT\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
+            appendLine("  \"\$IPT\" -w 3 -t nat -F $chain >/dev/null 2>&1 || true")
+            appendLine("  \"\$IPT\" -w 3 -t nat -X $chain >/dev/null 2>&1 || true")
             appendLine("  j=0")
-            appendLine("  while [ \"\$j\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $CHAIN_NAME >/dev/null 2>&1; do")
+            appendLine("  while [ \"\$j\" -lt 16 ] && \"\$IP6T\" -w 3 -t nat -D OUTPUT -j $chain >/dev/null 2>&1; do")
             appendLine("    j=\$((j + 1))")
             appendLine("  done")
-            appendLine("  \"\$IP6T\" -w 3 -t nat -F $CHAIN_NAME >/dev/null 2>&1 || true")
-            appendLine("  \"\$IP6T\" -w 3 -t nat -X $CHAIN_NAME >/dev/null 2>&1 || true")
+            appendLine("  \"\$IP6T\" -w 3 -t nat -F $chain >/dev/null 2>&1 || true")
+            appendLine("  \"\$IP6T\" -w 3 -t nat -X $chain >/dev/null 2>&1 || true")
             appendLine("}")
             appendLine("cleanup_until_gone() {")
             appendLine("  while :; do")
             appendLine("    cleanup_once")
-            appendLine("    if ! \"\$IPT\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1 && ! \"\$IP6T\" -w 3 -t nat -S $CHAIN_NAME >/dev/null 2>&1; then")
+            appendLine("    if ! \"\$IPT\" -w 3 -t nat -S $chain >/dev/null 2>&1 && ! \"\$IP6T\" -w 3 -t nat -S $chain >/dev/null 2>&1; then")
             appendLine("      break")
             appendLine("    fi")
             appendLine("    sleep 2")
@@ -317,12 +481,12 @@ internal object RootRedirectScripts {
     fun startWatchdog(port: Int, fgaUid: Int, ipv6: Boolean): String {
         val watchdogBody = watchdogScript(port, fgaUid, ipv6)
         return buildString {
-            append(killWatchdogCommands())
-            appendLine("WFILE=$WATCHDOG_SCRIPT_PRIMARY")
+            append(killWatchdogCommands(fgaUid))
+            appendLine("WFILE=${watchdogScriptPrimary(fgaUid)}")
             appendLine("cat <<'FGA_WATCHDOG_EOF' > \"\$WFILE\" 2>/dev/null || {")
             append(watchdogBody)
             appendLine("FGA_WATCHDOG_EOF")
-            appendLine("  WFILE=$WATCHDOG_SCRIPT_FALLBACK")
+            appendLine("  WFILE=${watchdogScriptFallback(fgaUid)}")
             appendLine("  cat <<'FGA_WATCHDOG_EOF' > \"\$WFILE\" || { echo $MARKER_FAIL_WATCHDOG_PROBE; exit 1; }")
             append(watchdogBody)
             appendLine("FGA_WATCHDOG_EOF")
@@ -335,7 +499,7 @@ internal object RootRedirectScripts {
             appendLine("fi")
             appendLine("p=0")
             appendLine("while [ \"\$p\" -lt 30 ]; do")
-            appendLine("  for OF in $WATCHDOG_OK_PRIMARY $WATCHDOG_OK_FALLBACK; do")
+            appendLine("  for OF in ${watchdogOkPrimary(fgaUid)} ${watchdogOkFallback(fgaUid)}; do")
             appendLine("    if [ -f \"\$OF\" ]; then")
             appendLine("      ST=\$(cat \"\$OF\" 2>/dev/null)")
             appendLine("      if [ \"\$ST\" = \"OK\" ]; then")

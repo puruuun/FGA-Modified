@@ -1466,6 +1466,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_root_ipv6_unsupported">"This device does not support IPv6 nat rules; IPv6 connections are not captured (the game works normally)."</string>
     <string name="capture_root_nat_unsupported">"Root rules (nat REDIRECT) are not supported on this device"</string>
     <string name="capture_root_owner_unsupported">"This device does not support per-app rules (iptables owner), so root mode cannot be used. Use FGA VPN or the external app proxy."</string>
+    <string name="capture_root_other_app_active">"Another FGA app is collecting through root. Turn off collection in that app first."</string>
     <string name="capture_root_unexpected_connections">"Unexpected connections (no SNI / non-TLS closed): %1$d"</string>
     <string name="capture_root_non_game_failures">"Non-game host connection failures: %1$d"</string>
     <string name="capture_root_cleanup_retry_warning">"Could not remove root rules. Retrying; if it keeps failing, please reboot."</string>

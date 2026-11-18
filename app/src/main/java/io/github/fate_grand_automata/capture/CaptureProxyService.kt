@@ -447,6 +447,7 @@ class CaptureProxyService : Service() {
                     val localizedError = when (errorMessage) {
                         RootCaptureRunner.ERROR_NAT_UNSUPPORTED -> getString(R.string.capture_root_nat_unsupported)
                         RootCaptureRunner.ERROR_OWNER_UNSUPPORTED -> getString(R.string.capture_root_owner_unsupported)
+                        RootCaptureRunner.ERROR_OTHER_APP_ACTIVE -> getString(R.string.capture_root_other_app_active)
                         RootCaptureRunner.ERROR_START_FAILED -> getString(R.string.capture_start_failed)
                         else -> errorMessage
                     }
@@ -1070,8 +1071,9 @@ class CaptureProxyService : Service() {
             if (!flag.isSet()) return
             ROOT_SERIAL_EXECUTOR.execute {
                 if (!CaptureProxyStatus.state.value.reading && flag.isSet()) {
+                    val fgaUid = Process.myUid()
                     val res = runCatching {
-                        shell.run(ROOT_SH_COMMAND, RootRedirectScripts.cleanup(killWatchdog = true), 10)
+                        shell.run(ROOT_SH_COMMAND, RootRedirectScripts.cleanup(fgaUid, killWatchdog = true), 10)
                     }.getOrElse {
                         RootShellOutput(-1, emptyList(), false)
                     }
