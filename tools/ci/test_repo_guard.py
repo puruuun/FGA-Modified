@@ -18,8 +18,9 @@ def record(path, size, kind='blob'):
     return ('100644 %s %s %7s\t%s\0' % (kind, 'a' * 40, size, path)).encode('utf-8')
 
 
-def run(stdin, *args):
-    p = subprocess.run([sys.executable, SCRIPT, *args], input=stdin, capture_output=True)
+def run(stdin, *args, **env):
+    p = subprocess.run([sys.executable, SCRIPT, *args], input=stdin, capture_output=True,
+                       env=dict(os.environ, **env))
     return p.returncode, p.stdout.decode('utf-8', 'replace')
 
 
@@ -119,6 +120,23 @@ class CommandLineTest(unittest.TestCase):
         code, out = run(record('x/m.onnx', 1), '--allow', allow, '--label', 'abc1234')
         self.assertEqual(code, 1)
         self.assertIn('REFUSED x/m.onnx (in commit abc1234)', out)
+
+    def test_korean_and_japanese_names_stay_readable(self):
+        allow = self.write('allow.txt', b'')
+        for name in ('assets/' + chr(0xBAA8) + chr(0xB378) + '.onnx', 'a/' + chr(0x30E2) + chr(0x30C7) + chr(0x30EB) + '.pt'):
+            # A console encoding that cannot hold the name must not matter: the output is UTF-8 bytes.
+            code, out = run(record(name, 1), '--allow', allow, PYTHONIOENCODING='ascii')
+            self.assertEqual(code, 1)
+            self.assertIn('REFUSED ' + name + ':', out)
+
+    def test_undecodable_bytes_and_separators_are_escaped(self):
+        allow = self.write('allow.txt', b'')
+        data = (b'100644 blob ' + b'a' * 40 + b'       1' + bytes([9]) + b'a/' + bytes([0xff]) + b'x'
+                + chr(0x2028).encode() + chr(0x85).encode() + b'.onnx' + bytes([0]))
+        code, out = run(data, '--allow', allow)
+        self.assertEqual(code, 1)
+        self.assertIn('a/' + chr(92) + 'xffx' + chr(92) + 'u2028' + chr(92) + 'x85.onnx', out)
+        self.assertEqual(len(out.splitlines()), 3, out)
 
     def test_path_with_line_break_cannot_forge_a_log_line(self):
         allow = self.write('allow.txt', b'')
@@ -303,6 +321,53 @@ class StepScriptTest(unittest.TestCase):
         code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
         self.assertEqual(code, 0, out)
         self.assertNotEqual(root, head)
+
+    def merge_base_into_topic(self, base, evil_files=None):
+        self.git('checkout', '-q', 'topic')
+        if evil_files is None:
+            self.git('merge', '-q', '--no-edit', base)
+            return self.git('rev-parse', 'HEAD')
+        self.git('merge', '-q', '--no-commit', '--no-ff', base)
+        for name, size in evil_files.items():
+            path = os.path.join(self.repo, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'wb') as f:
+                f.write(b'x' * size)
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', 'merge with a resolution')
+        return self.git('rev-parse', 'HEAD')
+
+    def start_topic(self):
+        self.commit({'ok.txt': 1})
+        self.git('checkout', '-q', '-b', 'topic')
+        self.commit({'topic/a.txt': 1})
+        self.git('checkout', '-q', '-')
+
+    def test_file_introduced_by_a_merge_and_deleted_later_is_refused(self):
+        self.start_topic()
+        base = self.commit({'base/b.txt': 1})
+        merge = self.merge_base_into_topic(base, {'tmp/evil.bin': g.MAX_BYTES + 1})
+        head = self.delete_commit('tmp/evil.bin')
+        code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
+        self.assertEqual(code, 1, out)
+        self.assertIn('REFUSED tmp/evil.bin', out)
+        self.assertIn('(in commit %s)' % merge[:7], out)
+
+    def test_clean_merge_of_a_base_with_a_large_file_is_not_rechecked(self):
+        self.start_topic()
+        base = self.commit({'base/huge.bin': g.MAX_BYTES + 1, 'base/m.onnx': 1})
+        head = self.merge_base_into_topic(base)
+        code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
+        self.assertEqual(code, 0, out)
+
+    def test_base_commits_that_added_and_deleted_a_large_file_are_not_checked(self):
+        self.start_topic()
+        self.commit({'base/huge.bin': g.MAX_BYTES + 1})
+        base = self.delete_commit('base/huge.bin')
+        self.git('checkout', '-q', 'topic')
+        head = self.commit({'topic/b.txt': 1})
+        code, out = self.step(head, base + '...' + head, 'pull_request', pr_head=head)
+        self.assertEqual(code, 0, out)
 
     def test_head_without_an_allow_list_fails(self):
         head = self.commit({'ok.txt': 1}, seed_allow_list=False)

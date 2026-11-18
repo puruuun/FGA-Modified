@@ -25,16 +25,12 @@ commit_range=$(printf '%s' "${RANGE:-}" | sed 's/\.\.\.*/../')
 # file of the head commit instead of passing without a look.
 if [ -n "${RANGE:-}" ] \
   && git diff --name-only --no-renames --diff-filter=d -z "$RANGE" > "$only" \
-  && commits=$(git rev-list --no-merges "$commit_range"); then
+  && git rev-list "$commit_range" > "$RUNNER_TEMP/commits"; then
   "$py" "$guard" --allow "$allow" --only "$only" < "$listing" || status=1
   # A file added in one commit and deleted in a later one is gone from the net diff, but the
-  # blob stays in the history that a fast-forward merge keeps.
-  for c in $commits; do
-    git diff-tree --no-commit-id -r --no-renames --diff-filter=d --name-only -z "$c" > "$only"
-    git ls-tree -r -l -z "$c" > "$RUNNER_TEMP/commit-listing"
-    "$py" "$guard" --allow "$allow" --only "$only" --label "$(git rev-parse --short "$c")" \
-      < "$RUNNER_TEMP/commit-listing" || status=1
-  done
+  # blob stays in the history that a fast-forward merge keeps. A merge counts only for what it
+  # introduces itself, not for the files of the base that it brings in.
+  "$py" "$guard" --allow "$allow" --history "$RUNNER_TEMP/commits" < /dev/null || status=1
 else
   echo "No usable diff range; checking every tracked file of $head."
   "$py" "$guard" --allow "$allow" < "$listing" || status=1
