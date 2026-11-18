@@ -145,6 +145,10 @@ Configured under **Battle launcher → Bond points**. Sums bond gains for result
 
 When using a Command Spell in battle, instead of template-matching the `"Command Spell"` text, FGA taps the fixed coordinates of the Command Spell diamond to the left of the Master portrait for 16:9 and wide screens. Subsequent steps behave as before, and if no confirmation dialog appears, FGA treats Command Spells as depleted and stops the battle. [Details](Command-Spell-Tap-EN.md)
 
+### Master Skill Menu Delay
+
+When a master skill (or Order Change) is used, the wait after pressing the Master Skill button, before the menu is used, can be changed under **Fine tune → Wait → Master Skill Menu Delay**. The range is 300–3000ms in 100ms steps, and the default is 1500ms, which behaves exactly as before. Setting it too low can make master skills fail on slow devices.
+
 ## Other Features
 
 App language selection moved to **More options → Advanced → App Language**. Under **More options → Advanced → Dark mode**, you can pick **Follow system** (default), **Light**, or **Dark**, taking effect immediately across the app. In-battle overlays always stay dark, and the AP widget follows Widget settings.
