@@ -504,6 +504,8 @@ dependencies {
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
+    // The nativeProbe device suite runs its test class through JUnitCore inside the custom runner.
+    androidTestImplementation(libs.junit4)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling)
     implementation(libs.compose.foundation)

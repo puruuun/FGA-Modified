@@ -21,6 +21,7 @@ import io.github.fate_grand_automata.qa.suites.verifySkillLevelPanel
 import io.github.fate_grand_automata.qa.suites.verifyHakunoShuffle
 import io.github.fate_grand_automata.qa.suites.verifyCEEnhance
 import io.github.fate_grand_automata.qa.suites.verifyCardSwap
+import io.github.fate_grand_automata.qa.suites.runNativeProbeCase
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -65,24 +66,29 @@ class SupportDeviceTestRunner : Instrumentation() {
                 val started = SystemClock.elapsedRealtime()
                 var api: FixtureApi? = null
                 try {
-                    api = FixtureApi(this, case, input.optJSONObject("imports") ?: JSONObject())
-                    result.put("actual", when (case.optString("suite", "support")) {
-                        "support" -> api.verifySupport()
-                        "bond" -> api.verifyBond()
-                        "questItems" -> api.verifyQuestItems()
-                        "noblePhantasm" -> api.verifyNoblePhantasm()
-                        "fpSell" -> api.verifyFpSell()
-                        "skillLevel" -> api.verifySkillLevel()
-                        "weeklyRoute" -> api.verifyWeeklyRoute()
-                        "rankUp" -> api.verifyRankUp()
-                        "skillLevelPanel" -> api.verifySkillLevelPanel()
-                        "hakunoShuffle" -> api.verifyHakunoShuffle()
-                        "ceEnhance" -> api.verifyCEEnhance()
-                        "cardSwap" -> api.verifyCardSwap()
-                        else -> error("Unknown suite")
-                    })
-                    api.checkCoverage()
-                    result.put("passed", true)
+                    // Native probes read no screenshot, so they bypass the fixture API.
+                    if (case.optString("suite") == "nativeProbe") {
+                        result.put("actual", runNativeProbeCase(case)).put("passed", true)
+                    } else {
+                        api = FixtureApi(this, case, input.optJSONObject("imports") ?: JSONObject())
+                        result.put("actual", when (case.optString("suite", "support")) {
+                            "support" -> api.verifySupport()
+                            "bond" -> api.verifyBond()
+                            "questItems" -> api.verifyQuestItems()
+                            "noblePhantasm" -> api.verifyNoblePhantasm()
+                            "fpSell" -> api.verifyFpSell()
+                            "skillLevel" -> api.verifySkillLevel()
+                            "weeklyRoute" -> api.verifyWeeklyRoute()
+                            "rankUp" -> api.verifyRankUp()
+                            "skillLevelPanel" -> api.verifySkillLevelPanel()
+                            "hakunoShuffle" -> api.verifyHakunoShuffle()
+                            "ceEnhance" -> api.verifyCEEnhance()
+                            "cardSwap" -> api.verifyCardSwap()
+                            else -> error("Unknown suite")
+                        })
+                        api.checkCoverage()
+                        result.put("passed", true)
+                    }
                 } catch (error: Throwable) { result.put("passed", false).put("error", error.stackTraceToString()) }
                 finally {
                     result.put("elapsedMs", SystemClock.elapsedRealtime() - started)

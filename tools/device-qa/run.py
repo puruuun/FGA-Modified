@@ -3,7 +3,7 @@
 Development aid. The authoritative check is `tools/device-qa/run.py`.
 
 Usage:
-    py -3 tools/device-qa/run.py [--build] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
+    py -3 tools/device-qa/run.py [--build [--native]] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
 
 Python only moves files and calls adb/gradle. Reader logic stays in the app's androidTest code.
 """
@@ -26,7 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
-KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "ceEnhance", "hakunoShuffle", "cardSwap"}
+KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "ceEnhance", "hakunoShuffle", "cardSwap", "nativeProbe"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
@@ -59,9 +59,12 @@ def adb(adb_path: str, serial: str, *args: str) -> str:
     return result.stdout
 
 
-def gradle_build() -> None:
+def gradle_build(native: bool) -> None:
     gradlew = REPO / ("gradlew.bat" if os.name == "nt" else "gradlew")
     cmd = [str(gradlew), "-PfgaDeviceTests=true", ":app:assembleDeviceTest", ":app:assembleDeviceTestAndroidTest", "--console=plain"]
+    if native:
+        # Without it the APK has no libfga_ffi.so and every nativeProbe case reports itself skipped.
+        cmd.insert(1, "-Pfga.native=true")
     if subprocess.run(cmd, cwd=REPO).returncode != 0:
         sys.exit("gradle build failed")
 
@@ -209,6 +212,9 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
             default_score = (check.get("bondDefault") or {}).get("score")
             lines.append(f"| {name} / {y} | {check['effect']} | {np_score} | {default_score} | {check['matched']} |")
         lines.append("")
+    native_skipped = [r for r in results if "skipped" in (r.get("actual") or {})]
+    if native_skipped:
+        lines += ["## Skip 케이스 (네이티브 라이브러리 없음)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:
@@ -221,13 +227,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--serial", default=DEFAULT_SERIAL)
     parser.add_argument("--build", action="store_true", help="build the deviceTest APKs first")
+    parser.add_argument("--native", action="store_true", help="with --build: also build and package the Rust library (needs cargo-ndk)")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
     args = parser.parse_args()
 
     if args.build:
-        gradle_build()
+        gradle_build(args.native)
     adb_path = find_adb()
     adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
