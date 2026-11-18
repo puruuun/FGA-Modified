@@ -63,7 +63,7 @@ cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
 cargo test -p fga-sensing --features ort
 ```
 
-`tract` is pure Rust. `ort` has its build script download a prebuilt ONNX Runtime from `cdn.pyke.io` (checked against a hash in the crate) and link it statically, so it needs network access on the first build and compiles no C++ of ours; the download is cached under the user's cache folder (`%LOCALAPPDATA%\ort.pyke.io` on Windows, `~/.cache/ort.pyke.io` on Linux).
+`tract` is pure Rust. `ort` has its build script download a prebuilt ONNX Runtime from `cdn.pyke.io` (checked against a hash in the crate) and link it statically, so it needs network access on the first build and compiles no C++ of ours; the download is cached under the user's cache folder (`%LOCALAPPDATA%\ort.pyke.io` on Windows, `~/.cache/ort.pyke.io` on Linux). On Windows the prebuilt runtime is the DirectML build, and the build also places `DirectML.dll` next to the binaries it produces (a link into that cache folder), which they load at start.
 
 The model and the labelled samples are local only (see "Test data"), so the tests that run the real model need two environment variables and skip themselves, with one printed line, without them. They are how a change to preprocessing or decoding is checked against the Python result the model was chosen on:
 

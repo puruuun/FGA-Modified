@@ -6,6 +6,8 @@
 //! so the model has 18710 classes. The same layout is kept here so a class number means the same
 //! character as in the Python check.
 
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use crate::Error;
 
 /// The metadata key that holds the character list.
@@ -18,6 +20,9 @@ pub const BLANK: usize = 0;
 pub struct CharacterList {
     /// Classes 1..=len; the blank and the trailing space are implied.
     entries: Vec<String>,
+    /// Identifies these entries, so an [`crate::ctc::AllowedSet`] built for one model is not
+    /// used with another whose class numbers mean other characters.
+    fingerprint: u64,
 }
 
 impl CharacterList {
@@ -27,7 +32,19 @@ impl CharacterList {
         if entries.is_empty() {
             return Err(Error::EmptyCharacterList);
         }
-        Ok(Self { entries })
+        // SipHash with fixed keys: the same entries give the same value within this build, and
+        // the value is never stored or compared across builds.
+        let mut hasher = DefaultHasher::new();
+        entries.hash(&mut hasher);
+        Ok(Self {
+            entries,
+            fingerprint: hasher.finish(),
+        })
+    }
+
+    /// A 64-bit hash of the entries: two different lists get the same value only by a collision.
+    pub fn fingerprint(&self) -> u64 {
+        self.fingerprint
     }
 
     /// Number of model classes: the entries plus the blank and the space.

@@ -5,7 +5,7 @@ use ort::session::Session;
 use ort::session::builder::SessionBuilder;
 use ort::value::TensorRef;
 
-use super::{Backend, backend_error, probabilities_from};
+use super::{Backend, backend_error, dimensions, probabilities_from};
 use crate::Error;
 use crate::charset::{CharacterList, METADATA_KEY};
 use crate::ctc::Probabilities;
@@ -64,11 +64,7 @@ impl Backend for OrtBackend {
             .next()
             .ok_or_else(|| Error::Backend("the model returned no output".into()))?;
         let (shape, data) = output.try_extract_tensor::<f32>().map_err(backend_error)?;
-        let shape: Vec<usize> = shape
-            .iter()
-            .map(|&d| usize::try_from(d).unwrap_or_default())
-            .collect();
-        probabilities_from(&shape, data.to_vec())
+        probabilities_from(&dimensions(shape)?, data.to_vec())
     }
 
     fn characters(&self) -> &CharacterList {

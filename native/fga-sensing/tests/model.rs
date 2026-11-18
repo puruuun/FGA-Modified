@@ -25,16 +25,24 @@ mod checks {
 
     const SCORE_CHARACTERS: &str = "+/0123456789";
 
+    /// Both variables set: run. Neither: skip, as on CI. Only one: a broken local setup that
+    /// would otherwise pass silently, so fail.
     fn local_files(test: &str) -> Option<(PathBuf, PathBuf)> {
         match (
             std::env::var_os("FGA_OCR_MODEL"),
             std::env::var_os("FGA_OCR_SAMPLES"),
         ) {
             (Some(model), Some(samples)) => Some((model.into(), samples.into())),
-            _ => {
-                println!("{test}: skipped, FGA_OCR_MODEL and FGA_OCR_SAMPLES are not both set");
+            (None, None) => {
+                println!("{test}: skipped, FGA_OCR_MODEL and FGA_OCR_SAMPLES are not set");
                 None
             }
+            (model, samples) => panic!(
+                "{test}: only one of FGA_OCR_MODEL ({}) and FGA_OCR_SAMPLES ({}) is set; set both \
+                 to run the model tests or neither to skip them",
+                if model.is_some() { "set" } else { "missing" },
+                if samples.is_some() { "set" } else { "missing" },
+            ),
         }
     }
 
@@ -46,6 +54,7 @@ mod checks {
         let mut recognizer = Recognizer::new(B::load_file(&model).unwrap());
         assert_eq!(recognizer.characters().class_count(), 18710);
         let mut checked = 0;
+        let mut with_text = 0;
         for &i in &FIXED {
             let sample = &index[i];
             let crop = samples::load_gray(&dir.join(&sample.file)).unwrap();
@@ -63,8 +72,17 @@ mod checks {
                 sample.py_conf
             );
             checked += 1;
+            with_text += usize::from(!sample.py_text.is_empty());
         }
-        println!("{test}: {checked} samples equal to the Python text");
+        // Blank crops read as "" on both sides; most of the fixed set must hold real text, or the
+        // test would pass on an engine that reads nothing.
+        assert!(
+            with_text * 2 > checked,
+            "only {with_text} of {checked} samples have text"
+        );
+        println!(
+            "{test}: {checked} samples equal to the Python text, {with_text} of them non-empty"
+        );
     }
 
     pub fn allowed_set_keeps_only_score_characters<B: Backend>(test: &str) {

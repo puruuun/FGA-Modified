@@ -55,6 +55,9 @@ fn parse_args() -> Result<Args, String> {
         Ok(_) => return Err(usage.to_string()),
         Err(_) => None,
     };
+    if next().is_ok() {
+        return Err(usage.to_string());
+    }
     Ok(Args {
         backend,
         model,
@@ -266,9 +269,15 @@ fn print_summary(args: &Args, rows: &[Row], load_time: Duration) {
     let mut times: Vec<Duration> = rows.iter().map(|r| r.elapsed).collect();
     times.sort_unstable();
     let ms = |d: Option<&Duration>| d.map_or(0.0, |d| d.as_secs_f64() * 1000.0);
+    let half = times.len() / 2;
+    let median = if times.len().is_multiple_of(2) {
+        (ms(half.checked_sub(1).and_then(|i| times.get(i))) + ms(times.get(half))) / 2.0
+    } else {
+        ms(times.get(half))
+    };
     println!(
         "time per crop: median={:.2}ms max={:.2}ms first={:.2}ms | model load={:.0}ms",
-        ms(times.get(times.len() / 2)),
+        median,
         ms(times.last()),
         ms(rows.first().map(|r| &r.elapsed)),
         load_time.as_secs_f64() * 1000.0

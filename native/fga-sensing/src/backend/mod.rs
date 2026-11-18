@@ -46,7 +46,46 @@ fn probabilities_from(shape: &[usize], data: Vec<f32>) -> Result<Probabilities, 
     }
 }
 
+/// ONNX Runtime reports dimensions as i64. A negative one (ONNX's "unknown") must not become a
+/// size of zero, which would read as an empty output instead of a broken one.
+#[cfg_attr(not(feature = "ort"), allow(dead_code))]
+fn dimensions(shape: &[i64]) -> Result<Vec<usize>, Error> {
+    shape
+        .iter()
+        .map(|&d| {
+            usize::try_from(d)
+                .map_err(|_| Error::Backend(format!("invalid output dimension {d} in {shape:?}")))
+        })
+        .collect()
+}
+
 #[cfg(any(feature = "tract", feature = "ort"))]
 fn backend_error(error: impl std::fmt::Display) -> Error {
     Error::Backend(format!("{error:#}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dimensions_convert_when_valid() {
+        assert_eq!(dimensions(&[1, 40, 18710]), Ok(vec![1, 40, 18710]));
+        assert_eq!(dimensions(&[]), Ok(vec![]));
+    }
+
+    #[test]
+    fn negative_dimensions_are_an_error() {
+        assert!(matches!(
+            dimensions(&[1, -1, 18710]),
+            Err(Error::Backend(_))
+        ));
+        assert!(matches!(dimensions(&[i64::MIN]), Err(Error::Backend(_))));
+    }
+
+    #[cfg(target_pointer_width = "32")]
+    #[test]
+    fn dimensions_past_usize_are_an_error() {
+        assert!(matches!(dimensions(&[i64::MAX]), Err(Error::Backend(_))));
+    }
 }

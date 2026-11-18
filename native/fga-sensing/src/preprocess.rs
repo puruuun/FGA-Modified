@@ -23,6 +23,28 @@ pub const MIN_MODEL_WIDTH: usize = 320;
 /// The scale the measured Python path applied before recognition.
 pub const DEFAULT_UPSCALE: usize = 4;
 
+// Size limits. Matching runs on 720p frames, which are at most about 1680 px wide (21:9 at a
+// height of 720), and a text line there is well under 100 px tall. A crop past these limits is
+// not a text line, so it is refused before anything is allocated for it. Within them every size
+// product in this module stays far below 2^31, so it cannot overflow even where usize is 32 bits
+// (armeabi-v7a); the largest is the cubic pass's buffer, MAX_CROP_HEIGHT * MAX_UPSCALE *
+// MAX_IMAGE_WIDTH = 2048 * 16384 = 2^25 values.
+
+/// Widest crop the recogniser takes: a full 720p frame width with margin.
+pub const MAX_CROP_WIDTH: usize = 2048;
+/// Tallest crop the recogniser takes: more than twice the tallest text line in a 720p frame.
+pub const MAX_CROP_HEIGHT: usize = 256;
+/// Twice the measured 4x, to leave room for trying other scales.
+pub const MAX_UPSCALE: usize = 8;
+/// Widest image the resamplers take or produce: a maximal crop at the maximal upscale.
+pub const MAX_IMAGE_WIDTH: usize = MAX_CROP_WIDTH * MAX_UPSCALE;
+/// Tallest image the resamplers take or produce.
+pub const MAX_IMAGE_HEIGHT: usize = MAX_CROP_HEIGHT * MAX_UPSCALE;
+/// Widest model input. A line across a 1680 px frame at 20 px high (smaller than any game text
+/// at 720p) needs 48 * 84 = 4032. The output then has 512 steps of 18710 classes, about 38 MB,
+/// which is the most one crop should cost.
+pub const MAX_MODEL_WIDTH: usize = 4096;
+
 /// OpenCV's `INTER_RESIZE_COEF_BITS`.
 const COEF_BITS: u32 = 11;
 const COEF_SCALE: f32 = (1 << COEF_BITS) as f32;
@@ -52,32 +74,40 @@ impl InputTensor {
 
 /// The full Python path: upscale by `upscale` (1 skips it), then [`to_input_tensor`].
 pub fn prepare_crop(crop: &GrayImage, upscale: usize) -> Result<InputTensor, Error> {
+    check_limits(crop.width(), crop.height(), MAX_CROP_WIDTH, MAX_CROP_HEIGHT)?;
+    if upscale == 0 || upscale > MAX_UPSCALE {
+        return Err(Error::InvalidUpscale {
+            factor: upscale,
+            max: MAX_UPSCALE,
+        });
+    }
     if upscale == 1 {
         return to_input_tensor(crop);
     }
-    let width = crop.width().checked_mul(upscale);
-    let height = crop.height().checked_mul(upscale);
-    match (width, height) {
-        (Some(width), Some(height)) if upscale > 0 => {
-            to_input_tensor(&resize_cubic(crop, width, height)?)
-        }
-        _ => Err(Error::InvalidSize {
-            width: crop.width(),
-            height: crop.height(),
-        }),
-    }
+    // Within MAX_IMAGE_WIDTH x MAX_IMAGE_HEIGHT, given the two checks above.
+    let (width, height) = (crop.width() * upscale, crop.height() * upscale);
+    to_input_tensor(&resize_cubic(crop, width, height)?)
 }
 
 /// RapidOCR's `resize_norm_img` for a batch of one: scale to the model height keeping the aspect
 /// ratio, map 0..255 to -1..1, and pad on the right to at least [`MIN_MODEL_WIDTH`].
 pub fn to_input_tensor(image: &GrayImage) -> Result<InputTensor, Error> {
+    check_image(image)?;
     let ratio = image.width() as f64 / image.height() as f64;
     let max_ratio = (MIN_MODEL_WIDTH as f64 / MODEL_HEIGHT as f64).max(ratio);
+    // `as` saturates on overflow, and the result is checked against the limit right away.
     let width = (MODEL_HEIGHT as f64 * max_ratio) as usize;
+    if width > MAX_MODEL_WIDTH {
+        return Err(Error::InputTooWide {
+            width,
+            max: MAX_MODEL_WIDTH,
+        });
+    }
     let wanted = (MODEL_HEIGHT as f64 * ratio).ceil() as usize;
     let resized_width = wanted.clamp(1, width.max(1));
     let resized = resize_linear(image, resized_width, MODEL_HEIGHT)?;
 
+    // At most 3 * 48 * 4096 values; `channel * plane + y * width + x` stays below that.
     let plane = MODEL_HEIGHT * width;
     let mut data = vec![0.0f32; plane * 3];
     for (y, row) in resized.pixels().chunks(resized_width).enumerate() {
@@ -96,7 +126,7 @@ pub fn to_input_tensor(image: &GrayImage) -> Result<InputTensor, Error> {
 
 /// OpenCV `INTER_CUBIC` for 8-bit images (see the module comment).
 pub fn resize_cubic(image: &GrayImage, width: usize, height: usize) -> Result<GrayImage, Error> {
-    check_size(width, height)?;
+    check_resize(image, width, height)?;
     let columns = cubic_taps(image.width(), width);
     let rows = cubic_taps(image.height(), height);
     let horizontal = horizontal_pass(image, width, |y| {
@@ -142,7 +172,7 @@ pub fn resize_cubic(image: &GrayImage, width: usize, height: usize) -> Result<Gr
 
 /// OpenCV `INTER_LINEAR` for 8-bit images (see the module comment).
 pub fn resize_linear(image: &GrayImage, width: usize, height: usize) -> Result<GrayImage, Error> {
-    check_size(width, height)?;
+    check_resize(image, width, height)?;
     let columns = linear_taps(image.width(), width, true);
     let rows = linear_taps(image.height(), height, false);
     let horizontal = horizontal_pass(image, width, |y| {
@@ -186,9 +216,37 @@ fn row_of(horizontal: &[i32], width: usize, height: usize, row: isize) -> &[i32]
         .unwrap_or_default()
 }
 
-fn check_size(width: usize, height: usize) -> Result<(), Error> {
-    if width == 0 || height == 0 || width.checked_mul(height).is_none() {
+/// A resampler's source and target must both fit the image limits; see the comment on them.
+fn check_resize(image: &GrayImage, width: usize, height: usize) -> Result<(), Error> {
+    check_image(image)?;
+    if width == 0 || height == 0 {
         return Err(Error::InvalidSize { width, height });
+    }
+    check_limits(width, height, MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
+}
+
+fn check_image(image: &GrayImage) -> Result<(), Error> {
+    check_limits(
+        image.width(),
+        image.height(),
+        MAX_IMAGE_WIDTH,
+        MAX_IMAGE_HEIGHT,
+    )
+}
+
+fn check_limits(
+    width: usize,
+    height: usize,
+    max_width: usize,
+    max_height: usize,
+) -> Result<(), Error> {
+    if width > max_width || height > max_height {
+        return Err(Error::ImageTooLarge {
+            width,
+            height,
+            max_width,
+            max_height,
+        });
     }
     Ok(())
 }
@@ -303,6 +361,106 @@ mod tests {
         assert!(resize_linear(&one, 0, 1).is_err());
         assert!(resize_cubic(&one, 1, 0).is_err());
         assert!(prepare_crop(&one, 0).is_err());
+    }
+
+    #[test]
+    fn a_single_pixel_crop_still_works() {
+        let one = image(1, 1, |_, _| 255);
+        let tensor = prepare_crop(&one, DEFAULT_UPSCALE).unwrap();
+        assert_eq!(tensor.width(), MIN_MODEL_WIDTH);
+    }
+
+    #[test]
+    fn crops_just_inside_the_limits_work() {
+        let largest = image(MAX_CROP_WIDTH, MAX_CROP_HEIGHT, |x, y| (x ^ y) as u8);
+        assert_eq!(
+            prepare_crop(&largest, DEFAULT_UPSCALE).unwrap().width(),
+            384
+        );
+        // 2048 / 24 * 48 = 4096, the widest model input.
+        let widest = image(MAX_CROP_WIDTH, 24, |x, _| x as u8);
+        assert_eq!(
+            prepare_crop(&widest, DEFAULT_UPSCALE).unwrap().width(),
+            MAX_MODEL_WIDTH
+        );
+    }
+
+    fn too_large(width: usize, height: usize) -> Error {
+        Error::ImageTooLarge {
+            width,
+            height,
+            max_width: MAX_CROP_WIDTH,
+            max_height: MAX_CROP_HEIGHT,
+        }
+    }
+
+    #[test]
+    fn crops_past_the_limits_are_refused() {
+        let wide = image(MAX_CROP_WIDTH + 1, 30, |_, _| 0);
+        assert_eq!(
+            prepare_crop(&wide, 4),
+            Err(too_large(MAX_CROP_WIDTH + 1, 30))
+        );
+        let tall = image(30, MAX_CROP_HEIGHT + 1, |_, _| 0);
+        assert_eq!(
+            prepare_crop(&tall, 4),
+            Err(too_large(30, MAX_CROP_HEIGHT + 1))
+        );
+    }
+
+    #[test]
+    fn extreme_crops_are_refused_before_any_resampling() {
+        let line = image(1_000_000, 1, |_, _| 0);
+        assert_eq!(prepare_crop(&line, 4), Err(too_large(1_000_000, 1)));
+        assert!(matches!(
+            to_input_tensor(&line),
+            Err(Error::ImageTooLarge { .. })
+        ));
+        let column = image(1, 1_000_000, |_, _| 0);
+        assert_eq!(prepare_crop(&column, 4), Err(too_large(1, 1_000_000)));
+        assert!(matches!(
+            resize_linear(&column, 1, 48),
+            Err(Error::ImageTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn a_crop_too_wide_for_its_height_is_refused() {
+        // 2048 / 23 * 48 = 4274, past the widest model input.
+        let thin = image(MAX_CROP_WIDTH, 23, |_, _| 0);
+        assert_eq!(
+            prepare_crop(&thin, 4),
+            Err(Error::InputTooWide {
+                width: 4274,
+                max: MAX_MODEL_WIDTH
+            })
+        );
+    }
+
+    #[test]
+    fn resize_targets_past_the_limits_are_refused() {
+        let one = image(1, 1, |_, _| 0);
+        assert!(matches!(
+            resize_cubic(&one, MAX_IMAGE_WIDTH + 1, 1),
+            Err(Error::ImageTooLarge { .. })
+        ));
+        assert!(matches!(
+            resize_linear(&one, 1, usize::MAX),
+            Err(Error::ImageTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn upscale_factor_is_bounded() {
+        let one = image(1, 1, |_, _| 0);
+        assert!(prepare_crop(&one, MAX_UPSCALE).is_ok());
+        assert_eq!(
+            prepare_crop(&one, MAX_UPSCALE + 1),
+            Err(Error::InvalidUpscale {
+                factor: MAX_UPSCALE + 1,
+                max: MAX_UPSCALE
+            })
+        );
     }
 
     #[test]

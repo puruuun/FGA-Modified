@@ -13,12 +13,22 @@ pub struct Probabilities {
 }
 
 impl Probabilities {
+    /// Refuses NaN and infinity here rather than in [`decode`], so no `Probabilities` value can
+    /// hold one: NaN loses every comparison, so a row of it would decode as the blank and the
+    /// crop would read as empty. A broken SIMD kernel on an emulator is the expected cause, and
+    /// it has to surface as an error. The scan costs far less than the inference.
     pub fn new(steps: usize, classes: usize, data: Vec<f32>) -> Result<Self, Error> {
         if classes == 0 || steps.checked_mul(classes) != Some(data.len()) {
             return Err(Error::InvalidOutput {
                 steps,
                 classes,
                 values: data.len(),
+            });
+        }
+        if let Some(index) = data.iter().position(|v| !v.is_finite()) {
+            return Err(Error::NonFiniteOutput {
+                step: index / classes,
+                class: index % classes,
             });
         }
         Ok(Self {
@@ -46,10 +56,15 @@ impl Probabilities {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllowedSet {
     classes: Vec<usize>,
+    /// The list the class numbers belong to. Models for different servers (Japanese and digits,
+    /// Korean) number their classes differently, and [`decode`] refuses a set from another list.
+    class_count: usize,
+    fingerprint: u64,
 }
 
 impl AllowedSet {
     /// Fails on a character the model cannot produce, so a typo cannot silently shrink the set.
+    /// The set is only valid with `characters`.
     pub fn new(characters: &CharacterList, allowed: &str) -> Result<Self, Error> {
         let mut classes = Vec::new();
         for c in allowed.chars() {
@@ -61,7 +76,15 @@ impl AllowedSet {
         }
         classes.sort_unstable();
         classes.dedup();
-        Ok(Self { classes })
+        Ok(Self {
+            classes,
+            class_count: characters.class_count(),
+            fingerprint: characters.fingerprint(),
+        })
+    }
+
+    fn belongs_to(&self, characters: &CharacterList) -> bool {
+        self.class_count == characters.class_count() && self.fingerprint == characters.fingerprint()
     }
 }
 
@@ -72,7 +95,9 @@ pub struct Decoded {
     /// RapidOCR's score: the mean of the kept steps' probabilities, each rounded to five
     /// decimals, the mean rounded again; 0 for an empty text.
     pub confidence: f64,
-    /// The probability of the step each character came from, in text order.
+    /// One value per emitted class symbol, in text order: the probability of the step that
+    /// symbol came from. Every entry of the PP-OCRv6 list is one character, but the list format
+    /// allows longer entries, and such an entry would still have one value.
     pub char_confidences: Vec<f32>,
 }
 
@@ -88,6 +113,11 @@ pub fn decode(
             model: probabilities.classes(),
             characters: characters.class_count(),
         });
+    }
+    if let Some(set) = allowed
+        && !set.belongs_to(characters)
+    {
+        return Err(Error::AllowedSetMismatch);
     }
     let mut text = String::new();
     let mut char_confidences = Vec::new();
@@ -234,6 +264,75 @@ mod tests {
         let set = AllowedSet::new(&list, "+/62").unwrap();
         assert_eq!(decode(&output, &list, None).unwrap().text, "6A6");
         assert_eq!(decode(&output, &list, Some(&set)).unwrap().text, "66");
+    }
+
+    #[test]
+    fn allowed_set_from_a_longer_list_is_refused() {
+        let other = CharacterList::from_metadata("+\n/\n6\n2\nA\nB").unwrap();
+        let set = AllowedSet::new(&other, "+/62").unwrap();
+        let output = steps(&[(3, 0.9)]);
+        assert_eq!(
+            decode(&output, &characters(), Some(&set)),
+            Err(Error::AllowedSetMismatch)
+        );
+    }
+
+    #[test]
+    fn allowed_set_from_a_list_of_the_same_length_is_refused() {
+        // Same five entries in another order: "6" and "2" have other class numbers here.
+        let other = CharacterList::from_metadata("2\n6\n/\n+\nA").unwrap();
+        assert_eq!(other.class_count(), characters().class_count());
+        let set = AllowedSet::new(&other, "+/62").unwrap();
+        let output = steps(&[(3, 0.9)]);
+        assert_eq!(
+            decode(&output, &characters(), Some(&set)),
+            Err(Error::AllowedSetMismatch)
+        );
+    }
+
+    #[test]
+    fn allowed_set_from_an_equal_list_is_accepted() {
+        // Built from a separately parsed copy of the same text, as a second load of a model gives.
+        let set = AllowedSet::new(&characters(), "+/62").unwrap();
+        let output = steps(&[(3, 0.9), (0, 0.9), (4, 0.9)]);
+        assert_eq!(
+            decode(&output, &characters(), Some(&set)).unwrap().text,
+            "62"
+        );
+    }
+
+    #[test]
+    fn nan_anywhere_is_an_error() {
+        for index in [0, 3, 20] {
+            let mut data = vec![0.1f32; 21];
+            data[index] = f32::NAN;
+            assert_eq!(
+                Probabilities::new(3, 7, data),
+                Err(Error::NonFiniteOutput {
+                    step: index / 7,
+                    class: index % 7
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn infinity_anywhere_is_an_error() {
+        for (index, value) in [
+            (0, f32::INFINITY),
+            (11, f32::NEG_INFINITY),
+            (20, f32::INFINITY),
+        ] {
+            let mut data = vec![0.1f32; 21];
+            data[index] = value;
+            assert_eq!(
+                Probabilities::new(3, 7, data),
+                Err(Error::NonFiniteOutput {
+                    step: index / 7,
+                    class: index % 7
+                })
+            );
+        }
     }
 
     #[test]

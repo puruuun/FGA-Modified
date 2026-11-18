@@ -45,6 +45,7 @@ impl GrayImage {
     pub(crate) fn clamped(&self, x: isize, y: isize) -> u8 {
         let x = clamp_index(x, self.width);
         let y = clamp_index(y, self.height);
+        // x < width and y < height, so the index is below width * height, which `new` checked.
         self.pixels
             .get(y * self.width + x)
             .copied()
