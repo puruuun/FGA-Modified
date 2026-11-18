@@ -77,7 +77,7 @@ class SupportScoreReader @Inject constructor(
     private val ocr: OcrService,
     private val diagnostics: IReaderDiagnostics = NoReaderDiagnostics,
     private val addedTuning: IAddedFeatureTuning = IAddedFeatureTuning.Default
-) : IFgoAutomataApi by api, ISupportScoreReader {
+) : IFgoAutomataApi by api {
     companion object {
         const val MIN_OCR_CONFIDENCE = 75
         const val MIN_CONFIRM_CONFIDENCE = 85
@@ -258,7 +258,7 @@ class SupportScoreReader @Inject constructor(
     }
 
     /** Read-only within the caller's candidate snapshot, before any Append display switch. */
-    override fun read(bounds: SupportBounds, checkClass: Boolean, checkGrand: Boolean, screen: Int, row: Int): SupportScores {
+    fun read(bounds: SupportBounds, checkClass: Boolean, checkGrand: Boolean, screen: Int = -1, row: Int = -1): SupportScores {
         if (!checkClass && !checkGrand) return SupportScores()
         if (!diagnostics.enabled) return readScores(bounds, checkClass, checkGrand, null)
         if (diagnosticCandidates >= MAX_DIAGNOSTIC_CANDIDATES) {
