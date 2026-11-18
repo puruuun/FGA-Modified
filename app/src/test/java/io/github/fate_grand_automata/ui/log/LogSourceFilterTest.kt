@@ -61,4 +61,12 @@ class LogSourceFilterTest {
         assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:4", 1000, source = LogSourceFilter.Shop).isEmpty())
         assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:1", 1000, source = LogSourceFilter.Shop))
     }
+
+    @Test fun unknownStoredGroupMatchesTheOtherFilter() {
+        val read = kotlinx.serialization.json.Json.decodeFromString<ChangeSource>("""{"group":"FutureGroup","path":"x/y"}""")
+        val entry = outside(read)
+        assertEquals(LogSourceFilter.Other, read.logSource())
+        assertEquals(listOf(entry), filter(listOf(entry), LogSourceFilter.Other))
+        assertTrue(filter(listOf(entry), LogSourceFilter.Shop).isEmpty())
+    }
 }
