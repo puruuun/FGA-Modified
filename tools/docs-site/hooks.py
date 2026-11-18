@@ -104,6 +104,7 @@ LOCALE_META = {
 # Logical pages belonging to Getting Started, in display order.
 GETTING_STARTED = [
     "scripts/Installation",
+    "scripts/Log-Collection-Setup",
     "scripts/Original-FGA-Import",
 ]
 
