@@ -1070,8 +1070,9 @@ class CaptureProxyService : Service() {
             if (!flag.isSet()) return
             ROOT_SERIAL_EXECUTOR.execute {
                 if (!CaptureProxyStatus.state.value.reading && flag.isSet()) {
+                    val fgaUid = Process.myUid()
                     val res = runCatching {
-                        shell.run(ROOT_SH_COMMAND, RootRedirectScripts.cleanup(killWatchdog = true), 10)
+                        shell.run(ROOT_SH_COMMAND, RootRedirectScripts.cleanup(fgaUid, killWatchdog = true), 10)
                     }.getOrElse {
                         RootShellOutput(-1, emptyList(), false)
                     }

@@ -28,9 +28,11 @@ While reading is turned off, there are no kernel rules (`FGA_CAP`) and FGA's pro
 
 ### Turning Reading On (`Turn reading on` / `Start log collection` on Main Screen)
 
+> Only one FGA app (stable or beta) can run root collection at a time. If another FGA app is already collecting through root, the second app shows an "another FGA app is collecting through root" message and does not start; it never touches the other app's rules.
+
 1. **Start proxy listener**: FGA opens the transparent TLS proxy on `127.0.0.1:<port>` and `[::1]:<port>` first.
-2. **Apply kernel rules (`FGA_CAP` chain)**:
-   - Creates the `FGA_CAP` chain in `iptables -w 3 -t nat` and `ip6tables -w 3 -t nat`, adds `-p tcp --dport 443 -m owner --uid-owner <UID> -j REDIRECT --to-ports <port>` rules for each prepared FGO app UID, and inserts `-j FGA_CAP` at the top of the `OUTPUT` chain.
+2. **Apply kernel rules (`FGA_CAP_<app UID>` chain)**:
+   - Creates the `FGA_CAP_<app UID>` chain in `iptables -w 3 -t nat` and `ip6tables -w 3 -t nat`, adds `-p tcp --dport 443 -m owner --uid-owner <UID> -j REDIRECT --to-ports <port>` rules for each prepared FGO app UID, and inserts `-j FGA_CAP_<app UID>` at the top of the `OUTPUT` chain.
    - Before the `REDIRECT` rules, `RETURN` rules are inserted for destinations `127.0.0.0/8`, `0.0.0.0` (IPv4) and `::1`, `::` (IPv6) to exclude loopback traffic from redirection. Thus, connections to hosts returning `127.0.0.1` via DNS blocking fail inside the game just as when capture is off.
    - Because rules match only FGO's UID, FGA's own outbound connections to the game server are never redirected back into itself.
 3. **Start root watchdog**:
