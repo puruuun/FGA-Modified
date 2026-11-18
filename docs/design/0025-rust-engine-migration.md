@@ -146,8 +146,7 @@
 
 - 소유자 PC에 Rust 도구와 안드로이드 NDK를 설치합니다. **2026-11-18 설치 완료:**
   - Rust 1.100.0 (`stable-x86_64-pc-windows-gnu`), `clippy`, `rustfmt`, 타깃 `aarch64-linux-android`와 `armv7-linux-androideabi`
-  - `cargo-ndk` 4.1.2, NDK 28.2.13676358 (`%LOCALAPPDATA%\Android\Sdk
-dk\`)
+  - `cargo-ndk` 4.1.2, NDK 28.2.13676358 (`%LOCALAPPDATA%/Android/Sdk/ndk/`)
   - 확인: 시험 라이브러리의 PC 테스트가 통과했고 두 ABI용 `.so`가 빌드됐습니다. arm64 `.so`는 16KB 정렬(0x4000)입니다.
   - 제약: PC에 Visual Studio가 없어서 GNU 계열 도구로 설치했습니다. C 코드를 포함한 크레이트는 PC에서 테스트를 빌드하지 못할 수 있습니다. 안드로이드용 빌드와 CI(리눅스)는 영향이 없습니다. 실행 확인에서 문제가 되면 C 컴파일러 설치를 소유자에게 묻습니다.
 - 빈 Rust 함수 하나를 앱에서 부르는 최소 PR을 만들어 블루스택과 실제 폰에서 실행합니다.
