@@ -2,7 +2,8 @@ name: Main CI
 
 on:
   push:
-    branches: [main]
+    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    branches: [main, rust]
     # Same list as pr-build.yml. .github/workflows/** is deliberately not ignored so
     # commits that change a workflow are still checked.
     paths-ignore:
@@ -19,7 +20,8 @@ on:
       - '.claude/**'
       - '**/AGENTS.md'
   pull_request:
-    branches: [main]
+    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    branches: [main, rust]
     # Same paths-ignore as push.
     paths-ignore:
       - '.idea/**'

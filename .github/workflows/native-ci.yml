@@ -4,12 +4,14 @@ name: Native CI
 # waits on them (design 0025, D-7).
 on:
   push:
-    branches: [main]
+    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    branches: [main, rust]
     paths:
       - 'native/**'
       - '.github/workflows/native-ci.yml'
   pull_request:
-    branches: [main]
+    # rust is the long-lived branch of design 0025 (AGENTS.md, "Exception: the rust branch").
+    branches: [main, rust]
     paths:
       - 'native/**'
       - '.github/workflows/native-ci.yml'
