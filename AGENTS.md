@@ -59,7 +59,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
   - each step in order: what is tapped, how long it waits, which screen region is read and how (template and threshold, OCR, colour, sample bank), and what each result leads to;
   - the safety guards and every end state (stop reasons), plus what changes against the current behaviour.
   - Write it in Korean, in the owner's terms. Start development (issue, agent prompt, branch) only after the owner approves the walkthrough or after the amendments they ask for.
-- For new commits, use the owner-approved identity `puruuun <188972188+puruuun@users.noreply.github.com>` for both author and committer. Do not use an AI agent as author, committer, or co-author unless the user requests it. Do not add `Co-Authored-By` trailers or "Generated with" lines for any AI agent (Codex, Claude, Copilot, …) to commits or PR descriptions; GitHub should show only `puruuun`. Preserve authorship on existing published commits.
+- Commit with the Git identity already configured on this PC (`puruuun`). Do not set another author or committer, and preserve authorship on existing published commits.
 - Preserve existing `main` changes and skip already applied changes. Never force push or bypass branch protection or execution-environment restrictions. Stop and report a rejected push or a conflict that cannot be resolved safely.
 - Before pushing a branch, run the full unit test command from Build & test locally and confirm it passes. Commits that change only documentation are exempt.
 - After opening or updating a PR, check its `Main CI` run. If it fails, fix it on the branch before any other work. After merging, check the `Main CI` run on `main` too.
@@ -75,7 +75,7 @@ Fate/Grand Automata (FGA) — an Android app that automates farming in the game 
 
 - Owner decision, 2026-10-23: the planner (Claude) writes specs and agent prompts, reviews and merges PRs, and builds, installs and releases. An implementing agent implements, tests and opens the PR.
 - Which models do which work, and how the planner runs them, is in [`docs/agents/agent-team.md`](docs/agents/agent-team.md), which only the planner needs.
-- Every agent follows the same rules: its own worktree and branch, the PR flow, the `puruuun` commit identity, no AI trailers, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
+- Every agent follows the same rules: its own worktree and branch, the PR flow, the configured commit identity, no device work unless the planner assigns it. When a task moves to another agent, it continues from where the previous one stopped on the same branch. The planner tells the owner which agent and model did each task, and why when it was not the first choice.
 - Verification agent for risky changes (owner decision, 2026-11-11). Before the planner merges a PR with a risky change, a separate verification agent reviews it.
   - **Risky changes:**
     - automation logic, screen reading, taps, coordinates or templates (`scripts/`, `libautomata/`, `app/` runner and imaging);

@@ -63,7 +63,7 @@ Owner decision, 2026-11-13, which replaces the owner-run Antigravity hand-off of
   - Gemini's file tools cannot write in the home config folders, the main checkout's source folders or other worktrees, and cannot read `.fga-signing`.
   - Commits get the `puruuun` identity from the runner's environment. `COMMIT_MSG.txt`, `TASK-*.md` and `REPORT-*.md` are git-excluded.
 - **Gemini's part:** it runs the full unit tests and `:app:assembleBeta`, commits and pushes.
-- **Planner's part:** it opens the PR (there is no `gh` there), and checks the commit identity and the trailers.
+- **Planner's part:** it opens the PR (there is no `gh` there), and checks the commit identity.
 - **Review or verification by Gemini:** use the same runner with `--readonly`, and ask for the same evidence table as for any verifier.
   - Read-only Gemini can read files only inside its own worktree, and it cannot run commands, git included.
   - Put the prompt, the specs, the diff (`git diff base...HEAD > TASK-<issue>-diff.patch`) and the old versions of the main files in that worktree as untracked `TASK-*` files.
