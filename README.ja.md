@@ -74,6 +74,6 @@ FGA(mod)が役に立ちましたら、[Ko-fi](https://ko-fi.com/puruuun)から�
 
 [オリジナルリポジトリ](https://github.com/Fate-Grand-Automata/FGA) · [オリジナル版ガイド](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MITライセンス](LICENSE)
 
-ベースバージョン: 公式 FGA v3059 ([基準コミット](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700))。オリジナル開発チームの著作権表示を保持しています。追加・修正部分の著作権は puruuun に帰属し、同じ MIT ライセンスで配布されます。
+ベースバージョン: 公式 FGA v3071 ([基準コミット](https://github.com/Fate-Grand-Automata/FGA/commit/14f7878a14d6ed3fe28770e45f720c64aaa1f47d))。オリジナル開発チームの著作権表示を保持しています。追加・修正部分の著作権は puruuun に帰属し、同じ MIT ライセンスで配布されます。
 
 参照: 「Chaldeaリンクからコマンド入力」の変換ルールは [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter)（コミット `1c95510`）の変換ロジックを参考に Kotlin へ移植しています。

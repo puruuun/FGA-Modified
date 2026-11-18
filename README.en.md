@@ -67,6 +67,6 @@ If FGA(mod) helps you, you can leave a tip on [Ko-fi](https://ko-fi.com/puruuun)
 
 [Upstream repository](https://github.com/Fate-Grand-Automata/FGA) · [Original documentation](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT license](LICENSE)
 
-Based on official FGA v3059 ([source commit](https://github.com/Fate-Grand-Automata/FGA/commit/e138a15273dee9cac342833ee2d8aee93d8ae700)). Upstream copyright notices are retained. Additions and changes are Copyright (c) 2026 puruuun and are distributed under the same MIT license.
+Based on official FGA v3071 ([source commit](https://github.com/Fate-Grand-Automata/FGA/commit/14f7878a14d6ed3fe28770e45f720c64aaa1f47d)). Upstream copyright notices are retained. Additions and changes are Copyright (c) 2026 puruuun and are distributed under the same MIT license.
 
 Credit: the conversion rules behind "Chaldea command import" follow the logic of [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter) (commit `1c95510`), ported to Kotlin.
