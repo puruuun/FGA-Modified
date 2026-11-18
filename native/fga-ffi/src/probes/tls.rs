@@ -77,7 +77,14 @@ fn pump<A, B>(from: &mut ConnectionCommon<A>, to: &mut ConnectionCommon<B>) -> R
     }
     let mut pending = wire.as_slice();
     while !pending.is_empty() {
-        to.read_tls(&mut pending).map_err(|e| e.to_string())?;
+        let consumed = to.read_tls(&mut pending).map_err(|e| e.to_string())?;
+        // A receiver that takes nothing would spin here forever, out of MAX_ROUNDS' reach.
+        if consumed == 0 {
+            return Err(format!(
+                "receiver took none of {} pending bytes",
+                pending.len()
+            ));
+        }
         to.process_new_packets().map_err(|e| e.to_string())?;
     }
     Ok(())

@@ -1,6 +1,7 @@
 //! Stage 1-0 probes. Each returns plain text so the JNI layer only converts, and each can run
 //! as a host test where its crates build.
 
+mod compare;
 mod cpu;
 mod hex;
 

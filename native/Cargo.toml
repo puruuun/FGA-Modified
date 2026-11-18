@@ -10,7 +10,7 @@ publish = false
 
 [workspace.lints.clippy]
 # A panic that escapes into the JVM kills the app (docs/agents/rust-native.md).
-# clippy.toml lifts these four inside tests.
+# clippy.toml lifts the first three inside tests; todo! stays denied there too.
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"

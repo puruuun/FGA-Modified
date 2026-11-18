@@ -6,6 +6,8 @@ use tract_core::ops::cnn::{Conv, KernelFormat, PaddingSpec, PoolSpec};
 use tract_core::ops::einsum::EinSum;
 use tract_core::ops::nn::DataFormat;
 
+use super::compare::within_tolerance;
+
 const SIDE: usize = 4;
 const CONV_OUT: usize = 2;
 const CONV_SIDE: usize = SIDE - 1;
@@ -87,6 +89,9 @@ fn run_model() -> TractResult<Vec<f32>> {
         },
         &[source, kernel, bias],
     )?;
+    let conv_out = *conv
+        .first()
+        .ok_or_else(|| format_err!("conv produced no output"))?;
     let dense = model.add_const(
         "dense.weights",
         Tensor::from_shape(
@@ -97,7 +102,7 @@ fn run_model() -> TractResult<Vec<f32>> {
     let output = model.wire_node(
         "dense",
         EinSum::new("nchw,kchw->nk".parse()?, f32::datum_type()),
-        &[conv[0], dense],
+        &[conv_out, dense],
     )?;
     model.select_output_outlets(&output)?;
 
@@ -116,24 +121,7 @@ fn run_model() -> TractResult<Vec<f32>> {
 
 pub fn tiny_model() -> Result<String, String> {
     let actual = run_model().map_err(|e| format!("tract: {e:#}"))?;
-    let expected = expected();
-    if actual.len() != expected.len() {
-        return Err(format!(
-            "expected {} outputs, got {}",
-            expected.len(),
-            actual.len()
-        ));
-    }
-    let worst = actual
-        .iter()
-        .zip(&expected)
-        .map(|(a, e)| (a - e).abs())
-        .fold(0.0_f32, f32::max);
-    if worst > TOLERANCE {
-        return Err(format!(
-            "output {actual:?} differs from {expected:?} by {worst}"
-        ));
-    }
+    let worst = within_tolerance(&actual, &expected(), TOLERANCE)?;
     Ok(format!(
         "conv+dense output {actual:?} within {TOLERANCE} (worst {worst:e})"
     ))
