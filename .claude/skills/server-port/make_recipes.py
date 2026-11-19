@@ -13,9 +13,11 @@ decides, per template, which of these holds and records the numbers:
   manual         something a script cannot find, described in overrides.csv
   screenshot     none of the above: the best score found and why
 
-Language-free evidence, any of: the KR and JP copies score 0.95 or more against each other; the
-sprite and the same-named sprite of another APK are the same art (same size, correlation 0.98 or
-more); the En copy scores 0.95 or more on a source screenshot.
+Language-free needs a template match: the KR and JP copies score 0.95 or more against each other, or
+the En copy scores 0.95 or more on a source screenshot. Two copies below 0.80 veto it. That the sprite
+and the same-named sprite of another APK are the same art (same size, correlation 0.98 or more) only
+supports: APK atlases can be replaced by downloaded localized ones, so a disagreement between copies
+and agreement between sprites is written to the notes as a CONTRADICTION.
 
     make_recipes.py --source Kr --extracted build/apk-kr --templates app/src/main/assets/Kr \\
         --screens docs/reference-images/Kr --other-templates Jp=app/src/main/assets/Jp \\
@@ -45,6 +47,8 @@ SPRITE_MIN = 0.85
 CLEAR_WIN = 0.02
 LANGUAGE_FREE_COPY = 0.95
 LANGUAGE_FREE_SPRITE = 0.98
+# Copies of two servers below this score are different art
+VETO_BELOW = 0.80
 
 
 def labelled(values: list[str], what: str) -> dict[str, str]:
@@ -159,6 +163,8 @@ def build_recipe(name, args, source, template_rgb, sets, indexes, overrides, atl
     row.update(template=name, background=background)
     notes, evidence = [], []
     override = overrides.get(name)
+    if override:
+        row["atlas_unverified"] = override.get("atlas_unverified", "")
 
     try:
         if override and override["kind"] == "atlas":
@@ -295,6 +301,7 @@ def main() -> None:
                     proof.append(("copy", label, score, score >= LANGUAGE_FREE_COPY))
                 else:
                     row["_notes_extra"] = row.get("_notes_extra", []) + [f"{label} copy size differs or flat"]
+                    row["_copy_gap"] = row.get("_copy_gap", []) + [label]
         if row["sprites"]:
             own = args_extracted_of(row, args, source)
             for label, folder in others_x.items():
@@ -372,8 +379,23 @@ def main() -> None:
             if "size" in text or "absent" in text or "flat" in text:
                 evidence.append(f"art {text}")
         notes = list(row["notes"]) + row.pop("_notes_extra", [])
+        gap = row.pop("_copy_gap", [])
+        copies = [(label, score) for kind, label, score, _ in proof if kind == "copy"]
+        arts = [(label, score) for kind, label, score, ok in proof if kind == "art" and ok]
+        # Two servers' copies that disagree veto language-free whatever the sprites say: an APK atlas
+        # can be replaced at run time by a downloaded localized one, so identical APK sprites do not
+        # prove identical screens. Sprite identity only supports a copy or En match, never decides alone.
+        vetoed = [(label, score) for label, score in copies if score < VETO_BELOW]
+        strong = any(score >= LANGUAGE_FREE_COPY for _, score in copies) or any(
+            k == "en" and ok for k, _, _, ok in proof)
+        if arts and (vetoed or gap):
+            why = ", ".join(f"{label} copy {score:.3f}" for label, score in vetoed) or                 ", ".join(f"{label} copy size differs" for label in gap)
+            notes.append("CONTRADICTION: copies disagree (" + why + ") but sprites agree ("
+                         + ", ".join(f"{label} {score:.3f}" for label, score in arts) + "); not language-free")
+        elif arts and not strong:
+            notes.append("sprites agree across APKs but no copy confirms it; not language-free")
         # A template whose art is the same on every server needs no recipe: the copy is the answer
-        if any(ok for *_, ok in proof) and row["kind"] != "manual":
+        if strong and not vetoed and row["kind"] != "manual":
             if row["kind"] != "language-free":
                 notes.append(f"recipe kept for reference: {row['kind']}")
             row["kind"] = "language-free"

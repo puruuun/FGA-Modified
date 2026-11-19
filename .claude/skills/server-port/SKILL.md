@@ -30,7 +30,7 @@ Needs Python 3, Pillow, numpy and opencv-python-headless. On Windows run the scr
 
 | Kind | Meaning | Port action |
 |---|---|---|
-| `language-free` | The art is the same on every server. Evidence, any of: the KR and JP copies score 0.95 or more against each other; the sprite and the same-named sprite of another APK are the same size and correlate at 0.98 or more; the `En` copy scores 0.95 or more on source screenshots. | Copy the KR or JP file; no draft. |
+| `language-free` | The art is the same on every server. Needs a template match: the KR and JP copies score 0.95 or more against each other, or the `En` copy scores 0.95 or more on source screenshots. Vetoed whenever two servers' copies score below 0.80 against each other (see "Language-free veto"). | Copy the KR or JP file; no draft. |
 | `sprite` | One atlas sprite, a scale (1.25 unless another wins by 0.02), edge insets from `--crop-like`. | Replay on the target APK. |
 | `layers` | Several sprites with offsets. | Replay. |
 | `font` | A localization string in the game font; stored by its key, with size, stroke and color. | Replay with the target's text for that key. |
@@ -42,6 +42,28 @@ Needs Python 3, Pillow, numpy and opencv-python-headless. On Windows run the scr
 screens where the existing template is a positive at 0.85 or more), or, with no positive, at its worst
 half-pixel shift; otherwise `weak`. A `weak` recipe is replayed and listed apart: judge it by a screenshot.
 A `language-free` row keeps its sprite columns when a sprite was found, for reference.
+
+## Language-free veto and downloaded atlases
+
+An APK atlas can be replaced at run time by a downloaded localized one (the KR APK holds the JP
+originals of several atlases, and KR downloads `_Data/Scenes/{Battle,Combine,Common,EventGacha,MyRoom,
+PartyOrganization,Shop,Summon,Title}/Atlas` replacements; the list is the server's `asset_storage.json`).
+So two APKs holding the same sprite does not prove that the screens look the same:
+
+- **Veto.** When copies of a template exist on two servers and score below 0.80 against each other, the
+  template is not language-free, whatever the sprites say. Sprite identity across APKs (same size,
+  correlation 0.98 or more) is supporting evidence only, never alone: `make_recipes.py` needs a
+  matching copy or `En` copy as well.
+- **Contradictions** (copies disagree or differ in size, sprites agree) are written to the recipe's
+  `notes` as `CONTRADICTION: ...` and listed in `report.md`. Treat each as a sign that the APK atlas
+  is not what the screen shows; the sprite recipe of such a template is a guess until a screenshot of
+  the target confirms it.
+- **Download caveat.** `port_server.py --asset-storage` takes the target's `asset_storage.json`; a
+  sprite or layers recipe whose atlas (or whose scene's `Atlas`) is in that list is classed
+  `drafted-download-risk`: the atlas may be replaced by a download on the target. Without the list the
+  flag says "unknown". NA's list holds no `_Data/Scenes/*/Atlas` entry (only `UISkin*`,
+  `DownloadClassBoard*`, `EventRewardAtlas` and a system file `AtlasOverrideData`), so no NA draft
+  is flagged: the list does not show a replacement, and does not prove there is none.
 
 ## Procedure
 
@@ -70,8 +92,13 @@ A `language-free` row keeps its sprite columns when a sprite was found, for refe
    ```bash
    py -3 -E -P .claude/skills/server-port/port_server.py --target En --extracted build/apk-na \
        --recipes .claude/skills/server-port/recipes/Kr.csv .claude/skills/server-port/recipes/Jp.csv \
-       --screens docs/reference-images/En --atlas-dir build/atlas-banners-NA --out build/port-na
+       --screens docs/reference-images/En --atlas-dir build/atlas-banners-NA        --asset-storage build/atlas-export/NA/asset_storage.json        --source-extracted Kr=build/apk-kr --source-extracted Jp=build/apk-jp --out build/port-na
    ```
+
+   Classes of a missing entry (the best of its sources counts): `language-free`, `drafted`,
+   `drafted-weak`, `drafted-size-flag`, `drafted-download-risk`, `drafted-ambiguous-key`,
+   `atlas-unverified` (a banner id that is not verified on the target, `atlas_unverified` in
+   `overrides.csv`) and `screenshot-only`.
 
    `report.md` has the counts per class and, per script file that uses the image, each entry's class,
    source, kind and scores. `drafts/` holds the replayed drafts (`<name>.<Source>.png`),
@@ -104,7 +131,9 @@ layer first, separated by `;`), `scale`, `font`, `font_size`, `font_stroke`, `fo
 `localization_key`, `atlas` (`Kr=Banner/x.png;Jp=Banner/y.png;En=Banner/z.png`) and `notes`. The
 offsets and insets are found by `make_recipes.py` against the existing template.
 
-A font row is a fallback: it is used only when no sprite reaches 0.85 against the template, and kept only when the rendered text reaches 0.80 at the worst shift (otherwise the template is `screenshot`). It names the widget path (the key) of the string in `LocalizationJpn.txt`, not its text: the
+A font draft is `drafted-ambiguous-key` when the source text maps to keys with more than one distinct
+target text (`report.md` lists the candidates with their target texts), and the KR and JP recipes of a
+template may pick different keys: the report says so, and at least one of them is wrong. A font row is a fallback: it is used only when no sprite reaches 0.85 against the template, and kept only when the rendered text reaches 0.80 at the worst shift (otherwise the template is `screenshot`). It names the widget path (the key) of the string in `LocalizationJpn.txt`, not its text: the
 same key holds the target's text in the target APK. Several keys can hold the same text; the row keeps
 the one that exists in all three APKs and whose NA text is the most common among them, and `notes` says
 how many candidates there were.

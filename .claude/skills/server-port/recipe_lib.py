@@ -32,7 +32,7 @@ import template_lib as lib  # noqa: E402
 
 COLUMNS = ["template", "images_entry", "kind", "quality", "sprite_apk", "sprites", "sprite_size", "insets",
            "offsets", "scale", "background", "font", "font_size", "font_stroke", "font_color",
-           "localization_key", "atlas", "evidence", "notes"]
+           "localization_key", "atlas", "atlas_unverified", "evidence", "notes"]
 
 # Kinds a script can replay on another server's APK
 REPLAYABLE = ("sprite", "layers", "font", "atlas")
@@ -277,3 +277,29 @@ def screen_scores(folder: str, templates: dict[str, np.ndarray]) -> dict[str, li
 
 def to_text(value) -> str:
     return "" if value is None else str(value)
+
+
+# Atlases the game replaces by a downloaded localized one live in the server's asset list under
+# _Data/Scenes/<Scene>/Atlas; the scene names the atlases by prefix (CommonUIAtlas is Common's)
+SCENE_PREFIX_EXTRA = {"Summon": ("Gacha",)}
+
+
+def load_asset_paths(path: str) -> set[str]:
+    with open(path, encoding="utf-8") as f:
+        return {entry["path"] for entry in json.load(f)}
+
+
+def download_status(atlas: str, asset_paths: set[str] | None) -> str:
+    """'replaceable' when the target's asset list holds a downloaded atlas of this name or of its scene,
+    'not listed' when it holds none, 'unknown' without a list."""
+    if asset_paths is None:
+        return "unknown"
+    for path in asset_paths:
+        parts = path.split("/")
+        if parts[-1] == atlas:
+            return "replaceable"
+        if len(parts) == 4 and parts[0] == "_Data" and parts[1] == "Scenes" and parts[3] == "Atlas":
+            scene = parts[2]
+            if atlas.startswith((scene,) + SCENE_PREFIX_EXTRA.get(scene, ())):
+                return "replaceable"
+    return "not listed"
