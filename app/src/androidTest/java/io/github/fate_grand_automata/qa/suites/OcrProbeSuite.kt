@@ -90,12 +90,14 @@ private fun ortEngine(threads: Int) = Engine(
         "threads" to threads,
         "intraThreads" to load.getInt("intraThreads"),
         "availableProcessors" to Runtime.getRuntime().availableProcessors(),
-        "processThreads" to JSONObject().put("beforeLoad", threadsAround.getOrNull(0)).put("afterLoad", threadsAround.getOrNull(1))
-            .put("afterReading", threadsAround.getOrNull(2)),
+        // processThreads() is -1 when /proc/self/task cannot be read; such a reading is left out
+        // (JSONObject.put drops a null), so no difference is made from it.
+        "processThreads" to JSONObject().put("beforeLoad", threadsAround.known(0)).put("afterLoad", threadsAround.known(1))
+            .put("afterReading", threadsAround.known(2)),
         // Reported, not checked: by ONNX Runtime's threading documentation an intra-op pool of N
         // creates N - 1 threads, so 1 should give 0, but ART may start or end its own threads
         // during the load, so a failing rule on this count could not be justified.
-        "threadsCreatedByLoad" to threadsAround.getOrNull(1)?.let { after -> threadsAround.getOrNull(0)?.let { after - it } },
+        "threadsCreatedByLoad" to threadsAround.known(1)?.let { after -> threadsAround.known(0)?.let { after - it } },
         "threadNote" to if (threads == 0) {
             "threads 0 is ONNX Runtime's default (one intra-op thread per physical core, calling thread included); processThreads shows the pool it created"
         } else {
@@ -112,8 +114,11 @@ private fun ortPackaged(): Boolean = try {
     false
 }
 
-/** Threads of this process, from the kernel. */
+/** Threads of this process, from the kernel; -1 when the kernel's list cannot be read. */
 private fun processThreads(): Int = File("/proc/self/task").list()?.size ?: -1
+
+/** The reading at [index], or null when it is missing or could not be taken. */
+private fun List<Int>.known(index: Int): Int? = getOrNull(index)?.takeIf { it >= 0 }
 /** Lists in a report stay short so the whole report stays under the runner's 256 KB limit. */
 private const val MAX_LISTED = 20
 

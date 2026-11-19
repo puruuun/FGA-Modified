@@ -1,17 +1,37 @@
 //! The intra-op thread count reaches ONNX Runtime (issue #535). ONNX Runtime's threading
 //! documentation: the intra-op pool of N threads counts the calling thread, so a session built
 //! with N creates N - 1 threads of its own, kept until the session is dropped. This counts the
-//! process's threads in /proc/self/task around a load and a read, so it counts on Linux (CI) and Android only
-//! and says so elsewhere. It needs no local files: the model is a tiny one built here.
+//! process's threads in /proc/self/task around a load and a read; the counting runs on Linux (CI)
+//! and Android only. Elsewhere the same loads and reads run with a fixed counter. It needs no
+//! local files: the model is a tiny one built here.
 //!
-//! One test only: the thread count is process-wide, and a second test running in parallel would
-//! change it.
+//! One test only: the thread count is process-wide, and the test harness runs every test on a
+//! thread of its own, so a second test here would change the count while this one measures.
+//! The counting helpers are tested in ort_thread_helpers.rs for that reason.
 
 #![cfg(feature = "ort")]
 
 #[cfg(test)]
+#[path = "support/thread_count.rs"]
+mod thread_count;
+
+#[cfg(test)]
 mod threads {
     use std::num::NonZeroUsize;
+    use std::path::{Path, PathBuf};
+    use std::time::Duration;
+
+    use fga_sensing::Recognizer;
+    use fga_sensing::backend::OrtBackend;
+    use fga_sensing::image::GrayImage;
+
+    use super::thread_count::{difference, settle};
+
+    /// How long a dropped session's threads may stay listed. `pthread_join` can return before
+    /// the kernel removes the thread's /proc/self/task entry, so a count read right after a drop
+    /// can still include them.
+    const SETTLE_ATTEMPTS: usize = 100;
+    const SETTLE_PAUSE: Duration = Duration::from_millis(20);
 
     /// Protobuf wire format, just enough for the ONNX messages below.
     fn varint(mut value: u64, out: &mut Vec<u8>) {
@@ -87,80 +107,92 @@ mod threads {
         model
     }
 
+    /// The model file, removed however the test ends.
+    struct TempModel(PathBuf);
+
+    impl TempModel {
+        fn new() -> Self {
+            let path =
+                std::env::temp_dir().join(format!("fga-ort-threads-{}.onnx", std::process::id()));
+            std::fs::write(&path, tiny_model()).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for TempModel {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    /// Threads added by a load and still there after a read, against the settled count before
+    /// the load. ONNX Runtime's documentation says nothing of creating pool threads later, and a
+    /// thread is listed in /proc/self/task as soon as the call that creates it returns, so the
+    /// counts after the load and the read are taken without waiting.
+    fn created_by(
+        model: &Path,
+        threads: Option<NonZeroUsize>,
+        baseline: usize,
+        count: &mut impl FnMut() -> usize,
+    ) -> (i64, i64) {
+        let before = settle(&mut *count, baseline, SETTLE_ATTEMPTS, SETTLE_PAUSE).unwrap();
+        let mut recognizer =
+            Recognizer::new(OrtBackend::load_file_with_threads(model, threads).unwrap());
+        let after_load = count();
+        let crop = GrayImage::new(40, 20, vec![128; 800]).unwrap();
+        // Identity's output is not [1, steps, classes], so the read fails, but only after the
+        // session has run.
+        let read = recognizer.recognize(&crop, None).err().unwrap().to_string();
+        assert!(read.contains("expected an output of shape"), "{read}");
+        let after_read = count();
+        drop(recognizer);
+        (
+            difference(before, after_load),
+            difference(before, after_read),
+        )
+    }
+
     #[cfg(any(target_os = "linux", target_os = "android"))]
     fn process_threads() -> usize {
         std::fs::read_dir("/proc/self/task").unwrap().count()
     }
 
-    /// Threads the load created, and threads alive after a read, both against the count before
-    /// the load. The read fails (Identity's output is not [1, steps, classes]), but it has run
-    /// the session by then.
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    fn created_by(model: &std::path::Path, threads: Option<NonZeroUsize>) -> (usize, usize) {
-        use fga_sensing::Recognizer;
-        use fga_sensing::backend::OrtBackend;
-        use fga_sensing::image::GrayImage;
-
-        let before = process_threads();
-        let mut recognizer =
-            Recognizer::new(OrtBackend::load_file_with_threads(model, threads).unwrap());
-        let after_load = process_threads();
-        let crop = GrayImage::new(40, 20, vec![128; 800]).unwrap();
-        let _ = recognizer.recognize(&crop, None);
-        let after_read = process_threads();
-        drop(recognizer);
-        (after_load - before, after_read - before)
-    }
-
     #[cfg(any(target_os = "linux", target_os = "android"))]
     #[test]
     fn intra_op_thread_count_reaches_onnx_runtime() {
-        let model =
-            std::env::temp_dir().join(format!("fga-ort-threads-{}.onnx", std::process::id()));
-        std::fs::write(&model, tiny_model()).unwrap();
+        let model = TempModel::new();
+        let mut count = process_threads;
 
-        // The first load also builds the process's ONNX Runtime environment; measured loads
-        // come after it, so only the session's own threads are counted.
-        created_by(&model, NonZeroUsize::new(1));
+        // The first load also builds the process's ONNX Runtime environment. With one thread
+        // it starts no pool thread, so the count after it is the baseline for every measurement.
+        drop(OrtBackend::load_file_with_threads(&model.0, NonZeroUsize::new(1)).unwrap());
+        let baseline = count();
 
-        let one = created_by(&model, NonZeroUsize::new(1));
-        let three = created_by(&model, NonZeroUsize::new(3));
-        let default = created_by(&model, None);
-        std::fs::remove_file(&model).unwrap();
-        println!("threads created (load, read): one {one:?}, three {three:?}, default {default:?}");
+        let one = created_by(&model.0, NonZeroUsize::new(1), baseline, &mut count);
+        let three = created_by(&model.0, NonZeroUsize::new(3), baseline, &mut count);
+        let default = created_by(&model.0, None, baseline, &mut count);
+        // An observation only: the default is one thread per physical core as ONNX Runtime
+        // detects it, which neither std nor a container's CPU quota tells reliably.
+        println!(
+            "threads created (load, read) over baseline {baseline}: one {one:?}, three {three:?}, default {default:?}"
+        );
 
         // One intra-op thread is the calling thread: no pool thread. Three: two pool threads.
         // Ignoring the argument gives the default pool for both, which cannot be 0 and 2 at once.
         assert_eq!(one, (0, 0), "one intra-op thread");
         assert_eq!(three, (2, 2), "three intra-op threads");
-        // The default is one thread per physical core, which std cannot tell; it can never
-        // exceed the logical processors. On a single-core runner it equals the one-thread case,
-        // which the two exact checks above still distinguish from an ignored argument.
-        let logical = std::thread::available_parallelism().unwrap().get();
-        assert!(
-            default.0 < logical.max(2),
-            "default created {default:?} on {logical} processors"
-        );
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "android")))]
     #[test]
     fn intra_op_thread_count_reaches_onnx_runtime() {
-        use fga_sensing::Recognizer;
-        use fga_sensing::backend::OrtBackend;
-        use fga_sensing::image::GrayImage;
-
-        // The thread count needs Linux; the tiny model is still loaded and run here, so a broken
-        // model encoding shows up on every platform, not only in CI.
-        let model =
-            std::env::temp_dir().join(format!("fga-ort-threads-{}.onnx", std::process::id()));
-        std::fs::write(&model, tiny_model()).unwrap();
-        let backend = OrtBackend::load_file_with_threads(&model, NonZeroUsize::new(1));
-        std::fs::remove_file(&model).unwrap();
-        let mut recognizer = Recognizer::new(backend.unwrap());
-        let crop = GrayImage::new(40, 20, vec![128; 800]).unwrap();
-        let read = recognizer.recognize(&crop, None).err().unwrap().to_string();
-        assert!(read.contains("expected an output of shape"), "{read}");
+        // No thread list to read here: the same loads and reads run with a fixed count, so the
+        // model, the loads and the read assertions are checked on every platform.
+        let model = TempModel::new();
+        let mut count = || 7;
+        for threads in [NonZeroUsize::new(1), NonZeroUsize::new(3), None] {
+            assert_eq!(created_by(&model.0, threads, 7, &mut count), (0, 0));
+        }
         println!(
             "ort thread count test: thread counting skipped, it reads /proc/self/task, which only Linux and Android have; the tiny model loaded and ran"
         );
