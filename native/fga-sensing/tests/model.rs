@@ -25,6 +25,9 @@ mod checks {
 
     const SCORE_CHARACTERS: &str = "+/0123456789";
 
+    /// A sample file, its true class and Grand score, and the shifts to read it at.
+    type Work<'a> = (&'a str, u8, Option<u8>, Vec<(isize, isize)>);
+
     /// Both variables set: run. Neither: skip, as on CI. Only one: a broken local setup that
     /// would otherwise pass silently, so fail.
     fn local_files(test: &str) -> Option<(PathBuf, PathBuf)> {
@@ -173,13 +176,11 @@ mod checks {
                 Score::Value(16),
                 Display::Compound,
             ),
-            // The cost of the edge rules: a complete "+62/+16" whose ink reaches the last
-            // columns of the content is unknown, as one that is cut there is.
             (
                 "0000.png",
-                Score::Unknown(Reason::Clipped),
-                Score::Unknown(Reason::Clipped),
-                Display::Unknown,
+                Score::Value(62),
+                Score::Value(16),
+                Display::Compound,
             ),
             // A class value that is not 62.
             (
@@ -223,11 +224,17 @@ mod checks {
     }
 
     /// The cut sweep of `support_score_eval` on a fixed handful of samples: every shift (right and
-    /// left by 1 to 20 columns, down and up by 1 to 10 rows) of a crop whose value is known must
-    /// read as that value or as unknown, never as another number. SYNTHETIC cuts, see
+    /// left by 1 to 20 columns, down and up by 1 to 10 rows) of a crop whose value is known, read
+    /// and split by what the automation does with a wrong number. SYNTHETIC cuts, see
     /// `samples::shifted`; the full sweep is the evaluation tool's.
-    pub fn cut_sweep_returns_no_wrong_value<B: Backend>(test: &str) {
+    ///
+    /// The automation acts only on class 62 and a compound's Grand 16, so a 62 or a 16 that is not
+    /// the true value (F62, F16) is a wrong pick and must not occur at all. Any other wrong number
+    /// acts as a miss; `MEASURED_OTHER` is what this reader returned when it was measured, a bound
+    /// that shows a regression, not a target.
+    pub fn cut_sweep_has_no_wrong_pick<B: Backend>(test: &str) {
         use fga_sensing::readers::support_score::{ScoreConfig, SupportScoreReader};
+        const MEASURED_OTHER: usize = 47;
         let Some((model, dir)) = local_files(test) else {
             return;
         };
@@ -237,7 +244,9 @@ mod checks {
         )
         .unwrap();
         // (file, class score, Grand score) as the labels give them; None where the field has none.
-        let known: [(&str, u8, Option<u8>); 7] = [
+        // The last three are compounds whose Grand score is not 16: a cut that leaves "+10/+1"
+        // must not be taken for a 16.
+        let known: [(&str, u8, Option<u8>); 10] = [
             ("0183.png", 62, Some(16)),
             ("0006.png", 56, Some(16)),
             ("0033.png", 14, Some(16)),
@@ -245,6 +254,9 @@ mod checks {
             ("0044.png", 62, None),
             ("0269.png", 45, None),
             ("0102.png", 0, None),
+            ("0179.png", 10, Some(12)),
+            ("0195.png", 18, Some(14)),
+            ("0188.png", 13, Some(2)),
         ];
         let mut shifts: Vec<(isize, isize)> = vec![];
         for d in 1..=20 {
@@ -253,60 +265,75 @@ mod checks {
         for d in 1..=10 {
             shifts.extend([(0, d), (0, -d)]);
         }
-        let mut returned = 0;
-        for (file, class, grand) in known {
+        // Shifted far to the left, these leave only "+16", which reads as an ordinary score of
+        // 16: a number that is not 62 and so a miss for the automation, but one the cut sweep
+        // should keep seeing.
+        let far_left: [(&str, u8); 4] = [
+            ("0014.png", 0),
+            ("0021.png", 6),
+            ("0034.png", 1),
+            ("0084.png", 2),
+        ];
+        let mut work: Vec<Work> = known
+            .iter()
+            .map(|&(f, c, g)| (f, c, g, shifts.clone()))
+            .collect();
+        for (file, class) in far_left {
+            work.push((file, class, Some(16), (17..=20).map(|d| (-d, 0)).collect()));
+        }
+        // Per direction: F62, F16, OTHER, correct 62 or 16.
+        let mut split = std::collections::BTreeMap::<&str, [usize; 4]>::new();
+        let mut wrong_picks = Vec::new();
+        for (file, class, grand, list) in &work {
             let crop = samples::load_gray(&dir.join(file)).unwrap();
-            for &(dx, dy) in &shifts {
+            for &(dx, dy) in list {
                 let moved = samples::shifted(&crop, dx, dy).unwrap();
                 let score = reader.read(&moved).unwrap();
                 let at = format!(
                     "{file} shifted ({dx}, {dy}): text {:?}",
                     score.observation.text
                 );
+                let direction = match (dx.signum(), dy.signum()) {
+                    (1, _) => "right",
+                    (-1, _) => "left",
+                    (_, 1) => "down",
+                    _ => "up",
+                };
+                let counts = split.entry(direction).or_default();
                 if let Some(value) = score.class.value() {
-                    assert_eq!(value, class, "class, {at}");
-                    returned += 1;
+                    if value == *class {
+                        counts[3] += usize::from(value == 62);
+                    } else if value == 62 {
+                        counts[0] += 1;
+                        wrong_picks.push(format!("F62: {at}"));
+                    } else {
+                        counts[2] += 1;
+                    }
                 }
                 if let Some(value) = score.grand.value() {
-                    assert_eq!(Some(value), grand, "grand, {at}");
-                    returned += 1;
+                    if Some(value) == *grand {
+                        counts[3] += usize::from(value == 16);
+                    } else if value == 16 {
+                        counts[1] += 1;
+                        wrong_picks.push(format!("F16: {at}"));
+                    } else {
+                        counts[2] += 1;
+                    }
                 }
             }
         }
-        // Shifted far to the left, these leave only "+16", which reads as an ordinary score: the
-        // case the left-edge rule exists for, and one a reader of the text alone gets wrong.
-        let far_left: [(&str, u8); 10] = [
-            ("0014.png", 0),
-            ("0021.png", 6),
-            ("0034.png", 1),
-            ("0035.png", 0),
-            ("0039.png", 0),
-            ("0047.png", 0),
-            ("0067.png", 9),
-            ("0080.png", 0),
-            ("0081.png", 0),
-            ("0084.png", 2),
-        ];
-        for (file, class) in far_left {
-            let crop = samples::load_gray(&dir.join(file)).unwrap();
-            for d in 17..=20 {
-                let moved = samples::shifted(&crop, -d, 0).unwrap();
-                let score = reader.read(&moved).unwrap();
-                let at = format!("{file} shifted left {d}: text {:?}", score.observation.text);
-                if let Some(value) = score.class.value() {
-                    assert_eq!(value, class, "class, {at}");
-                }
-                if let Some(value) = score.grand.value() {
-                    assert_eq!(value, 16, "grand, {at}");
-                }
-            }
-        }
-        // Zero wrong values also holds for a reader that never answers, so some answers must
-        // exist: the smallest shifts leave the field whole.
-        assert!(returned > 0, "no shifted crop returned a value");
+        assert!(wrong_picks.is_empty(), "wrong picks: {wrong_picks:?}");
+        let other: usize = split.values().map(|c| c[2]).sum();
+        let correct: usize = split.values().map(|c| c[3]).sum();
         println!(
-            "{test}: {returned} values returned over {} shifts, none wrong",
-            shifts.len()
+            "{test}: per direction [F62, F16, OTHER, correct 62/16]: {split:?}; OTHER {other} (bound {MEASURED_OTHER})"
+        );
+        // Zero wrong picks also holds for a reader that never answers, so some 62 or 16 must
+        // have been accepted on a cut crop: the smallest shifts leave the field whole.
+        assert!(correct > 0, "no shifted crop returned a 62 or a 16");
+        assert!(
+            other <= MEASURED_OTHER,
+            "{other} other wrong numbers, measured {MEASURED_OTHER}: {split:?}"
         );
     }
 
@@ -359,8 +386,8 @@ mod tract {
     }
 
     #[test]
-    fn cut_sweep_returns_no_wrong_value() {
-        super::checks::cut_sweep_returns_no_wrong_value::<TractBackend>("tract cut sweep");
+    fn cut_sweep_has_no_wrong_pick() {
+        super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep");
     }
 
     #[test]
@@ -428,8 +455,8 @@ mod ort {
     }
 
     #[test]
-    fn cut_sweep_returns_no_wrong_value() {
-        super::checks::cut_sweep_returns_no_wrong_value::<OrtBackend>("ort cut sweep");
+    fn cut_sweep_has_no_wrong_pick() {
+        super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep");
     }
 
     #[test]

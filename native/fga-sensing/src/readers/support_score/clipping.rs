@@ -1,35 +1,20 @@
-//! Whether the score field is cut off by the crop, decided from the pixels and not from the
-//! recognised text: a cut "+62/+16" reads as a valid "+62/+1", and a cut "+62/+16" with its right
-//! half missing is a valid ordinary score.
+//! Whether the score field is cut off at the bottom of the crop, decided from the pixels and not
+//! from the recognised text: a text that runs into a textureless band has lost the lower part of
+//! every digit, whatever it reads as.
 //!
-//! The rules were chosen by the cut sweep of the evaluation tool (docs/agents/rust-native.md,
-//! "Support-score reader"), which shifts real crops inside the 60x30 size and counts the wrong
-//! values the reader then returns:
-//! - the right end of the text is not at a fixed place (the last ink column of the labelled real
-//!   reads spreads over 33 to 55), so a "must end here" rule does not exist;
-//! - ink in the last four columns of the content is the narrowest right-end rule that leaves no
-//!   wrong value at any shift to the right (three columns leave four);
-//! - ink in the first column is the narrowest rule that leaves none at any shift to the left; the
-//!   plus the text starts with is the leftmost glyph, so a cut there takes it first;
-//! - a text that ends in a textureless band at the bottom was kept although the sweep found no
-//!   wrong value without it (vertical shifts never gave one): it costs no labelled read, and it
-//!   is the reason `0070` is rejected, which the left-edge rule only does by one pixel of margin.
+//! There is no left or right rule. A cut can only shorten a number, so it cannot create the 62 or
+//! the 16 the automation acts on, and on real screens `+62/+16` fills the crop edge to edge, so ink
+//! at the left or right edge does not separate a whole field from a cut one (the owner's decision,
+//! after the cut sweep of the evaluation tool showed that such rules cost 112 of 306 labelled
+//! reads). What a cut at the sides does to other numbers is measured by that sweep and counted as
+//! misses, not as wrong picks.
 //!
-//! All of it assumes the 60x30 score region; the reader refuses a crop of another size.
+//! The 60x30 score region is assumed; the reader refuses a crop of another size.
 
 use crate::image::GrayImage;
 
 /// A pixel at or below this belongs to the dark outline the game draws around score digits.
 const INK_DARK: u8 = 75;
-/// A column holds ink when this many outline pixels lie in the text band, so one speckle is not.
-const INK_PIXELS_PER_COLUMN: usize = 2;
-/// The columns at the right end of the content that must hold no ink.
-const RIGHT_COLUMNS: usize = 4;
-/// The rows searched for ink, as fifteenths of the crop height. The band keeps the label printed
-/// above the score out of the check.
-const BAND_TOP_FIFTEENTHS: usize = 4;
-const BAND_BOTTOM_FIFTEENTHS: usize = 14;
-const BAND_DENOMINATOR: usize = 15;
 /// Largest step between neighbouring pixels, and largest spread, of a row without texture.
 const FLAT_STEP: u8 = 8;
 const FLAT_RANGE: u8 = 32;
@@ -40,10 +25,6 @@ const INK_ROWS_ABOVE: usize = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ClipReport {
-    /// Ink in the last columns of the content: the digits may continue past it.
-    pub right: bool,
-    /// Ink in the first column: the leading plus, and perhaps more, may be missing.
-    pub left: bool,
     /// Text ends in a textureless band at the bottom of the crop: the lower part of every digit
     /// is missing.
     pub vertical: bool,
@@ -51,7 +32,7 @@ pub struct ClipReport {
 
 impl ClipReport {
     pub fn any(self) -> bool {
-        self.right || self.left || self.vertical
+        self.vertical
     }
 }
 
@@ -69,8 +50,6 @@ pub fn inspect(image: &GrayImage) -> ClipReport {
         return ClipReport::default();
     };
     ClipReport {
-        right: (content.saturating_sub(RIGHT_COLUMNS)..content).any(|x| column_has_ink(image, x)),
-        left: column_has_ink(image, 0),
         vertical: text_cut_by_flat_bottom(image, content),
     }
 }
@@ -95,19 +74,6 @@ fn pixel(image: &GrayImage, x: usize, y: usize) -> u8 {
 fn row(image: &GrayImage, y: usize, content: usize) -> &[u8] {
     let start = y * image.width();
     image.pixels().get(start..start + content).unwrap_or(&[])
-}
-
-fn text_rows(image: &GrayImage) -> std::ops::Range<usize> {
-    let top = image.height() * BAND_TOP_FIFTEENTHS / BAND_DENOMINATOR;
-    let bottom = image.height() * BAND_BOTTOM_FIFTEENTHS / BAND_DENOMINATOR;
-    top..bottom
-}
-
-fn column_has_ink(image: &GrayImage, x: usize) -> bool {
-    text_rows(image)
-        .filter(|&y| pixel(image, x, y) <= INK_DARK)
-        .count()
-        >= INK_PIXELS_PER_COLUMN
 }
 
 fn is_flat(line: &[u8]) -> bool {
@@ -156,14 +122,6 @@ mod tests {
         GrayImage::new(W, H, pixels).unwrap()
     }
 
-    fn black_strip(pixels: &mut [u8]) {
-        for y in 0..H {
-            for x in 55..W {
-                put(pixels, x, y, 0);
-            }
-        }
-    }
-
     fn flat_bottom(pixels: &mut [u8], from: usize) {
         for y in from..H {
             for x in 0..W {
@@ -190,72 +148,10 @@ mod tests {
     }
 
     #[test]
-    fn ink_in_the_middle_is_not_cut() {
-        let mut pixels = panel();
-        outline(&mut pixels, 30, 10..24);
-        outline(&mut pixels, 8, 10..24);
-        assert_eq!(inspect(&image(pixels)), ClipReport::default());
-    }
-
-    #[test]
-    fn ink_in_the_last_columns_is_a_cut_on_the_right() {
-        for x in W - 4..W {
-            let mut pixels = panel();
-            outline(&mut pixels, x, 10..24);
-            assert!(inspect(&image(pixels)).right, "column {x}");
-        }
-        let mut pixels = panel();
-        outline(&mut pixels, W - 5, 10..24);
-        assert!(!inspect(&image(pixels)).right);
-    }
-
-    #[test]
-    fn the_right_end_is_where_the_black_strip_starts() {
-        let mut touching = panel();
-        black_strip(&mut touching);
-        outline(&mut touching, 52, 10..24);
-        assert!(inspect(&image(touching)).right);
-
-        let mut inside = panel();
-        black_strip(&mut inside);
-        outline(&mut inside, 50, 10..24);
-        assert!(!inspect(&image(inside)).right);
-    }
-
-    #[test]
-    fn ink_in_the_first_column_is_a_cut_on_the_left() {
+    fn ink_at_the_sides_is_not_a_cut() {
         let mut pixels = panel();
         outline(&mut pixels, 0, 10..24);
-        assert!(inspect(&image(pixels)).left);
-        let mut pixels = panel();
-        outline(&mut pixels, 1, 10..24);
-        assert!(!inspect(&image(pixels)).left);
-    }
-
-    #[test]
-    fn one_dark_pixel_is_a_speckle_not_ink() {
-        let mut pixels = panel();
-        put(&mut pixels, 0, 15, 40);
-        put(&mut pixels, W - 1, 15, 40);
-        assert_eq!(inspect(&image(pixels)), ClipReport::default());
-    }
-
-    #[test]
-    fn the_label_above_the_score_does_not_count() {
-        let mut pixels = panel();
-        outline(&mut pixels, 0, 0..6);
-        outline(&mut pixels, W - 1, 0..6);
-        assert_eq!(inspect(&image(pixels)), ClipReport::default());
-    }
-
-    #[test]
-    fn a_bright_frame_at_the_edge_is_not_ink() {
-        let mut pixels = panel();
-        for y in 0..H {
-            put(&mut pixels, W - 1, y, 190);
-            put(&mut pixels, W - 2, y, 190);
-            put(&mut pixels, 0, y, 190);
-        }
+        outline(&mut pixels, W - 1, 10..24);
         assert_eq!(inspect(&image(pixels)), ClipReport::default());
     }
 
@@ -293,9 +189,9 @@ mod tests {
     }
 
     #[test]
-    fn a_dark_crop_is_all_ink_and_the_blank_rule_takes_it() {
+    fn a_dark_crop_is_not_a_cut_and_the_blank_rule_takes_it() {
         let dark = image(vec![58; W * H]);
-        assert!(inspect(&dark).right && inspect(&dark).left);
+        assert_eq!(inspect(&dark), ClipReport::default());
         assert!(is_featureless(&dark));
     }
 

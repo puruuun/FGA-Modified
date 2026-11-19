@@ -339,7 +339,7 @@ fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {
 
 /// A cut field cannot know what it lost: `+62/+1` is what both a cut `+62/+16` and a real
 /// `+62/+1` look like, and a class score read beside a cut Grand score may be a cut one too. So
-/// every field is unknown, and so is the display form, in whichever direction the cut is.
+/// every field is unknown, and so is the display form.
 fn apply_clipping(score: &mut SupportScore) {
     if score.observation.clip.any() {
         score.class = Score::Unknown(Reason::Clipped);

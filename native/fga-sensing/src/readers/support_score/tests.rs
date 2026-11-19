@@ -258,32 +258,12 @@ fn one_weak_character_is_unknown_when_a_character_floor_is_set() {
 }
 
 #[test]
-fn a_cut_at_the_right_takes_every_field_of_a_compound() {
-    let mut cut = observation("+62/+16", 0.99);
-    cut.clip.right = true;
-    let score = decide(cut, &config());
-    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.display, Display::Unknown);
-}
-
-#[test]
-fn a_cut_at_the_right_takes_an_ordinary_field_and_its_display() {
+fn a_cut_takes_an_ordinary_field_and_its_display() {
     let mut cut = observation("+62", 0.99);
-    cut.clip.right = true;
+    cut.clip.vertical = true;
     let score = decide(cut, &config());
     assert_eq!(score.class, Score::Unknown(Reason::Clipped));
     // A cut field cannot know that it has no Grand score.
-    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.display, Display::Unknown);
-}
-
-#[test]
-fn a_cut_at_the_left_takes_every_field() {
-    let mut cut = observation("+62/+16", 0.99);
-    cut.clip.left = true;
-    let score = decide(cut, &config());
-    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
     assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
     assert_eq!(score.display, Display::Unknown);
 }
@@ -378,7 +358,7 @@ fn the_reader_reads_through_any_backend() {
     assert_eq!(score.observation.min_char_confidence, Some(0.99));
 }
 
-/// A crop with dark outline in `columns`, over the text band, on a textured panel.
+/// A crop with dark outline in `columns` over the text rows, on a textured panel.
 fn crop_with_outline(columns: &[usize]) -> GrayImage {
     let mut pixels = panel();
     for &x in columns {
@@ -408,17 +388,6 @@ fn assert_cut_is_unknown(image: GrayImage, what: &str) {
 }
 
 #[test]
-fn a_field_cut_at_the_right_is_unknown_whatever_the_text() {
-    assert_cut_is_unknown(crop_with_outline(&[W - 1]), "ink in the last column");
-    assert_cut_is_unknown(crop_with_outline(&[W - 4]), "ink four columns from the end");
-}
-
-#[test]
-fn a_field_cut_at_the_left_is_unknown_whatever_the_text() {
-    assert_cut_is_unknown(crop_with_outline(&[0, 20]), "ink in the first column");
-}
-
-#[test]
 fn a_field_cut_at_the_bottom_is_unknown_whatever_the_text() {
     let mut pixels = panel();
     for y in 10..24 {
@@ -429,9 +398,10 @@ fn a_field_cut_at_the_bottom_is_unknown_whatever_the_text() {
 }
 
 #[test]
-fn a_field_that_ends_before_the_edges_is_read() {
+fn ink_at_the_left_and_right_edges_is_not_a_cut() {
+    // Real `+62/+16` fields fill the crop edge to edge.
     let mut reader = reader(Scripted::text("+62/+16", 0.99), ScoreConfig::default());
-    let score = reader.read(&crop_with_outline(&[8, 30, W - 6])).unwrap();
+    let score = reader.read(&crop_with_outline(&[0, 30, W - 1])).unwrap();
     assert_eq!(values(&score), (Some(62), Some(16)));
     assert_eq!(score.display, Display::Compound);
 }

@@ -347,8 +347,7 @@ fn write_tsv(
     results: &[SupportScore],
 ) -> Result<(), String> {
     let mut out = String::from(
-        "file\tcase\tserver\tkind\tis62\tis16\tcls\tgrand\ttext\tconfidence\tmin_char\tclip_right\tclip_left\t\
-         clip_vertical\tclass\tclass_reason\tgrand_out\tgrand_reason\tdisplay\tkt_cls\tkt_grand\tus\n",
+        "file\tcase\tserver\tkind\tis62\tis16\tcls\tgrand\ttext\tconfidence\tmin_char\tclip_vertical\tclass\tclass_reason\tgrand_out\tgrand_reason\tdisplay\tkt_cls\tkt_grand\tus\n",
     );
     let flag = |f: Option<bool>| f.map_or("", |b| if b { "1" } else { "0" });
     let reason = |s: Score| s.reason().map_or("", |r| r.name());
@@ -356,7 +355,7 @@ fn write_tsv(
         let o = &score.observation;
         let _ = writeln!(
             out,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             sample.file,
             sample.case,
             sample.server,
@@ -369,8 +368,6 @@ fn write_tsv(
             o.confidence,
             o.min_char_confidence
                 .map_or(String::new(), |c| format!("{c:.5}")),
-            u8::from(o.clip.right),
-            u8::from(o.clip.left),
             u8::from(o.clip.vertical),
             score.class.value().map_or(String::new(), |v| v.to_string()),
             reason(score.class),
@@ -1018,12 +1015,11 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         if von != voff {
             changed += 1;
             println!(
-                "  {} ({}) text={:?} conf={:.5} clip right={} vertical={} | without check class={} grand={} [{}/{}] | with check class={} grand={} [{}/{}] | {}",
+                "  {} ({}) text={:?} conf={:.5} clip vertical={} | without check class={} grand={} [{}/{}] | with check class={} grand={} [{}/{}] | {}",
                 sample.file,
                 sample.case,
                 a.observation.text,
                 a.observation.confidence,
-                a.observation.clip.right,
                 a.observation.clip.vertical,
                 show(voff.0),
                 show(voff.1),
@@ -1038,20 +1034,15 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         }
     }
     println!("  rows changed: {changed}");
-    let right = restricted.rows.iter().filter(|o| o.clip.right).count();
     let vertical = restricted.rows.iter().filter(|o| o.clip.vertical).count();
-    println!(
-        "  rows flagged: right {right}, vertical {vertical} of {}",
-        index.len()
-    );
+    println!("  rows flagged: vertical {vertical} of {}", index.len());
     println!("  flagged rows (any text):");
     for (sample, o) in index.iter().zip(&restricted.rows) {
-        if o.clip.right || o.clip.vertical {
+        if o.clip.vertical {
             println!(
-                "    {} ({}) right={} vertical={} text={:?} | {}",
+                "    {} ({}) vertical={} text={:?} | {}",
                 sample.file,
                 sample.case,
-                o.clip.right,
                 o.clip.vertical,
                 o.text,
                 show_label(sample)

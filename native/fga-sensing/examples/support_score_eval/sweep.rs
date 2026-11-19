@@ -223,7 +223,6 @@ enum Right {
     None,
     Ink(usize),
     Range(usize),
-    Current,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -273,7 +272,6 @@ fn cut(row: &CutRow, combo: Combo, ranges: &Ranges) -> bool {
         Right::None => false,
         Right::Ink(k) => ink.last_col.is_some_and(|c| c + k >= ink.content),
         Right::Range(m) => outside(ink.last_col, ranges.last_col, m),
-        Right::Current => row.obs.clip.right,
     };
     let left = match combo.1 {
         Left::None => false,
@@ -412,7 +410,6 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
         Right::Ink(3),
         Right::Ink(4),
         Right::Range(margin),
-        Right::Current,
     ];
     let lefts = [
         Left::None,
@@ -660,11 +657,7 @@ pub fn class_report(
                         .is_some_and(|k| r.ink.last_col.is_some_and(|c| c + k >= r.ink.content))
                     || (v.left && r.ink.first_col.is_some_and(|c| c < 1));
                 let mut obs = r.obs.clone();
-                obs.clip = ClipReport {
-                    right: cut,
-                    left: false,
-                    vertical: false,
-                };
+                obs.clip = ClipReport { vertical: cut };
                 decide(obs, &cfg)
             })
             .collect();
