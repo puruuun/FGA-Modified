@@ -35,9 +35,20 @@ pub fn poison_ort_lock_for_tests() -> Result<String, String> {
     panic!("poisoning the ONNX Runtime recogniser lock")
 }
 
+/// The largest intra-op thread count accepted. A chosen bound, not a measured one: above the
+/// core count of current phone CPUs (10 at most), so a measurement never needs more, while a
+/// mistaken argument such as `Int.MAX_VALUE` would have ONNX Runtime try to create that many
+/// threads. Checked before the lock is taken, like every argument.
+pub const MAX_INTRA_THREADS: i32 = 16;
+
 /// The thread count arrives as a JNI int. 0 is ONNX Runtime's own "use the default", so it is
-/// passed on as such; a negative count is refused rather than wrapped into a huge one.
+/// passed on as such; a negative count, or one above [`MAX_INTRA_THREADS`], is refused.
 pub fn intra_threads(threads: i32) -> Result<Option<NonZeroUsize>, String> {
+    if threads > MAX_INTRA_THREADS {
+        return Err(format!(
+            "invalid thread count {threads}: at most {MAX_INTRA_THREADS}"
+        ));
+    }
     usize::try_from(threads)
         .map(NonZeroUsize::new)
         .map_err(|_| format!("invalid thread count {threads}"))
@@ -103,6 +114,20 @@ mod tests {
         assert_eq!(intra_threads(0), Ok(None));
         assert_eq!(intra_threads(1), Ok(NonZeroUsize::new(1)));
         assert_eq!(intra_threads(8), Ok(NonZeroUsize::new(8)));
+        assert_eq!(
+            intra_threads(MAX_INTRA_THREADS),
+            Ok(NonZeroUsize::new(MAX_INTRA_THREADS as usize))
+        );
+        assert_eq!(
+            intra_threads(MAX_INTRA_THREADS + 1),
+            Err(format!(
+                "invalid thread count 17: at most {MAX_INTRA_THREADS}"
+            ))
+        );
+        assert_eq!(
+            intra_threads(i32::MAX),
+            Err(format!("invalid thread count {}: at most 16", i32::MAX))
+        );
         assert_eq!(intra_threads(-1), Err("invalid thread count -1".to_owned()));
         assert_eq!(
             intra_threads(i32::MIN),
@@ -139,6 +164,15 @@ mod tests {
     #[test]
     fn unload_without_a_model_drops_nothing() {
         assert_eq!(run_guarded(ocr_unload_ort), "OK: {\"dropped\":false}");
+    }
+
+    #[test]
+    fn too_many_threads_are_refused_before_loading() {
+        let text = run_guarded(|| ocr_load_ort("no/such/model.onnx", i32::MAX));
+        assert_eq!(
+            text,
+            format!("ERR: invalid thread count {}: at most 16", i32::MAX)
+        );
     }
 
     #[test]

@@ -29,8 +29,9 @@ import kotlin.math.ceil
 internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val test = case.getString("test")
     if (!NativeProbe.loaded) {
-        return JSONObject().put("test", test)
-            .put("skipped", "libfga_ffi.so is not packaged; build with -Pfga.native=true")
+        val reason = NativeProbe.skipReason()
+        Log.w(TAG, "$test: skipped, $reason")
+        return JSONObject().put("test", test).put("skipped", reason)
     }
     val actual = when (test) {
         "tesseract-baseline" -> tesseractBaseline(runner, case)
@@ -62,8 +63,12 @@ private class Engine(
     val load: (String) -> String,
     val read: (ByteArray, Int, Int, String) -> String,
     val unload: () -> String,
+    val memoryNote: String = HWM_NOTE,
     val extra: (load: JSONObject, threadsAround: List<Int>) -> Map<String, Any?> = { _, _ -> emptyMap() },
 )
+
+private const val HWM_NOTE =
+    "vmHwmKb is the process-wide peak; an earlier case (tesseract-baseline) may already have set it, so it moves only when this case goes higher"
 
 private val TRACT = Engine("ocrLoad", { NativeProbe.ocrLoad(it) }, NativeProbe::ocrRead, NativeProbe::ocrUnload)
 
@@ -77,6 +82,9 @@ private fun ortEngine(threads: Int) = Engine(
     { NativeProbe.ocrLoadOrt(it, threads) },
     NativeProbe::ocrReadOrt,
     NativeProbe::ocrUnloadOrt,
+    memoryNote = "vmHwmKb is the process-wide peak; the tesseract-baseline and tract cases run first and may already have set it, so it moves only when this case goes higher. " +
+        "libonnxruntime.so is mapped when libfga_ffi.so loads, before beforeLoad, so the library itself is in every reading. " +
+        "The ONNX Runtime environment is built on the first load and stays for the life of the process, so afterUnloadAndGc cannot return to beforeLoad",
 ) { load, threadsAround ->
     mapOf(
         "threads" to threads,
@@ -84,10 +92,14 @@ private fun ortEngine(threads: Int) = Engine(
         "availableProcessors" to Runtime.getRuntime().availableProcessors(),
         "processThreads" to JSONObject().put("beforeLoad", threadsAround.getOrNull(0)).put("afterLoad", threadsAround.getOrNull(1))
             .put("afterReading", threadsAround.getOrNull(2)),
+        // Reported, not checked: by ONNX Runtime's threading documentation an intra-op pool of N
+        // creates N - 1 threads, so 1 should give 0, but ART may start or end its own threads
+        // during the load, so a failing rule on this count could not be justified.
+        "threadsCreatedByLoad" to threadsAround.getOrNull(1)?.let { after -> threadsAround.getOrNull(0)?.let { after - it } },
         "threadNote" to if (threads == 0) {
             "threads 0 is ONNX Runtime's default (one intra-op thread per physical core, calling thread included); processThreads shows the pool it created"
         } else {
-            "intra-op pool of $threads, calling thread included. The tract cases run on one thread: native/ builds tract-linalg without its multithread-mm feature, so tract's matrix products run on the calling thread"
+            "intra-op pool of $threads, calling thread included; by ONNX Runtime's documentation the load creates ${threads - 1} pool threads (threadsCreatedByLoad, reported, not checked). The tract cases run on one thread: native/ builds tract-linalg without its multithread-mm feature, so tract's matrix products run on the calling thread"
         },
     )
 }
@@ -295,7 +307,7 @@ private fun engineMemory(runner: SupportDeviceTestRunner, case: JSONObject, engi
     collectGarbage()
     readings += memory("afterUnloadAndGc")
     return JSONObject()
-        .put("note", "vmHwmKb is the process-wide peak; an earlier case (tesseract-baseline) may already have set it, so it moves only when this case goes higher")
+        .put("note", engine.memoryNote)
         .put("samples", samples.size)
         .put("loadMs", load.getLong("loadMs"))
         .put("readErrors", errors)

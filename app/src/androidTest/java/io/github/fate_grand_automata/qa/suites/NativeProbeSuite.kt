@@ -8,7 +8,8 @@ import org.junit.runner.notification.RunListener
 
 /**
  * nativeProbe suite: runs one [NativeProbeTest] method, named by the case's "test", and reports
- * the outcome. A skipped test (no libfga_ffi.so in the APK) is reported as skipped, not failed.
+ * the outcome. A skipped test (libfga_ffi.so not packaged, or packaged but not loadable; the
+ * reason says which) is reported as skipped, not failed.
  */
 internal fun runNativeProbeCase(case: JSONObject): JSONObject {
     val test = case.getString("test")

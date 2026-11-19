@@ -5,13 +5,39 @@ package io.github.fate_grand_automata.qa
  * `OK: <detail>` or `ERR: <detail>`; a Rust panic comes back as `ERR: panic: <message>`.
  */
 object NativeProbe {
-    /** False when the APK was built without `-Pfga.native=true`, so there is no libfga_ffi.so. */
+    /**
+     * The loader's message when `System.loadLibrary("fga_ffi")` failed, null when it worked. It
+     * tells a library that is not in the APK apart from one that is there but cannot be loaded,
+     * for example because the ONNX Runtime build's libonnxruntime.so is missing or does not load.
+     */
+    var loadError: String? = null
+        private set
+
+    /** False when libfga_ffi.so did not load; [skipReason] says why. */
     val loaded: Boolean by lazy {
         try {
             System.loadLibrary("fga_ffi")
             true
-        } catch (_: UnsatisfiedLinkError) {
+        } catch (error: UnsatisfiedLinkError) {
+            loadError = error.message ?: error.toString()
             false
+        }
+    }
+
+    /**
+     * The skipped reason for a case that needs the library. "Not packaged" only when the class
+     * loader says it could not find libfga_ffi.so itself (libcore's Runtime.loadLibrary0 message);
+     * any other failure, such as dlopen naming a missing libonnxruntime.so, is reported as a load
+     * failure with the loader's own message.
+     */
+    fun skipReason(): String {
+        // Reading `loaded` runs the load first, so loadError is set before it is read.
+        if (loaded) return "libfga_ffi.so is loaded"
+        val message = loadError ?: "no error recorded"
+        return if (message.contains("couldn't find \"libfga_ffi.so\"")) {
+            "libfga_ffi.so is not packaged; build with -Pfga.native=true ($message)"
+        } else {
+            "libfga_ffi.so is packaged but could not be loaded: $message"
         }
     }
 

@@ -117,7 +117,7 @@ fn memory_from_status(text: &str) -> Result<String, String> {
     }
 }
 
-pub(super) fn load_json(load_ms: u128, classes: usize) -> String {
+fn load_json(load_ms: u128, classes: usize) -> String {
     format!("{{\"loadMs\":{load_ms},\"classes\":{classes}}}")
 }
 

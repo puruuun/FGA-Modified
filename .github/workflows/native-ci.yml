@@ -96,9 +96,9 @@ jobs:
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           ORT_SKIP_DOWNLOAD=1 cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
       - name: Android build, ort-probe
-        # The same Microsoft AAR that Gradle's -Pfga.native.ort=true uses
-        # (gradle/libs.versions.toml), checked against the SHA-256 that app/build.gradle.kts also
-        # checks; bump the three together. ort-sys takes
+        # The same Microsoft AAR that Gradle's -Pfga.native.ort=true uses. Version and SHA-256 are
+        # pinned in three places that change together: gradle/libs.versions.toml,
+        # app/build.gradle.kts (extractOnnxRuntime) and here. ort-sys takes
         # one runtime folder per build, so each ABI is built on its own.
         env:
           ORT_AAR_URL: https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.31.0/onnxruntime-android-1.31.0.aar
@@ -106,7 +106,7 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           aar="$RUNNER_TEMP/onnxruntime-android.aar"
-          curl --fail --silent --show-error --location --output "$aar" "$ORT_AAR_URL"
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors --output "$aar" "$ORT_AAR_URL"
           echo "$ORT_AAR_SHA256  $aar" | sha256sum --check
           readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           for abi in armeabi-v7a arm64-v8a; do

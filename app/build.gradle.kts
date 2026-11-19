@@ -250,8 +250,9 @@ if (nativeOrtEnabled) {
         description = "Extracts libonnxruntime.so from the onnxruntime-android AAR for fga-ffi."
         aar.from(onnxRuntimeAar)
         abis.set(shippedAbis)
-        // onnxruntime-android 1.31.0; its SHA-1 equals Maven Central's published .sha1. Bump it
-        // with the catalog version and .github/workflows/native-ci.yml.
+        // onnxruntime-android 1.31.0; its SHA-1 equals Maven Central's published .sha1. Version
+        // and SHA-256 are pinned in three places that change together: gradle/libs.versions.toml,
+        // here, and .github/workflows/native-ci.yml.
         sha256.set("72683787a80d0608a3121b967d8e1239aef48286826661c953211626690540a7")
         // ORT_LIB_PATH below names the same folder.
         outputDir.set(layout.buildDirectory.dir("onnxruntime/jniLibs"))
