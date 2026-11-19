@@ -146,7 +146,7 @@ mod checks {
         }
     }
 
-    /// The support-score reader (issue #555) on six fixed crops, one per case the rules exist
+    /// The support-score reader (issue #555) on seven fixed crops, one per case the rules exist
     /// for. The reasons are the reader's own, so a rule that stops firing fails here with the
     /// file name.
     pub fn support_score_reader_decides_fixed_samples<B: Backend>(test: &str) {
@@ -244,6 +244,8 @@ mod checks {
         )
         .unwrap();
         // (file, class score, Grand score) as the labels give them; None where the field has none.
+        // Every sample here has its exact truth, so a value is wrong exactly when it differs from
+        // it, and F62, F16 and OTHER below partition the wrong values.
         // The last three are compounds whose Grand score is not 16: a cut that leaves "+10/+1"
         // must not be taken for a 16.
         let known: [(&str, u8, Option<u8>); 10] = [

@@ -3,7 +3,7 @@
 //! Kotlin reader's stage 0 results.
 //!
 //! cargo run --release -p fga-sensing --features tract --example support_score_eval -- \
-//!     tract <model.onnx> <samples dir> <output.tsv> [--analysis] [--sweep] [--unrestricted] \
+//!     tract <model.onnx> <samples dir> <output.tsv> [--analysis] [--sweep] [--restricted] \
 //!     [--format strict|compound-class-plus|class-plus|plus-optional] [--range independent|joint] [--floor 0.9] \
 //!     [--char-floor 0.5] [--no-clipping]
 //!
@@ -16,9 +16,10 @@
 mod samples;
 #[path = "support_score_eval/sweep.rs"]
 mod sweep;
+#[path = "../tests/support/wrong.rs"]
+mod wrong;
 
 use std::collections::BTreeMap;
-use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -53,7 +54,7 @@ fn main() -> ExitCode {
 
 fn parse_args() -> Result<Args, String> {
     let usage = "usage: support_score_eval <tract|ort> <model.onnx> <samples dir> <output.tsv> \
-                 [--analysis] [--sweep] [--unrestricted] [--format strict|compound-class-plus|class-plus|plus-optional] \
+                 [--analysis] [--sweep] [--restricted] [--format strict|compound-class-plus|class-plus|plus-optional] \
                  [--range independent|joint] [--floor <0..1>] [--char-floor <0..1>] [--no-clipping]";
     let mut args = std::env::args().skip(1);
     let mut next = || args.next().ok_or_else(|| usage.to_string());
@@ -74,7 +75,7 @@ fn parse_args() -> Result<Args, String> {
         match flag.as_str() {
             "--analysis" => parsed.analysis = true,
             "--sweep" => parsed.sweep = true,
-            "--unrestricted" => parsed.config.restrict_characters = false,
+            "--restricted" => parsed.config.restrict_characters = true,
             "--no-clipping" => parsed.config.check_clipping = false,
             "--format" => {
                 parsed.config.format = match next()?.as_str() {
@@ -170,7 +171,7 @@ fn evaluate<B: Backend>(
         } else {
             (&other_mode, &main_mode)
         };
-        analysis(&index, restricted, unrestricted);
+        analysis(&index, restricted, unrestricted, &args.samples);
         return Ok(());
     }
     let results = decide_all(&main_mode, &args.config);
@@ -255,9 +256,10 @@ struct Tally {
     grand_equal: usize,
     grand_unknown: usize,
     grand_wrong: usize,
-    /// `is62` true and a class value other than 62, whether or not `cls` is labelled.
+    /// `is62` true and a class value other than 62 on a row without a `cls` label; a row with one
+    /// is judged by that label in `class_wrong`.
     flag_wrong_class: usize,
-    /// `is16` true and a Grand value other than 16, whether or not `grand` is labelled.
+    /// `is16` true and a Grand value other than 16 on a row without a `grand` label.
     flag_wrong_grand: usize,
 }
 
@@ -353,9 +355,8 @@ fn write_tsv(
     let reason = |s: Score| s.reason().map_or("", |r| r.name());
     for ((sample, score), micros) in index.iter().zip(results).zip(&observed.micros) {
         let o = &score.observation;
-        let _ = writeln!(
-            out,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+        let row = format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             sample.file,
             sample.case,
             sample.server,
@@ -378,6 +379,15 @@ fn write_tsv(
             sample.kt_grand.map_or(String::new(), |v| v.to_string()),
             micros
         );
+        // A precision on the wrong column once cut "+62/+16" to "+62/+".
+        if row.split('\t').nth(8) != Some(o.text.as_str()) {
+            return Err(format!(
+                "{}: the text column does not hold {:?}",
+                sample.file, o.text
+            ));
+        }
+        out.push_str(&row);
+        out.push('\n');
     }
     std::fs::write(path, out).map_err(|e| format!("{}: {e}", path.display()))
 }
@@ -739,7 +749,9 @@ fn fmt_opt(v: Option<f64>) -> String {
 
 fn line_for(t: &Tally) -> String {
     format!(
-        "+62 read {}/{} (miss {}, FA {}) | +16 read {}/{} (miss {}, FA {}) | class equal {}/{} unknown {} WRONG {} | grand equal {}/{} unknown {} WRONG {}",
+        "WRONG by flag class {} grand {} | +62 read {}/{} (miss {}, FA {}) | +16 read {}/{} (miss {}, FA {}) | class equal {}/{} unknown {} WRONG {} | grand equal {}/{} unknown {} WRONG {}",
+        t.flag_wrong_class,
+        t.flag_wrong_grand,
         t.read62,
         t.positives62,
         t.misses62(),
@@ -781,7 +793,7 @@ const ALL_FORMATS: [Format; 4] = [
     Format::PlusOptional,
 ];
 
-fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
+fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed, samples_dir: &Path) {
     let base = ScoreConfig::default();
     let open = ScoreConfig {
         min_confidence: 0.0,
@@ -936,7 +948,12 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
     }
     println!("  rows differing: {differing}");
 
-    println!("\n== R3 sensitivity (defaults, restricted mode): text floor");
+    let chosen = if base.restrict_characters {
+        restricted
+    } else {
+        unrestricted
+    };
+    println!("\n== R3 sensitivity (defaults, the mode of the default configuration): text floor");
     for floor in [
         0.0, 0.3, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.93, 0.95, 0.97, 0.99,
     ] {
@@ -944,21 +961,23 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
             min_confidence: floor,
             ..base.clone()
         };
-        let t = tally_with(index, restricted, &config, |_| true);
+        let t = tally_with(index, chosen, &config, |_| true);
         println!("  floor {floor:.2}: {}", line_for(&t));
     }
-    println!("\n== R3 sensitivity (defaults, restricted mode): per-character floor");
+    println!(
+        "\n== R3 sensitivity (defaults, the mode of the default configuration): per-character floor"
+    );
     for floor in [0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.97, 0.99] {
         let config = ScoreConfig {
             min_char_confidence: floor,
             ..base.clone()
         };
-        let t = tally_with(index, restricted, &config, |_| true);
+        let t = tally_with(index, chosen, &config, |_| true);
         println!("  char floor {floor:.2}: {}", line_for(&t));
     }
 
     println!(
-        "\n== R3 cross-checks (restricted mode; the floor is derived on one part and applied to the other)"
+        "\n== R3 cross-checks (the mode of the default configuration; the floor is derived on one part and applied to the other)"
     );
     type Part = (&'static str, fn(&Sample) -> bool);
     let pairs: [(Part, Part); 4] = [
@@ -974,7 +993,7 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         (("Kr", |s| s.server == "Kr"), ("Jp", |s| s.server == "Jp")),
     ];
     for ((from_name, from), (to_name, to)) in pairs {
-        let s = split(index, restricted, &base, from);
+        let s = split(index, chosen, &base, from);
         let text = derive_floor(&s.correct_text, &s.wrong_text);
         let character = derive_floor(&s.correct_char, &s.wrong_char);
         println!(
@@ -988,8 +1007,8 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
             min_confidence: text.value.unwrap_or(0.0),
             ..base.clone()
         };
-        let reference = tally_with(index, restricted, &open, to);
-        let t = tally_with(index, restricted, &applied, to);
+        let reference = tally_with(index, chosen, &open, to);
+        let t = tally_with(index, chosen, &applied, to);
         println!("   applied to {to_name} (text floor): {}", line_for(&t));
         println!(
             "   {to_name} with no floor:           {}",
@@ -997,10 +1016,12 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         );
     }
 
-    println!("\n== R2c clipping: rows whose result the check changes (restricted mode)");
-    let on = decide_all(restricted, &base);
+    println!(
+        "\n== R2c clipping: rows whose result the check changes (the mode of the default configuration)"
+    );
+    let on = decide_all(chosen, &base);
     let off = decide_all(
-        restricted,
+        chosen,
         &ScoreConfig {
             check_clipping: false,
             ..base.clone()
@@ -1034,10 +1055,10 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         }
     }
     println!("  rows changed: {changed}");
-    let vertical = restricted.rows.iter().filter(|o| o.clip.vertical).count();
+    let vertical = chosen.rows.iter().filter(|o| o.clip.vertical).count();
     println!("  rows flagged: vertical {vertical} of {}", index.len());
     println!("  flagged rows (any text):");
-    for (sample, o) in index.iter().zip(&restricted.rows) {
+    for (sample, o) in index.iter().zip(&chosen.rows) {
         if o.clip.vertical {
             println!(
                 "    {} ({}) vertical={} text={:?} | {}",
@@ -1050,18 +1071,18 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         }
     }
 
-    println!("\n== R2b range policy (restricted mode, defaults otherwise)");
+    println!("\n== R2b range policy (the mode of the default configuration, defaults otherwise)");
     for policy in [RangePolicy::Independent, RangePolicy::Joint] {
         let config = ScoreConfig {
             range_policy: policy,
             ..base.clone()
         };
-        let t = tally_with(index, restricted, &config, |_| true);
+        let t = tally_with(index, chosen, &config, |_| true);
         println!("  {policy:?}: {}", line_for(&t));
     }
     let range_rows: Vec<_> = index
         .iter()
-        .zip(&decide_all(restricted, &base))
+        .zip(&decide_all(chosen, &base))
         .filter(|(_, s)| {
             s.class.reason() == Some(Reason::Range) || s.grand.reason() == Some(Reason::Range)
         })
@@ -1103,17 +1124,12 @@ fn analysis(index: &[Sample], restricted: &Observed, unrestricted: &Observed) {
         "\n== edge ink in the raw crops (outline pixel <= 75 in rows 8..28 or the edge row/column)"
     );
     println!("  see the notes in docs/agents/rust-native.md; counted by the analysis helper below");
-    edge_ink(index);
+    edge_ink(index, samples_dir);
 }
 
 /// Counts, over the whole set, how many crops carry dark outline pixels on each edge of the crop.
-fn edge_ink(index: &[Sample]) {
+fn edge_ink(index: &[Sample], dir: &Path) {
     // The crops are read again here so the counts do not depend on the reader.
-    let dir = std::env::var_os("FGA_OCR_SAMPLES").map(PathBuf::from);
-    let Some(dir) = dir else {
-        println!("  FGA_OCR_SAMPLES is not set: edge counts skipped");
-        return;
-    };
     let mut counts = [0usize; 4];
     let mut positive = [0usize; 4];
     for sample in index {

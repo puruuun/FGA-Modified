@@ -5,9 +5,8 @@
 //! There is no left or right rule. A cut can only shorten a number, so it cannot create the 62 or
 //! the 16 the automation acts on, and on real screens `+62/+16` fills the crop edge to edge, so ink
 //! at the left or right edge does not separate a whole field from a cut one (the owner's decision,
-//! after the cut sweep of the evaluation tool showed that such rules cost 112 of 306 labelled
-//! reads). What a cut at the sides does to other numbers is measured by that sweep and counted as
-//! misses, not as wrong picks.
+//! after the cut sweep of the evaluation tool showed what such rules cost in labelled reads). What a
+//! cut at the sides does to other numbers is measured by that sweep and counts as misses.
 //!
 //! The 60x30 score region is assumed; the reader refuses a crop of another size.
 

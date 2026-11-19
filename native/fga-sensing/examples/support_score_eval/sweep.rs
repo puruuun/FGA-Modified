@@ -17,6 +17,7 @@ use fga_sensing::readers::support_score::{
     ClipReport, Format, Observation, ScoreConfig, SupportScore, SupportScoreReader, decide,
 };
 
+use super::wrong::{self, Truth, classify};
 use super::{Backend, Recognizer, Sample, Verdict, class_verdict, grand_verdict, samples};
 
 pub const MAX_SHIFT_X: isize = 20;
@@ -159,41 +160,9 @@ pub fn run<B: Backend>(
     Ok(all)
 }
 
-type Truth = (Option<u8>, Option<u8>);
-
-/// What each field of a sample is supposed to read: the label where it gives the number, the
-/// special value (62, 16) where only the flag is true, else what the reader itself returned on the
-/// unshifted crop (no wrong value was ever seen there), else nothing is known.
-fn truth(sample: &Sample, base: &SupportScore) -> Truth {
-    let class = sample
-        .cls
-        .or(if sample.is62 == Some(true) {
-            Some(62)
-        } else {
-            None
-        })
-        .or(base.class.value());
-    let grand = sample
-        .grand
-        .or(if sample.is16 == Some(true) {
-            Some(16)
-        } else {
-            None
-        })
-        .or(base.grand.value());
-    (class, grand)
-}
-
-fn wrong_field(value: Option<u8>, truth: Option<u8>, flag: Option<bool>, special: u8) -> bool {
-    match value {
-        None => false,
-        Some(v) => truth.is_some_and(|t| t != v) || (flag == Some(false) && v == special),
-    }
-}
-
 fn is_wrong(sample: &Sample, truth: Truth, score: &SupportScore) -> bool {
-    wrong_field(score.class.value(), truth.0, sample.is62, 62)
-        || wrong_field(score.grand.value(), truth.1, sample.is16, 16)
+    wrong::wrong_field(score.class.value(), truth.0, sample.is62, 62)
+        || wrong::wrong_field(score.grand.value(), truth.1, sample.is16, 16)
 }
 
 fn has_value(score: &SupportScore) -> bool {
@@ -307,7 +276,7 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
     let truths: Vec<Truth> = rows
         .iter()
         .map(|r| match (index.get(r.sample), unshifted.get(&r.sample)) {
-            (Some(s), Some(b)) => truth(s, b),
+            (Some(s), Some(b)) => wrong::truth(s, b.class.value(), b.grand.value()),
             _ => (None, None),
         })
         .collect();
@@ -619,7 +588,7 @@ pub fn class_report(
             left: false,
         },
         Variant {
-            name: "D last 4 columns + first column (490544f3)",
+            name: "D last 4 columns + first column",
             format: Format::Strict,
             right: Some(4),
             left: true,
@@ -645,8 +614,10 @@ pub fn class_report(
         "F62: class 62 returned for a true class that is not 62. F16: Grand 16 returned for a true Grand that is not 16 (or a field with none). OTHER: any other wrong number. correct: 62 or 16 returned that is the true value."
     );
     for v in &variants {
+        // The comparison is of rule sets, so the command line cannot switch the pixel check off.
         let cfg = ScoreConfig {
             format: v.format,
+            check_clipping: true,
             ..config.clone()
         };
         let verdicts: Vec<SupportScore> = rows
@@ -690,7 +661,9 @@ pub fn class_report(
                 continue;
             };
             let base = unshifted.get(&row.sample);
-            let t = base.map_or((None, None), |b| truth(sample, b));
+            let t = base.map_or((None, None), |b| {
+                wrong::truth(sample, b.class.value(), b.grand.value())
+            });
             let no_grand = base.is_some_and(|b| {
                 b.display == fga_sensing::readers::support_score::Display::Ordinary
             });
@@ -699,25 +672,27 @@ pub fn class_report(
             let entry = per.entry((dir, amount)).or_default();
             let class = score.class.value();
             let grand = score.grand.value();
-            let f62 = class == Some(62)
-                && (sample.is62 == Some(false) || sample.cls.is_some_and(|c| c != 62));
-            let f16 = grand == Some(16)
-                && (sample.is16 == Some(false)
-                    || sample.grand.is_some_and(|g| g != 16)
-                    || no_grand);
-            let class_wrong = wrong_field(class, t.0, sample.is62, 62);
-            let grand_wrong = wrong_field(grand, t.1, sample.is16, 16);
-            entry.f62 += usize::from(f62);
-            entry.f16 += usize::from(f16);
-            entry.other += usize::from(class_wrong && !f62) + usize::from(grand_wrong && !f16);
-            entry.correct += usize::from(class == Some(62) && t.0 == Some(62) && !class_wrong)
-                + usize::from(grand == Some(16) && t.1 == Some(16) && !grand_wrong);
+            let kinds = classify(sample, t, no_grand, class, grand);
+            let (f62, f16) = (kinds.f62 > 0, kinds.f16 > 0);
+            entry.f62 += kinds.f62;
+            entry.f16 += kinds.f16;
+            entry.other += kinds.other;
+            entry.correct += usize::from(
+                class == Some(62)
+                    && t.0 == Some(62)
+                    && !wrong::wrong_field(class, t.0, sample.is62, 62),
+            ) + usize::from(
+                grand == Some(16)
+                    && t.1 == Some(16)
+                    && !wrong::wrong_field(grand, t.1, sample.is16, 16),
+            );
             if f62 || f16 {
                 listed.push(format!(
-                    "    {} {dir} {amount}: text {:?} conf {:.5} -> class {:?} grand {:?} ({})",
+                    "    {} {dir} {amount}: text {:?} conf {:.5} weakest char {:?} -> class {:?} grand {:?} ({})",
                     sample.file,
                     score.observation.text,
                     score.observation.confidence,
+                    score.observation.min_char_confidence,
                     class,
                     grand,
                     match (f62, f16) {

@@ -250,7 +250,6 @@ fn one_weak_character_is_unknown_when_a_character_floor_is_set() {
     weak.min_char_confidence = Some(0.49);
     let score = decide(weak.clone(), &strict);
     assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
-    // The same read passes when no character floor is set.
     assert_eq!(values(&decide(weak, &config())), (Some(62), Some(16)));
     let mut edge = observation("+62/+16", 0.99);
     edge.min_char_confidence = Some(0.5);
@@ -298,7 +297,6 @@ fn nothing_left_after_the_range_rule_leaves_no_display_form() {
         assert_eq!(values(&score), (None, None), "{text}");
         assert_eq!(score.display, Display::Unknown, "{text}");
     }
-    // One field left keeps its display form.
     assert_eq!(decided("+63/+16", 0.99).display, Display::Compound);
 }
 
@@ -482,4 +480,44 @@ fn reasons_have_distinct_names() {
     names.sort_unstable();
     names.dedup();
     assert_eq!(names.len(), Reason::ALL.len());
+}
+
+#[test]
+fn the_weakest_character_is_the_minimum_of_the_text() {
+    let script = || {
+        Scripted::new(vec![
+            vec![('+', 0.99)],
+            vec![('6', 0.55)],
+            vec![('2', 0.97)],
+        ])
+    };
+    let mut reader = reader(script(), config());
+    let seen = reader.observe(&crop(panel())).unwrap();
+    assert_eq!(seen.text, "+62");
+    let weakest = seen.min_char_confidence.unwrap();
+    assert!((weakest - 0.55).abs() < 1e-6, "{weakest}");
+
+    // Through `read_with`: the floor sits between the weakest character and the others, so
+    // anything but the minimum would let the read through.
+    let mut recognizer = Recognizer::new(script());
+    let floor = |min_char_confidence| ScoreConfig {
+        min_confidence: 0.5,
+        min_char_confidence,
+        ..config()
+    };
+    let low = read_with(&mut recognizer, &floor(0.6), &crop(panel())).unwrap();
+    assert_eq!(low.class, Score::Unknown(Reason::LowConfidence));
+    let ok = read_with(&mut recognizer, &floor(0.5), &crop(panel())).unwrap();
+    assert_eq!(ok.class, Score::Value(62));
+}
+
+#[test]
+fn a_text_without_character_confidences_is_not_confident() {
+    let mut observed = observation("+62", 0.99);
+    observed.min_char_confidence = None;
+    for config in [config(), ScoreConfig::default()] {
+        let score = decide(observed.clone(), &config);
+        assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
+        assert_eq!(score.display, Display::Unknown);
+    }
 }

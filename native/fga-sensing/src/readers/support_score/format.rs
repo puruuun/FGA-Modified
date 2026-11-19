@@ -1,8 +1,8 @@
 //! The text forms of a support score: `+NN` and `+NN/+MM`.
 
 /// How strictly the plus signs are demanded. Tesseract loses a plus now and then, which is why
-/// the Kotlin reader tolerates a missing one; whether the new engine needs that is decided on the
-/// labelled samples and recorded in docs/agents/rust-native.md.
+/// the Kotlin reader tolerates a missing one; the default here is `Strict`, because the plus is the
+/// leftmost glyph, so a field cut at the left loses it first and must then be refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
     /// `+NN` and `+NN/+MM`.
@@ -75,6 +75,12 @@ mod tests {
     }
 
     #[test]
+    fn a_cut_grand_score_is_still_a_number() {
+        assert_eq!(strict("+62/+1"), Some((62, Some(1))));
+        assert_eq!(strict("+62/+0"), Some((62, Some(0))));
+    }
+
+    #[test]
     fn strict_takes_the_two_forms() {
         assert_eq!(strict("+62"), Some((62, None)));
         assert_eq!(strict("+7"), Some((7, None)));
@@ -139,6 +145,13 @@ mod tests {
                 "/+16",
                 "+62//+16",
                 "+62/+16/+1",
+                "+062",
+                "+162",
+                "+62/+016",
+                "+62/+16/+16",
+                "+\u{0666}\u{0662}",
+                "+\u{0662}/+\u{0661}\u{0666}",
+                "+\u{ff16}\u{ff12}",
                 "+05",
                 "+00",
                 "+6A",

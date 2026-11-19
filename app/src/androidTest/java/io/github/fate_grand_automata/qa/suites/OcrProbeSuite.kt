@@ -515,7 +515,7 @@ private fun checkScoreCrop(runner: SupportDeviceTestRunner, path: String) {
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(png, 0, png.size, options)
     check(options.outWidth == SCORE_CROP_WIDTH && options.outHeight == SCORE_CROP_HEIGHT) {
-        "$path is ${options.outWidth}x${options.outHeight}; kotlin-reader needs ${SCORE_CROP_WIDTH}x$SCORE_CROP_HEIGHT score crops"
+        "$path is ${options.outWidth}x${options.outHeight}; the reader cases need ${SCORE_CROP_WIDTH}x$SCORE_CROP_HEIGHT score crops"
     }
 }
 
@@ -708,6 +708,8 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     check(indexBytes.isNotEmpty()) { "$dir/index.json is missing on the device; push the OCR samples first (docs/agents/rust-native.md)" }
     val index = JSONArray(indexBytes.toString(Charsets.UTF_8))
     val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    // With no rows every tally is zero, so a lowered floor would pass an empty index.
+    check(rows.isNotEmpty()) { "$dir/index.json has no rows" }
     for (row in rows) {
         val file = row.getString("file")
         check(row.has("kt_cls") && row.has("kt_grand")) { "$dir/index.json: $file has no kt_cls or kt_grand" }

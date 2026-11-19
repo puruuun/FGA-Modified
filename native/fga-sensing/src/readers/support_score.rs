@@ -141,10 +141,9 @@ pub struct ScoreConfig {
 pub const EXPECTED_CROP_SIZE: (usize, usize) = (60, 30);
 
 /// A margin, not a measured boundary: 0.05 below the lowest confidence of a correct read on the
-/// 370 labelled samples (0.91163), by the rule of docs/agents/rust-native.md. Two verifiers
-/// confirmed that it separates nothing on those samples, because no wrong read of a valid text
-/// exists there; the format and the pixel rules do the real work, and the two real errors found
-/// (`0070`, `0299`) read with 0.956 and 0.937.
+/// 370 labelled samples (0.91163). It separates nothing there, because no wrong read of a valid
+/// text exists on those samples; the format and the pixel rule do the real work, and the two real
+/// errors found (`0070`, `0299`) read with 0.956 and 0.937.
 pub const DEFAULT_MIN_CONFIDENCE: f64 = 0.86;
 
 /// A character the model itself gives less than even odds is not a read. Not fitted: the lowest
@@ -248,8 +247,6 @@ pub fn observe_with<B: Backend>(
     })
 }
 
-/// A whole read on a borrowed recogniser, building the allowed set when the configuration asks
-/// for one.
 pub fn read_with<B: Backend>(
     recognizer: &mut Recognizer<B>,
     config: &ScoreConfig,
@@ -312,12 +309,14 @@ fn is_blank(observation: &Observation) -> bool {
     observation.text.is_empty() || observation.featureless
 }
 
-/// The floor is a minimum: a read exactly at it passes.
+/// A text without per-character confidences cannot be checked against the floor, and the decoder
+/// always gives them for a non-empty text, so their absence fails closed (a blank text never gets
+/// here).
 fn is_confident(observation: &Observation, config: &ScoreConfig) -> bool {
     observation.confidence >= config.min_confidence
         && observation
             .min_char_confidence
-            .is_none_or(|weakest| weakest >= config.min_char_confidence)
+            .is_some_and(|weakest| weakest >= config.min_char_confidence)
 }
 
 fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {
@@ -337,9 +336,9 @@ fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {
     (class, grand)
 }
 
-/// A cut field cannot know what it lost: `+62/+1` is what both a cut `+62/+16` and a real
-/// `+62/+1` look like, and a class score read beside a cut Grand score may be a cut one too. So
-/// every field is unknown, and so is the display form.
+/// A text that runs into a flat band at the bottom has lost the lower part of every digit, so no
+/// digit of it can be trusted: every field is unknown, and so is the display form, since a cut
+/// field cannot know that it has no Grand score.
 fn apply_clipping(score: &mut SupportScore) {
     if score.observation.clip.any() {
         score.class = Score::Unknown(Reason::Clipped);
