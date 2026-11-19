@@ -3,7 +3,7 @@
 
 Requires Pillow, numpy and opencv-python-headless. Run on Windows with `py -3 -E -P`.
 Every sprite of an extract_apk_ui.py folder is tried at scales 1.0-1.5 against every template of
-a folder; a sprite's alpha is flattened on the template's median color so the art sits on a
+a folder; sprites are scaled the way a device screenshot shows them (see --device-height) and a sprite's alpha is flattened on the template's median color so the art sits on a
 similar background. The best sprites per template are printed and written to a CSV, together
 with the best sprite's highest score inside the OTHER templates (a false-match check: a sprite
 that also scores high elsewhere would match the wrong screen).
@@ -55,14 +55,15 @@ def lib_safe(name: str) -> str:
 class Scaled:
     """Sprites resized once per scale; only the cheap background flattening depends on the template."""
 
-    def __init__(self, sprites):
+    def __init__(self, sprites, device_height):
         self.sprites = sprites
+        self.device_height = device_height
         self.cache = {}
 
     def get(self, i: int, scale: float) -> np.ndarray:
         key = (i, scale)
         if key not in self.cache:
-            self.cache[key] = lib.scale_sprite(self.sprites[i][2], scale)
+            self.cache[key] = lib.scale_sprite(self.sprites[i][2], scale, self.device_height)
         return self.cache[key]
 
 
@@ -100,6 +101,9 @@ def main() -> None:
     parser.add_argument("--extracted", required=True, help="folder written by extract_apk_ui.py")
     parser.add_argument("--templates", required=True, help="folder of 720p templates, e.g. app/src/main/assets/Kr")
     parser.add_argument("--names", help="comma-separated template files to match; default: every .png")
+    parser.add_argument("--device-height", type=int, default=lib.DEFAULT_DEVICE_HEIGHT, metavar="PX",
+                        help="height of the device screen sprites are drawn on before FGA shrinks them to 720p; "
+                             "720 = one INTER_AREA step, the behaviour before #556 (default: %(default)s)")
     parser.add_argument("--top", type=int, default=3, help="best sprites to show per template (default: 3)")
     parser.add_argument("--out-csv", help="write the best sprite per template here")
     args = parser.parse_args()
@@ -111,7 +115,7 @@ def main() -> None:
     if missing:
         sys.exit(f"not in {args.templates}: {', '.join(missing)}")
 
-    scaled = Scaled(load_sprites(args.extracted))
+    scaled = Scaled(load_sprites(args.extracted), args.device_height)
     print(f"{len(scaled.sprites)} sprites, {len(templates)} templates in the folder, {len(wanted)} to match")
 
     rows = []

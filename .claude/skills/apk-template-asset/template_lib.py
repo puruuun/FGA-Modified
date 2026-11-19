@@ -18,6 +18,8 @@ RENDER_SCALE = 4
 SHIFTS = [(0, 0), (0.5, 0), (0, 0.5), (0.5, 0.5)]
 # NGUI UI to 720p, measured on KR 8.1.0: the best match of every atlas sprite was at this scale
 DEFAULT_SPRITE_SCALE = 1.25
+# Measured on KR 8.1.0 against 270 screenshots: drawing via a 1080p screen scores 0.01-0.03 above a single INTER_AREA step
+DEFAULT_DEVICE_HEIGHT = 1080
 
 # Keeps a __pycache__ out of the other skill's folder when crop_template is imported from here
 sys.dont_write_bytecode = True
@@ -70,9 +72,62 @@ def sprite_on_background(rgba: np.ndarray, background) -> np.ndarray:
     return np.clip(rgb + 0.5, 0, 255).astype(np.uint8)
 
 
-def scale_sprite(rgba: np.ndarray, scale: float) -> np.ndarray:
+def scale_sprite(rgba: np.ndarray, scale: float, device_height: int = DEFAULT_DEVICE_HEIGHT) -> np.ndarray:
+    """A sprite at 720p scale `scale`, the way a screenshot of a device with a `device_height` screen shows it.
+
+    The game draws the sprite with bilinear filtering on a device-sized screen and FGA then shrinks
+    the screenshot with INTER_AREA. A single INTER_AREA enlargement acts like nearest neighbour and
+    makes a blockier draft than any screenshot (measured: 0.01-0.03 lower scores on KR).
+    device_height 720 keeps that single step.
+    """
     h, w = rgba.shape[:2]
-    return cv2.resize(rgba, (max(1, round(w * scale)), max(1, round(h * scale))), interpolation=cv2.INTER_AREA)
+    size = (max(1, round(w * scale)), max(1, round(h * scale)))
+    if device_height == 720:
+        return cv2.resize(rgba, size, interpolation=cv2.INTER_AREA)
+    device = scale * device_height / 720
+    big = cv2.resize(rgba, (max(1, round(w * device)), max(1, round(h * device))), interpolation=cv2.INTER_LINEAR)
+    return cv2.resize(big, size, interpolation=cv2.INTER_AREA)
+
+
+def composite_layers(layers: list[np.ndarray], offsets: list[tuple[int, int]]) -> np.ndarray:
+    """RGBA layers alpha-composited bottom to top on the union of their boxes.
+
+    offsets[i] is where layer i's top-left sits relative to layer 0's, in pixels.
+    """
+    x0 = min(dx for dx, _ in offsets)
+    y0 = min(dy for _, dy in offsets)
+    x1 = max(dx + layer.shape[1] for layer, (dx, _) in zip(layers, offsets))
+    y1 = max(dy + layer.shape[0] for layer, (_, dy) in zip(layers, offsets))
+    canvas = np.zeros((y1 - y0, x1 - x0, 4), np.float32)
+    for layer, (dx, dy) in zip(layers, offsets):
+        top = layer.astype(np.float32)
+        x, y = dx - x0, dy - y0
+        below = canvas[y:y + top.shape[0], x:x + top.shape[1]]
+        top_a = top[:, :, 3:4] / 255
+        below_a = below[:, :, 3:4] / 255
+        out_a = top_a + below_a * (1 - top_a)
+        safe = np.where(out_a > 0, out_a, 1)
+        rgb = (top[:, :, :3] * top_a + below[:, :, :3] * below_a * (1 - top_a)) / safe
+        below[:, :, :3] = rgb
+        below[:, :, 3:4] = out_a * 255
+    return np.clip(canvas + 0.5, 0, 255).astype(np.uint8)
+
+
+def locate(container_gray: np.ndarray, needle_gray: np.ndarray) -> tuple[float, int, int] | None:
+    """(score, x, y) of the needle's top-left relative to the container's; x and y are negative
+    when the needle is the larger image and the container sits inside it. None for a flat image."""
+    ch, cw = container_gray.shape
+    nh, nw = needle_gray.shape
+    if nw <= cw and nh <= ch:
+        outer, inner, sign = container_gray, needle_gray, 1
+    elif cw <= nw and ch <= nh:
+        outer, inner, sign = needle_gray, container_gray, -1
+    else:
+        return None
+    if outer.std() < 3 or inner.std() < 3:
+        return None
+    _, score, _, (x, y) = cv2.minMaxLoc(cv2.matchTemplate(outer, inner, cv2.TM_CCOEFF_NORMED))
+    return float(score), sign * x, sign * y
 
 
 def arrange(image_a: np.ndarray, image_b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
