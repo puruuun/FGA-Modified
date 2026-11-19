@@ -1,0 +1,40 @@
+name: "機能の提案 (日本語)"
+description: "新しい機能や改善のアイデア"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        アイデアを自由に書いてください。空欄があってもかまいません。
+
+        このアプリは**日本の公式サーバーと韓国サーバー**を対象に開発しています。他のサーバー専用の機能は対応が難しいです。
+  - type: textarea
+    id: problem
+    attributes:
+      label: "何に困っていますか？"
+      description: "今どんな場面で不便かを書いてください。"
+    validations:
+      required: false
+  - type: textarea
+    id: idea
+    attributes:
+      label: "どうなるとよいですか？"
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "ゲームサーバー"
+      options:
+        - "日本"
+        - "韓国"
+        - "その他"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "参考資料"
+      description: "スクリーンショットや参考リンクがあれば貼ってください。アカウント情報は隠してください。"
+    validations:
+      required: false

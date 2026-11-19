@@ -1,0 +1,56 @@
+name: "Bug report (English)"
+description: "The app does something wrong or stops"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill in what you know. You can leave any field empty; the maintainer will ask in a comment for what is missing.
+
+        **Before you post:** this repository is public. If a screenshot shows account data such as a friend code or a player name, hide it first.
+  - type: textarea
+    id: what
+    attributes:
+      label: "What happened?"
+      description: "What you expected and what the app did instead."
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: "How can it be reproduced?"
+      description: "The feature (battle, skill upgrade, log capture, ...) and the steps."
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "Game server"
+      options:
+        - "KR"
+        - "JP"
+        - "Other"
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: "App version"
+      description: "Shown next to Build: on the first screen of the app."
+      placeholder: "e.g. 1.8.1"
+    validations:
+      required: false
+  - type: input
+    id: device
+    attributes:
+      label: "Device and Android version"
+      placeholder: "e.g. Galaxy Tab S9, Android 14 / BlueStacks 5, Android 11"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "Screenshots, settings, anything else"
+      description: "Screen resolution, related settings and screenshots help."
+    validations:
+      required: false
