@@ -26,6 +26,10 @@ commit_range=$(printf '%s' "${RANGE:-}" | sed 's/\.\.\.*/../')
 if [ -n "${RANGE:-}" ] \
   && git diff --name-only --no-renames --diff-filter=d -z "$RANGE" > "$only" \
   && git rev-list "$commit_range" > "$RUNNER_TEMP/commits"; then
+  # No case is known where only this net-diff check finds a file: every file of the net diff is
+  # also introduced by a commit of the range, which the history check below reports. It stays as a
+  # second layer, so that a failure of the history check cannot be the only thing between a file and main.
+  # "|| status=1" keeps both checks running: set -e would otherwise stop the step after the first.
   "$py" "$guard" --allow "$allow" --only "$only" < "$listing" || status=1
   # A file added in one commit and deleted in a later one is gone from the net diff, but the
   # blob stays in the history that a fast-forward merge keeps. A merge counts only for what it

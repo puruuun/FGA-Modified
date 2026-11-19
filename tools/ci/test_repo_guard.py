@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 import repo_guard as g
@@ -393,6 +394,45 @@ class StepScriptTest(unittest.TestCase):
             base = head
             inside = head
 
+    def wrapper(self, failing_flag):
+        path = os.path.join(self.tmp.name, 'python-wrapper.sh')
+        real = sys.executable.replace(chr(92), '/')
+        with open(path, 'w', newline=chr(10)) as f:
+            f.write('#!/bin/sh' + chr(10))
+            f.write('case " $* " in *" %s "*) echo "fake failure of %s"; exit 1;; esac' % (failing_flag, failing_flag) + chr(10))
+            f.write('exec "%s" "$@"' % real + chr(10))
+        os.chmod(path, 0o755)
+        return path.replace(chr(92), '/')
+
+    def run_with(self, python, head, range_):
+        env = dict(os.environ, RANGE=range_, EVENT_NAME='push', PR_HEAD='', HEAD_SHA=head,
+                   RUNNER_TEMP=self.tmp.name, PYTHON=python)
+        script = os.path.join(HERE, 'run_repo_guard.sh')
+        p = subprocess.run([self.sh, script], cwd=self.repo, env=env, capture_output=True)
+        return p.returncode, (p.stdout + p.stderr).decode('utf-8', 'replace')
+
+    def test_both_checks_run_even_when_the_net_diff_check_fails(self):
+        base = self.commit({'ok.txt': 1})
+        head = self.commit({'bad/m.onnx': 1})
+        # The net-diff check is replaced by a failure; the history check must still run and report.
+        code, out = self.run_with(self.wrapper('--only'), head, base + '..' + head)
+        self.assertNotEqual(code, 0, out)
+        self.assertIn('fake failure of --only', out)
+        self.assertIn('REFUSED bad/m.onnx (in commit', out)
+
+    def test_a_failing_net_diff_check_alone_fails_the_step(self):
+        base = self.commit({'ok.txt': 1})
+        head = self.commit({'a.txt': 1})
+        self.assertEqual(self.run_with(sys.executable, head, base + '..' + head)[0], 0)
+        code, out = self.run_with(self.wrapper('--only'), head, base + '..' + head)
+        self.assertNotEqual(code, 0, out)
+
+    def test_a_failing_history_check_fails_the_step_even_when_the_net_diff_check_passes(self):
+        base = self.commit({'ok.txt': 1})
+        head = self.commit({'a.txt': 1})
+        code, out = self.run_with(self.wrapper('--history'), head, base + '..' + head)
+        self.assertNotEqual(code, 0, out)
+
     def test_head_without_an_allow_list_fails(self):
         head = self.commit({'ok.txt': 1}, seed_allow_list=False)
         code, out = self.step(head, '', 'push')
@@ -524,6 +564,24 @@ class HistoryCommandTest(unittest.TestCase):
             f.write(chr(10).join(commits))
         return run(b'', '--allow', self.allow, '--history', path, cwd=cwd or self.repo)
 
+    def test_renamed_and_copied_files_are_refused_under_their_new_path(self):
+        self.commit({'plain.txt': 3000, 'src.txt': 3000})
+        os.rename(os.path.join(self.repo, 'plain.txt'), os.path.join(self.repo, 'renamed.onnx'))
+        # The source is modified in the same commit so that git can detect the copy.
+        with open(os.path.join(self.repo, 'src.txt'), 'a', newline=chr(10)) as f:
+            f.write('one more line' + chr(10))
+        shutil.copy(os.path.join(self.repo, 'src.txt'), os.path.join(self.repo, 'copied.pt'))
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', 'rename and copy')
+        head = self.git('rev-parse', 'HEAD')
+        shown = self.git('diff-tree', '--no-commit-id', '-r', '-M', '-C', '--name-status', head)
+        self.assertIn('R', shown)  # the construction really is a rename and a copy for git
+        self.assertIn('C', shown)
+        code, out = self.history(head)
+        self.assertEqual(code, 1, out)
+        self.assertIn('REFUSED renamed.onnx', out)
+        self.assertIn('REFUSED copied.pt', out)
+
     def test_root_commit_is_checked(self):
         root = self.commit({'model.onnx': 1})
         code, out = self.history(root)
@@ -565,6 +623,53 @@ class HistoryCommandTest(unittest.TestCase):
         code, out = self.history(self.git('rev-parse', 'HEAD'))
         self.assertEqual(code, 1, out)
         self.assertIn('REFUSED sub.onnx', out)
+
+
+
+class RenameAndProtectionTest(unittest.TestCase):
+    BLOB = b'a' * 40
+
+    def out(self, *tokens):
+        return b''.join(t + bytes([0]) for t in tokens)
+
+    def test_rename_and_copy_records_fail_instead_of_being_misread(self):
+        commit = ('c1' * 20).encode()
+        for status in (b'R100', b'C075', b'MR'):
+            record = b':100644 100644 ' + self.BLOB + b' ' + self.BLOB + b' ' + status
+            with self.assertRaises(g.GuardError, msg=status):
+                g.parse_diff_tree(self.out(commit, record, b'old.txt', b'new.onnx'))
+
+    def test_header_that_was_not_asked_for_fails(self):
+        asked = 'c1' * 20
+        other = ('d2' * 20).encode()
+        nl = chr(10).encode()
+        commit_answer = asked.encode() + b' commit 1' + nl
+        record = b':000000 100644 ' + b'0' * 40 + b' ' + self.BLOB + b' A'
+        diff = self.out(other, record, b'a.txt')
+        blob_answer = self.BLOB + b' blob 1' + nl
+        with mock.patch.object(g, 'git_output', side_effect=[commit_answer, diff, blob_answer]):
+            with self.assertRaises(g.GuardError) as caught:
+                g.history_entries([asked])
+        self.assertIn('not asked for', str(caught.exception))
+
+    def test_unexpected_exception_exits_non_zero(self):
+        messages = []
+        with tempfile.TemporaryDirectory() as tmp:
+            allow = os.path.join(tmp, 'allow.txt')
+            open(allow, 'wb').close()
+            with mock.patch.object(g, 'load_allow_list', side_effect=KeyError('boom')), \
+                    mock.patch.object(g, 'emit', side_effect=messages.append):
+                code = g.main(['repo_guard.py', '--allow', allow])
+        self.assertEqual(code, 1)
+        self.assertTrue(any('KeyError' in m for m in messages), messages)
+
+    def test_unreadable_history_file_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            allow = os.path.join(tmp, 'allow.txt')
+            open(allow, 'wb').close()
+            code, out = run(b'', '--allow', allow, '--history', os.path.join(tmp, 'missing.txt'))
+        self.assertEqual(code, 1, out)
+        self.assertIn('cannot read', out)
 
 
 if __name__ == '__main__':

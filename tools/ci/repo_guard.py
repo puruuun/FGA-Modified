@@ -182,6 +182,10 @@ def parse_diff_tree(out):
             if len(fields) != 2 * parents + 3:
                 raise GuardError('unexpected metadata of git diff-tree: %r' % token[:200])
             mode, blob = fields[parents], fields[2 * parents + 1]
+            if any(chr(c) in 'RC' for c in fields[-1]):
+                # A rename or copy record has two paths; --no-renames makes git print none, so
+                # seeing one means the call changed and the next token would be misread.
+                raise GuardError('unexpected rename or copy record of git diff-tree')
             if mode != ZERO_MODE:  # a zero mode is a deletion; the file is not in that commit
                 records.append((commit, mode, blob, tokens[i + 1]))
             i += 2
@@ -275,6 +279,8 @@ def main(argv):
                     commits = f.read().decode('ascii').split()
             except (OSError, UnicodeDecodeError) as e:
                 raise GuardError('cannot read %s: %s' % (history_file, e))
+            # The existence check in history_entries refuses the same inputs first, and a SHA-256
+            # repository (64 hex digits) is refused here by the length.
             if any(len(c) != 40 or c.strip('0123456789abcdef') for c in commits):
                 raise GuardError('the commit list holds something that is not a commit id')
             entries = history_entries(commits) if commits else []
