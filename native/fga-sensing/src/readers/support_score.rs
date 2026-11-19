@@ -126,7 +126,8 @@ pub struct ScoreConfig {
     pub range_policy: RangePolicy,
     /// Minimum confidence of the whole text (the mean over its characters).
     pub min_confidence: f64,
-    /// Minimum confidence of every single character; 0 switches the check off.
+    /// Minimum confidence of every single character. 0 accepts any weakest character, but a
+    /// non-empty text without per-character confidences is refused whatever the floor.
     pub min_char_confidence: f32,
     /// Recognise with [`SCORE_CHARACTERS`] only.
     pub restrict_characters: bool,

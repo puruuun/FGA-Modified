@@ -160,7 +160,7 @@ fn evaluate<B: Backend>(
     let index = samples::load_index(&args.samples)?;
     if args.sweep {
         let rows = sweep::run(args, &index, &load, &args.config)?;
-        sweep::report(&index, &rows, &args.config);
+        sweep::report(&index, &rows, &args.config, &args.output)?;
         return Ok(());
     }
     let main_mode = observe_all(args, &index, &load, args.config.restrict_characters)?;
@@ -379,7 +379,7 @@ fn write_tsv(
             sample.kt_grand.map_or(String::new(), |v| v.to_string()),
             micros
         );
-        // A precision on the wrong column once cut "+62/+16" to "+62/+".
+        // The ninth column is the text and must hold it exactly, whatever precision the other columns use.
         if row.split('\t').nth(8) != Some(o.text.as_str()) {
             return Err(format!(
                 "{}: the text column does not hold {:?}",

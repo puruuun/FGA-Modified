@@ -506,7 +506,7 @@ private const val SCORE_CROP_WIDTH = 60
 private const val SCORE_CROP_HEIGHT = 30
 
 /**
- * A sample for [kotlinReader]: present, and exactly the score region's size. The crop path pads a
+ * A sample for [kotlinReader] and [rustReader]: present, and exactly the score region's size. The crop path pads a
  * smaller crop with the black canvas, where the full-frame path would have refused it.
  */
 private fun checkScoreCrop(runner: SupportDeviceTestRunner, path: String) {

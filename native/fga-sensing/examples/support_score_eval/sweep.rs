@@ -17,7 +17,7 @@ use fga_sensing::readers::support_score::{
     ClipReport, Format, Observation, ScoreConfig, SupportScore, SupportScoreReader, decide,
 };
 
-use super::wrong::{self, Truth, classify};
+use super::wrong::{self, Expect, classify};
 use super::{Backend, Recognizer, Sample, Verdict, class_verdict, grand_verdict, samples};
 
 pub const MAX_SHIFT_X: isize = 20;
@@ -160,9 +160,38 @@ pub fn run<B: Backend>(
     Ok(all)
 }
 
-fn is_wrong(sample: &Sample, truth: Truth, score: &SupportScore) -> bool {
-    wrong::wrong_field(score.class.value(), truth.0, sample.is62, 62)
-        || wrong::wrong_field(score.grand.value(), truth.1, sample.is16, 16)
+/// Wrong by the one definition of `wrong::classify`.
+fn is_wrong(sample: &Sample, expect: &Expect, score: &SupportScore) -> bool {
+    classify(
+        sample,
+        expect.truth,
+        expect.no_grand,
+        score.class.value(),
+        score.grand.value(),
+    )
+    .wrong()
+        > 0
+}
+
+/// What the unshifted read of a sample (when there is one) lets the cut reads be judged against.
+fn expectation(sample: &Sample, base: Option<&&SupportScore>) -> Expect {
+    match base {
+        Some(b) => Expect {
+            truth: wrong::truth(sample, b.class.value(), b.grand.value()),
+            no_grand: b.display == fga_sensing::readers::support_score::Display::Ordinary,
+        },
+        None => Expect {
+            truth: (None, None),
+            no_grand: false,
+        },
+    }
+}
+
+fn expectation_none() -> Expect {
+    Expect {
+        truth: (None, None),
+        no_grand: false,
+    }
 }
 
 fn has_value(score: &SupportScore) -> bool {
@@ -258,7 +287,12 @@ fn cut(row: &CutRow, combo: Combo, ranges: &Ranges) -> bool {
     right || left || vertical
 }
 
-pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
+pub fn report(
+    index: &[Sample],
+    rows: &[CutRow],
+    config: &ScoreConfig,
+    output: &Path,
+) -> Result<(), String> {
     // The reader without any pixel rule, as the baseline every candidate is applied to.
     let bare = ScoreConfig {
         check_clipping: false,
@@ -273,11 +307,11 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
             unshifted.insert(row.sample, score);
         }
     }
-    let truths: Vec<Truth> = rows
+    let expects: Vec<Expect> = rows
         .iter()
-        .map(|r| match (index.get(r.sample), unshifted.get(&r.sample)) {
-            (Some(s), Some(b)) => wrong::truth(s, b.class.value(), b.grand.value()),
-            _ => (None, None),
+        .map(|r| match index.get(r.sample) {
+            Some(sample) => expectation(sample, unshifted.get(&r.sample)),
+            None => expectation_none(),
         })
         .collect();
     let sample_of = |r: &CutRow| index.get(r.sample);
@@ -361,11 +395,12 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
         "\n== sweep of the reader as built (its own pixel rules), values returned / WRONG per amount"
     );
     let actual: Vec<SupportScore> = rows.iter().map(|r| decide(r.obs.clone(), config)).collect();
-    print_sweep(index, rows, &actual, &truths);
+    print_sweep(index, rows, &actual, &expects);
+    write_cut_rows(output, index, rows, &actual, &expects)?;
 
     // ---- Same without any pixel rule.
     println!("\n== sweep with no pixel rule at all");
-    print_sweep(index, rows, &base_scores, &truths);
+    print_sweep(index, rows, &base_scores, &expects);
 
     class_report(index, rows, &base_scores, config);
 
@@ -418,7 +453,7 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
                         continue;
                     };
                     let is_cut = cut(row, combo, &ranges);
-                    let t = truths.get(i).copied().unwrap_or((None, None));
+                    let e = expects.get(i).copied().unwrap_or_else(expectation_none);
                     let dir = direction(row.dx, row.dy);
                     if (row.dx, row.dy) == (0, 0) {
                         let had_ok = class_verdict(sample, base.class.value()) == Verdict::Ok
@@ -432,7 +467,7 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
                         if wrong_real {
                             *wrong.entry("real").or_default() += 1;
                         }
-                    } else if !is_cut && has_value(base) && is_wrong(sample, t, base) {
+                    } else if !is_cut && has_value(base) && is_wrong(sample, &e, base) {
                         *wrong.entry(dir).or_default() += 1;
                     }
                 }
@@ -493,13 +528,14 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
             }
         }
     }
+    Ok(())
 }
 
-fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], truths: &[Truth]) {
+fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], expects: &[Expect]) {
     // direction -> amount -> (values, wrong)
     let mut table: BTreeMap<(&'static str, isize), (usize, usize)> = BTreeMap::new();
     let mut wrongs: Vec<String> = Vec::new();
-    for ((row, score), t) in rows.iter().zip(scores).zip(truths) {
+    for ((row, score), e) in rows.iter().zip(scores).zip(expects) {
         if (row.dx, row.dy) == (0, 0) {
             continue;
         }
@@ -510,7 +546,7 @@ fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], truth
         let amount = row.dx.abs().max(row.dy.abs());
         let entry = table.entry((dir, amount)).or_default();
         entry.0 += usize::from(has_value(score));
-        if is_wrong(sample, *t, score) {
+        if is_wrong(sample, e, score) {
             entry.1 += 1;
             wrongs.push(format!(
                 "{} {dir} {amount}: text {:?} conf {:.5} -> class {:?} grand {:?} (truth {:?})",
@@ -519,7 +555,7 @@ fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], truth
                 score.observation.confidence,
                 score.class.value(),
                 score.grand.value(),
-                t
+                e.truth
             ));
         }
     }
@@ -557,6 +593,7 @@ struct Split {
     f16: usize,
     other: usize,
     correct: usize,
+    no_truth: usize,
 }
 
 /// Splits the wrong values of the sweep by what the automation does with them: the selection acts
@@ -611,7 +648,7 @@ pub fn class_report(
         "\n== the wrong values of the cut sweep by what the automation does with them ({cut_crops} cut crops examined)"
     );
     println!(
-        "F62: class 62 returned for a true class that is not 62. F16: Grand 16 returned for a true Grand that is not 16 (or a field with none). OTHER: any other wrong number. correct: 62 or 16 returned that is the true value."
+        "F62: class 62 returned for a true class that is not 62. F16: Grand 16 returned for a true Grand that is not 16 (or a field with none). OTHER: any other wrong number (any Grand value on a field with none is wrong). correct: 62 or 16 returned that is the true value. no-truth: 62 or 16 returned for a field nothing is known about."
     );
     for v in &variants {
         // The comparison is of rule sets, so the command line cannot switch the pixel check off.
@@ -653,6 +690,7 @@ pub fn class_report(
         );
         let mut per: BTreeMap<(&'static str, isize), Split> = BTreeMap::new();
         let mut listed: Vec<String> = Vec::new();
+        let mut no_truth_files: BTreeMap<String, usize> = BTreeMap::new();
         for (row, score) in rows.iter().zip(&verdicts) {
             if (row.dx, row.dy) == (0, 0) {
                 continue;
@@ -661,31 +699,22 @@ pub fn class_report(
                 continue;
             };
             let base = unshifted.get(&row.sample);
-            let t = base.map_or((None, None), |b| {
-                wrong::truth(sample, b.class.value(), b.grand.value())
-            });
-            let no_grand = base.is_some_and(|b| {
-                b.display == fga_sensing::readers::support_score::Display::Ordinary
-            });
+            let e = expectation(sample, base);
             let dir = direction(row.dx, row.dy);
             let amount = row.dx.abs().max(row.dy.abs());
             let entry = per.entry((dir, amount)).or_default();
             let class = score.class.value();
             let grand = score.grand.value();
-            let kinds = classify(sample, t, no_grand, class, grand);
+            let kinds = classify(sample, e.truth, e.no_grand, class, grand);
             let (f62, f16) = (kinds.f62 > 0, kinds.f16 > 0);
             entry.f62 += kinds.f62;
             entry.f16 += kinds.f16;
             entry.other += kinds.other;
-            entry.correct += usize::from(
-                class == Some(62)
-                    && t.0 == Some(62)
-                    && !wrong::wrong_field(class, t.0, sample.is62, 62),
-            ) + usize::from(
-                grand == Some(16)
-                    && t.1 == Some(16)
-                    && !wrong::wrong_field(grand, t.1, sample.is16, 16),
-            );
+            entry.correct += kinds.correct;
+            entry.no_truth += kinds.no_truth;
+            if kinds.no_truth > 0 {
+                *no_truth_files.entry(sample.file.clone()).or_default() += kinds.no_truth;
+            }
             if f62 || f16 {
                 listed.push(format!(
                     "    {} {dir} {amount}: text {:?} conf {:.5} weakest char {:?} -> class {:?} grand {:?} ({})",
@@ -712,6 +741,7 @@ pub fn class_report(
                         f16: a.f16 + s.f16,
                         other: a.other + s.other,
                         correct: a.correct + s.correct,
+                        no_truth: a.no_truth + s.no_truth,
                     });
             let by_shift: Vec<String> = per
                 .iter()
@@ -719,17 +749,82 @@ pub fn class_report(
                 .map(|((_, a), s)| format!("{a}:{}/{}/{}", s.f62, s.f16, s.other))
                 .collect();
             println!(
-                "  {dir:5} F62 {} F16 {} OTHER {} correct accepts {} | nonzero shifts (F62/F16/OTHER): {}",
+                "  {dir:5} F62 {} F16 {} OTHER {} correct accepts {} no-truth {} | nonzero shifts (F62/F16/OTHER): {}",
                 sum.f62,
                 sum.f16,
                 sum.other,
                 sum.correct,
+                sum.no_truth,
                 by_shift.join(" ")
             );
         }
+        println!(
+            "  no truth (a 62 or 16 read with no label, no flag and no unshifted read): {} fields in {} files {:?}",
+            no_truth_files.values().sum::<usize>(),
+            no_truth_files.len(),
+            no_truth_files
+        );
         println!("  F62/F16 listed ({}):", listed.len());
         for l in &listed {
             println!("{l}");
         }
     }
+}
+
+/// One row per cut crop of the reader as built: the sample, the shift, what was read, and what the
+/// read is (F62, F16, OTHER, correct, no_truth, joined by `+`, or none when no field counts).
+fn write_cut_rows(
+    path: &Path,
+    index: &[Sample],
+    rows: &[CutRow],
+    scores: &[SupportScore],
+    expects: &[Expect],
+) -> Result<(), String> {
+    let mut out =
+        String::from("file\tdirection\tamount\ttext\tconfidence\tmin_char\tclass\tgrand\tkind\n");
+    let show = |v: Option<u8>| v.map_or(String::new(), |v| v.to_string());
+    for ((row, score), e) in rows.iter().zip(scores).zip(expects) {
+        if (row.dx, row.dy) == (0, 0) {
+            continue;
+        }
+        let Some(sample) = index.get(row.sample) else {
+            continue;
+        };
+        let class = score.class.value();
+        let grand = score.grand.value();
+        let k = classify(sample, e.truth, e.no_grand, class, grand);
+        let mut kinds: Vec<&str> = Vec::new();
+        for (count, name) in [
+            (k.f62, "F62"),
+            (k.f16, "F16"),
+            (k.other, "OTHER"),
+            (k.correct, "correct"),
+            (k.no_truth, "no_truth"),
+        ] {
+            if count > 0 {
+                kinds.push(name);
+            }
+        }
+        let kind = if kinds.is_empty() {
+            "none".to_owned()
+        } else {
+            kinds.join("+")
+        };
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\n",
+            sample.file,
+            direction(row.dx, row.dy),
+            row.dx.abs().max(row.dy.abs()),
+            score.observation.text,
+            score.observation.confidence,
+            score
+                .observation
+                .min_char_confidence
+                .map_or(String::new(), |c| format!("{c:.5}")),
+            show(class),
+            show(grand),
+            kind
+        ));
+    }
+    std::fs::write(path, out).map_err(|e| format!("{}: {e}", path.display()))
 }
