@@ -175,23 +175,18 @@ impl<P: Clone> PlanCache<P> {
 /// Runs `run` with `executor` installed for this thread. tract-linalg's `multithread_tract_scope`
 /// puts the thread's previous executor back only when its closure returns, so a panic inside
 /// tract would leave this pool installed on the calling (JNI) thread for every later tract call
-/// there that sets none of its own. The panic is therefore caught inside the scope and comes back
-/// as an error, and the scope always restores.
+/// there that sets none of its own. The panic is therefore caught inside the scope, so that the
+/// scope returns and restores, and raised again after it.
 #[cfg(feature = "tract-threads")]
 fn in_scope<T>(executor: &Executor, run: impl FnOnce() -> TractResult<T>) -> Result<T, Error> {
-    use std::panic::{AssertUnwindSafe, catch_unwind};
-    // A plan keeps no state between runs (each run builds its own), so nothing half-updated is
-    // observed after a caught panic.
-    multithread_tract_scope(executor.clone(), || catch_unwind(AssertUnwindSafe(run)))
-        .map_err(|payload| {
-            let text = payload
-                .downcast_ref::<&str>()
-                .map(|s| (*s).to_owned())
-                .or_else(|| payload.downcast_ref::<String>().cloned())
-                .unwrap_or_else(|| "non-text panic payload".to_owned());
-            Error::Backend(format!("tract panicked: {text}"))
-        })?
-        .map_err(backend_error)
+    use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+    match multithread_tract_scope(executor.clone(), || catch_unwind(AssertUnwindSafe(run))) {
+        Ok(result) => result.map_err(backend_error),
+        // Not a new panic: the one tract raised continues, as it does in a build without the
+        // feature, so the caller's panic guard reports it and fga-ffi's recogniser lock is
+        // poisoned instead of a recogniser that stopped mid-run being used again.
+        Err(payload) => resume_unwind(payload),
+    }
 }
 
 /// One thread is tract's own single-threaded path, so a build with the feature runs one thread
@@ -347,20 +342,49 @@ mod tests {
         assert_eq!(cache.widths(), vec![320]);
     }
 
+    #[test]
+    fn a_failed_plan_evicts_nothing_from_a_full_cache() {
+        let mut cache = PlanCache::new(320, 1);
+        for width in [400, 480] {
+            cache.get_or_insert_with(width, || Ok(2)).unwrap();
+        }
+        assert_eq!(cache.widths(), vec![320, 400, 480]);
+        assert_eq!(
+            cache.get_or_insert_with(560, || Err(Error::Backend("no".into()))),
+            Err(Error::Backend("no".into()))
+        );
+        assert_eq!(cache.widths(), vec![320, 400, 480]);
+    }
+
+    #[cfg(feature = "tract-threads")]
+    fn panic_inside_scope() -> std::thread::Result<Result<(), Error>> {
+        let Ok(pool) = executor(2) else {
+            panic!("no pool")
+        };
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            in_scope(&pool, || panic!("inside tract"))
+        }))
+    }
+
+    #[cfg(feature = "tract-threads")]
+    #[test]
+    fn a_panic_inside_the_scope_reaches_the_caller() {
+        let Err(payload) = panic_inside_scope() else {
+            panic!("the panic was swallowed")
+        };
+        assert_eq!(payload.downcast_ref::<&str>(), Some(&"inside tract"));
+    }
+
     #[cfg(feature = "tract-threads")]
     #[test]
     fn a_panic_inside_the_scope_restores_the_executor() {
         use tract_linalg::multithread::current_tract_executor;
+        // Whatever reaches the caller, the pool must not stay installed on this thread.
+        let _ = panic_inside_scope();
+        assert!(matches!(current_tract_executor(), Executor::SingleThread));
         let Ok(pool) = executor(2) else {
             panic!("no pool")
         };
-        let result: Result<(), Error> = in_scope(&pool, || panic!("inside tract"));
-        assert_eq!(
-            result,
-            Err(Error::Backend("tract panicked: inside tract".into()))
-        );
-        assert!(matches!(current_tract_executor(), Executor::SingleThread));
-        // A run that returns also restores.
         assert_eq!(in_scope(&pool, || Ok(7)), Ok(7));
         assert!(matches!(current_tract_executor(), Executor::SingleThread));
     }

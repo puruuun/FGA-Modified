@@ -444,22 +444,32 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
     // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
     // Issue #549: an observation case confirms a PC count on the device. Its minEqual is that PC
     // count, and a different count is reported, not failed; an ERR still fails.
-    var threadMismatches = 0
-    engine.tract?.let { (minWidth, threads) ->
-        val key = "$minWidth|$allowed"
-        if (threads <= 1) oneThreadTexts[key] = texts.toList() else {
-            val reference = oneThreadTexts[key]
-            if (reference == null) {
-                report.put("oneThreadReference", "none: no one-thread tract case at minWidth $minWidth with this allowed set ran before this one")
-            } else {
-                val threadDiffering = JSONArray()
-                samples.indices.filter { texts.getOrNull(it) != reference.getOrNull(it) }.also { threadMismatches = it.size }
-                    .take(MAX_LISTED).forEach { i ->
-                        threadDiffering.put(JSONObject().put("file", samples[i].file).put("oneThread", reference[i] ?: JSONObject.NULL).put("text", texts[i] ?: JSONObject.NULL))
-                    }
-                report.put("oneThreadReference", JSONObject().put("compared", samples.size).put("differ", threadMismatches).put("differing", threadDiffering))
+    // A multi-threaded tract case must read exactly what the one-thread case at the same width and
+    // allowed set read in this run; without that reading, or with one of another length, it fails.
+    var referenceProblem: String? = null
+    val tract = engine.tract
+    val referenceKey = tract?.let { (minWidth, _) -> "$minWidth|$allowed" }
+    if (tract != null && tract.second > 1) {
+        val (minWidth, _) = tract
+        val oneThreadCase = if (minWidth == 320) {
+            if (allowed.isEmpty()) "tract-recognise" else "tract-recognise-allowed"
+        } else "tract-width-$minWidth" + if (allowed.isEmpty()) "" else "-allowed"
+        val reference = oneThreadTexts[referenceKey]
+        referenceProblem = when {
+            reference == null -> "no one-thread reference: $oneThreadCase (minWidth $minWidth, allowed \"$allowed\") must pass earlier in the same run"
+            reference.size != texts.size -> "the one-thread reference from $oneThreadCase holds ${reference.size} texts, this case read ${texts.size}"
+            else -> {
+                val differing = samples.indices.filter { texts[it] != reference[it] }
+                val listed = JSONArray()
+                for (i in differing.take(MAX_LISTED)) {
+                    listed.put(JSONObject().put("file", samples[i].file).put("oneThread", reference[i] ?: JSONObject.NULL).put("text", texts[i] ?: JSONObject.NULL))
+                }
+                report.put("oneThreadReference", JSONObject().put("case", oneThreadCase).put("compared", samples.size)
+                    .put("differ", differing.size).put("differing", listed))
+                if (differing.isEmpty()) null else "${differing.size} texts differ from $oneThreadCase"
             }
         }
+        referenceProblem?.let { report.put("oneThreadProblem", it) }
     }
     val observation = case.optBoolean("observation", false)
     if (observation) {
@@ -467,9 +477,11 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
             .put("belowMinEqual", equal < minEqual)
     }
     Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount${if (observation) ", observation" else ""})")
-    if (errorCount > 0 || (equal < minEqual && !observation) || threadMismatches > 0) {
-        throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR, $threadMismatches differ from one thread. $report")
+    if (errorCount > 0 || (equal < minEqual && !observation) || referenceProblem != null) {
+        throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR${referenceProblem?.let { ", $it" } ?: ""}. $report")
     }
+    // Only a one-thread case that passed its own checks becomes the reference.
+    if (tract != null && tract.second <= 1 && referenceKey != null) oneThreadTexts[referenceKey] = texts.toList()
     return report
 }
 
@@ -545,9 +557,9 @@ private fun readField(runner: SupportDeviceTestRunner, ocr: MeasuredOcr, path: S
  * the reader got in the stage 0 replay (docs/qa/0025-stage-0-baseline.md 4.1), read through
  * [readField] with every OCR profile, the dark retry and the template matches, as in production.
  *
- * Before the timed loop, one JP field is read untimed: it starts the shared Tesseract engine and
- * loads SupportScoreBlocks' templates (a gzip resource loaded on first use by a JP read), neither
- * of which is a per-field cost.
+ * Before the timed loop, one JP and one KR field are read untimed: they start the shared Tesseract
+ * engine, load SupportScoreBlocks' templates and make the KR profile's first use, none of which
+ * is a per-field cost.
  *
  * The case fails on what a correctly driven reader always does, and reports the rest:
  * - every field made at least one OCR call: the reader runs its primary OCR profiles on every
@@ -570,6 +582,9 @@ private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSO
         // An explicit null is "stage 0 read nothing"; a missing key would read as null too and
         // count as agreement, so it is refused.
         check(row.has("kt_cls") && row.has("kt_grand")) { "$dir/index.json: $file has no kt_cls or kt_grand" }
+        // Without is62 and is16 a row would never count as a false accept, so the rule would hold
+        // vacuously; an explicit null is a row without a label.
+        check(row.has("is62") && row.has("is16")) { "$dir/index.json: $file has no is62 or is16" }
         checkScoreCrop(runner, "$dir/$file")
     }
     val threadsBefore = processThreads()
@@ -586,10 +601,21 @@ private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSO
     val tally = mutableMapOf<String, Int>()
     fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
     fun tallied(key: String) = tally[key] ?: 0
-    val warmUp = rows.firstOrNull { it.getString("server") == "Jp" } ?: rows.first()
-    val warmUpRun: ReaderRun
+    // SupportScoreBlocks loads its templates (a gzip resource) only when a JP read reaches the
+    // two-digit block path, which a +62 that stage 0 read as 62 certainly does; a KR row pays the
+    // first use of the KR profile (dark retry). Both warm-up reads are untimed.
+    val jpWarmUp = rows.firstOrNull { it.getString("server") == "Jp" && it.boolOrNull("is62") == true && it.intOrNull("kt_cls") == 62 }
+    val warmUps = listOfNotNull(
+        (jpWarmUp ?: rows.firstOrNull { it.getString("server") == "Jp" })?.let { it to if (jpWarmUp != null) "Jp row labelled +62 that stage 0 read as 62" else "first Jp row: no Jp row is labelled +62 and read as 62 in stage 0, so the block templates may still load inside the timed span" },
+        rows.firstOrNull { it.getString("server") == "Kr" }?.let { it to "first Kr row" },
+    )
+    val warmUpReport = JSONArray()
     try {
-        warmUpRun = readField(runner, ocr, "$dir/${warmUp.getString("file")}", warmUp.getString("server"))
+        for ((row, why) in warmUps) {
+            val run = readField(runner, ocr, "$dir/${row.getString("file")}", row.getString("server"))
+            warmUpReport.put(JSONObject().put("file", row.getString("file")).put("server", row.getString("server"))
+                .put("why", why).put("us", run.micros).put("ocrCalls", run.ocrCalls))
+        }
         for (row in rows) {
             val file = row.getString("file")
             val server = row.getString("server")
@@ -637,9 +663,9 @@ private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSO
         "time per field median ${perField.opt("medianUs")} us p90 ${perField.opt("p90Us")} us max ${perField.opt("maxUs")} us, " +
         "stage 0 same value $sameValue, both nothing $bothNothing, differ $differenceCount")
     val report = JSONObject()
-        .put("note", "SupportScoreReader.read(bound, true, true) through the crop path of SupportSuite (FixtureApi frame crop, region720 $SCORE_CROP_REGION_720, row y720 $SCORE_CROP_ROW_Y_720) with the profile of the row server; perField times read() alone, after an untimed warm-up read of one JP field (Tesseract start, SupportScoreBlocks templates) and with the frame composed and the asset templates loaded beforehand")
+        .put("note", "SupportScoreReader.read(bound, true, true) through the crop path of SupportSuite (FixtureApi frame crop, region720 $SCORE_CROP_REGION_720, row y720 $SCORE_CROP_ROW_Y_720) with the profile of the row server; perField times read() alone, after untimed warm-up reads of one JP and one KR field (Tesseract start, SupportScoreBlocks templates, first KR profile use; see warmUp) and with the frame composed and the asset templates loaded beforehand")
         .put("samples", rows.size)
-        .put("warmUp", JSONObject().put("file", warmUp.getString("file")).put("us", warmUpRun.micros).put("ocrCalls", warmUpRun.ocrCalls))
+        .put("warmUp", warmUpReport)
         .put("perField", perField)
         .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })
         .put("ocrCallsPerField", calls)
