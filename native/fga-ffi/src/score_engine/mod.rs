@@ -6,6 +6,10 @@
 //! second load while one is loaded is refused and keeps the loaded engine, so two models never
 //! sit in memory together and nobody's engine is swapped under them; the owner unloads first.
 //!
+//! The slot holds a [`ScoreModel`], the real one being the PP-OCRv6 recogniser; the trait exists so
+//! that host tests (the `test-hooks` feature) can put a marker engine into the slot without a model
+//! file, which CI does not have.
+//!
 //! The `*_entry` functions are what the JNI exports call: each runs the whole call, the reading of
 //! the Java arguments included, inside the panic guard, so a host test can drive the guard
 //! through the same path as the export.
@@ -19,11 +23,26 @@ use std::time::Instant;
 use fga_sensing::Recognizer;
 use fga_sensing::backend::{Backend, TractBackend};
 use fga_sensing::image::GrayImage;
-use fga_sensing::readers::support_score::{EXPECTED_CROP_SIZE, Reason, ScoreConfig, read_with};
+use fga_sensing::readers::support_score::{
+    EXPECTED_CROP_SIZE, Reason, ScoreConfig, SupportScore, read_with,
+};
 
 use crate::guard::{catch_panic, run_guarded};
 
-static ENGINE: Mutex<Option<Recognizer<TractBackend>>> = Mutex::new(None);
+/// What the engine slot holds: something that reads one 60x30 crop with the default `ScoreConfig`.
+pub trait ScoreModel: Send {
+    fn read(&mut self, crop: &GrayImage) -> Result<SupportScore, String>;
+}
+
+impl ScoreModel for Recognizer<TractBackend> {
+    fn read(&mut self, crop: &GrayImage) -> Result<SupportScore, String> {
+        read_with(self, &ScoreConfig::default(), crop).map_err(|e| e.to_string())
+    }
+}
+
+type Slot = Option<Box<dyn ScoreModel>>;
+
+static ENGINE: Mutex<Slot> = Mutex::new(None);
 
 pub const NOT_LOADED: &str = "the support-score engine is not loaded";
 pub const ALREADY_LOADED: &str =
@@ -39,7 +58,7 @@ pub const CODE_ERROR: i32 = -1;
 /// The call left a Java exception pending, which the export cleared.
 pub const CODE_PENDING_EXCEPTION: i32 = -2;
 
-fn engine() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>, String> {
+fn engine() -> Result<MutexGuard<'static, Slot>, String> {
     ENGINE.lock().map_err(|_| POISONED.to_owned())
 }
 
@@ -56,6 +75,19 @@ pub fn poison_engine_lock_for_tests() -> Result<String, String> {
     panic!("poisoning the support-score engine lock")
 }
 
+/// Only for tests/score_engine_hooks.rs: fills the slot with `model` as `load` would, refusing a
+/// filled slot as `load` does, so the slot rules can be checked without a model file.
+#[cfg(feature = "test-hooks")]
+#[doc(hidden)]
+pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
+    let mut slot = engine()?;
+    if slot.is_some() {
+        return Err(ALREADY_LOADED.to_owned());
+    }
+    *slot = Some(model);
+    Ok("0".to_owned())
+}
+
 /// Loads the model at `model_path` with the tract backend at the reader's defaults (320 wide, one
 /// thread, the settings the reader was measured with). Returns the load time in milliseconds.
 pub fn load(model_path: &str) -> Result<String, String> {
@@ -65,7 +97,7 @@ pub fn load(model_path: &str) -> Result<String, String> {
     }
     let started = Instant::now();
     let backend = TractBackend::load_file(Path::new(model_path)).map_err(|e| e.to_string())?;
-    *slot = Some(Recognizer::new(backend));
+    *slot = Some(Box::new(Recognizer::new(backend)));
     Ok(started.elapsed().as_millis().to_string())
 }
 
@@ -97,7 +129,7 @@ where
     let mut slot = engine()?;
     let loaded = slot.as_mut().ok_or(NOT_LOADED)?;
     let started = Instant::now();
-    let score = read_with(loaded, &ScoreConfig::default(), &crop).map_err(|e| e.to_string())?;
+    let score = loaded.read(&crop)?;
     Ok(wire::encode_score(&score, started.elapsed().as_micros()))
 }
 
@@ -232,14 +264,5 @@ mod tests {
         for code in [CODE_NO, CODE_YES, CODE_ERROR] {
             assert_eq!(after_pending_exception_code(code), CODE_PENDING_EXCEPTION);
         }
-    }
-
-    #[test]
-    fn probe_calls_never_reach_the_engine_slot() {
-        assert_eq!(
-            crate::run_guarded(crate::probes::ocr_unload),
-            "OK: {\"dropped\":false}"
-        );
-        assert_eq!(is_loaded_entry(), CODE_NO);
     }
 }

@@ -382,14 +382,36 @@ abstract class ProvideOcrModel : DefaultTask() {
         Files.copy(noticeFile.get().asFile.toPath(), File(dir, name.removeSuffix(".onnx") + ".NOTICE.txt").toPath())
     }
 
+    /** Only HTTPS, redirects included: the hash protects the content, not the request. */
+    private fun httpsUri(text: String, what: String): URI {
+        val uri = try { URI(text) } catch (e: java.net.URISyntaxException) { throw GradleException("$what '$text' is not a URL: ${e.message}") }
+        if (!uri.scheme.equals("https", ignoreCase = true) || uri.host.isNullOrEmpty()) {
+            throw GradleException("$what '$text' is not an https URL; the OCR model is only downloaded over HTTPS")
+        }
+        return uri
+    }
+
     private fun download(url: String, target: File, size: Long) {
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
-        connection.connectTimeout = 30_000
-        connection.readTimeout = 60_000
-        connection.instanceFollowRedirects = true
+        var uri = httpsUri(url, "The pinned OCR model URL")
+        var connection: HttpURLConnection
+        var redirects = 0
+        while (true) {
+            connection = uri.toURL().openConnection() as HttpURLConnection
+            connection.connectTimeout = 30_000
+            connection.readTimeout = 60_000
+            // Redirects are followed here, one by one, so each target can be held to HTTPS.
+            connection.instanceFollowRedirects = false
+            val status = connection.responseCode
+            if (status !in 300..399) break
+            val location = connection.getHeaderField("Location")
+            connection.disconnect()
+            if (location == null) throw GradleException("OCR model download from $uri answered HTTP $status without a Location")
+            if (++redirects > 5) throw GradleException("OCR model download from $url was redirected more than 5 times")
+            uri = httpsUri(uri.resolve(location).toString(), "A redirect of the OCR model download to")
+        }
         try {
             val status = connection.responseCode
-            if (status != 200) throw GradleException("OCR model download from $url answered HTTP $status")
+            if (status != 200) throw GradleException("OCR model download from $uri answered HTTP $status")
             connection.inputStream.use { input ->
                 target.outputStream().use { output ->
                     val buffer = ByteArray(1 shl 16)
@@ -426,11 +448,11 @@ abstract class ProvideOcrModel : DefaultTask() {
     }
 }
 
-// A relative path is taken from the repository root, where the commands in rust-native.md run.
+// A relative path is taken from the repository root, where the commands in rust-native.md run. A
+// missing file is reported by Gradle's check of the task's input file (localModel).
 val ocrModelPath: File? = providers.gradleProperty("fga.ocr.model").orNull?.let { rootProject.file(it) }
-if (ocrModelPath != null) {
-    if (!nativeEnabled) throw GradleException("-Pfga.ocr.model only works together with -Pfga.native=true")
-    if (!ocrModelPath.isFile) throw GradleException("-Pfga.ocr.model: no file at ${ocrModelPath.path}")
+if (ocrModelPath != null && !nativeEnabled) {
+    throw GradleException("-Pfga.ocr.model only works together with -Pfga.native=true")
 }
 
 if (nativeEnabled) {
@@ -450,9 +472,10 @@ if (nativeEnabled) {
 
 /*
  * Issue #568: the `rust` build type is the owner's Rust test APK, built only from the `rust`
- * branch and never published. Without the library it would be a beta with another name, so it
- * refuses to build without `fga.native`; the check runs when the build is asked for and again
- * before the variant's first task, so no other variant is affected.
+ * branch and never published. Without the library it would be a beta with another name, so
+ * without `fga.native` its variant does not exist (beforeVariants below), and aggregate tasks
+ * such as `assemble`, `test` and `check` run as before. A request that names the variant, or an
+ * abbreviation of it (`assembleRu`), stops with this message instead of Gradle's "not found".
  */
 val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let { raw ->
     when {
@@ -463,24 +486,14 @@ val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let
 }
 val rustNativeMissing = "The rust build type packages the Rust engine; build it with -Pfga.native=true " +
     "(see docs/agents/rust-native.md, \"Rust test APK\")."
-if (!nativeEnabled && gradle.startParameter.taskNames.any { Regex("[a-z]Rust([A-Z]|$)").containsMatchIn(it.substringAfterLast(':')) }) {
+if (!nativeEnabled && gradle.startParameter.taskNames.any { Regex("[a-z]Ru(st?)?([A-Z]|$)").containsMatchIn(it.substringAfterLast(':')) }) {
     throw GradleException(rustNativeMissing)
 }
 
-abstract class FailBuild : DefaultTask() {
-    @get:Input
-    abstract val message: Property<String>
-
-    @TaskAction
-    fun fail(): Unit = throw GradleException(message.get())
-}
-
 if (!nativeEnabled) {
-    val rustNeedsNative = tasks.register<FailBuild>("rustNeedsNative") {
-        description = "Stops a build of the rust build type without -Pfga.native=true."
-        message.set(rustNativeMissing)
+    androidComponents {
+        beforeVariants(selector().withBuildType("rust")) { it.enable = false }
     }
-    tasks.matching { it.name == "preRustBuild" }.configureEach { dependsOn(rustNeedsNative) }
 }
 
 // Release versions come from version.properties. FGA_VERSION_NAME / FGA_VERSION_CODE override them
@@ -745,6 +758,9 @@ android {
             initWith(getByName("beta"))
             applicationIdSuffix = ".rust"
             buildConfigField("boolean", "RUST_TEST_BUILD", "true")
+            // Only here: JNI finds RustSensing's native methods by name, and other builds do not
+            // need the class at all.
+            proguardFile("proguard-rust.pro")
             matchingFallbacks += listOf("beta", "ci", "release")
         }
         // Isolated, non-minified target for signed on-device reader tests. No product UI or permissions.
@@ -901,6 +917,10 @@ tasks.withType<Test>().configureEach {
     val ocrModelPin = rootProject.layout.projectDirectory.file("native/ocr-model/model.properties")
     systemProperty("fga.ocrModelPin", ocrModelPin.asFile.path)
     inputs.file(ocrModelPin).withPathSensitivity(PathSensitivity.NONE).withPropertyName("ocrModelPin")
+    // The reply codes of the Rust support-score engine, which the Rust test checks too.
+    val scoreWireCodes = rootProject.layout.projectDirectory.file("native/fga-ffi/src/score_engine/wire-codes.txt")
+    systemProperty("fga.scoreWireCodes", scoreWireCodes.asFile.path)
+    inputs.file(scoreWireCodes).withPathSensitivity(PathSensitivity.NONE).withPropertyName("scoreWireCodes")
 
     // The bundled LICENSE is a generated asset, so tests read the copy the build produced.
     dependsOn(copyLicenseAsset)

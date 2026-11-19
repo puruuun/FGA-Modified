@@ -42,6 +42,10 @@ object OcrModelInstaller {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("cannot create ${dir.path}")
         val target = File(dir, fileName(pin))
         dir.listFiles()?.forEach { if (it != target) it.deleteRecursively() }
+        // A reused copy is trusted by its size: only this function writes the folder, it is app-private
+        // and never backed up, and a file gets the final name only after its hash matched, so a
+        // same-size difference would take storage corruption. Hashing 21 MB again at each run start
+        // costs time (12 to 28 ms on the owner's PC with Python's SHA-256, more on a phone).
         if (target.isFile && target.length() == pin.size) return target
         target.delete()
         val part = File(dir, target.name + PART_SUFFIX)

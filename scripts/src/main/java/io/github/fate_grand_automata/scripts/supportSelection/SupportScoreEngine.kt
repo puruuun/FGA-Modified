@@ -8,13 +8,20 @@ import kotlin.time.Duration
  * owner's Rust test APK, nothing anywhere else. Like [ISupportScoreReader] it says what it read and
  * keeps its thresholds to itself (design 0025, D-3).
  *
- * It never throws: an engine that is missing, failed to load or answered something unexpected
- * reads every field as unknown with a reason. Reading [available] or calling [read] for the first
- * time loads the engine, so neither may run on the main thread. [close] frees it at the end of a
- * run; a read after that is unknown ([EngineUnknownReason.Unavailable]).
+ * None of its members throws, short of errors that leave the virtual machine unusable: an engine
+ * that is missing, failed to load or answered something unexpected reads every field as unknown
+ * with a reason. The first [available], [unavailableReason] or [read] loads the engine, so none of
+ * them may run on the main thread. [close] frees it at the end of a run without waiting for a
+ * load or read in progress; afterwards every field is unknown ([EngineUnknownReason.Unavailable]).
  */
 interface SupportScoreEngine : AutoCloseable {
-    val available: Boolean
+    /** Why the engine cannot read, or null when it can. Loads the engine the first time. */
+    val unavailableReason: String?
+
+    val available: Boolean get() = unavailableReason == null
+
+    /** How long the first load took, null before it ran. For the log. */
+    val loadTime: Duration?
 
     /** [field] is the score region of one support row at 720p, a 60x30 grayscale image. */
     fun read(field: Pattern): EngineScore
@@ -24,10 +31,12 @@ interface SupportScoreEngine : AutoCloseable {
 
 /** The binding of every build that has no engine. */
 object NoSupportScoreEngine : SupportScoreEngine {
-    override val available = false
+    private const val REASON = "this build has no support-score engine"
 
-    override fun read(field: Pattern) =
-        EngineScore.unknown(EngineUnknownReason.Unavailable, "this build has no support-score engine")
+    override val unavailableReason = REASON
+    override val loadTime: Duration? = null
+
+    override fun read(field: Pattern) = EngineScore.unknown(EngineUnknownReason.Unavailable, REASON)
 }
 
 /** Why a field is unknown. The first seven are the reader's own; the last two are the binding's. */
@@ -58,8 +67,9 @@ sealed interface EngineField {
 enum class EngineDisplay { Ordinary, Compound, Unknown }
 
 /**
- * One read. [text], the confidences and [detail] are for the log only. [duration] is the whole
- * call as the caller saw it.
+ * One read. [text], the confidences, [engineTime] and [detail] are for the log only. [duration]
+ * is the whole call as the caller saw it; [engineTime] is the engine's own reading time, null when
+ * the engine did not read.
  */
 data class EngineScore(
     val classScore: EngineField,
@@ -69,6 +79,7 @@ data class EngineScore(
     val confidence: Float?,
     val minCharConfidence: Float?,
     val duration: Duration,
+    val engineTime: Duration? = null,
     /** For an [EngineUnknownReason.EngineError] or [EngineUnknownReason.Unavailable] field: what went wrong. */
     val detail: String? = null,
 ) {

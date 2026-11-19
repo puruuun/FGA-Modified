@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.EngineField
 import io.github.fate_grand_automata.scripts.supportSelection.EngineScore
 import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReason
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.microseconds
 
 /**
  * Reads the reply of `RustSensing.readScore`, laid out by native/fga-ffi/src/score_engine/wire.rs
@@ -45,16 +46,12 @@ object ScoreWire {
 
     private class Malformed(message: String) : Exception(message)
 
-    /** [duration] is the caller's time for the whole call; Rust's own time is [rustMicros]. */
+    /** [duration] is the caller's time for the whole call; Rust's own time goes into [EngineScore.engineTime]. */
     fun decode(reply: IntArray?, duration: Duration): EngineScore = try {
         parse(reply, duration)
     } catch (e: Malformed) {
         EngineScore.unknown(EngineUnknownReason.EngineError, "malformed engine reply: ${e.message}", duration)
     }
-
-    /** Microseconds Rust spent inside the reader, or null when [reply] is not a well-formed read. */
-    fun rustMicros(reply: IntArray?): Int? =
-        reply?.takeIf { decode(it, Duration.ZERO).detail == null && it.size >= HEADER_LEN }?.get(9)
 
     private fun parse(reply: IntArray?, duration: Duration): EngineScore {
         if (reply == null) throw Malformed("no reply (JNI failure)")
@@ -79,16 +76,21 @@ object ScoreWire {
         val classScore = field("class", reply[2], reply[5], MAX_CLASS)
         val grandScore = field("grand", reply[3], reply[6], MAX_GRAND)
         val display = DISPLAYS.getOrNull(reply[4]) ?: throw Malformed("display ${reply[4]}")
+        if (reply[9] < 0) throw Malformed("engine time ${reply[9]}")
         return EngineScore(
             classScore = classScore,
             grandScore = grandScore,
             display = display,
             text = text,
-            confidence = Float.fromBits(reply[7]).takeUnless { it.isNaN() },
-            minCharConfidence = Float.fromBits(reply[8]).takeUnless { it.isNaN() },
+            confidence = confidence(reply[7]),
+            minCharConfidence = confidence(reply[8]),
             duration = duration,
+            engineTime = reply[9].microseconds,
         )
     }
+
+    /** NaN is "none" in the layout; wire.rs never sends an infinity, so one is treated as none too. */
+    private fun confidence(bits: Int): Float? = Float.fromBits(bits).takeIf { it.isFinite() }
 
     private fun field(name: String, value: Int, reason: Int, max: Int): EngineField = when {
         reason == NO_REASON && value in 0..max -> EngineField.Value(value)

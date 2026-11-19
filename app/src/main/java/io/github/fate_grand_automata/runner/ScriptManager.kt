@@ -22,7 +22,6 @@ import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.script.ScriptEntryPoint
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.prefs.core.PrefsCore
-import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.entrypoints.AutoCEEnhance
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
@@ -58,7 +57,6 @@ import io.github.fate_grand_automata.util.skillLevelStepMessage
 import io.github.fate_grand_automata.util.skillLevelSummary
 import io.github.fate_grand_automata.util.showOverlayDialog
 import io.github.lib_automata.EntryPoint
-import io.github.lib_automata.OcrService
 import io.github.lib_automata.ScreenshotService
 import io.github.lib_automata.ScriptAbortException
 import kotlinx.coroutines.CoroutineScope
@@ -96,27 +94,10 @@ class ScriptManager @Inject constructor(
     var scriptState: ScriptState = ScriptState.Stopped
         private set
 
-    /**
-     * The OCR engine belonging to the current [ScriptComponent]. Held so its native Tesseract
-     * context can be freed as soon as the run ends instead of waiting on the finalizer.
-     */
-    private var ocrService: OcrService? = null
+    /** The OCR and support-score engines of the current [ScriptComponent]. */
+    private val runEngines = RunEngines()
 
-    /** The run's Rust support-score engine (issue #568), released with [ocrService]. */
-    private var supportScoreEngine: SupportScoreEngine? = null
-
-    fun releaseOcrService() {
-        ocrService?.let {
-            ocrService = null
-            runCatching { it.close() }
-                .onFailure { e -> Timber.w(e, "Failed to release the OCR service") }
-        }
-        supportScoreEngine?.let {
-            supportScoreEngine = null
-            runCatching { it.close() }
-                .onFailure { e -> Timber.w(e, "Failed to release the support-score engine") }
-        }
-    }
+    fun releaseOcrService() = runEngines.release()
 
     /** D-25: saves the probe's CSV below the FGA storage root, remembers the successes and builds the summary text. */
     private fun probeSummary(context: Context, reason: AutoWeeklyRoute.ExitReason.Probed): String {
@@ -581,8 +562,7 @@ class ScriptManager @Inject constructor(
 
         // A fresh ScriptComponent means a fresh OCR engine; drop the previous one first
         releaseOcrService()
-        ocrService = hiltEntryPoint.ocrService()
-        supportScoreEngine = hiltEntryPoint.supportScoreEngine()
+        runEngines.attach(hiltEntryPoint.ocrService(), hiltEntryPoint.supportScoreEngine())
 
         scope.launch {
             val previewWasVisible = withContext(Dispatchers.Main) { gameAreaPreview.beginScript() }

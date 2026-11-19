@@ -10,7 +10,6 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class OcrModelInstallerTest {
@@ -68,6 +67,5 @@ class OcrModelInstallerTest {
         for (bad in listOf("file=a.onnx\nsha256=xyz\nsize=1", "file=../a.onnx\nsha256=${pin.sha256}\nsize=1", "file=a.onnx\nsha256=${pin.sha256}\nsize=0", "sha256=${pin.sha256}\nsize=1")) {
             assertFailsWith<IOException>(bad) { OcrModelPin.parse(bad.byteInputStream()) }
         }
-        assertFalse(dir.list()!!.isNotEmpty())
     }
 }

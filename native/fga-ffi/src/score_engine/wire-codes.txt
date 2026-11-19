@@ -1,0 +1,13 @@
+# The codes of the support-score engine's reply (wire.rs), shared by the Rust test
+# (wire.rs, codes_match_the_shared_table) and the Kotlin test (ScoreWireTest), so a change on one
+# side fails on the other. One entry per line: kind, the name as fga-sensing writes it, the code.
+reason blank 1
+reason low_confidence 2
+reason format 3
+reason range 4
+reason clipped 5
+reason not_shown 6
+reason crop_size 7
+display ordinary 0
+display compound 1
+display unknown 2

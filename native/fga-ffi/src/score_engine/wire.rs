@@ -239,6 +239,36 @@ mod tests {
     }
 
     #[test]
+    fn codes_match_the_shared_table() {
+        let table = include_str!("wire-codes.txt");
+        let mut reasons = Vec::new();
+        let mut displays = Vec::new();
+        for line in table
+            .lines()
+            .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
+        {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+            assert_eq!(fields.len(), 3, "{line}");
+            let code: i32 = fields[2].parse().unwrap();
+            match fields[0] {
+                "reason" => reasons.push((fields[1].to_owned(), code)),
+                "display" => displays.push((fields[1].to_owned(), code)),
+                other => panic!("unknown kind {other}"),
+            }
+        }
+        let ours: Vec<(String, i32)> = Reason::ALL
+            .iter()
+            .map(|r| (r.name().to_owned(), reason_code(*r)))
+            .collect();
+        assert_eq!(reasons, ours);
+        let ours: Vec<(String, i32)> = [Display::Ordinary, Display::Compound, Display::Unknown]
+            .iter()
+            .map(|d| (d.name().to_owned(), display_code(*d)))
+            .collect();
+        assert_eq!(displays, ours);
+    }
+
+    #[test]
     fn reason_codes_are_pinned_and_distinct() {
         let codes: Vec<i32> = Reason::ALL.iter().map(|r| reason_code(*r)).collect();
         assert_eq!(codes, vec![1, 2, 3, 4, 5, 6, 7]);

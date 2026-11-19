@@ -30,9 +30,9 @@ class SupportScoreEngineBindingTest {
     }
 
     /**
-     * The unit tests run on the ci build type. The Hilt provider must give the no-op object there
-     * and must not touch libfga_ffi.so, which is not on a JVM test's library path: a load attempt
-     * would throw UnsatisfiedLinkError.
+     * The unit tests run on the ci build type, where the Hilt provider must give the no-op object.
+     * libfga_ffi.so is not on this test's library path, so a provider that tried to load it would
+     * fail this test with UnsatisfiedLinkError.
      */
     @Test fun `the script provider binds the no-op engine in this build`() {
         assertFalse(BuildConfig.RUST_TEST_BUILD)

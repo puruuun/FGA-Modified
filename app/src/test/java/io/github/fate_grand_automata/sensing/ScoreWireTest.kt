@@ -6,6 +6,8 @@ import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReaso
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import java.io.File
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 
 class ScoreWireTest {
@@ -33,7 +35,7 @@ class ScoreWireTest {
         assertEquals(0.5f, score.minCharConfidence)
         assertEquals(3.milliseconds, score.duration)
         assertNull(score.detail)
-        assertEquals(1234, ScoreWire.rustMicros(GOLDEN_COMPOUND))
+        assertEquals(1234.microseconds, score.engineTime)
     }
 
     @Test fun `golden ordinary reply from wire_rs decodes`() {
@@ -77,7 +79,41 @@ class ScoreWireTest {
         val score = ScoreWire.decode(reply, 0.milliseconds)
         assertEquals(EngineField.Unknown(EngineUnknownReason.EngineError), score.classScore)
         assertEquals("not loaded", score.detail)
-        assertNull(ScoreWire.rustMicros(reply))
+        assertNull(score.engineTime)
+    }
+
+    /** native/fga-ffi/src/score_engine/wire-codes.txt, which wire.rs's test reads too. */
+    @Test fun `codes match the table shared with wire_rs`() {
+        val table = File(System.getProperty("fga.scoreWireCodes")!!).readLines()
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+            .map { it.trim().split(Regex("""\s+""")) }
+        fun camel(name: String) = name.split('_').joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
+        val reasons = table.filter { it[0] == "reason" }
+        assertEquals(ScoreWire.REASONS.size, reasons.size)
+        for ((_, name, code) in reasons) {
+            assertEquals(EngineUnknownReason.valueOf(camel(name)), ScoreWire.REASONS[code.toInt() - 1], name)
+            val score = ScoreWire.decode(read(-1, -1, 2, code.toInt(), code.toInt()), 0.milliseconds)
+            assertEquals(EngineField.Unknown(EngineUnknownReason.valueOf(camel(name))), score.classScore, name)
+        }
+        val displays = table.filter { it[0] == "display" }
+        assertEquals(EngineDisplay.entries.size, displays.size)
+        for ((_, name, code) in displays) {
+            val value = if (name == "unknown") -1 else 1
+            val reason = if (name == "unknown") 1 else 0
+            val score = ScoreWire.decode(read(value, value, code.toInt(), reason, reason), 0.milliseconds)
+            assertEquals(EngineDisplay.valueOf(camel(name)), score.display, name)
+        }
+    }
+
+    @Test fun `infinite confidences count as absent`() {
+        val reply = GOLDEN_COMPOUND.copyOf().also {
+            it[7] = Float.POSITIVE_INFINITY.toRawBits()
+            it[8] = Float.NEGATIVE_INFINITY.toRawBits()
+        }
+        val score = ScoreWire.decode(reply, 0.milliseconds)
+        assertEquals(EngineField.Value(62), score.classScore)
+        assertNull(score.confidence)
+        assertNull(score.minCharConfidence)
     }
 
     @Test fun `malformed replies are engine errors, never values`() {
@@ -89,6 +125,10 @@ class ScoreWireTest {
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[10] = 6 })
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[10] = -1 })
         assertEngineError(GOLDEN_COMPOUND + 43)
+        // One element shorter than the declared text.
+        assertEngineError(GOLDEN_COMPOUND.copyOf(GOLDEN_COMPOUND.size - 1))
+        // A negative engine time.
+        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[9] = -1 })
         // Unknown status and display.
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[1] = 2 })
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[1] = -1 })

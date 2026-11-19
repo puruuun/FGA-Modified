@@ -41,5 +41,8 @@ mod poisoned {
             run_guarded(|| ocr_load_tract("no/such/model.onnx", 160, 17)),
             "ERR: invalid thread count 17: 0..=16"
         );
+        // Issue #568: the product engine keeps its own lock, so it still answers.
+        assert_eq!(fga_ffi::score_engine::is_loaded_entry(), 0);
+        assert_eq!(fga_ffi::score_engine::unload_entry(), 0);
     }
 }
