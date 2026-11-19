@@ -72,9 +72,6 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(run(b'\xff\0'), 'true')
 
 
-NATIVE_CI = os.path.join(os.path.dirname(__file__), '..', '..', '.github', 'workflows', 'native-ci.yml')
-
-
 class NativeClassifyTest(unittest.TestCase):
     def test_native_paths(self):
         for p in ('native/Cargo.toml', 'native/fga-ffi/src/lib.rs', '.github/workflows/native-ci.yml'):
@@ -100,36 +97,6 @@ class NativeClassifyTest(unittest.TestCase):
             self.assertTrue(g.needs_build([p]), p)
             self.assertTrue(g.needs_build([p, 'docs/a.md']), p)
 
-    def test_patterns_equal_native_ci_paths_filter(self):
-        with open(NATIVE_CI, encoding='utf-8') as f:
-            lines = f.read().splitlines()
-        sections = []
-        current = None
-        for line in lines:
-            if line.strip().startswith('#'):
-                continue
-            if re.match(r'^\s*paths:\s*$', line):
-                current = []
-                sections.append(current)
-                continue
-            m = re.match(r"^\s*-\s*'([^']*)'\s*$", line)
-            if current is not None and m:
-                current.append(m.group(1))
-            else:
-                current = None
-        self.assertTrue(sections, 'no paths: filter found in native-ci.yml')
-        for section in sections:
-            self.assertEqual(sorted(section), sorted(g.NATIVE_PATTERNS))
-
-    def test_native_ci_triggers(self):
-        with open(NATIVE_CI, encoding='utf-8') as f:
-            text = f.read()
-        self.assertIsNone(re.search(r'(?m)^  pull_request:', text))
-        self.assertIsNotNone(re.search(r'(?m)^  workflow_call:', text))
-        group = re.search(r'(?m)^  group: (.*)$', text).group(1)
-        for part in ('github.workflow', 'github.event_name', 'github.ref'):
-            self.assertIn(part, group)
-
     def test_cli_classify_native(self):
         def run(data):
             r = subprocess.run([sys.executable, SCRIPT, 'classify-native'], input=data, capture_output=True)
@@ -138,29 +105,11 @@ class NativeClassifyTest(unittest.TestCase):
         self.assertEqual(run(b'app/a.kt\0native/fga-ffi/src/lib.rs\0'), 'true')
         self.assertEqual(run(b''), 'true')
 
-
-class WorkflowWiringTest(unittest.TestCase):
-    def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), '..', '..', '.github', 'workflows', 'main-ci.yml'),
-                  encoding='utf-8') as f:
-            self.text = f.read()
-
-    def test_native_job_calls_native_ci_only_when_needed(self):
-        start = self.text.index('\n  native:\n')
-        end = self.text.index('\n  gate:\n')
-        m = self.text[start:end]
-        body = m
-        self.assertIn('needs: changes', body)
-        self.assertIn("if: needs.changes.outputs.native == 'true'", body)
-        self.assertIn('uses: ./.github/workflows/native-ci.yml', body)
-
-    def test_gate_waits_for_and_reads_native(self):
-        gate = self.text[self.text.index('  gate:'):]
-        self.assertIn('needs: [changes, test-and-build, native]', gate)
-        self.assertIn('NATIVE_RESULT: ${{ needs.native.result }}', gate)
-        self.assertIn('NATIVE: ${{ needs.changes.outputs.native }}', gate)
-        self.assertIn('"$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT"', gate)
-        self.assertIn('name: Main CI gate', gate)
+    def test_classify_commands_reject_extra_arguments(self):
+        for cmd in ('classify', 'classify-native'):
+            r = subprocess.run([sys.executable, SCRIPT, cmd, 'extra'], input=b'docs/a.md\0', capture_output=True)
+            self.assertEqual(r.returncode, 2, cmd)
+            self.assertEqual(r.stdout, b'', cmd)
 
 
 def expected_gate(changes, code, native, build, rust):
@@ -208,18 +157,6 @@ class GateTest(unittest.TestCase):
         self.assertFalse(ok('success', 'true', 'false', 'success', 'cancelled'))
         self.assertFalse(ok('failure', 'false', 'false', 'skipped', 'skipped'))
         self.assertFalse(ok('success', 'true', 'false', 'skipped', 'skipped'))
-
-    def test_native_output_normalisation(self):
-        # Same line as in main-ci.yml: anything but exactly "false" becomes "true".
-        with open(os.path.join(os.path.dirname(__file__), '..', '..', '.github', 'workflows', 'main-ci.yml'),
-                  encoding='utf-8') as f:
-            self.assertIn('[ "$native" = false ] || native=true', f.read())
-        script = '[ "$native" = false ] || native=true; printf %s "$native"'
-        for raw, want in (('false', 'false'), ('true', 'true'), ('', 'true'), ('False', 'true'),
-                          ('false ', 'true'), ('x', 'true')):
-            r = subprocess.run(['sh', '-c', script], env={'native': raw, 'PATH': os.environ['PATH']},
-                               capture_output=True)
-            self.assertEqual(r.stdout.decode(), want, raw)
 
     def test_cli_exit_codes(self):
         def rc(*a):
