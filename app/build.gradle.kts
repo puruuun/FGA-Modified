@@ -1,5 +1,6 @@
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.util.Properties
 import javax.inject.Inject
 
@@ -208,7 +209,7 @@ abstract class ExtractOnnxRuntime : DefaultTask() {
     fun extract() {
         // Gradle does not check downloads against a checksum unless dependency verification is
         // set up, which this project does not use, so the binary that gets linked is pinned here.
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val digest = MessageDigest.getInstance("SHA-256")
         aar.singleFile.inputStream().use { input ->
             val buffer = ByteArray(1 shl 16)
             while (true) {
