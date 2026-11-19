@@ -48,6 +48,51 @@ folder the package came from.
    (`BattleUIAtlas/buttontxt_retire` is the retreat label), only the art in them is localized.
    Use another server's template of the same name as the `--check` to see whether a sprite fits.
 
+   **Layout: where it is drawn and at what scale.** The APK's scenes hold every widget that uses
+   the sprite, so the screen position and the draft scale need no screenshot:
+
+   ```bash
+   py -3 -E -P .claude/skills/apk-template-asset/layout_calc.py --data build/apk-kr-unpacked/assets/bin/Data \
+       --extracted build/apk-kr BattleUIAtlas/buttontxt_retire --out-json build/layout.json
+   ```
+
+   `--data` is the APK's `assets/bin/Data` (unpack the APK; the script only reads it),
+   `--extracted` the folder of step 1 (each sprite's own pixel size comes from its `index.json`).
+   Sprites are `Atlas/sprite` or a bare name. It takes about 10 s. For every widget it prints
+   the scene file, the Transform path, the box at 720p and in 1440p script coordinates (16:9, X
+   origin as in `coordinates.md`) and the draft scale.
+
+   - **Position.** Predicted boxes of `retreat_button`, `retreat_confirm`, `skill_level_label`,
+     `skill_level_reselect`, `support_region_tool` and `weekly_notice` agree with the planner's
+     numbers within 0.5 px on KR 8.1.0, and NA 2.95.0 gives the same boxes; they matched the KR
+     screenshots within 2 px. The same sprite can sit on several screens: pick the widget whose
+     path is the screen you want. A sprite whose widgets hang under no `UI Root` (a prefab that a
+     scene instantiates at run time) is listed as "no UI Root": its position is not in the data.
+     A widget with a UIRect anchor is marked `anchored`; the game may resize it at run time, so
+     check its box against a screenshot.
+   - **Scale.** A sprite is not always drawn at its own size: the widget size sets it, and the
+     draft scale is `1.25 * widget / sprite`, per axis. The script prints both. Axes within 5 %
+     are one scale (their mean; a widget one unit larger than its sprite is NGUI's even-size
+     rounding). A widget stretched on one axis is a 9-slice: the draft uses the axis nearer 1.25,
+     because that is the axis a label or icon keeps its proportions on, and the other axis is
+     the slice's stretched middle. When neither axis is near the scale found by matching, trust
+     the matching: the widget size is a prediction, `--check` or `score_screens.py` decides.
+   - **What the widget rule did and did not predict**, against the scale that won when the
+     sprite was matched against screenshots (KR 8.1.0 data; NA 2.95.0 prints the same):
+
+     | Sprite | Widget rule | Best scale found | |
+     |---|---|---|---|
+     | `CommonUIAtlas/btn_boostitem_off` | no widget; its `btn_boostitem_on` sibling (62x62) is drawn 54x54 units: 1.089 | x1.1 | agrees |
+     | `CommonUIAtlas/rarity4_0` | 58x20 widget on the costume dialog: 1.047 | x0.9 (drop screen) | differs: the matched screen's widget is not in the scene data (prefab) |
+     | `GachaAtlas/img_bg_friendpointuse` | 234x38 widget: x 1.25, y 1.28 | x1.0 | differs: the matched crop is a smooth gradient, so every scale scores the same |
+     | `CommonUIAtlas/btn_list_small` | no widget in the scenes (set at run time) | x1.35 | no prediction |
+
+     Where one unit of rounding separates widget and sprite (retire, decide, `support_region_tool`)
+     the rule prints 1.25-1.28 against the matched 1.25; `btn_txt_servant_reselect` (widget 104x64
+     for a 63x46 sprite, x 2.06, y 1.74) is a stretched widget that matched at 1.25 as a layer, so
+     the rule does not predict it. It gives nothing for sprites that are set from code. The boxes printed in the issue as "widget 292x48" and
+     "60x21" are 720p sizes (units x 1.25), not NGUI units.
+
 3. **Draft** it, in one of two modes:
 
    - **Atlas sprite first.** The sprite is the real art, so bold, outlined, glowing or colored
@@ -139,8 +184,38 @@ d. **A real screenshot of the target server** before committing, as in step 5.
 
 ## What to expect
 
-- **Scale 1.25** takes an NGUI atlas sprite to 720p. Measured on KR 8.1.0, every matched sprite's
-  best scale was 1.25. Another scale winning is a sign of a false match.
+- **Scale 1.25 is the default, not a law.** It takes an NGUI sprite drawn at its own size to
+  720p, and every sprite in the KR table below won at 1.25. A sprite is drawn at its widget's
+  size, so others win elsewhere (`btn_boostitem_off` x1.1, `btn_list_small` x1.35, `rarity4_0`
+  x0.9): read the widget with `layout_calc.py` before reading a different winner as a false match.
+- **Cards and banners from Atlas Academy.** Some screens show art that is not in the APK atlases.
+  Atlas Academy's images (downloaded by the owner or planner; they are copyrighted too and stay
+  outside the repository) cover two cases: weekly banners `Banner/chaldea_category_*` and
+  `Banner/questboard_cap*` at x1.25, and card faces `Faces/f_<id>.png` (128x128) drawn at about
+  x0.77 under the APK's frame sprites (for the Ember of Wisdom cards: `CommonUIAtlas/listframes2_bg`,
+  `listframes3_bg`, `listframes*_txt_expup` and `rarity3_0`/`rarity4_0`/`rarity5_0`, offsets located
+  inside the template). Such a composite is an `APK-partial` draft: the top-left corner badge is in
+  no sprite, and offsets are off by 1-3 px (worst shift 0.74-0.79 on `En`).
+- **Resources of the KR APK that are the JP originals** make `Jp` drafts, for atlases the JP APK
+  lacks (`ResultAtlas`). Drafted from the KR extraction against `app/src/main/assets/Jp`:
+
+  ```bash
+  py -3 -E -P .claude/skills/apk-template-asset/draft_template.py --extracted build/apk-kr \
+      --sprite ResultAtlas/btn_txt_next --crop-like app/src/main/assets/Jp/mat_rewards.png \
+      --check app/src/main/assets/Jp/mat_rewards.png --out build/draft/mat_rewards.png
+  ```
+
+  | Template | Sprite | Worst shift | Screenshots |
+  |---|---|---|---|
+  | `mat_rewards` | `ResultAtlas/btn_txt_next` | 0.925 | none |
+  | `bond_result_title` | `ResultAtlas/img_txt_servantbonds01` | 0.872 | 8 positives, draft min 0.879, false max 0.406; call similarity 0.85 |
+
+  Both reproduce with the command above (the second with `servantbonds01` and `bond_result_title.png`).
+- **The worst half-pixel shift underestimates small templates.** `friend_summon` has a worst
+  shift of 0.766 but a draft minimum of 0.998 on its 2 positives; Jp `bond_popup_title` 0.481 and
+  0.897 on 2. A small or smooth crop moves by more than a large one when it shifts half a pixel.
+  Judge a draft by `score_screens.py` against the call's similarity wherever screenshots exist,
+  and by the worst shift only when they do not.
 - Font rendering reaches 0.80 or more at the worst shift for plain labels; bold, outlined or
   glowing ones fail.
 - A rendered label scored at most 0.49 inside another template; sprites at most 0.42 on KR
@@ -193,7 +268,11 @@ than the unshifted score.
 
 - **Downloaded game data is encrypted** and not used. Some APK atlases are the JP originals that
   the game replaces with downloaded localized ones (KR `ResultAtlas` is Japanese), so result and
-  reward screens still need a screenshot.
+  reward screens still need a screenshot. The KR APK's JP-original atlases are a JP source only
+  for atlases the JP APK lacks; where both have an atlas, use the JP APK's.
+- `layout_calc.py` matches widgets by sprite name only (the atlas reference is not resolved), so a
+  name used in two atlases lists both; it lists no widget for a sprite the game sets from code,
+  and no position for a prefab outside a `UI Root`.
 - UnityPy cannot decode a few textures (2 on KR 8.1.0); those atlases are skipped or listed
   without art.
 - The atlas rects come from a byte scan of the il2cpp build's MonoBehaviours (no type tree).
