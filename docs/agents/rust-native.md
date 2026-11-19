@@ -87,7 +87,7 @@ In the app, Gradle builds the library only when asked:
 py -3 tools/device-qa/run.py --build --native --suite nativeProbe
 ```
 
-`-Pfga.native=true` registers `cargoNdkBuild`, which runs the `cargo ndk` build above into `app/build/generated/rustJniLibs` and adds it to every variant's native libraries. Without the property no task looks at `native/`, and the APKs carry no Rust library. The `nativeProbe` device suite runs the probe tests in `app/src/androidTest`; on an APK built without the library they report themselves skipped and their results are logged under the logcat tag `FgaNativeProbe`. The skipped reason carries the loader's message and says "not packaged" only when the class loader could not find `libfga_ffi.so` itself; a library that is packaged but does not load (for example a missing or broken `libonnxruntime.so`) is reported as such.
+`-Pfga.native=true` registers `cargoNdkBuild`, which runs the `cargo ndk` build above into `app/build/generated/rustJniLibs` and adds it to every variant's native libraries. Since issue #568 it also packages the pinned OCR model, which Gradle downloads unless `-Pfga.ocr.model=<path>` (or `run.py --ocr-model <path>`) names a local copy ("Rust test APK" below). Without the property no task looks at `native/`, and the APKs carry no Rust library. The `nativeProbe` device suite runs the probe tests in `app/src/androidTest`; on an APK built without the library they report themselves skipped and their results are logged under the logcat tag `FgaNativeProbe`. The skipped reason carries the loader's message and says "not packaged" only when the class loader could not find `libfga_ffi.so` itself; a library that is packaged but does not load (for example a missing or broken `libonnxruntime.so`) is reported as such.
 
 The `ocrProbe` device suite (issue #530) runs the PP-OCRv6 recogniser through `libfga_ffi.so` with the `tract` backend and, for comparison, the app's Tesseract engine, on the labelled samples from "Test data". It reports agreement with the Python text, time per crop and process memory (`/proc/self/status` and Android PSS). The model and the samples are not committed, so they are pushed to these device paths first:
 
@@ -224,6 +224,32 @@ The first prints the numbers of the acceptance line of design 0025, section 5 (m
 
 ```bash
 py -3 tools/device-qa/run.py --build --native --suite ocrProbe --local-fixtures build/ocr-device-fixtures
+```
+
+### Rust test APK (issue #568)
+
+Owner decision: users of the public app see nothing of the engine change. The Rust reader is tried in a separate, owner-only APK built from the `rust` branch; it is never published and is not a release ([`releases-and-versioning.md`](releases-and-versioning.md)).
+
+**Build.** From `rust`, with the shell set up as below:
+
+```bash
+./gradlew -Pfga.native=true -Pfga.ocr.model=build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx -PfgaDebugSigning=true -Pfga.rust.build=1 :app:assembleRust
+```
+
+- The `rust` build type is `initWith(beta)`: package `io.github.fate_grand_automata.rust`, launcher name `FGA Rust` (`app/src/rust/res/values/strings.xml`), the beta's signing (`signRustRotated` re-signs it with the rotated release key like the beta, or leaves it debug-signed with `-PfgaDebugSigning=true`), version name `<beta.versionName>-rust.<N>` and the beta's version code. N is `-Pfga.rust.build` (a whole number from 1 to 99, default 1; anything else stops the build); count it up for each Rust test build of the same beta. `version.properties` has no key for it because `main` shares that file.
+- Without `-Pfga.native=true` the `rust` variant refuses to build: the task names are checked when the build is configured, and `rustNeedsNative` stops `preRustBuild` for any other way of reaching it. Every other variant is unchanged.
+- `BuildConfig.RUST_TEST_BUILD` is true only in this build type. It is the one switch that lets product code reach the engine.
+
+**The model.** `native/ocr-model/model.properties` pins the file name, URL, size and SHA-256 (RapidOCR's model listing names the same URL and hash); `native/ocr-model/NOTICE.txt` is its licence notice (Apache-2.0, PaddleOCR, converted by RapidOCR). To change the model, change `url`, `sha256` and `size` together, and only for a model the support-score reader has been measured with. With `fga.native` on, `provideOcrModel` takes the file from `-Pfga.ocr.model=<path>` or, without it, downloads the URL; it refuses a file whose size or SHA-256 differs (a part file never gets the final name and is deleted on failure) and writes `assets/ocr/PP-OCRv6_rec_small.onnx`, `assets/ocr/ocr-model.properties` and `assets/ocr/PP-OCRv6_rec_small.NOTICE.txt` into `app/build/generated/ocrModelAssets`. Like `libfga_ffi.so`, the asset goes into every variant Gradle builds with the property on (so the device-test APK has it too); off, the task does not exist. The model is never committed: `tools/ci/repo_guard.py` refuses `.onnx` files, `build/` is ignored, and `tools/ci/apk_check.py` fails a CI APK that holds any `.onnx` entry.
+
+**Product API beside the probes.** `io.github.fate_grand_automata.sensing.RustSensing` (app main source set) calls fga-ffi's `score_engine`: `load(path)` (`OK: <ms>` / `ERR: ...`), `readScore(pixels, 60, 30)` (one `int[]`, laid out in `score_engine/wire.rs`), `unload()` and `isLoaded()` (1, 0, or negative for an error). The reply carries value and reason separately, so unknown never reads as 0; `ScoreWire.kt` turns anything that does not fit the layout into "unknown, engine error". The **slot rule**: the engine has its own static in Rust, apart from the probes' recogniser. A probe load, read or unload never touches it and the reverse; a second `load` while one is loaded is refused and keeps the loaded engine. A crop other than 60x30 is answered as `crop_size` without reading the pixels; a pixel array of another length, a null array, a read before load and an unload while unloaded each have their own answer and test (`score_engine/mod.rs`, `tests/score_engine_poisoned.rs`, `tests/score_engine_model.rs`).
+
+**Kotlin binding.** `scripts` has the port `SupportScoreEngine` (`available`, `read(field: Pattern): EngineScore`) and `NoSupportScoreEngine`. The Hilt provider in `ScriptsModule` binds `NoSupportScoreEngine` unless `BuildConfig.RUST_TEST_BUILD`, so no other build ever calls `System.loadLibrary`. `RustSupportScoreEngine` loads lazily on its first use in a run (never on the main thread): it loads the library, copies the packaged model once to `noBackupFilesDir/ocr-model/<sha256>-PP-OCRv6_rec_small.onnx` (streamed through a 64 KB buffer, checked by size and SHA-256 while it is written; a later run reuses a file of the pinned size and deletes anything else in that folder) and loads it. Any failure makes it unavailable for the run, with a reason. `ScriptManager` closes it, which unloads, when the run's component is released. No script uses it yet.
+
+**Device case.** `rust-engine` in `ocrProbe`, after `rust-reader`: it uses `RustSupportScoreEngine` on the model packaged in the device-test APK (no pushed model), reads the 370 samples through FixtureApi's crop frame and `SupportScoreLayout.numberRegion(...).getPattern()`, and fails unless the engine is available, every field equals `rust-reader`'s read of the same sample (which must pass earlier in the run), the Pattern's gray bytes equal the bytes `rust-reader` fed, and `rust-reader`'s floors and rules hold. It reports the load time, the time per field and the memory around the load (VmRSS, VmHWM after resetting it through `clear_refs`, Java heap, and peaks sampled during the load). The copy it makes is deleted when the run ends.
+
+```bash
+py -3 tools/device-qa/run.py --build --native --ocr-model build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx --suite ocrProbe --local-fixtures build/ocr-device-fixtures
 ```
 
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).

@@ -1,10 +1,12 @@
 //! The Kotlin boundary of the FGA Rust core.
 //!
-//! For now it only carries the stage 1-0 probes of design 0025: they show whether Rust code,
-//! and the crypto and inference crates the later stages want, run on our test devices.
+//! It carries the stage 1-0 probes of design 0025 (device-test code only) and, since issue #568,
+//! the support-score engine for product code ([`score_engine`]), which keeps its own state.
 
 mod guard;
 mod jni_exports;
 pub mod probes;
+mod product_jni;
+pub mod score_engine;
 
-pub use guard::run_guarded;
+pub use guard::{catch_panic, run_guarded};

@@ -22,6 +22,7 @@ import io.github.fate_grand_automata.di.script.ScriptComponentBuilder
 import io.github.fate_grand_automata.di.script.ScriptEntryPoint
 import io.github.fate_grand_automata.di.service.ServiceCoroutineScope
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
 import io.github.fate_grand_automata.scripts.entrypoints.AutoCEEnhance
 import io.github.fate_grand_automata.scripts.entrypoints.AutoFriendGacha
@@ -101,11 +102,19 @@ class ScriptManager @Inject constructor(
      */
     private var ocrService: OcrService? = null
 
+    /** The run's Rust support-score engine (issue #568), released with [ocrService]. */
+    private var supportScoreEngine: SupportScoreEngine? = null
+
     fun releaseOcrService() {
         ocrService?.let {
             ocrService = null
             runCatching { it.close() }
                 .onFailure { e -> Timber.w(e, "Failed to release the OCR service") }
+        }
+        supportScoreEngine?.let {
+            supportScoreEngine = null
+            runCatching { it.close() }
+                .onFailure { e -> Timber.w(e, "Failed to release the support-score engine") }
         }
     }
 
@@ -573,6 +582,7 @@ class ScriptManager @Inject constructor(
         // A fresh ScriptComponent means a fresh OCR engine; drop the previous one first
         releaseOcrService()
         ocrService = hiltEntryPoint.ocrService()
+        supportScoreEngine = hiltEntryPoint.supportScoreEngine()
 
         scope.launch {
             val previewWasVisible = withContext(Dispatchers.Main) { gameAreaPreview.beginScript() }

@@ -44,6 +44,17 @@ class ApkCheckTest(unittest.TestCase):
                                         'lib/arm64-v8a/xlibfga_ffi.so', 'assets/libfga_ffi.so/readme'])
         self.assertEqual(self.run_cli(apk)[0], 0)
 
+    def test_model_asset_fails(self):
+        for entry in ('assets/ocr/PP-OCRv6_rec_small.onnx', 'assets/other/model.ONNX', 'm.onnx'):
+            code, out = self.run_cli(self.apk('m.apk', BASE + [entry]))
+            self.assertEqual(code, 1, entry)
+            self.assertIn(entry, out)
+
+    def test_model_notice_and_pin_alone_pass(self):
+        apk = self.apk('n.apk', BASE + ['assets/ocr/ocr-model.properties',
+                                        'assets/ocr/PP-OCRv6_rec_small.NOTICE.txt', 'assets/ocr/m.onnx.txt'])
+        self.assertEqual(self.run_cli(apk)[0], 0)
+
     def test_library_at_archive_root_fails(self):
         self.assertEqual(self.run_cli(self.apk('d.apk', BASE + ['libfga_ffi.so']))[0], 1)
 

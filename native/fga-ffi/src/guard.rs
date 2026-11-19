@@ -9,12 +9,22 @@ pub fn run_guarded<F>(body: F) -> String
 where
     F: FnOnce() -> Result<String, String>,
 {
+    match catch_panic(body) {
+        Ok(detail) => format!("OK: {detail}"),
+        Err(detail) => format!("ERR: {detail}"),
+    }
+}
+
+/// The guard for functions that do not answer in text: a panic becomes `Err("panic: ...")`.
+pub fn catch_panic<T, F>(body: F) -> Result<T, String>
+where
+    F: FnOnce() -> Result<T, String>,
+{
     // The closure's state is dropped right after a panic and never observed again, so a broken
     // invariant inside it cannot leak out.
     match catch_unwind(AssertUnwindSafe(body)) {
-        Ok(Ok(detail)) => format!("OK: {detail}"),
-        Ok(Err(detail)) => format!("ERR: {detail}"),
-        Err(payload) => format!("ERR: panic: {}", panic_message(payload.as_ref())),
+        Ok(result) => result,
+        Err(payload) => Err(format!("panic: {}", panic_message(payload.as_ref()))),
     }
 }
 
@@ -30,7 +40,20 @@ fn panic_message(payload: &(dyn Any + Send)) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::run_guarded;
+    use super::{catch_panic, run_guarded};
+
+    #[test]
+    fn catch_panic_passes_results_and_catches_panics() {
+        assert_eq!(catch_panic(|| Ok::<i32, String>(3)), Ok(3));
+        assert_eq!(
+            catch_panic(|| Err::<i32, String>("no".to_owned())),
+            Err("no".to_owned())
+        );
+        assert_eq!(
+            catch_panic::<i32, _>(|| panic!("boom")),
+            Err("panic: boom".to_owned())
+        );
+    }
 
     #[test]
     fn ok_result_is_prefixed() {

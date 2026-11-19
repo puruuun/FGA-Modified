@@ -4,7 +4,11 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.accessibility.AccessibilityGestures
+import io.github.fate_grand_automata.sensing.supportScoreEngine
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.fate_grand_automata.imaging.TesseractOcrService
 import io.github.fate_grand_automata.util.StorageReaderDiagnostics
 import io.github.fate_grand_automata.scripts.FgoAutomataApi
@@ -37,6 +41,12 @@ abstract class ScriptsModule {
                 gameSizeWithBorders = platformImpl.windowRegion.size,
                 offset = { platformImpl.windowRegion.location }
             )
+
+        // Issue #568: one engine per run, unloaded by ScriptManager when the run's component ends.
+        @ScriptScope
+        @Provides
+        fun provideSupportScoreEngine(@ApplicationContext context: Context): SupportScoreEngine =
+            supportScoreEngine(context)
     }
 
     @ScriptScope

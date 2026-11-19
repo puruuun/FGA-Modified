@@ -15,7 +15,7 @@ use crate::probes;
 ///
 /// A null return reaches Kotlin as an exception at the call site, which a test reports; it is
 /// the only way left once the exception cannot be cleared or the JVM cannot allocate the string.
-fn to_java(env: &mut JNIEnv, text: String) -> jstring {
+pub(crate) fn to_java(env: &mut JNIEnv, text: String) -> jstring {
     let text = match env.exception_check() {
         Ok(false) => text,
         // An Err cannot say whether one is pending; clearing when none is is harmless.

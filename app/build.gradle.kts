@@ -1,3 +1,5 @@
+import java.net.HttpURLConnection
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
@@ -318,6 +320,169 @@ if (nativeOrtEnabled) {
     }
 }
 
+/*
+ * Issue #568: the PP-OCRv6 recogniser model for the Rust support-score engine. It is pinned in
+ * native/ocr-model/model.properties (file name, URL, size, SHA-256) and never committed. With
+ * `fga.native` on, every variant that packages libfga_ffi.so also packages the model under
+ * assets/ocr/, with the pin file and the licence notice beside it. The model comes from
+ * `-Pfga.ocr.model=<path>` or, without it, from the pinned URL; either way a file whose size or
+ * SHA-256 differs stops the build, and nothing that failed the check is left where a later build
+ * could pick it up. Off, none of this is registered.
+ */
+abstract class ProvideOcrModel : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val pinFile: RegularFileProperty
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val noticeFile: RegularFileProperty
+
+    @get:InputFile
+    @get:Optional
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val localModel: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun provide() {
+        val pin = Properties().apply { pinFile.get().asFile.inputStream().use { load(it) } }
+        fun pinned(key: String) = pin.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw GradleException("${pinFile.get().asFile.name} has no $key")
+        val name = pinned("file")
+        if (!Regex("""[A-Za-z0-9._-]+\.onnx""").matches(name)) throw GradleException("model file name '$name' is not a plain .onnx name")
+        val sha256 = pinned("sha256").lowercase()
+        if (!Regex("[0-9a-f]{64}").matches(sha256)) throw GradleException("sha256 '$sha256' is not 64 hex digits")
+        val size = pinned("size").toLongOrNull()?.takeIf { it > 0 } ?: throw GradleException("size '${pin.getProperty("size")}' is not a positive number")
+        val url = pinned("url")
+
+        val root = outputDir.get().asFile
+        // Whatever an earlier run left, a model that passed or a stray part file, is never reused.
+        root.deleteRecursively()
+        val dir = File(root, "ocr").apply { mkdirs() }
+        val part = File(dir, "$name.part")
+        try {
+            val local = localModel.orNull?.asFile
+            if (local != null) {
+                logger.lifecycle("OCR model: checking $local")
+                Files.copy(local.toPath(), part.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            } else {
+                logger.lifecycle("OCR model: downloading $url")
+                download(url, part, size)
+            }
+            check(part, size, sha256)
+            Files.move(part.toPath(), File(dir, name).toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: Exception) {
+            part.delete()
+            throw e
+        }
+        Files.copy(pinFile.get().asFile.toPath(), File(dir, "ocr-model.properties").toPath())
+        Files.copy(noticeFile.get().asFile.toPath(), File(dir, name.removeSuffix(".onnx") + ".NOTICE.txt").toPath())
+    }
+
+    private fun download(url: String, target: File, size: Long) {
+        val connection = URI(url).toURL().openConnection() as HttpURLConnection
+        connection.connectTimeout = 30_000
+        connection.readTimeout = 60_000
+        connection.instanceFollowRedirects = true
+        try {
+            val status = connection.responseCode
+            if (status != 200) throw GradleException("OCR model download from $url answered HTTP $status")
+            connection.inputStream.use { input ->
+                target.outputStream().use { output ->
+                    val buffer = ByteArray(1 shl 16)
+                    var total = 0L
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        // A server that sends more than the pinned size is wrong; stop before the disk fills.
+                        if (total > size) throw GradleException("OCR model download from $url is longer than the pinned $size bytes")
+                        output.write(buffer, 0, read)
+                    }
+                }
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun check(file: File, size: Long, sha256: String) {
+        val actualSize = file.length()
+        if (actualSize != size) throw GradleException("OCR model has $actualSize bytes, the pin says $size (truncated or another file)")
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        if (actual != sha256) throw GradleException("OCR model has SHA-256 $actual, the pin says $sha256")
+    }
+}
+
+// A relative path is taken from the repository root, where the commands in rust-native.md run.
+val ocrModelPath: File? = providers.gradleProperty("fga.ocr.model").orNull?.let { rootProject.file(it) }
+if (ocrModelPath != null) {
+    if (!nativeEnabled) throw GradleException("-Pfga.ocr.model only works together with -Pfga.native=true")
+    if (!ocrModelPath.isFile) throw GradleException("-Pfga.ocr.model: no file at ${ocrModelPath.path}")
+}
+
+if (nativeEnabled) {
+    val provideOcrModel = tasks.register<ProvideOcrModel>("provideOcrModel") {
+        description = "Provides the pinned OCR model (checked by size and SHA-256) as an APK asset."
+        pinFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/model.properties"))
+        noticeFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/NOTICE.txt"))
+        if (ocrModelPath != null) localModel.set(ocrModelPath)
+        outputDir.set(layout.buildDirectory.dir("generated/ocrModelAssets"))
+    }
+    androidComponents {
+        onVariants { variant ->
+            variant.sources.assets?.addGeneratedSourceDirectory(provideOcrModel, ProvideOcrModel::outputDir)
+        }
+    }
+}
+
+/*
+ * Issue #568: the `rust` build type is the owner's Rust test APK, built only from the `rust`
+ * branch and never published. Without the library it would be a beta with another name, so it
+ * refuses to build without `fga.native`; the check runs when the build is asked for and again
+ * before the variant's first task, so no other variant is affected.
+ */
+val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let { raw ->
+    when {
+        raw == null -> 1
+        Regex("[1-9][0-9]?").matches(raw) -> raw.toInt()
+        else -> throw GradleException("-Pfga.rust.build must be a whole number from 1 to 99, got '$raw'")
+    }
+}
+val rustNativeMissing = "The rust build type packages the Rust engine; build it with -Pfga.native=true " +
+    "(see docs/agents/rust-native.md, \"Rust test APK\")."
+if (!nativeEnabled && gradle.startParameter.taskNames.any { Regex("[a-z]Rust([A-Z]|$)").containsMatchIn(it.substringAfterLast(':')) }) {
+    throw GradleException(rustNativeMissing)
+}
+
+abstract class FailBuild : DefaultTask() {
+    @get:Input
+    abstract val message: Property<String>
+
+    @TaskAction
+    fun fail(): Unit = throw GradleException(message.get())
+}
+
+if (!nativeEnabled) {
+    val rustNeedsNative = tasks.register<FailBuild>("rustNeedsNative") {
+        description = "Stops a build of the rust build type without -Pfga.native=true."
+        message.set(rustNativeMissing)
+    }
+    tasks.matching { it.name == "preRustBuild" }.configureEach { dependsOn(rustNeedsNative) }
+}
+
 // Release versions come from version.properties. FGA_VERSION_NAME / FGA_VERSION_CODE override them
 // (PR builds set them to run_number). A malformed file fails the build here, not in CI.
 val versionProperties = Properties().apply {
@@ -348,8 +513,11 @@ val envVersionCode: Int? = System.getenv("FGA_VERSION_CODE")?.toInt()
 androidComponents {
     onVariants { variant ->
         val beta = variant.buildType == "beta" || variant.buildType == "deviceTest"
-        val name = envVersionName ?: if (beta) betaVersionName else stableVersionName
-        val code = envVersionCode ?: if (beta) betaVersionCode else stableVersionCode
+        // The Rust test APK is a build of the current beta; the suffix tells its builds apart
+        // without a key in version.properties, which main shares.
+        val rust = variant.buildType == "rust"
+        val name = if (rust) "$betaVersionName-rust.$rustBuildNumber" else envVersionName ?: if (beta) betaVersionName else stableVersionName
+        val code = if (rust) betaVersionCode else envVersionCode ?: if (beta) betaVersionCode else stableVersionCode
         variant.outputs.forEach { output ->
             output.versionName.set(name)
             output.versionCode.set(code)
@@ -483,7 +651,7 @@ val debugSigningOnly: Provider<Boolean> = providers.environmentVariable("CI").ma
     .orElse(false)
     .zip(providers.gradleProperty("fgaDebugSigning").map { it == "true" }.orElse(false)) { a, b -> a || b }
 
-listOf("ci", "beta").forEach { buildType ->
+listOf("ci", "beta", "rust").forEach { buildType ->
     val signTask = tasks.register<SignRotatedApk>("sign${buildType.replaceFirstChar { it.uppercase() }}Rotated") {
         description = "Re-signs the $buildType APK with the rotated release key (or logs debug-only signing)."
         apk.set(layout.buildDirectory.file("outputs/apk/$buildType/app-$buildType.apk"))
@@ -524,6 +692,8 @@ android {
         versionCode = envVersionCode ?: stableVersionCode
         versionName = envVersionName ?: stableVersionName
         testInstrumentationRunner = "io.github.fate_grand_automata.qa.SupportDeviceTestRunner"
+        // Issue #568: true only in the rust build type, the one build that may load the Rust engine.
+        buildConfigField("boolean", "RUST_TEST_BUILD", "false")
     }
 
     signingConfigs {
@@ -569,6 +739,13 @@ android {
             initWith(getByName("ci"))
             applicationIdSuffix = ".beta"
             matchingFallbacks += listOf("ci", "release")
+        }
+        // Issue #568: the owner's Rust test APK (see the rust block above); installs beside the beta.
+        create("rust") {
+            initWith(getByName("beta"))
+            applicationIdSuffix = ".rust"
+            buildConfigField("boolean", "RUST_TEST_BUILD", "true")
+            matchingFallbacks += listOf("beta", "ci", "release")
         }
         // Isolated, non-minified target for signed on-device reader tests. No product UI or permissions.
         create("deviceTest") {
@@ -719,6 +896,11 @@ tasks.withType<Test>().configureEach {
      * as soon as the test is run from the IDE instead of Gradle.
      */
     systemProperty("fga.supportAssets", supportAssets.asFile.path)
+
+    // The app parses the model pin from its assets; the test checks the pin file itself.
+    val ocrModelPin = rootProject.layout.projectDirectory.file("native/ocr-model/model.properties")
+    systemProperty("fga.ocrModelPin", ocrModelPin.asFile.path)
+    inputs.file(ocrModelPin).withPathSensitivity(PathSensitivity.NONE).withPropertyName("ocrModelPin")
 
     // The bundled LICENSE is a generated asset, so tests read the copy the build produced.
     dependsOn(copyLicenseAsset)

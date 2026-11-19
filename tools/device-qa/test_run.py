@@ -88,6 +88,21 @@ class GradleCommandTest(unittest.TestCase):
         self.assertIn("-Pfga.native.threads=true", self.command(native=True, native_threads=True))
         self.assertNotIn("-Pfga.native.ort=true", self.command(native=True, native_threads=True))
 
+    def test_without_a_model_no_model_property(self):
+        cmd = self.command(native=True)
+        self.assertIn("-Pfga.native=true", cmd)
+        self.assertFalse(any(a.startswith("-Pfga.ocr.model") for a in cmd))
+
+    def test_model_path_is_passed_absolute(self):
+        cmd = self.command(native=True, ocr_model=Path("build/m.onnx"))
+        model = [a for a in cmd if a.startswith("-Pfga.ocr.model=")]
+        self.assertEqual(len(model), 1)
+        self.assertTrue(Path(model[0].split("=", 1)[1]).is_absolute())
+
+    def test_model_without_native_stops(self):
+        with self.assertRaises(SystemExit):
+            self.command(native=False, ocr_model=Path("m.onnx"))
+
 
 if __name__ == "__main__":
     unittest.main()

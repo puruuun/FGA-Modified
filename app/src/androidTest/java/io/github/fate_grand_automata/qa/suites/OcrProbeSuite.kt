@@ -9,8 +9,12 @@ import io.github.fate_grand_automata.qa.FixtureApi
 import io.github.fate_grand_automata.qa.MeasuredOcr
 import io.github.fate_grand_automata.qa.NativeProbe
 import io.github.fate_grand_automata.qa.SupportDeviceTestRunner
+import io.github.fate_grand_automata.sensing.RustSupportScoreEngine
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
+import io.github.fate_grand_automata.scripts.supportSelection.EngineField
+import io.github.fate_grand_automata.scripts.supportSelection.EngineScore
+import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReason
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScores
@@ -32,6 +36,9 @@ import kotlin.math.ceil
  * The model and the samples are local-only data (docs/agents/rust-native.md, "Test data"), so
  * they are pushed to the device before the run; the case file names their device paths. All cases
  * run in one process, so the case file puts each engine's memory case before its other cases.
+ * Issue #568's `rust-engine` case is the exception: it loads the model packaged in the APK through
+ * the product binding, so it needs no pushed model, and it runs after `rust-reader`, whose reads it
+ * must equal.
  */
 internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val test = case.getString("test")
@@ -47,6 +54,7 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
         "tract-memory" -> engineMemory(runner, case, TRACT)
         "tract-recognise", "tract-recognise-allowed" -> engineRecognise(runner, case, TRACT)
         "rust-reader" -> rustReader(runner, case)
+        "rust-engine" -> rustEngine(runner, case)
         "ort-memory", "ort-recognise", "ort-recognise-allowed", "ort-recognise-1thread" -> {
             if (!ortPackaged()) return ortSkipped(test)
             val engine = ortEngine(case.optInt("threads", 0))
@@ -264,6 +272,10 @@ internal fun removeOcrProbeCopies(runner: SupportDeviceTestRunner) {
     copiedModel = null
     val dir = copyDir(runner)
     check(dir.deleteRecursively()) { "could not delete ${dir.path}" }
+    // The rust-engine case's copy of the packaged model: the product keeps it between runs, a
+    // check run does not leave it behind.
+    val engineCopy = RustSupportScoreEngine.modelDir(runner.targetContext)
+    check(engineCopy.deleteRecursively()) { "could not delete ${engineCopy.path}" }
 }
 
 private fun okJson(call: String, result: String): JSONObject {
@@ -738,6 +750,8 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     var differenceCount = 0
     var sameValue = 0
     var bothNothing = 0
+    rustReaderReads.clear()
+    rustReaderPassed = false
     val load = try {
         okJson("ocrLoad", NativeProbe.ocrLoad(model.path)).also {
             for ((row, sample) in rows.zip(samples)) {
@@ -751,6 +765,7 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
                     continue
                 }
                 val read = JSONObject(result.removePrefix("OK: "))
+                rustReaderReads[file] = RustReaderRead(read, sample.gray)
                 engineMicros += read.getLong("micros")
                 callMicros += callUs
                 byServer.getOrPut(row.getString("server")) { mutableListOf() } += callUs
@@ -847,6 +862,242 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     report.put("minRead62", minRead62).put("minRead16", minRead16)
     if (errorCount > 0 || falseAccepts.isNotEmpty() || wrong.isNotEmpty() || belowFloor) {
         throw AssertionError("rust-reader: $errorCount ERR ${errors.toString().take(300)}, false accepts ${falseAccepts.take(MAX_LISTED)}, wrong values ${wrong.take(MAX_LISTED)}, +62 read ${tallied("read62")} (need $minRead62), +16 read ${tallied("read16")} (need $minRead16). $report")
+    }
+    rustReaderPassed = true
+    return report
+}
+
+/** What rust-reader read for one sample in this run, and the bytes it fed, for [rustEngine]. */
+private class RustReaderRead(val json: JSONObject, val gray: ByteArray)
+
+private val rustReaderReads = mutableMapOf<String, RustReaderRead>()
+private var rustReaderPassed = false
+
+/** fga-sensing's reason names, as supportScoreRead writes them. */
+private fun EngineUnknownReason.wireName(): String? = when (this) {
+    EngineUnknownReason.Blank -> "blank"
+    EngineUnknownReason.LowConfidence -> "low_confidence"
+    EngineUnknownReason.Format -> "format"
+    EngineUnknownReason.Range -> "range"
+    EngineUnknownReason.Clipped -> "clipped"
+    EngineUnknownReason.NotShown -> "not_shown"
+    EngineUnknownReason.CropSize -> "crop_size"
+    EngineUnknownReason.EngineError, EngineUnknownReason.Unavailable -> null
+}
+
+private fun EngineField.reasonName(): String? = (this as? EngineField.Unknown)?.reason?.wireName()
+
+private fun JSONObject.stringOrNull(key: String): String? = if (!has(key) || isNull(key)) null else getString(key)
+private fun JSONObject.floatOrNull(key: String): Float? = if (!has(key) || isNull(key)) null else getDouble(key).toFloat()
+
+/** The fields of [score] that differ from rust-reader's JSON for the same sample. */
+private fun differencesFrom(score: EngineScore, probe: JSONObject): List<String> {
+    val pairs = listOf(
+        "class" to (score.classScore.valueOrNull to probe.intOrNull("class")),
+        "grand" to (score.grandScore.valueOrNull to probe.intOrNull("grand")),
+        "display" to (score.display.name.lowercase() to probe.getString("display")),
+        "classReason" to (score.classScore.reasonName() to probe.stringOrNull("classReason")),
+        "grandReason" to (score.grandScore.reasonName() to probe.stringOrNull("grandReason")),
+        "text" to (score.text to probe.getString("text")),
+        // The engine sends f32; the probe's JSON holds the f64 the f32 came from.
+        "confidence" to (score.confidence to probe.floatOrNull("confidence")),
+        "minCharConfidence" to (score.minCharConfidence to probe.floatOrNull("minCharConfidence")),
+    )
+    return pairs.filter { (_, values) -> values.first != values.second }.map { (key, values) -> "$key ${values.first} != ${values.second}" }
+}
+
+/** VmRSS and VmHWM of this process in kB, from the kernel; -1 when a line is missing. */
+private fun procStatus(): Map<String, Long> {
+    val text = File("/proc/self/status").readText()
+    return listOf("VmRSS", "VmHWM").associateWith { key ->
+        Regex("""(?m)^$key:\s+(\d+) kB""").find(text)?.groupValues?.get(1)?.toLong() ?: -1L
+    }
+}
+
+private fun javaHeapKb(): Long = Runtime.getRuntime().let { (it.totalMemory() - it.freeMemory()) / 1024 }
+
+private fun engineMemory(point: String): JSONObject {
+    val status = procStatus()
+    return JSONObject().put("point", point).put("vmRssKb", status["VmRSS"]).put("vmHwmKb", status["VmHWM"])
+        .put("javaHeapKb", javaHeapKb()).put("nativeHeapKb", Debug.getNativeHeapAllocatedSize() / 1024)
+}
+
+private class PeakSampler : Thread() {
+    @Volatile var running = true
+    @Volatile var maxHeapKb = javaHeapKb()
+    @Volatile var maxRssKb = procStatus()["VmRSS"] ?: -1L
+    @Volatile var samples = 0
+
+    override fun run() {
+        while (running) {
+            maxHeapKb = maxOf(maxHeapKb, javaHeapKb())
+            maxRssKb = maxOf(maxRssKb, procStatus()["VmRSS"] ?: -1L)
+            samples++
+            sleep(5)
+        }
+    }
+}
+
+/**
+ * Samples the Java heap and VmRSS every few milliseconds while [block] runs, so the report has the
+ * highest values during the load and not only the values after it.
+ */
+private fun <T> sampledPeaks(block: () -> T): Pair<T, JSONObject> {
+    val sampler = PeakSampler().apply { isDaemon = true; start() }
+    val result = try { block() } finally { sampler.running = false; sampler.join() }
+    return result to JSONObject().put("maxJavaHeapKb", sampler.maxHeapKb).put("maxVmRssKb", sampler.maxRssKb).put("samples", sampler.samples)
+}
+
+/**
+ * Issue #568: the product binding (RustSupportScoreEngine, as the rust build type's Hilt provider
+ * builds it) on the model packaged in this APK's assets, reading the 370 crops through the Pattern
+ * path a script uses: FixtureApi's crop frame, SupportScoreLayout.numberRegion of a row at y 200,
+ * getPattern. The case needs no model on the device.
+ *
+ * It fails when the engine is not available (a library that is loaded but a model asset that is
+ * missing or does not load is a failure, not a skip), when any read is an engine error, when the
+ * bytes the Pattern holds differ from the bytes rust-reader fed for the same sample (the two
+ * paths must give the reader the same pixels), when any field differs from rust-reader's read of
+ * the same sample, which must have passed earlier in this run, and on rust-reader's own rules: a
+ * false accept, a wrong value, or fewer than minRead62 / minRead16 reads.
+ */
+private fun rustEngine(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+    val dir = case.getString("samples")
+    check(rustReaderPassed) { "rust-engine compares with rust-reader, which must pass earlier in the same run" }
+    val index = JSONArray(runner.fixture("$dir/index.json").toString(Charsets.UTF_8))
+    val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    check(rows.isNotEmpty()) { "$dir/index.json has no rows" }
+    check(rows.size == rustReaderReads.size) { "rust-reader read ${rustReaderReads.size} samples, the index has ${rows.size}" }
+    val minRead62 = case.getInt("minRead62")
+    val minRead16 = case.getInt("minRead16")
+
+    val context = runner.targetContext
+    val copyDir = RustSupportScoreEngine.modelDir(context)
+    val copyBefore = copyDir.listFiles()?.map { it.name } ?: emptyList()
+    // VmHWM is the process peak since start; writing 5 to clear_refs resets it to the current RSS
+    // (Linux 4.0+), so the value after the load is the load's own peak. Reported if it is refused.
+    val hwmReset = try { File("/proc/self/clear_refs").writeText("5"); true } catch (_: Exception) { false }
+    val readings = mutableListOf<JSONObject>()
+    collectGarbage()
+    readings += engineMemory("beforeLoad")
+    val engine = RustSupportScoreEngine.forApp(context)
+    val tally = mutableMapOf<String, Int>()
+    fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
+    fun tallied(key: String) = tally[key] ?: 0
+    val wrong = mutableListOf<String>()
+    val falseAccepts = mutableListOf<String>()
+    val engineErrors = mutableListOf<String>()
+    val pixelMismatch = mutableListOf<String>()
+    val fieldMismatch = mutableListOf<String>()
+    val perField = mutableListOf<Long>()
+    val perFieldRust = mutableListOf<Long>()
+    val reasons = mutableMapOf<String, Int>()
+    var compared = 0
+    var loadPeaks = JSONObject()
+    try {
+        val (available, peaks) = sampledPeaks { engine.available }
+        loadPeaks = peaks
+        readings += engineMemory("afterLoad")
+        if (!available) {
+            val why = Mat(30, 60, CvType.CV_8UC1).let { mat -> DroidCvPattern(mat).use { engine.read(it).detail } }
+            throw AssertionError("rust-engine: the engine is not available: $why")
+        }
+        for (row in rows) {
+            val file = row.getString("file")
+            val path = "$dir/$file"
+            checkScoreCrop(runner, path)
+            val reference = checkNotNull(rustReaderReads[file]) { "rust-reader has no read of $file" }
+            val fixture = JSONObject().put("name", path).put("suite", "support").put("frame", "crop")
+                .put("file", path).put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", row.getString("server"))
+            val api = FixtureApi(runner, fixture, JSONObject())
+            val score = try {
+                with(api) {
+                    val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
+                    useSameSnapIn {
+                        SupportScoreLayout.numberRegion(bound.region).getPattern("rust-engine").use { pattern ->
+                            val gray = pattern.grayPixels()
+                            if (gray == null || pattern.width != SCORE_CROP_WIDTH || pattern.height != SCORE_CROP_HEIGHT || !gray.contentEquals(reference.gray)) {
+                                val first = gray?.indices?.firstOrNull { it >= reference.gray.size || gray[it] != reference.gray[it] }
+                                pixelMismatch += "$file ${pattern.width}x${pattern.height}" + if (gray == null) " not gray" else " first differing byte $first"
+                            }
+                            engine.read(pattern)
+                        }
+                    }
+                }.also { api.checkCoverage() }
+            } finally {
+                api.close()
+            }
+            perField += score.duration.inWholeMicroseconds
+            val classScore = score.classScore
+            val grandScore = score.grandScore
+            val failed = listOf(EngineUnknownReason.EngineError, EngineUnknownReason.Unavailable).map { EngineField.Unknown(it) }
+            if (classScore in failed || grandScore in failed) {
+                engineErrors += "$file ${score.detail}"
+                continue
+            }
+            for ((key, field) in listOf("classReason" to classScore, "grandReason" to grandScore)) {
+                field.reasonName()?.let { reasons["$key.$it"] = (reasons["$key.$it"] ?: 0) + 1 }
+            }
+            compared++
+            differencesFrom(score, reference.json).takeIf { it.isNotEmpty() }?.let { fieldMismatch += "$file: ${it.joinToString()}" }
+            perFieldRust += reference.json.getLong("micros")
+            val cls = classScore.valueOrNull
+            val grand = grandScore.valueOrNull
+            when (row.boolOrNull("is62")) {
+                true -> {
+                    count("positives62")
+                    if (cls == 62) count("read62") else if (cls != null && row.intOrNull("cls") == null) wrong += "$file class $cls, is62"
+                }
+                false -> if (cls == 62) falseAccepts += "$file +62"
+                null -> Unit
+            }
+            when (row.boolOrNull("is16")) {
+                true -> {
+                    count("positives16")
+                    if (grand == 16) count("read16") else if (grand != null && row.intOrNull("grand") == null) wrong += "$file grand $grand, is16"
+                }
+                false -> if (grand == 16) falseAccepts += "$file +16"
+                null -> Unit
+            }
+            row.intOrNull("cls")?.let { label -> if (cls != null && cls != label) wrong += "$file class $cls, label $label" }
+            row.intOrNull("grand")?.let { label -> if (grand != null && grand != label) wrong += "$file grand $grand, label $label" }
+        }
+        readings += engineMemory("afterReadingAll")
+    } finally {
+        engine.close()
+    }
+    collectGarbage()
+    readings += engineMemory("afterCloseAndGc")
+    val copyAfter = copyDir.listFiles()?.map { it.name } ?: emptyList()
+    val timingReport = timing(perField)
+    val report = JSONObject()
+        .put("note", "RustSupportScoreEngine.forApp on the packaged model; perField is engine.read() as a script sees it (gray copy, JNI, reply parsing); rust-reader's Rust-side time for the same samples is beside it. Memory: vmHwmKb after the load is the load's own peak when hwmReset is true; peaksDuringLoad samples the Java heap and VmRSS every 5 ms during the load, the model copy included")
+        .put("samples", rows.size)
+        .put("compared", compared)
+        .put("loadMs", engine.loadMillis)
+        .put("modelCopy", JSONObject().put("before", JSONArray(copyBefore)).put("after", JSONArray(copyAfter)))
+        .put("perField", timingReport)
+        .put("rustReaderPerFieldRust", timing(perFieldRust))
+        .put("hwmReset", hwmReset)
+        .put("peaksDuringLoad", loadPeaks)
+        .put("memory", JSONArray(readings))
+        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62")).put("minRead62", minRead62))
+        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16")).put("minRead16", minRead16))
+        .put("unknownReasons", JSONObject().apply { for ((key, value) in reasons.toSortedMap()) put(key, value) })
+        .put("pixelMismatchCount", pixelMismatch.size).put("pixelMismatch", JSONArray(pixelMismatch.take(MAX_LISTED)))
+        .put("fieldMismatchCount", fieldMismatch.size).put("fieldMismatch", JSONArray(fieldMismatch.take(MAX_LISTED)))
+        .put("engineErrorCount", engineErrors.size).put("engineErrors", JSONArray(engineErrors.take(MAX_LISTED)))
+        .put("falseAccepts", JSONArray(falseAccepts.take(MAX_LISTED))).put("wrong", JSONArray(wrong.take(MAX_LISTED)))
+    Log.i(TAG, "rust-engine: +62 read ${tallied("read62")} of ${tallied("positives62")}, +16 read ${tallied("read16")} of ${tallied("positives16")}, " +
+        "false accepts ${falseAccepts.size}, wrong ${wrong.size}, pixel mismatch ${pixelMismatch.size}, field mismatch ${fieldMismatch.size} of $compared, " +
+        "engine errors ${engineErrors.size}, load ${engine.loadMillis} ms, per field median ${timingReport.opt("medianUs")} us p90 ${timingReport.opt("p90Us")} us max ${timingReport.opt("maxUs")} us, " +
+        "memory ${readings.joinToString { "${it.getString("point")} rss ${it.opt("vmRssKb")} hwm ${it.opt("vmHwmKb")} heap ${it.opt("javaHeapKb")} native ${it.opt("nativeHeapKb")}" }}, " +
+        "peaks during load $loadPeaks, hwmReset $hwmReset, model copy before $copyBefore after $copyAfter")
+    val belowFloor = tallied("read62") < minRead62 || tallied("read16") < minRead16
+    if (engineErrors.isNotEmpty() || pixelMismatch.isNotEmpty() || fieldMismatch.isNotEmpty() || compared != rows.size ||
+        falseAccepts.isNotEmpty() || wrong.isNotEmpty() || belowFloor
+    ) {
+        throw AssertionError("rust-engine: engine errors ${engineErrors.take(5)}, pixel mismatch ${pixelMismatch.take(5)}, field mismatch ${fieldMismatch.take(5)}, compared $compared of ${rows.size}, false accepts ${falseAccepts.take(5)}, wrong ${wrong.take(5)}, +62 read ${tallied("read62")} (need $minRead62), +16 read ${tallied("read16")} (need $minRead16). $report")
     }
     return report
 }

@@ -3,7 +3,7 @@
 Development aid. The authoritative check is `tools/device-qa/run.py`.
 
 Usage:
-    py -3 tools/device-qa/run.py [--build] [--native] [--native-ort] [--native-threads] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
+    py -3 tools/device-qa/run.py [--build] [--native] [--native-ort] [--native-threads] [--ocr-model PATH] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
 
 Python only moves files and calls adb/gradle. Reader logic stays in the app's androidTest code.
 """
@@ -59,7 +59,7 @@ def adb(adb_path: str, serial: str, *args: str) -> str:
     return result.stdout
 
 
-def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = False) -> None:
+def gradle_command(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> list[str]:
     gradlew = REPO / ("gradlew.bat" if os.name == "nt" else "gradlew")
     cmd = [str(gradlew), "-PfgaDeviceTests=true", ":app:assembleDeviceTest", ":app:assembleDeviceTestAndroidTest", "--console=plain"]
     if native:
@@ -71,7 +71,17 @@ def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = 
     if native_threads:
         # Issue #549: without it the tract-threads cases of ocrProbe report themselves skipped.
         cmd.insert(2, "-Pfga.native.threads=true")
-    if subprocess.run(cmd, cwd=REPO).returncode != 0:
+    if ocr_model is not None:
+        if not native:
+            sys.exit("--ocr-model needs --native: only a native build packages the model")
+        # Issue #568: a native build packages the pinned OCR model; without a local copy Gradle
+        # downloads it. Gradle checks either against the pinned size and SHA-256.
+        cmd.insert(2, f"-Pfga.ocr.model={Path(ocr_model).resolve()}")
+    return cmd
+
+
+def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> None:
+    if subprocess.run(gradle_command(native, native_ort, native_threads, ocr_model), cwd=REPO).returncode != 0:
         sys.exit("gradle build failed")
 
 
@@ -256,6 +266,7 @@ def main() -> int:
     parser.add_argument("--native", action="store_true", help="build and package the Rust library with --build (needs cargo-ndk); a skipped native probe then fails the run")
     parser.add_argument("--native-ort", action="store_true", help="as --native, with the ONNX Runtime probes (-Pfga.native.ort=true); a skipped ONNX Runtime case then fails the run too")
     parser.add_argument("--native-threads", action="store_true", help="as --native, with tract's multi-threaded kernels (-Pfga.native.threads=true); a skipped tract-threads case then fails the run too")
+    parser.add_argument("--ocr-model", type=Path, help="with --build and --native: a local copy of the pinned OCR model, so Gradle does not download it (-Pfga.ocr.model)")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
@@ -264,7 +275,7 @@ def main() -> int:
         args.native = True
 
     if args.build:
-        gradle_build(args.native, args.native_ort, args.native_threads)
+        gradle_build(args.native, args.native_ort, args.native_threads, args.ocr_model)
     adb_path = find_adb()
     adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
