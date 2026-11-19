@@ -18,6 +18,10 @@ bars that leaves the image itself taller. That is the resolution matching runs a
 taken from a reference image is exactly the pixels the script compares, with no resampling in
 between. Downscale a contributed screenshot before committing it.
 
+To draft the templates of a server and screen that has no screenshot, use the
+`apk-template-asset` skill (`.claude/skills/apk-template-asset/`), which cuts them from that
+server's APK; the result is checked against a real screenshot before it is committed.
+
 Server choice and app language are independent: a user can run the JP server with the app's
 UI in English, or the EN server in Korean. Don't assume they're coupled when reading prefs or
 adding server-specific behavior.
