@@ -1,0 +1,40 @@
+name: "Feature request (English)"
+description: "An idea for a new feature or an improvement"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe your idea freely. You can leave any field empty.
+
+        This app is developed for the **KR server and the official JP server**. Features that only apply to other servers are unlikely to be added.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "What is the problem?"
+      description: "The situation in which the app falls short today."
+    validations:
+      required: false
+  - type: textarea
+    id: idea
+    attributes:
+      label: "What would you like to happen?"
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "Game server"
+      options:
+        - "KR"
+        - "JP"
+        - "Other"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "References"
+      description: "Screenshots or links, if you have any. Please hide account data."
+    validations:
+      required: false

@@ -1,0 +1,40 @@
+name: "기능 제안 (한국어)"
+description: "새 기능이나 개선 아이디어"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        아이디어를 자유롭게 적어 주세요. 비워 둔 칸이 있어도 괜찮습니다.
+
+        이 앱은 **한국 서버와 일본 공식 서버**를 대상으로 개발합니다. 다른 서버 전용 기능은 반영하기 어렵습니다.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "무엇이 불편한가요?"
+      description: "지금 어떤 상황에서 아쉬운지 적어 주세요."
+    validations:
+      required: false
+  - type: textarea
+    id: idea
+    attributes:
+      label: "어떻게 되면 좋겠나요?"
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "게임 서버"
+      options:
+        - "한국"
+        - "일본"
+        - "그 외"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "참고 자료"
+      description: "스크린샷이나 참고할 링크가 있으면 붙여 주세요. 계정 정보는 가려 주세요."
+    validations:
+      required: false

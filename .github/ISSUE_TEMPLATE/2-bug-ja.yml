@@ -1,0 +1,56 @@
+name: "バグ報告 (日本語)"
+description: "アプリが正しく動かない、止まるとき"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        わかる範囲で書いてください。空欄があっても報告できます。足りない情報はコメントでお聞きします。
+
+        **投稿する前に確認してください。** このリポジトリは公開されています。スクリーンショットにフレンドコードやマスター名などのアカウント情報が写っている場合は、隠してから投稿してください。
+  - type: textarea
+    id: what
+    attributes:
+      label: "何が起きましたか？"
+      description: "期待した動作と実際の動作を書いてください。"
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: "どうすれば再現しますか？"
+      description: "機能（バトル、スキル強化、ログ収集など）と手順を書いてください。"
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "ゲームサーバー"
+      options:
+        - "日本"
+        - "韓国"
+        - "その他"
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: "アプリのバージョン"
+      description: "アプリの最初の画面の Build: の横に表示されます。"
+      placeholder: "例: 1.8.1"
+    validations:
+      required: false
+  - type: input
+    id: device
+    attributes:
+      label: "端末と Android のバージョン"
+      placeholder: "例: Galaxy Tab S9, Android 14 / BlueStacks 5, Android 11"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "スクリーンショット、設定、その他の情報"
+      description: "画面解像度、関連する設定、スクリーンショットがあると助かります。"
+    validations:
+      required: false
