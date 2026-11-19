@@ -14,7 +14,7 @@ use std::path::Path;
 
 use fga_sensing::image::GrayImage;
 use fga_sensing::readers::support_score::{
-    Observation, ScoreConfig, SupportScore, SupportScoreReader, decide,
+    ClipReport, Format, Observation, ScoreConfig, SupportScore, SupportScoreReader, decide,
 };
 
 use super::{Backend, Recognizer, Sample, Verdict, class_verdict, grand_verdict, samples};
@@ -400,6 +400,8 @@ pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
     println!("\n== sweep with no pixel rule at all");
     print_sweep(index, rows, &base_scores, &truths);
 
+    class_report(index, rows, &base_scores, config);
+
     // ---- Candidates.
     println!("\n== candidate rules (offline, on the cached observations)");
     let margin = 3;
@@ -571,5 +573,195 @@ fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], truth
     println!("  wrong values listed ({}):", wrongs.len());
     for w in &wrongs {
         println!("    {w}");
+    }
+}
+
+/// One configuration of the class split: a format, the pixel rules as ink columns (`right`: the
+/// last k columns of the content, `left`: the first column); the flat-bottom rule is always on.
+struct Variant {
+    name: &'static str,
+    format: Format,
+    right: Option<usize>,
+    left: bool,
+}
+
+#[derive(Default, Clone, Copy)]
+struct Split {
+    f62: usize,
+    f16: usize,
+    other: usize,
+    correct: usize,
+}
+
+/// Splits the wrong values of the sweep by what the automation does with them: the selection acts
+/// only on class 62 and a compound's Grand 16, so a wrong 62 (F62) or wrong 16 (F16) is a wrong
+/// pick, and any other wrong number is a miss. Correct accepts on cut crops are the benefit side.
+pub fn class_report(
+    index: &[Sample],
+    rows: &[CutRow],
+    base_scores: &[SupportScore],
+    config: &ScoreConfig,
+) {
+    let variants = [
+        Variant {
+            name: "A strict, flat-bottom, no ink rule",
+            format: Format::Strict,
+            right: None,
+            left: false,
+        },
+        Variant {
+            name: "B A + ink in the last 1 column",
+            format: Format::Strict,
+            right: Some(1),
+            left: false,
+        },
+        Variant {
+            name: "C A + ink in the last 2 columns",
+            format: Format::Strict,
+            right: Some(2),
+            left: false,
+        },
+        Variant {
+            name: "D last 4 columns + first column (490544f3)",
+            format: Format::Strict,
+            right: Some(4),
+            left: true,
+        },
+        Variant {
+            name: "E as A with CompoundClassPlusOptional",
+            format: Format::CompoundClassPlusOptional,
+            right: None,
+            left: false,
+        },
+    ];
+    let mut unshifted: BTreeMap<usize, &SupportScore> = BTreeMap::new();
+    for (row, score) in rows.iter().zip(base_scores) {
+        if (row.dx, row.dy) == (0, 0) {
+            unshifted.insert(row.sample, score);
+        }
+    }
+    let cut_crops = rows.iter().filter(|r| (r.dx, r.dy) != (0, 0)).count();
+    println!(
+        "\n== the wrong values of the cut sweep by what the automation does with them ({cut_crops} cut crops examined)"
+    );
+    println!(
+        "F62: class 62 returned for a true class that is not 62. F16: Grand 16 returned for a true Grand that is not 16 (or a field with none). OTHER: any other wrong number. correct: 62 or 16 returned that is the true value."
+    );
+    for v in &variants {
+        let cfg = ScoreConfig {
+            format: v.format,
+            ..config.clone()
+        };
+        let verdicts: Vec<SupportScore> = rows
+            .iter()
+            .map(|r| {
+                let cut = r.obs.clip.vertical
+                    || v.right
+                        .is_some_and(|k| r.ink.last_col.is_some_and(|c| c + k >= r.ink.content))
+                    || (v.left && r.ink.first_col.is_some_and(|c| c < 1));
+                let mut obs = r.obs.clone();
+                obs.clip = ClipReport {
+                    right: cut,
+                    left: false,
+                    vertical: false,
+                };
+                decide(obs, &cfg)
+            })
+            .collect();
+        let real: Vec<&SupportScore> = rows
+            .iter()
+            .zip(&verdicts)
+            .filter(|(r, _)| (r.dx, r.dy) == (0, 0))
+            .map(|(_, s)| s)
+            .collect();
+        let t = super::tally(index.iter().zip(real.iter().copied()));
+        println!("\n-- {}", v.name);
+        println!(
+            "  real 370: +62 missed {} of {}, +16 missed {} of {}, false accepts {}, wrong values {}, class values equal {} of {}",
+            t.positives62 - t.read62,
+            t.positives62,
+            t.positives16 - t.read16,
+            t.positives16,
+            t.false_accepts62 + t.false_accepts16,
+            t.wrong(),
+            t.class_equal,
+            t.class_labelled
+        );
+        let mut per: BTreeMap<(&'static str, isize), Split> = BTreeMap::new();
+        let mut listed: Vec<String> = Vec::new();
+        for (row, score) in rows.iter().zip(&verdicts) {
+            if (row.dx, row.dy) == (0, 0) {
+                continue;
+            }
+            let Some(sample) = index.get(row.sample) else {
+                continue;
+            };
+            let base = unshifted.get(&row.sample);
+            let t = base.map_or((None, None), |b| truth(sample, b));
+            let no_grand = base.is_some_and(|b| {
+                b.display == fga_sensing::readers::support_score::Display::Ordinary
+            });
+            let dir = direction(row.dx, row.dy);
+            let amount = row.dx.abs().max(row.dy.abs());
+            let entry = per.entry((dir, amount)).or_default();
+            let class = score.class.value();
+            let grand = score.grand.value();
+            let f62 = class == Some(62)
+                && (sample.is62 == Some(false) || sample.cls.is_some_and(|c| c != 62));
+            let f16 = grand == Some(16)
+                && (sample.is16 == Some(false)
+                    || sample.grand.is_some_and(|g| g != 16)
+                    || no_grand);
+            let class_wrong = wrong_field(class, t.0, sample.is62, 62);
+            let grand_wrong = wrong_field(grand, t.1, sample.is16, 16);
+            entry.f62 += usize::from(f62);
+            entry.f16 += usize::from(f16);
+            entry.other += usize::from(class_wrong && !f62) + usize::from(grand_wrong && !f16);
+            entry.correct += usize::from(class == Some(62) && t.0 == Some(62) && !class_wrong)
+                + usize::from(grand == Some(16) && t.1 == Some(16) && !grand_wrong);
+            if f62 || f16 {
+                listed.push(format!(
+                    "    {} {dir} {amount}: text {:?} conf {:.5} -> class {:?} grand {:?} ({})",
+                    sample.file,
+                    score.observation.text,
+                    score.observation.confidence,
+                    class,
+                    grand,
+                    match (f62, f16) {
+                        (true, true) => "F62 F16",
+                        (true, false) => "F62",
+                        _ => "F16",
+                    }
+                ));
+            }
+        }
+        for dir in ["right", "left", "down", "up"] {
+            let sum =
+                per.iter()
+                    .filter(|((d, _), _)| *d == dir)
+                    .fold(Split::default(), |a, (_, s)| Split {
+                        f62: a.f62 + s.f62,
+                        f16: a.f16 + s.f16,
+                        other: a.other + s.other,
+                        correct: a.correct + s.correct,
+                    });
+            let by_shift: Vec<String> = per
+                .iter()
+                .filter(|((d, _), s)| *d == dir && (s.f62 + s.f16 + s.other) > 0)
+                .map(|((_, a), s)| format!("{a}:{}/{}/{}", s.f62, s.f16, s.other))
+                .collect();
+            println!(
+                "  {dir:5} F62 {} F16 {} OTHER {} correct accepts {} | nonzero shifts (F62/F16/OTHER): {}",
+                sum.f62,
+                sum.f16,
+                sum.other,
+                sum.correct,
+                by_shift.join(" ")
+            );
+        }
+        println!("  F62/F16 listed ({}):", listed.len());
+        for l in &listed {
+            println!("{l}");
+        }
     }
 }
