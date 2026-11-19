@@ -35,6 +35,9 @@ opencv_version = "4.11.0"
 opencv_jvm_version = "4.9.0-0"
 # Only used for its 16 KB aligned libc++_shared.so, see app/build.gradle.kts
 opencv_aligned_libcxx_version = "4.14.0"
+# Device-test builds with -Pfga.native.ort=true only (issue #535): the AAR's libonnxruntime.so is
+# what native/fga-ffi links against; the same 1.31 minor as ort 2.0.0-rc.15 and the PC runtime.
+onnxruntime_android_version = "1.31.0"
 nav3_core_version = "1.1.7"
 
 reorderable_version = "3.1.0"
@@ -112,6 +115,7 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 
 opencv = { group = "org.opencv", name = "opencv", version.ref = "opencv_version" }
 opencv-aligned-libcxx = { group = "org.opencv", name = "opencv", version.ref = "opencv_aligned_libcxx_version" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime_android_version" }
 tesseract4android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tesseract4android_version" }
 
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit_bom_version" }

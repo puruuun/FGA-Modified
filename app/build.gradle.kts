@@ -126,6 +126,11 @@ androidComponents {
  */
 val nativeEnabled = providers.gradleProperty("fga.native").orNull == "true"
 val shippedAbis = listOf("armeabi-v7a", "arm64-v8a")
+// Issue #535, see the ONNX Runtime block below.
+val nativeOrtEnabled = providers.gradleProperty("fga.native.ort").orNull == "true"
+if (nativeOrtEnabled && !nativeEnabled) {
+    throw GradleException("-Pfga.native.ort=true only works together with -Pfga.native=true")
+}
 
 abstract class CargoNdkBuild : Exec() {
     @get:OutputDirectory
@@ -164,9 +169,133 @@ if (nativeEnabled) {
         )
     }
 
+    // With ONNX Runtime the per-ABI builds below provide libfga_ffi.so instead.
+    if (!nativeOrtEnabled) {
+        androidComponents {
+            onVariants { variant ->
+                variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoNdkBuild, CargoNdkBuild::outputDir)
+            }
+        }
+    }
+}
+
+/*
+ * Issue #535: `-Pfga.native.ort=true` (with `fga.native`) adds the ONNX Runtime probes of
+ * fga-ffi, so the device suite can measure ONNX Runtime next to tract. fga-ffi links the shared
+ * libonnxruntime.so from Microsoft's onnxruntime-android AAR, so that library is extracted for
+ * the linker and packaged next to libfga_ffi.so. Off, none of this is registered or resolved.
+ */
+abstract class ExtractOnnxRuntime : DefaultTask() {
+    @get:InputFiles
+    abstract val aar: ConfigurableFileCollection
+
+    @get:Input
+    abstract val abis: ListProperty<String>
+
+    @get:Input
+    abstract val sha256: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val archives: ArchiveOperations
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun extract() {
+        // Gradle does not check downloads against a checksum unless dependency verification is
+        // set up, which this project does not use, so the binary that gets linked is pinned here.
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        aar.singleFile.inputStream().use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        if (actual != sha256.get()) {
+            throw GradleException("${aar.singleFile.name} has SHA-256 $actual, expected ${sha256.get()}")
+        }
+        val wanted = abis.get()
+        files.sync {
+            from(archives.zipTree(aar.singleFile)) {
+                include(wanted.map { "jni/$it/libonnxruntime.so" })
+                eachFile { path = path.removePrefix("jni/") }
+            }
+            includeEmptyDirs = false
+            into(outputDir)
+        }
+        // A missing ABI would otherwise surface as a link error deep inside the cargo build.
+        val missing = wanted.filterNot { outputDir.get().file("$it/libonnxruntime.so").asFile.isFile }
+        if (missing.isNotEmpty()) {
+            throw GradleException("${aar.singleFile.name} has no libonnxruntime.so for $missing")
+        }
+    }
+}
+
+if (nativeOrtEnabled) {
+    val onnxRuntimeAar = configurations.create("onnxRuntimeAar") {
+        isTransitive = false
+    }
+    dependencies {
+        onnxRuntimeAar("${libs.onnxruntime.android.get()}@aar")
+    }
+    val extractOnnxRuntime = tasks.register<ExtractOnnxRuntime>("extractOnnxRuntime") {
+        description = "Extracts libonnxruntime.so from the onnxruntime-android AAR for fga-ffi."
+        aar.from(onnxRuntimeAar)
+        abis.set(shippedAbis)
+        // onnxruntime-android 1.31.0; its SHA-1 equals Maven Central's published .sha1. Bump it
+        // with the catalog version and .github/workflows/native-ci.yml.
+        sha256.set("72683787a80d0608a3121b967d8e1239aef48286826661c953211626690540a7")
+        // ORT_LIB_PATH below names the same folder.
+        outputDir.set(layout.buildDirectory.dir("onnxruntime/jniLibs"))
+    }
+
+    /*
+     * ort-sys takes one ORT_LIB_PATH per build, and each ABI needs its own libonnxruntime.so, so
+     * each ABI gets its own cargo-ndk run. They write next to, not into, the default build's
+     * output, so switching the property off again never packages an ONNX Runtime build.
+     */
+    val ortBuilds = shippedAbis.map { abi ->
+        val taskSuffix = abi.split('-', '_').joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
+        tasks.register<CargoNdkBuild>("cargoNdkBuildOrt$taskSuffix") {
+            description = "Builds native/ with the ort-probe feature for $abi."
+            val workspace = rootProject.layout.projectDirectory.dir("native")
+            val output = layout.buildDirectory.dir("generated/rustJniLibsOrt/$abi")
+            val runtimeDir = extractOnnxRuntime.flatMap { it.outputDir.dir(abi) }
+            outputDir.set(output)
+            workingDir(workspace)
+            inputs.files(fileTree(workspace) { exclude("target/**") })
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+                .withPropertyName("nativeSources")
+            inputs.dir(runtimeDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("onnxRuntime")
+
+            val homeCargo = File(System.getProperty("user.home"), ".cargo/bin/" + if (File.separatorChar == '\\') "cargo.exe" else "cargo")
+            executable(if (homeCargo.isFile) homeCargo.path else "cargo")
+            if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
+                environment("ANDROID_HOME", androidComponents.sdkComponents.sdkDirectory.get().asFile.path)
+            }
+            // ort-sys's documented way to link a supplied runtime: the folder that holds it, and
+            // dynamic linking, since the AAR has only the shared library.
+            environment("ORT_PREFER_DYNAMIC_LINK", "1")
+            environment("ORT_LIB_PATH", layout.buildDirectory.dir("onnxruntime/jniLibs/$abi").get().asFile.path)
+            argumentProviders.add(
+                CommandLineArgumentProvider {
+                    listOf("ndk", "-t", abi, "--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi", "--features", "ort-probe")
+                },
+            )
+        }
+    }
+
     androidComponents {
         onVariants { variant ->
-            variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoNdkBuild, CargoNdkBuild::outputDir)
+            variant.sources.jniLibs?.addGeneratedSourceDirectory(extractOnnxRuntime, ExtractOnnxRuntime::outputDir)
+            ortBuilds.forEach { variant.sources.jniLibs?.addGeneratedSourceDirectory(it, CargoNdkBuild::outputDir) }
         }
     }
 }

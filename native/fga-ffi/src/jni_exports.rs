@@ -127,6 +127,57 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrRe
     to_java(&mut env, text)
 }
 
+// Issue #535: the ONNX Runtime twins of the three functions above, only in a library built with
+// `ort-probe`. Without it the symbols are absent and Kotlin gets UnsatisfiedLinkError, which the
+// ocrProbe suite reports as a skipped case, so the default library stays as it was.
+#[cfg(feature = "ort-probe")]
+export_probe!(
+    Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrUnloadOrt,
+    probes::ocr_unload_ort
+);
+
+#[cfg(feature = "ort-probe")]
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrLoadOrt<'local>(
+    mut env: JNIEnv<'local>,
+    _this: JObject<'local>,
+    model_path: JString<'local>,
+    threads: jint,
+) -> jstring {
+    let text = run_guarded(|| {
+        let path: String = env
+            .get_string(&model_path)
+            .map_err(|e| format!("modelPath: {e}"))?
+            .into();
+        probes::ocr_load_ort(&path, threads)
+    });
+    to_java(&mut env, text)
+}
+
+#[cfg(feature = "ort-probe")]
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrReadOrt<'local>(
+    mut env: JNIEnv<'local>,
+    _this: JObject<'local>,
+    pixels: JByteArray<'local>,
+    width: jint,
+    height: jint,
+    allowed: JString<'local>,
+) -> jstring {
+    let text = run_guarded(|| {
+        // Test-only probe, as ocrRead: the copy is not bounded.
+        let pixels = env
+            .convert_byte_array(&pixels)
+            .map_err(|e| format!("pixels: {e}"))?;
+        let allowed: String = env
+            .get_string(&allowed)
+            .map_err(|e| format!("allowed: {e}"))?
+            .into();
+        probes::ocr_read_ort(pixels, width, height, &allowed)
+    });
+    to_java(&mut env, text)
+}
+
 // Clearing a pending exception needs a JVM, which host tests do not have. The device suite
 // nativeProbe covers the null-argument path (NativeProbeTest.ocrLoadNullPath).
 #[cfg(test)]

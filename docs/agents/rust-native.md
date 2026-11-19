@@ -54,7 +54,7 @@ cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-tar
 
 The ABIs are the ones the app ships (`shippedAbis` in `app/build.gradle.kts`). `--platform 24` is the app's `minSdk`, so the library never needs a newer libc than the app supports, and the Android lint run uses it too so it checks the same build. The last line checks the code that only builds for Android and ARM, which the PC runs leave out.
 
-The inference backends of `fga-sensing` are Cargo features that are off by default in that crate. Since issue #530, `fga-ffi` turns on `tract` for its device probes, so every `--workspace` command above, the Android lint run and the Android build compile `tract`; `ort` stays off in all of them. Lint and test each backend on `fga-sensing` alone with (for `tract` this now repeats what the workspace commands do):
+The inference backends of `fga-sensing` are Cargo features that are off by default in that crate. Since issue #530, `fga-ffi` turns on `tract` for its device probes, so every `--workspace` command above, the Android lint run and the Android build compile `tract`; `ort` stays off in all of them unless `fga-ffi`'s `ort-probe` feature is asked for (issue #535, "ONNX Runtime on Android" below). Lint and test each backend on `fga-sensing` alone with (for `tract` this now repeats what the workspace commands do):
 
 ```bash
 cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings
@@ -63,7 +63,7 @@ cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
 cargo test -p fga-sensing --features ort
 ```
 
-`tract` is pure Rust. `ort` has its build script download a prebuilt ONNX Runtime from `cdn.pyke.io` (checked against a hash in the crate) and link it statically, so it needs network access on the first build and compiles no C++ of ours; the download is cached under the user's cache folder (`%LOCALAPPDATA%\ort.pyke.io` on Windows, `~/.cache/ort.pyke.io` on Linux). On Windows the prebuilt runtime is the DirectML build, and the build also places `DirectML.dll` next to the binaries it produces (a link into that cache folder), which they load at start.
+`tract` is pure Rust. On the PC, `ort` has its build script download a prebuilt ONNX Runtime from `cdn.pyke.io` (checked against a hash in the crate) and link it statically, so it needs network access on the first build and compiles no C++ of ours; the download is cached under the user's cache folder (`%LOCALAPPDATA%\ort.pyke.io` on Windows, `~/.cache/ort.pyke.io` on Linux). On Windows the prebuilt runtime is the DirectML build, and the build also places `DirectML.dll` next to the binaries it produces (a link into that cache folder), which they load at start.
 
 The model and the labelled samples are local only (see "Test data"), so the tests that run the real model need two environment variables and skip themselves, with one printed line, without them. They are how a change to preprocessing or decoding is checked against the Python result the model was chosen on:
 
@@ -105,7 +105,35 @@ py -3 tools/device-qa/run.py --build --native --suite ocrProbe --local-fixtures 
 
 Without the library the suite reports itself skipped; with it, a missing model or sample fails the case and names the path. The model copy the suite makes in the app's cache folder is removed when the run ends; the pushed files under `/sdcard/Download/fga-device-qa/` stay.
 
-`tract-recognise` passes with at least 360 of 370 texts equal to Python, `tract-recognise-allowed` with at least 356. The PC gives 370 and 366. The floor leaves room for floating-point differences between CPU builds on the first device measurement; the report and the `FgaOcrProbe` log line give the exact count, and the PR that records the device results raises the floor to the measured value. The cases share one process, so the case file runs the Tesseract case first and the tract memory case before the other tract cases. Results are logged under the logcat tag `FgaOcrProbe`.
+`tract-recognise` and `ort-recognise` pass with all 370 texts equal to Python, `tract-recognise-allowed` and `ort-recognise-allowed` with at least 366, and `ort-recognise-1thread` with 370. These floors are the values measured on the three devices of #530 (tablet, MuMu, BlueStacks), which equal the PC's: a lower count is a regression to investigate, not a number to lower. The report and the `FgaOcrProbe` log line give the exact count. The cases share one process, so the case file runs the Tesseract case first, each engine's memory case before its other cases, and the tract cases before the ONNX Runtime ones. Results are logged under the logcat tag `FgaOcrProbe`.
+
+### ONNX Runtime on Android (issue #535)
+
+The `ocrProbe` suite also measures the recogniser with ONNX Runtime (`ort-memory`, `ort-recognise`, `ort-recognise-allowed` at ONNX Runtime's default thread count, and `ort-recognise-1thread` with one intra-op thread, the like-for-like comparison with tract, which runs on one thread). It needs a second Gradle property, off by default:
+
+```bash
+./gradlew -Pfga.native=true -Pfga.native.ort=true -PfgaDeviceTests=true :app:assembleDeviceTest :app:assembleDeviceTestAndroidTest
+py -3 tools/device-qa/run.py --build --native-ort --suite ocrProbe --local-fixtures build/ocr-device-fixtures
+```
+
+- `-Pfga.native.ort=true` is meaningful only with `-Pfga.native=true` (alone it stops the build). It turns on `fga-ffi`'s `ort-probe` feature, which adds `ocrLoadOrt`, `ocrReadOrt` and `ocrUnloadOrt` next to the tract functions. Without the property nothing changes: the same tasks, no extra dependency resolved, and the same `libfga_ffi.so`. Without the feature those three functions do not exist; the suite catches `UnsatisfiedLinkError` and reports the ONNX Runtime cases skipped (`"requires": "ort"`) while the tract cases still run.
+- `--native-ort` implies `--native` and fails the run when an ONNX Runtime case was skipped; with `--native` alone those cases may be skipped.
+- The runtime is Microsoft's `com.microsoft.onnxruntime:onnxruntime-android` AAR from Maven Central, pinned in `gradle/libs.versions.toml` (1.31.0, the minor that `ort` 2.0.0-rc.15 binds and the one the PC tests use). Gradle resolves it into its own configuration only when the property is on, checks its SHA-256 (`app/build.gradle.kts`; its SHA-1 equals Maven Central's published `.sha1`), and extracts only `jni/<abi>/libonnxruntime.so` into `app/build/onnxruntime/`, so the AAR's Java classes, JNI library and manifest (an `INTERNET` permission and a telemetry provider) never reach the APK. It is never committed.
+- Linking: `ort-sys`'s documented way to use a supplied runtime is `ORT_LIB_PATH` (the folder that holds it) with `ORT_PREFER_DYNAMIC_LINK=1`; `libfga_ffi.so` then lists `libonnxruntime.so` as `NEEDED`, and Android loads it from the APK with `System.loadLibrary("fga_ffi")`. `ORT_LIB_PATH` is one folder per build, so Gradle runs one cargo-ndk build per ABI (`cargoNdkBuildOrtArm64V8a`, `cargoNdkBuildOrtArmeabiV7a`) in place of `cargoNdkBuild`. No `load-dynamic`, which would add the `libloading` crate.
+- What the AAR's `libonnxruntime.so` is: ONNX Runtime 1.31.0, MIT licence (the POM), `minSdkVersion` 24 (its manifest; the ELF note says API 24, NDK r28), C++ runtime linked in (it needs only `libc`, `libm`, `libdl`, `liblog`, `libandroid`), all `LOAD` segments 16 KB aligned on arm64 and armeabi-v7a. ABIs in the AAR: arm64-v8a, armeabi-v7a, x86, x86_64; the app packages the first two. Size as packaged: 34,208,672 B (arm64-v8a), 24,181,976 B (armeabi-v7a).
+- Execution providers: the probes register none, so ONNX Runtime uses its CPU provider. ONNX Runtime's mobile documentation says the Android package also supports NNAPI and XNNPACK; the binary exports `OrtSessionOptionsAppendExecutionProvider_Nnapi`. Neither is enabled here.
+- The prebuilt runtime that `ort` itself downloads (`cdn.pyke.io`, listed in `ort-sys`'s `build/download/dist.tsv`) exists for `aarch64-linux-android` only (a static NNAPI build, which would also need `libc++_shared.so` linked), not for `armv7-linux-androideabi`, so the Android build does not use it.
+- `ort` allows one ONNX Runtime environment per process, ever, so `OrtBackend` builds it on the first load and keeps it for the life of the process; a memory reading after `ocrUnloadOrt` still includes it.
+
+Lint and build the feature for Android without Gradle: lint needs no runtime (`ORT_SKIP_DOWNLOAD=1` defers ort-sys's missing-library error to the link step), the build needs the extracted `libonnxruntime.so` of each ABI (`.github/workflows/native-ci.yml` does the same with the AAR from Maven Central):
+
+```bash
+ORT_SKIP_DOWNLOAD=1 cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
+ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_PATH=../app/build/onnxruntime/jniLibs/arm64-v8a \
+    cargo ndk -t arm64-v8a --platform 24 -o ../build/rustJniLibsOrt build --release -p fga-ffi --features ort-probe
+```
+
+On the PC, `cargo test --workspace --features fga-ffi/ort-probe` runs the ONNX Runtime probe tests with the prebuilt runtime that `ort` downloads, and with `FGA_OCR_MODEL` and `FGA_OCR_SAMPLES` set, `tests/ocr_ort_model.rs` reads the same 25 samples as Python at the default thread count and at one thread.
 
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 

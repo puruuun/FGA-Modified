@@ -60,6 +60,12 @@ jobs:
         run: |
           cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
           cargo test -p fga-sensing --features ort
+      - name: Clippy and test, fga-ffi with ort-probe
+        # Issue #535: the ONNX Runtime probes of fga-ffi. On the host they link the same prebuilt
+        # runtime as the step above.
+        run: |
+          cargo clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
+          cargo test --workspace --features fga-ffi/ort-probe
       - name: Install cargo-deny and cargo-ndk
         run: |
           cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
@@ -83,3 +89,33 @@ jobs:
           aligns=$("$readelf" -lW "$RUNNER_TEMP/jniLibs/arm64-v8a/libfga_ffi.so" | awk '$1 == "LOAD" { print $NF }' | sort -u)
           echo "LOAD alignment: $aligns"
           test "$aligns" = "0x4000"
+      - name: Android clippy, ort-probe
+        # Lint needs no runtime: ORT_SKIP_DOWNLOAD defers ort-sys's missing-library error to the
+        # link step, which a lint run never reaches.
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          ORT_SKIP_DOWNLOAD=1 cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
+      - name: Android build, ort-probe
+        # The same Microsoft AAR that Gradle's -Pfga.native.ort=true uses
+        # (gradle/libs.versions.toml), checked against the SHA-256 that app/build.gradle.kts also
+        # checks; bump the three together. ort-sys takes
+        # one runtime folder per build, so each ABI is built on its own.
+        env:
+          ORT_AAR_URL: https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.31.0/onnxruntime-android-1.31.0.aar
+          ORT_AAR_SHA256: "72683787a80d0608a3121b967d8e1239aef48286826661c953211626690540a7"
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          aar="$RUNNER_TEMP/onnxruntime-android.aar"
+          curl --fail --silent --show-error --location --output "$aar" "$ORT_AAR_URL"
+          echo "$ORT_AAR_SHA256  $aar" | sha256sum --check
+          readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          for abi in armeabi-v7a arm64-v8a; do
+            unzip -o -q "$aar" "jni/$abi/libonnxruntime.so" -d "$RUNNER_TEMP/onnxruntime"
+            ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_PATH="$RUNNER_TEMP/onnxruntime/jni/$abi" \
+              cargo ndk -t "$abi" --platform 24 -o "$RUNNER_TEMP/jniLibsOrt" build --release -p fga-ffi --features ort-probe
+          done
+          for lib in "$RUNNER_TEMP/jniLibsOrt/arm64-v8a/libfga_ffi.so" "$RUNNER_TEMP/onnxruntime/jni/arm64-v8a/libonnxruntime.so"; do
+            aligns=$("$readelf" -lW "$lib" | awk '$1 == "LOAD" { print $NF }' | sort -u)
+            echo "$lib LOAD alignment: $aligns"
+            test "$aligns" = "0x4000"
+          done

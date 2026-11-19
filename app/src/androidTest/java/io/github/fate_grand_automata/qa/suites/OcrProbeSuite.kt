@@ -19,6 +19,8 @@ import kotlin.math.ceil
 /**
  * ocrProbe suite (issue #530): the PP-OCRv6 recogniser through libfga_ffi.so (tract backend) and,
  * for comparison, the Tesseract engine the app uses today, on the 370 labelled support-score crops.
+ * Issue #535 adds the same recogniser with ONNX Runtime (`ort-*` cases), which needs a library
+ * built with `-Pfga.native.ort=true`; without it those cases report themselves skipped.
  *
  * The model and the samples are local-only data (docs/agents/rust-native.md, "Test data"), so
  * they are pushed to the device before the run; the case file names their device paths. All cases
@@ -32,8 +34,13 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
     }
     val actual = when (test) {
         "tesseract-baseline" -> tesseractBaseline(runner, case)
-        "tract-memory" -> tractMemory(runner, case)
-        "tract-recognise", "tract-recognise-allowed" -> tractRecognise(runner, case)
+        "tract-memory" -> engineMemory(runner, case, TRACT)
+        "tract-recognise", "tract-recognise-allowed" -> engineRecognise(runner, case, TRACT)
+        "ort-memory", "ort-recognise", "ort-recognise-allowed", "ort-recognise-1thread" -> {
+            if (!ortPackaged()) return ortSkipped(test)
+            val engine = ortEngine(case.optInt("threads", 0))
+            if (test == "ort-memory") engineMemory(runner, case, engine) else engineRecognise(runner, case, engine)
+        }
         else -> error("Unknown ocrProbe test $test")
     }
     Log.i(TAG, "$test: $actual")
@@ -41,6 +48,60 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
 }
 
 private const val TAG = "FgaOcrProbe"
+
+/**
+ * tools/device-qa/run.py reads `requires`: with `--native` alone an ONNX Runtime case may be
+ * skipped, with `--native-ort` it may not.
+ */
+private fun ortSkipped(test: String): JSONObject = JSONObject().put("test", test).put("requires", "ort")
+    .put("skipped", "libfga_ffi.so was built without the ort-probe feature; build with -Pfga.native=true -Pfga.native.ort=true")
+
+/** One recogniser backend behind libfga_ffi.so: its three calls and what its report adds. */
+private class Engine(
+    val loadCall: String,
+    val load: (String) -> String,
+    val read: (ByteArray, Int, Int, String) -> String,
+    val unload: () -> String,
+    val extra: (load: JSONObject, threadsAround: List<Int>) -> Map<String, Any?> = { _, _ -> emptyMap() },
+)
+
+private val TRACT = Engine("ocrLoad", { NativeProbe.ocrLoad(it) }, NativeProbe::ocrRead, NativeProbe::ocrUnload)
+
+/**
+ * [threads] 0 is ONNX Runtime's default, which by its documentation is one intra-op thread per
+ * physical core; the API cannot report the number it picked, so the report gives the processor
+ * count and the process's thread count before loading, after loading and after reading.
+ */
+private fun ortEngine(threads: Int) = Engine(
+    "ocrLoadOrt",
+    { NativeProbe.ocrLoadOrt(it, threads) },
+    NativeProbe::ocrReadOrt,
+    NativeProbe::ocrUnloadOrt,
+) { load, threadsAround ->
+    mapOf(
+        "threads" to threads,
+        "intraThreads" to load.getInt("intraThreads"),
+        "availableProcessors" to Runtime.getRuntime().availableProcessors(),
+        "processThreads" to JSONObject().put("beforeLoad", threadsAround.getOrNull(0)).put("afterLoad", threadsAround.getOrNull(1))
+            .put("afterReading", threadsAround.getOrNull(2)),
+        "threadNote" to if (threads == 0) {
+            "threads 0 is ONNX Runtime's default (one intra-op thread per physical core, calling thread included); processThreads shows the pool it created"
+        } else {
+            "intra-op pool of $threads, calling thread included. The tract cases run on one thread: native/ builds tract-linalg without its multithread-mm feature, so tract's matrix products run on the calling thread"
+        },
+    )
+}
+
+/** The ONNX Runtime functions exist only in a library built with the ort-probe feature. */
+private fun ortPackaged(): Boolean = try {
+    NativeProbe.ocrUnloadOrt()
+    true
+} catch (_: UnsatisfiedLinkError) {
+    false
+}
+
+/** Threads of this process, from the kernel. */
+private fun processThreads(): Int = File("/proc/self/task").list()?.size ?: -1
 /** Lists in a report stay short so the whole report stays under the runner's 256 KB limit. */
 private const val MAX_LISTED = 20
 
@@ -100,7 +161,7 @@ private fun copyDir(runner: SupportDeviceTestRunner) = File(runner.targetContext
 
 /**
  * Rust opens the model by path, and the app process cannot read /sdcard/Download directly. The
- * copy is shared by the tract cases of one run and removed by [removeOcrProbeCopies].
+ * copy is shared by the tract and ONNX Runtime cases of one run and removed by [removeOcrProbeCopies].
  */
 private fun modelFile(runner: SupportDeviceTestRunner, devicePath: String): File {
     copiedModel?.let { (path, file) -> if (path == devicePath && file.isFile) return file }
@@ -117,7 +178,7 @@ private fun modelFile(runner: SupportDeviceTestRunner, devicePath: String): File
 
 /**
  * Files copied for a check are removed afterwards (docs/agents/devices-and-safety.md). The runner
- * calls this once when its whole run ends, pass, fail or exception, so the tract cases share one
+ * calls this once when its whole run ends, pass, fail or exception, so the tract and ONNX Runtime cases share one
  * copy; the fixtures under /sdcard/Download/fga-device-qa/ stay. `deleteRecursively` reports a
  * failure only by returning false (and returns true for a missing folder), so a failure throws
  * here and the runner records it as `cleanupError`.
@@ -207,25 +268,29 @@ private fun tesseractBaseline(runner: SupportDeviceTestRunner, case: JSONObject)
         .put("memory", memoryReport(readings))
 }
 
-private fun tractMemory(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+private fun engineMemory(runner: SupportDeviceTestRunner, case: JSONObject, engine: Engine): JSONObject {
     val samples = samples(runner, case.getString("samples"))
     val model = modelFile(runner, case.getString("model"))
     val readings = mutableListOf<JSONObject>()
+    val threadsAround = mutableListOf<Int>()
     var errors = 0
     var firstError: String? = null
     collectGarbage()
     readings += memory("beforeLoad")
+    threadsAround += processThreads()
     val load = try {
-        okJson("ocrLoad", NativeProbe.ocrLoad(model.path)).also {
+        okJson(engine.loadCall, engine.load(model.path)).also {
             readings += memory("afterLoad")
+            threadsAround += processThreads()
             for (sample in samples) {
-                val result = NativeProbe.ocrRead(sample.gray, sample.width, sample.height, "")
+                val result = engine.read(sample.gray, sample.width, sample.height, "")
                 if (!result.startsWith("OK: ")) { errors++; firstError = firstError ?: "${sample.file}: $result" }
             }
             readings += memory("afterReadingAll")
+            threadsAround += processThreads()
         }
     } finally {
-        NativeProbe.ocrUnload()
+        engine.unload()
     }
     collectGarbage()
     readings += memory("afterUnloadAndGc")
@@ -236,9 +301,10 @@ private fun tractMemory(runner: SupportDeviceTestRunner, case: JSONObject): JSON
         .put("readErrors", errors)
         .put("firstReadError", firstError)
         .put("memory", memoryReport(readings))
+        .apply { for ((key, value) in engine.extra(load, threadsAround)) put(key, value) }
 }
 
-private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, engine: Engine): JSONObject {
     val test = case.getString("test")
     val allowed = case.optString("allowed", "")
     val minEqual = case.getInt("minEqual")
@@ -251,11 +317,13 @@ private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): J
     var differingCount = 0
     var errorCount = 0
     var equal = 0
+    val threadsAround = mutableListOf(processThreads())
     val load = try {
-        okJson("ocrLoad", NativeProbe.ocrLoad(model.path)).also {
+        okJson(engine.loadCall, engine.load(model.path)).also {
+            threadsAround += processThreads()
             for (sample in samples) {
                 val started = System.nanoTime()
-                val result = NativeProbe.ocrRead(sample.gray, sample.width, sample.height, allowed)
+                val result = engine.read(sample.gray, sample.width, sample.height, allowed)
                 callMicros += (System.nanoTime() - started) / 1000
                 if (!result.startsWith("OK: ")) {
                     errorCount++
@@ -272,9 +340,10 @@ private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): J
                     }
                 }
             }
+            threadsAround += processThreads()
         }
     } finally {
-        NativeProbe.ocrUnload()
+        engine.unload()
     }
     val report = JSONObject()
         .put("note", "perCrop is timed inside Rust around recognize only; perJniCall is the whole call from Kotlin and is the one to compare with tesseract-baseline perCall (whole detectTextLine with its preprocessing)" +
@@ -292,6 +361,7 @@ private fun tractRecognise(runner: SupportDeviceTestRunner, case: JSONObject): J
         // Inside Rust around recognize only; the JNI figure adds the array copy and the string round trip.
         .put("perCrop", timing(engineMicros))
         .put("perJniCall", timing(callMicros))
+    for ((key, value) in engine.extra(load, threadsAround)) report.put(key, value)
     // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
     Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount)")
     if (errorCount > 0 || equal < minEqual) {

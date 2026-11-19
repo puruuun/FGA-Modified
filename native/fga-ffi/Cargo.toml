@@ -35,6 +35,12 @@ default = []
 # self dev-dependency below turns it on for test builds only; the feature resolver keeps it out
 # of `cargo build`, the cargo-ndk build and Gradle's cargoNdkBuild.
 test-hooks = []
+# Issue #535: the ONNX Runtime probes next to the tract ones. Off by default, so the plain
+# cargo-ndk build and Gradle's `-Pfga.native=true` build exactly what they built before; Gradle
+# turns it on with `-Pfga.native.ort=true`. For Android, ort-sys links the libonnxruntime.so of
+# Microsoft's onnxruntime-android AAR, which Gradle extracts and passes in through ORT_LIB_PATH
+# (docs/agents/rust-native.md); on the PC it uses the prebuilt runtime that `ort` downloads.
+ort-probe = ["fga-sensing/ort"]
 
 [dev-dependencies]
 # Tests only: the JSON shape checks and the model test on local samples.

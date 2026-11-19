@@ -31,4 +31,13 @@ object NativeProbe {
     external fun ocrUnload(): String
     /** `/proc/self/status`: `{"vmRssKb":…,"vmHwmKb":…,"vmSizeKb":…}`. */
     external fun memoryStatus(): String
+
+    // Issue #535: the same recogniser with ONNX Runtime. Only in a library built with
+    // `-Pfga.native.ort=true`; otherwise each call throws UnsatisfiedLinkError.
+    /** [threads] is ONNX Runtime's intra-op thread count, 0 for its default: `{"loadMs":…,"classes":…,"intraThreads":…}`. */
+    external fun ocrLoadOrt(modelPath: String?, threads: Int): String
+    /** As [ocrRead], on the ONNX Runtime model. */
+    external fun ocrReadOrt(pixels: ByteArray, width: Int, height: Int, allowed: String): String
+    /** `{"dropped":true|false}`. */
+    external fun ocrUnloadOrt(): String
 }

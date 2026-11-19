@@ -73,7 +73,7 @@ pub fn ocr_read(pixels: Vec<u8>, width: i32, height: i32, allowed: &str) -> Resu
 
 /// Built before the lock is taken, so a malformed crop is reported even when no model is loaded.
 /// `GrayImage::new` is the pixel-count check.
-fn crop_from(pixels: Vec<u8>, width: i32, height: i32) -> Result<GrayImage, String> {
+pub(super) fn crop_from(pixels: Vec<u8>, width: i32, height: i32) -> Result<GrayImage, String> {
     let (Ok(w), Ok(h)) = (usize::try_from(width), usize::try_from(height)) else {
         return Err(format!("invalid crop size {width}x{height}"));
     };
@@ -117,11 +117,11 @@ fn memory_from_status(text: &str) -> Result<String, String> {
     }
 }
 
-fn load_json(load_ms: u128, classes: usize) -> String {
+pub(super) fn load_json(load_ms: u128, classes: usize) -> String {
     format!("{{\"loadMs\":{load_ms},\"classes\":{classes}}}")
 }
 
-fn read_json(text: &str, confidence: f64, micros: u128) -> String {
+pub(super) fn read_json(text: &str, confidence: f64, micros: u128) -> String {
     // JSON has no NaN or infinity; the decoder never produces them, but the format must hold anyway.
     let confidence = if confidence.is_finite() {
         confidence.to_string()
