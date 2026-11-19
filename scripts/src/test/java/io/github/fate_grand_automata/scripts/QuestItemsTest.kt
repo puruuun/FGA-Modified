@@ -80,6 +80,8 @@ class QuestItemsTest {
         var tea = false
         var modal = false
         var nativeHeadingOnly = false
+        var noTitle = false
+        var hideStorm = false
         var snapshot = false
         var absent = false
         var hideState = false
@@ -121,7 +123,12 @@ class QuestItemsTest {
             every { loc.dialogHeading } returns heading
             every { loc.dialogClose } returns close
             every { api.locations.menuStartQuestClick } returns quest
-            every { api.images[any(), any()] } answers { patterns.getOrPut(firstArg()) { mockk<Pattern>() } }
+            every { api.images[any(), any()] } answers {
+                if (server == GameServer.En.Original) check(firstArg<Images>() != Images.QuestItemDialog && firstArg<Images>() != Images.QuestItemDialogKrNative) {
+                    "NA has no title template; ImageLoader would throw"
+                }
+                patterns.getOrPut(firstArg()) { mockk<Pattern>() }
+            }
             every { api.useSameSnapIn<Any?>(any()) } answers {
                 assertFalse(snapshot)
                 if (pending != null && framesUntilChange-- <= 0) { pending!!.invoke(); pending = null }
@@ -133,8 +140,8 @@ class QuestItemsTest {
                 val region = firstArg<Region>()
                 val image = patterns.entries.single { it.value == secondArg<Pattern>() }.key
                 when (image) {
-                    Images.QuestItemDialog -> region == heading && modal && !nativeHeadingOnly
-                    Images.QuestItemDialogKrNative -> region == heading && modal && nativeHeadingOnly
+                    Images.QuestItemDialog -> region == heading && modal && !nativeHeadingOnly && !noTitle
+                    Images.QuestItemDialogKrNative -> region == heading && modal && nativeHeadingOnly && !noTitle
                     Images.QuestItemDialogClose -> region == close && modal && !partialDialog
                     Images.QuestItemTeapot -> region == main && !absent && !modal && !hideIcon && (kind == Kind.Teapot || ambiguousIcon)
                     Images.QuestItemStormPod -> region == main && !absent && !modal && !hideIcon && (kind == Kind.StormPod || ambiguousIcon)
@@ -152,7 +159,7 @@ class QuestItemsTest {
                     Images.QuestItemOff, Images.QuestItemOffMain -> on == false || (on != null && ambiguousState)
                     else -> false
                 }
-                if (found) listOf(match(region)) else emptyList()
+                if (found && !(hideStorm && region == left && image != Images.QuestItemDialogClose)) listOf(match(region)) else emptyList()
             }
             every { party.selectParty() } answers { trace.add("party") }
             every { with(api) { any<Location>().click(any()) } } answers {
@@ -240,14 +247,53 @@ class QuestItemsTest {
 
     @Test
     fun `bypass and unsupported servers perform no item capture or template load`() {
-        for (bypass in listOf(false, true)) {
+        val unsupported = listOf(GameServer.En.BetterFGO, GameServer.Cn, GameServer.Tw)
+        for (server in listOf<GameServer?>(null) + unsupported) {
             val f = Fixture()
-            every { f.api.prefs.ignoreQuestItemUsage } returns bypass
-            if (!bypass) every { f.api.prefs.gameServer } returns GameServer.En.Original
+            if (server == null) every { f.api.prefs.ignoreQuestItemUsage } returns true
+            else every { f.api.prefs.gameServer } returns server
             f.items.prepare()
             assertThat(f.trace).isEqualTo(emptyList())
             verify(exactly = 0) { f.api.useSameSnapIn<Any?>(any()) }
             verify(exactly = 0) { f.api.images[any(), any()] }
+        }
+    }
+
+    @Test
+    fun `item control gate covers KR JP and NA only`() {
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original, GameServer.Jp.BetterFGO, GameServer.En.Original))
+            assertTrue(QuestItemReader.supports(server), server.toString())
+        for (server in listOf(GameServer.En.BetterFGO, GameServer.Cn, GameServer.Tw))
+            assertFalse(QuestItemReader.supports(server), server.toString())
+    }
+
+    @Test
+    fun `NA dialog is recognised from Close and both buttons without ever requesting a title image`() {
+        val f = Fixture(server = GameServer.En.Original); f.modal = true
+        val view = f.reader.read()
+        assertTrue(view is View.Dialog)
+        verify(exactly = 0) { with(f.api) { f.heading.exists(any<Pattern>(), any(), any()) } }
+        f.wanted(true, true); f.items.prepare()
+        assertThat(f.trace).isEqualTo(listOf("storm", "tea", "close"))
+    }
+
+    @Test
+    fun `NA Close with a missing or ambiguous button is Unknown and nothing is tapped`() {
+        val missing = Fixture(server = GameServer.En.Original); missing.modal = true; missing.hideStorm = true
+        assertThat(missing.reader.read()).isEqualTo(View.Unknown)
+        missing.items.prepare()
+        assertTrue(missing.trace.isEmpty())
+        val ambiguous = Fixture(server = GameServer.En.Original); ambiguous.modal = true; ambiguous.ambiguousState = true
+        assertThat(ambiguous.reader.read()).isEqualTo(View.Unknown)
+    }
+
+    @Test
+    fun `KR and JP Close with both buttons but no title is not a dialog`() {
+        for (server in listOf(GameServer.Kr, GameServer.Jp.Original)) {
+            val f = Fixture(server = server); f.modal = true; f.noTitle = true
+            assertThat(f.reader.read()).isEqualTo(View.Unknown)
+            f.items.prepare()
+            assertTrue(f.trace.isEmpty())
         }
     }
 
@@ -334,7 +380,7 @@ class QuestItemsTest {
             every { with(f.api) { 1.seconds.wait() } } answers { f.trace.add("wait1") }
             every { with(f.api) { 2.seconds.wait() } } answers { f.trace.add("wait2") }
             f.launch.start()
-            val itemTrace = if (server is GameServer.Kr || server is GameServer.Jp) listOf("main", "close") else emptyList()
+            val itemTrace = if (QuestItemReader.supports(server)) listOf("main", "close") else emptyList()
             assertThat(f.trace).isEqualTo(listOf("party", "wait1") + itemTrace + listOf("wait1", "quest", "wait2"))
         }
     }

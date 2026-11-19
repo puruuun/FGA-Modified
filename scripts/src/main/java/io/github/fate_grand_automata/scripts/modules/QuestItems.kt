@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.scripts.modules
 import io.github.fate_grand_automata.scripts.prefs.IAddedFeatureTuning
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
-import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.Kind
 import io.github.fate_grand_automata.scripts.modules.QuestItemReader.View
 import io.github.lib_automata.Location
@@ -17,7 +16,7 @@ class QuestItems @Inject constructor(api: IFgoAutomataApi, private val reader: Q
 ) : IFgoAutomataApi by api {
     fun prepare() {
         // Bypass must do no captures, template loads or taps. Other servers keep their old behavior.
-        if (prefs.ignoreQuestItemUsage || (prefs.gameServer !is GameServer.Kr && prefs.gameServer !is GameServer.Jp)) return
+        if (prefs.ignoreQuestItemUsage || !QuestItemReader.supports(prefs.gameServer)) return
         val wantedStorm = prefs.selectedServerConfigPref.useStormPod
         val wantedTea = prefs.selectedServerConfigPref.useTeapot
         val initial = await(initial = true) { it != View.Unknown }

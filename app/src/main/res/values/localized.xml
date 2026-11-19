@@ -705,7 +705,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_use_storm_pod">Use Storm Pods</string>
     <string name="p_use_teapot">Use Teapots</string>
     <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
-    <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
+    <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR, JP and NA servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
     <string name="p_bond">Bond points</string>
     <string name="p_bond_track">Track bond point gains</string>

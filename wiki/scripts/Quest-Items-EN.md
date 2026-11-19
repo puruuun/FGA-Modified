@@ -3,7 +3,7 @@
 ## How to Use
 
 1. Turn on **More options → Battle → Enable Teapot/Storm Pod control**. It defaults to ON for new configurations.
-2. Select the KR or JP server and tap the Play button.
+2. Select the KR, JP or NA server and tap the Play button.
 3. On the right side of the launcher, under **Item auto-use** (between **Refill** and **Limit**), set **Use Storm Pods** and **Use Teapots** shown side by side on one row. You can toggle each by tapping the checkbox or its label. If the labels are too narrow to fit on one line, they wrap onto two lines.
 4. Checked means ON; unchecked means OFF. Tapping **OK** starts with the selected launch settings.
 
@@ -16,7 +16,7 @@ These two choices are remembered per server and are not stored inside an individ
 | Only Use Teapots checked | Storm Pod OFF, Teapot ON |
 | Both checked | Storm Pod ON, Teapot ON |
 
-When **Enable Teapot/Storm Pod control** is turned off, all checking and toggling of in-game item states is skipped. Your launcher selections are preserved while the entire item block is hidden. Turning the feature back on applies the launcher's selections. Previously saved explicit enable/ignore choices are kept, while unconfigured setups default to ON. On other servers, this control is currently skipped.
+When **Enable Teapot/Storm Pod control** is turned off, all checking and toggling of in-game item states is skipped. Your launcher selections are preserved while the entire item block is hidden. Turning the feature back on applies the launcher's selections. Previously saved explicit enable/ignore choices are kept, while unconfigured setups default to ON. On other servers (BetterFGO, CN, TW), this control is currently skipped.
 
 ## Behavior
 
@@ -30,8 +30,14 @@ If it opens a dialog, it checks **left = Storm Pod / right = Teapot** individual
 
 If the party screen has no item button, it starts normally. In quests offering only one item, it controls only the visible item and never taps an unoffered item. When the game's **Fast Repeat** skips the party confirmation screen, the already-applied settings remain in use, and they are checked again on the next launch after support selection.
 
-## Starting with Fixed Waits
+## NA server
 
-To allow launching even if the party title image does not match, the title check, up to 3-second retry, 2-second post-check wait, and skip log were removed. All servers proceed through the 4s → 1s → 1s sequence above. On servers other than KR/JP or when auto-control is disabled, item actions are skipped while the 1-second wait is kept.
+The NA server is supported. KR and JP recognise the settings dialog from its title image together with the Close button and both item buttons. NA does not use the title image: it treats the screen as the dialog when the **Close button and both the Storm Pod and Teapot ON/OFF buttons are found**. If the Close button is visible but one of the two buttons is missing or ambiguous, nothing is tapped and the run stops before Quest Start.
+
+NA is not played by the owner, so this was not verified on a device. The Close button was checked only against an NA screenshot and the layout against the official notice; no test was run on an NA device.
+
+To allow launching even if the party title image does not match, the title check, up to 3-second retry, 2-second post-check wait, and skip log were removed. All servers proceed through the 4s → 1s → 1s sequence above. On servers other than KR/JP/NA or when auto-control is disabled, item actions are skipped while the 1-second wait is kept.
+
+## Starting with Fixed Waits
 
 If an item icon or ON/OFF button is absent or uncertain, it proceeds to start without tapping items. Dialog title, Close button, and both switch checks are kept. If a transition, restoration, or close check fails after tapping an actual item button, it stops with the existing message (`Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.`).
