@@ -21,7 +21,8 @@ pub const POISONED: &str =
 
 /// A panic while the lock was held (caught by the guard) leaves it poisoned. The recogniser may
 /// then be half-updated, so every later call reports that instead of using it.
-fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>, String> {
+pub(super) fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>, String>
+{
     RECOGNIZER.lock().map_err(|_| POISONED.to_owned())
 }
 
@@ -200,7 +201,7 @@ pub(super) fn read_json(text: &str, confidence: f64, micros: u128) -> String {
     )
 }
 
-fn json_string(text: &str) -> String {
+pub(super) fn json_string(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
     for c in text.chars() {

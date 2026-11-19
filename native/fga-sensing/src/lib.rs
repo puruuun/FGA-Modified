@@ -13,6 +13,7 @@ pub mod ctc;
 mod error;
 pub mod image;
 pub mod preprocess;
+pub mod readers;
 mod recognizer;
 
 pub use error::Error;

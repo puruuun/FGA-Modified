@@ -196,6 +196,32 @@ py -3 tools/device-qa/run.py --build --native-threads --suite ocrProbe --local-f
 
 `--native-threads` implies `--native`, builds with `-Pfga.native.threads=true` and fails the run when a `tract-threads` case was skipped; it combines with `--native-ort`. With `--native` alone those cases may be skipped.
 
+### Support-score reader (#555)
+
+`fga_sensing::readers::support_score` decides whether a recognised text is a support score: the class score (0 to 62) and the Grand score (0 to 16), each a value or "unknown" with a reason. The bar is the owner's: never return a wrong value; a miss costs a refresh, a false accept picks the wrong servant. Every rule only ever turns a value into "unknown". It is not connected to the app; the Kotlin reader stays in use.
+
+- `SupportScoreReader::observe` runs the recogniser and the pixel checks, `decide(observation, &ScoreConfig)` applies the rules in a fixed order: blank, confidence, format, range, clipping. The split lets `support_score_eval` try other settings without running the model again. The reader takes any `Backend` through the `Recognizer`; its unit tests use a scripted fake. `read_with` reads on a recogniser somebody else holds, which the device probe needs.
+- The Kotlin reader's Tesseract workarounds (several binarisation profiles, the `416` rule, template matching, agreement across profiles) are not ported.
+- **How a threshold is chosen** (R3 of the task): the rule is fixed before the pass counts are looked at. For a confidence floor: with wrong reads present, the midpoint of the gap between the highest wrong and the lowest correct confidence (no floor if they overlap); with none, the lowest correct confidence minus 0.05. A choice is then cross-checked by deriving it on `known_miss` false and applying it to true and the reverse, and on Jp then Kr and the reverse. 370 samples are few: where the rule cannot be validated, the default says so in its comment, and a finding such as "the derived floor differs by server" is a result, not something to tune away.
+- **Evaluation:**
+
+```bash
+cd native
+cargo run --release -p fga-sensing --features tract --example support_score_eval -- \
+    tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/support-score-eval.tsv
+cargo run --release -p fga-sensing --features tract --example support_score_eval -- \
+    tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/support-score-analysis.tsv --analysis
+```
+
+The first prints the numbers of the acceptance line of design 0025, section 5 (misses at most 12 and 25, false accepts 0, no wrong labelled value), the unknown reasons, and every row where the reader differs from the Kotlin reader's stage 0 result, and writes one TSV row per sample. Flags (`--unrestricted`, `--format`, `--range`, `--floor`, `--char-floor`, `--no-clipping`) change one rule. The second prints the tables the defaults were chosen from: format, character restriction, floor distributions, sensitivity, cross-checks, the rows each rule changes. The Kotlin stage 0 results (`kt_cls`, `kt_grand`) only hold the 62 and 16 that the Kotlin policy asked for, so most rows read as a difference; the "decision on 62/16" lines are the comparison that matters.
+- **The defaults** (`ScoreConfig::default()`): strict `+NN` / `+NN/+MM` with the one exception that the plus in front of the class score of a compound may be missing (`Format::CompoundClassPlusOptional`, the strictest form that loses no labelled read); class 0 to 62 and Grand 0 to 16, an out-of-range number making the other field of the compound unknown (`RangePolicy::Joint`; the samples hold no such row, so this is the conservative choice, not a measured one); text confidence at least 0.86; no per-character floor; no character restriction in the recogniser; the pixel check on.
+- **The pixel check** (`clipping.rs`) knows two cuts. A text that ends in a textureless band at the bottom of the crop makes every field unknown (the lower part of every digit is missing). Fill and outline pixels at the right end of the content make the last field unknown (the Grand score of a compound, the class score of an ordinary field). The left, top and bottom crop edges carry ink in most valid reads (see the edge counts of the analysis) and are not used. A crop with no texture at all is blank, whatever the model reads out of it.
+- **Device case:** `rust-reader` in `ocrProbe` (after `kotlin-reader`) calls `NativeProbe.supportScoreRead(pixels, width, height)` on the recogniser that `ocrLoad` loaded; there is no load call of its own, and `ocrUnload` serves it. It reports the same tallies as `kotlin-reader` (+62 and +16 read, missed, false accepts, class and Grand values, differences from `kt_cls`/`kt_grand`), the unknown reasons and the time per field. It fails on an `ERR`, a false accept, or a labelled value read as another number; the miss counts are reported, not checked. It runs with the rest of the suite (the case file has no per-case filter), after the model and samples are pushed:
+
+```bash
+py -3 tools/device-qa/run.py --build --native --suite ocrProbe --local-fixtures build/ocr-device-fixtures
+```
+
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:

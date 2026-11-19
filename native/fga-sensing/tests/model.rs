@@ -143,6 +143,77 @@ mod checks {
         }
     }
 
+    /// The support-score reader (issue #555) on six fixed crops, one per case the rules exist
+    /// for. The reasons are the reader's own, so a rule that stops firing fails here with the
+    /// file name.
+    pub fn support_score_reader_decides_fixed_samples<B: Backend>(test: &str) {
+        use fga_sensing::readers::support_score::{
+            Display, Reason, Score, ScoreConfig, SupportScoreReader,
+        };
+        let Some((model, dir)) = local_files(test) else {
+            return;
+        };
+        let mut reader = SupportScoreReader::new(
+            Recognizer::new(B::load_file(&model).unwrap()),
+            ScoreConfig::default(),
+        )
+        .unwrap();
+        let cases: [(&str, Score, Score, Display); 6] = [
+            // A plain +62.
+            (
+                "0044.png",
+                Score::Value(62),
+                Score::Unknown(Reason::NotShown),
+                Display::Ordinary,
+            ),
+            // A compound +62/+16.
+            (
+                "0000.png",
+                Score::Value(62),
+                Score::Value(16),
+                Display::Compound,
+            ),
+            // A class value that is not 62.
+            (
+                "0269.png",
+                Score::Value(45),
+                Score::Unknown(Reason::NotShown),
+                Display::Ordinary,
+            ),
+            // A crop with no score in it.
+            (
+                "0057.png",
+                Score::Unknown(Reason::Blank),
+                Score::Unknown(Reason::Blank),
+                Display::Unknown,
+            ),
+            // "+62/+16" with the lower part of the digits cut off: valid text, labelled not to
+            // be accepted.
+            (
+                "0070.png",
+                Score::Unknown(Reason::Clipped),
+                Score::Unknown(Reason::Clipped),
+                Display::Unknown,
+            ),
+            // The slash read as a 1: "+571+16".
+            (
+                "0299.png",
+                Score::Unknown(Reason::Format),
+                Score::Unknown(Reason::Format),
+                Display::Unknown,
+            ),
+        ];
+        for (file, class, grand, display) in cases {
+            let crop = samples::load_gray(&dir.join(file)).unwrap();
+            let score = reader.read(&crop).unwrap();
+            let seen = format!("{file}: text {:?}", score.observation.text);
+            assert_eq!(score.class, class, "{seen}");
+            assert_eq!(score.grand, grand, "{seen}");
+            assert_eq!(score.display, display, "{seen}");
+        }
+        println!("{test}: {} samples decided as expected", cases.len());
+    }
+
     pub fn loads_from_bytes_and_reads_wide_crops<B: Backend>(test: &str) {
         let Some((model, dir)) = local_files(test) else {
             return;
@@ -182,6 +253,13 @@ mod tract {
     #[test]
     fn allowed_set_keeps_only_score_characters() {
         super::checks::allowed_set_keeps_only_score_characters::<TractBackend>("tract allowed set");
+    }
+
+    #[test]
+    fn support_score_reader_decides_fixed_samples() {
+        super::checks::support_score_reader_decides_fixed_samples::<TractBackend>(
+            "tract support score",
+        );
     }
 
     #[test]
@@ -239,6 +317,13 @@ mod ort {
     #[test]
     fn allowed_set_keeps_only_score_characters() {
         super::checks::allowed_set_keeps_only_score_characters::<OrtBackend>("ort allowed set");
+    }
+
+    #[test]
+    fn support_score_reader_decides_fixed_samples() {
+        super::checks::support_score_reader_decides_fixed_samples::<OrtBackend>(
+            "ort support score",
+        );
     }
 
     #[test]

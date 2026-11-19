@@ -151,6 +151,28 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrRe
     to_java(&mut env, text)
 }
 
+/// Issue #555: the support-score reader on the recogniser that `ocrLoad` loaded. Only the pixels
+/// are read from Java, inside the guard; the size is bounded inside the probe before its lock.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_supportScoreRead<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _this: JObject<'local>,
+    pixels: JByteArray<'local>,
+    width: jint,
+    height: jint,
+) -> jstring {
+    let text = run_guarded(|| {
+        // Test-only probe, as ocrRead: the copy is not bounded.
+        let pixels = env
+            .convert_byte_array(&pixels)
+            .map_err(|e| format!("pixels: {e}"))?;
+        probes::support_score_read(pixels, width, height)
+    });
+    to_java(&mut env, text)
+}
+
 // Issue #535: the ONNX Runtime twins of the three functions above, only in a library built with
 // `ort-probe`. Without it the symbols are absent and Kotlin gets UnsatisfiedLinkError, which the
 // ocrProbe suite reports as a skipped case, so the default library stays as it was.

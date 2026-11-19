@@ -15,11 +15,24 @@ use serde_json::Value;
 pub struct Sample {
     pub file: String,
     pub case: String,
+    pub server: String,
+    pub kind: String,
     pub is62: Option<bool>,
     pub is16: Option<bool>,
+    pub cls: Option<u8>,
+    pub grand: Option<u8>,
+    /// What the Kotlin reader returned in the stage 0 replay of this crop.
+    pub kt_cls: Option<u8>,
+    pub kt_grand: Option<u8>,
     pub known_miss: bool,
     pub py_text: String,
     pub py_conf: f64,
+}
+
+fn small(row: &Value, key: &str) -> Option<u8> {
+    row.get(key)
+        .and_then(Value::as_u64)
+        .and_then(|v| u8::try_from(v).ok())
 }
 
 pub fn load_index(dir: &Path) -> Result<Vec<Sample>, String> {
@@ -35,8 +48,14 @@ pub fn load_index(dir: &Path) -> Result<Vec<Sample>, String> {
             Ok(Sample {
                 file: text("file").ok_or_else(|| format!("row without file: {row}"))?,
                 case: text("case").unwrap_or_default(),
+                server: text("server").unwrap_or_default(),
+                kind: text("kind").unwrap_or_default(),
                 is62: row.get("is62").and_then(Value::as_bool),
                 is16: row.get("is16").and_then(Value::as_bool),
+                cls: small(row, "cls"),
+                grand: small(row, "grand"),
+                kt_cls: small(row, "kt_cls"),
+                kt_grand: small(row, "kt_grand"),
                 known_miss: row
                     .get("known_miss")
                     .and_then(Value::as_bool)

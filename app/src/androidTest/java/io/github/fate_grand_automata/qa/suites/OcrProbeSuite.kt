@@ -46,6 +46,7 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
         "tesseract-baseline" -> tesseractBaseline(runner, case)
         "tract-memory" -> engineMemory(runner, case, TRACT)
         "tract-recognise", "tract-recognise-allowed" -> engineRecognise(runner, case, TRACT)
+        "rust-reader" -> rustReader(runner, case)
         "ort-memory", "ort-recognise", "ort-recognise-allowed", "ort-recognise-1thread" -> {
             if (!ortPackaged()) return ortSkipped(test)
             val engine = ortEngine(case.optInt("threads", 0))
@@ -680,6 +681,151 @@ private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSO
         .put("processThreads", JSONObject().put("before", threadsBefore.takeIf { it >= 0 }).put("after", processThreads().takeIf { it >= 0 }))
     if (noOcr.isNotEmpty() || falseAccepts.isNotEmpty()) {
         throw AssertionError("kotlin-reader: fields without an OCR call ${noOcr.take(MAX_LISTED)}, false accepts ${falseAccepts.take(MAX_LISTED)}. $report")
+    }
+    return report
+}
+
+/**
+ * Issue #555: the Rust support-score reader (`supportScoreRead`: the PP-OCRv6 recogniser plus the
+ * rules of fga-sensing's `SupportScoreReader`) on the same 370 crops as [kotlinReader], with the
+ * same definitions: a field is read when the reader returns 62 (class) or 16 (Grand), missed
+ * when a labelled positive is not, and a false accept when a row labelled not-62 or not-16 is
+ * returned as 62 or 16. The labels and the stage 0 results (`kt_cls`, `kt_grand`) are the ones
+ * [kotlinReader] uses.
+ *
+ * The case fails when a call returns `ERR`, on a false accept, and when a labelled class or Grand
+ * value is read as another number. It does not fail on misses: those are reported next to the
+ * Kotlin reader's, which is what the device comparison is for.
+ */
+private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+    val dir = case.getString("samples")
+    val indexBytes = runner.fixture("$dir/index.json")
+    check(indexBytes.isNotEmpty()) { "$dir/index.json is missing on the device; push the OCR samples first (docs/agents/rust-native.md)" }
+    val index = JSONArray(indexBytes.toString(Charsets.UTF_8))
+    val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    for (row in rows) {
+        val file = row.getString("file")
+        check(row.has("kt_cls") && row.has("kt_grand")) { "$dir/index.json: $file has no kt_cls or kt_grand" }
+        check(row.has("is62") && row.has("is16")) { "$dir/index.json: $file has no is62 or is16" }
+        checkScoreCrop(runner, "$dir/$file")
+    }
+    val samples = samples(runner, dir)
+    check(samples.size == rows.size) { "${samples.size} decoded samples for ${rows.size} index rows" }
+    val model = modelFile(runner, case.getString("model"))
+    val engineMicros = mutableListOf<Long>()
+    val callMicros = mutableListOf<Long>()
+    val byServer = mutableMapOf<String, MutableList<Long>>()
+    val reasons = mutableMapOf<String, Int>()
+    val errors = JSONArray()
+    var errorCount = 0
+    val wrong = mutableListOf<String>()
+    val falseAccepts = mutableListOf<String>()
+    val tally = mutableMapOf<String, Int>()
+    fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
+    fun tallied(key: String) = tally[key] ?: 0
+    val differences = JSONArray()
+    var differenceCount = 0
+    var sameValue = 0
+    var bothNothing = 0
+    val load = try {
+        okJson("ocrLoad", NativeProbe.ocrLoad(model.path)).also {
+            for ((row, sample) in rows.zip(samples)) {
+                val file = row.getString("file")
+                val started = System.nanoTime()
+                val result = NativeProbe.supportScoreRead(sample.gray, sample.width, sample.height)
+                val callUs = (System.nanoTime() - started) / 1000
+                if (!result.startsWith("OK: ")) {
+                    errorCount++
+                    if (errors.length() < MAX_LISTED) errors.put(JSONObject().put("file", file).put("result", result))
+                    continue
+                }
+                val read = JSONObject(result.removePrefix("OK: "))
+                engineMicros += read.getLong("micros")
+                callMicros += callUs
+                byServer.getOrPut(row.getString("server")) { mutableListOf() } += callUs
+                val cls = read.intOrNull("class")
+                val grand = read.intOrNull("grand")
+                for (key in listOf("classReason", "grandReason")) {
+                    if (!read.isNull(key)) {
+                        val reasonKey = "$key.${read.getString(key)}"
+                        reasons[reasonKey] = (reasons[reasonKey] ?: 0) + 1
+                    }
+                }
+                when (row.boolOrNull("is62")) {
+                    true -> { count("positives62"); if (cls == 62) count("read62") }
+                    false -> if (cls == 62) { count("falseAccepts62"); falseAccepts += "$file +62" }
+                    null -> Unit
+                }
+                when (row.boolOrNull("is16")) {
+                    true -> { count("positives16"); if (grand == 16) count("read16") }
+                    false -> if (grand == 16) { count("falseAccepts16"); falseAccepts += "$file +16" }
+                    null -> Unit
+                }
+                row.intOrNull("cls")?.let { label ->
+                    count("classLabels")
+                    when (cls) {
+                        label -> count("classValueEqual")
+                        null -> count("classUnknown")
+                        else -> { count("classWrong"); wrong += "$file class $cls, label $label" }
+                    }
+                }
+                row.intOrNull("grand")?.let { label ->
+                    count("grandLabels")
+                    when (grand) {
+                        label -> count("grandValueEqual")
+                        null -> count("grandUnknown")
+                        else -> { count("grandWrong"); wrong += "$file grand $grand, label $label" }
+                    }
+                }
+                val stage0Class = row.intOrNull("kt_cls")
+                val stage0Grand = row.intOrNull("kt_grand")
+                when {
+                    cls != stage0Class || grand != stage0Grand -> {
+                        differenceCount++
+                        if (differences.length() < MAX_LISTED) differences.put(JSONObject().put("file", file).put("case", row.optString("case"))
+                            .put("kotlin", JSONObject().put("class", stage0Class ?: JSONObject.NULL).put("grand", stage0Grand ?: JSONObject.NULL))
+                            .put("rust", JSONObject().put("class", cls ?: JSONObject.NULL).put("grand", grand ?: JSONObject.NULL)))
+                    }
+                    cls == null && grand == null -> bothNothing++
+                    else -> sameValue++
+                }
+            }
+        }
+    } finally {
+        NativeProbe.ocrUnload()
+    }
+    val perField = timing(callMicros)
+    Log.i(TAG, "rust-reader: +62 read ${tallied("read62")} of ${tallied("positives62")} (Kotlin stage 0: 74 of 86), " +
+        "+16 read ${tallied("read16")} of ${tallied("positives16")} (Kotlin stage 0: 142 of 167), " +
+        "false accepts +62 ${tallied("falseAccepts62")} +16 ${tallied("falseAccepts16")}, " +
+        "class value equal ${tallied("classValueEqual")} of ${tallied("classLabels")} wrong ${tallied("classWrong")}, " +
+        "time per field median ${perField.opt("medianUs")} us p90 ${perField.opt("p90Us")} us max ${perField.opt("maxUs")} us, " +
+        "Kotlin stage 0 same value $sameValue, both nothing $bothNothing, differ $differenceCount, ERR $errorCount")
+    val report = JSONObject()
+        .put("note", "supportScoreRead on the recogniser ocrLoad loaded (width 320, one thread) with the default ScoreConfig; perField is the whole JNI call from Kotlin, perFieldRust is inside Rust around recognise, pixel checks and rules")
+        .put("samples", rows.size)
+        .put("loadMs", load.getLong("loadMs"))
+        .put("perField", perField)
+        .put("perFieldRust", timing(engineMicros))
+        .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })
+        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62"))
+            .put("missed", tallied("positives62") - tallied("read62")).put("falseAccepts", tallied("falseAccepts62"))
+            .put("kotlinStage0", "74 of 86 read, 12 missed, 0 false accepts"))
+        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16"))
+            .put("missed", tallied("positives16") - tallied("read16")).put("falseAccepts", tallied("falseAccepts16"))
+            .put("kotlinStage0", "142 of 167 read, 25 missed, 0 false accepts"))
+        .put("classValue", JSONObject().put("labelled", tallied("classLabels")).put("equal", tallied("classValueEqual"))
+            .put("unknown", tallied("classUnknown")).put("wrong", tallied("classWrong")))
+        .put("grandValue", JSONObject().put("labelled", tallied("grandLabels")).put("equal", tallied("grandValueEqual"))
+            .put("unknown", tallied("grandUnknown")).put("wrong", tallied("grandWrong")))
+        .put("unknownReasons", JSONObject().apply { for ((key, value) in reasons.toSortedMap()) put(key, value) })
+        .put("kotlinStage0", JSONObject().put("sameValue", sameValue).put("bothNothing", bothNothing).put("differ", differenceCount)
+            .put("differences", differences)
+            .put("note", "rows where the Rust result differs from kt_cls/kt_grand; the Kotlin reader only returns the 62 and 16 its policy asks for, so most rows differ when Rust returns another class value"))
+        .put("errorCount", errorCount)
+        .put("errors", errors)
+    if (errorCount > 0 || falseAccepts.isNotEmpty() || wrong.isNotEmpty()) {
+        throw AssertionError("rust-reader: $errorCount ERR ${errors.toString().take(300)}, false accepts ${falseAccepts.take(MAX_LISTED)}, wrong labelled values ${wrong.take(MAX_LISTED)}. $report")
     }
     return report
 }

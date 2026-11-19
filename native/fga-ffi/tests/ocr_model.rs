@@ -14,7 +14,9 @@ mod model {
     use super::common::helpers::{
         FIXED, first_channel, fixed_samples_match_python, index, local_files, ok_json,
     };
-    use fga_ffi::probes::{NOT_LOADED, ocr_load, ocr_load_tract, ocr_read, ocr_unload};
+    use fga_ffi::probes::{
+        NOT_LOADED, ocr_load, ocr_load_tract, ocr_read, ocr_unload, support_score_read,
+    };
     use fga_ffi::run_guarded;
 
     #[test]
@@ -62,6 +64,28 @@ mod model {
             format!("ERR: {NOT_LOADED}")
         );
         assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], false);
+
+        // Issue #555: the support-score reader uses the recogniser ocrLoad loaded, and none
+        // after ocrUnload.
+        let (pixels, width, height) = first_channel(&dir.join("0000.png"));
+        assert_eq!(
+            run_guarded(|| support_score_read(pixels, width, height)),
+            format!("ERR: {NOT_LOADED}")
+        );
+        ok_json(&run_guarded(|| ocr_load(&model_path)));
+        for (file, class, grand, reason) in [
+            ("0000.png", Some(62), Some(16), None),
+            ("0070.png", None, None, Some("clipped")),
+            ("0299.png", None, None, Some("format")),
+        ] {
+            let (pixels, width, height) = first_channel(&dir.join(file));
+            let read = ok_json(&run_guarded(|| support_score_read(pixels, width, height)));
+            assert_eq!(read["class"].as_u64(), class, "{file}: {read}");
+            assert_eq!(read["grand"].as_u64(), grand, "{file}: {read}");
+            assert_eq!(read["classReason"].as_str(), reason, "{file}: {read}");
+            assert!(read["micros"].as_u64().is_some(), "{file}: {read}");
+        }
+        assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], true);
 
         // A failed load leaves no model behind, even after a good one.
         ok_json(&run_guarded(|| ocr_load(&model_path)));

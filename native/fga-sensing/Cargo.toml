@@ -45,3 +45,7 @@ serde_json = "1"
 [[example]]
 name = "ocr_eval"
 required-features = ["_backend"]
+
+[[example]]
+name = "support_score_eval"
+required-features = ["_backend"]

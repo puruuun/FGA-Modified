@@ -67,6 +67,15 @@ object NativeProbe {
     /** `{"threadsBuilt":true|false,"maxThreads":16}`. */
     external fun ocrTractFeatures(): String
 
+    // Issue #555: the support-score reader on the recogniser that ocrLoad loaded (no load call of
+    // its own). `ERR` before ocrLoad.
+    /**
+     * One 60x30 gray score crop: `{"class":62|null,"grand":16|null,"display":"ordinary"|"compound"|"unknown",
+     * "text":...,"confidence":...,"minCharConfidence":...|null,"classReason":...|null,"grandReason":...|null,
+     * "clipRight":...,"clipVertical":...,"featureless":...,"micros":...}`.
+     */
+    external fun supportScoreRead(pixels: ByteArray, width: Int, height: Int): String
+
     // Issue #535: the same recogniser with ONNX Runtime. Only in a library built with
     // `-Pfga.native.ort=true`; otherwise each call throws UnsatisfiedLinkError.
     /** [threads] is ONNX Runtime's intra-op thread count, 0 for its default: `{"loadMs":…,"classes":…,"intraThreads":…}`. */
