@@ -24,7 +24,7 @@ Owner decision, 2026-10-26. The backlog lives in GitHub issues on `puruuun/FGA-M
 
 ### Issues and PRs from outside
 
-Owner decision, 2026-11-19. People outside the team report through the issue forms in `.github/ISSUE_TEMPLATE/` (Korean, Japanese, English; no field is required), ask questions in Discussions, and may send PRs; what they are told is in `CONTRIBUTING.md` and `SECURITY.md`.
+Owner decision, 2026-11-19. People outside the team report through the issue forms in `.github/ISSUE_TEMPLATE/` (one for bugs, one for feature requests, each with Korean, Japanese and English text; no field is required), ask questions in Discussions, and may send any kind of PR without asking first; what they are told is in `CONTRIBUTING.md` and `SECURITY.md`.
 
 - **The owner hears about it from GitHub's notifications** (the owner's account watches the repository) and tells the planner. The planner does not poll for new issues.
 - **An outside issue:** the planner reads it, checks it against the code, and reports to the owner in Korean: what is claimed, whether it reproduces or what is missing, the suspected cause, and a proposed answer.
