@@ -22,24 +22,6 @@ Owner decision, 2026-10-26. The backlog lives in GitHub issues on `puruuun/FGA-M
 - Each issue covers the symptom, the reproduction conditions (server, device, resolution, settings), the evidence (logs and measurements; captures are not committed, so give their local path), the suspected cause with file names, and the proposed work.
 - Filing an issue does not start the work. Start only when the owner asks.
 
-### Issues and PRs from outside
-
-Owner decision, 2026-11-19. People outside the team report through the issue forms in `.github/ISSUE_TEMPLATE/` (one for bugs, one for feature requests, each with Korean, Japanese and English text; no field is required), ask questions in Discussions, and may send any kind of PR without asking first; what they are told is in `CONTRIBUTING.md` and `SECURITY.md`.
-
-- **The owner hears about it from GitHub's notifications** (the owner's account watches the repository) and tells the planner. The planner does not poll for new issues.
-- **An outside issue:** the planner reads it, checks it against the code, and reports to the owner in Korean: what is claimed, whether it reproduces or what is missing, the suspected cause, and a proposed answer.
-  - The answer is written in the reporter's language. When information is missing, ask for it in a comment; do not close an issue for an empty field.
-  - The planner posts a comment only after the owner approved its text.
-  - Work starts only when the owner asks, as for any backlog item. The outside issue itself serves as the backlog issue; add what the issue format above needs in a comment in English, instead of filing a duplicate.
-  - Labels: the existing `bug`, `enhancement`, `question`, `duplicate`, `wontfix`. A report about a server other than KR and official JP is answered and closed as `wontfix` unless the owner decides otherwise.
-- **An outside PR:**
-  - Read the diff before anyone approves its workflow run: a pull request runs its own version of the workflows. The owner approves the run for a first-time contributor in the GitHub UI.
-  - A PR that changes anything under `.github/` or `tools/ci/` is read line by line, because it can change what the required check does.
-  - The review points above and the verification rules apply as for an internal PR. The contributor does not have to follow `AGENTS.md`; what is missing (a test, the manual page, a guard check) is asked for in a review comment, or added by the planner in a follow-up commit on top of the contributor's commits.
-  - Merge the same way: fetch `refs/pull/<N>/head`, check that it contains the latest `main` and that `Main CI gate` passed on exactly that commit, and fast-forward `main` to it. The contributor stays the author. Never merge through the GitHub UI.
-  - Captures with account data in an outside issue or PR: tell the owner at once, so the owner can hide or delete them; do not copy them anywhere.
-- **A private vulnerability report** is the owner's to read. The planner works on it only from what the owner passes on, and nothing about it goes into a public issue, PR or commit message before the fix is released.
-
 ### PR review
 
 Owner decision, 2026-11-01. A green CI and the implementer's report are not enough; check the diff against these points before merging:
