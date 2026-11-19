@@ -32,7 +32,7 @@ If the party screen has no item button, it starts normally. In quests offering o
 
 ## NA server
 
-The NA server is supported. KR and JP recognise the settings dialog from its title image together with the Close button and both item buttons. NA does not use the title image: it treats the screen as the dialog when the **Close button and both the Storm Pod and Teapot ON/OFF buttons are found**. If the Close button is visible but one of the two buttons is missing or ambiguous, nothing is tapped and the run stops before Quest Start.
+The NA server is supported. KR and JP recognise the settings dialog from its title image together with the Close button and both item buttons. NA does not use the title image: it treats the screen as the dialog when the **Close button and both the Storm Pod and Teapot ON/OFF buttons are found**. If the Close button is visible but one of the two buttons is missing or ambiguous, no item is tapped and the start proceeds as usual.
 
 NA is not played by the owner, so this was not verified on a device. The Close button was checked only against an NA screenshot and the layout against the official notice; no test was run on an NA device.
 
