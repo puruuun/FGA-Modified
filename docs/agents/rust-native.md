@@ -63,7 +63,7 @@ py -3 tools/device-qa/run.py --build --native --suite nativeProbe
 
 `-Pfga.native=true` registers `cargoNdkBuild`, which runs the `cargo ndk` build above into `app/build/generated/rustJniLibs` and adds it to every variant's native libraries. Without the property no task looks at `native/`, and the APKs carry no Rust library. The `nativeProbe` device suite runs the probe tests in `app/src/androidTest`; on an APK built without the library they report themselves skipped and their results are logged under the logcat tag `FgaNativeProbe`.
 
-CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
+CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:
 
