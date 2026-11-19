@@ -144,7 +144,7 @@ Three switches measure where the recogniser's time goes. They change no behaviou
 - **tract threads.** `fga-sensing`'s feature `tract-threads` (through `fga-ffi`'s feature of the same name, Gradle's `-Pfga.native.threads=true`, only with `-Pfga.native=true`) builds `tract-linalg` with its `multithread-mm` feature and gives the tract backend a rayon pool of the requested size, built at load and dropped with the backend. It adds no crate: `tract-linalg` and `rayon` are already in the build (rayon through `tract-transformers`), so `Cargo.lock` only gains dependency lines. Without the feature, more than one thread is an error (`ERR` in the probes), never a silent single-thread run.
 - **Probes.** `NativeProbe.ocrLoadTract(path, minWidth, threads)` fills the slot that `ocrRead` and `ocrUnload` use; `minWidth` is 8..4096, `threads` 0..16 (0 and 1 are the calling thread), both checked before the lock. `ocrTractFeatures()` says whether the library has the thread feature. `ocrLoad` is unchanged.
 
-What tract 0.23.10's sources say (`~/.cargo/registry/src/*/tract-linalg-0.23.10/src/multithread.rs` and `src/frame/mmm/mod.rs`): the executor is `tract_linalg::multithread::Executor` (`SingleThread`, `MultiThread(Arc<rayon::ThreadPool>)`, `RayonGlobal`); the process default is `set_default_executor`, and `multithread_tract_scope(executor, f)` overrides it for one call on the current thread, which the backend uses. The thread count is the rayon pool's size, so it is per backend, not per process. `Executor::multithread(n)` panics when the pool cannot be built, so the backend builds the pool itself. A matrix product runs on the pool only when it has at least 64 panels or 2^21 multiply-adds (`THREADING_PANEL_THRESHOLD`, `THREADING_MAC_THRESHOLD`); the maintainers' comment there says below that size "per-call dispatch overhead (~5 µs native ...) exceeds the parallel speedup" and suggests a higher threshold for "many-small-MMM workloads (mobile vision ...)". The thresholds are left at their defaults. Element-wise and depth-wise work splits on row boundaries, which the source states is bit-identical to the single-thread path; the PC run below found identical texts and confidences.
+What tract 0.23.10's sources say (`~/.cargo/registry/src/*/tract-linalg-0.23.10/src/multithread.rs` and `src/frame/mmm/mod.rs`): the executor is `tract_linalg::multithread::Executor` (`SingleThread`, `MultiThread(Arc<rayon::ThreadPool>)`, `RayonGlobal`); the process default is `set_default_executor`, and `multithread_tract_scope(executor, f)` overrides it for one call on the current thread, which the backend uses. The thread count is the rayon pool's size, so it is per backend, not per process. `Executor::multithread(n)` panics when the pool cannot be built, so the backend builds the pool itself. `multithread_tract_scope` puts the previous executor back only when its closure returns, not when it panics; the backend therefore catches a panic inside the scope and returns it as an error, so a caught panic never leaves a pool installed on the calling thread. Without the feature the backend sets no executor at all and tract runs on its process default, `SingleThread`. A matrix product runs on the pool only when it has at least 64 panels or 2^21 multiply-adds (`THREADING_PANEL_THRESHOLD`, `THREADING_MAC_THRESHOLD`); the maintainers' comment there says below that size "per-call dispatch overhead (~5 µs native ...) exceeds the parallel speedup" and suggests a higher threshold for "many-small-MMM workloads (mobile vision ...)". The thresholds are left at their defaults. Element-wise and depth-wise work splits on row boundaries, which the source states is bit-identical to the single-thread path; the PC tables below found identical texts and confidences (to the five decimals the evaluation tool writes).
 
 What the model's graph says (read with a small protobuf reader, no package installed): the output has one step per 8 input columns (T = W / 8: 40 at 320, 12 at 96). The graph has five `ReduceMean` over axes 2 and 3 (squeeze-and-excitation pooling over height and width) and two self-attention blocks (`Softmax` over all positions). Both mix the padding columns into every column, so the output for the content is not independent of the padded width. RapidOCR pads with zeros after normalisation to `rec_img_shape` 320 (`ch_ppocr_rec/main.py`, `resize_norm_img`).
 
@@ -157,7 +157,27 @@ cargo run --release -p fga-sensing --features tract-threads --example ocr_eval -
     tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/ocr-eval-t4.tsv --threads 4
 ```
 
-It also prints the smallest and the median confidence over the texts that read as a score. The model tests add a narrower width (texts of the 25 fixed samples) and, with `--features tract-threads`, two threads (texts and confidences):
+Results on the owner's PC (issue #549, 370 samples, release build). Equal texts are against Python; the +62 and +16 columns are misses / false accepts (Python: 0/1 and 1/1). No width below 320 is accuracy-neutral: even 256 changes 4 texts without an allowed set and 3 with it. A verifier reproduced the equal-text counts at 320, 256, 160 and 96.
+
+| Minimum width | Equal texts (none / `+/0123456789`) | +62 (none / allowed) | +16 (none / allowed) | Median per crop, one thread (none / allowed) |
+|---|---|---|---|---|
+| 320 | 370 / 366 | 0/1 / 0/1 | 1/1 / 1/1 | 28.7 / 29.3 ms |
+| 256 | 366 / 363 | 0/1 / 0/1 | 0/1 / 0/1 | 23.4 / 23.4 ms |
+| 192 | 363 / 364 | 1/1 / 0/1 | 1/1 / 1/1 | 17.5 / 17.0 ms |
+| 160 | 361 / 362 | 1/1 / 0/1 | 1/1 / 1/1 | 14.9 / 14.5 ms |
+| 128 | 361 / 360 | 0/1 / 0/1 | 2/1 / 2/1 | 11.9 / 11.7 ms |
+| 112 | 357 / 357 | 1/1 / 0/1 | 2/1 / 2/1 | 10.7 / 10.6 ms |
+| 96 (the content of a 60x30 crop) | 355 / 355 | 0/1 / 0/1 | 2/1 / 2/1 | 8.4 / 8.5 ms |
+
+Threads on a 20-core PC: two threads give no gain, four threads about 17 to 27 % (16 to 17 % in the runs below; the planner gives 17 to 27 % across these and a verifier's runs; texts and confidences equal to one thread in every row). One-thread medians varied between 27.8 and 29.3 ms from run to run.
+
+| Setting | 1 thread | 2 threads | 4 threads |
+|---|---|---|---|
+| 320, no allowed set | 28.3 ms | 29.1 ms | 23.5 ms |
+| 320, `+/0123456789` | 27.8 ms | 25.7 ms | 23.3 ms |
+| 160, no allowed set | 14.4 ms | 12.8 ms | 12.0 ms |
+
+The tool also prints the smallest and the median confidence over the texts that read as a score. The model tests add a narrower width (texts of the 25 fixed samples) and, with `--features tract-threads`, two threads (texts and confidences):
 
 ```bash
 cargo test --release -p fga-sensing --features tract-threads --test model -- --nocapture
@@ -166,8 +186,9 @@ cargo test --release -p fga-sensing --features tract-threads --test model -- --n
 Device cases in `ocrProbe`, after the existing ones:
 
 - `kotlin-reader`: the current `SupportScoreReader` on each of the 370 crops through `SupportSuite`'s crop path (`FixtureApi` frame `crop` at the score region of row y 200, the row's server profile, `read(bound, true, true)`), so every OCR profile, the dark retry and the template matches run as in production. It reports time per field (median, 90 %, maximum, also per server), OCR calls per field, the +62 and +16 misses and false accepts, and how many fields equal the stage 0 replay's own result (`kt_cls`, `kt_grand` in `index.json`). It needs no Rust library.
-- `tract-width-160`: an observation at a width the PC found not accuracy-neutral (no width below 320 was); its `minEqual` is the PC count, and a different count is reported, not failed.
-- `tract-threads-2`, `tract-threads-4` at 320: need the thread feature; without it they report `"requires": "tract-threads"` and are skipped.
+- `tract-width-160` and `tract-width-160-allowed`: observations at a width the PC found not accuracy-neutral (no width below 320 was); their `minEqual` is the PC count (361, 362), and a different count is reported, not failed.
+- `tract-threads-2`, `tract-threads-4` and their `-allowed` twins at 320 (`minEqual` 370 and 366): need the thread feature; without it they report `"requires": "tract-threads"` and are skipped. Each must also read exactly the texts of the one-thread tract case with the same allowed set that ran before it in the same process (`oneThreadReference`).
+- `kotlin-reader` fails only when a field made no OCR call (the crop did not reach the reader) or the reader accepted a wrong +62 or +16 on a labelled row (the stage 0 replay had none). Agreement with stage 0 is reported as same value, both nothing and differ, with the differing rows; it is not checked, because stage 0 ran on MuMu and Tesseract on another CPU may round differently. Its numbers are in one `FgaOcrProbe` log line, since the summary lists only failed cases.
 
 ```bash
 py -3 tools/device-qa/run.py --build --native-threads --suite ocrProbe --local-fixtures build/ocr-device-fixtures

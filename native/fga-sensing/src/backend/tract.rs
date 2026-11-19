@@ -69,7 +69,7 @@ impl TractSettings {
 /// wider crops get a plan of their own on first use, kept for later calls.
 pub struct TractBackend {
     model: InferenceModel,
-    plans: Vec<(usize, Plan)>,
+    plans: PlanCache<Plan>,
     characters: CharacterList,
     threads: usize,
     #[cfg(feature = "tract-threads")]
@@ -101,7 +101,7 @@ impl TractBackend {
 
     /// The input widths that have a plan, the load-time one first.
     pub fn planned_widths(&self) -> Vec<usize> {
-        self.plans.iter().map(|(width, _)| *width).collect()
+        self.plans.widths()
     }
 
     fn from_proto(proto: &ModelProto, settings: TractSettings) -> Result<Self, Error> {
@@ -121,7 +121,7 @@ impl TractBackend {
         let plan = plan_for(&model, settings.min_width)?;
         Ok(Self {
             model,
-            plans: vec![(settings.min_width, plan)],
+            plans: PlanCache::new(settings.min_width, plan),
             characters,
             threads: settings.threads,
             // Last, so a model that fails to load starts no threads.
@@ -131,18 +131,67 @@ impl TractBackend {
     }
 
     fn plan(&mut self, width: usize) -> Result<Plan, Error> {
-        if let Some((_, plan)) = self.plans.iter().find(|(w, _)| *w == width) {
+        let model = &self.model;
+        self.plans
+            .get_or_insert_with(width, || plan_for(model, width))
+    }
+}
+
+/// Plans by input width, at most [`MAX_PLANS`]. Each plan carries its own optimised graph, so only
+/// a few stay; the load-time one (the width every short crop gets) is never dropped, and of the
+/// others the oldest goes first.
+struct PlanCache<P> {
+    entries: Vec<(usize, P)>,
+}
+
+impl<P: Clone> PlanCache<P> {
+    fn new(width: usize, plan: P) -> Self {
+        Self {
+            entries: vec![(width, plan)],
+        }
+    }
+
+    fn get_or_insert_with(
+        &mut self,
+        width: usize,
+        make: impl FnOnce() -> Result<P, Error>,
+    ) -> Result<P, Error> {
+        if let Some((_, plan)) = self.entries.iter().find(|(w, _)| *w == width) {
             return Ok(plan.clone());
         }
-        let plan = plan_for(&self.model, width)?;
-        // Each plan carries its own optimised graph, so only a few stay; the load-time one is
-        // never dropped.
-        if self.plans.len() >= MAX_PLANS {
-            self.plans.remove(1);
+        let plan = make()?;
+        if self.entries.len() >= MAX_PLANS {
+            self.entries.remove(1);
         }
-        self.plans.push((width, plan.clone()));
+        self.entries.push((width, plan.clone()));
         Ok(plan)
     }
+
+    fn widths(&self) -> Vec<usize> {
+        self.entries.iter().map(|(width, _)| *width).collect()
+    }
+}
+
+/// Runs `run` with `executor` installed for this thread. tract-linalg's `multithread_tract_scope`
+/// puts the thread's previous executor back only when its closure returns, so a panic inside
+/// tract would leave this pool installed on the calling (JNI) thread for every later tract call
+/// there that sets none of its own. The panic is therefore caught inside the scope and comes back
+/// as an error, and the scope always restores.
+#[cfg(feature = "tract-threads")]
+fn in_scope<T>(executor: &Executor, run: impl FnOnce() -> TractResult<T>) -> Result<T, Error> {
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+    // A plan keeps no state between runs (each run builds its own), so nothing half-updated is
+    // observed after a caught panic.
+    multithread_tract_scope(executor.clone(), || catch_unwind(AssertUnwindSafe(run)))
+        .map_err(|payload| {
+            let text = payload
+                .downcast_ref::<&str>()
+                .map(|s| (*s).to_owned())
+                .or_else(|| payload.downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "non-text panic payload".to_owned());
+            Error::Backend(format!("tract panicked: {text}"))
+        })?
+        .map_err(backend_error)
 }
 
 /// One thread is tract's own single-threaded path, so a build with the feature runs one thread
@@ -185,12 +234,13 @@ impl Backend for TractBackend {
         let tensor = Tensor::from_shape(&input.shape(), input.data()).map_err(backend_error)?;
         let inputs = tvec!(tensor.into_tvalue());
         // tract-linalg reads the executor from a thread-local override first, so it is set per
-        // call and per thread, and no other tract model in the process changes how it runs.
+        // call and per thread, for the one-thread backend too (`SingleThread`), and no other
+        // tract model in the process changes how it runs. Without the feature nothing here sets
+        // an override, so tract runs on its process default, `SingleThread`.
         #[cfg(feature = "tract-threads")]
-        let outputs = multithread_tract_scope(self.executor.clone(), || plan.run(inputs));
+        let outputs = in_scope(&self.executor, || plan.run(inputs))?;
         #[cfg(not(feature = "tract-threads"))]
-        let outputs = plan.run(inputs);
-        let outputs = outputs.map_err(backend_error)?;
+        let outputs = plan.run(inputs).map_err(backend_error)?;
         let output = outputs
             .first()
             .ok_or_else(|| Error::Backend("the model returned no output".into()))?;
@@ -267,6 +317,52 @@ mod tests {
             Ok(Executor::MultiThread(pool)) => assert_eq!(pool.current_num_threads(), 3),
             other => panic!("{other:?}"),
         }
+    }
+
+    #[test]
+    fn the_load_time_plan_stays_and_the_oldest_other_goes() {
+        let mut cache = PlanCache::new(320, "load");
+        let mut made = Vec::new();
+        for width in [400, 480, 400, 560, 640, 320] {
+            let plan = cache
+                .get_or_insert_with(width, || {
+                    made.push(width);
+                    Ok("planned")
+                })
+                .unwrap();
+            assert_eq!(plan, if width == 320 { "load" } else { "planned" });
+        }
+        // 400 was reused, then dropped for 560; 480 was dropped for 640.
+        assert_eq!(made, vec![400, 480, 560, 640]);
+        assert_eq!(cache.widths(), vec![320, 560, 640]);
+    }
+
+    #[test]
+    fn a_failed_plan_is_not_kept() {
+        let mut cache = PlanCache::new(320, 1);
+        assert_eq!(
+            cache.get_or_insert_with(400, || Err(Error::Backend("no".into()))),
+            Err(Error::Backend("no".into()))
+        );
+        assert_eq!(cache.widths(), vec![320]);
+    }
+
+    #[cfg(feature = "tract-threads")]
+    #[test]
+    fn a_panic_inside_the_scope_restores_the_executor() {
+        use tract_linalg::multithread::current_tract_executor;
+        let Ok(pool) = executor(2) else {
+            panic!("no pool")
+        };
+        let result: Result<(), Error> = in_scope(&pool, || panic!("inside tract"));
+        assert_eq!(
+            result,
+            Err(Error::Backend("tract panicked: inside tract".into()))
+        );
+        assert!(matches!(current_tract_executor(), Executor::SingleThread));
+        // A run that returns also restores.
+        assert_eq!(in_scope(&pool, || Ok(7)), Ok(7));
+        assert!(matches!(current_tract_executor(), Executor::SingleThread));
     }
 
     #[test]

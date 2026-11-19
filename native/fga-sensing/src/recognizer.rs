@@ -60,3 +60,86 @@ impl<B: Backend> Recognizer<B> {
         decode(&probabilities, self.backend.characters(), allowed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+    use crate::ctc::Probabilities;
+    use crate::preprocess::{InputTensor, MODEL_HEIGHT};
+
+    /// Records the width of every tensor it is given, as a real backend would see it.
+    struct WidthRecorder {
+        characters: CharacterList,
+        widths: Vec<usize>,
+    }
+
+    impl WidthRecorder {
+        fn new() -> Self {
+            Self {
+                characters: CharacterList::from_metadata("0\n1\n").unwrap(),
+                widths: Vec::new(),
+            }
+        }
+    }
+
+    impl Backend for WidthRecorder {
+        fn load_file(_: &Path) -> Result<Self, Error> {
+            Ok(Self::new())
+        }
+
+        fn load_bytes(_: &[u8]) -> Result<Self, Error> {
+            Ok(Self::new())
+        }
+
+        fn run(&mut self, input: &InputTensor) -> Result<crate::ctc::Probabilities, Error> {
+            assert_eq!(input.shape()[2], MODEL_HEIGHT);
+            self.widths.push(input.width());
+            let steps = input.width() / 8;
+            let classes = self.characters.class_count();
+            // Every step on the blank: decodes to an empty text.
+            let mut data = vec![0.0f32; steps * classes];
+            for step in 0..steps {
+                data[step * classes] = 1.0;
+            }
+            Probabilities::new(steps, classes, data)
+        }
+
+        fn characters(&self) -> &CharacterList {
+            &self.characters
+        }
+    }
+
+    fn crop() -> GrayImage {
+        GrayImage::new(60, 30, vec![200; 60 * 30]).unwrap()
+    }
+
+    #[test]
+    fn the_backend_gets_the_default_width() {
+        let mut recognizer = Recognizer::new(WidthRecorder::new());
+        assert_eq!(recognizer.min_width(), MIN_MODEL_WIDTH);
+        recognizer.recognize(&crop(), None).unwrap();
+        assert_eq!(recognizer.backend().widths, vec![MIN_MODEL_WIDTH]);
+    }
+
+    #[test]
+    fn the_backend_gets_the_chosen_width() {
+        for (min, width) in [(160, 160), (96, 96), (8, 96)] {
+            let mut recognizer = Recognizer::new(WidthRecorder::new())
+                .with_min_width(min)
+                .unwrap();
+            assert_eq!(recognizer.min_width(), min);
+            recognizer.recognize(&crop(), None).unwrap();
+            assert_eq!(recognizer.backend().widths, vec![width], "min {min}");
+        }
+    }
+
+    #[test]
+    fn a_bad_width_is_refused() {
+        assert!(matches!(
+            Recognizer::new(WidthRecorder::new()).with_min_width(7),
+            Err(Error::InvalidMinWidth { width: 7, .. })
+        ));
+    }
+}

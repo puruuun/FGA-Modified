@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.qa.suites
 
+import android.graphics.BitmapFactory
 import android.os.Debug
 import android.util.Log
 import io.github.fate_grand_automata.imaging.DroidCvPattern
@@ -12,6 +13,7 @@ import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScores
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.core.CvType
@@ -76,13 +78,22 @@ private class Engine(
     val read: (ByteArray, Int, Int, String) -> String,
     val unload: () -> String,
     val memoryNote: String = HWM_NOTE,
+    /** tract only: (minimum width, threads), so a thread case can be held to the one-thread texts. */
+    val tract: Pair<Int, Int>? = null,
     val extra: (load: JSONObject, threadsAround: List<Int>) -> Map<String, Any?> = { _, _ -> emptyMap() },
 )
+
+/**
+ * The texts of each one-thread tract case of this run, by minimum width and allowed set. A
+ * multi-threaded case must read exactly these: the PC found no difference, and tract splits its
+ * work without changing the order of any sum (tract-linalg's multithread.rs).
+ */
+private val oneThreadTexts = mutableMapOf<String, List<String?>>()
 
 private const val HWM_NOTE =
     "vmHwmKb is the process-wide peak; an earlier case (tesseract-baseline) may already have set it, so it moves only when this case goes higher"
 
-private val TRACT = Engine("ocrLoad", { NativeProbe.ocrLoad(it) }, NativeProbe::ocrRead, NativeProbe::ocrUnload)
+private val TRACT = Engine("ocrLoad", { NativeProbe.ocrLoad(it) }, NativeProbe::ocrRead, NativeProbe::ocrUnload, tract = 320 to 1)
 
 /**
  * [threads] 0 is ONNX Runtime's default, which by its documentation is one intra-op thread per
@@ -132,6 +143,7 @@ private fun tractEngine(minWidth: Int, threads: Int) = Engine(
     { NativeProbe.ocrLoadTract(it, minWidth, threads) },
     NativeProbe::ocrRead,
     NativeProbe::ocrUnload,
+    tract = minWidth to threads,
 ) { load, threadsAround ->
     mapOf(
         "minWidth" to load.getInt("minWidth"),
@@ -375,6 +387,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
     val samples = samples(runner, case.getString("samples"))
     val model = modelFile(runner, case.getString("model"))
     val engineMicros = mutableListOf<Long>()
+    val texts = mutableListOf<String?>()
     val callMicros = mutableListOf<Long>()
     val differing = JSONArray()
     val errors = JSONArray()
@@ -390,6 +403,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
                 val result = engine.read(sample.gray, sample.width, sample.height, allowed)
                 callMicros += (System.nanoTime() - started) / 1000
                 if (!result.startsWith("OK: ")) {
+                    texts += null
                     errorCount++
                     if (errors.length() < MAX_LISTED) errors.put(JSONObject().put("file", sample.file).put("result", result))
                     continue
@@ -397,6 +411,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
                 val read = JSONObject(result.removePrefix("OK: "))
                 engineMicros += read.getLong("micros")
                 val text = read.getString("text")
+                texts += text
                 if (text == sample.pyText) equal++ else {
                     differingCount++
                     if (differing.length() < MAX_LISTED) {
@@ -429,14 +444,31 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
     // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
     // Issue #549: an observation case confirms a PC count on the device. Its minEqual is that PC
     // count, and a different count is reported, not failed; an ERR still fails.
+    var threadMismatches = 0
+    engine.tract?.let { (minWidth, threads) ->
+        val key = "$minWidth|$allowed"
+        if (threads <= 1) oneThreadTexts[key] = texts.toList() else {
+            val reference = oneThreadTexts[key]
+            if (reference == null) {
+                report.put("oneThreadReference", "none: no one-thread tract case at minWidth $minWidth with this allowed set ran before this one")
+            } else {
+                val threadDiffering = JSONArray()
+                samples.indices.filter { texts.getOrNull(it) != reference.getOrNull(it) }.also { threadMismatches = it.size }
+                    .take(MAX_LISTED).forEach { i ->
+                        threadDiffering.put(JSONObject().put("file", samples[i].file).put("oneThread", reference[i] ?: JSONObject.NULL).put("text", texts[i] ?: JSONObject.NULL))
+                    }
+                report.put("oneThreadReference", JSONObject().put("compared", samples.size).put("differ", threadMismatches).put("differing", threadDiffering))
+            }
+        }
+    }
     val observation = case.optBoolean("observation", false)
     if (observation) {
         report.put("observation", true).put("observationNote", "minEqual is the PC count at this setting; a lower equalToPyText is reported here and does not fail the case")
             .put("belowMinEqual", equal < minEqual)
     }
     Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount${if (observation) ", observation" else ""})")
-    if (errorCount > 0 || (equal < minEqual && !observation)) {
-        throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR. $report")
+    if (errorCount > 0 || (equal < minEqual && !observation) || threadMismatches > 0) {
+        throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR, $threadMismatches differ from one thread. $report")
     }
     return report
 }
@@ -456,108 +488,172 @@ private fun counts(values: List<Int>): JSONObject {
         .put("max", sorted.last()).put("total", sorted.sum())
 }
 
+/** The decoded crop size the crop path needs (SupportScoreLayout's 120x60 score region at 720p). */
+private const val SCORE_CROP_WIDTH = 60
+private const val SCORE_CROP_HEIGHT = 30
+
+/**
+ * A sample for [kotlinReader]: present, and exactly the score region's size. The crop path pads a
+ * smaller crop with the black canvas, where the full-frame path would have refused it.
+ */
+private fun checkScoreCrop(runner: SupportDeviceTestRunner, path: String) {
+    val png = runner.fixture(path)
+    check(png.isNotEmpty()) { "$path is missing on the device; push the OCR samples first (docs/agents/rust-native.md)" }
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(png, 0, png.size, options)
+    check(options.outWidth == SCORE_CROP_WIDTH && options.outHeight == SCORE_CROP_HEIGHT) {
+        "$path is ${options.outWidth}x${options.outHeight}; kotlin-reader needs ${SCORE_CROP_WIDTH}x$SCORE_CROP_HEIGHT score crops"
+    }
+}
+
+private class ReaderRun(val scores: SupportScores, val micros: Long, val ocrCalls: Int)
+
+/**
+ * One field through the crop path of SupportSuite: FixtureApi places the crop on a black 1280x720
+ * frame at the score region of row y 200, and SupportScoreReader reads that row with the row
+ * server's profile. Only read() is timed: the frame is composed and the asset templates are
+ * loaded before the clock starts.
+ */
+private fun readField(runner: SupportDeviceTestRunner, ocr: MeasuredOcr, path: String, server: String): ReaderRun {
+    val fixture = JSONObject().put("name", path).put("suite", "support").put("frame", "crop")
+        .put("file", path).put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", server)
+    val api = FixtureApi(runner, fixture, JSONObject())
+    try {
+        val run = with(api) {
+            val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
+            for (image in listOf(Images.SupportScore62) + SupportScoreReader.COMPACT_CLASS_TEMPLATES + SupportScoreReader.GRAND_TEMPLATES) {
+                images[image]
+            }
+            val reader = SupportScoreReader(api, ocr)
+            useSameSnapIn {
+                SupportScoreLayout.numberRegion(bound.region).getPattern("frame-warm-up").close()
+                val callsBefore = ocr.calls
+                val started = System.nanoTime()
+                val read = reader.read(bound, true, true)
+                ReaderRun(read, (System.nanoTime() - started) / 1000, ocr.calls - callsBefore)
+            }
+        }
+        api.checkCoverage()
+        return run
+    } finally {
+        api.close()
+    }
+}
+
 /**
  * Issue #549: the real cost of the current reader per field. Each sample is the 60x30 gray crop
- * the reader got in the stage 0 replay (docs/qa/0025-stage-0-baseline.md 4.1). It goes through
- * SupportSuite's crop path: FixtureApi places it on a black 1280x720 frame at the score region of
- * a row, and SupportScoreReader.read(bound, checkClass = true, checkGrand = true) reads that row
- * with its server's profile, every OCR profile, the dark retry and the template matches, as in
- * production. Only read() is timed: the frame is composed, and the templates are loaded, before
- * the clock starts, and one shared Tesseract engine is started before the first field.
+ * the reader got in the stage 0 replay (docs/qa/0025-stage-0-baseline.md 4.1), read through
+ * [readField] with every OCR profile, the dark retry and the template matches, as in production.
+ *
+ * Before the timed loop, one JP field is read untimed: it starts the shared Tesseract engine and
+ * loads SupportScoreBlocks' templates (a gzip resource loaded on first use by a JP read), neither
+ * of which is a per-field cost.
+ *
+ * The case fails on what a correctly driven reader always does, and reports the rest:
+ * - every field made at least one OCR call: the reader runs its primary OCR profiles on every
+ *   score region that is not clipped, and a 60x30 crop at this region never is, so a field
+ *   without a call means the crop did not reach the reader;
+ * - no false accept on a labelled row: the stage 0 replay of these crops had none, and the reader
+ *   is built to answer "unknown" rather than a wrong value, so one is a finding to look at.
+ * Agreement with the stage 0 result is only reported. The crop path hands the reader the same
+ * pixels, but stage 0 ran on MuMu, and Tesseract on another CPU may round differently; there is no
+ * measurement that would justify any allowed number of differences.
  */
 private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val dir = case.getString("samples")
     val indexBytes = runner.fixture("$dir/index.json")
     check(indexBytes.isNotEmpty()) { "$dir/index.json is missing on the device; push the OCR samples first (docs/agents/rust-native.md)" }
     val index = JSONArray(indexBytes.toString(Charsets.UTF_8))
+    val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    for (row in rows) {
+        val file = row.getString("file")
+        // An explicit null is "stage 0 read nothing"; a missing key would read as null too and
+        // count as agreement, so it is refused.
+        check(row.has("kt_cls") && row.has("kt_grand")) { "$dir/index.json: $file has no kt_cls or kt_grand" }
+        checkScoreCrop(runner, "$dir/$file")
+    }
     val threadsBefore = processThreads()
     val ocr = MeasuredOcr(TesseractOcrService(runner.targetContext))
     val micros = mutableListOf<Long>()
     val ocrCalls = mutableListOf<Int>()
     val byServer = mutableMapOf<String, MutableList<Long>>()
-    val disagreements = JSONArray()
-    var disagreementCount = 0
-    var agreeWithStage0 = 0
+    val differences = JSONArray()
+    var differenceCount = 0
+    var sameValue = 0
+    var bothNothing = 0
+    val noOcr = mutableListOf<String>()
+    val falseAccepts = mutableListOf<String>()
     val tally = mutableMapOf<String, Int>()
     fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
     fun tallied(key: String) = tally[key] ?: 0
-    var firstCallUs = -1L
+    val warmUp = rows.firstOrNull { it.getString("server") == "Jp" } ?: rows.first()
+    val warmUpRun: ReaderRun
     try {
-        // The engine starts on its first call; that start is not a per-field cost.
-        val png = runner.fixture("$dir/${index.getJSONObject(0).getString("file")}")
-        val encoded = MatOfByte(*png)
-        val warmMat = try { Imgcodecs.imdecode(encoded, Imgcodecs.IMREAD_GRAYSCALE) } finally { encoded.release() }
-        DroidCvPattern(warmMat).use { pattern ->
-            val started = System.nanoTime()
-            ocr.detectTextLine(pattern, SupportScoreReader.OCR_OPTIONS)
-            firstCallUs = (System.nanoTime() - started) / 1000
-        }
-        for (i in 0 until index.length()) {
-            val row = index.getJSONObject(i)
+        warmUpRun = readField(runner, ocr, "$dir/${warmUp.getString("file")}", warmUp.getString("server"))
+        for (row in rows) {
             val file = row.getString("file")
             val server = row.getString("server")
-            val fixture = JSONObject().put("name", file).put("suite", "support").put("frame", "crop")
-                .put("file", "$dir/$file").put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", server)
-            val api = FixtureApi(runner, fixture, JSONObject())
-            val (scores, elapsed, calls) = try {
-                with(api) {
-                    val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
-                    for (image in listOf(Images.SupportScore62) + SupportScoreReader.COMPACT_CLASS_TEMPLATES + SupportScoreReader.GRAND_TEMPLATES) {
-                        images[image]
-                    }
-                    val reader = SupportScoreReader(api, ocr)
-                    useSameSnapIn {
-                        SupportScoreLayout.numberRegion(bound.region).getPattern("frame-warm-up").close()
-                        val callsBefore = ocr.calls
-                        val started = System.nanoTime()
-                        val read = reader.read(bound, true, true)
-                        Triple(read, (System.nanoTime() - started) / 1000, ocr.calls - callsBefore)
-                    }
-                }.also { api.checkCoverage() }
-            } finally {
-                api.close()
-            }
-            micros += elapsed
-            ocrCalls += calls
-            byServer.getOrPut(server) { mutableListOf() } += elapsed
-            val cls = scores.classScore
-            val grand = scores.grandScore
+            val run = readField(runner, ocr, "$dir/$file", server)
+            micros += run.micros
+            ocrCalls += run.ocrCalls
+            byServer.getOrPut(server) { mutableListOf() } += run.micros
+            if (run.ocrCalls == 0) noOcr += file
+            val cls = run.scores.classScore
+            val grand = run.scores.grandScore
             when (row.boolOrNull("is62")) {
-                true -> { count("positives62"); if (cls != 62) count("missed62") }
-                false -> if (cls == 62) count("falseAccepts62")
+                true -> { count("positives62"); if (cls == 62) count("read62") }
+                false -> if (cls == 62) { count("falseAccepts62"); falseAccepts += "$file +62" }
                 null -> Unit
             }
             when (row.boolOrNull("is16")) {
-                true -> { count("positives16"); if (grand != 16) count("missed16") }
-                false -> if (grand == 16) count("falseAccepts16")
+                true -> { count("positives16"); if (grand == 16) count("read16") }
+                false -> if (grand == 16) { count("falseAccepts16"); falseAccepts += "$file +16" }
                 null -> Unit
             }
             row.intOrNull("cls")?.let { label -> count("classLabels"); if (cls == label) count("classValueEqual") }
             // kt_cls and kt_grand are what the reader returned in the stage 0 replay the crops were cut from.
-            if (cls == row.intOrNull("kt_cls") && grand == row.intOrNull("kt_grand")) agreeWithStage0++ else {
-                disagreementCount++
-                if (disagreements.length() < MAX_LISTED) disagreements.put(JSONObject().put("file", file).put("case", row.optString("case"))
-                    .put("stage0", JSONObject().put("class", row.opt("kt_cls")).put("grand", row.opt("kt_grand")))
-                    .put("now", JSONObject().put("class", cls ?: JSONObject.NULL).put("grand", grand ?: JSONObject.NULL)))
+            val stage0Class = row.intOrNull("kt_cls")
+            val stage0Grand = row.intOrNull("kt_grand")
+            when {
+                cls != stage0Class || grand != stage0Grand -> {
+                    differenceCount++
+                    if (differences.length() < MAX_LISTED) differences.put(JSONObject().put("file", file).put("case", row.optString("case"))
+                        .put("stage0", JSONObject().put("class", stage0Class ?: JSONObject.NULL).put("grand", stage0Grand ?: JSONObject.NULL))
+                        .put("now", JSONObject().put("class", cls ?: JSONObject.NULL).put("grand", grand ?: JSONObject.NULL)))
+                }
+                cls == null && grand == null -> bothNothing++
+                else -> sameValue++
             }
         }
     } finally {
         ocr.close()
     }
-    return JSONObject()
-        .put("note", "SupportScoreReader.read(bound, true, true) through the crop path of SupportSuite (FixtureApi frame crop, region720 $SCORE_CROP_REGION_720, row y720 $SCORE_CROP_ROW_Y_720) with the profile of the row server; perField times read() alone, with the frame composed and the templates loaded beforehand")
-        .put("samples", index.length())
-        .put("firstOcrCallUs", firstCallUs)
-        .put("perField", timing(micros))
+    val perField = timing(micros)
+    val calls = counts(ocrCalls)
+    Log.i(TAG, "kotlin-reader: +62 read ${tallied("read62")} of ${tallied("positives62")} (stage 0: 74 of 86), " +
+        "+16 read ${tallied("read16")} of ${tallied("positives16")} (stage 0: 142 of 167), " +
+        "false accepts +62 ${tallied("falseAccepts62")} +16 ${tallied("falseAccepts16")}, " +
+        "OCR calls per field median ${calls.opt("median")} max ${calls.opt("max")}, " +
+        "time per field median ${perField.opt("medianUs")} us p90 ${perField.opt("p90Us")} us max ${perField.opt("maxUs")} us, " +
+        "stage 0 same value $sameValue, both nothing $bothNothing, differ $differenceCount")
+    val report = JSONObject()
+        .put("note", "SupportScoreReader.read(bound, true, true) through the crop path of SupportSuite (FixtureApi frame crop, region720 $SCORE_CROP_REGION_720, row y720 $SCORE_CROP_ROW_Y_720) with the profile of the row server; perField times read() alone, after an untimed warm-up read of one JP field (Tesseract start, SupportScoreBlocks templates) and with the frame composed and the asset templates loaded beforehand")
+        .put("samples", rows.size)
+        .put("warmUp", JSONObject().put("file", warmUp.getString("file")).put("us", warmUpRun.micros).put("ocrCalls", warmUpRun.ocrCalls))
+        .put("perField", perField)
         .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })
-        .put("ocrCallsPerField", counts(ocrCalls))
-        .put("agreeWithStage0", agreeWithStage0)
-        .put("disagreeWithStage0", disagreementCount)
-        .put("disagreements", disagreements)
-        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("missed", tallied("missed62"))
-            .put("falseAccepts", tallied("falseAccepts62")).put("stage0", "12 of 86 missed, 0 false accepts"))
-        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("missed", tallied("missed16"))
-            .put("falseAccepts", tallied("falseAccepts16")).put("stage0", "25 of 167 missed, 0 false accepts"))
+        .put("ocrCallsPerField", calls)
+        .put("stage0", JSONObject().put("sameValue", sameValue).put("bothNothing", bothNothing).put("differ", differenceCount)
+            .put("differences", differences)
+            .put("note", "reported, not checked: the same pixels, but stage 0 ran on MuMu and Tesseract may round differently on another CPU"))
+        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62"))
+            .put("falseAccepts", tallied("falseAccepts62")).put("stage0", "74 of 86 read, 0 false accepts"))
+        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16"))
+            .put("falseAccepts", tallied("falseAccepts16")).put("stage0", "142 of 167 read, 0 false accepts"))
         .put("classValue", JSONObject().put("labelled", tallied("classLabels")).put("equal", tallied("classValueEqual")))
         .put("processThreads", JSONObject().put("before", threadsBefore.takeIf { it >= 0 }).put("after", processThreads().takeIf { it >= 0 }))
+    if (noOcr.isNotEmpty() || falseAccepts.isNotEmpty()) {
+        throw AssertionError("kotlin-reader: fields without an OCR call ${noOcr.take(MAX_LISTED)}, false accepts ${falseAccepts.take(MAX_LISTED)}. $report")
+    }
+    return report
 }

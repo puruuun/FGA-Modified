@@ -13,7 +13,10 @@
     { "name": "kotlin-reader", "suite": "ocrProbe", "test": "kotlin-reader", "samples": "/sdcard/Download/fga-device-qa/ocr/samples" },
     { "name": "tract-width-160", "suite": "ocrProbe", "test": "tract-width-160", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 361, "minWidth": 160, "threads": 1, "observation": true },
     { "name": "tract-threads-2", "suite": "ocrProbe", "test": "tract-threads-2", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 370, "minWidth": 320, "threads": 2 },
-    { "name": "tract-threads-4", "suite": "ocrProbe", "test": "tract-threads-4", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 370, "minWidth": 320, "threads": 4 }
+    { "name": "tract-threads-4", "suite": "ocrProbe", "test": "tract-threads-4", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 370, "minWidth": 320, "threads": 4 },
+    { "name": "tract-width-160-allowed", "suite": "ocrProbe", "test": "tract-width-160-allowed", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "+/0123456789", "minEqual": 362, "minWidth": 160, "threads": 1, "observation": true },
+    { "name": "tract-threads-2-allowed", "suite": "ocrProbe", "test": "tract-threads-2-allowed", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "+/0123456789", "minEqual": 366, "minWidth": 320, "threads": 2 },
+    { "name": "tract-threads-4-allowed", "suite": "ocrProbe", "test": "tract-threads-4-allowed", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "+/0123456789", "minEqual": 366, "minWidth": 320, "threads": 4 }
   ],
   "imports": {
     "ocrProbe:localFixtures": [
