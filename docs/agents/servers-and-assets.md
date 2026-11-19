@@ -22,27 +22,11 @@ To draft the templates of a server and screen that has no screenshot, use the
 `apk-template-asset` skill (`.claude/skills/apk-template-asset/`), which cuts them from that
 server's APK; the result is checked against a real screenshot before it is committed.
 
-## NA: ported, not played
+## NA: not a target
 
-NA (`GameServer.En.Original`, assets in `En/`) is a target server, but the owner does not play it,
-so NA work is ported from KR and JP. Screen logic and layout are the same on every server; only
-language, fonts and some art differ.
-
-- A language-free template that matches KR or JP screens also serves NA through the `En`
-  fallback. Measured: support screen icons, the Grand CE label and the bond CE marks score
-  0.97-0.999 on JP screens with the `En` copies.
-- A template with text or localized art gets an `En` copy drafted from the NA APK or Atlas
-  Academy (`apk-template-asset`), or cut from an NA screenshot.
-- NA screenshots come from the owner when available, otherwise from public sources (wiki,
-  Reddit, X, video frames of 1080p or better; a blurry 720p frame loses text labels). Downloading
-  them needs the owner's approval, as any download does; they stay out of the repository, and
-  only finished templates and account-free crops are committed.
-- Code that branches on the server (`GameServer.Kr`, `GameServer.Jp`) runs its default path on
-  NA. A port decides for each branch whether NA takes the KR, the JP or the default behaviour,
-  including OCR settings.
-- The `server-port` skill (`.claude/skills/server-port/`) lists per `Images` entry what carries over, what can be redrawn from the NA APK and what needs a screenshot, and per code branch what to decide.
-- No device QA on NA unless the owner provides one; a PR says which NA parts were checked on
-  screenshots only.
+The owner decided on 2026-11-20 that the fork's features are for KR and official JP only. NA cannot be
+checked on a device, so no NA branches, templates or tests are added for the fork's features. Upstream NA
+behaviour and the `En/` templates stay as they are, and upstream syncs keep merging them.
 
 Server choice and app language are independent: a user can run the JP server with the app's
 UI in English, or the EN server in Korean. Don't assume they're coupled when reading prefs or
