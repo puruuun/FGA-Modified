@@ -200,6 +200,21 @@ def draft_text(args, color, background, checks) -> tuple[np.ndarray, float]:
     return lib.render(args.font, args.text, color, size, args.stroke, background), size
 
 
+def parse_scale(text: str):
+    parts = text.split(",")
+    try:
+        values = tuple(float(p) for p in parts)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number: {text}")
+    if len(values) > 2:
+        raise argparse.ArgumentTypeError("--scale takes X or X,Y")
+    return values[0] if len(values) == 1 else values
+
+
+def scale_text(scale) -> str:
+    return ",".join(f"{v:g}" for v in scale) if isinstance(scale, tuple) else f"{scale:g}"
+
+
 def main() -> None:
     ct = lib.crop_template_module()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -209,8 +224,9 @@ def main() -> None:
     parser.add_argument("--device-height", type=int, default=lib.DEFAULT_DEVICE_HEIGHT, metavar="PX",
                         help="sprite mode: height of the device screen the sprite is drawn on before FGA shrinks it "
                              "to 720p; 720 = one INTER_AREA step, the behaviour before #556 (default: %(default)s)")
-    parser.add_argument("--scale", type=float, default=lib.DEFAULT_SPRITE_SCALE,
-                        help="sprite to 720p scale (default: %(default)s, measured on KR 8.1.0)")
+    parser.add_argument("--scale", type=parse_scale, default=lib.DEFAULT_SPRITE_SCALE,
+                        help="sprite to 720p scale, a number or X,Y for a sprite stretched to its widget "
+                             "(default: %(default)s, measured on KR 8.1.0)")
     parser.add_argument("--crop", type=parse_box, metavar="X,Y,W,H",
                         help="keep only this box of the scaled sprite, in 720p pixels")
     parser.add_argument("--crop-like", metavar="REF.png",
@@ -272,7 +288,7 @@ def main() -> None:
 
     if args.sprite:
         draft = draft_sprite(args, background, reference)
-        print(f"draft {draft.shape[1]}x{draft.shape[0]} from {' + '.join(args.sprite)} at x{args.scale:g}, "
+        print(f"draft {draft.shape[1]}x{draft.shape[0]} from {' + '.join(args.sprite)} at x{scale_text(args.scale)}, "
               f"device {args.device_height}p")
     else:
         if args.color:

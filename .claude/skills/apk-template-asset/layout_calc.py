@@ -26,8 +26,10 @@ import UnityPy  # noqa: E402
 
 PIVOT = {0: (0, 1), 1: (.5, 1), 2: (1, 1), 3: (0, .5), 4: (.5, .5), 5: (1, .5), 6: (0, 0), 7: (.5, 0), 8: (1, 0)}
 ANCHOR_OFFSETS = {'left': 32, 'right': 52, 'bottom': 72, 'top': 92}
-# Two axes that differ by less than this are one scale (rounding of the widget size).
+# Two axes that differ by less than this are one scale.
 AXIS_TOLERANCE = 0.05
+# NGUI makes widget sizes even, so a widget one or two units off its sprite is rounding, not a resize.
+ROUNDING_UNITS = 2
 
 
 def transform_of(go):
@@ -84,13 +86,19 @@ def resolve(target, by_name):
     return name, cands
 
 
-def recommend(sx, sy):
-    """One scale for the draft. A sliced sprite is stretched on one axis only, and the part a template is cut from
-    (a label, an icon) keeps its own proportions, so the axis closer to the device scale 1.25 is the one to use."""
-    if abs(sx - sy) <= AXIS_TOLERANCE * max(sx, sy):
-        return round((sx + sy) / 2, 3), 'both axes agree'
-    axis, val = ('x', sx) if abs(sx - 1.25) <= abs(sy - 1.25) else ('y', sy)
-    return round(val, 3), 'stretched: x %.2f vs y %.2f, %s is nearer 1.25' % (sx, sy, axis)
+def recommend(sx, sy, dw, dh):
+    """(draft scale, warning). The widget size is not always the drawn size: a localized sprite can be larger or
+    smaller than the widget it sits in (KR retire label 90x31, NA 140x30, both in a 90x32 widget), and the game
+    either stretches the sprite to the widget or resizes the widget to the sprite. Which one happens needs a
+    screenshot, so 1.25 stays the suggestion unless both axes show the same other value."""
+    if max(dw, dh) <= ROUNDING_UNITS:
+        return 1.25, None
+    agree = abs(sx - sy) <= AXIS_TOLERANCE * max(sx, sy)
+    scale = round((sx + sy) / 2, 3) if agree else 1.25
+    warning = ('widget and sprite differ by %.0f x %.0f NGUI units: the game may stretch the sprite to the widget '
+               '(--scale %.3f,%.3f) or resize the widget to the sprite at run time (--scale 1.25); check with a '
+               'screenshot' % (dw, dh, sx, sy))
+    return scale, warning
 
 
 def main():
@@ -161,7 +169,7 @@ def main():
                 rec['sprite_size'] = [sw, sh]
                 sx, sy = 1.25 * w2 / sw, 1.25 * h2 / sh
                 rec['scale_x'], rec['scale_y'] = round(sx, 3), round(sy, 3)
-                rec['draft_scale'], rec['scale_note'] = recommend(sx, sy)
+                rec['draft_scale'], rec['scale_warning'] = recommend(sx, sy, abs(w2 - sw), abs(h2 - sh))
             results.append(rec)
 
     if a.out_json:
@@ -175,8 +183,10 @@ def main():
         print('    box720 x=%.0f y=%.0f w=%.0f h=%.0f | box1440 x=%d y=%d w=%d h=%d | widget %dx%d pivot %d' % (
             *r['box720'], *r['box1440'], *r['size'], r['pivot']))
         if 'draft_scale' in r:
-            print('    sprite %dx%d | scale x %.3f y %.3f -> draft --scale %s (%s)' % (
-                *r['sprite_size'], r['scale_x'], r['scale_y'], r['draft_scale'], r['scale_note']))
+            print('    sprite %dx%d | widget/sprite x %.3f y %.3f -> draft --scale %s' % (
+                *r['sprite_size'], r['scale_x'], r['scale_y'], r['draft_scale']))
+            if r['scale_warning']:
+                print('    WARNING: ' + r['scale_warning'])
         if r['anchored']:
             print('    anchored (%s): may be resized at runtime, check against a screenshot' % ', '.join(r['anchored']))
 

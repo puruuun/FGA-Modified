@@ -72,8 +72,9 @@ def sprite_on_background(rgba: np.ndarray, background) -> np.ndarray:
     return np.clip(rgb + 0.5, 0, 255).astype(np.uint8)
 
 
-def scale_sprite(rgba: np.ndarray, scale: float, device_height: int = DEFAULT_DEVICE_HEIGHT) -> np.ndarray:
-    """A sprite at 720p scale `scale`, the way a screenshot of a device with a `device_height` screen shows it.
+def scale_sprite(rgba: np.ndarray, scale, device_height: int = DEFAULT_DEVICE_HEIGHT) -> np.ndarray:
+    """A sprite at 720p scale `scale` (a number, or an (x, y) pair for a sprite stretched to its widget),
+    the way a screenshot of a device with a `device_height` screen shows it.
 
     The game draws the sprite with bilinear filtering on a device-sized screen and FGA then shrinks
     the screenshot with INTER_AREA. A single INTER_AREA enlargement acts like nearest neighbour and
@@ -81,11 +82,12 @@ def scale_sprite(rgba: np.ndarray, scale: float, device_height: int = DEFAULT_DE
     device_height 720 keeps that single step.
     """
     h, w = rgba.shape[:2]
-    size = (max(1, round(w * scale)), max(1, round(h * scale)))
+    sx, sy = scale if isinstance(scale, (tuple, list)) else (scale, scale)
+    size = (max(1, round(w * sx)), max(1, round(h * sy)))
     if device_height == 720:
         return cv2.resize(rgba, size, interpolation=cv2.INTER_AREA)
-    device = scale * device_height / 720
-    big = cv2.resize(rgba, (max(1, round(w * device)), max(1, round(h * device))), interpolation=cv2.INTER_LINEAR)
+    dx, dy = sx * device_height / 720, sy * device_height / 720
+    big = cv2.resize(rgba, (max(1, round(w * dx)), max(1, round(h * dy))), interpolation=cv2.INTER_LINEAR)
     return cv2.resize(big, size, interpolation=cv2.INTER_AREA)
 
 

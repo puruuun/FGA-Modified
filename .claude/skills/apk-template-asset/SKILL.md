@@ -70,28 +70,32 @@ folder the package came from.
      scene instantiates at run time) is listed as "no UI Root": its position is not in the data.
      A widget with a UIRect anchor is marked `anchored`; the game may resize it at run time, so
      check its box against a screenshot.
-   - **Scale.** A sprite is not always drawn at its own size: the widget size sets it, and the
-     draft scale is `1.25 * widget / sprite`, per axis. The script prints both. Axes within 5 %
-     are one scale (their mean; a widget one unit larger than its sprite is NGUI's even-size
-     rounding). A widget stretched on one axis is a 9-slice: the draft uses the axis nearer 1.25,
-     because that is the axis a label or icon keeps its proportions on, and the other axis is
-     the slice's stretched middle. When neither axis is near the scale found by matching, trust
-     the matching: the widget size is a prediction, `--check` or `score_screens.py` decides.
+   - **Scale.** The script prints the widget/sprite ratio per axis (`1.25 * widget / sprite`) and
+     suggests `--scale 1.25` unless both axes agree on another value. Do not read the ratio as the
+     drawn scale: a localized sprite is not the size of the widget it sits in. KR's retire label
+     is 90x31 and NA's is 140x30 in the same 90x32 widget, so the ratio on NA is x 0.80, y 1.33.
+     The game either stretches the sprite to the widget (non-uniform) or resizes the widget to
+     the sprite at run time (uniform 1.25), and which one happens is not in the data (no NA
+     screenshot of that screen exists to check). Where widget and sprite differ by more than 2
+     NGUI units (NGUI's even-size rounding is 1-2) the script warns and prints both candidates;
+     `draft_template.py --scale X,Y` drafts the stretched one, `--scale 1.25` the other. Draft
+     both and let a screenshot decide; without one the draft stays a guess.
    - **What the widget rule did and did not predict**, against the scale that won when the
      sprite was matched against screenshots (KR 8.1.0 data; NA 2.95.0 prints the same):
 
      | Sprite | Widget rule | Best scale found | |
      |---|---|---|---|
-     | `CommonUIAtlas/btn_boostitem_off` | no widget; its `btn_boostitem_on` sibling (62x62) is drawn 54x54 units: 1.089 | x1.1 | agrees |
-     | `CommonUIAtlas/rarity4_0` | 58x20 widget on the costume dialog: 1.047 | x0.9 (drop screen) | differs: the matched screen's widget is not in the scene data (prefab) |
-     | `GachaAtlas/img_bg_friendpointuse` | 234x38 widget: x 1.25, y 1.28 | x1.0 | differs: the matched crop is a smooth gradient, so every scale scores the same |
+     | `CommonUIAtlas/btn_boostitem_off` | no widget; its `btn_boostitem_on` sibling (62x62) is drawn 54x54 units: 1.089, with a warning | x1.1 | agrees |
+     | `CommonUIAtlas/rarity4_0` | 58x20 widget on the costume dialog: 1.047, with a warning | x0.9 (drop screen) | differs: the matched screen's widget is not in the scene data (prefab) |
+     | `GachaAtlas/img_bg_friendpointuse` | 234x38 widget: x 1.25, y 1.28, suggests 1.25 | x1.0 | differs: the matched crop is a smooth gradient, so every scale scores the same |
      | `CommonUIAtlas/btn_list_small` | no widget in the scenes (set at run time) | x1.35 | no prediction |
 
-     Where one unit of rounding separates widget and sprite (retire, decide, `support_region_tool`)
-     the rule prints 1.25-1.28 against the matched 1.25; `btn_txt_servant_reselect` (widget 104x64
-     for a 63x46 sprite, x 2.06, y 1.74) is a stretched widget that matched at 1.25 as a layer, so
-     the rule does not predict it. It gives nothing for sprites that are set from code. The boxes printed in the issue as "widget 292x48" and
-     "60x21" are 720p sizes (units x 1.25), not NGUI units.
+     The rule agrees on 1 of 4. For the sprites of the sprite-match table below it suggests 1.25
+     (retire, decide, `support_region_tool`: widget one unit off its sprite); on
+     `btn_txt_servant_reselect` (widget 104x64 for a 63x46 sprite) it warns, and the sprite
+     matched at 1.25 as a layer. It gives nothing for sprites that are set from code. The boxes
+     printed in the issue as "widget 292x48" and "60x21" are 720p sizes (units x 1.25), not NGUI
+     units.
 
 3. **Draft** it, in one of two modes:
 
