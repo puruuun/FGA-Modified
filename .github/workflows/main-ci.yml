@@ -1,8 +1,8 @@
 name: Main CI
 
 on:
-  push:
-    branches: [main]
+  # No push run on main: main only ever receives, by fast-forward, a commit on which the required
+  # check "Main CI gate" already passed in its pull request, so a push run would test the same tree again.
   pull_request:
     branches: [main]
   workflow_dispatch:
