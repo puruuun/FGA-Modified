@@ -18,8 +18,13 @@ use crate::image::GrayImage;
 
 /// Height the model was trained on.
 pub const MODEL_HEIGHT: usize = 48;
-/// RapidOCR's `rec_img_shape` width: narrower crops are padded to it, never shrunk below.
+/// RapidOCR's `rec_img_shape` width: narrower crops are padded to it, never shrunk below. The
+/// default minimum width; issue #549 lets a caller choose another one to measure what the padding
+/// costs.
 pub const MIN_MODEL_WIDTH: usize = 320;
+/// The smallest minimum width a caller may choose: the model emits one output step per 8 input
+/// columns (40 steps at 320, 4 at 32), so a narrower input has no step at all.
+pub const SMALLEST_MIN_WIDTH: usize = 8;
 /// The scale the measured Python path applied before recognition.
 pub const DEFAULT_UPSCALE: usize = 4;
 
@@ -74,6 +79,16 @@ impl InputTensor {
 
 /// The full Python path: upscale by `upscale` (1 skips it), then [`to_input_tensor`].
 pub fn prepare_crop(crop: &GrayImage, upscale: usize) -> Result<InputTensor, Error> {
+    prepare_crop_with(crop, upscale, MIN_MODEL_WIDTH)
+}
+
+/// [`prepare_crop`] with a chosen minimum model width (see [`to_input_tensor_with`]).
+pub fn prepare_crop_with(
+    crop: &GrayImage,
+    upscale: usize,
+    min_width: usize,
+) -> Result<InputTensor, Error> {
+    check_min_width(min_width)?;
     check_limits(crop.width(), crop.height(), MAX_CROP_WIDTH, MAX_CROP_HEIGHT)?;
     if upscale == 0 || upscale > MAX_UPSCALE {
         return Err(Error::InvalidUpscale {
@@ -82,20 +97,28 @@ pub fn prepare_crop(crop: &GrayImage, upscale: usize) -> Result<InputTensor, Err
         });
     }
     if upscale == 1 {
-        return to_input_tensor(crop);
+        return to_input_tensor_with(crop, min_width);
     }
     // Within MAX_IMAGE_WIDTH x MAX_IMAGE_HEIGHT, given the two checks above.
     let (width, height) = (crop.width() * upscale, crop.height() * upscale);
-    to_input_tensor(&resize_cubic(crop, width, height)?)
+    to_input_tensor_with(&resize_cubic(crop, width, height)?, min_width)
 }
 
 /// RapidOCR's `resize_norm_img` for a batch of one: scale to the model height keeping the aspect
 /// ratio, map 0..255 to -1..1, and pad on the right to at least [`MIN_MODEL_WIDTH`].
 pub fn to_input_tensor(image: &GrayImage) -> Result<InputTensor, Error> {
+    to_input_tensor_with(image, MIN_MODEL_WIDTH)
+}
+
+/// [`to_input_tensor`] padding to at least `min_width` instead of [`MIN_MODEL_WIDTH`]. Resize,
+/// normalisation and the padding value stay the same; only the number of padding columns changes.
+pub fn to_input_tensor_with(image: &GrayImage, min_width: usize) -> Result<InputTensor, Error> {
+    check_min_width(min_width)?;
     check_image(image)?;
     let ratio = image.width() as f64 / image.height() as f64;
-    let max_ratio = (MIN_MODEL_WIDTH as f64 / MODEL_HEIGHT as f64).max(ratio);
-    // `as` saturates on overflow, and the result is checked against the limit right away.
+    let max_ratio = (min_width as f64 / MODEL_HEIGHT as f64).max(ratio);
+    // `as` saturates on overflow, and the result is checked against the limit right away. For
+    // every allowed minimum, 48 * (min_width / 48) truncates back to min_width.
     let width = (MODEL_HEIGHT as f64 * max_ratio) as usize;
     if width > MAX_MODEL_WIDTH {
         return Err(Error::InputTooWide {
@@ -223,6 +246,19 @@ fn check_resize(image: &GrayImage, width: usize, height: usize) -> Result<(), Er
         return Err(Error::InvalidSize { width, height });
     }
     check_limits(width, height, MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
+}
+
+/// A minimum width the model can take: see [`SMALLEST_MIN_WIDTH`] and [`MAX_MODEL_WIDTH`].
+pub fn check_min_width(min_width: usize) -> Result<(), Error> {
+    if (SMALLEST_MIN_WIDTH..=MAX_MODEL_WIDTH).contains(&min_width) {
+        Ok(())
+    } else {
+        Err(Error::InvalidMinWidth {
+            width: min_width,
+            min: SMALLEST_MIN_WIDTH,
+            max: MAX_MODEL_WIDTH,
+        })
+    }
 }
 
 fn check_image(image: &GrayImage) -> Result<(), Error> {
@@ -497,6 +533,81 @@ mod tests {
         let tensor = to_input_tensor(&crop).unwrap();
         assert_eq!(tensor.width(), 480);
         assert!(tensor.data().iter().all(|&v| v == -1.0));
+    }
+
+    #[test]
+    fn the_default_minimum_is_320() {
+        for (w, h) in [(60, 30), (1, 1), (100, 10), (61, 30), (80, 12), (55, 30)] {
+            let crop = image(w, h, |x, y| (x * 31 + y * 17) as u8);
+            let default = prepare_crop(&crop, DEFAULT_UPSCALE).unwrap();
+            assert_eq!(
+                prepare_crop_with(&crop, DEFAULT_UPSCALE, MIN_MODEL_WIDTH).unwrap(),
+                default
+            );
+            assert_eq!(
+                to_input_tensor_with(&crop, MIN_MODEL_WIDTH).unwrap(),
+                to_input_tensor(&crop).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn a_narrower_minimum_drops_only_padding() {
+        let crop = image(60, 30, |x, y| (x * 7 + y * 13) as u8);
+        let full = prepare_crop(&crop, DEFAULT_UPSCALE).unwrap();
+        // 240x120 after upscaling: 96 columns of picture.
+        for (min, width) in [
+            (256, 256),
+            (160, 160),
+            (112, 112),
+            (97, 97),
+            (96, 96),
+            (8, 96),
+        ] {
+            let narrow = prepare_crop_with(&crop, DEFAULT_UPSCALE, min).unwrap();
+            assert_eq!(narrow.shape(), [1, 3, MODEL_HEIGHT, width], "min {min}");
+            for row in 0..3 * MODEL_HEIGHT {
+                let ours = &narrow.data()[row * width..(row + 1) * width];
+                let wide = &full.data()[row * MIN_MODEL_WIDTH..(row + 1) * MIN_MODEL_WIDTH];
+                assert_eq!(&ours[..96], &wide[..96], "min {min}, row {row}");
+                assert!(ours[96..].iter().all(|&v| v == 0.0), "min {min}, row {row}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_wide_crop_ignores_a_narrower_minimum() {
+        let crop = image(100, 10, |x, _| x as u8);
+        let default = to_input_tensor(&crop).unwrap();
+        assert_eq!(default.width(), 480);
+        assert_eq!(to_input_tensor_with(&crop, 160).unwrap(), default);
+    }
+
+    #[test]
+    fn the_minimum_width_is_bounded() {
+        let crop = image(60, 30, |_, _| 0);
+        let invalid = |width| Error::InvalidMinWidth {
+            width,
+            min: SMALLEST_MIN_WIDTH,
+            max: MAX_MODEL_WIDTH,
+        };
+        for bad in [0, SMALLEST_MIN_WIDTH - 1, MAX_MODEL_WIDTH + 1, usize::MAX] {
+            assert_eq!(prepare_crop_with(&crop, 4, bad), Err(invalid(bad)));
+            assert_eq!(to_input_tensor_with(&crop, bad), Err(invalid(bad)));
+            assert_eq!(check_min_width(bad), Err(invalid(bad)));
+        }
+        assert_eq!(
+            prepare_crop_with(&crop, 4, SMALLEST_MIN_WIDTH)
+                .unwrap()
+                .width(),
+            96
+        );
+        assert_eq!(
+            prepare_crop_with(&crop, 4, MAX_MODEL_WIDTH)
+                .unwrap()
+                .width(),
+            MAX_MODEL_WIDTH
+        );
     }
 
     #[test]

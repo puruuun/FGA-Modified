@@ -83,6 +83,10 @@ export_probe!(
     Java_io_github_fate_1grand_1automata_qa_NativeProbe_memoryStatus,
     probes::memory_status
 );
+export_probe!(
+    Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrTractFeatures,
+    probes::ocr_tract_features
+);
 
 /// Reading the Java arguments can fail, so it happens inside the guard and comes back as `ERR`. A
 /// null argument fails before any JNI call and leaves no exception; a JNI failure leaves one
@@ -99,6 +103,26 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrLo
             .map_err(|e| format!("modelPath: {e}"))?
             .into();
         probes::ocr_load(&path)
+    });
+    to_java(&mut env, text)
+}
+
+/// Issue #549: `ocrLoad` with a minimum model width and a tract thread count. The numbers are
+/// checked inside the probe before its lock, after the path has been read here.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrLoadTract<'local>(
+    mut env: JNIEnv<'local>,
+    _this: JObject<'local>,
+    model_path: JString<'local>,
+    min_width: jint,
+    threads: jint,
+) -> jstring {
+    let text = run_guarded(|| {
+        let path: String = env
+            .get_string(&model_path)
+            .map_err(|e| format!("modelPath: {e}"))?
+            .into();
+        probes::ocr_load_tract(&path, min_width, threads)
     });
     to_java(&mut env, text)
 }

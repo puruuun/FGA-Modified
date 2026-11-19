@@ -136,6 +136,45 @@ ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_PATH=../app/build/onnxruntime/jniLibs/arm64-v8
 
 On the PC, `cargo test --workspace --features fga-ffi/ort-probe` runs the ONNX Runtime probe tests with the prebuilt runtime that `ort` downloads, and with `FGA_OCR_MODEL` and `FGA_OCR_SAMPLES` set, `tests/ocr_ort_model.rs` reads the same 25 samples as Python at the default thread count and at one thread.
 
+### Speed measurements: the Kotlin reader, input width and tract threads (issue #549)
+
+Three switches measure where the recogniser's time goes. They change no behaviour of the app and choose nothing; all are off by default.
+
+- **Minimum model width.** `Recognizer::with_min_width` (and `preprocess::prepare_crop_with`, `to_input_tensor_with`) pad a short crop to a chosen width instead of RapidOCR's 320. Resize, normalisation and the padding value (0 after normalisation) stay the same; the allowed range is 8 (the model emits one output step per 8 columns) to `MAX_MODEL_WIDTH`. `TractSettings { min_width, threads }` with `TractBackend::load_file_with` plans that width at load. The default, 320, gives the same tensors as before (the fixed-sample model test still matches Python's texts and confidences).
+- **tract threads.** `fga-sensing`'s feature `tract-threads` (through `fga-ffi`'s feature of the same name, Gradle's `-Pfga.native.threads=true`, only with `-Pfga.native=true`) builds `tract-linalg` with its `multithread-mm` feature and gives the tract backend a rayon pool of the requested size, built at load and dropped with the backend. It adds no crate: `tract-linalg` and `rayon` are already in the build (rayon through `tract-transformers`), so `Cargo.lock` only gains dependency lines. Without the feature, more than one thread is an error (`ERR` in the probes), never a silent single-thread run.
+- **Probes.** `NativeProbe.ocrLoadTract(path, minWidth, threads)` fills the slot that `ocrRead` and `ocrUnload` use; `minWidth` is 8..4096, `threads` 0..16 (0 and 1 are the calling thread), both checked before the lock. `ocrTractFeatures()` says whether the library has the thread feature. `ocrLoad` is unchanged.
+
+What tract 0.23.10's sources say (`~/.cargo/registry/src/*/tract-linalg-0.23.10/src/multithread.rs` and `src/frame/mmm/mod.rs`): the executor is `tract_linalg::multithread::Executor` (`SingleThread`, `MultiThread(Arc<rayon::ThreadPool>)`, `RayonGlobal`); the process default is `set_default_executor`, and `multithread_tract_scope(executor, f)` overrides it for one call on the current thread, which the backend uses. The thread count is the rayon pool's size, so it is per backend, not per process. `Executor::multithread(n)` panics when the pool cannot be built, so the backend builds the pool itself. A matrix product runs on the pool only when it has at least 64 panels or 2^21 multiply-adds (`THREADING_PANEL_THRESHOLD`, `THREADING_MAC_THRESHOLD`); the maintainers' comment there says below that size "per-call dispatch overhead (~5 µs native ...) exceeds the parallel speedup" and suggests a higher threshold for "many-small-MMM workloads (mobile vision ...)". The thresholds are left at their defaults. Element-wise and depth-wise work splits on row boundaries, which the source states is bit-identical to the single-thread path; the PC run below found identical texts and confidences.
+
+What the model's graph says (read with a small protobuf reader, no package installed): the output has one step per 8 input columns (T = W / 8: 40 at 320, 12 at 96). The graph has five `ReduceMean` over axes 2 and 3 (squeeze-and-excitation pooling over height and width) and two self-attention blocks (`Softmax` over all positions). Both mix the padding columns into every column, so the output for the content is not independent of the padded width. RapidOCR pads with zeros after normalisation to `rec_img_shape` 320 (`ch_ppocr_rec/main.py`, `resize_norm_img`).
+
+PC evaluation (`ocr_eval`, release build):
+
+```bash
+cargo run --release -p fga-sensing --features tract --example ocr_eval -- \
+    tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/ocr-eval-w160.tsv --min-width 160
+cargo run --release -p fga-sensing --features tract-threads --example ocr_eval -- \
+    tract "$FGA_OCR_MODEL" "$FGA_OCR_SAMPLES" ../build/ocr-eval-t4.tsv --threads 4
+```
+
+It also prints the smallest and the median confidence over the texts that read as a score. The model tests add a narrower width (texts of the 25 fixed samples) and, with `--features tract-threads`, two threads (texts and confidences):
+
+```bash
+cargo test --release -p fga-sensing --features tract-threads --test model -- --nocapture
+```
+
+Device cases in `ocrProbe`, after the existing ones:
+
+- `kotlin-reader`: the current `SupportScoreReader` on each of the 370 crops through `SupportSuite`'s crop path (`FixtureApi` frame `crop` at the score region of row y 200, the row's server profile, `read(bound, true, true)`), so every OCR profile, the dark retry and the template matches run as in production. It reports time per field (median, 90 %, maximum, also per server), OCR calls per field, the +62 and +16 misses and false accepts, and how many fields equal the stage 0 replay's own result (`kt_cls`, `kt_grand` in `index.json`). It needs no Rust library.
+- `tract-width-160`: an observation at a width the PC found not accuracy-neutral (no width below 320 was); its `minEqual` is the PC count, and a different count is reported, not failed.
+- `tract-threads-2`, `tract-threads-4` at 320: need the thread feature; without it they report `"requires": "tract-threads"` and are skipped.
+
+```bash
+py -3 tools/device-qa/run.py --build --native-threads --suite ocrProbe --local-fixtures build/ocr-device-fixtures
+```
+
+`--native-threads` implies `--native`, builds with `-Pfga.native.threads=true` and fails the run when a `tract-threads` case was skipped; it combines with `--native-ort`. With `--native` alone those cases may be skipped.
+
 CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:

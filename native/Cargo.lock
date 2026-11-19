@@ -406,7 +406,9 @@ version = "0.1.0"
 dependencies = [
  "ort",
  "png",
+ "rayon",
  "serde_json",
+ "tract-linalg",
  "tract-onnx",
 ]
 
@@ -1662,6 +1664,7 @@ dependencies = [
  "minijinja",
  "num-traits",
  "pastey",
+ "rayon",
  "tract-data",
  "walkdir",
 ]

@@ -69,6 +69,11 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
           cargo test --workspace --features fga-ffi/ort-probe
+      - name: Clippy, fga-ffi with tract-threads
+        # Issue #549: the measurement switch for tract's multi-threaded kernels. Lint only: on the
+        # owner's PC with four jobs the lint added 17 s and the tests 93 s, and an Android lint and
+        # build would add more again, past the few minutes this workflow may grow per switch.
+        run: cargo clippy --workspace --all-targets --features fga-ffi/tract-threads -- -D warnings
       - name: Install cargo-deny and cargo-ndk
         run: |
           cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"

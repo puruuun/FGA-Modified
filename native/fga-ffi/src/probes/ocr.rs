@@ -8,8 +8,9 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::Instant;
 
 use fga_sensing::Recognizer;
-use fga_sensing::backend::{Backend, TractBackend};
+use fga_sensing::backend::{Backend, MAX_TRACT_THREADS, TractBackend, TractSettings};
 use fga_sensing::image::GrayImage;
+use fga_sensing::preprocess::check_min_width;
 
 static RECOGNIZER: Mutex<Option<Recognizer<TractBackend>>> = Mutex::new(None);
 
@@ -50,6 +51,65 @@ pub fn ocr_load(model_path: &str) -> Result<String, String> {
     let classes = loaded.characters().class_count();
     *slot = Some(loaded);
     Ok(load_json(load_ms, classes))
+}
+
+/// Whether this library was built with fga-ffi's `tract-threads` feature.
+pub const TRACT_THREADS_BUILT: bool = cfg!(feature = "tract-threads");
+
+pub const THREADS_NOT_BUILT: &str = "more than one tract thread needs a library built with the \
+     tract-threads feature; build with -Pfga.native=true -Pfga.native.threads=true";
+
+/// Issue #549: the arguments of [`ocr_load_tract`], which arrive as JNI ints. Checked here, before
+/// the lock is taken and before anything is loaded. A thread count of 0 means tract's default,
+/// its single-threaded kernels on the calling thread, as 1 does.
+pub fn tract_settings(min_width: i32, threads: i32) -> Result<TractSettings, String> {
+    let width = usize::try_from(min_width)
+        .map_err(|_| format!("invalid minimum width {min_width}"))
+        .and_then(|width| {
+            check_min_width(width)
+                .map(|()| width)
+                .map_err(|e| e.to_string())
+        })?;
+    let threads = usize::try_from(threads)
+        .ok()
+        .filter(|&t| t <= MAX_TRACT_THREADS)
+        .ok_or_else(|| format!("invalid thread count {threads}: 0..={MAX_TRACT_THREADS}"))?;
+    if threads > 1 && !TRACT_THREADS_BUILT {
+        // Running on one thread instead would report a single-thread time as a multi-thread one.
+        return Err(THREADS_NOT_BUILT.to_owned());
+    }
+    Ok(TractSettings {
+        min_width: width,
+        threads: threads.max(1),
+    })
+}
+
+/// [`ocr_load`] with a minimum model width and a thread count. It fills the same slot, so
+/// `ocrRead` and `ocrUnload` serve both.
+pub fn ocr_load_tract(model_path: &str, min_width: i32, threads: i32) -> Result<String, String> {
+    let settings = tract_settings(min_width, threads)?;
+    let mut slot = recognizer()?;
+    // As in ocr_load: the old model goes first, so two never sit in memory together.
+    *slot = None;
+    let started = Instant::now();
+    let backend =
+        TractBackend::load_file_with(Path::new(model_path), settings).map_err(|e| e.to_string())?;
+    let configured = backend.threads();
+    let loaded = Recognizer::new(backend)
+        .with_min_width(settings.min_width)
+        .map_err(|e| e.to_string())?;
+    let load_ms = started.elapsed().as_millis();
+    let classes = loaded.characters().class_count();
+    let min_width = loaded.min_width();
+    *slot = Some(loaded);
+    Ok(load_tract_json(load_ms, classes, min_width, configured))
+}
+
+/// What the library was built with, so the device suite can skip the thread cases.
+pub fn ocr_tract_features() -> Result<String, String> {
+    Ok(format!(
+        "{{\"threadsBuilt\":{TRACT_THREADS_BUILT},\"maxThreads\":{MAX_TRACT_THREADS}}}"
+    ))
 }
 
 /// `width` and `height` arrive as JNI ints, so a negative value is checked here, not assumed away.
@@ -119,6 +179,12 @@ fn memory_from_status(text: &str) -> Result<String, String> {
 
 fn load_json(load_ms: u128, classes: usize) -> String {
     format!("{{\"loadMs\":{load_ms},\"classes\":{classes}}}")
+}
+
+fn load_tract_json(load_ms: u128, classes: usize, min_width: usize, threads: usize) -> String {
+    format!(
+        "{{\"loadMs\":{load_ms},\"classes\":{classes},\"minWidth\":{min_width},\"threads\":{threads}}}"
+    )
 }
 
 pub(super) fn read_json(text: &str, confidence: f64, micros: u128) -> String {
@@ -263,5 +329,90 @@ mod tests {
     fn missing_model_is_an_error() {
         let text = run_guarded(|| ocr_load("no/such/model.onnx"));
         assert!(text.starts_with("ERR: inference backend: "), "{text}");
+        let text = run_guarded(|| ocr_load_tract("no/such/model.onnx", 160, 1));
+        assert!(text.starts_with("ERR: inference backend: "), "{text}");
+    }
+
+    #[test]
+    fn load_tract_result_shape() {
+        let value = json(&load_tract_json(12, 18710, 160, 2));
+        assert_eq!(value["loadMs"], 12);
+        assert_eq!(value["classes"], 18710);
+        assert_eq!(value["minWidth"], 160);
+        assert_eq!(value["threads"], 2);
+        assert_eq!(value.as_object().unwrap().len(), 4);
+    }
+
+    #[test]
+    fn features_result_shape() {
+        let text = run_guarded(ocr_tract_features);
+        let value = json(text.strip_prefix("OK: ").unwrap());
+        assert_eq!(value["threadsBuilt"], TRACT_THREADS_BUILT);
+        assert_eq!(value["maxThreads"], 16);
+    }
+
+    #[test]
+    fn tract_width_is_bounded() {
+        assert_eq!(tract_settings(320, 1).unwrap().min_width, 320);
+        assert_eq!(tract_settings(8, 1).unwrap().min_width, 8);
+        assert_eq!(tract_settings(4096, 1).unwrap().min_width, 4096);
+        assert_eq!(
+            tract_settings(-1, 1),
+            Err("invalid minimum width -1".to_owned())
+        );
+        assert_eq!(
+            tract_settings(i32::MIN, 1),
+            Err(format!("invalid minimum width {}", i32::MIN))
+        );
+        for bad in [0, 7, 4097, i32::MAX] {
+            assert_eq!(
+                tract_settings(bad, 1),
+                Err(format!("minimum model width {bad} is not in 8..=4096"))
+            );
+        }
+    }
+
+    #[test]
+    fn tract_threads_are_bounded() {
+        assert_eq!(tract_settings(320, 0).unwrap().threads, 1);
+        assert_eq!(tract_settings(320, 1).unwrap().threads, 1);
+        for bad in [-1, 17, i32::MAX, i32::MIN] {
+            assert_eq!(
+                tract_settings(320, bad),
+                Err(format!("invalid thread count {bad}: 0..=16"))
+            );
+        }
+    }
+
+    #[cfg(not(feature = "tract-threads"))]
+    #[test]
+    fn more_than_one_thread_needs_the_feature() {
+        for threads in [2, 4, 16] {
+            assert_eq!(
+                tract_settings(320, threads),
+                Err(THREADS_NOT_BUILT.to_owned())
+            );
+        }
+        let text = run_guarded(|| ocr_load_tract("no/such/model.onnx", 320, 2));
+        assert_eq!(text, format!("ERR: {THREADS_NOT_BUILT}"));
+    }
+
+    #[cfg(feature = "tract-threads")]
+    #[test]
+    fn the_feature_takes_more_than_one_thread() {
+        for threads in [2, 4, 16] {
+            assert_eq!(
+                tract_settings(320, threads).unwrap().threads,
+                threads as usize
+            );
+        }
+    }
+
+    #[test]
+    fn bad_tract_arguments_are_refused_before_loading() {
+        let text = run_guarded(|| ocr_load_tract("no/such/model.onnx", 7, 1));
+        assert_eq!(text, "ERR: minimum model width 7 is not in 8..=4096");
+        let text = run_guarded(|| ocr_load_tract("no/such/model.onnx", 320, 99));
+        assert_eq!(text, "ERR: invalid thread count 99: 0..=16");
     }
 }

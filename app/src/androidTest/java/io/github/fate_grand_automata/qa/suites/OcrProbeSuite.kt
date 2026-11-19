@@ -4,8 +4,13 @@ import android.os.Debug
 import android.util.Log
 import io.github.fate_grand_automata.imaging.DroidCvPattern
 import io.github.fate_grand_automata.imaging.TesseractOcrService
+import io.github.fate_grand_automata.qa.FixtureApi
+import io.github.fate_grand_automata.qa.MeasuredOcr
 import io.github.fate_grand_automata.qa.NativeProbe
 import io.github.fate_grand_automata.qa.SupportDeviceTestRunner
+import io.github.fate_grand_automata.scripts.Images
+import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
+import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
 import org.json.JSONArray
 import org.json.JSONObject
@@ -28,6 +33,8 @@ import kotlin.math.ceil
  */
 internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val test = case.getString("test")
+    // Issue #549: the current Kotlin reader needs no Rust library.
+    if (test == "kotlin-reader") return kotlinReader(runner, case).also { Log.i(TAG, "$test: $it") }.put("test", test)
     if (!NativeProbe.loaded) {
         val reason = NativeProbe.skipReason()
         Log.w(TAG, "$test: skipped, $reason")
@@ -42,7 +49,12 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
             val engine = ortEngine(case.optInt("threads", 0))
             if (test == "ort-memory") engineMemory(runner, case, engine) else engineRecognise(runner, case, engine)
         }
-        else -> error("Unknown ocrProbe test $test")
+        // Issue #549: tract with a chosen minimum width and kernel thread count.
+        else -> if (test.startsWith("tract-width-") || test.startsWith("tract-threads-")) {
+            val threads = case.optInt("threads", 1)
+            if (threads > 1 && !tractThreadsBuilt()) return tractThreadsSkipped(test)
+            engineRecognise(runner, case, tractEngine(case.getInt("minWidth"), threads))
+        } else error("Unknown ocrProbe test $test")
     }
     Log.i(TAG, "$test: $actual")
     return actual.put("test", test)
@@ -89,22 +101,57 @@ private fun ortEngine(threads: Int) = Engine(
     mapOf(
         "threads" to threads,
         "intraThreads" to load.getInt("intraThreads"),
-        "availableProcessors" to Runtime.getRuntime().availableProcessors(),
-        // processThreads() is -1 when /proc/self/task cannot be read; such a reading is left out
-        // (JSONObject.put drops a null), so no difference is made from it.
-        "processThreads" to JSONObject().put("beforeLoad", threadsAround.known(0)).put("afterLoad", threadsAround.known(1))
-            .put("afterReading", threadsAround.known(2)),
-        // Reported, not checked: by ONNX Runtime's threading documentation an intra-op pool of N
-        // creates N - 1 threads, so 1 should give 0, but ART may start or end its own threads
-        // during the load, so a failing rule on this count could not be justified.
-        "threadsCreatedByLoad" to threadsAround.known(1)?.let { after -> threadsAround.known(0)?.let { after - it } },
+    ) + threadReport(threadsAround) + mapOf(
         "threadNote" to if (threads == 0) {
             "threads 0 is ONNX Runtime's default (one intra-op thread per physical core, calling thread included); processThreads shows the pool it created"
         } else {
-            "intra-op pool of $threads, calling thread included; by ONNX Runtime's documentation the load creates ${threads - 1} pool threads (threadsCreatedByLoad, reported, not checked). The tract cases run on one thread: native/ builds tract-linalg without its multithread-mm feature, so tract's matrix products run on the calling thread"
+            "intra-op pool of $threads, calling thread included; by ONNX Runtime's documentation the load creates ${threads - 1} pool threads (threadsCreatedByLoad, reported, not checked). The tract-recognise cases run on one thread: tract's matrix products run on the calling thread unless a tract-threads case, in a library built with the tract-threads feature, gives them a pool"
         },
     )
 }
+
+/** The process's thread counts around a load (before it, after it, after reading). */
+private fun threadReport(threadsAround: List<Int>): Map<String, Any?> = mapOf(
+    "availableProcessors" to Runtime.getRuntime().availableProcessors(),
+    // processThreads() is -1 when /proc/self/task cannot be read; such a reading is left out
+    // (JSONObject.put drops a null), so no difference is made from it.
+    "processThreads" to JSONObject().put("beforeLoad", threadsAround.known(0)).put("afterLoad", threadsAround.known(1))
+        .put("afterReading", threadsAround.known(2)),
+    // Reported, not checked: ART may start or end its own threads during the load, so a failing
+    // rule on this count could not be justified.
+    "threadsCreatedByLoad" to threadsAround.known(1)?.let { after -> threadsAround.known(0)?.let { after - it } },
+)
+
+/**
+ * Issue #549: tract with [minWidth] (the input every short crop is padded to; ocrLoad uses 320)
+ * and [threads] for its matrix kernels. 0 and 1 run them on the calling thread; more builds a
+ * rayon pool of that many threads at load, so the load should create [threads] threads.
+ */
+private fun tractEngine(minWidth: Int, threads: Int) = Engine(
+    "ocrLoadTract",
+    { NativeProbe.ocrLoadTract(it, minWidth, threads) },
+    NativeProbe::ocrRead,
+    NativeProbe::ocrUnload,
+) { load, threadsAround ->
+    mapOf(
+        "minWidth" to load.getInt("minWidth"),
+        "threads" to threads,
+        "tractThreads" to load.getInt("threads"),
+    ) + threadReport(threadsAround) + mapOf(
+        "threadNote" to if (load.getInt("threads") <= 1) {
+            "tract's single-threaded kernels on the calling thread, as in the tract-recognise cases; the load should create no thread (threadsCreatedByLoad, reported, not checked)"
+        } else {
+            "a rayon pool of ${load.getInt("threads")} threads, built at load and dropped at unload; the calling thread waits while the pool works, so the load should create ${load.getInt("threads")} threads (threadsCreatedByLoad, reported, not checked). tract runs a matrix product on the pool only when it has at least 64 panels or 2^21 multiply-adds (tract-linalg's defaults, not changed here)"
+        },
+    )
+}
+
+/** Whether libfga_ffi.so was built with fga-ffi's tract-threads feature. */
+private fun tractThreadsBuilt(): Boolean = okJson("ocrTractFeatures", NativeProbe.ocrTractFeatures()).getBoolean("threadsBuilt")
+
+/** tools/device-qa/run.py reads `requires`, as for the ONNX Runtime cases, with `--native-threads`. */
+private fun tractThreadsSkipped(test: String): JSONObject = JSONObject().put("test", test).put("requires", "tract-threads")
+    .put("skipped", "libfga_ffi.so was built without the tract-threads feature; build with -Pfga.native=true -Pfga.native.threads=true")
 
 /** The ONNX Runtime functions exist only in a library built with the ort-probe feature. */
 private fun ortPackaged(): Boolean = try {
@@ -380,9 +427,137 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
         .put("perJniCall", timing(callMicros))
     for ((key, value) in engine.extra(load, threadsAround)) report.put(key, value)
     // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
-    Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount)")
-    if (errorCount > 0 || equal < minEqual) {
+    // Issue #549: an observation case confirms a PC count on the device. Its minEqual is that PC
+    // count, and a different count is reported, not failed; an ERR still fails.
+    val observation = case.optBoolean("observation", false)
+    if (observation) {
+        report.put("observation", true).put("observationNote", "minEqual is the PC count at this setting; a lower equalToPyText is reported here and does not fail the case")
+            .put("belowMinEqual", equal < minEqual)
+    }
+    Log.i(TAG, "$test: equalToPyText $equal of ${samples.size} (minEqual $minEqual, ERR $errorCount${if (observation) ", observation" else ""})")
+    if (errorCount > 0 || (equal < minEqual && !observation)) {
         throw AssertionError("$test: $equal of ${samples.size} texts equal py_text (need $minEqual), $errorCount ERR. $report")
     }
     return report
+}
+
+/** Where SupportSuite's crop cases (support-score-d2.json) put a score crop: the score region of a row at y 200 (720p). */
+private val SCORE_CROP_REGION_720 = listOf(1018, 355, 60, 30)
+private const val SCORE_CROP_ROW_Y_720 = 200
+
+private fun JSONObject.intOrNull(key: String): Int? = if (!has(key) || isNull(key)) null else getInt(key)
+private fun JSONObject.boolOrNull(key: String): Boolean? = if (!has(key) || isNull(key)) null else getBoolean(key)
+
+/** Nearest-rank median and maximum of whole counts. */
+private fun counts(values: List<Int>): JSONObject {
+    if (values.isEmpty()) return JSONObject().put("fields", 0)
+    val sorted = values.sorted()
+    return JSONObject().put("fields", sorted.size).put("median", sorted[(ceil(0.5 * sorted.size).toInt() - 1).coerceIn(0, sorted.lastIndex)])
+        .put("max", sorted.last()).put("total", sorted.sum())
+}
+
+/**
+ * Issue #549: the real cost of the current reader per field. Each sample is the 60x30 gray crop
+ * the reader got in the stage 0 replay (docs/qa/0025-stage-0-baseline.md 4.1). It goes through
+ * SupportSuite's crop path: FixtureApi places it on a black 1280x720 frame at the score region of
+ * a row, and SupportScoreReader.read(bound, checkClass = true, checkGrand = true) reads that row
+ * with its server's profile, every OCR profile, the dark retry and the template matches, as in
+ * production. Only read() is timed: the frame is composed, and the templates are loaded, before
+ * the clock starts, and one shared Tesseract engine is started before the first field.
+ */
+private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+    val dir = case.getString("samples")
+    val indexBytes = runner.fixture("$dir/index.json")
+    check(indexBytes.isNotEmpty()) { "$dir/index.json is missing on the device; push the OCR samples first (docs/agents/rust-native.md)" }
+    val index = JSONArray(indexBytes.toString(Charsets.UTF_8))
+    val threadsBefore = processThreads()
+    val ocr = MeasuredOcr(TesseractOcrService(runner.targetContext))
+    val micros = mutableListOf<Long>()
+    val ocrCalls = mutableListOf<Int>()
+    val byServer = mutableMapOf<String, MutableList<Long>>()
+    val disagreements = JSONArray()
+    var disagreementCount = 0
+    var agreeWithStage0 = 0
+    val tally = mutableMapOf<String, Int>()
+    fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
+    fun tallied(key: String) = tally[key] ?: 0
+    var firstCallUs = -1L
+    try {
+        // The engine starts on its first call; that start is not a per-field cost.
+        val png = runner.fixture("$dir/${index.getJSONObject(0).getString("file")}")
+        val encoded = MatOfByte(*png)
+        val warmMat = try { Imgcodecs.imdecode(encoded, Imgcodecs.IMREAD_GRAYSCALE) } finally { encoded.release() }
+        DroidCvPattern(warmMat).use { pattern ->
+            val started = System.nanoTime()
+            ocr.detectTextLine(pattern, SupportScoreReader.OCR_OPTIONS)
+            firstCallUs = (System.nanoTime() - started) / 1000
+        }
+        for (i in 0 until index.length()) {
+            val row = index.getJSONObject(i)
+            val file = row.getString("file")
+            val server = row.getString("server")
+            val fixture = JSONObject().put("name", file).put("suite", "support").put("frame", "crop")
+                .put("file", "$dir/$file").put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", server)
+            val api = FixtureApi(runner, fixture, JSONObject())
+            val (scores, elapsed, calls) = try {
+                with(api) {
+                    val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
+                    for (image in listOf(Images.SupportScore62) + SupportScoreReader.COMPACT_CLASS_TEMPLATES + SupportScoreReader.GRAND_TEMPLATES) {
+                        images[image]
+                    }
+                    val reader = SupportScoreReader(api, ocr)
+                    useSameSnapIn {
+                        SupportScoreLayout.numberRegion(bound.region).getPattern("frame-warm-up").close()
+                        val callsBefore = ocr.calls
+                        val started = System.nanoTime()
+                        val read = reader.read(bound, true, true)
+                        Triple(read, (System.nanoTime() - started) / 1000, ocr.calls - callsBefore)
+                    }
+                }.also { api.checkCoverage() }
+            } finally {
+                api.close()
+            }
+            micros += elapsed
+            ocrCalls += calls
+            byServer.getOrPut(server) { mutableListOf() } += elapsed
+            val cls = scores.classScore
+            val grand = scores.grandScore
+            when (row.boolOrNull("is62")) {
+                true -> { count("positives62"); if (cls != 62) count("missed62") }
+                false -> if (cls == 62) count("falseAccepts62")
+                null -> Unit
+            }
+            when (row.boolOrNull("is16")) {
+                true -> { count("positives16"); if (grand != 16) count("missed16") }
+                false -> if (grand == 16) count("falseAccepts16")
+                null -> Unit
+            }
+            row.intOrNull("cls")?.let { label -> count("classLabels"); if (cls == label) count("classValueEqual") }
+            // kt_cls and kt_grand are what the reader returned in the stage 0 replay the crops were cut from.
+            if (cls == row.intOrNull("kt_cls") && grand == row.intOrNull("kt_grand")) agreeWithStage0++ else {
+                disagreementCount++
+                if (disagreements.length() < MAX_LISTED) disagreements.put(JSONObject().put("file", file).put("case", row.optString("case"))
+                    .put("stage0", JSONObject().put("class", row.opt("kt_cls")).put("grand", row.opt("kt_grand")))
+                    .put("now", JSONObject().put("class", cls ?: JSONObject.NULL).put("grand", grand ?: JSONObject.NULL)))
+            }
+        }
+    } finally {
+        ocr.close()
+    }
+    return JSONObject()
+        .put("note", "SupportScoreReader.read(bound, true, true) through the crop path of SupportSuite (FixtureApi frame crop, region720 $SCORE_CROP_REGION_720, row y720 $SCORE_CROP_ROW_Y_720) with the profile of the row server; perField times read() alone, with the frame composed and the templates loaded beforehand")
+        .put("samples", index.length())
+        .put("firstOcrCallUs", firstCallUs)
+        .put("perField", timing(micros))
+        .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })
+        .put("ocrCallsPerField", counts(ocrCalls))
+        .put("agreeWithStage0", agreeWithStage0)
+        .put("disagreeWithStage0", disagreementCount)
+        .put("disagreements", disagreements)
+        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("missed", tallied("missed62"))
+            .put("falseAccepts", tallied("falseAccepts62")).put("stage0", "12 of 86 missed, 0 false accepts"))
+        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("missed", tallied("missed16"))
+            .put("falseAccepts", tallied("falseAccepts16")).put("stage0", "25 of 167 missed, 0 false accepts"))
+        .put("classValue", JSONObject().put("labelled", tallied("classLabels")).put("equal", tallied("classValueEqual")))
+        .put("processThreads", JSONObject().put("before", threadsBefore.takeIf { it >= 0 }).put("after", processThreads().takeIf { it >= 0 }))
 }

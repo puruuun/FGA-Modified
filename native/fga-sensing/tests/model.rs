@@ -85,6 +85,42 @@ mod checks {
         );
     }
 
+    /// Issue #549: the same fixed samples through a recogniser built by `build`. With
+    /// `same_confidence` false only the texts are compared: a narrower input changes the
+    /// confidences, and on these 25 samples the PC evaluation found the texts unchanged at 160.
+    #[cfg(feature = "tract")]
+    pub fn fixed_samples_with<B: Backend>(
+        test: &str,
+        build: impl FnOnce(&std::path::Path) -> Recognizer<B>,
+        same_confidence: bool,
+    ) {
+        let Some((model, dir)) = local_files(test) else {
+            return;
+        };
+        let index = samples::load_index(&dir).unwrap();
+        let mut recognizer = build(&model);
+        for &i in &FIXED {
+            let sample = &index[i];
+            let crop = samples::load_gray(&dir.join(&sample.file)).unwrap();
+            let decoded = recognizer.recognize(&crop, None).unwrap();
+            assert_eq!(
+                decoded.text, sample.py_text,
+                "{} ({})",
+                sample.file, sample.case
+            );
+            if same_confidence {
+                assert!(
+                    (decoded.confidence - sample.py_conf).abs() < 1e-4,
+                    "{}: confidence {} against Python {}",
+                    sample.file,
+                    decoded.confidence,
+                    sample.py_conf
+                );
+            }
+        }
+        println!("{test}: {} samples equal to the Python text", FIXED.len());
+    }
+
     pub fn allowed_set_keeps_only_score_characters<B: Backend>(test: &str) {
         let Some((model, dir)) = local_files(test) else {
             return;
@@ -135,7 +171,8 @@ mod checks {
 
 #[cfg(feature = "tract")]
 mod tract {
-    use fga_sensing::backend::TractBackend;
+    use fga_sensing::Recognizer;
+    use fga_sensing::backend::{TractBackend, TractSettings};
 
     #[test]
     fn fixed_samples_match_python() {
@@ -151,6 +188,41 @@ mod tract {
     fn loads_from_bytes_and_reads_wide_crops() {
         super::checks::loads_from_bytes_and_reads_wide_crops::<TractBackend>(
             "tract bytes and wide",
+        );
+    }
+
+    #[test]
+    fn a_narrower_input_keeps_the_fixed_texts() {
+        let settings = TractSettings {
+            min_width: 160,
+            threads: 1,
+        };
+        super::checks::fixed_samples_with(
+            "tract width 160",
+            |model| {
+                let backend = TractBackend::load_file_with(model, settings).unwrap();
+                assert_eq!(backend.planned_widths(), vec![160]);
+                Recognizer::new(backend).with_min_width(160).unwrap()
+            },
+            false,
+        );
+    }
+
+    #[cfg(feature = "tract-threads")]
+    #[test]
+    fn two_threads_read_the_fixed_samples_like_python() {
+        let settings = TractSettings {
+            min_width: 320,
+            threads: 2,
+        };
+        super::checks::fixed_samples_with(
+            "tract two threads",
+            |model| {
+                let backend = TractBackend::load_file_with(model, settings).unwrap();
+                assert_eq!(backend.threads(), 2);
+                Recognizer::new(backend)
+            },
+            true,
         );
     }
 }

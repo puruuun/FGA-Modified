@@ -19,7 +19,7 @@ mod tract;
 #[cfg(feature = "ort")]
 pub use self::ort::OrtBackend;
 #[cfg(feature = "tract")]
-pub use self::tract::TractBackend;
+pub use self::tract::{MAX_TRACT_THREADS, TractBackend, TractSettings};
 
 /// One loaded model. Loading is the expensive part, so a backend is built once and then run for
 /// every crop.

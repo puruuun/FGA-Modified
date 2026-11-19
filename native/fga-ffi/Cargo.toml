@@ -42,6 +42,10 @@ test-hooks = []
 # Microsoft's onnxruntime-android AAR, which Gradle extracts and passes in through ORT_LIB_PATH
 # (docs/agents/rust-native.md); on the PC it uses the prebuilt runtime that `ort` downloads.
 ort-probe = ["fga-sensing/ort"]
+# Issue #549: tract's multi-threaded kernels for the tract probes, so ocrLoadTract can take more
+# than one thread. Off by default for the same reason as ort-probe; Gradle turns it on with
+# `-Pfga.native.threads=true`.
+tract-threads = ["fga-sensing/tract-threads"]
 
 [dev-dependencies]
 # Tests only: the JSON shape checks and the model test on local samples.

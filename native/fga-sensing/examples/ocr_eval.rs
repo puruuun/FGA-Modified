@@ -2,7 +2,11 @@
 //! the Python check of docs/qa/0025-stage-0-baseline.md, section 4.5.
 //!
 //! cargo run --release -p fga-sensing --features tract --example ocr_eval -- \
-//!     tract <model.onnx> <samples dir> <output.tsv> [--allowed +/0123456789]
+//!     tract <model.onnx> <samples dir> <output.tsv> [--allowed +/0123456789] [--min-width 320] \
+//!     [--threads 1]
+//!
+//! `--min-width` and `--threads` are the measurements of issue #549; `--threads` above 1 needs
+//! `--features tract-threads`.
 
 #[path = "../tests/support/samples.rs"]
 mod samples;
@@ -14,6 +18,7 @@ use std::time::{Duration, Instant};
 
 use fga_sensing::Recognizer;
 use fga_sensing::backend::Backend;
+use fga_sensing::preprocess::MIN_MODEL_WIDTH;
 use samples::Sample;
 
 struct Args {
@@ -22,6 +27,8 @@ struct Args {
     samples: PathBuf,
     output: PathBuf,
     allowed: Option<String>,
+    min_width: usize,
+    threads: Option<usize>,
 }
 
 struct Row<'a> {
@@ -43,48 +50,70 @@ fn main() -> ExitCode {
 
 fn parse_args() -> Result<Args, String> {
     let usage = "usage: ocr_eval <tract|ort> <model.onnx> <samples dir> <output file> \
-                 [--allowed <chars>]";
+                 [--allowed <chars>] [--min-width <columns>] [--threads <count>]";
     let mut args = std::env::args().skip(1);
     let mut next = || args.next().ok_or_else(|| usage.to_string());
     let backend = next()?;
     let model = PathBuf::from(next()?);
     let samples = PathBuf::from(next()?);
     let output = PathBuf::from(next()?);
-    let allowed = match next() {
-        Ok(flag) if flag == "--allowed" => Some(next()?),
-        Ok(_) => return Err(usage.to_string()),
-        Err(_) => None,
-    };
-    if next().is_ok() {
-        return Err(usage.to_string());
-    }
-    Ok(Args {
+    let mut parsed = Args {
         backend,
         model,
         samples,
         output,
-        allowed,
-    })
+        allowed: None,
+        min_width: MIN_MODEL_WIDTH,
+        threads: None,
+    };
+    let number = |text: String| text.parse::<usize>().map_err(|_| usage.to_string());
+    while let Ok(flag) = next() {
+        match flag.as_str() {
+            "--allowed" => parsed.allowed = Some(next()?),
+            "--min-width" => parsed.min_width = number(next()?)?,
+            "--threads" => parsed.threads = Some(number(next()?)?),
+            _ => return Err(usage.to_string()),
+        }
+    }
+    Ok(parsed)
 }
 
 fn run(args: &Args) -> Result<(), String> {
     match args.backend.as_str() {
         #[cfg(feature = "tract")]
-        "tract" => evaluate::<fga_sensing::backend::TractBackend>(args),
+        "tract" => {
+            let settings = fga_sensing::backend::TractSettings {
+                min_width: args.min_width,
+                threads: args.threads.unwrap_or(1),
+            };
+            evaluate(args, |path| {
+                fga_sensing::backend::TractBackend::load_file_with(path, settings)
+            })
+        }
         #[cfg(feature = "ort")]
-        "ort" => evaluate::<fga_sensing::backend::OrtBackend>(args),
+        "ort" => {
+            if args.threads.is_some() {
+                return Err("--threads is for the tract backend".to_string());
+            }
+            evaluate(args, fga_sensing::backend::OrtBackend::load_file)
+        }
         other => Err(format!(
             "backend {other:?} is not compiled in; build with --features {other}"
         )),
     }
 }
 
-fn evaluate<B: Backend>(args: &Args) -> Result<(), String> {
+fn evaluate<B: Backend>(
+    args: &Args,
+    load: impl FnOnce(&Path) -> Result<B, fga_sensing::Error>,
+) -> Result<(), String> {
     let index = samples::load_index(&args.samples)?;
     let started = Instant::now();
-    let backend = B::load_file(&args.model).map_err(|e| e.to_string())?;
+    let backend = load(&args.model).map_err(|e| e.to_string())?;
     let load_time = started.elapsed();
-    let mut recognizer = Recognizer::new(backend);
+    let mut recognizer = Recognizer::new(backend)
+        .with_min_width(args.min_width)
+        .map_err(|e| e.to_string())?;
     let allowed = match &args.allowed {
         Some(chars) => Some(recognizer.allowed_set(chars).map_err(|e| e.to_string())?),
         None => None,
@@ -217,9 +246,11 @@ const QUESTIONS: [Question; 2] = [
 fn print_summary(args: &Args, rows: &[Row], load_time: Duration) {
     let same = rows.iter().filter(|r| r.text == r.sample.py_text).count();
     println!(
-        "backend={} allowed={} samples={}",
+        "backend={} allowed={} min_width={} threads={} samples={}",
         args.backend,
         args.allowed.as_deref().unwrap_or("-"),
+        args.min_width,
+        args.threads.map_or("-".to_string(), |t| t.to_string()),
         rows.len()
     );
     println!("same text as Python: {same}/{}", rows.len());
@@ -281,6 +312,34 @@ fn print_summary(args: &Args, rows: &[Row], load_time: Duration) {
         ms(times.last()),
         ms(rows.first().map(|r| &r.elapsed)),
         load_time.as_secs_f64() * 1000.0
+    );
+    // Confidence over the samples whose text reads as a score: how close a narrower input comes
+    // to a confidence floor the reader may set.
+    let mut scored: Vec<f64> = rows
+        .iter()
+        .filter(|r| parse_score(&r.text).0.is_some())
+        .map(|r| r.confidence)
+        .collect();
+    scored.sort_unstable_by(f64::total_cmp);
+    let middle = scored.len() / 2;
+    let median_conf = if scored.is_empty() {
+        None
+    } else if scored.len().is_multiple_of(2) {
+        middle
+            .checked_sub(1)
+            .and_then(|i| scored.get(i))
+            .zip(scored.get(middle))
+            .map(|(a, b)| (a + b) / 2.0)
+    } else {
+        scored.get(middle).copied()
+    };
+    println!(
+        "confidence of texts read as a score: count={} min={} median={}",
+        scored.len(),
+        scored
+            .first()
+            .map_or("-".to_string(), |c| format!("{c:.5}")),
+        median_conf.map_or("-".to_string(), |c| format!("{c:.5}"))
     );
     match peak_memory() {
         Some(peak) => println!("peak memory: {peak}"),

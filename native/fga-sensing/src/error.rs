@@ -25,6 +25,16 @@ pub enum Error {
     InputTooWide { width: usize, max: usize },
     /// The upscale factor is zero or past `preprocess::MAX_UPSCALE`.
     InvalidUpscale { factor: usize, max: usize },
+    /// The minimum model width is outside `preprocess::SMALLEST_MIN_WIDTH..=MAX_MODEL_WIDTH`.
+    InvalidMinWidth {
+        width: usize,
+        min: usize,
+        max: usize,
+    },
+    /// The thread count is zero or past `backend::MAX_TRACT_THREADS`.
+    InvalidThreadCount { threads: usize, max: usize },
+    /// More than one thread was asked of a build without the `tract-threads` feature.
+    ThreadsNotBuilt { threads: usize },
     /// The character list text holds no characters.
     EmptyCharacterList,
     /// The model carries no character list in its metadata.
@@ -75,6 +85,17 @@ impl fmt::Display for Error {
             Error::InvalidUpscale { factor, max } => {
                 write!(f, "upscale factor {factor} is not in 1..={max}")
             }
+            Error::InvalidMinWidth { width, min, max } => {
+                write!(f, "minimum model width {width} is not in {min}..={max}")
+            }
+            Error::InvalidThreadCount { threads, max } => {
+                write!(f, "thread count {threads} is not in 1..={max}")
+            }
+            Error::ThreadsNotBuilt { threads } => write!(
+                f,
+                "{threads} threads asked, but this build has no tract-threads feature, so tract \
+                 runs on the calling thread only"
+            ),
             Error::EmptyCharacterList => write!(f, "the character list is empty"),
             Error::MissingCharacterList => {
                 write!(f, "the model has no `character` metadata entry")

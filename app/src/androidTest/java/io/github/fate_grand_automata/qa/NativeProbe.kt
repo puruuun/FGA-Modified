@@ -58,6 +58,15 @@ object NativeProbe {
     /** `/proc/self/status`: `{"vmRssKb":…,"vmHwmKb":…,"vmSizeKb":…}`. */
     external fun memoryStatus(): String
 
+    // Issue #549: the same tract recogniser with a chosen minimum model width (8..4096, 320 is
+    // what ocrLoad uses) and kernel thread count (0..16, 0 and 1 mean the calling thread). It
+    // fills the slot ocrRead and ocrUnload use. More than one thread needs a library built with
+    // `-Pfga.native.threads=true`; otherwise the call returns `ERR`.
+    /** `{"loadMs":…,"classes":…,"minWidth":…,"threads":…}`. */
+    external fun ocrLoadTract(modelPath: String?, minWidth: Int, threads: Int): String
+    /** `{"threadsBuilt":true|false,"maxThreads":16}`. */
+    external fun ocrTractFeatures(): String
+
     // Issue #535: the same recogniser with ONNX Runtime. Only in a library built with
     // `-Pfga.native.ort=true`; otherwise each call throws UnsatisfiedLinkError.
     /** [threads] is ONNX Runtime's intra-op thread count, 0 for its default: `{"loadMs":…,"classes":…,"intraThreads":…}`. */

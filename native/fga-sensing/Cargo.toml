@@ -16,12 +16,21 @@ default = []
 # turns it on. fga-ffi turns on `tract` for the device probes of issue #530, so every workspace
 # build, the Android one included, compiles tract. `ort` stays off outside its own commands.
 tract = ["dep:tract-onnx", "_backend"]
+# Issue #549, a measurement switch, off by default: tract-linalg's multi-threaded matrix kernels
+# (its `multithread-mm` feature, which runs them on a rayon pool) and the pool the tract backend
+# builds for them. Both crates are already in the build through tract-onnx (rayon through
+# tract-transformers), so the switch adds no crate.
+tract-threads = ["tract", "dep:tract-linalg", "tract-linalg/multithread-mm", "dep:rayon"]
 ort = ["dep:ort", "_backend"]
 # Internal: lets the evaluation tool require "any backend", which Cargo cannot express directly.
 _backend = []
 
 [dependencies]
 tract-onnx = { version = "0.23", optional = true }
+# Only for `tract-threads`: named so that its feature can be switched on. The versions are the
+# ones tract-onnx already resolves to.
+tract-linalg = { version = "0.23", optional = true }
+rayon = { version = "1.10", optional = true }
 # download-binaries fetches a prebuilt ONNX Runtime at build time, so nothing is compiled from C++.
 # The prebuilt Windows runtime comes with DirectML.dll, which copy-dylibs links next to binaries;
 # tls-native uses the OS TLS stack for that download (schannel, OpenSSL on Linux) instead of ring.

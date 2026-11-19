@@ -132,6 +132,18 @@ val nativeOrtEnabled = providers.gradleProperty("fga.native.ort").orNull == "tru
 if (nativeOrtEnabled && !nativeEnabled) {
     throw GradleException("-Pfga.native.ort=true only works together with -Pfga.native=true")
 }
+// Issue #549: tract's multi-threaded kernels for the tract probes (fga-ffi's tract-threads
+// feature), a measurement switch for device-test builds. Off, the cargo-ndk commands are the
+// ones without it, so the library is the one built before the switch existed.
+val nativeThreadsEnabled = providers.gradleProperty("fga.native.threads").orNull == "true"
+if (nativeThreadsEnabled && !nativeEnabled) {
+    throw GradleException("-Pfga.native.threads=true only works together with -Pfga.native=true")
+}
+/** `--features` arguments for fga-ffi; empty when no switch is on, so the command stays as it was. */
+fun cargoFeatures(vararg features: String): List<String> {
+    val wanted = features.toList() + if (nativeThreadsEnabled) listOf("tract-threads") else emptyList()
+    return if (wanted.isEmpty()) emptyList() else listOf("--features", wanted.joinToString(","))
+}
 
 abstract class CargoNdkBuild : Exec() {
     @get:OutputDirectory
@@ -151,6 +163,8 @@ if (nativeEnabled) {
         // A local copy: a lambda that reached a script-level val could not be stored in the configuration cache.
         val abis = shippedAbis.toList()
         inputs.property("abis", abis)
+        val features = cargoFeatures()
+        inputs.property("features", features)
 
         // rustup installs into ~/.cargo/bin, which is often not on the PATH of a Gradle daemon
         // started by Android Studio.
@@ -165,7 +179,7 @@ if (nativeEnabled) {
             CommandLineArgumentProvider {
                 listOf("ndk") + abis.flatMap { listOf("-t", it) } +
                     // minSdk, so the library links against no newer libc than the app supports.
-                    listOf("--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi")
+                    listOf("--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi") + features
             },
         )
     }
@@ -286,9 +300,11 @@ if (nativeOrtEnabled) {
             // dynamic linking, since the AAR has only the shared library.
             environment("ORT_PREFER_DYNAMIC_LINK", "1")
             environment("ORT_LIB_PATH", layout.buildDirectory.dir("onnxruntime/jniLibs/$abi").get().asFile.path)
+            val features = cargoFeatures("ort-probe")
+            inputs.property("features", features)
             argumentProviders.add(
                 CommandLineArgumentProvider {
-                    listOf("ndk", "-t", abi, "--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi", "--features", "ort-probe")
+                    listOf("ndk", "-t", abi, "--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi") + features
                 },
             )
         }

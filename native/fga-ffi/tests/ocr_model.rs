@@ -12,9 +12,9 @@ mod common;
 #[cfg(test)]
 mod model {
     use super::common::helpers::{
-        first_channel, fixed_samples_match_python, index, local_files, ok_json,
+        FIXED, first_channel, fixed_samples_match_python, index, local_files, ok_json,
     };
-    use fga_ffi::probes::{NOT_LOADED, ocr_load, ocr_read, ocr_unload};
+    use fga_ffi::probes::{NOT_LOADED, ocr_load, ocr_load_tract, ocr_read, ocr_unload};
     use fga_ffi::run_guarded;
 
     #[test]
@@ -67,6 +67,37 @@ mod model {
         ok_json(&run_guarded(|| ocr_load(&model_path)));
         assert!(run_guarded(|| ocr_load("no/such/model.onnx")).starts_with("ERR: "));
         assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], false);
+
+        // Issue #549: ocrLoadTract fills the same slot. At 320 on one thread it is ocrLoad.
+        let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 320, 0)));
+        assert_eq!(loaded["minWidth"], 320);
+        assert_eq!(loaded["threads"], 1);
+        fixed_samples_match_python(&dir, &rows, |pixels, width, height| {
+            run_guarded(|| ocr_read(pixels, width, height, ""))
+        });
+        // A narrower input changes the confidences, so only the texts are compared; on these 25
+        // samples the PC evaluation found them unchanged at 160.
+        let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 160, 1)));
+        assert_eq!(loaded["minWidth"], 160);
+        for &i in &FIXED {
+            let file = rows[i]["file"].as_str().unwrap();
+            let (pixels, width, height) = first_channel(&dir.join(file));
+            let read = ok_json(&run_guarded(|| ocr_read(pixels, width, height, "")));
+            assert_eq!(
+                read["text"],
+                rows[i]["py_text"].as_str().unwrap_or_default(),
+                "{file}"
+            );
+        }
+        #[cfg(feature = "tract-threads")]
+        {
+            let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 320, 2)));
+            assert_eq!(loaded["threads"], 2);
+            fixed_samples_match_python(&dir, &rows, |pixels, width, height| {
+                run_guarded(|| ocr_read(pixels, width, height, ""))
+            });
+        }
+        assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], true);
 
         println!(
             "ocr probe model test: 25 samples equal to the Python text, {with_text} of them non-empty"
