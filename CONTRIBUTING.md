@@ -20,8 +20,7 @@ FGA(mod)에 관심을 가져 주셔서 고맙습니다. 제보, 제안, 질문, 
 
 ### 코드 기여(PR)
 
-- 버그 수정, 번역 수정, 설명서 수정은 바로 PR을 보내 주셔도 됩니다.
-- 새 기능이나 자동화 동작을 바꾸는 변경은 먼저 이슈로 이야기해 주세요. 방향이 맞지 않아 작업이 헛되는 일을 줄일 수 있습니다.
+- 버그 수정, 새 기능, 번역, 설명서 등 어떤 PR이든 환영합니다. 먼저 이슈를 열 필요는 없습니다.
 - PR은 `main` 브랜치를 대상으로 열어 주세요.
 - 보내기 전에 단위 테스트를 돌려 주세요. JDK 21이 필요합니다.
 
@@ -52,8 +51,7 @@ FGA(mod) に関心を持っていただきありがとうございます。不�
 
 ### コードの貢献（PR）
 
-- バグ修正、翻訳の修正、マニュアルの修正は、そのまま PR を送っていただいてかまいません。
-- 新機能や自動化の動作を変える変更は、先に Issue で相談してください。
+- バグ修正、新機能、翻訳、マニュアルなど、どんな PR でも歓迎します。先に Issue を開く必要はありません。
 - PR は `main` ブランチ宛てに開いてください。
 - 送る前にユニットテストを実行してください。JDK 21 が必要です。
 
@@ -84,8 +82,7 @@ The app is developed and tested for the **KR server and the official JP server**
 
 ### Pull requests
 
-- Bug fixes, translation fixes and manual fixes can be sent directly.
-- For a new feature or a change to how the automation behaves, open an issue first, so the direction is agreed before you spend time on it.
+- Any pull request is welcome: bug fixes, new features, translations, the manual. You do not have to open an issue first.
 - Open the PR against the `main` branch.
 - Run the unit tests before you send it. JDK 21 is required.
 
