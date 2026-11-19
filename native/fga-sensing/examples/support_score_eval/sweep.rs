@@ -175,16 +175,14 @@ fn is_wrong(sample: &Sample, expect: &Expect, score: &SupportScore) -> bool {
 
 /// What the unshifted read of a sample (when there is one) lets the cut reads be judged against.
 fn expectation(sample: &Sample, base: Option<&&SupportScore>) -> Expect {
-    match base {
-        Some(b) => Expect {
-            truth: wrong::truth(sample, b.class.value(), b.grand.value()),
-            no_grand: b.display == fga_sensing::readers::support_score::Display::Ordinary,
-        },
-        None => Expect {
-            truth: (None, None),
-            no_grand: false,
-        },
-    }
+    wrong::expect(
+        sample,
+        base.map(|b| wrong::BaseRead {
+            class: b.class.value(),
+            grand: b.grand.value(),
+            ordinary: b.display == fga_sensing::readers::support_score::Display::Ordinary,
+        }),
+    )
 }
 
 fn expectation_none() -> Expect {
@@ -396,13 +394,42 @@ pub fn report(
     );
     let actual: Vec<SupportScore> = rows.iter().map(|r| decide(r.obs.clone(), config)).collect();
     print_sweep(index, rows, &actual, &expects);
-    write_cut_rows(output, index, rows, &actual, &expects)?;
 
     // ---- Same without any pixel rule.
     println!("\n== sweep with no pixel rule at all");
     print_sweep(index, rows, &base_scores, &expects);
 
-    class_report(index, rows, &base_scores, config);
+    let table_a = class_report(index, rows, &base_scores, config);
+
+    // The rows are those of rule set A, the first table above, whatever the command line says
+    // about the format or the pixel check: the file must add up to that table.
+    let rule_set_a = ScoreConfig {
+        format: Format::Strict,
+        check_clipping: true,
+        ..config.clone()
+    };
+    let a_scores: Vec<SupportScore> = rows
+        .iter()
+        .map(|r| decide(r.obs.clone(), &rule_set_a))
+        .collect();
+    let written = cut_rows_text(index, rows, &a_scores, &expects);
+    std::fs::write(output, &written).map_err(|e| format!("{}: {e}", output.display()))?;
+    let summed = wrong::sum_rows(&written)?;
+    for dir in ["right", "left", "down", "up"] {
+        let from_file = summed.get(dir).copied().unwrap_or_default();
+        let from_table = table_a.get(dir).copied().unwrap_or_default();
+        if from_file != from_table {
+            return Err(format!(
+                "the rows written to {} add up to {from_file:?} for {dir} (F62, F16, OTHER, correct, no-truth), the rule-set A table says {from_table:?}",
+                output.display()
+            ));
+        }
+    }
+    println!(
+        "  the {} rows written to {} add up to the rule-set A table, per direction",
+        written.lines().count().saturating_sub(1),
+        output.display()
+    );
 
     // ---- Candidates.
     println!("\n== candidate rules (offline, on the cached observations)");
@@ -604,7 +631,8 @@ pub fn class_report(
     rows: &[CutRow],
     base_scores: &[SupportScore],
     config: &ScoreConfig,
-) {
+) -> BTreeMap<&'static str, [usize; 5]> {
+    let mut table_a: BTreeMap<&'static str, [usize; 5]> = BTreeMap::new();
     let variants = [
         Variant {
             name: "A strict, flat-bottom, no ink rule",
@@ -748,6 +776,12 @@ pub fn class_report(
                 .filter(|((d, _), s)| *d == dir && (s.f62 + s.f16 + s.other) > 0)
                 .map(|((_, a), s)| format!("{a}:{}/{}/{}", s.f62, s.f16, s.other))
                 .collect();
+            if v.name.starts_with("A ") {
+                table_a.insert(
+                    dir,
+                    [sum.f62, sum.f16, sum.other, sum.correct, sum.no_truth],
+                );
+            }
             println!(
                 "  {dir:5} F62 {} F16 {} OTHER {} correct accepts {} no-truth {} | nonzero shifts (F62/F16/OTHER): {}",
                 sum.f62,
@@ -769,19 +803,21 @@ pub fn class_report(
             println!("{l}");
         }
     }
+    table_a
 }
 
-/// One row per cut crop of the reader as built: the sample, the shift, what was read, and what the
-/// read is (F62, F16, OTHER, correct, no_truth, joined by `+`, or none when no field counts).
-fn write_cut_rows(
-    path: &Path,
+/// One row per cut crop: the sample, the shift, what was read, and the five counts of
+/// `wrong::Kinds` as numbers (f62, f16, other, correct, no_truth), so the file can be summed. The
+/// column positions are `wrong::DIRECTION_COLUMN` and `wrong::COUNT_COLUMN`.
+fn cut_rows_text(
     index: &[Sample],
     rows: &[CutRow],
     scores: &[SupportScore],
     expects: &[Expect],
-) -> Result<(), String> {
-    let mut out =
-        String::from("file\tdirection\tamount\ttext\tconfidence\tmin_char\tclass\tgrand\tkind\n");
+) -> String {
+    let mut out = String::from(
+        "file\tdirection\tamount\ttext\tconfidence\tmin_char\tclass\tgrand\tf62\tf16\tother\tcorrect\tno_truth\n",
+    );
     let show = |v: Option<u8>| v.map_or(String::new(), |v| v.to_string());
     for ((row, score), e) in rows.iter().zip(scores).zip(expects) {
         if (row.dx, row.dy) == (0, 0) {
@@ -793,25 +829,9 @@ fn write_cut_rows(
         let class = score.class.value();
         let grand = score.grand.value();
         let k = classify(sample, e.truth, e.no_grand, class, grand);
-        let mut kinds: Vec<&str> = Vec::new();
-        for (count, name) in [
-            (k.f62, "F62"),
-            (k.f16, "F16"),
-            (k.other, "OTHER"),
-            (k.correct, "correct"),
-            (k.no_truth, "no_truth"),
-        ] {
-            if count > 0 {
-                kinds.push(name);
-            }
-        }
-        let kind = if kinds.is_empty() {
-            "none".to_owned()
-        } else {
-            kinds.join("+")
-        };
+        let [f62, f16, other, correct, no_truth] = wrong::counts(&k);
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{f62}\t{f16}\t{other}\t{correct}\t{no_truth}\n",
             sample.file,
             direction(row.dx, row.dy),
             row.dx.abs().max(row.dy.abs()),
@@ -823,8 +843,7 @@ fn write_cut_rows(
                 .map_or(String::new(), |c| format!("{c:.5}")),
             show(class),
             show(grand),
-            kind
         ));
     }
-    std::fs::write(path, out).map_err(|e| format!("{}: {e}", path.display()))
+    out
 }

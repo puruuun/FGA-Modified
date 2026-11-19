@@ -16,6 +16,30 @@ pub struct Expect {
     pub no_grand: bool,
 }
 
+/// What the unshifted read of a sample said, when there was one.
+#[derive(Debug, Clone, Copy)]
+pub struct BaseRead {
+    pub class: Option<u8>,
+    pub grand: Option<u8>,
+    /// The read was an ordinary `+NN`, so the field has no Grand score.
+    pub ordinary: bool,
+}
+
+/// What a read of `sample` is judged against. Without an unshifted read the sample's own labels
+/// still decide.
+pub fn expect(sample: &Sample, base: Option<BaseRead>) -> Expect {
+    match base {
+        Some(b) => Expect {
+            truth: truth(sample, b.class, b.grand),
+            no_grand: b.ordinary,
+        },
+        None => Expect {
+            truth: truth(sample, None, None),
+            no_grand: false,
+        },
+    }
+}
+
 /// The label where it gives the number, the special value (62, 16) where only the flag is true,
 /// else what the reader itself returned on the unshifted crop (no wrong value was ever seen
 /// there), else nothing is known. `py_text`, the Python reading, is deliberately not used.
@@ -63,6 +87,9 @@ impl Kinds {
     }
 }
 
+/// `truth` must come from [`truth`] (or [`expect`]), which puts the label, the flag and the
+/// unshifted-read fallback in one place; a hand-made truth would make the kinds disagree with the
+/// rest of the evaluation.
 pub fn classify(
     sample: &Sample,
     truth: Truth,
@@ -85,4 +112,41 @@ pub fn classify(
         no_truth: usize::from(class_pick && truth.0.is_none())
             + usize::from(grand_pick && truth.1.is_none()),
     }
+}
+
+/// The counts of [`Kinds`] in the order of the columns of the sweep's TSV.
+pub fn counts(kinds: &Kinds) -> [usize; 5] {
+    [
+        kinds.f62,
+        kinds.f16,
+        kinds.other,
+        kinds.correct,
+        kinds.no_truth,
+    ]
+}
+
+/// Where the sweep's TSV keeps the direction and the first of the five count columns.
+pub const DIRECTION_COLUMN: usize = 1;
+pub const COUNT_COLUMN: usize = 8;
+
+/// The five count columns of the sweep's TSV summed per direction, so the file can be checked
+/// against the printed table.
+pub fn sum_rows(tsv: &str) -> Result<std::collections::BTreeMap<String, [usize; 5]>, String> {
+    let mut sums: std::collections::BTreeMap<String, [usize; 5]> = Default::default();
+    for (n, line) in tsv.lines().enumerate().skip(1) {
+        let fields: Vec<&str> = line.split('\t').collect();
+        let direction = fields
+            .get(DIRECTION_COLUMN)
+            .ok_or_else(|| format!("line {}: no direction column", n + 1))?;
+        let entry = sums.entry((*direction).to_owned()).or_default();
+        for (i, slot) in entry.iter_mut().enumerate() {
+            let text = fields
+                .get(COUNT_COLUMN + i)
+                .ok_or_else(|| format!("line {}: no count column {i}", n + 1))?;
+            *slot += text
+                .parse::<usize>()
+                .map_err(|_| format!("line {}: {text:?} is not a count", n + 1))?;
+        }
+    }
+    Ok(sums)
 }
