@@ -42,16 +42,19 @@ pub enum Reason {
     Clipped,
     /// The ordinary form `+NN` has no Grand score.
     NotShown,
+    /// The crop is not the size the pixel rules were built for.
+    CropSize,
 }
 
 impl Reason {
-    pub const ALL: [Reason; 6] = [
+    pub const ALL: [Reason; 7] = [
         Reason::Blank,
         Reason::LowConfidence,
         Reason::Format,
         Reason::Range,
         Reason::Clipped,
         Reason::NotShown,
+        Reason::CropSize,
     ];
 
     pub fn name(self) -> &'static str {
@@ -62,6 +65,7 @@ impl Reason {
             Reason::Range => "range",
             Reason::Clipped => "clipped",
             Reason::NotShown => "not_shown",
+            Reason::CropSize => "crop_size",
         }
     }
 }
@@ -128,22 +132,38 @@ pub struct ScoreConfig {
     pub restrict_characters: bool,
     /// Switches the pixel check off. Only the evaluation tool does that, to show what it changes.
     pub check_clipping: bool,
+    /// The crop size (width, height) the pixel rules are built for: the score region at 720p. A
+    /// crop of another size is unknown, since the constants of those rules would not fit it.
+    pub expected_size: (usize, usize),
 }
 
-/// 0.05 below the lowest confidence of a correct read on the 370 labelled samples (0.91163), by
-/// the rule of docs/agents/rust-native.md, "Support-score reader". No wrong read exists on those
-/// samples to place it against, so it is a margin, not a measured boundary.
+/// The score region of a support row at 720p.
+pub const EXPECTED_CROP_SIZE: (usize, usize) = (60, 30);
+
+/// A margin, not a measured boundary: 0.05 below the lowest confidence of a correct read on the
+/// 370 labelled samples (0.91163), by the rule of docs/agents/rust-native.md. Two verifiers
+/// confirmed that it separates nothing on those samples, because no wrong read of a valid text
+/// exists there; the format and the pixel rules do the real work, and the two real errors found
+/// (`0070`, `0299`) read with 0.956 and 0.937.
 pub const DEFAULT_MIN_CONFIDENCE: f64 = 0.86;
+
+/// A character the model itself gives less than even odds is not a read. Not fitted: the lowest
+/// correct read on the 370 samples has a weakest character of 0.517, so it costs no labelled read.
+pub const DEFAULT_MIN_CHAR_CONFIDENCE: f32 = 0.5;
 
 impl Default for ScoreConfig {
     fn default() -> Self {
         Self {
-            format: Format::CompoundClassPlusOptional,
+            // The plus is the leftmost glyph, so a field cut at the left loses it first and is
+            // then refused here; a tolerance for a missing class plus let `52/+16` and `2/+16`
+            // through the synthetic cut sweep.
+            format: Format::Strict,
             range_policy: RangePolicy::Joint,
             min_confidence: DEFAULT_MIN_CONFIDENCE,
-            min_char_confidence: 0.0,
+            min_char_confidence: DEFAULT_MIN_CHAR_CONFIDENCE,
             restrict_characters: false,
             check_clipping: true,
+            expected_size: EXPECTED_CROP_SIZE,
         }
     }
 }
@@ -156,6 +176,8 @@ pub struct Observation {
     /// The weakest character of the text; `None` for an empty text.
     pub min_char_confidence: Option<f32>,
     pub clip: ClipReport,
+    /// Width and height of the crop that was read.
+    pub crop_size: (usize, usize),
     /// No texture anywhere in the crop (see [`is_featureless`]): whatever the model read is noise.
     pub featureless: bool,
 }
@@ -221,6 +243,7 @@ pub fn observe_with<B: Backend>(
         confidence: decoded.confidence,
         min_char_confidence,
         clip: inspect_clipping(crop),
+        crop_size: (crop.width(), crop.height()),
         featureless: is_featureless(crop),
     })
 }
@@ -241,7 +264,7 @@ pub fn read_with<B: Backend>(
     Ok(decide(observation, config))
 }
 
-/// Applies the rules in a fixed order: blank, confidence, format, range, clipping.
+/// Applies the rules in a fixed order: size, blank, confidence, format, range, clipping.
 pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     let unknown = |reason: Reason, observation: Observation| SupportScore {
         class: Score::Unknown(reason),
@@ -249,6 +272,9 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
         display: Display::Unknown,
         observation,
     };
+    if observation.crop_size != config.expected_size {
+        return unknown(Reason::CropSize, observation);
+    }
     if is_blank(&observation) {
         return unknown(Reason::Blank, observation);
     }
@@ -264,6 +290,12 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
         Display::Ordinary
     };
     let (class, grand) = apply_range(parsed, config.range_policy);
+    // With nothing left to report, the display form is as unreliable as the numbers.
+    let display = if class.value().is_none() && grand.value().is_none() {
+        Display::Unknown
+    } else {
+        display
+    };
     let mut score = SupportScore {
         class,
         grand,
@@ -305,25 +337,14 @@ fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {
     (class, grand)
 }
 
-/// A cut at the right takes the field that is printed last (the Grand score of a compound, the
-/// class score of an ordinary one); the class score of a compound is still whole. A cut at the
-/// bottom takes every digit.
+/// A cut field cannot know what it lost: `+62/+1` is what both a cut `+62/+16` and a real
+/// `+62/+1` look like, and a class score read beside a cut Grand score may be a cut one too. So
+/// every field is unknown, and so is the display form, in whichever direction the cut is.
 fn apply_clipping(score: &mut SupportScore) {
-    let clipped = Score::Unknown(Reason::Clipped);
-    let cut = |field: &mut Score| {
-        if matches!(field, Score::Value(_)) {
-            *field = clipped;
-        }
-    };
-    if score.observation.clip.vertical {
-        cut(&mut score.class);
-        cut(&mut score.grand);
+    if score.observation.clip.any() {
+        score.class = Score::Unknown(Reason::Clipped);
+        score.grand = Score::Unknown(Reason::Clipped);
         score.display = Display::Unknown;
-    } else if score.observation.clip.right {
-        match score.display {
-            Display::Compound => cut(&mut score.grand),
-            _ => cut(&mut score.class),
-        }
     }
 }
 

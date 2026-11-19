@@ -1,0 +1,575 @@
+//! The cut sweep: SYNTHETIC cuts made from the real labelled crops, to see what the reader returns
+//! when the field is cut by the crop, which the 370 real samples hardly contain.
+//!
+//! Each crop of a sample with a readable label is shifted inside the same 60x30 size, right and
+//! left by 1 to 20 columns and down and up by 1 to 10 rows. What moves in from outside is not
+//! real game content: the vacated columns are filled with the median gray of their row, the
+//! vacated rows with the median gray of their column, which looks like panel background without
+//! texture of its own. What moves out is lost, as in a real cut. Real cuts also lose the content
+//! in a way a shift does not (the capture edge, the list scrolling), so a clean sweep is
+//! necessary evidence, not proof.
+
+use std::collections::BTreeMap;
+use std::path::Path;
+
+use fga_sensing::image::GrayImage;
+use fga_sensing::readers::support_score::{
+    Observation, ScoreConfig, SupportScore, SupportScoreReader, decide,
+};
+
+use super::{Backend, Recognizer, Sample, Verdict, class_verdict, grand_verdict, samples};
+
+pub const MAX_SHIFT_X: isize = 20;
+pub const MAX_SHIFT_Y: isize = 10;
+
+/// Dark outline pixels of the game's score text.
+const INK_DARK: u8 = 75;
+
+pub fn direction(dx: isize, dy: isize) -> &'static str {
+    match (dx.signum(), dy.signum()) {
+        (1, 0) => "right",
+        (-1, 0) => "left",
+        (0, 1) => "down",
+        (0, -1) => "up",
+        _ => "none",
+    }
+}
+
+fn shift_list() -> Vec<(isize, isize)> {
+    let mut list = vec![(0, 0)];
+    for d in 1..=MAX_SHIFT_X {
+        list.push((d, 0));
+        list.push((-d, 0));
+    }
+    for d in 1..=MAX_SHIFT_Y {
+        list.push((0, d));
+        list.push((0, -d));
+    }
+    list
+}
+
+/// Where the text's ink is. Ink is a pixel at or below 75 (the dark outline) inside the text
+/// band, the rows from four to fourteen fifteenths of the height; a column counts with at least
+/// two such pixels and a row (from the band top down) with at least three, so a speckle is not
+/// ink. The content ends where the black columns outside the game screen begin.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Ink {
+    pub first_col: Option<usize>,
+    pub last_col: Option<usize>,
+    pub first_row: Option<usize>,
+    pub last_row: Option<usize>,
+    pub content: usize,
+    pub height: usize,
+}
+
+pub fn ink_of(image: &GrayImage) -> Ink {
+    let (w, h) = (image.width(), image.height());
+    let px = |x: usize, y: usize| image.pixels().get(y * w + x).copied().unwrap_or(255);
+    let content = (0..w)
+        .rev()
+        .find(|&x| (0..h).any(|y| px(x, y) > 0))
+        .map_or(0, |x| x + 1);
+    let top = h * 4 / 15;
+    let bottom = h * 14 / 15;
+    let cols: Vec<usize> = (0..content)
+        .filter(|&x| (top..bottom).filter(|&y| px(x, y) <= INK_DARK).count() >= 2)
+        .collect();
+    let rows: Vec<usize> = (top..h)
+        .filter(|&y| (0..content).filter(|&x| px(x, y) <= INK_DARK).count() >= 3)
+        .collect();
+    Ink {
+        first_col: cols.first().copied(),
+        last_col: cols.last().copied(),
+        first_row: rows.first().copied(),
+        last_row: rows.last().copied(),
+        content,
+        height: h,
+    }
+}
+
+pub struct CutRow {
+    pub sample: usize,
+    pub dx: isize,
+    pub dy: isize,
+    pub obs: Observation,
+    pub ink: Ink,
+}
+
+pub fn has_readable_label(s: &Sample) -> bool {
+    s.is62 == Some(true) || s.is16 == Some(true) || s.cls.is_some() || s.grand.is_some()
+}
+
+/// Reads every crop at shift (0, 0) and, for the samples with a readable label, at every shift.
+pub fn run<B: Backend>(
+    args: &super::Args,
+    index: &[Sample],
+    load: &(impl Fn(&Path) -> Result<B, fga_sensing::Error> + Sync),
+    config: &ScoreConfig,
+) -> Result<Vec<CutRow>, String> {
+    let workers = std::thread::available_parallelism()
+        .map_or(2, |n| n.get())
+        .clamp(1, 8);
+    let shifts = shift_list();
+    let results: Vec<Result<Vec<CutRow>, String>> = std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..workers)
+            .map(|worker| {
+                let shifts = &shifts;
+                scope.spawn(move || -> Result<Vec<CutRow>, String> {
+                    let backend = load(&args.model).map_err(|e| e.to_string())?;
+                    let mut reader =
+                        SupportScoreReader::new(Recognizer::new(backend), config.clone())
+                            .map_err(|e| e.to_string())?;
+                    let mut rows = Vec::new();
+                    for (i, sample) in index.iter().enumerate() {
+                        if i % workers != worker {
+                            continue;
+                        }
+                        let crop = samples::load_gray(&args.samples.join(&sample.file))?;
+                        for &(dx, dy) in shifts {
+                            if (dx, dy) != (0, 0) && !has_readable_label(sample) {
+                                continue;
+                            }
+                            let image = samples::shifted(&crop, dx, dy)?;
+                            let obs = reader
+                                .observe(&image)
+                                .map_err(|e| format!("{}: {e}", sample.file))?;
+                            rows.push(CutRow {
+                                sample: i,
+                                dx,
+                                dy,
+                                obs,
+                                ink: ink_of(&image),
+                            });
+                        }
+                    }
+                    Ok(rows)
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|h| h.join().unwrap_or_else(|_| Err("worker panicked".into())))
+            .collect()
+    });
+    let mut all = Vec::new();
+    for part in results {
+        all.extend(part?);
+    }
+    all.sort_by_key(|r| (r.sample, r.dx, r.dy));
+    Ok(all)
+}
+
+type Truth = (Option<u8>, Option<u8>);
+
+/// What each field of a sample is supposed to read: the label where it gives the number, the
+/// special value (62, 16) where only the flag is true, else what the reader itself returned on the
+/// unshifted crop (no wrong value was ever seen there), else nothing is known.
+fn truth(sample: &Sample, base: &SupportScore) -> Truth {
+    let class = sample
+        .cls
+        .or(if sample.is62 == Some(true) {
+            Some(62)
+        } else {
+            None
+        })
+        .or(base.class.value());
+    let grand = sample
+        .grand
+        .or(if sample.is16 == Some(true) {
+            Some(16)
+        } else {
+            None
+        })
+        .or(base.grand.value());
+    (class, grand)
+}
+
+fn wrong_field(value: Option<u8>, truth: Option<u8>, flag: Option<bool>, special: u8) -> bool {
+    match value {
+        None => false,
+        Some(v) => truth.is_some_and(|t| t != v) || (flag == Some(false) && v == special),
+    }
+}
+
+fn is_wrong(sample: &Sample, truth: Truth, score: &SupportScore) -> bool {
+    wrong_field(score.class.value(), truth.0, sample.is62, 62)
+        || wrong_field(score.grand.value(), truth.1, sample.is16, 16)
+}
+
+fn has_value(score: &SupportScore) -> bool {
+    score.class.value().is_some() || score.grand.value().is_some()
+}
+
+fn range_of(values: impl Iterator<Item = usize>) -> Option<(usize, usize)> {
+    values.fold(None, |acc, v| match acc {
+        None => Some((v, v)),
+        Some((lo, hi)) => Some((lo.min(v), hi.max(v))),
+    })
+}
+
+fn histogram(title: &str, values: impl Iterator<Item = Option<usize>>) {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for v in values {
+        *counts
+            .entry(v.map_or("none".to_string(), |v| format!("{v:02}")))
+            .or_default() += 1;
+    }
+    let line: Vec<String> = counts.iter().map(|(k, v)| format!("{k}:{v}")).collect();
+    println!("  {title}: {}", line.join(" "));
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Right {
+    None,
+    Ink(usize),
+    Range(usize),
+    Current,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Left {
+    None,
+    Ink(usize),
+    Range(usize),
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Vert {
+    None,
+    InkBottom(usize),
+    Range(usize),
+    Current,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Combo(Right, Left, Vert);
+
+impl Combo {
+    fn parts(&self) -> usize {
+        usize::from(!matches!(self.0, Right::None))
+            + usize::from(!matches!(self.1, Left::None))
+            + usize::from(!matches!(self.2, Vert::None))
+    }
+
+    fn name(&self) -> String {
+        format!("right={:?} left={:?} vertical={:?}", self.0, self.1, self.2)
+    }
+}
+
+struct Ranges {
+    last_col: (usize, usize),
+    first_col: (usize, usize),
+    first_row: (usize, usize),
+    last_row: (usize, usize),
+}
+
+fn outside(value: Option<usize>, range: (usize, usize), margin: usize) -> bool {
+    value.is_some_and(|v| v + margin < range.0 || v > range.1 + margin)
+}
+
+fn cut(row: &CutRow, combo: Combo, ranges: &Ranges) -> bool {
+    let ink = &row.ink;
+    let right = match combo.0 {
+        Right::None => false,
+        Right::Ink(k) => ink.last_col.is_some_and(|c| c + k >= ink.content),
+        Right::Range(m) => outside(ink.last_col, ranges.last_col, m),
+        Right::Current => row.obs.clip.right,
+    };
+    let left = match combo.1 {
+        Left::None => false,
+        Left::Ink(k) => ink.first_col.is_some_and(|c| c < k),
+        Left::Range(m) => outside(ink.first_col, ranges.first_col, m),
+    };
+    let vertical = match combo.2 {
+        Vert::None => false,
+        Vert::InkBottom(k) => ink.last_row.is_some_and(|r| r + k >= ink.height),
+        Vert::Range(m) => {
+            outside(ink.first_row, ranges.first_row, m) || outside(ink.last_row, ranges.last_row, m)
+        }
+        Vert::Current => row.obs.clip.vertical,
+    };
+    right || left || vertical
+}
+
+pub fn report(index: &[Sample], rows: &[CutRow], config: &ScoreConfig) {
+    // The reader without any pixel rule, as the baseline every candidate is applied to.
+    let bare = ScoreConfig {
+        check_clipping: false,
+        ..config.clone()
+    };
+    let base_scores: Vec<SupportScore> =
+        rows.iter().map(|r| decide(r.obs.clone(), &bare)).collect();
+    // The unshifted reader result of each sample, for the truth of unlabelled fields.
+    let mut unshifted: BTreeMap<usize, &SupportScore> = BTreeMap::new();
+    for (row, score) in rows.iter().zip(&base_scores) {
+        if (row.dx, row.dy) == (0, 0) {
+            unshifted.insert(row.sample, score);
+        }
+    }
+    let truths: Vec<Truth> = rows
+        .iter()
+        .map(|r| match (index.get(r.sample), unshifted.get(&r.sample)) {
+            (Some(s), Some(b)) => truth(s, b),
+            _ => (None, None),
+        })
+        .collect();
+    let sample_of = |r: &CutRow| index.get(r.sample);
+
+    println!(
+        "config: format={:?} floor={} char_floor={} restricted={}",
+        config.format,
+        config.min_confidence,
+        config.min_char_confidence,
+        config.restrict_characters
+    );
+    let sweep_samples = index.iter().filter(|s| has_readable_label(s)).count();
+    println!(
+        "sweep: {sweep_samples} samples with a readable label x {} shifts (right/left 1..={MAX_SHIFT_X}, down/up 1..={MAX_SHIFT_Y}) plus all {} real crops unshifted. SYNTHETIC: vacated area = median gray of its row (columns) or column (rows).",
+        shift_list().len() - 1,
+        index.len()
+    );
+
+    // ---- Real labelled reads: where the ink ends.
+    let ok_real: Vec<usize> = rows
+        .iter()
+        .enumerate()
+        .filter(|(i, r)| {
+            (r.dx, r.dy) == (0, 0)
+                && sample_of(r).is_some_and(|s| {
+                    has_readable_label(s)
+                        && base_scores.get(*i).is_some_and(|b| {
+                            class_verdict(s, b.class.value()) == Verdict::Ok
+                                || grand_verdict(s, b.grand.value()) == Verdict::Ok
+                        })
+                })
+        })
+        .map(|(i, _)| i)
+        .collect();
+    let ink_of_rows = |f: fn(&Ink) -> Option<usize>| -> Vec<Option<usize>> {
+        ok_real
+            .iter()
+            .filter_map(|&i| rows.get(i))
+            .map(|r| f(&r.ink))
+            .collect()
+    };
+    println!(
+        "\n== where the ink ends, {} real labelled reads (unshifted)",
+        ok_real.len()
+    );
+    histogram("last ink column", ink_of_rows(|i| i.last_col).into_iter());
+    histogram(
+        "last ink column counted from the end of the content (content - 1 - last)",
+        ok_real.iter().filter_map(|&i| rows.get(i)).map(|r| {
+            r.ink
+                .last_col
+                .map(|c| r.ink.content.saturating_sub(1).saturating_sub(c))
+        }),
+    );
+    histogram("first ink column", ink_of_rows(|i| i.first_col).into_iter());
+    histogram("first ink row", ink_of_rows(|i| i.first_row).into_iter());
+    histogram("last ink row", ink_of_rows(|i| i.last_row).into_iter());
+    histogram(
+        "content width",
+        ok_real
+            .iter()
+            .filter_map(|&i| rows.get(i))
+            .map(|r| Some(r.ink.content)),
+    );
+    let obs_range = |f: fn(&Ink) -> Option<usize>| -> (usize, usize) {
+        range_of(ink_of_rows(f).into_iter().flatten()).unwrap_or((0, 0))
+    };
+    let ranges = Ranges {
+        last_col: obs_range(|i| i.last_col),
+        first_col: obs_range(|i| i.first_col),
+        first_row: obs_range(|i| i.first_row),
+        last_row: obs_range(|i| i.last_row),
+    };
+    println!(
+        "  observed ranges: last col {:?}, first col {:?}, first row {:?}, last row {:?}",
+        ranges.last_col, ranges.first_col, ranges.first_row, ranges.last_row
+    );
+
+    // ---- Sweep with the reader as it is (the lib's own pixel rules).
+    println!(
+        "\n== sweep of the reader as built (its own pixel rules), values returned / WRONG per amount"
+    );
+    let actual: Vec<SupportScore> = rows.iter().map(|r| decide(r.obs.clone(), config)).collect();
+    print_sweep(index, rows, &actual, &truths);
+
+    // ---- Same without any pixel rule.
+    println!("\n== sweep with no pixel rule at all");
+    print_sweep(index, rows, &base_scores, &truths);
+
+    // ---- Candidates.
+    println!("\n== candidate rules (offline, on the cached observations)");
+    let margin = 3;
+    let rights = [
+        Right::None,
+        Right::Ink(1),
+        Right::Ink(2),
+        Right::Ink(3),
+        Right::Ink(4),
+        Right::Range(margin),
+        Right::Current,
+    ];
+    let lefts = [
+        Left::None,
+        Left::Ink(1),
+        Left::Ink(2),
+        Left::Ink(3),
+        Left::Ink(4),
+        Left::Range(margin),
+    ];
+    let verts = [
+        Vert::None,
+        Vert::InkBottom(1),
+        Vert::InkBottom(2),
+        Vert::InkBottom(3),
+        Vert::InkBottom(4),
+        Vert::Range(margin),
+        Vert::Current,
+    ];
+    struct Outcome {
+        combo: Combo,
+        lost: Vec<String>,
+        wrong: BTreeMap<&'static str, usize>,
+        wrong_total: usize,
+    }
+    let mut outcomes = Vec::new();
+    for &r in &rights {
+        for &l in &lefts {
+            for &v in &verts {
+                let combo = Combo(r, l, v);
+                let mut lost = Vec::new();
+                let mut wrong: BTreeMap<&'static str, usize> = BTreeMap::new();
+                for (i, row) in rows.iter().enumerate() {
+                    let Some(sample) = sample_of(row) else {
+                        continue;
+                    };
+                    let Some(base) = base_scores.get(i) else {
+                        continue;
+                    };
+                    let is_cut = cut(row, combo, &ranges);
+                    let t = truths.get(i).copied().unwrap_or((None, None));
+                    let dir = direction(row.dx, row.dy);
+                    if (row.dx, row.dy) == (0, 0) {
+                        let had_ok = class_verdict(sample, base.class.value()) == Verdict::Ok
+                            || grand_verdict(sample, base.grand.value()) == Verdict::Ok;
+                        if is_cut && had_ok {
+                            lost.push(sample.file.clone());
+                        }
+                        let wrong_real = !is_cut
+                            && (class_verdict(sample, base.class.value()) == Verdict::Wrong
+                                || grand_verdict(sample, base.grand.value()) == Verdict::Wrong);
+                        if wrong_real {
+                            *wrong.entry("real").or_default() += 1;
+                        }
+                    } else if !is_cut && has_value(base) && is_wrong(sample, t, base) {
+                        *wrong.entry(dir).or_default() += 1;
+                    }
+                }
+                let wrong_total = wrong.values().sum();
+                outcomes.push(Outcome {
+                    combo,
+                    lost,
+                    wrong,
+                    wrong_total,
+                });
+            }
+        }
+    }
+    let show_outcome = |o: &Outcome| {
+        println!(
+            "  {} | lost {} | wrong: real {} right {} left {} down {} up {}",
+            o.combo.name(),
+            o.lost.len(),
+            o.wrong.get("real").copied().unwrap_or(0),
+            o.wrong.get("right").copied().unwrap_or(0),
+            o.wrong.get("left").copied().unwrap_or(0),
+            o.wrong.get("down").copied().unwrap_or(0),
+            o.wrong.get("up").copied().unwrap_or(0)
+        );
+    };
+    println!("single-end candidates (the other ends off):");
+    for o in outcomes.iter().filter(|o| o.combo.parts() <= 1) {
+        show_outcome(o);
+        if !o.lost.is_empty() {
+            println!("      lost files: {}", o.lost.join(" "));
+        }
+    }
+    let mut zero: Vec<&Outcome> = outcomes.iter().filter(|o| o.wrong_total == 0).collect();
+    zero.sort_by_key(|o| (o.lost.len(), o.combo.parts()));
+    println!(
+        "\ncombinations with zero wrong values everywhere: {}",
+        zero.len()
+    );
+    for o in zero.iter().take(12) {
+        show_outcome(o);
+        if !o.lost.is_empty() {
+            println!("      lost files: {}", o.lost.join(" "));
+        }
+    }
+    match zero.first() {
+        Some(best) => {
+            println!(
+                "SELECTED by the rule (zero wrong, fewest lost, then fewest rules): {}",
+                best.combo.name()
+            );
+        }
+        None => {
+            println!("NO CANDIDATE reaches zero wrong values; nothing is selected. Least wrong:");
+            let mut all: Vec<&Outcome> = outcomes.iter().collect();
+            all.sort_by_key(|o| (o.wrong_total, o.lost.len(), o.combo.parts()));
+            for o in all.iter().take(8) {
+                show_outcome(o);
+            }
+        }
+    }
+}
+
+fn print_sweep(index: &[Sample], rows: &[CutRow], scores: &[SupportScore], truths: &[Truth]) {
+    // direction -> amount -> (values, wrong)
+    let mut table: BTreeMap<(&'static str, isize), (usize, usize)> = BTreeMap::new();
+    let mut wrongs: Vec<String> = Vec::new();
+    for ((row, score), t) in rows.iter().zip(scores).zip(truths) {
+        if (row.dx, row.dy) == (0, 0) {
+            continue;
+        }
+        let Some(sample) = index.get(row.sample) else {
+            continue;
+        };
+        let dir = direction(row.dx, row.dy);
+        let amount = row.dx.abs().max(row.dy.abs());
+        let entry = table.entry((dir, amount)).or_default();
+        entry.0 += usize::from(has_value(score));
+        if is_wrong(sample, *t, score) {
+            entry.1 += 1;
+            wrongs.push(format!(
+                "{} {dir} {amount}: text {:?} conf {:.5} -> class {:?} grand {:?} (truth {:?})",
+                sample.file,
+                score.observation.text,
+                score.observation.confidence,
+                score.class.value(),
+                score.grand.value(),
+                t
+            ));
+        }
+    }
+    for dir in ["right", "left", "down", "up"] {
+        let line: Vec<String> = table
+            .iter()
+            .filter(|((d, _), _)| *d == dir)
+            .map(|((_, a), (v, w))| format!("{a}:{v}/{w}"))
+            .collect();
+        let wrong: usize = table
+            .iter()
+            .filter(|((d, _), _)| *d == dir)
+            .map(|(_, (_, w))| w)
+            .sum();
+        println!("  {dir:5} WRONG total {wrong}: {}", line.join(" "));
+    }
+    println!("  wrong values listed ({}):", wrongs.len());
+    for w in &wrongs {
+        println!("    {w}");
+    }
+}

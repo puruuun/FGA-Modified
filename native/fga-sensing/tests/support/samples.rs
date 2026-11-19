@@ -100,3 +100,40 @@ pub fn load_gray(path: &Path) -> Result<GrayImage, String> {
     GrayImage::new(info.width as usize, info.height as usize, pixels)
         .map_err(|e| format!("{}: {e}", path.display()))
 }
+
+fn median(mut values: Vec<u8>) -> u8 {
+    values.sort_unstable();
+    values.get(values.len() / 2).copied().unwrap_or(0)
+}
+
+/// A crop moved inside its own size by `dx` columns (right when positive) and `dy` rows (down
+/// when positive), as the cut sweep of the evaluation does it. SYNTHETIC: what moves out is lost,
+/// as in a real cut, and what moves in is not game content but the median gray of its row (for
+/// columns) or of its column (for rows), which looks like panel background.
+pub fn shifted(image: &GrayImage, dx: isize, dy: isize) -> Result<GrayImage, String> {
+    let (w, h) = (image.width(), image.height());
+    let px = |x: usize, y: usize| image.pixels().get(y * w + x).copied().unwrap_or(0);
+    let row_median: Vec<u8> = (0..h)
+        .map(|y| median((0..w).map(|x| px(x, y)).collect()))
+        .collect();
+    let col_median: Vec<u8> = (0..w)
+        .map(|x| median((0..h).map(|y| px(x, y)).collect()))
+        .collect();
+    let mut out = Vec::with_capacity(w * h);
+    for y in 0..h {
+        for x in 0..w {
+            let sx = x as isize - dx;
+            let sy = y as isize - dy;
+            let inside_x = (0..w as isize).contains(&sx);
+            let inside_y = (0..h as isize).contains(&sy);
+            out.push(if inside_x && inside_y {
+                px(sx as usize, sy as usize)
+            } else if !inside_x {
+                row_median.get(y).copied().unwrap_or(0)
+            } else {
+                col_median.get(x).copied().unwrap_or(0)
+            });
+        }
+    }
+    GrayImage::new(w, h, out).map_err(|e| e.to_string())
+}

@@ -158,7 +158,7 @@ mod checks {
             ScoreConfig::default(),
         )
         .unwrap();
-        let cases: [(&str, Score, Score, Display); 6] = [
+        let cases: [(&str, Score, Score, Display); 7] = [
             // A plain +62.
             (
                 "0044.png",
@@ -168,10 +168,18 @@ mod checks {
             ),
             // A compound +62/+16.
             (
-                "0000.png",
+                "0183.png",
                 Score::Value(62),
                 Score::Value(16),
                 Display::Compound,
+            ),
+            // The cost of the edge rules: a complete "+62/+16" whose ink reaches the last
+            // columns of the content is unknown, as one that is cut there is.
+            (
+                "0000.png",
+                Score::Unknown(Reason::Clipped),
+                Score::Unknown(Reason::Clipped),
+                Display::Unknown,
             ),
             // A class value that is not 62.
             (
@@ -212,6 +220,94 @@ mod checks {
             assert_eq!(score.display, display, "{seen}");
         }
         println!("{test}: {} samples decided as expected", cases.len());
+    }
+
+    /// The cut sweep of `support_score_eval` on a fixed handful of samples: every shift (right and
+    /// left by 1 to 20 columns, down and up by 1 to 10 rows) of a crop whose value is known must
+    /// read as that value or as unknown, never as another number. SYNTHETIC cuts, see
+    /// `samples::shifted`; the full sweep is the evaluation tool's.
+    pub fn cut_sweep_returns_no_wrong_value<B: Backend>(test: &str) {
+        use fga_sensing::readers::support_score::{ScoreConfig, SupportScoreReader};
+        let Some((model, dir)) = local_files(test) else {
+            return;
+        };
+        let mut reader = SupportScoreReader::new(
+            Recognizer::new(B::load_file(&model).unwrap()),
+            ScoreConfig::default(),
+        )
+        .unwrap();
+        // (file, class score, Grand score) as the labels give them; None where the field has none.
+        let known: [(&str, u8, Option<u8>); 7] = [
+            ("0183.png", 62, Some(16)),
+            ("0006.png", 56, Some(16)),
+            ("0033.png", 14, Some(16)),
+            ("0299.png", 57, Some(16)),
+            ("0044.png", 62, None),
+            ("0269.png", 45, None),
+            ("0102.png", 0, None),
+        ];
+        let mut shifts: Vec<(isize, isize)> = vec![];
+        for d in 1..=20 {
+            shifts.extend([(d, 0), (-d, 0)]);
+        }
+        for d in 1..=10 {
+            shifts.extend([(0, d), (0, -d)]);
+        }
+        let mut returned = 0;
+        for (file, class, grand) in known {
+            let crop = samples::load_gray(&dir.join(file)).unwrap();
+            for &(dx, dy) in &shifts {
+                let moved = samples::shifted(&crop, dx, dy).unwrap();
+                let score = reader.read(&moved).unwrap();
+                let at = format!(
+                    "{file} shifted ({dx}, {dy}): text {:?}",
+                    score.observation.text
+                );
+                if let Some(value) = score.class.value() {
+                    assert_eq!(value, class, "class, {at}");
+                    returned += 1;
+                }
+                if let Some(value) = score.grand.value() {
+                    assert_eq!(Some(value), grand, "grand, {at}");
+                    returned += 1;
+                }
+            }
+        }
+        // Shifted far to the left, these leave only "+16", which reads as an ordinary score: the
+        // case the left-edge rule exists for, and one a reader of the text alone gets wrong.
+        let far_left: [(&str, u8); 10] = [
+            ("0014.png", 0),
+            ("0021.png", 6),
+            ("0034.png", 1),
+            ("0035.png", 0),
+            ("0039.png", 0),
+            ("0047.png", 0),
+            ("0067.png", 9),
+            ("0080.png", 0),
+            ("0081.png", 0),
+            ("0084.png", 2),
+        ];
+        for (file, class) in far_left {
+            let crop = samples::load_gray(&dir.join(file)).unwrap();
+            for d in 17..=20 {
+                let moved = samples::shifted(&crop, -d, 0).unwrap();
+                let score = reader.read(&moved).unwrap();
+                let at = format!("{file} shifted left {d}: text {:?}", score.observation.text);
+                if let Some(value) = score.class.value() {
+                    assert_eq!(value, class, "class, {at}");
+                }
+                if let Some(value) = score.grand.value() {
+                    assert_eq!(value, 16, "grand, {at}");
+                }
+            }
+        }
+        // Zero wrong values also holds for a reader that never answers, so some answers must
+        // exist: the smallest shifts leave the field whole.
+        assert!(returned > 0, "no shifted crop returned a value");
+        println!(
+            "{test}: {returned} values returned over {} shifts, none wrong",
+            shifts.len()
+        );
     }
 
     pub fn loads_from_bytes_and_reads_wide_crops<B: Backend>(test: &str) {
@@ -260,6 +356,11 @@ mod tract {
         super::checks::support_score_reader_decides_fixed_samples::<TractBackend>(
             "tract support score",
         );
+    }
+
+    #[test]
+    fn cut_sweep_returns_no_wrong_value() {
+        super::checks::cut_sweep_returns_no_wrong_value::<TractBackend>("tract cut sweep");
     }
 
     #[test]
@@ -324,6 +425,11 @@ mod ort {
         super::checks::support_score_reader_decides_fixed_samples::<OrtBackend>(
             "ort support score",
         );
+    }
+
+    #[test]
+    fn cut_sweep_returns_no_wrong_value() {
+        super::checks::cut_sweep_returns_no_wrong_value::<OrtBackend>("ort cut sweep");
     }
 
     #[test]

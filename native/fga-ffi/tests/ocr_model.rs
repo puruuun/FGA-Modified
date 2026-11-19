@@ -67,14 +67,14 @@ mod model {
 
         // Issue #555: the support-score reader uses the recogniser ocrLoad loaded, and none
         // after ocrUnload.
-        let (pixels, width, height) = first_channel(&dir.join("0000.png"));
+        let (pixels, width, height) = first_channel(&dir.join("0183.png"));
         assert_eq!(
             run_guarded(|| support_score_read(pixels, width, height)),
             format!("ERR: {NOT_LOADED}")
         );
         ok_json(&run_guarded(|| ocr_load(&model_path)));
         for (file, class, grand, reason) in [
-            ("0000.png", Some(62), Some(16), None),
+            ("0183.png", Some(62), Some(16), None),
             ("0070.png", None, None, Some("clipped")),
             ("0299.png", None, None, Some("format")),
         ] {

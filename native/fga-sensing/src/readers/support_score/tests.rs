@@ -90,14 +90,6 @@ fn crop(pixels: Vec<u8>) -> GrayImage {
     GrayImage::new(W, H, pixels).unwrap()
 }
 
-fn stroke(pixels: &mut [u8], x: usize, rows: std::ops::Range<usize>) {
-    for y in rows {
-        pixels[y * W + x - 1] = 40;
-        pixels[y * W + x] = 200;
-        pixels[y * W + x + 1] = 40;
-    }
-}
-
 fn flat_bottom(pixels: &mut [u8]) {
     for y in 24..H {
         for x in 0..W {
@@ -114,6 +106,7 @@ fn config() -> ScoreConfig {
         min_char_confidence: 0.0,
         restrict_characters: false,
         check_clipping: true,
+        expected_size: (W, H),
     }
 }
 
@@ -127,6 +120,7 @@ fn observation(text: &str, confidence: f64) -> Observation {
             Some(confidence as f32)
         },
         clip: ClipReport::default(),
+        crop_size: (W, H),
         featureless: false,
     }
 }
@@ -264,22 +258,34 @@ fn one_weak_character_is_unknown_when_a_character_floor_is_set() {
 }
 
 #[test]
-fn a_cut_at_the_right_takes_the_grand_score_of_a_compound() {
+fn a_cut_at_the_right_takes_every_field_of_a_compound() {
     let mut cut = observation("+62/+16", 0.99);
     cut.clip.right = true;
     let score = decide(cut, &config());
-    assert_eq!(score.class, Score::Value(62));
+    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
     assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.display, Display::Compound);
+    assert_eq!(score.display, Display::Unknown);
 }
 
 #[test]
-fn a_cut_at_the_right_takes_the_class_score_of_an_ordinary_field() {
+fn a_cut_at_the_right_takes_an_ordinary_field_and_its_display() {
     let mut cut = observation("+62", 0.99);
     cut.clip.right = true;
     let score = decide(cut, &config());
     assert_eq!(score.class, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.display, Display::Ordinary);
+    // A cut field cannot know that it has no Grand score.
+    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
+    assert_eq!(score.display, Display::Unknown);
+}
+
+#[test]
+fn a_cut_at_the_left_takes_every_field() {
+    let mut cut = observation("+62/+16", 0.99);
+    cut.clip.left = true;
+    let score = decide(cut, &config());
+    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
+    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
+    assert_eq!(score.display, Display::Unknown);
 }
 
 #[test]
@@ -293,12 +299,27 @@ fn a_cut_at_the_bottom_takes_every_field() {
 }
 
 #[test]
-fn clipping_keeps_the_reason_of_a_field_that_was_already_unknown() {
+fn a_cut_takes_a_field_that_the_range_rule_had_left() {
     let mut cut = observation("+63/+16", 0.99);
     cut.clip.vertical = true;
     let score = decide(cut, &config());
-    assert_eq!(score.class, Score::Unknown(Reason::Range));
+    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
     assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
+}
+
+#[test]
+fn nothing_left_after_the_range_rule_leaves_no_display_form() {
+    let joint = ScoreConfig {
+        range_policy: RangePolicy::Joint,
+        ..config()
+    };
+    for text in ["+63/+16", "+62/+17", "+63"] {
+        let score = decide(observation(text, 0.99), &joint);
+        assert_eq!(values(&score), (None, None), "{text}");
+        assert_eq!(score.display, Display::Unknown, "{text}");
+    }
+    // One field left keeps its display form.
+    assert_eq!(decided("+63/+16", 0.99).display, Display::Compound);
 }
 
 #[test]
@@ -310,6 +331,37 @@ fn the_pixel_check_can_be_switched_off_for_the_evaluation() {
         ..config()
     };
     assert_eq!(values(&decide(cut, &off)), (Some(62), Some(16)));
+}
+
+#[test]
+fn a_crop_of_another_size_is_unknown_with_its_own_reason() {
+    for size in [(W + 1, H), (W, H + 1), (W - 1, H), (120, 60)] {
+        let mut other = observation("+62/+16", 0.99);
+        other.crop_size = size;
+        let score = decide(other, &config());
+        assert_eq!(score.class, Score::Unknown(Reason::CropSize), "{size:?}");
+        assert_eq!(score.grand, Score::Unknown(Reason::CropSize), "{size:?}");
+        assert_eq!(score.display, Display::Unknown, "{size:?}");
+    }
+    let wide = ScoreConfig {
+        expected_size: (120, 60),
+        ..config()
+    };
+    let mut other = observation("+62/+16", 0.99);
+    other.crop_size = (120, 60);
+    assert_eq!(values(&decide(other, &wide)), (Some(62), Some(16)));
+}
+
+#[test]
+fn the_defaults_are_pinned() {
+    let default = ScoreConfig::default();
+    assert_eq!(default.format, Format::Strict);
+    assert_eq!(default.range_policy, RangePolicy::Joint);
+    assert_eq!(default.min_confidence, 0.86);
+    assert_eq!(default.min_char_confidence, 0.5);
+    assert!(!default.restrict_characters);
+    assert!(default.check_clipping);
+    assert_eq!(default.expected_size, (60, 30));
 }
 
 fn reader(script: Scripted, config: ScoreConfig) -> SupportScoreReader<Scripted> {
@@ -326,29 +378,70 @@ fn the_reader_reads_through_any_backend() {
     assert_eq!(score.observation.min_char_confidence, Some(0.99));
 }
 
-#[test]
-fn the_reader_takes_the_cut_from_the_pixels_not_from_the_text() {
+/// A crop with dark outline in `columns`, over the text band, on a textured panel.
+fn crop_with_outline(columns: &[usize]) -> GrayImage {
     let mut pixels = panel();
-    stroke(&mut pixels, 30, 10..24);
-    flat_bottom(&mut pixels);
-    let mut reader = reader(Scripted::text("+62/+16", 0.99), config());
-    let score = reader.read(&crop(pixels)).unwrap();
-    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
-    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
+    for &x in columns {
+        for y in 10..24 {
+            pixels[y * W + x] = 40;
+        }
+    }
+    crop(pixels)
+}
+
+fn assert_cut_is_unknown(image: GrayImage, what: &str) {
+    for text in ["+62/+16", "+62/+1", "+62", "+2/+16"] {
+        let mut reader = reader(Scripted::text(text, 0.99), ScoreConfig::default());
+        let score = reader.read(&image).unwrap();
+        assert_eq!(
+            score.class,
+            Score::Unknown(Reason::Clipped),
+            "{what}: {text}"
+        );
+        assert_eq!(
+            score.grand,
+            Score::Unknown(Reason::Clipped),
+            "{what}: {text}"
+        );
+        assert_eq!(score.display, Display::Unknown, "{what}: {text}");
+    }
 }
 
 #[test]
-fn the_reader_sees_a_cut_at_the_right() {
+fn a_field_cut_at_the_right_is_unknown_whatever_the_text() {
+    assert_cut_is_unknown(crop_with_outline(&[W - 1]), "ink in the last column");
+    assert_cut_is_unknown(crop_with_outline(&[W - 4]), "ink four columns from the end");
+}
+
+#[test]
+fn a_field_cut_at_the_left_is_unknown_whatever_the_text() {
+    assert_cut_is_unknown(crop_with_outline(&[0, 20]), "ink in the first column");
+}
+
+#[test]
+fn a_field_cut_at_the_bottom_is_unknown_whatever_the_text() {
     let mut pixels = panel();
-    for x in W - 6..W {
-        pixels[14 * W + x] = 40;
-        pixels[15 * W + x] = 200;
-        pixels[16 * W + x] = 40;
+    for y in 10..24 {
+        pixels[y * W + 30] = 40;
     }
-    let mut reader = reader(Scripted::text("+62/+16", 0.99), config());
-    let score = reader.read(&crop(pixels)).unwrap();
-    assert_eq!(values(&score), (Some(62), None));
-    assert_eq!(score.grand, Score::Unknown(Reason::Clipped));
+    flat_bottom(&mut pixels);
+    assert_cut_is_unknown(crop(pixels), "text running into a flat band");
+}
+
+#[test]
+fn a_field_that_ends_before_the_edges_is_read() {
+    let mut reader = reader(Scripted::text("+62/+16", 0.99), ScoreConfig::default());
+    let score = reader.read(&crop_with_outline(&[8, 30, W - 6])).unwrap();
+    assert_eq!(values(&score), (Some(62), Some(16)));
+    assert_eq!(score.display, Display::Compound);
+}
+
+#[test]
+fn the_reader_checks_the_size_of_the_crop() {
+    let mut reader = reader(Scripted::text("+62/+16", 0.99), ScoreConfig::default());
+    let other = GrayImage::new(W + 10, H, vec![120; (W + 10) * H]).unwrap();
+    let score = reader.read(&other).unwrap();
+    assert_eq!(score.class, Score::Unknown(Reason::CropSize));
 }
 
 #[test]

@@ -3,7 +3,7 @@
 //! Kotlin reader's stage 0 results.
 //!
 //! cargo run --release -p fga-sensing --features tract --example support_score_eval -- \
-//!     tract <model.onnx> <samples dir> <output.tsv> [--analysis] [--unrestricted] \
+//!     tract <model.onnx> <samples dir> <output.tsv> [--analysis] [--sweep] [--unrestricted] \
 //!     [--format strict|compound-class-plus|class-plus|plus-optional] [--range independent|joint] [--floor 0.9] \
 //!     [--char-floor 0.5] [--no-clipping]
 //!
@@ -14,6 +14,8 @@
 
 #[path = "../tests/support/samples.rs"]
 mod samples;
+#[path = "support_score_eval/sweep.rs"]
+mod sweep;
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -35,6 +37,7 @@ struct Args {
     samples: PathBuf,
     output: PathBuf,
     analysis: bool,
+    sweep: bool,
     config: ScoreConfig,
 }
 
@@ -50,7 +53,7 @@ fn main() -> ExitCode {
 
 fn parse_args() -> Result<Args, String> {
     let usage = "usage: support_score_eval <tract|ort> <model.onnx> <samples dir> <output.tsv> \
-                 [--analysis] [--unrestricted] [--format strict|compound-class-plus|class-plus|plus-optional] \
+                 [--analysis] [--sweep] [--unrestricted] [--format strict|compound-class-plus|class-plus|plus-optional] \
                  [--range independent|joint] [--floor <0..1>] [--char-floor <0..1>] [--no-clipping]";
     let mut args = std::env::args().skip(1);
     let mut next = || args.next().ok_or_else(|| usage.to_string());
@@ -64,11 +67,13 @@ fn parse_args() -> Result<Args, String> {
         samples,
         output,
         analysis: false,
+        sweep: false,
         config: ScoreConfig::default(),
     };
     while let Ok(flag) = next() {
         match flag.as_str() {
             "--analysis" => parsed.analysis = true,
+            "--sweep" => parsed.sweep = true,
             "--unrestricted" => parsed.config.restrict_characters = false,
             "--no-clipping" => parsed.config.check_clipping = false,
             "--format" => {
@@ -149,9 +154,14 @@ fn observe_all<B: Backend>(
 
 fn evaluate<B: Backend>(
     args: &Args,
-    load: impl Fn(&Path) -> Result<B, fga_sensing::Error>,
+    load: impl Fn(&Path) -> Result<B, fga_sensing::Error> + Sync,
 ) -> Result<(), String> {
     let index = samples::load_index(&args.samples)?;
+    if args.sweep {
+        let rows = sweep::run(args, &index, &load, &args.config)?;
+        sweep::report(&index, &rows, &args.config);
+        return Ok(());
+    }
     let main_mode = observe_all(args, &index, &load, args.config.restrict_characters)?;
     if args.analysis {
         let other_mode = observe_all(args, &index, &load, !args.config.restrict_characters)?;
@@ -245,6 +255,10 @@ struct Tally {
     grand_equal: usize,
     grand_unknown: usize,
     grand_wrong: usize,
+    /// `is62` true and a class value other than 62, whether or not `cls` is labelled.
+    flag_wrong_class: usize,
+    /// `is16` true and a Grand value other than 16, whether or not `grand` is labelled.
+    flag_wrong_grand: usize,
 }
 
 impl Tally {
@@ -261,7 +275,7 @@ impl Tally {
     }
 
     fn wrong(&self) -> usize {
-        self.class_wrong + self.grand_wrong
+        self.class_wrong + self.grand_wrong + self.flag_wrong_class + self.flag_wrong_grand
     }
 }
 
@@ -274,6 +288,9 @@ fn tally<'a>(rows: impl Iterator<Item = (&'a Sample, &'a SupportScore)>) -> Tall
             Some(true) => {
                 t.positives62 += 1;
                 t.read62 += usize::from(class == Some(62));
+                // Counted once: a row with a `cls` label is judged by that label below.
+                t.flag_wrong_class +=
+                    usize::from(sample.cls.is_none() && class.is_some_and(|v| v != 62));
             }
             Some(false) => t.false_accepts62 += usize::from(class == Some(62)),
             None => {}
@@ -282,6 +299,8 @@ fn tally<'a>(rows: impl Iterator<Item = (&'a Sample, &'a SupportScore)>) -> Tall
             Some(true) => {
                 t.positives16 += 1;
                 t.read16 += usize::from(grand == Some(16));
+                t.flag_wrong_grand +=
+                    usize::from(sample.grand.is_none() && grand.is_some_and(|v| v != 16));
             }
             Some(false) => t.false_accepts16 += usize::from(grand == Some(16)),
             None => {}
@@ -328,7 +347,7 @@ fn write_tsv(
     results: &[SupportScore],
 ) -> Result<(), String> {
     let mut out = String::from(
-        "file\tcase\tserver\tkind\tis62\tis16\tcls\tgrand\ttext\tconfidence\tmin_char\tclip_right\t\
+        "file\tcase\tserver\tkind\tis62\tis16\tcls\tgrand\ttext\tconfidence\tmin_char\tclip_right\tclip_left\t\
          clip_vertical\tclass\tclass_reason\tgrand_out\tgrand_reason\tdisplay\tkt_cls\tkt_grand\tus\n",
     );
     let flag = |f: Option<bool>| f.map_or("", |b| if b { "1" } else { "0" });
@@ -337,7 +356,7 @@ fn write_tsv(
         let o = &score.observation;
         let _ = writeln!(
             out,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.5}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             sample.file,
             sample.case,
             sample.server,
@@ -351,6 +370,7 @@ fn write_tsv(
             o.min_char_confidence
                 .map_or(String::new(), |c| format!("{c:.5}")),
             u8::from(o.clip.right),
+            u8::from(o.clip.left),
             u8::from(o.clip.vertical),
             score.class.value().map_or(String::new(), |v| v.to_string()),
             reason(score.class),
@@ -402,6 +422,10 @@ fn summary(args: &Args, index: &[Sample], observed: &Observed, results: &[Suppor
     println!(
         "grand value: labelled {}, equal {}, unknown {}, WRONG {}",
         t.grand_labelled, t.grand_equal, t.grand_unknown, t.grand_wrong
+    );
+    println!(
+        "WRONG by flag without a value label: is62 true and class not 62: {}, is16 true and Grand not 16: {}",
+        t.flag_wrong_class, t.flag_wrong_grand
     );
 
     let mut class_reasons: BTreeMap<Reason, usize> = BTreeMap::new();
@@ -487,7 +511,8 @@ fn summary(args: &Args, index: &[Sample], observed: &Observed, results: &[Suppor
 
     // The Kotlin reader only returns the scores its policy asks for (62 and 16), so the list above
     // is long by design. The question that matters to the automation is the decision on those two.
-    let mut decision_lines: [Vec<String>; 4] = Default::default();
+    // Index: (reader accepts ? 0 : 1) * 3 + label (yes 0, NO 1, no label 2).
+    let mut decision_lines: [Vec<String>; 6] = Default::default();
     for (sample, score) in index.iter().zip(results) {
         for (name, ours, theirs, flag, wanted) in [
             ("+62", score.class.value(), sample.kt_cls, sample.is62, 62),
@@ -502,9 +527,14 @@ fn summary(args: &Args, index: &[Sample], observed: &Observed, results: &[Suppor
                 sample.file,
                 if we { "yes" } else { "no" },
                 if they { "yes" } else { "no" },
-                flag.map_or("?", |b| if b { "yes" } else { "NO" })
+                flag.map_or("none", |b| if b { "yes" } else { "NO" })
             );
-            let slot = usize::from(!we) * 2 + usize::from(flag == Some(false));
+            let label = match flag {
+                Some(true) => 0,
+                Some(false) => 1,
+                None => 2,
+            };
+            let slot = usize::from(!we) * 3 + label;
             if let Some(list) = decision_lines.get_mut(slot) {
                 list.push(line);
             }
@@ -513,8 +543,10 @@ fn summary(args: &Args, index: &[Sample], observed: &Observed, results: &[Suppor
     let titles = [
         "decision on 62/16: reader accepts, Kotlin does not, label says yes",
         "decision on 62/16: reader accepts, Kotlin does not, label says NO (a reader false accept)",
+        "decision on 62/16: reader accepts, Kotlin does not, NO label",
         "decision on 62/16: Kotlin accepts, reader does not, label says yes (a reader miss)",
         "decision on 62/16: Kotlin accepts, reader does not, label says NO (a Kotlin false accept)",
+        "decision on 62/16: Kotlin accepts, reader does not, NO label",
     ];
     for (title, lines) in titles.iter().zip(&decision_lines) {
         println!("{title}: {}", lines.len());
@@ -543,7 +575,7 @@ fn summary(args: &Args, index: &[Sample], observed: &Observed, results: &[Suppor
         }
     );
     println!(
-        "  wrong labelled values {} == 0: {}",
+        "  wrong values (labelled value or is62/is16 flag) {} == 0: {}",
         t.wrong(),
         if t.wrong() == 0 { "holds" } else { "FAILS" }
     );

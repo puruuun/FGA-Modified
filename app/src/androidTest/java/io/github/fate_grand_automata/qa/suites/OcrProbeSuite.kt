@@ -693,9 +693,14 @@ private fun kotlinReader(runner: SupportDeviceTestRunner, case: JSONObject): JSO
  * returned as 62 or 16. The labels and the stage 0 results (`kt_cls`, `kt_grand`) are the ones
  * [kotlinReader] uses.
  *
- * The case fails when a call returns `ERR`, on a false accept, and when a labelled class or Grand
- * value is read as another number. It does not fail on misses: those are reported next to the
- * Kotlin reader's, which is what the device comparison is for.
+ * The case fails when a call returns `ERR`, on a false accept, and on a wrong value: a labelled
+ * class or Grand value read as another number, and also an `is62` row that reads a class value
+ * other than 62 or an `is16` row that reads a Grand value other than 16, whether or not the
+ * number itself is labelled (111 rows have `is16` and no `grand`). It also fails when it reads
+ * fewer +62 or +16 than `minRead62` and `minRead16` of the case file, the PC counts of the final
+ * reader: the texts are the same on a device, so a lower count is a regression to investigate,
+ * not a number to lower, and a reader that returns nothing cannot pass. Misses above those
+ * floors are reported next to the Kotlin reader's, which is what the comparison is for.
  */
 private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val dir = case.getString("samples")
@@ -707,8 +712,12 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         val file = row.getString("file")
         check(row.has("kt_cls") && row.has("kt_grand")) { "$dir/index.json: $file has no kt_cls or kt_grand" }
         check(row.has("is62") && row.has("is16")) { "$dir/index.json: $file has no is62 or is16" }
+        // A missing value label would read as "no label" and let a wrong value pass.
+        check(row.has("cls") && row.has("grand")) { "$dir/index.json: $file has no cls or grand" }
         checkScoreCrop(runner, "$dir/$file")
     }
+    val minRead62 = case.getInt("minRead62")
+    val minRead16 = case.getInt("minRead16")
     val samples = samples(runner, dir)
     check(samples.size == rows.size) { "${samples.size} decoded samples for ${rows.size} index rows" }
     val model = modelFile(runner, case.getString("model"))
@@ -752,12 +761,20 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
                     }
                 }
                 when (row.boolOrNull("is62")) {
-                    true -> { count("positives62"); if (cls == 62) count("read62") }
+                    true -> {
+                        count("positives62")
+                        if (cls == 62) count("read62")
+                        else if (cls != null && row.intOrNull("cls") == null) { count("classWrong"); wrong += "$file class $cls, is62" }
+                    }
                     false -> if (cls == 62) { count("falseAccepts62"); falseAccepts += "$file +62" }
                     null -> Unit
                 }
                 when (row.boolOrNull("is16")) {
-                    true -> { count("positives16"); if (grand == 16) count("read16") }
+                    true -> {
+                        count("positives16")
+                        if (grand == 16) count("read16")
+                        else if (grand != null && row.intOrNull("grand") == null) { count("grandWrong"); wrong += "$file grand $grand, is16" }
+                    }
                     false -> if (grand == 16) { count("falseAccepts16"); falseAccepts += "$file +16" }
                     null -> Unit
                 }
@@ -824,8 +841,10 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
             .put("note", "rows where the Rust result differs from kt_cls/kt_grand; the Kotlin reader only returns the 62 and 16 its policy asks for, so most rows differ when Rust returns another class value"))
         .put("errorCount", errorCount)
         .put("errors", errors)
-    if (errorCount > 0 || falseAccepts.isNotEmpty() || wrong.isNotEmpty()) {
-        throw AssertionError("rust-reader: $errorCount ERR ${errors.toString().take(300)}, false accepts ${falseAccepts.take(MAX_LISTED)}, wrong labelled values ${wrong.take(MAX_LISTED)}. $report")
+    val belowFloor = tallied("read62") < minRead62 || tallied("read16") < minRead16
+    report.put("minRead62", minRead62).put("minRead16", minRead16)
+    if (errorCount > 0 || falseAccepts.isNotEmpty() || wrong.isNotEmpty() || belowFloor) {
+        throw AssertionError("rust-reader: $errorCount ERR ${errors.toString().take(300)}, false accepts ${falseAccepts.take(MAX_LISTED)}, wrong values ${wrong.take(MAX_LISTED)}, +62 read ${tallied("read62")} (need $minRead62), +16 read ${tallied("read16")} (need $minRead16). $report")
     }
     return report
 }
