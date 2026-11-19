@@ -40,6 +40,7 @@ language, fonts and some art differ.
 - Code that branches on the server (`GameServer.Kr`, `GameServer.Jp`) runs its default path on
   NA. A port decides for each branch whether NA takes the KR, the JP or the default behaviour,
   including OCR settings.
+- The `server-port` skill (`.claude/skills/server-port/`) lists per `Images` entry what carries over, what can be redrawn from the NA APK and what needs a screenshot, and per code branch what to decide.
 - No device QA on NA unless the owner provides one; a PR says which NA parts were checked on
   screenshots only.
 
