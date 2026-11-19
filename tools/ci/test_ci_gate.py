@@ -1,5 +1,6 @@
 import itertools
 import os
+import re
 import subprocess
 import sys
 import unittest
@@ -71,30 +72,103 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(run(b'\xff\0'), 'true')
 
 
-class GateTest(unittest.TestCase):
-    def test_all_combinations(self):
-        results = ['success', 'failure', 'cancelled', 'skipped', '']
-        codes = ['true', 'false', '', 'weird']
-        for c, k, b in itertools.product(results, codes, results):
-            expected = c == 'success' and (
-                (b == 'success' and k in ('true', 'false')) or (k == 'false' and b == 'skipped'))
-            self.assertEqual(g.gate_ok(c, k, b), expected, (c, k, b))
+class NativeClassifyTest(unittest.TestCase):
+    def test_native_paths(self):
+        for p in ('native/Cargo.toml', 'native/fga-ffi/src/lib.rs', '.github/workflows/native-ci.yml'):
+            self.assertTrue(g.needs_native([p]), p)
+        self.assertTrue(g.needs_native(['docs/a.md', 'native/x']))
 
-    def test_named_cases(self):
-        self.assertTrue(g.gate_ok('success', 'true', 'success'))
-        self.assertTrue(g.gate_ok('success', 'false', 'skipped'))
-        self.assertFalse(g.gate_ok('success', 'true', 'skipped'))
-        self.assertFalse(g.gate_ok('success', '', 'skipped'))
-        self.assertFalse(g.gate_ok('failure', 'false', 'skipped'))
-        self.assertFalse(g.gate_ok('success', 'true', 'failure'))
-        self.assertFalse(g.gate_ok('success', 'true', 'cancelled'))
+    def test_non_native_paths(self):
+        for p in ('app/src/A.kt', 'docs/a.md', 'native', 'nativex/a.rs', 'sub/native/a.rs',
+                  '.github/workflows/main-ci.yml', '.github/workflows/native-advisories.yml',
+                  '.github/workflows/native-ci.yml.bak'):
+            self.assertFalse(g.needs_native([p]), p)
+
+    def test_empty_or_unreadable_means_native(self):
+        self.assertTrue(g.needs_native([]))
+        self.assertTrue(g.needs_native(['']))
+        self.assertTrue(g.needs_native(None))
+
+    def test_native_implies_build(self):
+        samples = ['native/a.md', 'native/docs/x.md', 'native/README.md', 'native/AGENTS.md',
+                   '.github/workflows/native-ci.yml', 'native/fga-ffi/src/lib.rs']
+        for p in samples:
+            self.assertTrue(g.needs_native([p]), p)
+            self.assertTrue(g.needs_build([p]), p)
+            self.assertTrue(g.needs_build([p, 'docs/a.md']), p)
+
+    def test_cli_classify_native(self):
+        def run(data):
+            r = subprocess.run([sys.executable, SCRIPT, 'classify-native'], input=data, capture_output=True)
+            return r.stdout.decode().strip()
+        self.assertEqual(run(b'docs/a.md\0app/a.kt\0'), 'false')
+        self.assertEqual(run(b'app/a.kt\0native/fga-ffi/src/lib.rs\0'), 'true')
+        self.assertEqual(run(b''), 'true')
+
+    def test_classify_commands_reject_extra_arguments(self):
+        for cmd in ('classify', 'classify-native'):
+            r = subprocess.run([sys.executable, SCRIPT, cmd, 'extra'], input=b'docs/a.md\0', capture_output=True)
+            self.assertEqual(r.returncode, 2, cmd)
+            self.assertEqual(r.stdout, b'', cmd)
+
+
+def expected_gate(changes, code, native, build, rust):
+    if changes != 'success' or code not in ('true', 'false') or native not in ('true', 'false'):
+        return False
+    if not (build == 'success' or (code == 'false' and build == 'skipped')):
+        return False
+    if native == 'true':
+        return code == 'true' and rust == 'success'
+    return rust in ('skipped', 'success')
+
+
+class GateTest(unittest.TestCase):
+    def test_full_grid(self):
+        results = ['success', 'failure', 'cancelled', 'skipped', '']
+        flags = ['true', 'false', '', 'weird']
+        for c, k, n, b, r in itertools.product(results, flags, flags, results, results):
+            self.assertEqual(g.gate_ok(c, k, n, b, r), expected_gate(c, k, n, b, r), (c, k, n, b, r))
+
+    def test_passing_rows_are_exactly_these(self):
+        results = ['success', 'failure', 'cancelled', 'skipped', '']
+        flags = ['true', 'false', '', 'weird']
+        passing = {t for t in itertools.product(results, flags, flags, results, results) if g.gate_ok(*t)}
+        self.assertEqual(passing, {
+            ('success', 'true', 'true', 'success', 'success'),
+            ('success', 'true', 'false', 'success', 'success'),
+            ('success', 'true', 'false', 'success', 'skipped'),
+            ('success', 'false', 'false', 'success', 'success'),
+            ('success', 'false', 'false', 'success', 'skipped'),
+            ('success', 'false', 'false', 'skipped', 'success'),
+            ('success', 'false', 'false', 'skipped', 'skipped'),
+        })
+
+    def test_named_rows(self):
+        ok = g.gate_ok
+        self.assertTrue(ok('success', 'true', 'true', 'success', 'success'))
+        self.assertTrue(ok('success', 'false', 'false', 'skipped', 'skipped'))
+        self.assertFalse(ok('success', 'true', 'true', 'success', 'skipped'))
+        self.assertFalse(ok('success', 'true', 'true', 'success', 'cancelled'))
+        self.assertFalse(ok('success', 'true', 'true', 'success', 'failure'))
+        self.assertFalse(ok('success', 'true', 'true', 'success', ''))
+        self.assertFalse(ok('success', 'false', 'true', 'skipped', 'success'))
+        self.assertFalse(ok('success', 'true', '', 'success', 'skipped'))
+        self.assertFalse(ok('success', 'true', 'weird', 'success', 'success'))
+        self.assertFalse(ok('success', 'true', 'false', 'success', 'cancelled'))
+        self.assertFalse(ok('failure', 'false', 'false', 'skipped', 'skipped'))
+        self.assertFalse(ok('success', 'true', 'false', 'skipped', 'skipped'))
 
     def test_cli_exit_codes(self):
         def rc(*a):
             return subprocess.run([sys.executable, SCRIPT, 'gate', *a], capture_output=True).returncode
-        self.assertEqual(rc('success', 'false', 'skipped'), 0)
-        self.assertEqual(rc('success', 'true', 'skipped'), 1)
-        self.assertEqual(rc('success', 'true'), 2)
+        self.assertEqual(rc('success', 'false', 'false', 'skipped', 'skipped'), 0)
+        self.assertEqual(rc('success', 'true', 'true', 'success', 'success'), 0)
+        self.assertEqual(rc('success', 'true', 'true', 'success', 'cancelled'), 1)
+        self.assertEqual(rc('success', 'true', 'true', 'skipped', 'success'), 1)
+        self.assertEqual(rc('success', 'true', 'skipped'), 2)
+        self.assertEqual(rc('success', 'true', 'success', 'success'), 2)
+        self.assertEqual(rc('success', 'true', 'true', 'success', 'success', 'extra'), 2)
+        self.assertEqual(rc(), 2)
 
 
 if __name__ == '__main__':

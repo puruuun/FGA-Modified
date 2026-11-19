@@ -31,6 +31,28 @@ Read this when you verify a PR, when you implement a risky change (the guard-che
 - Checks that each new guard or regression test fails without its guard. It briefly disables or reverts the protected line, runs only that test, confirms that it fails, and restores the line. The report names the tests checked this way. A test that still passes protects nothing and is a finding. **The implementer does the same check before it reports.**
 - For capture and log work, checks memory: what stays resident, what is loaded per response or per screen, and whether anything grows without bound (the log feature once ran out of memory by loading everything). It reports this even when it passes.
 
+## Merges between `main` and `rust`
+
+Owner decision, 2026-11-19: both directions are verified, because the two branches are developed apart and a merge is where they meet.
+
+**`main` into `rust` (a sync).** One verifier for every sync, also when git merged everything without a conflict. It checks:
+
+- the PR is one merge commit of `main`'s tip on top of `rust`;
+- the result differs from an automatic merge (redo it with `git merge-tree` or a throwaway worktree) only in the files where a conflict was resolved by hand, and each of those is the smallest change that keeps both sides' intent;
+- nothing that lives only on `rust` was lost: `native/`, the Kotlin seams and bindings of design 0025, and the Rust-side records are what they were before the merge, except where `main` changed the same file;
+- everything from `main` arrived: the full difference from `main` is the Rust work and nothing else;
+- when `main` changed a file that the Rust work also changed (a reader behind a seam, a workflow, a Gradle file), the combined file still does what both sides meant, traced in the code;
+- the full unit tests and the Rust checks, re-run by the verifier.
+- The planner also replays the device QA suites of an area when both sides changed it.
+
+**`rust` into `main` (a finished unit).** This is the highest-risk kind of change: two verifiers on different models, and both must pass. On top of everything above in this guide they check:
+
+- the PR holds that unit and nothing else from `rust`: list every file and say why it belongs to the unit;
+- the unit's switch criteria in design 0025 are met, from the records under `docs/qa/` and not from the PR description: the accuracy table on the evaluation samples, the comparison record against the Kotlin implementation, zero native crashes;
+- with the unit's engine setting on its Kotlin value, and with `fga.native` off, the app behaves as `main` did before the PR: the affected device QA suites give the same result case by case;
+- the Kotlin implementation is still there and still selectable until the unit's lifecycle says it is removed.
+- The planner runs the full device QA (every suite) before this merge, and the owner approves it.
+
 ## What it must not do
 
 Change code, push or merge. A temporary edit for a guard check is restored before the report.

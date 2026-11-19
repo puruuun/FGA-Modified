@@ -28,6 +28,18 @@ MuMu is off. Say in the report which device ran the check.
 Several agents share one adb server. Never run `adb kill-server`, `start-server`, `disconnect`,
 `usb`, `tcpip` or `reconnect`. Always pass `-s <serial>`.
 
+- **Never install with a forced ABI on an emulator** (`adb install --abi …`, `pm install --abi …`).
+  On 2026-11-18 three such installs on BlueStacks each broke its package service; the third took
+  the system services down for a while and left the launcher on screen, which closes a running
+  game. 32-bit ARM is checked on a real 32-bit device or not at all.
+- **A command that hangs, breaks the connection or makes a service disappear is not retried in
+  another form.** Stop, check with read-only commands that the device is back (`getprop
+  sys.boot_completed`, `service check package`), and report what was run. The second and third
+  attempt above were the mistake, not the first.
+- **Remove what you pushed.** Files copied to a device for a check (APKs under `/data/local/tmp`,
+  dumps under the app's files folder) are deleted when the check is done. Fixtures under
+  `/sdcard/Download/fga-device-qa/` stay.
+
 ## The game
 
 - Agents never operate the game. Taps, swipes and script runs on a live game are the owner's.

@@ -2,10 +2,12 @@ name: Main CI
 
 on:
   push:
-    # rust is the long-lived branch of design 0025 (docs/agents/agent-team.md, "Branches and releases").
-    branches: [main, rust]
+    # Main dropped its push run (a fast-forward of an already checked commit tests the same tree again).
+    # rust keeps one until the owner decides otherwise: rust is the long-lived branch of design 0025
+    # (docs/agents/agent-team.md, "Branches and releases").
+    branches: [rust]
   pull_request:
-    # Same branches as push.
+    # rust is the long-lived branch of design 0025; a PR into it gets the same gate as one into main.
     branches: [main, rust]
   workflow_dispatch:
 
@@ -25,11 +27,15 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.classify.outputs.code }}
+      native: ${{ steps.classify.outputs.native }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Test the CI scripts
+        # Before any script is used: a broken script must fail the gate, not misclassify.
+        run: python3 -m unittest discover -s tools/ci -p 'test_*.py'
       - name: Decide whether the change needs the build
         id: classify
         env:
@@ -39,8 +45,9 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
           PUSH_AFTER: ${{ github.sha }}
         run: |
-          # Any failure must end in code=true: an error never skips the build.
+          # Any failure must end in code=true and native=true: an error never skips a check.
           code=true
+          native=true
           list="$RUNNER_TEMP/changed-files"
           range=""
           case "$EVENT_NAME" in
@@ -55,6 +62,7 @@ jobs:
             # --no-renames lists both the old and the new path of a rename.
             if git diff --name-only --no-renames -z "$range" > "$list" 2> "$RUNNER_TEMP/diff-err"; then
               code=$(python3 tools/ci/ci_gate.py classify < "$list") || code=true
+              native=$(python3 tools/ci/ci_gate.py classify-native < "$list") || native=true
             else
               echo "git diff failed for $range; building."
               cat "$RUNNER_TEMP/diff-err"
@@ -63,8 +71,19 @@ jobs:
             echo "No usable diff range for $EVENT_NAME; building."
           fi
           [ "$code" = false ] || code=true
-          echo "code=$code"
+          [ "$native" = false ] || native=true
+          echo "code=$code native=$native"
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "native=$native" >> "$GITHUB_OUTPUT"
+          # The guard below checks the same range.
+          echo "range=$range" >> "$GITHUB_OUTPUT"
+      - name: Refuse model files, large files and build output
+        env:
+          RANGE: ${{ steps.classify.outputs.range }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: sh tools/ci/run_repo_guard.sh
 
   test-and-build:
     needs: changes
@@ -82,6 +101,13 @@ jobs:
         run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
+      - name: The APK holds no Rust library
+        # Design 0025, D-6 and D-7: only a build with the fga.native switch carries libfga_ffi.so.
+        run: |
+          set -eu
+          set -- app/build/outputs/apk/ci/*.apk
+          [ -e "$1" ] || { echo "No CI APK under app/build/outputs/apk/ci"; exit 1; }
+          python3 tools/ci/apk_check.py "$@"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -89,9 +115,16 @@ jobs:
           path: '**/build/test-results/**/*.xml'
           retention-days: 14
 
+  # The Rust checks are defined once, in native-ci.yml. They are part of the required check because
+  # Native CI itself cannot be required: a PR that does not touch native/ would never get a run of it.
+  native:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    uses: ./.github/workflows/native-ci.yml
+
   gate:
     name: Main CI gate
-    needs: [changes, test-and-build]
+    needs: [changes, test-and-build, native]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -103,5 +136,7 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           CODE: ${{ needs.changes.outputs.code }}
+          NATIVE: ${{ needs.changes.outputs.native }}
           BUILD_RESULT: ${{ needs.test-and-build.result }}
-        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$BUILD_RESULT"
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT"

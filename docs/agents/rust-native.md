@@ -136,7 +136,7 @@ ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_PATH=../app/build/onnxruntime/jniLibs/arm64-v8
 
 On the PC, `cargo test --workspace --features fga-ffi/ort-probe` runs the ONNX Runtime probe tests with the prebuilt runtime that `ort` downloads, and with `FGA_OCR_MODEL` and `FGA_OCR_SAMPLES` set, `tests/ocr_ort_model.rs` reads the same 25 samples as Python at the default thread count and at one thread.
 
-CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
+CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:
 

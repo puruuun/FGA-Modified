@@ -1,0 +1,10 @@
+# Files that the repo guard (repo_guard.py) would refuse but that are meant to be committed.
+# One glob per line, same glob meaning as ci_gate.py. A path under build/ or target/ cannot be
+# allowed here. Add a path only when the planner said the file is to be committed, in the same PR.
+
+# Tesseract English data bundled as an OCR asset (refused by the .traineddata rule).
+app/src/main/assets/tessdata/eng.traineddata
+# Weekly Tesseract Japanese data, 14 MB, bundled for OCR (refused by the name and the size rule).
+app/src/main/assets/tessdata/jpn_weekly.traineddata
+# Weekly Tesseract Korean data, 12 MB, bundled for OCR (refused by the name and the size rule).
+app/src/main/assets/tessdata/kor_weekly.traineddata
