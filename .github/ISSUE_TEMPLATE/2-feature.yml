@@ -1,0 +1,44 @@
+name: "기능 제안 / 機能の提案 / Feature request"
+description: "새 기능이나 개선 아이디어 · 新しい機能や改善のアイデア · An idea for a new feature or an improvement"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        한국어, 日本語, English 중 편한 언어로 자유롭게 적어 주세요. 모든 칸은 선택 사항입니다.
+        書きやすい言語で自由に書いてください。すべての項目は任意です。
+        Describe your idea freely, in any of these languages. Every field is optional.
+
+        이 앱은 **한국 서버와 일본 공식 서버**를 대상으로 개발합니다.
+        このアプリは**日本の公式サーバーと韓国サーバー**を対象に開発しています。
+        This app is developed for the **KR server and the official JP server**.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "무엇이 불편한가요? / 何に困っていますか？ / What is the problem?"
+      description: "지금 어떤 상황에서 아쉬운지 · 今どんな場面で不便か · The situation in which the app falls short today"
+    validations:
+      required: false
+  - type: textarea
+    id: idea
+    attributes:
+      label: "어떻게 되면 좋겠나요? / どうなるとよいですか？ / What would you like to happen?"
+    validations:
+      required: false
+  - type: dropdown
+    id: server
+    attributes:
+      label: "게임 서버 / ゲームサーバー / Game server"
+      options:
+        - "한국 / 韓国 / KR"
+        - "일본 / 日本 / JP"
+        - "그 외 / その他 / Other"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: "참고 자료 / 参考資料 / References"
+      description: "스크린샷이나 링크. 계정 정보는 가려 주세요 · スクリーンショットやリンク。アカウント情報は隠してください · Screenshots or links. Please hide account data"
+    validations:
+      required: false

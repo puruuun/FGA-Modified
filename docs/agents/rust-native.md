@@ -107,7 +107,7 @@ Without the library the suite reports itself skipped; with it, a missing model o
 
 `tract-recognise` passes with at least 360 of 370 texts equal to Python, `tract-recognise-allowed` with at least 356. The PC gives 370 and 366. The floor leaves room for floating-point differences between CPU builds on the first device measurement; the report and the `FgaOcrProbe` log line give the exact count, and the PR that records the device results raises the floor to the measured value. The cases share one process, so the case file runs the Tesseract case first and the tract memory case before the other tract cases. Results are logged under the logcat tag `FgaOcrProbe`.
 
-CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
+CI runs the same set in `.github/workflows/native-ci.yml`, only when `native/` or that workflow changes; `Main CI` calls it and its gate waits for the result. It also fails when the arm64 library is not 16 KB aligned; check that locally with `llvm-readelf -lW` from the NDK (every `LOAD` line must end in `0x4000`).
 
 On the owner's PC, each shell needs:
 

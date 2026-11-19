@@ -1,0 +1,9 @@
+# Blank issues stay allowed: a report that fits no form is still welcome.
+blank_issues_enabled: true
+contact_links:
+  - name: "질문 / 質問 / Questions"
+    url: https://github.com/puruuun/FGA-Modified/discussions
+    about: "사용법 질문은 Discussions에 남겨 주세요. 使い方の質問は Discussions へ。 Ask how-to questions in Discussions."
+  - name: "설명서 / マニュアル / Manual"
+    url: https://puruuun.github.io/FGA-Modified/
+    about: "기능별 사용 방법. 機能ごとの使い方。 How each feature works."

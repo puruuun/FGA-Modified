@@ -1,0 +1,42 @@
+name: Native advisories
+
+# New security advisories appear without any commit, so Native CI (which runs on changes only)
+# cannot see them. This weekly run checks both long-lived refs.
+# A scheduled workflow runs from the default branch's copy of this file, which is why it lives on
+# main and names `rust` explicitly.
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Must match CARGO_DENY_VERSION in native-ci.yml.
+  CARGO_DENY_VERSION: 0.21.0
+
+jobs:
+  advisories:
+    name: advisories (${{ matrix.ref }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: [main, rust]
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+      - name: Install the pinned toolchain
+        # Reads native/rust-toolchain.toml, as in native-ci.yml.
+        run: rustup toolchain install
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
+      - name: Advisories
+        run: cargo deny check advisories
