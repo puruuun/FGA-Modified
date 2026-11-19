@@ -656,7 +656,7 @@
     <string name="p_use_storm_pod">스톰포드 사용</string>
     <string name="p_use_teapot">티포트 사용</string>
     <string name="p_quest_item_usage_summary">체크하면 ON, 해제하면 OFF로 맞춘 뒤 퀘스트를 시작합니다.</string>
-    <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본·북미 서버에서 지원합니다.</string>
+    <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본 서버에서 지원합니다.</string>
     <string name="quest_item_setting_failed">스톰포드·티포트 설정 또는 설정창 닫기를 확인하지 못해 퀘스트 시작 전에 중단했습니다.</string>
     <string name="p_bond">인연포인트</string>
     <string name="p_bond_track">인연포인트 획득량 추적</string>

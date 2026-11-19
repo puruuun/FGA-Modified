@@ -29,26 +29,20 @@ class QuestItemReader @Inject constructor(api: IFgoAutomataApi,
         const val STATE_SIMILARITY = 0.88
         const val ICON_SIMILARITY = 0.88
         const val SCREEN_SIMILARITY = 0.90
-
-        /** The one place that decides which servers run this feature; NA is Original only, CN and TW stay off. */
-        fun supports(server: GameServer) = server is GameServer.Kr || server is GameServer.Jp || server == GameServer.En.Original
     }
 
     /** Each invocation captures one fresh frame. Never retain it across a click. */
     fun read(): View = useSameSnapIn {
         val loc = locations.questItems
-        // NA has no title template (outlined title text cannot be drafted from the APK; owner decision), so NA
-        // recognises the dialog by Close plus both ON/OFF buttons and must never load the title image.
-        val titleless = prefs.gameServer == GameServer.En.Original
-        val dialog = !titleless && (loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)) ||
+        val dialog = loc.dialogHeading.exists(images[Images.QuestItemDialog], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)) ||
             // Native KR captures and window-resampled captures have different glyph antialiasing.
             (prefs.gameServer is GameServer.Kr && loc.dialogHeading.exists(
-                images[Images.QuestItemDialogKrNative], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY))))
+                images[Images.QuestItemDialogKrNative], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)))
         val close = loc.dialogClose.findAll(images[Images.QuestItemDialogClose], similarity = addedTuning.quest.similarity(SCREEN_SIMILARITY)).maxByOrNull { it.score }
         if (dialog || close != null) {
             val storm = button(loc.stormPodControl)
             val tea = button(loc.teapotControl)
-            return@useSameSnapIn if ((dialog || titleless) && close != null && storm != null && tea != null)
+            return@useSameSnapIn if (dialog && close != null && storm != null && tea != null)
                 View.Dialog(storm, tea, close.region.center) else View.Unknown
         }
         val tea = loc.mainControl.exists(images[Images.QuestItemTeapot], similarity = addedTuning.quest.similarity(ICON_SIMILARITY))

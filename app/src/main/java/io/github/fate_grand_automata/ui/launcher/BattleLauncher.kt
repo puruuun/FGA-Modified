@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.RefillResourceEnum
-import io.github.fate_grand_automata.scripts.modules.QuestItemReader
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.Stepper
@@ -187,7 +186,7 @@ fun battleLauncher(
     var useStormPod by remember { mutableStateOf(perServerConfigPref.useStormPod) }
     var useTeapot by remember { mutableStateOf(perServerConfigPref.useTeapot) }
     val ignoreQuestItemUsage = remember { prefs.ignoreQuestItemUsage }
-    val questItemsSupported = remember { QuestItemReader.supports(prefs.gameServer) }
+    val questItemsSupported = remember { prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr }
     val questItemsEnabled = !ignoreQuestItemUsage && questItemsSupported
 
     data class BondDraft(val track: Boolean, val stop: Boolean, val ignored: Set<Int>)
