@@ -9,7 +9,7 @@ use std::path::Path;
 use crate::Error;
 use crate::charset::CharacterList;
 use crate::ctc::Probabilities;
-use crate::preprocess::InputTensor;
+use crate::preprocess::{InputTensor, MIN_MODEL_WIDTH};
 
 #[cfg(feature = "ort")]
 mod ort;
@@ -19,7 +19,7 @@ mod tract;
 #[cfg(feature = "ort")]
 pub use self::ort::OrtBackend;
 #[cfg(feature = "tract")]
-pub use self::tract::{MAX_TRACT_THREADS, TractBackend, TractSettings};
+pub use self::tract::{MAX_TRACT_THREADS, READER_MIN_WIDTH, TractBackend, TractSettings};
 
 /// One loaded model. Loading is the expensive part, so a backend is built once and then run for
 /// every crop.
@@ -33,6 +33,13 @@ pub trait Backend: Sized {
 
     /// The character list from the model's own metadata.
     fn characters(&self) -> &CharacterList;
+
+    /// The width a [`crate::Recognizer`] pads short crops to unless it is given another one. A
+    /// backend that plans its input width at load gives that width, so the recogniser never asks
+    /// it for a plan it does not have; any other keeps RapidOCR's.
+    fn min_width(&self) -> usize {
+        MIN_MODEL_WIDTH
+    }
 }
 
 /// Turns a `[1, steps, classes]` output into [`Probabilities`].

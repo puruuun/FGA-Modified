@@ -19,8 +19,8 @@ use crate::image::GrayImage;
 /// Height the model was trained on.
 pub const MODEL_HEIGHT: usize = 48;
 /// RapidOCR's `rec_img_shape` width: narrower crops are padded to it, never shrunk below. The
-/// default minimum width; issue #549 lets a caller choose another one to measure what the padding
-/// costs.
+/// Python results the model was chosen on used it, so it stays the default here and of a backend
+/// that does not plan its width; the tract backend's reader width is `READER_MIN_WIDTH` (256).
 pub const MIN_MODEL_WIDTH: usize = 320;
 /// The smallest minimum width a caller may choose: the model emits one output step per 8 input
 /// columns (40 steps at 320, 4 at 32), so a narrower input has no step at all.

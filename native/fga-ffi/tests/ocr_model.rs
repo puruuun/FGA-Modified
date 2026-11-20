@@ -29,10 +29,16 @@ mod model {
         let model_path = model.to_str().unwrap().to_owned();
         let loaded = ok_json(&run_guarded(|| ocr_load(&model_path)));
         assert_eq!(loaded["classes"], 18710);
+        assert_eq!(loaded["minWidth"], 256);
         // A second load replaces the first.
         let reloaded = ok_json(&run_guarded(|| ocr_load(&model_path)));
         assert_eq!(reloaded["classes"], 18710);
 
+        // Issue #549: ocrLoadTract fills the same slot. The Python results used 320, and the
+        // confidences depend on the padded width, so they are compared at 320.
+        let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 320, 0)));
+        assert_eq!(loaded["minWidth"], 320);
+        assert_eq!(loaded["threads"], 1);
         let with_text = fixed_samples_match_python(&dir, &rows, |pixels, width, height| {
             run_guarded(|| ocr_read(pixels, width, height, ""))
         });
@@ -66,7 +72,7 @@ mod model {
         assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], false);
 
         // Issue #555: the support-score reader uses the recogniser ocrLoad loaded, and none
-        // after ocrUnload.
+        // after ocrUnload. 0299 reads at the reader width (issue #591).
         let (pixels, width, height) = first_channel(&dir.join("0183.png"));
         assert_eq!(
             run_guarded(|| support_score_read(pixels, width, height)),
@@ -76,7 +82,7 @@ mod model {
         for (file, class, grand, reason) in [
             ("0183.png", Some(62), Some(16), None),
             ("0070.png", None, None, Some("clipped")),
-            ("0299.png", None, None, Some("format")),
+            ("0299.png", Some(57), Some(16), None),
         ] {
             let (pixels, width, height) = first_channel(&dir.join(file));
             let read = ok_json(&run_guarded(|| support_score_read(pixels, width, height)));
@@ -92,13 +98,6 @@ mod model {
         assert!(run_guarded(|| ocr_load("no/such/model.onnx")).starts_with("ERR: "));
         assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], false);
 
-        // Issue #549: ocrLoadTract fills the same slot. At 320 on one thread it is ocrLoad.
-        let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 320, 0)));
-        assert_eq!(loaded["minWidth"], 320);
-        assert_eq!(loaded["threads"], 1);
-        fixed_samples_match_python(&dir, &rows, |pixels, width, height| {
-            run_guarded(|| ocr_read(pixels, width, height, ""))
-        });
         // A narrower input changes the confidences, so only the texts are compared; on these 25
         // samples the PC evaluation found them unchanged at 160.
         let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 160, 1)));
@@ -112,6 +111,22 @@ mod model {
                 rows[i]["py_text"].as_str().unwrap_or_default(),
                 "{file}"
             );
+        }
+        // Issue #570: the support-score reader reads on the width ocrLoadTract planned. 0299 is
+        // the one stored sample whose answer the PC evaluation found to differ between 320 and 256.
+        let (pixels, width, height) = first_channel(&dir.join("0299.png"));
+        for (min_width, class, grand, reason) in [
+            (320, None, None, Some("format")),
+            (256, Some(57), Some(16), None),
+        ] {
+            let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, min_width, 1)));
+            assert_eq!(loaded["minWidth"], min_width);
+            let read = ok_json(&run_guarded(|| {
+                support_score_read(pixels.clone(), width, height)
+            }));
+            assert_eq!(read["class"].as_u64(), class, "{min_width}: {read}");
+            assert_eq!(read["grand"].as_u64(), grand, "{min_width}: {read}");
+            assert_eq!(read["classReason"].as_str(), reason, "{min_width}: {read}");
         }
         #[cfg(feature = "tract-threads")]
         {

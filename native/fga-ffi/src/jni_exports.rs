@@ -151,7 +151,8 @@ pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_ocrRe
     to_java(&mut env, text)
 }
 
-/// Issue #555: the support-score reader on the recogniser that `ocrLoad` loaded. Only the pixels
+/// Issue #555: the support-score reader on the recogniser that `ocrLoad` or `ocrLoadTract` loaded
+/// (issue #570 reads it at a chosen model width through the latter). Only the pixels
 /// are read from Java, inside the guard; the size is bounded inside the probe before its lock.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fate_1grand_1automata_qa_NativeProbe_supportScoreRead<

@@ -8,8 +8,9 @@
 //!     [--widths 320,256,...] [--timing] [--negatives] [--broad] [--dump <png path>]
 //!
 //! Set A has an `index.json`, set B a `labels.tsv` (file, text), set P a `list.tsv` and no label.
-//! Width 320 is always run first: its unshifted read of set A is the fallback truth of the
-//! unlabelled fields, as in the evaluation tool's cut sweep.
+//! Width 320, RapidOCR's (the reader itself plans `READER_MIN_WIDTH`), is always run first: it is
+//! the reference every other width is compared with, and its unshifted read of set A is the
+//! fallback truth of the unlabelled fields, as in the evaluation tool's cut sweep.
 
 #[path = "../tests/support/samples.rs"]
 mod samples;

@@ -102,7 +102,20 @@ private val oneThreadTexts = mutableMapOf<String, List<String?>>()
 private const val HWM_NOTE =
     "vmHwmKb is the process-wide peak; an earlier case (tesseract-baseline) may already have set it, so it moves only when this case goes higher"
 
-private val TRACT = Engine("ocrLoad", { NativeProbe.ocrLoad(it) }, NativeProbe::ocrRead, NativeProbe::ocrUnload, tract = 320 to 1)
+/**
+ * The width the Python results (`py_text`, `py_conf`) were read at, RapidOCR's. The tract-memory
+ * and tract-recognise cases load at it, as the thread cases at 320 do, so `minEqual` keeps
+ * comparing with Python; ocrLoad plans the reader's narrower width (issue #591).
+ */
+private const val PYTHON_WIDTH = 320
+
+private val TRACT = Engine(
+    "ocrLoadTract",
+    { NativeProbe.ocrLoadTract(it, PYTHON_WIDTH, 1) },
+    NativeProbe::ocrRead,
+    NativeProbe::ocrUnload,
+    tract = PYTHON_WIDTH to 1,
+)
 
 /**
  * [threads] 0 is ONNX Runtime's default, which by its documentation is one intra-op thread per
@@ -143,7 +156,7 @@ private fun threadReport(threadsAround: List<Int>): Map<String, Any?> = mapOf(
 )
 
 /**
- * Issue #549: tract with [minWidth] (the input every short crop is padded to; ocrLoad uses 320)
+ * Issue #549: tract with [minWidth] (the input every short crop is padded to; the Python results used 320)
  * and [threads] for its matrix kernels. 0 and 1 run them on the calling thread; more builds a
  * rayon pool of that many threads at load, so the load should create [threads] threads.
  */
@@ -464,7 +477,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
     val referenceKey = tract?.let { (minWidth, _) -> "$minWidth|$allowed" }
     if (tract != null && tract.second > 1) {
         val (minWidth, _) = tract
-        val oneThreadCase = if (minWidth == 320) {
+        val oneThreadCase = if (minWidth == PYTHON_WIDTH) {
             if (allowed.isEmpty()) "tract-recognise" else "tract-recognise-allowed"
         } else "tract-width-$minWidth" + if (allowed.isEmpty()) "" else "-allowed"
         val reference = oneThreadTexts[referenceKey]
@@ -836,9 +849,10 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         "time per field median ${perField.opt("medianUs")} us p90 ${perField.opt("p90Us")} us max ${perField.opt("maxUs")} us, " +
         "Kotlin stage 0 same value $sameValue, both nothing $bothNothing, differ $differenceCount, ERR $errorCount")
     val report = JSONObject()
-        .put("note", "supportScoreRead on the recogniser ocrLoad loaded (width 320, one thread) with the default ScoreConfig; perField is the whole JNI call from Kotlin, perFieldRust is inside Rust around recognise, pixel checks and rules")
+        .put("note", "supportScoreRead on the recogniser ocrLoad loaded (the reader width minWidth, one thread, as the product engine) with the default ScoreConfig; perField is the whole JNI call from Kotlin, perFieldRust is inside Rust around recognise, pixel checks and rules")
         .put("samples", rows.size)
         .put("loadMs", load.getLong("loadMs"))
+        .put("minWidth", load.getInt("minWidth"))
         .put("perField", perField)
         .put("perFieldRust", timing(engineMicros))
         .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })

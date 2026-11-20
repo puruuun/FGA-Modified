@@ -21,7 +21,7 @@ use std::sync::{Mutex, MutexGuard, TryLockError};
 use std::time::Instant;
 
 use fga_sensing::Recognizer;
-use fga_sensing::backend::{Backend, TractBackend};
+use fga_sensing::backend::{TractBackend, TractSettings};
 use fga_sensing::image::GrayImage;
 use fga_sensing::readers::support_score::{
     EXPECTED_CROP_SIZE, Reason, ScoreConfig, SupportScore, read_with,
@@ -99,15 +99,23 @@ pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
     Ok("0".to_owned())
 }
 
-/// Loads the model at `model_path` with the tract backend at the reader's defaults (320 wide, one
-/// thread, the settings the reader was measured with). Returns the load time in milliseconds.
+/// The tract backend's defaults: the reader width (256) on one thread, the settings the reader's
+/// floors and device times were measured with. A test pins them, so a change of the default
+/// reaches the product only on purpose.
+pub fn settings() -> TractSettings {
+    TractSettings::default()
+}
+
+/// Loads the model at `model_path` with the tract backend at [`settings`]; the recogniser pads to
+/// the width the backend planned. Returns the load time in milliseconds.
 pub fn load(model_path: &str) -> Result<String, String> {
     let mut slot = engine()?;
     if slot.is_some() {
         return Err(ALREADY_LOADED.to_owned());
     }
     let started = Instant::now();
-    let backend = TractBackend::load_file(Path::new(model_path)).map_err(|e| e.to_string())?;
+    let backend = TractBackend::load_file_with(Path::new(model_path), settings())
+        .map_err(|e| e.to_string())?;
     *slot = Some(Box::new(Recognizer::new(backend)));
     Ok(started.elapsed().as_millis().to_string())
 }
@@ -196,6 +204,27 @@ pub fn after_pending_exception_code(_code: i32) -> i32 {
 mod tests {
     use super::*;
 
+    /// Held by every test here that takes the engine lock or asks `is_loaded`, which answers busy
+    /// instead of waiting while another test holds the lock (issue #591).
+    static SLOT_TESTS: Mutex<()> = Mutex::new(());
+
+    fn slot_test() -> MutexGuard<'static, ()> {
+        SLOT_TESTS
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    #[test]
+    fn the_engine_plans_the_reader_width_on_one_thread() {
+        assert_eq!(
+            settings(),
+            TractSettings {
+                min_width: 256,
+                threads: 1
+            }
+        );
+    }
+
     fn text_of(wire: &[i32]) -> String {
         wire[wire::HEADER_LEN..]
             .iter()
@@ -205,6 +234,7 @@ mod tests {
 
     #[test]
     fn read_before_load_is_an_error() {
+        let _slot = slot_test();
         let wire = read_entry(|n| Ok(vec![0; n]), 60, 30);
         assert_eq!(wire[1], wire::STATUS_ERROR);
         assert_eq!(text_of(&wire), NOT_LOADED);
@@ -270,6 +300,7 @@ mod tests {
 
     #[test]
     fn missing_model_is_an_error_and_loads_nothing() {
+        let _slot = slot_test();
         let text = load_entry(|| Ok("no/such/model.onnx".to_owned()));
         assert!(text.starts_with("ERR: inference backend: "), "{text}");
         assert_eq!(is_loaded_entry(), CODE_NO);
@@ -277,6 +308,7 @@ mod tests {
 
     #[test]
     fn unload_while_unloaded_drops_nothing() {
+        let _slot = slot_test();
         assert_eq!(unload_entry(), CODE_NO);
         assert_eq!(is_loaded_entry(), CODE_NO);
     }

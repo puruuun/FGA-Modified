@@ -49,7 +49,7 @@ object NativeProbe {
     external fun cpuProbe(): String
 
     // Issue #530: the PP-OCRv6 recogniser with the tract backend. `OK: ` is followed by a JSON object.
-    /** Loads the model (replacing any loaded one): `{"loadMs":…,"classes":…}`. Nullable so a probe can check that null comes back as `ERR`. */
+    /** Loads the model (replacing any loaded one) at the reader's width, as the product engine does: `{"loadMs":…,"classes":…,"minWidth":…}`. Nullable so a probe can check that null comes back as `ERR`. */
     external fun ocrLoad(modelPath: String?): String
     /** One grayscale crop, one byte per pixel; empty [allowed] means no restriction: `{"text":…,"confidence":…,"micros":…}`. */
     external fun ocrRead(pixels: ByteArray, width: Int, height: Int, allowed: String): String
@@ -58,8 +58,8 @@ object NativeProbe {
     /** `/proc/self/status`: `{"vmRssKb":…,"vmHwmKb":…,"vmSizeKb":…}`. */
     external fun memoryStatus(): String
 
-    // Issue #549: the same tract recogniser with a chosen minimum model width (8..4096, 320 is
-    // what ocrLoad uses) and kernel thread count (0..16, 0 and 1 mean the calling thread). It
+    // Issue #549: the same tract recogniser with a chosen minimum model width (8..4096; ocrLoad
+    // plans the reader's 256, the Python results used 320) and kernel thread count (0..16, 0 and 1 mean the calling thread). It
     // fills the slot ocrRead and ocrUnload use. More than one thread needs a library built with
     // `-Pfga.native.threads=true`; otherwise the call returns `ERR`.
     /** `{"loadMs":…,"classes":…,"minWidth":…,"threads":…}`. */

@@ -49,12 +49,18 @@ mod checks {
         }
     }
 
-    pub fn fixed_samples_match_python<B: Backend>(test: &str) {
+    /// `load` gives a backend at the width the Python results used, RapidOCR's 320: the
+    /// confidences are compared too, and they depend on the padded width.
+    pub fn fixed_samples_match_python<B: Backend>(
+        test: &str,
+        load: impl FnOnce(&std::path::Path) -> B,
+    ) {
         let Some((model, dir)) = local_files(test) else {
             return;
         };
         let index = samples::load_index(&dir).unwrap();
-        let mut recognizer = Recognizer::new(B::load_file(&model).unwrap());
+        let mut recognizer = Recognizer::new(load(&model));
+        assert_eq!(recognizer.min_width(), 320);
         assert_eq!(recognizer.characters().class_count(), 18710);
         let mut checked = 0;
         let mut with_text = 0;
@@ -124,12 +130,16 @@ mod checks {
         println!("{test}: {} samples equal to the Python text", FIXED.len());
     }
 
-    pub fn allowed_set_keeps_only_score_characters<B: Backend>(test: &str) {
+    /// `load` as for [`fixed_samples_match_python`]: the free reads are compared with Python's.
+    pub fn allowed_set_keeps_only_score_characters<B: Backend>(
+        test: &str,
+        load: impl FnOnce(&std::path::Path) -> B,
+    ) {
         let Some((model, dir)) = local_files(test) else {
             return;
         };
         let index = samples::load_index(&dir).unwrap();
-        let mut recognizer = Recognizer::new(B::load_file(&model).unwrap());
+        let mut recognizer = Recognizer::new(load(&model));
         let allowed = recognizer.allowed_set(SCORE_CHARACTERS).unwrap();
         // Python read "_", "X", "X" and "A" on these blank-looking crops.
         for file in ["0002.png", "0005.png", "0052.png", "0068.png"] {
@@ -204,9 +214,9 @@ mod checks {
                 Score::Unknown(Reason::Clipped),
                 Display::Unknown,
             ),
-            // The slash read as a 1: "+571+16".
+            // The leading plus not read: "62/+16".
             (
-                "0299.png",
+                "0168.png",
                 Score::Unknown(Reason::Format),
                 Score::Unknown(Reason::Format),
                 Display::Unknown,
@@ -230,11 +240,10 @@ mod checks {
     ///
     /// The automation acts only on class 62 and a compound's Grand 16, so a 62 or a 16 that is not
     /// the true value (F62, F16) is a wrong pick and must not occur at all. Any other wrong number
-    /// acts as a miss; `MEASURED_OTHER` is what this reader returned when it was measured, a bound
-    /// that shows a regression, not a target.
-    pub fn cut_sweep_has_no_wrong_pick<B: Backend>(test: &str) {
+    /// acts as a miss; `measured_other` is what this reader returned on that backend when it was
+    /// measured, a bound that shows a regression, not a target.
+    pub fn cut_sweep_has_no_wrong_pick<B: Backend>(test: &str, measured_other: usize) {
         use fga_sensing::readers::support_score::{ScoreConfig, SupportScoreReader};
-        const MEASURED_OTHER: usize = 47;
         let Some((model, dir)) = local_files(test) else {
             return;
         };
@@ -328,14 +337,14 @@ mod checks {
         let other: usize = split.values().map(|c| c[2]).sum();
         let correct: usize = split.values().map(|c| c[3]).sum();
         println!(
-            "{test}: per direction [F62, F16, OTHER, correct 62/16]: {split:?}; OTHER {other} (bound {MEASURED_OTHER})"
+            "{test}: per direction [F62, F16, OTHER, correct 62/16]: {split:?}; OTHER {other} (bound {measured_other})"
         );
         // Zero wrong picks also holds for a reader that never answers, so some 62 or 16 must
         // have been accepted on a cut crop: the smallest shifts leave the field whole.
         assert!(correct > 0, "no shifted crop returned a 62 or a 16");
         assert!(
-            other <= MEASURED_OTHER,
-            "{other} other wrong numbers, measured {MEASURED_OTHER}: {split:?}"
+            other <= measured_other,
+            "{other} other wrong numbers, measured {measured_other}: {split:?}"
         );
     }
 
@@ -353,7 +362,8 @@ mod checks {
             sample.py_text
         );
 
-        // Three crops side by side: 180x30, past the 320/48 ratio, so the input is wider than 320.
+        // Three crops side by side: 180x30 becomes 288 columns, wider than tract's 256 plan, so
+        // tract plans that width on first use.
         let wide: Vec<u8> = crop
             .pixels()
             .chunks(crop.width())
@@ -367,17 +377,53 @@ mod checks {
 
 #[cfg(feature = "tract")]
 mod tract {
+    use std::path::Path;
+
     use fga_sensing::Recognizer;
-    use fga_sensing::backend::{TractBackend, TractSettings};
+    use fga_sensing::backend::{Backend, READER_MIN_WIDTH, TractBackend, TractSettings};
+    use fga_sensing::preprocess::MIN_MODEL_WIDTH;
+
+    /// The width the Python results used, not the reader's.
+    #[cfg(test)]
+    fn at_python_width(model: &Path) -> TractBackend {
+        let settings = TractSettings {
+            min_width: MIN_MODEL_WIDTH,
+            threads: 1,
+        };
+        TractBackend::load_file_with(model, settings).unwrap()
+    }
 
     #[test]
     fn fixed_samples_match_python() {
-        super::checks::fixed_samples_match_python::<TractBackend>("tract fixed samples");
+        super::checks::fixed_samples_match_python("tract fixed samples", at_python_width);
     }
 
     #[test]
     fn allowed_set_keeps_only_score_characters() {
-        super::checks::allowed_set_keeps_only_score_characters::<TractBackend>("tract allowed set");
+        super::checks::allowed_set_keeps_only_score_characters(
+            "tract allowed set",
+            at_python_width,
+        );
+    }
+
+    /// Issue #591: a default load plans the reader width, and a recogniser on it reads a score
+    /// crop without planning another.
+    #[test]
+    fn the_default_load_reads_at_the_reader_width() {
+        let Some(model) = std::env::var_os("FGA_OCR_MODEL") else {
+            println!("tract reader width: skipped, FGA_OCR_MODEL is not set");
+            return;
+        };
+        let backend = TractBackend::load_file(Path::new(&model)).unwrap();
+        assert_eq!(backend.planned_widths(), vec![READER_MIN_WIDTH]);
+        let mut recognizer = Recognizer::new(backend);
+        assert_eq!(recognizer.min_width(), READER_MIN_WIDTH);
+        let crop = fga_sensing::image::GrayImage::new(60, 30, vec![128; 60 * 30]).unwrap();
+        recognizer.recognize(&crop, None).unwrap();
+        assert_eq!(
+            recognizer.backend().planned_widths(),
+            vec![READER_MIN_WIDTH]
+        );
     }
 
     #[test]
@@ -389,7 +435,7 @@ mod tract {
 
     #[test]
     fn cut_sweep_has_no_wrong_pick() {
-        super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep");
+        super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep", 46);
     }
 
     #[test]
@@ -437,16 +483,22 @@ mod tract {
 
 #[cfg(feature = "ort")]
 mod ort {
-    use fga_sensing::backend::OrtBackend;
+    use fga_sensing::backend::{Backend, OrtBackend};
+
+    // ONNX Runtime plans no width, so it pads to RapidOCR's 320, the Python results' width.
+    #[cfg(test)]
+    fn load(model: &std::path::Path) -> OrtBackend {
+        OrtBackend::load_file(model).unwrap()
+    }
 
     #[test]
     fn fixed_samples_match_python() {
-        super::checks::fixed_samples_match_python::<OrtBackend>("ort fixed samples");
+        super::checks::fixed_samples_match_python("ort fixed samples", load);
     }
 
     #[test]
     fn allowed_set_keeps_only_score_characters() {
-        super::checks::allowed_set_keeps_only_score_characters::<OrtBackend>("ort allowed set");
+        super::checks::allowed_set_keeps_only_score_characters("ort allowed set", load);
     }
 
     #[test]
@@ -458,7 +510,7 @@ mod ort {
 
     #[test]
     fn cut_sweep_has_no_wrong_pick() {
-        super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep");
+        super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep", 47);
     }
 
     #[test]

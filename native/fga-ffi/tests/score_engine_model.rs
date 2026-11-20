@@ -92,6 +92,15 @@ mod model {
             format!("ERR: {ALREADY_LOADED}")
         );
         assert_eq!(is_loaded_entry(), CODE_YES);
+        // Issue #591: the engine reads at the reader width; at 320 this sample is unknown (format).
+        let (pixels_0299, w_0299, h_0299) = first_channel(&dir.join("0299.png"));
+        let reply = read_entry(|_| Ok(pixels_0299), w_0299, h_0299);
+        assert_eq!(
+            &reply[1..4],
+            &[wire::STATUS_READ, 57, 16],
+            "0299: {}",
+            text(&reply)
+        );
 
         // The probe slot: loading, reading and unloading it leaves the engine as it is.
         ok_json(&run_guarded(|| ocr_load(&model_path)));

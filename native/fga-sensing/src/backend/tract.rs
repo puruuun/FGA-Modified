@@ -10,7 +10,7 @@ use super::{Backend, backend_error, probabilities_from};
 use crate::Error;
 use crate::charset::{CharacterList, METADATA_KEY};
 use crate::ctc::Probabilities;
-use crate::preprocess::{InputTensor, MIN_MODEL_WIDTH, MODEL_HEIGHT, check_min_width};
+use crate::preprocess::{InputTensor, MODEL_HEIGHT, check_min_width};
 
 type Plan = Arc<TypedRunnableModel>;
 
@@ -20,12 +20,18 @@ const MAX_PLANS: usize = 3;
 /// count of current phone CPUs, while a mistaken argument cannot ask for thousands of threads.
 pub const MAX_TRACT_THREADS: usize = 16;
 
+/// The input width the support-score reader plans at load, narrower than RapidOCR's 320 (issue
+/// #591): on the stored samples and the live-scan crops it gives the same answers with one more
+/// +16 read and no wrong value, and on three devices it reads a field about 19% faster.
+/// Narrower widths lose reads (docs/agents/rust-native.md).
+pub const READER_MIN_WIDTH: usize = 256;
+
 /// How a [`TractBackend`] is set up (issue #549). The default is what [`Backend::load_file`]
-/// gives: the 320 plan at load and tract's single-threaded kernels.
+/// gives: the [`READER_MIN_WIDTH`] plan at load and tract's single-threaded kernels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TractSettings {
-    /// The input width planned at load time; set it to the recogniser's minimum width, which is
-    /// the width every short crop gets.
+    /// The input width planned at load time. `Recognizer::new` pads short crops to it; a
+    /// recogniser given another width with `with_min_width` makes the backend plan that one too.
     pub min_width: usize,
     /// Threads for tract's matrix kernels; 1 runs them on the calling thread. More than one needs
     /// the `tract-threads` feature, which builds tract-linalg with `multithread-mm` and gives the
@@ -36,7 +42,7 @@ pub struct TractSettings {
 impl Default for TractSettings {
     fn default() -> Self {
         Self {
-            min_width: MIN_MODEL_WIDTH,
+            min_width: READER_MIN_WIDTH,
             threads: 1,
         }
     }
@@ -65,12 +71,14 @@ impl TractSettings {
 ///
 /// The input width is pinned per plan: tract also runs the model with a symbolic width, but on the
 /// PC that took 59 ms per crop against 25 ms pinned (issue #524). Every crop narrower than the
-/// minimum width (320 by default) at its height gives that width, which is planned at load time;
-/// wider crops get a plan of their own on first use, kept for later calls.
+/// minimum width at its height gives that width, which is planned at load time and which
+/// [`Backend::min_width`] reports, so a recogniser pads to it; wider crops get a plan of their own
+/// on first use, kept for later calls.
 pub struct TractBackend {
     model: InferenceModel,
     plans: PlanCache<Plan>,
     characters: CharacterList,
+    min_width: usize,
     threads: usize,
     #[cfg(feature = "tract-threads")]
     executor: Executor,
@@ -123,6 +131,7 @@ impl TractBackend {
             model,
             plans: PlanCache::new(settings.min_width, plan),
             characters,
+            min_width: settings.min_width,
             threads: settings.threads,
             // Last, so a model that fails to load starts no threads.
             #[cfg(feature = "tract-threads")]
@@ -247,6 +256,10 @@ impl Backend for TractBackend {
     fn characters(&self) -> &CharacterList {
         &self.characters
     }
+
+    fn min_width(&self) -> usize {
+        self.min_width
+    }
 }
 
 #[cfg(test)]
@@ -258,8 +271,9 @@ mod tests {
     }
 
     #[test]
-    fn the_default_is_320_on_one_thread() {
-        assert_eq!(TractSettings::default(), settings(320, 1));
+    fn the_default_is_256_on_one_thread() {
+        assert_eq!(READER_MIN_WIDTH, 256);
+        assert_eq!(TractSettings::default(), settings(256, 1));
         assert_eq!(TractSettings::default().check(), Ok(()));
     }
 

@@ -40,6 +40,9 @@ pub fn poison_lock_for_tests() -> Result<String, String> {
     panic!("poisoning the recogniser lock")
 }
 
+/// The recogniser the support-score reader runs on: the tract backend's defaults, as the product
+/// engine loads it, so the `rust-reader` device case reads at the product's width. A comparison
+/// with the Python results loads through [`ocr_load_tract`] at 320, the width they used.
 pub fn ocr_load(model_path: &str) -> Result<String, String> {
     let mut slot = recognizer()?;
     // Dropped before the new model loads, so two models never sit in memory together and a
@@ -50,8 +53,9 @@ pub fn ocr_load(model_path: &str) -> Result<String, String> {
     let loaded = Recognizer::new(backend);
     let load_ms = started.elapsed().as_millis();
     let classes = loaded.characters().class_count();
+    let min_width = loaded.min_width();
     *slot = Some(loaded);
-    Ok(load_json(load_ms, classes))
+    Ok(load_json(load_ms, classes, min_width))
 }
 
 /// Whether this library was built with fga-ffi's `tract-threads` feature.
@@ -178,8 +182,8 @@ fn memory_from_status(text: &str) -> Result<String, String> {
     }
 }
 
-fn load_json(load_ms: u128, classes: usize) -> String {
-    format!("{{\"loadMs\":{load_ms},\"classes\":{classes}}}")
+fn load_json(load_ms: u128, classes: usize, min_width: usize) -> String {
+    format!("{{\"loadMs\":{load_ms},\"classes\":{classes},\"minWidth\":{min_width}}}")
 }
 
 fn load_tract_json(load_ms: u128, classes: usize, min_width: usize, threads: usize) -> String {
@@ -228,10 +232,11 @@ mod tests {
 
     #[test]
     fn load_result_shape() {
-        let value = json(&load_json(1234, 18710));
+        let value = json(&load_json(1234, 18710, 256));
         assert_eq!(value["loadMs"], 1234);
         assert_eq!(value["classes"], 18710);
-        assert_eq!(value.as_object().unwrap().len(), 2);
+        assert_eq!(value["minWidth"], 256);
+        assert_eq!(value.as_object().unwrap().len(), 3);
     }
 
     #[test]
@@ -370,6 +375,26 @@ mod tests {
                 tract_settings(bad, 1),
                 Err(format!("minimum model width {bad} is not in 8..=4096"))
             );
+        }
+    }
+
+    // The reader width and the Python results' width, the two the device cases load.
+    #[test]
+    fn score_reader_widths_are_accepted_and_others_refused() {
+        for width in [256, 320] {
+            let settings = tract_settings(width, 1).unwrap();
+            assert_eq!(settings.min_width, width as usize);
+            assert_eq!(settings.threads, 1);
+        }
+        assert_eq!(
+            tract_settings(-256, 1),
+            Err("invalid minimum width -256".to_owned())
+        );
+        for bad in [0, 7, 4097] {
+            let refused = format!("minimum model width {bad} is not in 8..=4096");
+            assert_eq!(tract_settings(bad, 1), Err(refused.clone()));
+            let text = run_guarded(|| ocr_load_tract("no/such/model.onnx", bad, 1));
+            assert_eq!(text, format!("ERR: {refused}"));
         }
     }
 
