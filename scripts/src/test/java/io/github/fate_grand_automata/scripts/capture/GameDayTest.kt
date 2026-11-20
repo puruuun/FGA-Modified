@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.capture
 
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.Locale
 import java.util.TimeZone
 import kotlin.test.*
 
@@ -32,5 +33,21 @@ class GameDayTest {
         } finally {
             TimeZone.setDefault(saved)
         }
+    }
+
+    @Test fun independentOfDeviceLocaleCalendar() {
+        val saved = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale("th", "TH"))
+            check()
+        } finally {
+            Locale.setDefault(saved)
+        }
+    }
+
+    @Test fun leapDay() {
+        assertEquals(GameDay(2028, 2, 28), gameDay(kst(2028, 2, 29, 3, 59, 59, 999)))
+        assertEquals(GameDay(2028, 2, 29), gameDay(kst(2028, 2, 29, 4)))
+        assertEquals(GameDay(2028, 2, 29), gameDay(kst(2028, 3, 1, 3)))
     }
 }

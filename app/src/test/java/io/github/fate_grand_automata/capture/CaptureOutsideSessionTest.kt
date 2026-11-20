@@ -278,6 +278,13 @@ class CaptureOutsideSessionTest {
         assertTrue(session.openEntries.value.isEmpty())
     }
 
+    @Test fun firstLoginAfterFourWithoutAnOpenPeriodWritesNothingAndTheGrantOpensOne() {
+        time = kstSeconds(11, 5)
+        response("login/top", outsideLogin(fruit = 50, grant = 370))
+        assertTrue(logs.entries.isEmpty())
+        assertEquals(AccountDelta(friendPoint = 370), session.openEntries.value.single().period.total)
+    }
+
     @Test fun reloadAcrossFourResumesAndTheNextLoginCloses() {
         time = kstSeconds(10, 21)
         feed()
