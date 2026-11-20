@@ -12,6 +12,12 @@ background colour of its 1 px border where no widget is drawn (reported per row)
     cross_server.py score   --kr build/apk-kr --jp build/apk-jp --work build/cross   (checks FROZEN.txt first)
 
 Writes <work>/acceptance.csv and prints one row per draft and the totals per server and element class.
+
+--named runs the same replay with the element named instead of located: cross_server_cases.json "named" holds, per
+template and per screenshot server, the widget path (and the sprite code sets, the text shown there and the target
+text) chosen from that server's data, template and one screenshot only, or "art" where the element is not drawn
+from the APK. The screenshot still gives the crop margin, the sprites under the element and the N/W decision.
+Its files are pred_named/ (with its own FROZEN.txt), scores_named.json and acceptance_named.csv.
 """
 import argparse
 import collections
@@ -35,21 +41,25 @@ with open(os.path.join(HERE, 'cross_server_cases.json'), encoding='utf-8') as _f
     _CASES = json.load(_f)
 NAMES = _CASES['templates']
 SPEC = _CASES['cases']
-DATA, WORK = {}, None
+NAMED_SPEC = _CASES['named']
+DATA, WORK, NAMED = {}, None, False
 
 
 def configure(a):
-    global WORK, PRED
+    global WORK, PRED, NAMED, SUFFIX
     DATA.update({'Kr': os.path.abspath(a.kr), 'Jp': os.path.abspath(a.jp)})
     WORK = os.path.abspath(a.work)
-    PRED = os.path.join(WORK, 'pred')
-    os.environ['CROSS_SERVER_ARGS'] = json.dumps([DATA['Kr'], DATA['Jp'], WORK])
+    NAMED = a.named
+    PRED = os.path.join(WORK, 'pred_named' if NAMED else 'pred')
+    SUFFIX = '_named' if NAMED else ''
+    os.environ['CROSS_SERVER_ARGS'] = json.dumps([DATA['Kr'], DATA['Jp'], WORK, NAMED])
 
 
 if os.environ.get('CROSS_SERVER_ARGS'):  # pool workers on Windows re-import this module
-    _k, _j, WORK = json.loads(os.environ['CROSS_SERVER_ARGS'])
+    _k, _j, WORK, NAMED = json.loads(os.environ['CROSS_SERVER_ARGS'])
     DATA.update({'Kr': _k, 'Jp': _j})
-PRED = os.path.join(WORK, 'pred') if WORK else None
+PRED = os.path.join(WORK, 'pred_named' if NAMED else 'pred') if WORK else None
+SUFFIX = '_named' if NAMED else ''
 
 
 def asset(server, n):
@@ -91,11 +101,23 @@ def predict(job):
     args = ['--data', DATA[target], '--locate-on', os.path.join(R, 'docs', 'reference-images', other, shot),
             '--locate-data', DATA[other], '--locate-template', asset(other, n),
             '--out-dir', os.path.join(PRED, target), '--name', n, '--background-from', asset(target, n)]
-    args += SPEC.get(n, {}).get('args', [])
-    shown = SPEC.get(n, {}).get('shown', {}).get(other)
+    if NAMED:
+        named = NAMED_SPEC[n][other]
+        rec['named'] = named
+        if 'art' in named:
+            rec['error'] = 'not in the APK: ' + named['art']
+            rec['art'] = True
+            return rec
+        args += ['--locate-path', named['path']]
+        if named.get('sprite'):
+            args += ['--locate-sprite', named['sprite']]
+        shown, tt = named.get('shown'), named.get('target_text')
+    else:
+        args += SPEC.get(n, {}).get('args', [])
+        shown = SPEC.get(n, {}).get('shown', {}).get(other)
+        tt = SPEC.get(n, {}).get('target_text', {}).get(target)
     if shown:
         args += ['--shown-text', shown]
-    tt = SPEC.get(n, {}).get('target_text', {}).get(target)
     if tt:
         args += ['--target-text', tt]
         rec['target_text_given'] = tt
@@ -179,9 +201,11 @@ def score_job(job):
     out = {'target': target, 'template': n, 'threshold': thr, 'existing': e, 'shot': rec.get('shot'), 'drafts': []}
     rep = rec.get('report')
     if not rep or not rep.get('drafts'):
-        out['grade'] = 'cannot build'
+        out['grade'] = 'not in the APK' if rec.get('art') else 'cannot build'
         out['why'] = (rec.get('error') or '').strip().splitlines()[-1:] or ['']
         return out
+    if rec.get('named'):
+        out['located'] = 'no widget matching' not in rec.get('log', '')
     out['class'] = element_class(rep)
     out['notes'] = rep.get('notes', [])
     out['elements'] = [(w['role'], w['path']) for w in rep['widgets']]
@@ -204,13 +228,14 @@ def do_score():
             assert hashlib.sha256(open(d['file'], 'rb').read()).hexdigest() == frozen[rel], rel
     with Pool(6) as p:
         res = list(p.imap(score_job, sorted(recs, key=lambda r: (r['template'], r['target']))))
-    json.dump(res, open(os.path.join(WORK, 'scores.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1, default=str)
+    json.dump(res, open(os.path.join(WORK, 'scores%s.json' % SUFFIX), 'w', encoding='utf-8'), ensure_ascii=False, indent=1,
+              default=str)
     f3 = ss.fmt
     rows = []
     for r in res:
         e = r['existing']
         if not r['drafts']:
-            rows.append([r['template'], r['target'], '-', 'cannot build', '', '', '', '%.2f' % r['threshold'],
+            rows.append([r['template'], r['target'], '-', r['grade'], '', '', '', '%.2f' % r['threshold'],
                          '', '', f3(e['true_min']), f3(e['fp_max']), '', r.get('why', [''])[0][:90], r['shot']])
             continue
         for i, d in enumerate(r['drafts']):
@@ -218,9 +243,11 @@ def do_score():
             rows.append([r['template'], r['target'], r['class'], d['grade'] + ('' if i == 0 else ' (alt %s)' % d['variant']),
                          s['positives'], f3(s['true_min']), f3(s['fp_max']), '%.2f' % r['threshold'],
                          f3(s['margin_true']), f3(s['margin_false']), f3(e['true_min']), f3(e['fp_max']),
-                         'border bg' if d['bg_from_border'] else '', '; '.join(x[-90:] for x in r['notes']) if i == 0 else '',
+                         'border bg' if d['bg_from_border'] else '',
+                         '; '.join(([] if r.get('located', True) else ['named widget not found on the screenshot']) +
+                                   [x[-90:] for x in r['notes']]) if i == 0 else '',
                          r['shot']])
-    with open(os.path.join(WORK, 'acceptance.csv'), 'w', newline='', encoding='utf-8') as f:
+    with open(os.path.join(WORK, 'acceptance%s.csv' % SUFFIX), 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['template', 'target', 'class', 'grade', 'positives', 'draft_true_min', 'draft_fp_max', 'threshold',
                     'margin_true', 'margin_false', 'existing_true_min', 'existing_fp_max', 'background', 'notes',
@@ -228,7 +255,8 @@ def do_score():
         w.writerows(rows)
     for row in rows:
         print(' | '.join(str(v) for v in row[:13]))
-    grades = ('as good as existing', 'passes but lower', 'fails the threshold', 'cannot build')
+    grades = ('as good as existing', 'passes but lower', 'fails the threshold', 'cannot build') + \
+        (('not in the APK',) if NAMED else ())
     tot = collections.Counter()
     for r in res:
         tot[(r['target'], r.get('class', '-'), r['grade'])] += 1
@@ -248,6 +276,7 @@ def main():
     ap.add_argument('--jp', required=True)
     ap.add_argument('--work', required=True)
     ap.add_argument('--only', nargs='*', help='template names (predict only)')
+    ap.add_argument('--named', action='store_true', help='name the element (cases "named") instead of locating it')
     a = ap.parse_args()
     configure(a)
     if a.step == 'predict':

@@ -17,6 +17,11 @@ or let one screenshot of the OTHER server find it (game code and layout are shar
     --locate-on SHOT --locate-data DIR (--locate-box X,Y,W,H | --locate-template PNG)
         the widgets of DIR drawn inside that box of SHOT (720p game-area pixels); the same paths are drafted from
         --data. The box's margin around the drawn content carries over as the crop.
+    --locate-path RX    name the element instead: only widgets whose path matches RX are looked for in the box
+                        (no size, flatness or box-explained floor). When none is found there, the named widgets
+                        are drafted without the crop margin and without the sprites under them.
+    --locate-sprite S   draw the named sprite widgets with sprite S of their atlas (a sprite set by code, which no
+                        widget names in the data)
     --shown-text TEXT   the text the element shows on SHOT (labels set from code show something else in the
                         data); the target text is the same localization entry on the target server
     --target-text TEXT  the target text, for texts that come from server data and are not in the APK table
@@ -149,13 +154,14 @@ def locate_on(a, target):
         box = (b[1], b[2], t.shape[1], t.shape[0])
         print('locate: %s found at %d,%d (%.3f) on %s' % (os.path.basename(a.locate_template), b[1], b[2], b[0],
                                                          os.path.basename(a.locate_on)))
-    found = el.locate(other, orule, shot, box, text=a.shown_text)
+    only = re.compile(a.locate_path) if a.locate_path else None
+    found = el.locate(other, orule, shot, box, text=a.shown_text, only=only, only_sprite=a.locate_sprite)
     # only widgets the target build also has can be drafted there
     missing = [f for f in found if same_widget(target, f['widget']) is None]
     if missing:
         print('locate: %d located widget(s) are not in the target data and are skipped' % len(missing))
         found = [f for f in found if f not in missing]
-    if found and found[0]['box_score'] < MIN_BOX_SCORE:
+    if found and only is None and found[0]['box_score'] < MIN_BOX_SCORE:
         print('locate: best widget explains the box at %.2f only (< %.2f): not located' % (found[0]['box_score'],
                                                                                        MIN_BOX_SCORE))
         for f in found[:5]:
@@ -165,6 +171,13 @@ def locate_on(a, target):
         found = []
     members = el.group(found, other, orule)
     backs = el.locate_backgrounds(other, orule, shot, box, members) if not a.no_background_widgets else []
+    named = []
+    if only is not None and not members:
+        for w in other.widgets:
+            if only.search(w['path']) and el.drawable(w) and w['path'] not in {n['path'] for n in named}:
+                named.append(sprite_as(w, a.locate_sprite))
+        print('locate: no widget matching %r is found in the box; drafting the %d named widget(s) without the crop '
+              'margin and without the sprites under them' % (a.locate_path, len(named)))
     print('locate: %d widget(s) drawn in the box; kept %d (one scene or prefab, consistent offsets), %d under them'
           % (len(found), len(members), len(backs)))
     for f in found[:8]:
@@ -184,9 +197,9 @@ def locate_on(a, target):
         insets = tuple(int(round(max(-INSET_LIMIT, min(INSET_LIMIT, v)))) for v in
                        (L - box[0], T - box[1], box[0] + box[2] - R, box[1] + box[3] - B))
     target_text = None
-    labels = [m for m in members if m['layer']['kind'] == 'label']
+    labels = [m['widget'] for m in members if m['layer']['kind'] == 'label'] + [w for w in named if 'label' in w]
     if a.shown_text and labels:
-        own = el.strip_markup(other.label_text(labels[0]['widget'])[0]).strip()
+        own = el.strip_markup(other.label_text(labels[0])[0]).strip()
         if own == a.shown_text.strip():
             print('text: the located label shows %r in the data itself; the target label keeps its own text' % own)
         else:
@@ -198,12 +211,20 @@ def locate_on(a, target):
                 sys.exit('no localization entry shows %r on the other server with an entry on the target (the text '
                          'comes from server data): give the target text with --target-text' % a.shown_text)
     pairs = []
-    for m in members + backs:
-        tw = same_widget(target, m['widget'])
-        pairs.append((m['widget'], tw, 'background' if m in backs else 'element'))
+    found_pairs = [(m['widget'], 'background' if m in backs else 'element') for m in members + backs]
+    for ow, role in found_pairs + [(w, 'element') for w in named]:
+        tw = same_widget(target, ow)
+        if tw is not None and role == 'element' and only is not None:
+            tw = sprite_as(tw, a.locate_sprite)
+        pairs.append((ow, tw, role))
         if tw is None:
-            print('   %s is not in the target data' % m['widget']['path'])
+            print('   %s is not in the target data' % ow['path'])
     return other, shot, pairs, insets, target_text
+
+
+def sprite_as(w, sprite):
+    """w drawn with another sprite of its atlas (set by code), or w."""
+    return dict(w, sprite=sprite) if sprite and w['class'] in ('UISprite', 'UISkinSprite') else w
 
 
 def map_text(other, target, shown):
@@ -304,6 +325,9 @@ def main(argv=None):
     ap.add_argument('--locate-data')
     ap.add_argument('--locate-box')
     ap.add_argument('--locate-template')
+    ap.add_argument('--locate-path', help='regex of the widget path(s) of the element: name the element instead of '
+                    'letting the screenshot find it')
+    ap.add_argument('--locate-sprite', help='with --locate-path: the sprite the named sprite widgets show (set by code)')
     ap.add_argument('--shown-text', help="the text the element shows on the --locate-on screenshot (that server's "
                     'language); labels are matched with it, and the target text is the same localization entry')
     ap.add_argument('--target-text', help='the text the element shows on the target server, when the APK localization '
@@ -380,6 +404,8 @@ def main(argv=None):
                 w['path'][-60:], *[v for _, p in cands for v in (p['W'], p['H'])]))
             continue
         ow = same_widget(decide_data, w)
+        if ow is not None and a.locate_sprite and w.get('sprite') == a.locate_sprite:
+            ow = sprite_as(ow, a.locate_sprite)
         if ow is None:
             report['notes'].append('%s: not in the deciding server data' % w['path'][-60:])
             continue

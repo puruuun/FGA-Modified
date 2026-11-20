@@ -25,7 +25,7 @@ _LAYERS = {}
 
 def widget_layer(data, rule, w, mode=None, text=None, sprite=None):
     """Cached _widget_layer."""
-    key = (id(data), w['file'], w['pid'], mode, text,
+    key = (id(data), w['file'], w['pid'], w.get('sprite'), mode, text,
            None if sprite is None else (sprite[0]['name'], sprite[1]['name']))
     if key not in _LAYERS:
         _LAYERS[key] = _widget_layer(data, rule, w, mode, text, sprite)
@@ -248,21 +248,31 @@ def predicted_rect(data, rule, w):
     return p['cx'], p['cy'], p['W'], p['H'], p['rooted']
 
 
-def locate(data, rule, screen, box, min_score=0.45, tol=6, grow=2.5, text=None):
+def locate(data, rule, screen, box, min_score=0.45, tol=6, grow=2.5, text=None, only=None, only_sprite=None):
     """Widgets of `data` drawn inside box (x, y, w, h) of a screenshot of the same server.
 
     Candidates: drawable widgets no larger than `grow` x the box on either axis (bigger ones are backgrounds, see
     locate_backgrounds) whose rect overlaps the box when rooted; prefab widgets (no UI Root, no position in the data)
     of a size that fits are searched anywhere in the box. Each is drawn alone and matched alpha-weighted. Copies of
     the same path are tried once. text: what the element shows on this screenshot; every label is then drawn with
-    it (labels whose text is set by code show something else in the data). Returns [dict(score, widget, layer, found (x, y), offset (found - predicted))]
-    best first."""
+    it (labels whose text is set by code show something else in the data).
+
+    only: a compiled regex naming the element. Only widgets whose path it matches are tried, without the size and
+    flatness filters; a rooted one not found at its own spot is also searched with its centre anywhere in the box,
+    and one larger than the box anywhere it covers the box. only_sprite draws the named sprite widgets with that
+    sprite of their atlas (a sprite set by code).
+
+    Returns [dict(score, widget, layer, found (x, y), offset (found - predicted))] best first."""
     sw = screen.shape[1]
     bx, by, bw, bh = box
     seen, out = set(), []
     for w in data.widgets:
         if not drawable(w):
             continue
+        if only is not None and not only.search(w['path']):
+            continue
+        if only_sprite and w['class'] in ('UISprite', 'UISkinSprite'):
+            w = dict(w, sprite=only_sprite)
         if text is not None and 'label' not in w:
             continue
         key = (w['path'], w.get('sprite') or (w.get('label') or {}).get('text'))
@@ -276,34 +286,54 @@ def locate(data, rule, screen, box, min_score=0.45, tol=6, grow=2.5, text=None):
             ppu = data.root_of(w)[0] or nl.DEFAULT_PPU
             H = w['label']['fontSize'] * ppu * abs(nl.world(w, data.root_of(w)[2])[1][1])
             W = min(W, bw)
-        if W > grow * bw + 8 or H > grow * bh + 8 or W < 4 or H < 4:
+        if only is None and (W > grow * bw + 8 or H > grow * bh + 8 or W < 4 or H < 4):
             continue
         L, T = sw / 2 + cx - W / 2, 360 + cy - H / 2
-        if rooted:
+        if rooted and only is None:
             ix = max(0, min(L + W, bx + bw) - max(L, bx))
             iy = max(0, min(T + H, by + bh) - max(T, by))
             if ix * iy <= 0:
                 continue
         seen.add(key)
-        lay = widget_layer(data, rule, w, text=text)
-        if 'error' in lay:
-            continue
-        bgl = None
-        if lay['kind'] == 'label':
-            bgl = float(np.median(screen[max(0, int(by)):int(by + bh), max(0, int(bx)):int(bx + bw)]))
-        t, m = gray_mask(lay, bgl)
-        if (m > 0.5).sum() < LOCATE_MIN_PX or float(t[m > 0.5].std()) < LOCATE_MIN_STD:
-            continue
-        x, y = screen_xy(lay, sw)
-        if rooted:
-            win = (x - tol, y - tol, t.shape[1] + 2 * tol, t.shape[0] + 2 * tol)
-        else:
+        modes = [None]
+        if only is not None and w['class'] in ('UISprite', 'UISkinSprite') and data.sprite_data(w)[1] is not None:
+            # a named sprite whose size the data leaves open (N or W) is tried both ways
+            modes = [c[0] for c in rule.candidates(w) if c[0] in ('N', 'W')] or [None]
+        best = None
+        for mode in modes:
+            lay = widget_layer(data, rule, w, mode=mode, text=text)
+            if 'error' in lay:
+                continue
+            bgl = None
+            if lay['kind'] == 'label':
+                bgl = float(np.median(screen[max(0, int(by)):int(by + bh), max(0, int(bx)):int(bx + bw)]))
+            t, m = gray_mask(lay, bgl)
+            if only is None and ((m > 0.5).sum() < LOCATE_MIN_PX or float(t[m > 0.5].std()) < LOCATE_MIN_STD):
+                continue
+            x, y = screen_xy(lay, sw)
             # anywhere its centre falls inside the box
-            win = (bx - t.shape[1] / 2 - tol, by - t.shape[0] / 2 - tol, bw + t.shape[1] + 2 * tol,
-                   bh + t.shape[0] + 2 * tol)
-        res = match_layer(screen, t, m, win)
-        if res is None or res[0] < min_score:
+            anywhere = (bx - t.shape[1] / 2 - tol, by - t.shape[0] / 2 - tol, bw + t.shape[1] + 2 * tol,
+                        bh + t.shape[0] + 2 * tol)
+            wins = [(x - tol, y - tol, t.shape[1] + 2 * tol, t.shape[0] + 2 * tol)] if rooted else [anywhere]
+            if only is not None:
+                if rooted:
+                    wins.append(anywhere)
+                if t.shape[1] > bw or t.shape[0] > bh:
+                    # a named widget larger than the box: anywhere it covers the box
+                    wins.append((bx + bw - t.shape[1] - tol, by + bh - t.shape[0] - tol,
+                                 2 * t.shape[1] - bw + 2 * tol, 2 * t.shape[0] - bh + 2 * tol))
+            res = None
+            for win in wins:
+                r = match_layer(screen, t, m, win)
+                if r is not None and (res is None or r[0] > res[0]):
+                    res = r
+                if only is None and res is not None and res[0] >= min_score:
+                    break
+            if res is not None and (best is None or res[0] > best[0][0]):
+                best = (res, lay, x, y)
+        if best is None or best[0][0] < min_score:
             continue
+        res, lay, x, y = best
         out.append({'score': res[0], 'widget': w, 'layer': lay, 'found': (res[1], res[2]),
                     'offset': (res[1] - x, res[2] - y), 'rooted': rooted,
                     'box_score': box_explained(screen, lay, (res[1], res[2]), box)})

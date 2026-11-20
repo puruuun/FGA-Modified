@@ -68,6 +68,12 @@ package.
    that come from server data and are not in the APK table, the one you give with `--target-text 닫기`.
    The margin between the drawn content and the located box carries over as the crop.
 
+   Locating picks the widget that best explains the box, which is often another label of the same style or the
+   wrong scene. When you know the element from the data, name it and let the screenshot give only the crop margin,
+   the sprites under it and the N/W decision: `--locate-path RX` (a regex of its widget path) and, for a sprite
+   that code sets (no widget names it in the data), `--locate-sprite S`. A named widget that is not found in the
+   box is drafted without the margin and without the sprites under it, and the output says so.
+
 3. **Settle what the data cannot decide.** A sprite whose code swaps it and resizes it to its own size (N) cannot
    be told from one stretched to its widget (W) when the scene lists only one sprite for that slot. When the two
    sizes differ, both drafts are written (`<name>_N.png`, `<name>_W.png`) with a warning. One screenshot of either
@@ -127,7 +133,7 @@ colour, font size or threshold chosen by scoring against them. A flat background
 | `draft_element.py` | the entry point above |
 | `screen_score.py` | true score, false positives and margins on a folder of screenshots; the threshold from `scripts/` |
 | `selfcheck.py --kr DIR --jp DIR` | replays the accepted numbers (below) on your extraction; `text_check.py --record` rewrites the text expectations |
-| `cross_server.py` | the cross-server acceptance replay (below) |
+| `cross_server.py [--named]` | the cross-server acceptance replay (below), with the element located or named |
 | `draft_template.py`, `find_sprite.py`, `score_screens.py`, `template_lib.py` | the manual tools: one sprite or font text at a chosen scale, which sprite a template was cut from, folder scoring |
 
 ## What the rules are and how well they hold
@@ -163,7 +169,8 @@ Every template that exists in both `Kr/` and `Jp/` and that the existing templat
 reference screenshots (38): the KR draft from KR data plus **one** JP screenshot (the JP template's best 16:9
 positive, used to locate the element and to decide N/W), the JP draft the same way the other round; drafts frozen
 (sha256) before scoring; scored on the target server's screenshots against the existing template and the code's
-threshold. Grade of the first draft per template (as good as existing / passes but lower / fails / cannot build):
+threshold. **Element located automatically** — grade of the first draft per template (as good as existing /
+passes but lower / fails / cannot build):
 
 | | as good | lower | fails | cannot build |
 |---|---|---|---|---|
@@ -184,10 +191,35 @@ found on the other screenshot, so N/W stayed open.
   reselect sprite located instead); JP `skill_level_result` 0.783 against 0.80 (glowing text; the existing
   template itself scores 0.804).
 
+**Element named instead of located** (`cross_server.py --named`): the same 76 drafts with the element chosen by
+hand from the source server only (its data, template and the same one screenshot; `cross_server_cases.json`
+"named" records each path, sprite, text and why), or marked as art that is not in the APK. The screenshot still
+gives the crop margin, the sprites under the element and the N/W decision. Frozen before scoring, scored the same
+way (as good / lower / fails / cannot build / not in the APK):
+
+| | as good | lower | fails | cannot build | not in the APK |
+|---|---|---|---|---|---|
+| KR (38) | 6 | 8 | 13 | 0 | 11 |
+| JP (38) | 9 | 6 | 11 | 0 | 12 |
+
+Naming fixes, among others, `ce_enhance_reselect`, `fp_sell_tab` JP, `fp_sell_word_servant` JP, `weekly_terminal` and the JP
+dialog titles; the failures left are drafting limits and known issues: a label whose size is set at run time
+(`ce_enhance_execute`: the dialog's four-button layout), part of a widget cropped by the template (a word of a
+title, the caption of a big button: the draft is the whole widget), runtime tints, a JP or KR atlas that holds
+the other server's art, glow, KR dialog text that the renderer does not match (`append_level_dialog_title`,
+`fp_sell_word_servant` on KR), and the issues below.
+
+Known issues (not fixed): the N/W decision measures the widget at its data position and ignores where it was
+found, so anchored or moved widgets stay undecided (`rank_up`, `weekly_*`); with `--shown-text`, a target label
+keeps its own data text when the source label already shows the shown text, which can be a placeholder id;
+`--target-text` applies only when the localization mapping finds nothing; `--locate-path` keeps the best raw
+match over its search windows, which can be off the widget's own spot.
+
 So: once the element is the right widget, text, sprite and composite drafts clear the threshold with margin
-(passing drafts: true minimum 0.84-0.99, best false positive 0.36-0.68, existing templates 0.34-0.60). Locating the element automatically
-from the other server's screenshot is the weak step; name the element yourself (`--path`, `--sprite`, `--key`)
-when you know it, and look at what `--locate-on` printed before trusting a draft.
+(passing named drafts: true minimum 0.81-0.98, best false positive 0.36-0.68, existing templates 0.34-0.60).
+Name the element yourself (`--locate-path`, or `--path`, `--sprite`, `--key` without a screenshot) when you know
+it, name every widget the template shows (the caption and the button under it), and look at what was printed
+before trusting a draft.
 
 ## Limits
 
