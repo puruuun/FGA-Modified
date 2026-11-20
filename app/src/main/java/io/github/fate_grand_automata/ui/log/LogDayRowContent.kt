@@ -38,18 +38,23 @@ internal fun LogDayCard(row: LogDayRow, selected: Boolean, now: Long, onClick: (
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(dayLabel(row.day.day, now), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Row(Modifier.testTag("log-day-line2:${row.key}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.testTag("log-day-line1:${row.key}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // The date and the server never shrink; only a long name gives way.
+                Text(dayLabel(row.day.day, now), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                    maxLines = 1, softWrap = false)
                 Text(row.account.name ?: noProfile, style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                row.account.server?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
-                Text("·", style = MaterialTheme.typography.bodySmall)
-                Text(
-                    (if (row.account.inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") +
-                        stringResource(R.string.capture_log_day_summary, row.account.battles.size),
-                    style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
+                row.account.server?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false) }
             }
+            val battle = stringResource(R.string.capture_log_day_source_battle)
+            val sources = daySources(row.account).map {
+                when (it) { DaySource.Battle -> battle; is DaySource.Other -> sourceFilterLabel(it.source) }
+            }
+            val line2 = listOfNotNull(stringResource(R.string.capture_log_in_progress).takeIf { row.account.inProgress }, *sources.toTypedArray())
+                .joinToString(" · ")
+            // An empty line is left out instead of kept blank: a day without sources has nothing to say there.
+            if (line2.isNotEmpty()) Text(line2, Modifier.testTag("log-day-line2:${row.key}"), style = MaterialTheme.typography.bodySmall,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

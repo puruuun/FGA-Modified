@@ -1482,7 +1482,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_view">View</string>
     <string name="capture_log_view_record">By record</string>
     <string name="capture_log_view_day">By day</string>
-    <string name="capture_log_day_summary">Battles %1$d</string>
+    <string name="capture_log_day_source_battle">Battle</string>
     <string name="capture_log_day_changes">Changes</string>
     <string name="capture_log_day_scripts">Scripts run</string>
     <string name="capture_log_day_included">Includes %1$d battle logs</string>

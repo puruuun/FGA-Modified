@@ -1,5 +1,9 @@
 package io.github.fate_grand_automata.ui.log
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -18,6 +22,8 @@ import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -85,16 +91,62 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-script:older").assertExists()
     }
 
-    @Test fun aRowIsTwoLinesTheDateThenTheAccountAndTheSummary() {
+    private fun cardRow(name: String?, battles: List<io.github.fate_grand_automata.capture.CaptureLogItem>, outside: List<io.github.fate_grand_automata.capture.CaptureLogItem>,
+                         inProgress: Boolean = false): LogDayRow {
+        val account = LogDayAccount("A", name, "JP", emptyMap(), outside, battles, inProgress)
+        return LogDayRow(LogDay(io.github.fate_grand_automata.scripts.capture.GameDay(2026, 11, 11), listOf(account), battles, outside, inProgress), account)
+    }
+
+    private val battleItem = io.github.fate_grand_automata.capture.CaptureLogItem(battle = dayBattleToday)
+    private val giftItem = io.github.fate_grand_automata.capture.CaptureLogItem(outside = dayOutside)
+
+    @Test fun aRowIsTwoLinesTheDateWithTheAccountAndServerThenTheDaysSources() {
         rule.setContent { Screen() }
         chooseView("day")
-        val row = rule.onNodeWithTag("log-day:2026-11-11/a:A")
-        row.assertTextContains("11월 11일", substring = true)
-        row.assertTextContains("JP", substring = true)
-        val line2 = hasParent(hasTestTag("log-day-line2:2026-11-11/a:A"))
-        rule.onNode(line2.and(hasText("샘플")), useUnmergedTree = true).assertExists()
-        rule.onNode(line2.and(hasText("전투 1", substring = true)), useUnmergedTree = true).assertExists()
-        rule.onNode(line2.and(hasText("11월", substring = true)), useUnmergedTree = true).assertDoesNotExist()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
+        val line1 = hasParent(hasTestTag("log-day-line1:2026-11-11/a:A"))
+        rule.onNode(line1.and(hasText("11월 11일", substring = true)), useUnmergedTree = true).assertExists()
+        rule.onNode(line1.and(hasText("샘플")), useUnmergedTree = true).assertExists()
+        rule.onNode(line1.and(hasText("JP")), useUnmergedTree = true).assertExists()
+        // The gift box period starts first (09:00), then the script battle (10:00); no count anywhere.
+        rule.onNode(hasTestTag("log-day-line2:2026-11-11/a:A"), useUnmergedTree = true).assertTextEquals("선물함 · 전투")
+        rule.onNode(hasText("전투 1", substring = true), useUnmergedTree = true).assertDoesNotExist()
+        rule.onNode(hasText("전투 0", substring = true), useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test fun theSourceLineHasNoCountAndNoBattleZero() {
+        rule.setContent { FGATheme(false) { LogDayCard(cardRow("샘플", emptyList(), listOf(giftItem)), false, kst("2026-11-12T10:00:00")) {} } }
+        rule.onNode(hasTestTag("log-day-line2:2026-11-11/a:A"), useUnmergedTree = true).assertTextEquals("선물함")
+        rule.onNode(hasText("전투", substring = true), useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test fun aDayWithoutSourcesLeavesTheSecondLineOut() {
+        rule.setContent { FGATheme(false) { LogDayCard(cardRow("샘플", emptyList(), emptyList()), false, kst("2026-11-12T10:00:00")) {} } }
+        rule.onNodeWithTag("log-day-line2:2026-11-11/a:A").assertDoesNotExist()
+        rule.onNode(hasText("샘플"), useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun theInProgressMarkLeadsTheSourceLine() {
+        rule.setContent { FGATheme(false) { LogDayCard(cardRow("샘플", listOf(battleItem), listOf(giftItem), inProgress = true), false, kst("2026-11-12T10:00:00")) {} } }
+        rule.onNode(hasTestTag("log-day-line2:2026-11-11/a:A"), useUnmergedTree = true).assertTextEquals("진행 중 · 선물함 · 전투")
+    }
+
+    @Test fun aLongNameEllipsizesWhileTheDateAndTheServerStayWhole() {
+        val long = "아주아주아주아주아주아주아주아주아주아주아주아주아주아주아주아주 긴 이름"
+        rule.setContent { FGATheme(false) { Box(Modifier.width(200.dp)) { LogDayCard(cardRow(long, listOf(battleItem), emptyList()), false, kst("2026-11-12T10:00:00")) {} } } }
+        val line1 = hasParent(hasTestTag("log-day-line1:2026-11-11/a:A"))
+        val date = rule.onNode(line1.and(hasText("11월 11일", substring = true)), useUnmergedTree = true).fetchSemanticsNode()
+        val server = rule.onNode(line1.and(hasText("JP")), useUnmergedTree = true).fetchSemanticsNode()
+        val name = rule.onNode(line1.and(hasText(long)), useUnmergedTree = true).fetchSemanticsNode()
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        listOf(date, server, name).forEach {
+            it.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action!!.invoke(results)
+        }
+        assertEquals(listOf(false, false, true), results.map { it.isLineEllipsized(0) })
+        // The name gives way: it ends before the server starts, and the server keeps its whole text.
+        assertTrue(name.boundsInRoot.right <= server.boundsInRoot.left, "n=${name.boundsInRoot} s=${server.boundsInRoot} d=${date.boundsInRoot}")
+        assertTrue(server.boundsInRoot.width >= results[1].getLineRight(0) - results[1].getLineLeft(0), "w=${server.boundsInRoot.width} t=${results[1].getLineRight(0)}")
+        assertTrue(server.boundsInRoot.right <= with(rule.density) { 200.dp.toPx() })
     }
 
     @Test fun scriptItemsAreNotCardsAndTappingOneOpensTheBattleDetail() {
@@ -346,8 +398,15 @@ class LogDayScreenshotTest {
     @Test fun narrowRowList() = rule.shoot("log-day", "NarrowRowList", 360, 800, false, "ko", beforeCapture = {
         chooseView("day")
     }) {
+        val long = dayOutside.copy(id = "long", accountId = "C", accountName = "아주아주아주아주 긴 계정 이름 예시입니다",
+            period = OutsidePeriod("C", kst("2026-11-11T09:00:00") / 1000)
+                .add(ChangeSource.of("card/x"), AccountDelta(qp = 1), kst("2026-11-11T09:01:00") / 1000)
+                .add(ChangeSource.of("battle/result"), AccountDelta(qp = 1), kst("2026-11-11T09:02:00") / 1000)
+                .add(ChangeSource.of("eventMission/x"), AccountDelta(qp = 1), kst("2026-11-11T09:03:00") / 1000)
+                .add(ChangeSource.of("gacha/draw"), AccountDelta(qp = 1), kst("2026-11-11T09:04:00") / 1000)
+                .add(ChangeSource.of("shop/purchase"), AccountDelta(qp = 1), kst("2026-11-11T09:05:00") / 1000))
         LogScreenContent(listOf(dayBattleToday, dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회"), dayBattleOlder),
-            {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP", "B" to "KR"))
+            {}, {}, outsideEntries = listOf(dayOutside, long), accountServers = mapOf("A" to "JP", "B" to "KR", "C" to "JP"))
     }
 
     @Test fun filterDialogWithView() = rule.shoot("log-day", "FilterDialogView", 360, 800, false, "ko", beforeCapture = {

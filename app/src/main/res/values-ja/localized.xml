@@ -1171,7 +1171,7 @@
     <string name="capture_log_view">表示</string>
     <string name="capture_log_view_record">記録別</string>
     <string name="capture_log_view_day">日別</string>
-    <string name="capture_log_day_summary">バトル %1$d</string>
+    <string name="capture_log_day_source_battle">戦闘</string>
     <string name="capture_log_day_changes">変動</string>
     <string name="capture_log_day_scripts">実行したスクリプト</string>
     <string name="capture_log_day_included">バトル%1$d回を含む</string>

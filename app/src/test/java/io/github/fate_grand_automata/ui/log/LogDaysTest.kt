@@ -179,4 +179,55 @@ class LogDaysTest {
         assertFalse(deviceZoneDiffers(now, TimeZone.getTimeZone("Asia/Tokyo")))
         assertTrue(deviceZoneDiffers(now, TimeZone.getTimeZone("UTC")))
     }
+
+    private fun outsideOf(id: String, started: String, vararg sources: ChangeSource): CaptureLogItem {
+        val start = at(started) / 1000
+        val period = sources.foldIndexed(OutsidePeriod("A", start)) { i, p, source -> p.add(source, AccountDelta(qp = 10), start + 1 + i) }
+        return item(OutsideLogEntry(id, "A", "nameA", at(started), at(started), period))
+    }
+
+    private fun sourcesOf(vararg records: CaptureLogItem) = daySources(groupLogDays(records.toList()).single().accounts.single())
+
+    private val battleEntry = DaySource.Battle
+    private fun other(source: LogSourceFilter) = DaySource.Other(source)
+
+    @Test fun aScriptBattleAloneGivesOneBattleEntry() {
+        assertEquals(listOf(battleEntry), sourcesOf(battle("b1", "2026-11-11T10:00:00+09:00"), battle("b2", "2026-11-11T11:00:00+09:00")))
+    }
+
+    @Test fun aHandPlayedQuestAloneGivesOneBattleEntryAndNoManualQuestEntry() {
+        val sources = sourcesOf(outsideOf("m", "2026-11-11T10:00:00+09:00", ChangeSource.of("battle/result")))
+        assertEquals(listOf(battleEntry), sources)
+        assertFalse(sources.contains(other(LogSourceFilter.ManualQuest)))
+    }
+
+    @Test fun aScriptBattleAndAHandPlayedQuestShareOneBattleEntry() {
+        assertEquals(listOf(battleEntry), sourcesOf(
+            battle("b", "2026-11-11T10:00:00+09:00"), outsideOf("m", "2026-11-11T12:00:00+09:00", ChangeSource.of("battle/result"))))
+    }
+
+    @Test fun sourcesFollowTheirFirstAppearanceInTimeAndRepeatsAreDropped() {
+        val sources = sourcesOf(
+            // Given out of order on purpose: the list is by start time, not by input order.
+            outsideOf("late", "2026-11-11T15:00:00+09:00", ChangeSource.of("present/receive"), ChangeSource.of("gacha/draw")),
+            battle("b", "2026-11-11T12:00:00+09:00"),
+            outsideOf("early", "2026-11-11T09:00:00+09:00", ChangeSource.of("card/x"), ChangeSource.of("present/receive")),
+        )
+        assertEquals(listOf(other(LogSourceFilter.Enhancement), other(LogSourceFilter.GiftBox), battleEntry, other(LogSourceFilter.Summon)), sources)
+    }
+
+    @Test fun aPeriodKeepsItsStoredSourceOrderAtItsStart() {
+        assertEquals(listOf(other(LogSourceFilter.Shop), other(LogSourceFilter.GiftBox)), sourcesOf(
+            outsideOf("p", "2026-11-11T09:00:00+09:00", ChangeSource.of("shop/purchase"), ChangeSource.of("present/receive"))))
+    }
+
+    @Test fun scriptFlaggedAndOtherSourcesGetTheFilterGroups() {
+        assertEquals(listOf(other(LogSourceFilter.Script), other(LogSourceFilter.Other)), sourcesOf(
+            outsideOf("p", "2026-11-11T09:00:00+09:00", ChangeSource(ChangeSource.Group.GiftBox, script = true), ChangeSource.of("zzz/unknown"))))
+    }
+
+    @Test fun aDayWithoutSourcesGivesAnEmptyList() {
+        val account = LogDayAccount("A", "nameA", "JP", emptyMap(), emptyList(), emptyList())
+        assertEquals(emptyList(), daySources(account))
+    }
 }

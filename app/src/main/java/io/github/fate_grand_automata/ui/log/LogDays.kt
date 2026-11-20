@@ -22,6 +22,26 @@ internal data class LogDayRow(val day: LogDay, val account: LogDayAccount) {
     val key get() = logDayRowKey(day.key, account.accountId)
 }
 
+/** What a day row lists on its second line: one battle entry for script and hand-played battles alike, then the other sources. */
+internal sealed interface DaySource {
+    data object Battle : DaySource
+    data class Other(val source: LogSourceFilter) : DaySource
+}
+
+/**
+ * Sources of one account's day in order of first appearance. A script battle record and a hand-played quest
+ * ([LogSourceFilter.ManualQuest]) are the same entry for the row, so "battle" appears once and without a count.
+ */
+internal fun daySources(account: LogDayAccount): List<DaySource> = buildList {
+    val events = account.battles.map { it.startedAt() to listOf<DaySource>(DaySource.Battle) } +
+        account.outside.map { record ->
+            record.startedAt() to record.outside!!.period.sources.map { delta ->
+                delta.source.logSource().let { if (it == LogSourceFilter.ManualQuest) DaySource.Battle else DaySource.Other(it) }
+            }
+        }
+    events.sortedBy { it.first }.forEach { (_, sources) -> sources.forEach { if (it !in this) add(it) } }
+}
+
 internal fun logDayRowKey(dayKey: String, accountId: String?) = "$dayKey/${accountId?.let { "a:$it" } ?: "none"}"
 
 /** Newest day first; inside a day the accounts keep the order [groupLogDays] gave them, "No profile" last. */
