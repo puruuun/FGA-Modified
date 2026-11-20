@@ -235,6 +235,62 @@ class CaptureOutsideSessionTest {
         assertEquals(AccountDelta(friendPoint = 370), logs.entries.single().period.sources.single().delta)
     }
 
+    private fun kstSeconds(day: Int, hour: Int, minute: Int = 0) =
+        java.time.LocalDateTime.of(2026, 11, day, hour, minute).toEpochSecond(java.time.ZoneOffset.ofHours(9))
+
+    @Test fun sameGameDayLoginKeepsThePeriod() {
+        time = kstSeconds(10, 5)
+        feed()
+        time = kstSeconds(11, 3, 59)
+        response("login/top", outsideLogin(fruit = 50, grant = 370))
+        assertTrue(logs.entries.isEmpty())
+        session.setRunning(false)
+        assertEquals(1, logs.entries.size)
+        assertEquals(-2, logs.entries.single().period.total.items[100])
+        assertEquals(370, logs.entries.single().period.total.friendPoint)
+    }
+
+    @Test fun firstLoginAfterFourClosesTheOldPeriodAndTheGrantOpensTheNewOne() {
+        time = kstSeconds(10, 21)
+        feed()
+        time = kstSeconds(11, 4)
+        response("login/top", outsideLogin(fruit = 50, grant = 370))
+        val old = logs.entries.single()
+        assertEquals(AccountDelta(items = mapOf(100L to -2L)), old.period.total)
+        assertEquals(kstSeconds(10, 21), old.period.startedAt)
+        val opened = session.openEntries.value.single()
+        assertNotEquals(old.id, opened.id)
+        assertEquals(AccountDelta(friendPoint = 370), opened.period.total)
+        assertEquals(kstSeconds(11, 4), opened.period.startedAt)
+        feed(num = 49)
+        session.setRunning(false)
+        assertEquals(-1, logs.entries.last().period.total.items[100])
+    }
+
+    @Test fun changesBeforeTheReLoginStayInTheOldPeriod() {
+        time = kstSeconds(10, 21)
+        feed()
+        time = kstSeconds(11, 4, 30)
+        feed(num = 7)
+        assertTrue(logs.entries.isEmpty())
+        response("login/top", outsideLogin(fruit = 50, grant = 0))
+        assertEquals(-3, logs.entries.single().period.total.items[100])
+        assertTrue(session.openEntries.value.isEmpty())
+    }
+
+    @Test fun reloadAcrossFourResumesAndTheNextLoginCloses() {
+        time = kstSeconds(10, 21)
+        feed()
+        accounts = CaptureAccounts().apply { load(directory) }
+        time = kstSeconds(11, 5)
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        assertTrue(logs.entries.isEmpty())
+        assertEquals(-2, session.openEntries.value.single().period.total.items[100])
+        response("login/top", outsideLogin(fruit = 50, grant = 370))
+        assertEquals(-2, logs.entries.single().period.total.items[100])
+        assertEquals(370, session.openEntries.value.single().period.total.friendPoint)
+    }
+
     @Test fun loginWithoutGrantRecordsNothingButStillCheckpoints() {
         feed()
         response("login/top", outsideLogin(fruit = 50, grant = 0))

@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import io.github.fate_grand_automata.scripts.capture.LoginGrant
+import io.github.fate_grand_automata.scripts.capture.gameDay
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -123,6 +124,11 @@ internal class CaptureOutsideSession(
         val matchesScript = scriptServer == null || server == scriptServer
         if (scriptActive && matchesScript) return
         if (CaptureNames.classify(target) == CaptureNames.ApiPath.Login) {
+            // The 04:00 reset forces a re-login, so the first login of a new game day closes the old period and its
+            // grant opens the new one. A battle or result before that login still belongs to the old day.
+            periods[response.id]?.let {
+                if (gameDay(it.period.startedAt * 1000) != gameDay(now() * 1000)) close(response.id)
+            }
             // A login replaces the account, so it is never diffed; the grant the server reports is the one change kept.
             checkpoint(response)
             val state = response.next
