@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.ui.log
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -16,12 +17,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.capture.sourceName
 import io.github.fate_grand_automata.ui.Heading
@@ -34,15 +38,18 @@ internal fun LogDayCard(row: LogDayRow, selected: Boolean, now: Long, onClick: (
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(dayLabel(row.day.day, now), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(row.account.name ?: noProfile, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f, fill = false))
-                row.account.server?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Text(dayLabel(row.day.day, now), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(Modifier.testTag("log-day-line2:${row.key}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(row.account.name ?: noProfile, style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                row.account.server?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
+                Text("·", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    (if (row.account.inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") +
+                        stringResource(R.string.capture_log_day_summary, row.account.battles.size),
+                    style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false)
             }
-            Text(
-                (if (row.account.inProgress) stringResource(R.string.capture_log_in_progress) + " · " else "") +
-                    stringResource(R.string.capture_log_day_summary, row.account.battles.size),
-                style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -69,7 +76,26 @@ internal fun LazyListScope.logDayItems(row: LogDayRow, names: GameNameMap, now: 
     if (account.battles.isEmpty()) item { Text(stringResource(R.string.capture_log_day_no_scripts),
         Modifier.padding(horizontal = 16.dp).testTag("log-day-no-scripts")) }
     items(account.battles, key = { it.id }) { entry ->
-        Box(Modifier.padding(bottom = 6.dp)) { entry.battle?.let { LogCard(it, false, { onBattle(entry.id) }, null) } }
+        entry.battle?.let { LogDayScriptItem(it, { onBattle(entry.id) }) }
+    }
+}
+
+/** Plain list item on the page (no card): the day detail is a report, the record view keeps the cards. */
+@Composable
+private fun LogDayScriptItem(entry: BattleLogEntry, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        Column(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("log-script:${entry.id}")
+            .padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (entry.gains != null) Icon(painterResource(R.drawable.ic_swords),
+                    stringResource(R.string.capture_log_recorded_with_collection), Modifier.size(16.dp))
+                Text(entry.configName, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(localDateTimeText(entry.endedAt), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
+            Text(battleSummaryText(entry), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -89,7 +115,7 @@ private fun LogDayAccountChanges(row: LogDayRow, names: GameNameMap) {
             TextButton(onClick = { expanded = !expanded }, Modifier.testTag("log-day-expand:${account.accountId}")) {
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
                 Text(
-                    if (expanded) stringResource(R.string.capture_gains_collapse)
+                    if (expanded) stringResource(R.string.capture_log_day_collapse)
                     else if (account.battles.isNotEmpty()) stringResource(R.string.capture_log_day_included, account.battles.size)
                     else stringResource(R.string.capture_log_day_breakdown),
                     Modifier.padding(start = 8.dp))

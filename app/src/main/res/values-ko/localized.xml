@@ -1417,7 +1417,8 @@
     <string name="capture_log_day_changes">변동</string>
     <string name="capture_log_day_scripts">실행한 스크립트</string>
     <string name="capture_log_day_included">전투 %1$d회 포함</string>
-    <string name="capture_log_day_breakdown">내역 펼치기</string>
+    <string name="capture_log_day_breakdown">출처별 내역 펼치기</string>
+    <string name="capture_log_day_collapse">출처별 내역 접기</string>
     <string name="capture_log_day_no_changes">기록된 변동이 없습니다</string>
     <string name="capture_log_day_no_scripts">이 날 기록된 스크립트 실행이 없습니다</string>
     <string name="capture_log_day_zone_note">한국·일본 시간 04:00 기준</string>

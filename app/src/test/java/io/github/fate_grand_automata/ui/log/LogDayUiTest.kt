@@ -64,7 +64,7 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day-account:A").assertExists()
         rule.onNodeWithText("JP").assertExists()
         rule.onNodeWithTag("log-day-expand:A").performClick()
-        rule.onNodeWithTag("log-card:today").performClick()
+        rule.onNodeWithTag("log-script:today").performClick()
         rule.onNodeWithTag("log-day-detail").assertDoesNotExist()
         rule.onNodeWithContentDescription(back).performClick()
         rule.onNodeWithTag("log-day-detail").assertExists()
@@ -82,7 +82,45 @@ class LogDayUiTest {
         rule.onNodeWithContentDescription(back).performClick()
         rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
         rule.onNodeWithTag("log-day-no-scripts").assertDoesNotExist()
-        rule.onNodeWithTag("log-card:older").assertExists()
+        rule.onNodeWithTag("log-script:older").assertExists()
+    }
+
+    @Test fun aRowIsTwoLinesTheDateThenTheAccountAndTheSummary() {
+        rule.setContent { Screen() }
+        chooseView("day")
+        val row = rule.onNodeWithTag("log-day:2026-11-11/a:A")
+        row.assertTextContains("11월 11일", substring = true)
+        row.assertTextContains("JP", substring = true)
+        val line2 = hasParent(hasTestTag("log-day-line2:2026-11-11/a:A"))
+        rule.onNode(line2.and(hasText("샘플")), useUnmergedTree = true).assertExists()
+        rule.onNode(line2.and(hasText("전투 1", substring = true)), useUnmergedTree = true).assertExists()
+        rule.onNode(line2.and(hasText("11월", substring = true)), useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test fun scriptItemsAreNotCardsAndTappingOneOpensTheBattleDetail() {
+        rule.setContent { Screen() }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
+        rule.onNodeWithTag("log-script:today").assertExists().assertHasClickAction()
+        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+        rule.onNodeWithTag("log-script:today").performClick()
+        rule.onNodeWithTag("log-day-detail").assertDoesNotExist()
+    }
+
+    @Test fun theRecordViewStillUsesTheCards() {
+        rule.setContent { Screen() }
+        rule.onNodeWithTag("log-card:today").assertExists()
+        rule.onNodeWithTag("log-script:today").assertDoesNotExist()
+    }
+
+    @Test fun theExpandedBreakdownUsesTheDayViewLabel() {
+        rule.setContent { Screen() }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
+        rule.onNodeWithText("출처별 내역 접기").assertDoesNotExist()
+        rule.onNodeWithTag("log-day-expand:A").performClick()
+        rule.onNodeWithText("출처별 내역 접기").assertExists()
+        rule.onNodeWithText("전투별 내역 접기").assertDoesNotExist()
     }
 
     @Test fun theViewAndTheSelectedDaySurviveRecreation() {
@@ -92,7 +130,7 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithTag("log-day-detail").assertExists()
-        rule.onNodeWithTag("log-card:older").assertExists()
+        rule.onNodeWithTag("log-script:older").assertExists()
     }
 
     @Test @Config(qualifiers = "ko-w1000dp-h700dp-hdpi") fun wideScreenShowsTheFirstDayAtOnceAndSwitchesPanes() {
@@ -102,8 +140,8 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day-account:A").assertExists()
         rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
         rule.onNodeWithTag("log-day:2026-11-10/a:A").assertIsSelected()
-        rule.onNodeWithTag("log-card:older").assertExists()
-        rule.onNodeWithTag("log-card:older").performClick()
+        rule.onNodeWithTag("log-script:older").assertExists()
+        rule.onNodeWithTag("log-script:older").performClick()
         rule.onNodeWithTag("log-day-detail").assertDoesNotExist()
         rule.onNodeWithTag("log-day:2026-11-10/a:A").assertExists()
     }
@@ -198,15 +236,15 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
         rule.onNodeWithTag("log-day-account:A").assertExists()
         rule.onNodeWithTag("log-day-account:B").assertDoesNotExist()
-        rule.onNodeWithTag("log-card:today").assertExists()
-        rule.onNodeWithTag("log-card:b").assertDoesNotExist()
+        rule.onNodeWithTag("log-script:today").assertExists()
+        rule.onNodeWithTag("log-script:b").assertDoesNotExist()
         rule.onNodeWithText("JP").assertExists()
         rule.onNodeWithContentDescription(back).performClick()
         rule.onNodeWithTag("log-day:2026-11-11/a:B").performClick()
         rule.onNodeWithTag("log-day-account:B").assertExists()
         rule.onNodeWithTag("log-day-account:A").assertDoesNotExist()
-        rule.onNodeWithTag("log-card:b").assertExists()
-        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+        rule.onNodeWithTag("log-script:b").assertExists()
+        rule.onNodeWithTag("log-script:today").assertDoesNotExist()
         rule.onNodeWithText("KR").assertExists()
     }
 
@@ -234,8 +272,8 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day:2026-11-11/none").assertExists()
         rule.onNodeWithTag("log-day:2026-11-11/none").assertTextContains("프로필 없음", substring = true)
         rule.onNodeWithTag("log-day:2026-11-11/none").performClick()
-        rule.onNodeWithTag("log-card:n").assertExists()
-        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+        rule.onNodeWithTag("log-script:n").assertExists()
+        rule.onNodeWithTag("log-script:today").assertDoesNotExist()
     }
 
     @Test fun theSelectedRowOfASecondAccountSurvivesRecreation() {
@@ -245,7 +283,7 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day:2026-11-11/a:B").performClick()
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithTag("log-day-account:B").assertExists()
-        rule.onNodeWithTag("log-card:b").assertExists()
+        rule.onNodeWithTag("log-script:b").assertExists()
     }
 
     @Test @Config(qualifiers = "ko-w1000dp-h700dp-hdpi") fun aFilterChangeThatRemovesTheSelectedRowSelectsTheFirstOne() {
@@ -260,7 +298,7 @@ class LogDayUiTest {
         rule.onNodeWithText("적용").performClick()
         rule.onNodeWithTag("log-day:2026-11-12/a:A").assertDoesNotExist()
         rule.onNodeWithTag("log-day:2026-11-11/a:A").assertIsSelected()
-        rule.onNodeWithTag("log-card:today").assertExists()
+        rule.onNodeWithTag("log-script:today").assertExists()
     }
 
     @Test fun anEmptyDayViewShowsTheNormalEmptyText() {

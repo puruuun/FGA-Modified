@@ -282,9 +282,16 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
 }
 
 @Composable
-internal fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
-    val summary = listOfNotNull(stringResource(R.string.battle_log_card_runs, entry.timesRan, entry.averageTurnsPerRun),
+internal fun battleSummaryText(entry: BattleLogEntry): String =
+    listOfNotNull(stringResource(R.string.battle_log_card_runs, entry.timesRan, entry.averageTurnsPerRun),
         if (entry.gains != null) stringResource(R.string.capture_gains_tracked) else null, entry.reasonText.takeIf { it.isNotBlank() }).joinToString(" · ")
+
+@Composable
+internal fun localDateTimeText(endedAt: Long): String = localDateTime(endedAt)
+
+@Composable
+internal fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
+    val summary = battleSummaryText(entry)
     LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick,
         checked = checked, collected = entry.gains != null)
 }

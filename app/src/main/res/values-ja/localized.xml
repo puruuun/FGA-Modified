@@ -1175,7 +1175,8 @@
     <string name="capture_log_day_changes">変動</string>
     <string name="capture_log_day_scripts">実行したスクリプト</string>
     <string name="capture_log_day_included">バトル%1$d回を含む</string>
-    <string name="capture_log_day_breakdown">内訳を表示</string>
+    <string name="capture_log_day_breakdown">出所別の内訳を表示</string>
+    <string name="capture_log_day_collapse">出所別の内訳を閉じる</string>
     <string name="capture_log_day_no_changes">記録された変動はありません</string>
     <string name="capture_log_day_no_scripts">この日に記録されたスクリプト実行はありません</string>
     <string name="capture_log_day_zone_note">韓国・日本時間 04:00 基準</string>
