@@ -92,7 +92,11 @@ class SupportScoreScanner(
     fun run(): ScoreScanResult {
         val startTime = clock()
         val notStarted = try {
-            startProblem()
+            // A stop that arrives while the engine's first load succeeds: nothing created, nothing deleted.
+            startProblem() ?: run {
+                exitManager.checkExitRequested()
+                null
+            }
         } catch (e: ScriptAbortException) {
             ScoreScanEndReason.UserStopped
         }
@@ -129,6 +133,8 @@ class SupportScoreScanner(
         !screen.someSupportsPresent() -> ScoreScanEndReason.NoRows
         storage.freeBytes() < ScoreScanLog.MIN_FREE_BYTES -> ScoreScanEndReason.LowSpace
         !engine.available -> engineUnavailable()
+        // someSupportsPresent also matches a guest row, which has no confirm-setup button to find.
+        frames.sameSnap { frames.rows() }.isEmpty() -> ScoreScanEndReason.NoRows
         else -> null
     }
 
@@ -171,7 +177,7 @@ class SupportScoreScanner(
 
     private fun readScreen(folder: ScoreScanFolder, index: Int, previous: List<RowKey>?): ScreenOutcome {
         listProblem()?.let { return ScreenOutcome.End(it) }
-        // someSupportsPresent also matches a guest row, which has no confirm-setup button to find.
+        // A later screen with only rows that have no confirm-setup button ends here, not as the bottom.
         val rows = frames.rows()
         if (rows.isEmpty()) return ScreenOutcome.End(ScoreScanEndReason.NoRows)
 
@@ -190,7 +196,8 @@ class SupportScoreScanner(
                 val kotlin = reader.read(rows[row], true, checkGrand, index, row)
                 val kotlinMicros = kotlinStart.elapsedNow().inWholeMicroseconds
                 val rust = engine.read(fields[row])
-                // After both reads, so a row that fails leaves neither a crop nor a line.
+                // After both reads, so a read that fails leaves neither; a failing appendLine, or a
+                // process killed between the two writes, can still leave a crop without its line.
                 val crop = ScoreScanLog.cropName(index, row)
                 folder.writeCrop(crop, pngs[row])
                 val record = ScoreScanRecord(

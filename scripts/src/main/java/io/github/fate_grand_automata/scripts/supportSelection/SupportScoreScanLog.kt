@@ -152,7 +152,7 @@ data class ScoreScanResult(
     val rows: Int,
     val agree: Int,
     val differ: Int,
-    /** The engine's unavailableReason or the exception message, for the owner and the summary. */
+    /** The engine's unavailableReason for an [ScoreScanEndReason.EngineUnavailable] end, else null; an exception is rethrown and never reaches a result. */
     val detail: String?,
 )
 
@@ -234,7 +234,7 @@ object ScoreScanLog {
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { String.format(Locale.ROOT, "%02x", it) }
 
     /**
-     * The scan folders to delete so that, with the one about to be created, [KEEP_SCANS] remain.
+     * The scan folders to delete so that, with the one just created (not in [existing]), [KEEP_SCANS] remain.
      * The names are timestamps, so the oldest sort first.
      */
     fun toDelete(existing: List<String>): List<String> {

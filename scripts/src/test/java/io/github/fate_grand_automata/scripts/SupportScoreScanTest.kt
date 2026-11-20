@@ -185,12 +185,16 @@ class SupportScoreScanTest {
         /** Runs after a read has returned its score: the engine closes between two reads. */
         var onReturned: (Int) -> Unit = {}
         override val unavailableReason: String? get() {
+            loaded = true
             asked++
             onAsked()
             return reason
         }
-        override val loadTime: Duration? = 420.milliseconds
+        /** Null until the first ask or read, which loads the real engine, whether that load works or not. */
+        private var loaded = false
+        override val loadTime: Duration? get() = if (loaded) 420.milliseconds else null
         override fun read(field: Pattern): EngineScore {
+            loaded = true
             if (reason != null) return EngineScore.unknown(EngineUnknownReason.Unavailable, reason)
             val pixels = field.grayPixels()!!
             reads += pixels to world.currentSnap
@@ -313,11 +317,12 @@ class SupportScoreScanTest {
         val result = scan.run()
 
         assertThat(result.screens).isEqualTo(2)
-        // Per loop: the screen's snapshot and the look before the scroll. Screens 0 and 2 are read, 4 and 6 unchanged.
-        assertThat(scan.world.snaps).isEqualTo(7)
+        // The start's look at the rows, then per loop the screen's snapshot and the look before the scroll.
+        // Screens 1 and 3 are read, 5 and 7 unchanged.
+        assertThat(scan.world.snaps).isEqualTo(8)
         assertThat(scan.reader.calls.map { it.first }).containsExactly(0, 1, 2, 2, 3, 4)
-        assertThat(scan.reader.calls.map { it.third }).containsExactly(0, 0, 0, 2, 2, 2)
-        assertThat(scan.engine.reads.map { it.second }).containsExactly(0, 0, 0, 2, 2, 2)
+        assertThat(scan.reader.calls.map { it.third }).containsExactly(1, 1, 1, 3, 3, 3)
+        assertThat(scan.engine.reads.map { it.second }).containsExactly(1, 1, 1, 3, 3, 3)
         val lines = scan.lines(result)
         for ((i, line) in lines.withIndex()) {
             val crop = File(scan.folder(result), line.str("crop")).readBytes()
@@ -369,12 +374,20 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `a list with only a guest row ends without any gesture`() {
+    fun `a list with only a guest row at the start ends before anything is written`() {
         val scan = Scan(total = 0, guestOnly = true)
+        assertNotStarted(scan, scan.run(), ScoreScanEndReason.NoRows)
+    }
+
+    @Test
+    fun `a later screen with only a guest row ends the scan with the rows read so far and no gesture`() {
+        val scan = Scan(total = 9)
+        scan.world.onScroll = { if (it == 1) scan.world.guestOnly = true }
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.NoRows)
-        assertThat(scan.world.gestures.size).isEqualTo(0)
-        assertThat(result.rows).isEqualTo(0)
+        assertThat(scan.scrolls).isEqualTo(1)
+        assertThat(result.rows).isEqualTo(3)
+        assertThat(scan.lines(result).size).isEqualTo(3)
         assertThat(scan.summary(result).str("endReason")).isEqualTo("no_rows")
     }
 
@@ -391,6 +404,21 @@ class SupportScoreScanTest {
         val scan = Scan(total = 5)
         scan.engine.onAsked = { scan.world.exitManager.exit(); scan.engine.reason = "stopped" }
         assertNotStarted(scan, scan.run(), ScoreScanEndReason.UserStopped)
+    }
+
+    @Test
+    fun `a stop that arrives while the engine loads fine creates and deletes nothing`() {
+        val scan = Scan(total = 5)
+        val old = (1..25).map { "20200101-0000%02d".format(it) }
+        old.forEach { File(scan.root, it).mkdirs() }
+        scan.engine.onAsked = { scan.world.exitManager.exit() }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(result.folder).isNull()
+        assertThat(scan.root.list()!!.sorted()).isEqualTo(old)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.reader.calls.size).isEqualTo(0)
+        assertThat(scan.engine.reads.size).isEqualTo(0)
     }
 
     @Test
@@ -439,6 +467,22 @@ class SupportScoreScanTest {
         assertThat(result.screens).isEqualTo(4)
         assertThat(scan.lines(result).map { it.int("screen") to it.int("row") }.distinct().size).isEqualTo(result.rows)
         assertThat(scan.reader.calls.map { it.first }).containsExactly(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8)
+    }
+
+    @Test
+    fun `two dropped scrolls apart from each other neither end the scan nor log a row twice`() {
+        val scan = Scan(total = 13)
+        scan.world.droppedScrolls += setOf(2, 4)
+        val result = scan.run()
+        // Offsets 0, 2, (2), 4, (4), 6, 8, 10, then two scrolls that leave offset 10 as it was.
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(result.screens).isEqualTo(6)
+        assertThat(scan.scrolls).isEqualTo(9)
+        assertThat(result.rows).isEqualTo(18)
+        assertThat(scan.lines(result).size).isEqualTo(18)
+        assertThat(scan.lines(result).map { it.int("screen") to it.int("row") }.distinct().size).isEqualTo(18)
+        assertThat(scan.reader.calls.map { it.first })
+            .containsExactly(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 12)
     }
 
     @Test
@@ -539,8 +583,8 @@ class SupportScoreScanTest {
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
         assertThat(result.screens).isEqualTo(1)
-        // The first screen and the look before its scroll.
-        assertThat(scan.world.snaps).isEqualTo(2)
+        // The start's look at the rows, the first screen and the look before its scroll.
+        assertThat(scan.world.snaps).isEqualTo(3)
     }
 
     @Test
