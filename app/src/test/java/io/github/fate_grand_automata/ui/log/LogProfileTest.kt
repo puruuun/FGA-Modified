@@ -20,18 +20,18 @@ class LogProfileTest {
     private val entries = listOf(battle, outside, other, legacy)
 
     @Test fun profileMatchesBothKindsAndOnlyAllIncludesUnidentifiedHistory() {
-        assertEquals(listOf(battle, outside), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = "a"))
-        assertEquals(listOf(other), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = "b"))
-        assertEquals(entries, filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone))
-        assertTrue(filterCaptureLogs(listOf(legacy), LogTimeFilter.All, null, now, zone, profile = "a").isEmpty())
+        assertEquals(listOf(battle, outside), filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), now, zone, profile = "a"))
+        assertEquals(listOf(other), filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), now, zone, profile = "b"))
+        assertEquals(entries, filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), now, zone))
+        assertTrue(filterCaptureLogs(listOf(legacy), LogTimeFilter.All, emptySet(), now, zone, profile = "a").isEmpty())
     }
 
     @Test fun profileTimeAndResourceCombineAndResourceChoicesUseTheSubset() {
         val old = CaptureLogItem(outside = outside.outside!!.copy(id = "old", endedAt = now - 10 * 86_400_000L))
-        val subset = filterCaptureLogs(entries + old, LogTimeFilter.Today, null, now, zone, profile = "a")
+        val subset = filterCaptureLogs(entries + old, LogTimeFilter.Today, emptySet(), now, zone, profile = "a")
         assertEquals(listOf(battle, outside), subset)
-        assertEquals(listOf(battle, outside), filterCaptureLogs(entries + old, LogTimeFilter.Today, "2:6510", now, zone, profile = "a"))
-        assertTrue(logResources(filterCaptureLogs(entries, LogTimeFilter.Today, null, now, zone, profile = "b")).isEmpty())
+        assertEquals(listOf(battle, outside), filterCaptureLogs(entries + old, LogTimeFilter.Today, setOf("2:6510"), now, zone, profile = "a"))
+        assertTrue(logResources(filterCaptureLogs(entries, LogTimeFilter.Today, emptySet(), now, zone, profile = "b")).isEmpty())
         assertTrue("2:6510" in logResources(subset))
     }
 
@@ -50,9 +50,9 @@ class LogProfileTest {
     }
 
     @Test fun noProfileChoiceKeepsOnlyEntriesWithoutAccountId() {
-        assertEquals(listOf(legacy), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = NO_LOG_PROFILE))
+        assertEquals(listOf(legacy), filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), now, zone, profile = NO_LOG_PROFILE))
         assertTrue(NO_LOG_PROFILE.any { !it.isDigit() })
-        assertEquals(listOf(battle, outside), filterCaptureLogs(entries, LogTimeFilter.All, null, now, zone, profile = "a"))
+        assertEquals(listOf(battle, outside), filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), now, zone, profile = "a"))
     }
 
     @Test fun noProfileCombinesWithTimeAndResourceFilters() {
@@ -61,9 +61,9 @@ class LogProfileTest {
         val recent = CaptureLogItem(battle = battleLogFixture("recent").copy(
             endedAt = now, gains = RunGains(items = listOf(GainedItem(2, 6510, 1)))))
         val all = entries + old + recent
-        assertEquals(listOf(legacy, recent), filterCaptureLogs(all, LogTimeFilter.Today, null, now, zone, profile = NO_LOG_PROFILE))
-        assertEquals(listOf(recent), filterCaptureLogs(all, LogTimeFilter.Today, "2:6510", now, zone, profile = NO_LOG_PROFILE))
-        assertEquals(setOf("2:6510"), logResources(filterCaptureLogs(all, LogTimeFilter.All, null, now, zone, profile = NO_LOG_PROFILE)))
+        assertEquals(listOf(legacy, recent), filterCaptureLogs(all, LogTimeFilter.Today, emptySet(), now, zone, profile = NO_LOG_PROFILE))
+        assertEquals(listOf(recent), filterCaptureLogs(all, LogTimeFilter.Today, setOf("2:6510"), now, zone, profile = NO_LOG_PROFILE))
+        assertEquals(setOf("2:6510"), logResources(filterCaptureLogs(all, LogTimeFilter.All, emptySet(), now, zone, profile = NO_LOG_PROFILE)))
     }
 
     @Test fun noProfileIsAvailableOnlyWhileAnIdlessLogExistsAndFallsBackToAll() {

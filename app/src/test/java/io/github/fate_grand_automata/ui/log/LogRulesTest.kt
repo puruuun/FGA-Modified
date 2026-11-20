@@ -20,7 +20,7 @@ class LogRulesTest {
         val gain = entry("gain", 200)
         val loss = entry("loss", -200)
         assertEquals(setOf("2:4"), logResources(listOf(gain, loss)))
-        assertEquals(listOf(gain), filterCaptureLogs(listOf(gain, loss), LogTimeFilter.All, "2:4", now, zone))
+        assertEquals(listOf(gain), filterCaptureLogs(listOf(gain, loss), LogTimeFilter.All, setOf("2:4"), now, zone))
         assertEquals(listOf(LogResource(id = 4, count = -200)), outsideResources(AccountDelta(friendPoint = -200), emptyMap()))
     }
 
@@ -35,53 +35,53 @@ class LogRulesTest {
     private val all = listOf(today, week, month, old)
 
     @Test fun todayUsesLocalMidnightInclusively() {
-        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Today, null, now, zone))
+        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Today, emptySet(), now, zone))
         val prior = battle("prior", "2026-11-04T14:59:59Z")
-        assertTrue(filterCaptureLogs(listOf(prior), LogTimeFilter.Today, null, now, zone).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(prior), LogTimeFilter.Today, emptySet(), now, zone).isEmpty())
     }
     @Test fun sevenAndThirtyDaysIncludeTodayAndTheirBoundaryDay() {
-        assertEquals(listOf(today, week), filterCaptureLogs(all, LogTimeFilter.Week, null, now, zone))
-        assertEquals(listOf(today, week, month), filterCaptureLogs(all, LogTimeFilter.Month, null, now, zone))
-        assertEquals(all, filterCaptureLogs(all, LogTimeFilter.All, null, now, zone))
+        assertEquals(listOf(today, week), filterCaptureLogs(all, LogTimeFilter.Week, emptySet(), now, zone))
+        assertEquals(listOf(today, week, month), filterCaptureLogs(all, LogTimeFilter.Month, emptySet(), now, zone))
+        assertEquals(all, filterCaptureLogs(all, LogTimeFilter.All, emptySet(), now, zone))
     }
     @Test fun todayExcludesTomorrowAndCalendarDayHandlesDaylightSaving() {
         val future = battle("future", "2026-11-05T15:00:00Z")
-        assertTrue(filterCaptureLogs(listOf(future), LogTimeFilter.Today, null, now, zone).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(future), LogTimeFilter.Today, emptySet(), now, zone).isEmpty())
         val beforeFallback = battle("beforeFallback", "2026-11-01T04:00:00Z")
         val duringFallback = battle("duringFallback", "2026-11-01T06:30:00Z")
-        assertEquals(listOf(beforeFallback, duringFallback), filterCaptureLogs(listOf(beforeFallback, duringFallback), LogTimeFilter.Today, null,
+        assertEquals(listOf(beforeFallback, duringFallback), filterCaptureLogs(listOf(beforeFallback, duringFallback), LogTimeFilter.Today, emptySet(),
             Instant.parse("2026-11-01T20:00:00Z").toEpochMilli(), TimeZone.getTimeZone("America/New_York")))
     }
     @Test fun fruitGainsCanBeFoundEvenWhenGrossUsageOffsetsThem() {
         val outside = outsideFixture()
         val period = outside.period.copy(total = AccountDelta(mapOf(100L to 0L)), fruitUsed = mapOf(100L to 2L), sources = emptyList())
         val entry = CaptureLogItem(outside = outside.copy(period = period))
-        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:100", now, zone))
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf("2:100"), now, zone))
     }
     @Test fun gainsFilterMatchesBothKindsAndRetainsPositiveSourceWithNegativeNet() {
         val outside = CaptureLogItem(outside = outsideFixture()) // 6001 gained in gift box, used in enhancement.
-        assertEquals(listOf(week, outside), filterCaptureLogs(all + outside, LogTimeFilter.All, "2:6001", now, zone))
-        assertTrue(filterCaptureLogs(listOf(outside), LogTimeFilter.All, "2:100", now, zone).isEmpty())
+        assertEquals(listOf(week, outside), filterCaptureLogs(all + outside, LogTimeFilter.All, setOf("2:6001"), now, zone))
+        assertTrue(filterCaptureLogs(listOf(outside), LogTimeFilter.All, setOf("2:100"), now, zone).isEmpty())
     }
     @Test fun currencyFilterMatchesQpAndLossesButNotUntrackedRuns() {
         val qp = CaptureLogItem(battle = battleLogFixture().copy(gains = RunGains(qp = 10)))
         val untracked = CaptureLogItem(battle = battleLogFixture("untracked"))
         val loss = battle("loss", "2026-11-05T00:00:00Z", 6510, -3)
-        assertEquals(listOf(qp), filterCaptureLogs(listOf(qp, untracked), LogTimeFilter.All, "2:1", now, zone))
-        assertEquals(listOf(loss), filterCaptureLogs(listOf(loss), LogTimeFilter.All, "2:6510", now, zone))
+        assertEquals(listOf(qp), filterCaptureLogs(listOf(qp, untracked), LogTimeFilter.All, setOf("2:1"), now, zone))
+        assertEquals(listOf(loss), filterCaptureLogs(listOf(loss), LogTimeFilter.All, setOf("2:6510"), now, zone))
     }
     @Test fun timeAndResourceCombineWithoutChangingOrder() {
-        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Week, "2:6510", now, zone))
-        assertTrue(filterCaptureLogs(all, LogTimeFilter.Today, "2:6001", now, zone).isEmpty())
+        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Week, setOf("2:6510"), now, zone))
+        assertTrue(filterCaptureLogs(all, LogTimeFilter.Today, setOf("2:6001"), now, zone).isEmpty())
     }
 
     @Test fun customPickerDatesIncludeBothLocalDaysAndCombineWithResource() {
         val start = Instant.parse("2026-10-30T00:00:00Z").toEpochMilli()
         val end = Instant.parse("2026-11-05T00:00:00Z").toEpochMilli()
         val tomorrow = battle("tomorrow", "2026-11-05T15:00:00Z")
-        assertEquals(listOf(today, week), filterCaptureLogs(all + tomorrow, LogTimeFilter.Custom, null, now, zone, start, end))
-        assertEquals(listOf(week), filterCaptureLogs(all, LogTimeFilter.Custom, "2:6001", now, zone, start, end))
-        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Custom, null, now, zone, end, end))
+        assertEquals(listOf(today, week), filterCaptureLogs(all + tomorrow, LogTimeFilter.Custom, emptySet(), now, zone, start, end))
+        assertEquals(listOf(week), filterCaptureLogs(all, LogTimeFilter.Custom, setOf("2:6001"), now, zone, start, end))
+        assertEquals(listOf(today), filterCaptureLogs(all, LogTimeFilter.Custom, emptySet(), now, zone, end, end))
     }
 
     @Test fun customRangeUsesCalendarDaysAcrossDstInsteadOfFixed24Hours() {
@@ -90,12 +90,12 @@ class LogRulesTest {
         val first = battle("first", "2026-11-01T04:00:00Z")
         val last = battle("last", "2026-11-02T04:59:59Z")
         val next = battle("next", "2026-11-02T05:00:00Z")
-        assertEquals(listOf(first, last), filterCaptureLogs(listOf(first, last, next), LogTimeFilter.Custom, null, now, zone, day, day))
+        assertEquals(listOf(first, last), filterCaptureLogs(listOf(first, last, next), LogTimeFilter.Custom, emptySet(), now, zone, day, day))
     }
     @Test fun resourcesComeOnlyFromRecordedChangesAndKeepDropTypesDistinct() {
         val ce = CaptureLogItem(battle = battleLogFixture("ce").copy(gains = RunGains(items = listOf(GainedItem(3, 6510, 1)))))
         assertEquals(setOf("2:6510", "3:6510"), logResources(listOf(today, ce)))
-        assertTrue(filterCaptureLogs(listOf(ce), LogTimeFilter.All, "2:6510", now, zone).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(ce), LogTimeFilter.All, setOf("2:6510"), now, zone).isEmpty())
     }
     @Test fun usedStormPodIsInFilterAndFruitIsShownOnce() {
         val gains = RunGains(fruitUsed = mapOf(100L to 2L), itemsUsed = mapOf(49L to 20L, 100L to 2L))
@@ -103,8 +103,8 @@ class LogRulesTest {
         assertTrue("2:49" in logResources(listOf(entry)))
         assertEquals(listOf(-2L, -20L), battleResources(gains).map { it.count })
         assertEquals(1, battleResources(gains).count { it.id == 100L })
-        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:49", now, zone))
-        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:100", now, zone))
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf("2:49"), now, zone))
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf("2:100"), now, zone))
     }
     @Test fun zeroRowsAndUnusedFruitAreAbsent() {
         assertTrue(outsideResources(AccountDelta(items = mapOf(100L to 0L, 6510L to 0L)), mapOf(100L to 0L)).isEmpty())

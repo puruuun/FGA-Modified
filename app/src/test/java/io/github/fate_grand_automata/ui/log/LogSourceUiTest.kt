@@ -45,7 +45,9 @@ class LogSourceUiTest {
         rule.onNodeWithTag("log-card:outside:manual").assertDoesNotExist()
         rule.onNodeWithTag("log-card:outside:" + outside.id).assertExists()
         rule.onNodeWithTag("log-card:" + battleLogFixture().id).assertExists()
-        rule.onNodeWithText("해제").performClick()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-reset").performClick()
+        rule.onNodeWithText("적용").performClick()
         rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
         rule.onNodeWithTag("log-card:outside:manual").assertExists()
     }

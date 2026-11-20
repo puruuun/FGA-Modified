@@ -1072,7 +1072,8 @@
     <string name="capture_log_retention">로그 보관 개수 (종류별)</string>
     <string name="capture_log_retention_confirm">전투 기록과 스크립트 밖 기록을 각각 최신 %1$d개만 보관할까요? 오래된 기록은 영구 삭제됩니다.</string>
     <string name="capture_log_apply">적용</string>
-    <string name="capture_log_clear_filter">해제</string>
+    <string name="capture_log_reset_filters">초기화</string>
+    <string name="capture_log_resources_more">%1$s 외 %2$d개</string>
 
     <!-- Account dashboard -->
     <string name="dashboard_title">계정 대시보드</string>

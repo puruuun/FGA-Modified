@@ -54,7 +54,7 @@ class LogRefineScreenshotTest(private val width: Int, private val height: Int, p
     private fun showFilters(time: LogTimeFilter = LogTimeFilter.All) {
         RuntimeEnvironment.setQualifiers("$locale-w${width}dp-h${height}dp-notnight-hdpi")
         rule.setContent { FGATheme(false) {
-            LogFilterDialog(time, null, start, end, 200, 2, 1, entries, outsideNames, null,
+            LogFilterDialog(time, emptySet(), start, end, 200, 2, 1, entries, outsideNames, null,
                 {}, { _, _, _, _, _, _, _ -> })
         } }
     }

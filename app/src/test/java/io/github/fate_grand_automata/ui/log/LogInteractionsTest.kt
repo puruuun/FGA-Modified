@@ -65,10 +65,12 @@ class LogInteractionsTest {
         rule.onNodeWithText("Today").performScrollTo().performClick()
         rule.onNodeWithText("Apply").performClick()
         restoration.emulateSavedInstanceStateRestore()
-        rule.onNodeWithText("Today · 무간의 톱니바퀴").assertIsDisplayed()
+        rule.onNode(hasText("Today") and hasAnyAncestor(hasTestTag("log-filter-summary"))).assertIsDisplayed()
         rule.onNodeWithText("No records match the active filters.").assertIsDisplayed()
         rule.onNodeWithTag("log-filter-active", useUnmergedTree = true).assertExists()
-        rule.onNodeWithText("Clear").performClick()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-reset").performClick()
+        rule.onNodeWithText("Apply").performClick()
         rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
     }
 
@@ -161,10 +163,10 @@ class LogInteractionsTest {
         var applied = false
         val restoration = StateRestorationTester(rule)
         restoration.setContent { FGATheme(darkTheme = false) {
-            LogFilterDialog(LogTimeFilter.Custom, "2:6510", day, day, 200, 0, 0, listOf(CaptureLogItem(outside = live.copy(endedAt = day))), outsideNames, null, {},
-                { time, resource, start, end, retention, _, _ ->
+            LogFilterDialog(LogTimeFilter.Custom, setOf("2:6510"), day, day, 200, 0, 0, listOf(CaptureLogItem(outside = live.copy(endedAt = day))), outsideNames, null, {},
+                { time, resources, start, end, retention, _, _ ->
                     assertEquals(LogTimeFilter.Custom, time)
-                    assertEquals("2:6510", resource)
+                    assertEquals(setOf("2:6510"), resources)
                     assertEquals(day, start); assertEquals(day, end); assertEquals(200, retention)
                     applied = true
                 })

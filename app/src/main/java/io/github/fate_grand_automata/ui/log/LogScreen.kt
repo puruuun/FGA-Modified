@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.ui.log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -86,7 +87,7 @@ fun LogScreenContent(
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
-    var resource by rememberSaveable { mutableStateOf<String?>(null) }
+    var resources by rememberSaveable(stateSaver = LogResourceSetSaver) { mutableStateOf(LogFilterState.DEFAULT.resources) }
     var profile by rememberSaveable { mutableStateOf<String?>(null) }
     var source by rememberSaveable { mutableStateOf<LogSourceFilter?>(null) }
     var start by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -101,15 +102,19 @@ fun LogScreenContent(
     val all = mixedCaptureLogs(entries, outsideEntries, openOutsideEntries)
     val profiles = logProfiles(all)
     val activeProfile = availableLogProfile(profile, profiles, hasLogWithoutProfile(all))
-    val sorted = filterCaptureLogs(all, time, resource, System.currentTimeMillis(), customStart = start, customEnd = end, profile = activeProfile, source = source)
-    val filtered = time != LogTimeFilter.All || resource != null || activeProfile != null || source != null
+    val now = System.currentTimeMillis()
+    val activeResources = availableLogResources(resources, logResources(
+        filterCaptureLogs(all, time, emptySet(), now, customStart = start, customEnd = end, profile = activeProfile, source = source)))
+    val sorted = filterCaptureLogs(all, time, activeResources, now, customStart = start, customEnd = end, profile = activeProfile, source = source)
+    val filtered = time != LogTimeFilter.All || activeResources.isNotEmpty() || activeProfile != null || source != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
     val noProfileLabel = stringResource(R.string.capture_log_no_profile)
-    val clearFilters = { time = LogTimeFilter.All; resource = null; profile = null; source = null; start = null; end = null }
+    val (resourceNames, hiddenResources) = resourceSummaryParts(activeResources.map { resourceLabel(it, names) })
+    val resourceSummaryText = if (hiddenResources > 0) stringResource(R.string.capture_log_resources_more, resourceNames, hiddenResources) else resourceNames
     val summary = if (filtered) listOfNotNull(
         if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
-        activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resource?.let { resourceLabel(it, names) }, source?.let { sourceFilterLabel(it) }).joinToString(" · ") else null
+        activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resourceSummaryText.takeIf { it.isNotEmpty() }, source?.let { sourceFilterLabel(it) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -123,7 +128,7 @@ fun LogScreenContent(
                 onDeleteSelected = { pendingIds = ArrayList(deletion.targets(all)); confirmAll = false },
                 onClear = { pendingIds = ArrayList(deletion.targets(all, all = true)); confirmAll = true },
                 hasEntries = all.isNotEmpty(), emptyText = if (twoPanes) "" else emptyText,
-                onFilter = { showFilters = true }, filterSummary = summary, onClearFilter = clearFilters)
+                onFilter = { showFilters = true }, filterSummary = summary)
         }
         if (twoPanes) {
             CappedWidth {
@@ -143,9 +148,9 @@ fun LogScreenContent(
             } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
         }
     }
-    if (showFilters) LogFilterDialog(time, resource, start, end, retention, entries.size, outsideEntries.size,
-        all, names, profile, onDismiss = { showFilters = false }, onApply = { newTime, newResource, newStart, newEnd, newRetention, newProfile, newSource ->
-            time = newTime; resource = newResource; start = newStart; end = newEnd
+    if (showFilters) LogFilterDialog(time, activeResources, start, end, retention, entries.size, outsideEntries.size,
+        all, names, profile, onDismiss = { showFilters = false }, onApply = { newTime, newResources, newStart, newEnd, newRetention, newProfile, newSource ->
+            time = newTime; resources = newResources; start = newStart; end = newEnd
             profile = newProfile; source = newSource
             if (newRetention != retention) onRetention(newRetention)
             showFilters = false
@@ -168,7 +173,7 @@ internal fun ColumnScope.LogList(
     sorted: List<CaptureLogItem>, selectedId: String?, onSelect: (String) -> Unit,
     deletion: LogDeleteSelection, onEnterDelete: () -> Unit, onCancelDelete: () -> Unit,
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
-    emptyText: String, onFilter: () -> Unit, filterSummary: String?, onClearFilter: () -> Unit,
+    emptyText: String, onFilter: () -> Unit, filterSummary: String?,
 ) {
     val listState = rememberLazyListState()
     val newestId = sorted.firstOrNull()?.id
@@ -198,8 +203,7 @@ internal fun ColumnScope.LogList(
     }
     if (filterSummary != null) Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp).testTag("log-filter-summary"),
         verticalAlignment = Alignment.CenterVertically) {
-        Text(filterSummary, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
-        TextButton(onClick = onClearFilter) { Text(stringResource(R.string.capture_log_clear_filter)) }
+        Text(filterSummary, Modifier.weight(1f).clickable(onClick = onFilter).padding(vertical = 8.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
     }
     if (sorted.isEmpty()) {
         if (emptyText.isNotEmpty()) Text(emptyText, Modifier.padding(16.dp))

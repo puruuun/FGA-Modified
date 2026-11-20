@@ -1142,7 +1142,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_retention">Records to keep (per type)</string>
     <string name="capture_log_retention_confirm">Keep the newest %1$d battle records and %1$d outside records? Older records will be permanently deleted.</string>
     <string name="capture_log_apply">Apply</string>
-    <string name="capture_log_clear_filter">Clear</string>
+    <string name="capture_log_reset_filters">Reset</string>
+    <string name="capture_log_resources_more">%1$s and %2$d more</string>
 
     <!-- Account dashboard -->
     <string name="dashboard_title">Account dashboard</string>

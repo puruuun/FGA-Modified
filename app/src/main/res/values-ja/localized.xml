@@ -828,7 +828,8 @@
     <string name="capture_log_retention">ログの保存件数（種類ごと）</string>
     <string name="capture_log_retention_confirm">戦闘記録とスクリプト外の記録を、それぞれ最新の%1$d件だけ保存しますか？古い記録は完全に削除されます。</string>
     <string name="capture_log_apply">適用</string>
-    <string name="capture_log_clear_filter">解除</string>
+    <string name="capture_log_reset_filters">リセット</string>
+    <string name="capture_log_resources_more">%1$s ほか%2$d件</string>
 
     <!-- Account dashboard -->
     <string name="dashboard_title">アカウントダッシュボード</string>
