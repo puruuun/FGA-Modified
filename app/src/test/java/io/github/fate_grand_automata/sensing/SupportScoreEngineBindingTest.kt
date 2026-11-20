@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import io.github.lib_automata.ExitManager
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
@@ -36,8 +37,13 @@ class SupportScoreEngineBindingTest {
      */
     @Test fun `the script provider binds the no-op engine in this build`() {
         assertFalse(BuildConfig.RUST_TEST_BUILD)
-        val engine = ScriptsModule.provideSupportScoreEngine(ApplicationProvider.getApplicationContext<Application>())
+        val engine = ScriptsModule.provideSupportScoreEngine(ApplicationProvider.getApplicationContext<Application>(), ExitManager())
         assertSame(NoSupportScoreEngine, engine)
         assertFalse(engine.available)
+    }
+
+    @Test fun `outside the rust build type the stop check is never read`() {
+        val engine = supportScoreEngine(ApplicationProvider.getApplicationContext<Application>()) { error("stop check read") }
+        assertSame(NoSupportScoreEngine, engine)
     }
 }

@@ -13,5 +13,6 @@ import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 fun supportScoreEngineFor(rustTestBuild: Boolean, create: () -> SupportScoreEngine): SupportScoreEngine =
     if (rustTestBuild) create() else NoSupportScoreEngine
 
-fun supportScoreEngine(context: Context): SupportScoreEngine =
-    supportScoreEngineFor(BuildConfig.RUST_TEST_BUILD) { RustSupportScoreEngine.forApp(context) }
+/** [stopRequested] reaches only the rust build type's engine; it must answer without waiting. */
+fun supportScoreEngine(context: Context, stopRequested: () -> Boolean): SupportScoreEngine =
+    supportScoreEngineFor(BuildConfig.RUST_TEST_BUILD) { RustSupportScoreEngine.forApp(context, stopRequested = stopRequested) }

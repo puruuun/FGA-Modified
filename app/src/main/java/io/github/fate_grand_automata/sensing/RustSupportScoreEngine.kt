@@ -60,8 +60,9 @@ import kotlin.time.Duration.Companion.seconds
  * its text in the detail. A [VirtualMachineError] (out of memory, stack overflow, an internal VM
  * error) and [ThreadDeath] propagate, because the process cannot be trusted to go on after them.
  *
- * [prepareModel] returns the model file to load. [stopRequested] tells whether the run was stopped;
- * it must answer at once and never wait. [isMainThread] exists for the unit tests, which have no
+ * [prepareModel] returns the model file to load. [stopRequested] tells whether the run was stopped
+ * (the script component's `ExitManager.isExitRequested`, wired in ScriptsModule); it must answer at
+ * once and never wait, so a paused run's stop still ends the wait. [isMainThread] exists for the unit tests, which have no
  * Android looper, and [slotWait] for the test of an expiring wait.
  */
 class RustSupportScoreEngine(
@@ -240,9 +241,13 @@ class RustSupportScoreEngine(
         }
 
         /** The engine on the model packaged in the app's assets, copied by [OcrModelInstaller]. */
-        fun forApp(context: Context, native: ScoreNative = RustScoreNative): RustSupportScoreEngine {
+        fun forApp(
+            context: Context,
+            native: ScoreNative = RustScoreNative,
+            stopRequested: () -> Boolean = { false },
+        ): RustSupportScoreEngine {
             val appContext = context.applicationContext ?: context
-            return RustSupportScoreEngine(native, prepareModel = { installedModel(appContext) })
+            return RustSupportScoreEngine(native, prepareModel = { installedModel(appContext) }, stopRequested = stopRequested)
         }
 
         fun modelDir(context: Context) = File(context.noBackupFilesDir, "ocr-model")
