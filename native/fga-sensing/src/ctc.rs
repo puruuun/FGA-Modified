@@ -46,6 +46,12 @@ impl Probabilities {
         self.classes
     }
 
+    /// One step's class probabilities; `None` past the last step. Read-only access for the
+    /// measurement examples (issue #570), which decode the same output under other rules.
+    pub fn row(&self, step: usize) -> Option<&[f32]> {
+        self.data.chunks_exact(self.classes).nth(step)
+    }
+
     fn rows(&self) -> impl Iterator<Item = &[f32]> {
         self.data.chunks_exact(self.classes)
     }

@@ -49,3 +49,8 @@ required-features = ["_backend"]
 [[example]]
 name = "support_score_eval"
 required-features = ["_backend"]
+
+# Issue #570, a measurement of the model input width and of decoding under the score grammar.
+[[example]]
+name = "width_decode_eval"
+required-features = ["tract"]
