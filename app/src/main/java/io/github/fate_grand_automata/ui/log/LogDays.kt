@@ -14,7 +14,18 @@ internal data class LogDayAccount(
     val totals: Map<String, Long>,
     val outside: List<CaptureLogItem>,
     val battles: List<CaptureLogItem>,
+    val inProgress: Boolean = false,
 )
+
+/** One left-list row of the day view: a game day seen for a single account. */
+internal data class LogDayRow(val day: LogDay, val account: LogDayAccount) {
+    val key get() = logDayRowKey(day.key, account.accountId)
+}
+
+internal fun logDayRowKey(dayKey: String, accountId: String?) = "$dayKey/${accountId?.let { "a:$it" } ?: "none"}"
+
+/** Newest day first; inside a day the accounts keep the order [groupLogDays] gave them, "No profile" last. */
+internal fun logDayRows(days: List<LogDay>): List<LogDayRow> = days.flatMap { day -> day.accounts.map { LogDayRow(day, it) } }
 
 internal data class LogDay(
     val day: GameDay,
@@ -68,6 +79,7 @@ internal fun groupLogDays(
             totals = totals.filterValues { it != 0L },
             outside = own.filter { it.outside != null }.sortedByDescending { it.startedAt() },
             battles = own.filter { it.battle != null }.sortedByDescending { it.startedAt() },
+            inProgress = own.any { it.inProgress },
         )
     }.sortedWith(compareBy<LogDayAccount> { it.accountId == null }.thenBy { it.name.orEmpty() }.thenBy { it.accountId.orEmpty() })
     LogDay(

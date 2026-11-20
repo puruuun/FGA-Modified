@@ -1413,8 +1413,8 @@
     <string name="capture_log_view">보기</string>
     <string name="capture_log_view_record">기록별</string>
     <string name="capture_log_view_day">날짜별</string>
-    <string name="capture_log_day_summary">전투 %1$d · 계정 %2$d</string>
-    <string name="capture_log_day_changes">계정별 변동</string>
+    <string name="capture_log_day_summary">전투 %1$d</string>
+    <string name="capture_log_day_changes">변동</string>
     <string name="capture_log_day_scripts">실행한 스크립트</string>
     <string name="capture_log_day_included">전투 %1$d회 포함</string>
     <string name="capture_log_day_breakdown">내역 펼치기</string>

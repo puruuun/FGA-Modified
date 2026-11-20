@@ -58,9 +58,9 @@ class LogDayUiTest {
         chooseView("day")
         rule.onNodeWithTag("log-card:today").assertDoesNotExist()
         rule.onNodeWithContentDescription("삭제").assertDoesNotExist()
-        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
-        rule.onNodeWithTag("log-day:2026-11-10").assertExists()
-        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
         rule.onNodeWithTag("log-day-account:A").assertExists()
         rule.onNodeWithText("JP").assertExists()
         rule.onNodeWithTag("log-day-expand:A").performClick()
@@ -69,7 +69,7 @@ class LogDayUiTest {
         rule.onNodeWithContentDescription(back).performClick()
         rule.onNodeWithTag("log-day-detail").assertExists()
         rule.onNodeWithContentDescription(back).performClick()
-        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
         chooseView("record")
         rule.onNodeWithTag("log-card:today").assertExists()
     }
@@ -77,10 +77,10 @@ class LogDayUiTest {
     @Test fun theIncludedBattleCountAndTheEmptySectionLinesShow() {
         rule.setContent { Screen() }
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
         rule.onNodeWithText("전투 1회 포함").assertExists()
         rule.onNodeWithContentDescription(back).performClick()
-        rule.onNodeWithTag("log-day:2026-11-10").performClick()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
         rule.onNodeWithTag("log-day-no-scripts").assertDoesNotExist()
         rule.onNodeWithTag("log-card:older").assertExists()
     }
@@ -89,7 +89,7 @@ class LogDayUiTest {
         val restoration = StateRestorationTester(rule)
         restoration.setContent { Screen() }
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-10").performClick()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithTag("log-day-detail").assertExists()
         rule.onNodeWithTag("log-card:older").assertExists()
@@ -98,14 +98,14 @@ class LogDayUiTest {
     @Test @Config(qualifiers = "ko-w1000dp-h700dp-hdpi") fun wideScreenShowsTheFirstDayAtOnceAndSwitchesPanes() {
         rule.setContent { Screen() }
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-11").assertIsSelected()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertIsSelected()
         rule.onNodeWithTag("log-day-account:A").assertExists()
-        rule.onNodeWithTag("log-day:2026-11-10").performClick()
-        rule.onNodeWithTag("log-day:2026-11-10").assertIsSelected()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").performClick()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertIsSelected()
         rule.onNodeWithTag("log-card:older").assertExists()
         rule.onNodeWithTag("log-card:older").performClick()
         rule.onNodeWithTag("log-day-detail").assertDoesNotExist()
-        rule.onNodeWithTag("log-day:2026-11-10").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertExists()
     }
 
     @Test fun theDayViewGroupsOnlyWhatPassesTheActiveFilter() {
@@ -113,12 +113,12 @@ class LogDayUiTest {
             period = OutsidePeriod("A", kst("2026-11-12T09:00:00") / 1000).add(ChangeSource(ChangeSource.Group.Shop), AccountDelta(qp = 5), kst("2026-11-12T09:10:00") / 1000))
         rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday), {}, {}, outsideEntries = listOf(later)) } }
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-12").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-12/a:A").assertExists()
         rule.onNodeWithTag("log-filter-button").performClick()
         rule.onNodeWithTag("log-filter-source:Script").performScrollTo().performClick()
         rule.onNodeWithText("적용").performClick()
-        rule.onNodeWithTag("log-day:2026-11-12").assertDoesNotExist()
-        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-12/a:A").assertDoesNotExist()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
     }
 
     @Test fun theHeadingNoLongerHasViewChipsAndTheDialogChoiceTakesEffectOnlyOnApply() {
@@ -131,7 +131,7 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-card:today").assertExists()
         rule.onNodeWithText("적용").performClick()
         rule.onNodeWithTag("log-card:today").assertDoesNotExist()
-        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
     }
 
     @Test fun cancelKeepsTheCurrentView() {
@@ -146,7 +146,7 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-view-day").assertIsSelected()
         rule.onNodeWithTag("log-view-record").performClick()
         rule.onNodeWithText("취소").performClick()
-        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
     }
 
     @Test fun resetKeepsTheViewAndStaysDisabledWhenOnlyTheViewChanged() {
@@ -181,14 +181,86 @@ class LogDayUiTest {
         rule.onNodeWithContentDescription("삭제").assertDoesNotExist()
     }
 
-    @Test fun twoAccountsOnADayStayDistinctWithoutACardBackground() {
-        val other = dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회")
-        rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday, other), {}, {}) } }
+    private val second = dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회",
+        gains = RunGains(items = listOf(GainedItem(2, 6510, 9)), qp = 70_000))
+    private val noProfile = dayBattleToday.copy(id = "n", accountId = null, accountName = null, configName = "무계정 주회", gains = null)
+
+    @androidx.compose.runtime.Composable private fun TwoAccounts() = FGATheme(false) {
+        LogScreenContent(listOf(dayBattleToday, second, dayBattleOlder), {}, {}, outsideEntries = listOf(dayOutside),
+            accountServers = mapOf("A" to "JP", "B" to "KR"))
+    }
+
+    @Test fun twoAccountsOnADayGiveTwoRowsAndEachDetailShowsOnlyItsOwn() {
+        rule.setContent { TwoAccounts() }
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
         rule.onNodeWithTag("log-day-account:A").assertExists()
+        rule.onNodeWithTag("log-day-account:B").assertDoesNotExist()
+        rule.onNodeWithTag("log-card:today").assertExists()
+        rule.onNodeWithTag("log-card:b").assertDoesNotExist()
+        rule.onNodeWithText("JP").assertExists()
+        rule.onNodeWithContentDescription(back).performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").performClick()
         rule.onNodeWithTag("log-day-account:B").assertExists()
-        rule.onAllNodesWithTag("log-day-divider").assertCountEquals(1)
+        rule.onNodeWithTag("log-day-account:A").assertDoesNotExist()
+        rule.onNodeWithTag("log-card:b").assertExists()
+        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+        rule.onNodeWithText("KR").assertExists()
+    }
+
+    @Test fun theProfileFilterKeepsOnlyThatAccountsRowsAcrossDays() {
+        rule.setContent { TwoAccounts() }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertExists()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:B").performClick()
+        rule.onNodeWithText("적용").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertDoesNotExist()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertDoesNotExist()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-profile:A").performClick()
+        rule.onNodeWithText("적용").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-10/a:A").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").assertDoesNotExist()
+    }
+
+    @Test fun recordsWithoutAnAccountGetTheirOwnNoProfileRowLast() {
+        rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday, noProfile), {}, {}) } }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11/none").assertExists()
+        rule.onNodeWithTag("log-day:2026-11-11/none").assertTextContains("프로필 없음", substring = true)
+        rule.onNodeWithTag("log-day:2026-11-11/none").performClick()
+        rule.onNodeWithTag("log-card:n").assertExists()
+        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+    }
+
+    @Test fun theSelectedRowOfASecondAccountSurvivesRecreation() {
+        val restoration = StateRestorationTester(rule)
+        restoration.setContent { TwoAccounts() }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").performClick()
+        restoration.emulateSavedInstanceStateRestore()
+        rule.onNodeWithTag("log-day-account:B").assertExists()
+        rule.onNodeWithTag("log-card:b").assertExists()
+    }
+
+    @Test @Config(qualifiers = "ko-w1000dp-h700dp-hdpi") fun aFilterChangeThatRemovesTheSelectedRowSelectsTheFirstOne() {
+        val later = dayOutside.copy(id = "later", startedAt = kst("2026-11-12T09:00:00"), endedAt = kst("2026-11-12T09:30:00"),
+            period = OutsidePeriod("A", kst("2026-11-12T09:00:00") / 1000).add(ChangeSource(ChangeSource.Group.Shop), AccountDelta(qp = 5), kst("2026-11-12T09:10:00") / 1000))
+        rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday), {}, {}, outsideEntries = listOf(later)) } }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-12/a:A").performClick()
+        rule.onNodeWithTag("log-day:2026-11-12/a:A").assertIsSelected()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-filter-source:Script").performScrollTo().performClick()
+        rule.onNodeWithText("적용").performClick()
+        rule.onNodeWithTag("log-day:2026-11-12/a:A").assertDoesNotExist()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").assertIsSelected()
+        rule.onNodeWithTag("log-card:today").assertExists()
     }
 
     @Test fun anEmptyDayViewShowsTheNormalEmptyText() {
@@ -216,7 +288,7 @@ class LogDayScreenshotTest {
 
     @Test fun narrowDay() = rule.shoot("log-day", "NarrowDayDetail", 360, 800, false, "ko", beforeCapture = {
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:A").performClick()
         rule.onNodeWithTag("log-day-expand:A").performClick()
     }) { Screen() }
 
@@ -227,9 +299,16 @@ class LogDayScreenshotTest {
 
     @Test fun narrowTwoAccounts() = rule.shoot("log-day", "NarrowTwoAccounts", 360, 800, false, "ko", beforeCapture = {
         chooseView("day")
-        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11/a:B").performClick()
     }) {
         LogScreenContent(listOf(dayBattleToday, dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회")),
+            {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP", "B" to "KR"))
+    }
+
+    @Test fun narrowRowList() = rule.shoot("log-day", "NarrowRowList", 360, 800, false, "ko", beforeCapture = {
+        chooseView("day")
+    }) {
+        LogScreenContent(listOf(dayBattleToday, dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회"), dayBattleOlder),
             {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP", "B" to "KR"))
     }
 

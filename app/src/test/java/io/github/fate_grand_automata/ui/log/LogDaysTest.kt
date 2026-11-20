@@ -127,6 +127,52 @@ class LogDaysTest {
         assertEquals(200L, day.accounts.single().totals["2:1"])
     }
 
+    private fun rowsOf(vararg items: CaptureLogItem) = logDayRows(groupLogDays(items.toList()))
+
+    @Test fun eachGameDayAndAccountIsOneRowNewestDayFirstNoProfileLast() {
+        val rows = rowsOf(
+            battle("a1", "2026-11-11T10:00:00+09:00", account = "A", qp = 1), battle("b1", "2026-11-11T11:00:00+09:00", account = "B", qp = 2),
+            battle("n1", "2026-11-11T12:00:00+09:00", account = null), battle("a2", "2026-11-12T10:00:00+09:00", account = "A", qp = 3),
+        )
+        assertEquals(listOf("2026-11-12" to "A", "2026-11-11" to "A", "2026-11-11" to "B", "2026-11-11" to null),
+            rows.map { it.day.key to it.account.accountId })
+        assertEquals(4, rows.map { it.key }.distinct().size)
+    }
+
+    @Test fun aRowOnlyCarriesItsOwnAccountsBattlesAndTotals() {
+        val rows = rowsOf(
+            battle("a1", "2026-11-11T10:00:00+09:00", account = "A", qp = 10), battle("b1", "2026-11-11T11:00:00+09:00", account = "B", qp = 20),
+            item(outside("oa", "2026-11-11T09:00:00+09:00", account = "A", qp = 100)),
+        )
+        val a = rows.single { it.account.accountId == "A" }.account
+        val b = rows.single { it.account.accountId == "B" }.account
+        assertEquals(listOf("a1"), a.battles.map { it.id })
+        assertEquals(listOf("b1"), b.battles.map { it.id })
+        assertEquals(mapOf("2:1" to 210L), a.totals)
+        assertEquals(mapOf("2:1" to 20L), b.totals)
+        assertTrue(b.outside.isEmpty())
+    }
+
+    @Test fun afterTheProfileFilterOnlyThatAccountsDaysRemain() {
+        val items = listOf(
+            battle("a1", "2026-11-11T10:00:00+09:00", account = "A", qp = 1), battle("b1", "2026-11-11T11:00:00+09:00", account = "B", qp = 1),
+            battle("a2", "2026-11-12T10:00:00+09:00", account = "A", qp = 1), battle("b2", "2026-11-13T10:00:00+09:00", account = "B", qp = 1),
+        )
+        val rows = logDayRows(groupLogDays(filterCaptureLogs(items, LogTimeFilter.All, emptySet(), 0L, profile = "A")))
+        assertEquals(listOf("2026-11-12", "2026-11-11"), rows.map { it.day.key })
+        assertTrue(rows.all { it.account.accountId == "A" })
+    }
+
+    @Test fun theNoProfileRowKeyNeverCollidesWithAnAccountIdNamedNone() {
+        assertNotEquals(logDayRowKey("2026-11-11", null), logDayRowKey("2026-11-11", "none"))
+    }
+
+    @Test fun inProgressIsPerAccount() {
+        val rows = rowsOf(item(outside("oa", "2026-11-11T09:00:00+09:00", account = "A"), inProgress = true),
+            battle("b1", "2026-11-11T11:00:00+09:00", account = "B"))
+        assertEquals(listOf(true, false), rows.map { it.account.inProgress })
+    }
+
     @Test fun theDeviceZoneNoteAppearsOnlyOutsideNinePlusHours() {
         val now = at("2026-11-11T12:00:00+09:00")
         assertFalse(deviceZoneDiffers(now, TimeZone.getTimeZone("Asia/Seoul")))

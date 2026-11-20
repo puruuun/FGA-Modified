@@ -39,7 +39,6 @@ import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.exit.battleSummaryContent
 import java.io.File
 import io.github.fate_grand_automata.scripts.capture.BattleGains
-import io.github.fate_grand_automata.scripts.capture.GameDay
 import java.text.DateFormat
 import java.util.Date
 
@@ -114,7 +113,7 @@ fun LogScreenContent(
     val sorted = filterCaptureLogs(all, time, activeResources, now, customStart = start, customEnd = end, profile = activeProfile, source = source)
     val filtered = time != LogTimeFilter.All || activeResources.isNotEmpty() || activeProfile != null || source != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
-    val days = if (dayView) groupLogDays(sorted, logProfiles(all), accountServers) else emptyList()
+    val days = if (dayView) logDayRows(groupLogDays(sorted, logProfiles(all), accountServers)) else emptyList()
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
     val noProfileLabel = stringResource(R.string.capture_log_no_profile)
     val (resourceNames, hiddenResources) = resourceSummaryParts(activeResources.map { resourceLabel(it, names) })
@@ -129,7 +128,7 @@ fun LogScreenContent(
         val twoPanes = maxWidth >= 840.dp
         val selected = sorted.find { it.id == selectedId } ?: if (twoPanes) sorted.firstOrNull() else null
         val selectedDay = days.find { it.key == selectedDayKey } ?: if (twoPanes) days.firstOrNull() else null
-        val dayBattle = selectedDay?.battles?.find { it.id == dayBattleId }?.battle
+        val dayBattle = selectedDay?.account?.battles?.find { it.id == dayBattleId }?.battle
         val list: @Composable ColumnScope.() -> Unit = {
             LogList(sorted, if (deletion.active) null else selected?.id,
                 onSelect = { if (deletion.active) deletion = deletion.toggle(it) else selectedId = it },
@@ -140,8 +139,8 @@ fun LogScreenContent(
                 hasEntries = all.isNotEmpty(), emptyText = if (twoPanes) "" else emptyText,
                 onFilter = { showFilters = true }, filterSummary = summary,
                 dayView = dayView, filterActive = filtered,
-                days = days, selectedDay = selectedDay?.day, now = now,
-                onSelectDay = { selectedDayKey = it.key(); dayBattleId = null })
+                days = days, selectedDay = selectedDay?.key, now = now,
+                onSelectDay = { selectedDayKey = it; dayBattleId = null })
         }
         if (twoPanes) {
             CappedWidth {
@@ -200,8 +199,8 @@ internal fun ColumnScope.LogList(
     deletion: LogDeleteSelection, onEnterDelete: () -> Unit, onCancelDelete: () -> Unit,
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
     emptyText: String, onFilter: () -> Unit, filterSummary: String?,
-    dayView: Boolean = false, filterActive: Boolean = filterSummary != null, days: List<LogDay> = emptyList(),
-    selectedDay: GameDay? = null, now: Long = 0L, onSelectDay: (GameDay) -> Unit = {},
+    dayView: Boolean = false, filterActive: Boolean = filterSummary != null, days: List<LogDayRow> = emptyList(),
+    selectedDay: String? = null, now: Long = 0L, onSelectDay: (String) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val newestId = sorted.firstOrNull()?.id
@@ -236,7 +235,7 @@ internal fun ColumnScope.LogList(
     if (sorted.isEmpty()) {
         if (emptyText.isNotEmpty()) Text(emptyText, Modifier.padding(16.dp))
     } else if (dayView) LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
-        items(days, key = { it.key }) { LogDayCard(it, it.day == selectedDay, now) { onSelectDay(it.day) } }
+        items(days, key = { it.key }) { LogDayCard(it, it.key == selectedDay, now) { onSelectDay(it.key) } }
     } else LazyColumn(Modifier.weight(1f), state = listState, verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
         items(sorted, key = { it.id }) { entry ->
             val selected = if (deletion.active) entry.id in deletion.selected else entry.id == selectedId
