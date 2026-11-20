@@ -17,7 +17,7 @@
 pub mod wire;
 
 use std::path::Path;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, TryLockError};
 use std::time::Instant;
 
 use fga_sensing::Recognizer;
@@ -53,6 +53,8 @@ pub const POISONED: &str =
 /// `unload` and `isLoaded` answer with these; anything else is an error on the Kotlin side.
 pub const CODE_NO: i32 = 0;
 pub const CODE_YES: i32 = 1;
+/// `isLoaded` only: another call holds the engine lock (a load or a read), so the slot is in use.
+pub const CODE_BUSY: i32 = 2;
 /// A poisoned lock or a caught panic.
 pub const CODE_ERROR: i32 = -1;
 /// The call left a Java exception pending, which the export cleared.
@@ -77,6 +79,15 @@ pub fn poison_engine_lock_for_tests() -> Result<String, String> {
 
 /// Only for tests/score_engine_hooks.rs: fills the slot with `model` as `load` would, refusing a
 /// filled slot as `load` does, so the slot rules can be checked without a model file.
+/// Only for tests/score_engine_busy.rs: runs `body` while this thread holds the engine lock, as a
+/// load or a read would.
+#[cfg(feature = "test-hooks")]
+#[doc(hidden)]
+pub fn with_engine_locked_for_tests<R>(body: impl FnOnce() -> R) -> Result<R, String> {
+    let _held = engine()?;
+    Ok(body())
+}
+
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
@@ -105,8 +116,15 @@ pub fn unload() -> Result<bool, String> {
     Ok(engine()?.take().is_some())
 }
 
-pub fn is_loaded() -> Result<bool, String> {
-    Ok(engine()?.is_some())
+/// `Some(filled)`, or `None` when another call holds the lock. It never waits: Kotlin polls it
+/// while an earlier run's engine may still be loading or reading, and a wait here would make that
+/// poll as slow as the call it waits for.
+pub fn is_loaded() -> Result<Option<bool>, String> {
+    match ENGINE.try_lock() {
+        Ok(slot) => Ok(Some(slot.is_some())),
+        Err(TryLockError::WouldBlock) => Ok(None),
+        Err(TryLockError::Poisoned(_)) => Err(POISONED.to_owned()),
+    }
 }
 
 /// One score field. `fetch` copies the pixels out of Java; it receives the only length a 60x30
@@ -160,7 +178,11 @@ pub fn unload_entry() -> i32 {
 }
 
 pub fn is_loaded_entry() -> i32 {
-    code(catch_panic(is_loaded))
+    match catch_panic(is_loaded) {
+        Ok(Some(filled)) => code(Ok(filled)),
+        Ok(None) => CODE_BUSY,
+        Err(_) => CODE_ERROR,
+    }
 }
 
 /// What an `int` answer becomes when a Java exception was pending after the call.

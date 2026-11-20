@@ -510,16 +510,20 @@ if (!nativeEnabled) {
 /*
  * JNI binds RustSensing's natives by class and method name, and R8 renames or drops whatever
  * proguard-rust.pro does not keep; a missing rule shows only on a device, as an
- * UnsatisfiedLinkError the engine turns into "unavailable". So assembleRust fails unless R8's
- * seeds file (outputs/mapping/rust/seeds.txt, written next to the mapping file) lists the class,
- * INSTANCE and the four natives, and the mapping file maps the class to its own name.
+ * UnsatisfiedLinkError the engine turns into "unavailable". So packaging the rust APK or bundle
+ * fails unless R8's seeds file (outputs/mapping/rust/seeds.txt, written next to the mapping file)
+ * lists the class, INSTANCE and the four natives, and the mapping file maps the class to its own
+ * name.
  */
 abstract class CheckRustKeepRules : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val mappingFile: RegularFileProperty
 
-    @get:Internal
+    // @InputFiles, not @InputFile: a missing seeds file then reaches the check below with its own
+    // message instead of Gradle's. The mapping file input orders this task after R8, which writes both.
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
     abstract val seedsFile: RegularFileProperty
 
     @get:OutputFile
@@ -564,7 +568,11 @@ if (nativeEnabled) {
                 seedsFile.set(mapping.map { it.asFile.resolveSibling("seeds.txt") }.let { layout.file(it) })
                 stamp.set(layout.buildDirectory.file("intermediates/checkRustKeepRules/ok.txt"))
             }
-            tasks.matching { it.name == "assembleRust" }.configureEach { dependsOn(checkKeep) }
+            // Every minified rust artifact goes through one of these packaging tasks (assembleRust and
+            // installRust through packageRust, bundleRust through packageRustBundle), so none is
+            // written without the check. A dependency, not a finalizer, so a failed check leaves no APK.
+            tasks.matching { it.name == "packageRust" || it.name == "packageRustBundle" }
+                .configureEach { dependsOn(checkKeep) }
         }
     }
 }

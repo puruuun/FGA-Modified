@@ -7,34 +7,46 @@ import timber.log.Timber
 /**
  * The engines of one script run's component, which [ScriptManager] frees as soon as the run ends
  * instead of waiting on a finalizer: the Tesseract OCR service (its native context) and the Rust
- * support-score engine (issue #568, its model). Every path that ends a run calls [release]: the
- * script exit, a failed screen detection, a skill screen without a servant, a cancelled launcher
- * and the service's destruction. Those paths run on the main thread and on `Dispatchers.Default`
- * and can overlap, so [attach] and [release] are synchronized: whether two releases run one after
- * the other or at the same time, each engine is closed exactly once. Closing does not wait for a
- * running read (see RustSupportScoreEngine), so holding the monitor while closing stays short.
+ * support-score engine (issue #568, its model).
+ *
+ * [release] and [attach] are called from the main thread (`startScript`, the service's
+ * `onDestroy`) and from `Dispatchers.Default` (`onScriptExit` and the early exits inside the
+ * launched start), and those calls can overlap. Closing can take long: `TesseractOcrService.close`
+ * waits on its own lock for an OCR call that is still running. So the monitor guards only the two
+ * fields; whoever takes an engine out of them closes it, after leaving the monitor. Each engine is
+ * taken out once, so it is closed exactly once, and no caller waits for another caller's close.
  */
 class RunEngines {
     private var ocrService: OcrService? = null
     private var supportScoreEngine: SupportScoreEngine? = null
 
-    /** Holds the engines of a new run; whatever an earlier run left is released first. */
-    @Synchronized
+    /** Holds the engines of a new run; whatever an earlier run left is closed first. */
     fun attach(ocrService: OcrService, supportScoreEngine: SupportScoreEngine) {
-        release()
-        this.ocrService = ocrService
-        this.supportScoreEngine = supportScoreEngine
+        val old = synchronized(this) {
+            val taken = this.ocrService to this.supportScoreEngine
+            this.ocrService = ocrService
+            this.supportScoreEngine = supportScoreEngine
+            taken
+        }
+        close(old.first, old.second)
     }
 
-    @Synchronized
     fun release() {
-        ocrService?.let {
+        val taken = synchronized(this) {
+            val taken = ocrService to supportScoreEngine
             ocrService = null
+            supportScoreEngine = null
+            taken
+        }
+        close(taken.first, taken.second)
+    }
+
+    private fun close(ocrService: OcrService?, supportScoreEngine: SupportScoreEngine?) {
+        ocrService?.let {
             runCatching { it.close() }
                 .onFailure { e -> Timber.w(e, "Failed to release the OCR service") }
         }
         supportScoreEngine?.let {
-            supportScoreEngine = null
             runCatching { it.close() }
                 .onFailure { e -> Timber.w(e, "Failed to release the support-score engine") }
         }

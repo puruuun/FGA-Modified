@@ -6,19 +6,35 @@ import io.github.lib_automata.OcrService
 import io.github.lib_automata.OcrText
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.TextLineOcrOptions
+import java.util.Collections
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Tests the [RunEngines] helper on its own. [ScriptManager]'s call sites (which paths call
- * `releaseOcrService` and when) are not covered here; they are the same as before the helper.
+ * `releaseOcrService` and when) are not covered here.
  */
 class RunEnginesTest {
-    private class FakeOcr(val log: MutableList<String>, val name: String, val throwOnClose: Boolean = false) : OcrService {
+    /** [closeGate] stands for TesseractOcrService.close waiting for a running OCR call. */
+    private class FakeOcr(
+        val log: MutableList<String>,
+        val name: String,
+        val throwOnClose: Boolean = false,
+        val closeGate: CountDownLatch? = null,
+    ) : OcrService {
+        val closing = CountDownLatch(1)
+
         override fun detectText(pattern: Pattern): String = error("unused")
         override fun detectTextLine(pattern: Pattern, options: TextLineOcrOptions): OcrText = error("unused")
         override fun close() {
             log += "ocr $name closed"
+            closing.countDown()
+            closeGate?.await(10, TimeUnit.SECONDS)
             if (throwOnClose) error("close failed")
         }
     }
@@ -31,28 +47,13 @@ class RunEnginesTest {
         }
     }
 
-    private val log = mutableListOf<String>()
+    private val log: MutableList<String> = Collections.synchronizedList(mutableListOf())
     private val engines = RunEngines()
 
     private fun start(name: String, failing: Boolean = false) =
         engines.attach(FakeOcr(log, name, failing), FakeEngine(log, name, failing))
 
-    /**
-     * ScriptManager calls release() on each way a run ends: the script exit (normal or by an
-     * exception, both through onScriptExit), a failed screen detection, a skill screen without a
-     * servant, a cancelled launcher, and the service's destruction (ScriptRunnerServiceController).
-     */
-    @Test fun `each end of a run closes both engines once`() {
-        for (end in listOf("script exit", "detection failed", "no servant", "cancelled", "service destroyed")) {
-            log.clear()
-            start(end)
-            engines.release()
-            engines.release()
-            assertEquals(listOf("ocr $end closed", "engine $end closed"), log, end)
-        }
-    }
-
-    @Test fun `a run that exits and then the service ends closes once`() {
+    @Test fun `releasing twice closes each engine once`() {
         start("a")
         engines.release()
         engines.release()
@@ -72,5 +73,30 @@ class RunEnginesTest {
         engines.release()
         engines.release()
         assertEquals(listOf("ocr a closed", "engine a closed"), log)
+    }
+
+    @Test fun `a close that blocks does not hold up another release or attach`() {
+        val gate = CountDownLatch(1)
+        val slowOcr = FakeOcr(log, "a", closeGate = gate)
+        engines.attach(slowOcr, FakeEngine(log, "a"))
+        val first = thread { engines.release() }
+        assertTrue(slowOcr.closing.await(10, TimeUnit.SECONDS))
+
+        val second = thread { engines.release() }
+        second.join(5_000)
+        assertFalse(second.isAlive, "a second release waited for the first one's close")
+        val attach = thread { engines.attach(FakeOcr(log, "b"), FakeEngine(log, "b")) }
+        attach.join(5_000)
+        assertFalse(attach.isAlive, "an attach waited for the first release's close")
+        assertTrue(first.isAlive)
+
+        gate.countDown()
+        first.join(10_000)
+        assertFalse(first.isAlive)
+        engines.release()
+        assertEquals(1, log.count { it == "ocr a closed" })
+        assertEquals(1, log.count { it == "engine a closed" })
+        assertEquals(1, log.count { it == "ocr b closed" })
+        assertEquals(1, log.count { it == "engine b closed" })
     }
 }

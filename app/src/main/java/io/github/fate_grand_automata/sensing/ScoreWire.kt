@@ -28,8 +28,15 @@ object ScoreWire {
 
     const val CODE_NO = 0
     const val CODE_YES = 1
+
+    /** `isLoaded` only: another call holds the engine lock, so the slot is in use. */
+    const val CODE_BUSY = 2
     const val CODE_ERROR = -1
     const val CODE_PENDING_EXCEPTION = -2
+
+    /** score_engine's `ALREADY_LOADED`; `load` answers it with the `ERR: ` prefix. */
+    const val ALREADY_LOADED = "the support-score engine is already loaded; unload it before loading again"
+    const val ALREADY_LOADED_REPLY = "ERR: $ALREADY_LOADED"
 
     /** Rust's reason codes in order: 1 is Blank … 7 is CropSize. */
     val REASONS = listOf(

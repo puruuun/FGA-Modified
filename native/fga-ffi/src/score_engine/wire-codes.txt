@@ -1,6 +1,8 @@
-# The codes of the support-score engine's reply (wire.rs), shared by the Rust test
+# The codes of the support-score engine (the reply of wire.rs, the unload and isLoaded answers of
+# mod.rs, the already-loaded text), shared by the Rust test
 # (wire.rs, codes_match_the_shared_table) and the Kotlin test (ScoreWireTest), so a change on one
-# side fails on the other. One entry per line: kind, the name as fga-sensing writes it, the code.
+# side fails on the other. One entry per line: kind, the name as fga-sensing writes it, the code;
+# for `text`, the rest of the line is the text.
 reason blank 1
 reason low_confidence 2
 reason format 3
@@ -11,3 +13,9 @@ reason crop_size 7
 display ordinary 0
 display compound 1
 display unknown 2
+answer no 0
+answer yes 1
+answer busy 2
+answer error -1
+answer pending_exception -2
+text already_loaded the support-score engine is already loaded; unload it before loading again

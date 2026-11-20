@@ -27,9 +27,10 @@ import kotlin.time.Duration.Companion.seconds
  *     NotLoaded --load failed--> Failed(why) --close--> Closed
  *     NotLoaded --close--> Closed
  *
- * [close] runs on the main thread (ScriptManager releases a run there when the user stops it) or
- * on a `Dispatchers.Default` thread (the script's own exit and the early-exit paths), while a load
- * copies 21 MB and a read takes tens of milliseconds, so close must not wait for the lock. It sets
+ * [close] runs on the main thread (`startScript` releases the previous run's engines there, and
+ * the service's `onDestroy`) or on `Dispatchers.Default` (`onScriptExit` after the script ends,
+ * by a stop too, and the early exits inside the launched start), while a load copies 21 MB and a
+ * read takes tens of milliseconds, so close must not wait for the lock. It sets
  * [closeRequested] and finishes the close only if the lock is free. Otherwise the thread holding
  * the lock finishes it: every holder checks the flag before it starts (and then never loads or
  * reads), the load checks it again just before `native.load`, and every holder tries the lock
@@ -44,24 +45,31 @@ import kotlin.time.Duration.Companion.seconds
  * the next run's first use loads. Rule: a load that finds the slot filled treats it as an earlier
  * run that is still unloading and waits on the script thread, polling `isLoaded` every
  * [SLOT_POLL_MS] ms, for at most [slotWait]; then it loads, or, if the slot is still filled, the
- * run is unavailable with [SLOT_BUSY]. It never unloads a model it did not load, because the
- * filled slot may belong to a run that is still reading, and one live run holds one loaded engine.
- * Waiting is bounded because an engine whose close never finishes must cost the next run its
- * engine, not its script thread. A close requested during the wait ends it without a load.
+ * run is unavailable with [SLOT_BUSY]. Filled means `isLoaded` answers loaded or busy (another
+ * call holds the Rust lock; Rust answers that without waiting, so one poll stays short), or `load`
+ * answers [ScoreWire.ALREADY_LOADED_REPLY] because another run loaded in between. It never unloads
+ * a model it did not load, because the filled slot may belong to a run that is still reading, and
+ * one live run holds one loaded engine. Waiting is bounded because an engine whose close never
+ * finishes must cost the next run its engine, not its script thread. A close, a stop
+ * ([stopRequested]) or an interrupt during the wait ends it without a load. The model copy and
+ * `native.load` themselves cannot be cut short: on the three QA devices the first load of a run,
+ * copy included, took 146 to 581 ms, and a stop that arrives during it takes effect after it.
  *
  * Errors: every Throwable from the library or the model copy (an `UnsatisfiedLinkError` from a
  * library that does not match this class included) becomes "unavailable" or "engine error" with
  * its text in the detail. A [VirtualMachineError] (out of memory, stack overflow, an internal VM
  * error) and [ThreadDeath] propagate, because the process cannot be trusted to go on after them.
  *
- * [prepareModel] returns the model file to load. [isMainThread] exists for the unit tests, which
- * have no Android looper, and [slotWait] for the test of an expiring wait.
+ * [prepareModel] returns the model file to load. [stopRequested] tells whether the run was stopped;
+ * it must answer at once and never wait. [isMainThread] exists for the unit tests, which have no
+ * Android looper, and [slotWait] for the test of an expiring wait.
  */
 class RustSupportScoreEngine(
     private val native: ScoreNative,
     private val prepareModel: () -> File,
     private val isMainThread: () -> Boolean = { Looper.myLooper() == Looper.getMainLooper() },
     private val slotWait: Duration = 3.seconds,
+    private val stopRequested: () -> Boolean = { false },
 ) : SupportScoreEngine {
     private sealed interface State {
         data object NotLoaded : State
@@ -197,13 +205,15 @@ class RustSupportScoreEngine(
         while (true) {
             // The copy takes long enough for the run to end meanwhile; a closed run loads nothing.
             if (closeRequested) return CLOSED
-            if (native.isLoaded() != 1) {
+            if (stopRequested()) return STOPPED
+            val slot = native.isLoaded()
+            if (slot != ScoreWire.CODE_YES && slot != ScoreWire.CODE_BUSY) {
                 val answer = native.load(model.path)
                 if (answer.startsWith("OK: ")) return null
-                // Another run filled the slot between the check and the load: wait for it as well.
-                if (native.isLoaded() != 1) return "model load failed: $answer"
+                if (answer != ScoreWire.ALREADY_LOADED_REPLY) return "model load failed: $answer"
             }
-            if (System.nanoTime() >= deadline) return SLOT_BUSY
+            // nanoTime may wrap, so only the difference is compared.
+            if (System.nanoTime() - deadline >= 0) return SLOT_BUSY
             try {
                 Thread.sleep(SLOT_POLL_MS)
             } catch (e: InterruptedException) {
@@ -219,6 +229,7 @@ class RustSupportScoreEngine(
         const val PIN_ASSET = "$ASSET_DIR/ocr-model.properties"
         const val CLOSED = "the engine was closed at the end of the run"
         const val SLOT_BUSY = "an earlier run's engine was still loaded when the wait for it ended; this run has no engine"
+        const val STOPPED = "the run was stopped during the wait for an earlier run's engine; nothing was loaded"
         const val SLOT_POLL_MS = 20L
 
         private fun describe(t: Throwable) = "${t.javaClass.simpleName}: ${t.message}"

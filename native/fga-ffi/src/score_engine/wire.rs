@@ -258,16 +258,23 @@ mod tests {
         let table = include_str!("wire-codes.txt");
         let mut reasons = Vec::new();
         let mut displays = Vec::new();
+        let mut answers = Vec::new();
+        let mut texts = Vec::new();
         for line in table
             .lines()
             .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
         {
-            let fields: Vec<&str> = line.split_whitespace().collect();
+            let fields: Vec<&str> = line.splitn(3, ' ').collect();
             assert_eq!(fields.len(), 3, "{line}");
-            let code: i32 = fields[2].parse().unwrap();
+            if fields[0] == "text" {
+                texts.push((fields[1].to_owned(), fields[2].to_owned()));
+                continue;
+            }
+            let code: i32 = fields[2].trim().parse().unwrap();
             match fields[0] {
                 "reason" => reasons.push((fields[1].to_owned(), code)),
                 "display" => displays.push((fields[1].to_owned(), code)),
+                "answer" => answers.push((fields[1].to_owned(), code)),
                 other => panic!("unknown kind {other}"),
             }
         }
@@ -281,6 +288,24 @@ mod tests {
             .map(|d| (d.name().to_owned(), display_code(d)))
             .collect();
         assert_eq!(displays, ours);
+        use crate::score_engine::{
+            ALREADY_LOADED, CODE_BUSY, CODE_ERROR, CODE_NO, CODE_PENDING_EXCEPTION, CODE_YES,
+        };
+        let ours: Vec<(String, i32)> = [
+            ("no", CODE_NO),
+            ("yes", CODE_YES),
+            ("busy", CODE_BUSY),
+            ("error", CODE_ERROR),
+            ("pending_exception", CODE_PENDING_EXCEPTION),
+        ]
+        .iter()
+        .map(|(name, code)| ((*name).to_owned(), *code))
+        .collect();
+        assert_eq!(answers, ours);
+        assert_eq!(
+            texts,
+            vec![("already_loaded".to_owned(), ALREADY_LOADED.to_owned())]
+        );
     }
 
     #[test]

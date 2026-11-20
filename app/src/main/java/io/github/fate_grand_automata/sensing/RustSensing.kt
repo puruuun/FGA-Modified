@@ -17,7 +17,7 @@ interface ScoreNative {
     /** 1 dropped, 0 nothing was loaded, negative an error ([ScoreWire.CODE_ERROR], [ScoreWire.CODE_PENDING_EXCEPTION]). */
     fun unload(): Int
 
-    /** 1 loaded, 0 not, negative an error. */
+    /** 1 loaded, 0 not, 2 busy (another call holds the engine lock; answered without waiting), negative an error. */
     fun isLoaded(): Int
 }
 

@@ -31,10 +31,10 @@ fga-sensing = { path = "../fga-sensing", version = "0.1.0", features = ["tract"]
 
 [features]
 default = []
-# Exists only for tests/ocr_poisoned.rs, tests/ocr_ort_poisoned.rs, tests/score_engine_poisoned.rs
-# and tests/score_engine_hooks.rs: functions that poison the tract, the ONNX Runtime and the
-# support-score engine locks, and one that fills the engine slot with a marker engine without a
-# model file (issue #568). The self dev-dependency below turns it on for
+# Exists only for tests/ocr_poisoned.rs, tests/ocr_ort_poisoned.rs, tests/score_engine_poisoned.rs,
+# tests/score_engine_hooks.rs and tests/score_engine_busy.rs: functions that poison the tract, the
+# ONNX Runtime and the support-score engine locks, one that fills the engine slot with a marker
+# engine without a model file, and one that holds the engine lock (issue #568). The self dev-dependency below turns it on for
 # test builds only; the feature resolver keeps it out of `cargo build`, the cargo-ndk builds and
 # Gradle's cargoNdkBuild tasks.
 test-hooks = []

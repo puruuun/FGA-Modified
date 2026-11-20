@@ -26,6 +26,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 class RustSupportScoreEngineTest {
@@ -45,6 +46,8 @@ class RustSupportScoreEngineTest {
         val slot: AtomicBoolean = AtomicBoolean(false),
         val name: String = "",
         val events: MutableList<String> = Collections.synchronizedList(mutableListOf()),
+        @Volatile var busyPolls: Int = 0,
+        @Volatile var refuseLoads: Int = 0,
     ) : ScoreNative {
         val calls: MutableList<String> = Collections.synchronizedList(mutableListOf())
         val entered = CountDownLatch(1)
@@ -65,8 +68,12 @@ class RustSupportScoreEngineTest {
         override fun load(modelPath: String): String {
             call("load")
             loadGate?.let { entered.countDown(); it.await(10, TimeUnit.SECONDS) }
+            if (refuseLoads > 0) {
+                refuseLoads--
+                return ScoreWire.ALREADY_LOADED_REPLY
+            }
             if (loadAnswer.startsWith("OK: ")) {
-                if (!slot.compareAndSet(false, true)) return "ERR: the support-score engine is already loaded; unload it before loading again"
+                if (!slot.compareAndSet(false, true)) return ScoreWire.ALREADY_LOADED_REPLY
                 events += "load $name"
             }
             return loadAnswer
@@ -84,7 +91,15 @@ class RustSupportScoreEngineTest {
             return if (slot.getAndSet(false)) ScoreWire.CODE_YES else ScoreWire.CODE_NO
         }
 
-        override fun isLoaded() = if (loaded) 1.also { sawBusySlot.countDown() } else 0
+        override fun isLoaded(): Int {
+            calls += "isLoaded"
+            if (busyPolls > 0) {
+                busyPolls--
+                sawBusySlot.countDown()
+                return ScoreWire.CODE_BUSY
+            }
+            return if (loaded) ScoreWire.CODE_YES.also { sawBusySlot.countDown() } else ScoreWire.CODE_NO
+        }
     }
 
     private class FakePattern(private val gray: () -> ByteArray?) : Pattern {
@@ -114,8 +129,12 @@ class RustSupportScoreEngineTest {
         native: FakeNative,
         mainThread: Boolean = false,
         slotWait: Duration = 5.seconds,
+        stopRequested: () -> Boolean = { false },
         prepare: () -> File = { model },
-    ) = RustSupportScoreEngine(native, prepare, isMainThread = { mainThread }, slotWait = slotWait)
+    ) = RustSupportScoreEngine(native, prepare, isMainThread = { mainThread }, slotWait = slotWait, stopRequested = stopRequested)
+
+    /** The calls without the `isLoaded` polls, whose number depends on timing. */
+    private val FakeNative.work get() = calls.filter { it != "isLoaded" }
 
     private val unavailable = EngineField.Unknown(EngineUnknownReason.Unavailable)
     private val engineError = EngineField.Unknown(EngineUnknownReason.EngineError)
@@ -123,7 +142,7 @@ class RustSupportScoreEngineTest {
     @Test fun `nothing loads until the first use, and only once`() {
         val native = FakeNative()
         val engine = engine(native)
-        assertEquals(emptyList(), native.calls)
+        assertEquals(emptyList(), native.work)
         assertNull(engine.loadTime)
         val score = engine.read(field)
         assertEquals(EngineField.Value(62), score.classScore)
@@ -132,7 +151,7 @@ class RustSupportScoreEngineTest {
         assertTrue(engine.available)
         assertNull(engine.unavailableReason)
         assertNotNull(engine.loadTime)
-        assertEquals(listOf("library", "load", "read", "read"), native.calls)
+        assertEquals(listOf("library", "load", "read", "read"), native.work)
     }
 
     @Test fun `a missing library makes the engine unavailable without a load`() {
@@ -141,7 +160,7 @@ class RustSupportScoreEngineTest {
         assertFalse(engine.available)
         assertTrue(engine.unavailableReason!!.contains("libfga_ffi.so did not load"))
         assertEquals(unavailable, engine.read(field).classScore)
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
     }
 
     @Test fun `a missing model asset makes the engine unavailable`() {
@@ -150,7 +169,7 @@ class RustSupportScoreEngineTest {
         val score = engine.read(field)
         assertEquals(unavailable, score.grandScore)
         assertTrue(score.detail!!.startsWith("the OCR model asset is missing"))
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
     }
 
     @Test fun `a model that does not match its pin makes the engine unavailable`() {
@@ -165,7 +184,7 @@ class RustSupportScoreEngineTest {
         assertFalse(engine.available)
         assertFalse(engine.available)
         assertEquals(unavailable, engine.read(field).classScore)
-        assertEquals(listOf("library", "load"), native.calls)
+        assertEquals(listOf("library", "load"), native.work)
     }
 
     @Test fun `the main thread never loads`() {
@@ -173,7 +192,7 @@ class RustSupportScoreEngineTest {
         val engine = engine(native, mainThread = true)
         assertFalse(engine.available)
         assertEquals(unavailable, engine.read(field).classScore)
-        assertEquals(emptyList(), native.calls)
+        assertEquals(emptyList(), native.work)
     }
 
     @Test fun `a library that does not match the class makes nothing throw`() {
@@ -190,7 +209,7 @@ class RustSupportScoreEngineTest {
         assertTrue(score.detail!!.startsWith("UnsatisfiedLinkError"))
         val unloadFails = FakeNative(failOn = "unload")
         engine(unloadFails).apply { read(field); close() }
-        assertEquals(listOf("library", "load", "read", "unload"), unloadFails.calls)
+        assertEquals(listOf("library", "load", "read", "unload"), unloadFails.work)
     }
 
     @Test fun `a close after a failing unload still ends closed`() {
@@ -200,7 +219,7 @@ class RustSupportScoreEngineTest {
         engine.close()
         assertEquals(unavailable, engine.read(field).classScore)
         assertEquals(RustSupportScoreEngine.CLOSED, engine.unavailableReason)
-        assertEquals(listOf("library", "load", "read", "unload"), native.calls)
+        assertEquals(listOf("library", "load", "read", "unload"), native.work)
     }
 
     @Test fun `a field whose pixels cannot be read is an engine error`() {
@@ -231,7 +250,7 @@ class RustSupportScoreEngineTest {
         engine.close()
         assertEquals(unavailable, engine.read(field).classScore)
         assertFalse(engine.available)
-        assertEquals(listOf("library", "load", "read", "unload"), native.calls)
+        assertEquals(listOf("library", "load", "read", "unload"), native.work)
     }
 
     @Test fun `close before any use calls nothing and nothing loads afterwards`() {
@@ -240,7 +259,7 @@ class RustSupportScoreEngineTest {
         engine.close()
         assertFalse(engine.available)
         assertEquals(unavailable, engine.read(field).classScore)
-        assertEquals(emptyList(), native.calls)
+        assertEquals(emptyList(), native.work)
     }
 
     @Test fun `close does not wait for a load, and the engine ends unloaded`() {
@@ -256,7 +275,7 @@ class RustSupportScoreEngineTest {
         gate.countDown()
         worker.join(10_000)
         assertFalse(native.loaded)
-        assertEquals(listOf("library", "load", "unload"), native.calls)
+        assertEquals(listOf("library", "load", "unload"), native.work)
         assertEquals(unavailable, engine.read(field).classScore)
         assertEquals(1, native.calls.count { it == "unload" })
     }
@@ -275,7 +294,7 @@ class RustSupportScoreEngineTest {
         worker.join(10_000)
         assertFalse(native.loaded)
         assertEquals(unavailable, engine.read(field).classScore)
-        assertEquals(listOf("library", "load", "read", "unload"), native.calls)
+        assertEquals(listOf("library", "load", "read", "unload"), native.work)
     }
 
     @Test fun `the next run loads only after the previous run's engine unloaded`() {
@@ -313,7 +332,7 @@ class RustSupportScoreEngineTest {
         assertEquals(RustSupportScoreEngine.SLOT_BUSY, engine.unavailableReason)
         assertEquals(unavailable, engine.read(field).classScore)
         engine.close()
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
         assertTrue(slot.get())
     }
 
@@ -328,7 +347,7 @@ class RustSupportScoreEngineTest {
         worker.join(10_000)
         assertFalse(worker.isAlive)
         assertEquals(RustSupportScoreEngine.CLOSED, reason)
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
         assertTrue(slot.get())
     }
 
@@ -364,7 +383,52 @@ class RustSupportScoreEngineTest {
         assertFalse(worker.isAlive)
         assertTrue(reason!!.contains("interrupted"))
         assertTrue(stillInterrupted)
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
+    }
+
+    @Test fun `a busy slot is waited for and never loaded over`() {
+        val native = FakeNative(busyPolls = 3)
+        val engine = engine(native)
+        assertNull(engine.unavailableReason)
+        assertEquals(listOf("isLoaded", "isLoaded", "isLoaded", "isLoaded", "load"), native.calls.drop(1))
+    }
+
+    @Test fun `a refused load is retried once the slot is free`() {
+        val native = FakeNative(refuseLoads = 1)
+        val engine = engine(native)
+        assertNull(engine.unavailableReason)
+        assertEquals(2, native.calls.count { it == "load" })
+        assertEquals(EngineField.Value(62), engine.read(field).classScore)
+    }
+
+    @Test fun `a slot kept by a third run ends at the bound`() {
+        val native = FakeNative(refuseLoads = Int.MAX_VALUE)
+        val engine = engine(native, slotWait = 100.milliseconds)
+        assertEquals(RustSupportScoreEngine.SLOT_BUSY, engine.unavailableReason)
+        assertFalse(native.loaded)
+    }
+
+    @Test fun `another load error fails at once`() {
+        val native = FakeNative(loadAnswer = "ERR: inference backend: bad model")
+        val engine = engine(native)
+        assertEquals("model load failed: ERR: inference backend: bad model", engine.unavailableReason)
+        assertEquals(1, native.calls.count { it == "load" })
+    }
+
+    @Test fun `a stop during the wait ends it within a poll and loads nothing`() {
+        val stopped = AtomicBoolean(false)
+        val native = FakeNative(slot = AtomicBoolean(true), name = "B")
+        val engine = engine(native, slotWait = 30.seconds, stopRequested = { stopped.get() })
+        var reason: String? = null
+        val worker = thread { reason = engine.unavailableReason }
+        assertTrue(native.sawBusySlot.await(10, TimeUnit.SECONDS))
+        val stoppedAt = System.nanoTime()
+        stopped.set(true)
+        worker.join(5_000)
+        assertFalse(worker.isAlive)
+        assertTrue((System.nanoTime() - stoppedAt).nanoseconds < 1.seconds)
+        assertEquals(RustSupportScoreEngine.STOPPED, reason)
+        assertEquals(listOf("library"), native.work)
     }
 
     @Test fun `a close during the model copy loads nothing`() {
@@ -372,7 +436,7 @@ class RustSupportScoreEngineTest {
         lateinit var engine: RustSupportScoreEngine
         engine = engine(native, prepare = { engine.close(); model })
         assertEquals(RustSupportScoreEngine.CLOSED, engine.unavailableReason)
-        assertEquals(listOf("library"), native.calls)
+        assertEquals(listOf("library"), native.work)
     }
 
     companion object {

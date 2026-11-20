@@ -86,7 +86,7 @@ class ScoreWireTest {
     @Test fun `codes match the table shared with wire_rs`() {
         val table = File(System.getProperty("fga.scoreWireCodes")!!).readLines()
             .filter { it.isNotBlank() && !it.startsWith("#") }
-            .map { it.trim().split(Regex("""\s+""")) }
+            .map { it.trim().split(' ', limit = 3) }
         fun camel(name: String) = name.split('_').joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
         val reasons = table.filter { it[0] == "reason" }
         assertEquals(ScoreWire.REASONS.size, reasons.size)
@@ -106,6 +106,19 @@ class ScoreWireTest {
             val score = ScoreWire.decode(read(value, value, code.toInt(), reason, reason), 0.milliseconds)
             assertEquals(EngineDisplay.valueOf(camel(name)), score.display, name)
         }
+        val answers = table.filter { it[0] == "answer" }.associate { it[1] to it[2].toInt() }
+        assertEquals(
+            mapOf(
+                "no" to ScoreWire.CODE_NO,
+                "yes" to ScoreWire.CODE_YES,
+                "busy" to ScoreWire.CODE_BUSY,
+                "error" to ScoreWire.CODE_ERROR,
+                "pending_exception" to ScoreWire.CODE_PENDING_EXCEPTION,
+            ),
+            answers,
+        )
+        val texts = table.filter { it[0] == "text" }.associate { it[1] to it[2] }
+        assertEquals(mapOf("already_loaded" to ScoreWire.ALREADY_LOADED), texts)
     }
 
     @Test fun `infinite confidences count as absent`() {
