@@ -12,6 +12,7 @@ import java.io.FileNotFoundException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The Rust support-score engine behind [SupportScoreEngine] (issue #568), for the rust build type
@@ -26,14 +27,27 @@ import kotlin.time.Duration.Companion.nanoseconds
  *     NotLoaded --load failed--> Failed(why) --close--> Closed
  *     NotLoaded --close--> Closed
  *
- * [close] runs on the main thread (ScriptManager releases a run there), while a load copies 21 MB
- * and a read takes tens of milliseconds, so close must not wait for the lock. It sets
+ * [close] runs on the main thread (ScriptManager releases a run there when the user stops it) or
+ * on a `Dispatchers.Default` thread (the script's own exit and the early-exit paths), while a load
+ * copies 21 MB and a read takes tens of milliseconds, so close must not wait for the lock. It sets
  * [closeRequested] and finishes the close only if the lock is free. Otherwise the thread holding
  * the lock finishes it: every holder checks the flag before it starts (and then never loads or
- * reads) and again after it has released the lock, taking the lock back if it is free. The flag
- * is set before close tries the lock, so whichever of the two gets the lock after the flag is set
- * sees it, and the close is never lost. `finishClose` unloads only from Loaded and always ends in
- * Closed, so the library's unload runs at most once.
+ * reads), the load checks it again just before `native.load`, and every holder tries the lock
+ * again after it has released it. The flag is set before close tries the lock, so whichever of the
+ * two gets the lock after the flag is set sees it, and the close is never lost. That one
+ * after-release attempt is enough: finishing the close while still holding the lock would only
+ * duplicate it. `finishClose` unloads only from Loaded and always ends in Closed, so the library's
+ * unload runs at most once per instance.
+ *
+ * Two runs in a row. Rust keeps one engine slot per process, and because close does not wait, the
+ * previous run's engine can still be loaded (its worker finishing a read before it unloads) when
+ * the next run's first use loads. Rule: a load that finds the slot filled treats it as an earlier
+ * run that is still unloading and waits on the script thread, polling `isLoaded` every
+ * [SLOT_POLL_MS] ms, for at most [slotWait]; then it loads, or, if the slot is still filled, the
+ * run is unavailable with [SLOT_BUSY]. It never unloads a model it did not load, because the
+ * filled slot may belong to a run that is still reading, and one live run holds one loaded engine.
+ * Waiting is bounded because an engine whose close never finishes must cost the next run its
+ * engine, not its script thread. A close requested during the wait ends it without a load.
  *
  * Errors: every Throwable from the library or the model copy (an `UnsatisfiedLinkError` from a
  * library that does not match this class included) becomes "unavailable" or "engine error" with
@@ -41,12 +55,13 @@ import kotlin.time.Duration.Companion.nanoseconds
  * error) and [ThreadDeath] propagate, because the process cannot be trusted to go on after them.
  *
  * [prepareModel] returns the model file to load. [isMainThread] exists for the unit tests, which
- * have no Android looper.
+ * have no Android looper, and [slotWait] for the test of an expiring wait.
  */
 class RustSupportScoreEngine(
     private val native: ScoreNative,
     private val prepareModel: () -> File,
     private val isMainThread: () -> Boolean = { Looper.myLooper() == Looper.getMainLooper() },
+    private val slotWait: Duration = 3.seconds,
 ) : SupportScoreEngine {
     private sealed interface State {
         data object NotLoaded : State
@@ -107,24 +122,26 @@ class RustSupportScoreEngine(
     /**
      * Runs [block] under the lock unless a close was requested, in which case the answer is
      * [closed], and finishes a close requested while [block] ran. A call that was already running
-     * when close was requested still returns its own answer.
+     * when close was requested still returns its own answer. The unlock is unconditional and the
+     * close is finished after it, so a throw while closing never leaves the lock held.
      */
     private inline fun <T> withWork(closed: () -> T, block: () -> T): T {
-        if (!closeRequested) {
-            work.lock()
-            try {
-                if (!closeRequested) return block()
-            } finally {
-                if (closeRequested) finishClose()
-                work.unlock()
-                closeIfFree()
+        try {
+            if (!closeRequested) {
+                work.lock()
+                try {
+                    if (!closeRequested) return block()
+                } finally {
+                    work.unlock()
+                }
             }
+            return closed()
+        } finally {
+            closeIfFree()
         }
-        closeIfFree()
-        return closed()
     }
 
-    /** Covers a close that set its flag after this thread's last check but before it unlocked. */
+    /** Finishes a requested close if no other thread holds the lock; that thread finishes it otherwise. */
     private fun closeIfFree() {
         if (closeRequested && work.tryLock()) {
             try { finishClose() } finally { work.unlock() }
@@ -176,14 +193,33 @@ class RustSupportScoreEngine(
         } catch (e: FileNotFoundException) {
             return "the OCR model asset is missing: ${e.message}"
         }
-        val answer = native.load(model.path)
-        return if (answer.startsWith("OK: ")) null else "model load failed: $answer"
+        val deadline = System.nanoTime() + slotWait.inWholeNanoseconds
+        while (true) {
+            // The copy takes long enough for the run to end meanwhile; a closed run loads nothing.
+            if (closeRequested) return CLOSED
+            if (native.isLoaded() != 1) {
+                val answer = native.load(model.path)
+                if (answer.startsWith("OK: ")) return null
+                // Another run filled the slot between the check and the load: wait for it as well.
+                if (native.isLoaded() != 1) return "model load failed: $answer"
+            }
+            if (System.nanoTime() >= deadline) return SLOT_BUSY
+            try {
+                Thread.sleep(SLOT_POLL_MS)
+            } catch (e: InterruptedException) {
+                // A cancelled run's coroutine machinery relies on the flag, so it is kept.
+                Thread.currentThread().interrupt()
+                return "the wait for an earlier run's engine was interrupted"
+            }
+        }
     }
 
     companion object {
         const val ASSET_DIR = "ocr"
         const val PIN_ASSET = "$ASSET_DIR/ocr-model.properties"
         const val CLOSED = "the engine was closed at the end of the run"
+        const val SLOT_BUSY = "an earlier run's engine was still loaded when the wait for it ended; this run has no engine"
+        const val SLOT_POLL_MS = 20L
 
         private fun describe(t: Throwable) = "${t.javaClass.simpleName}: ${t.message}"
 

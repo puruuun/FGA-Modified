@@ -9,6 +9,10 @@ import io.github.lib_automata.TextLineOcrOptions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Tests the [RunEngines] helper on its own. [ScriptManager]'s call sites (which paths call
+ * `releaseOcrService` and when) are not covered here; they are the same as before the helper.
+ */
 class RunEnginesTest {
     private class FakeOcr(val log: MutableList<String>, val name: String, val throwOnClose: Boolean = false) : OcrService {
         override fun detectText(pattern: Pattern): String = error("unused")

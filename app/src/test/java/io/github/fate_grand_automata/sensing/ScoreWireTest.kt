@@ -90,6 +90,9 @@ class ScoreWireTest {
         fun camel(name: String) = name.split('_').joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
         val reasons = table.filter { it[0] == "reason" }
         assertEquals(ScoreWire.REASONS.size, reasons.size)
+        // Every reason except the two the binding adds comes from the reader, so it needs a code.
+        val readerReasons = EngineUnknownReason.entries.toSet() - setOf(EngineUnknownReason.EngineError, EngineUnknownReason.Unavailable)
+        assertEquals(readerReasons, ScoreWire.REASONS.toSet())
         for ((_, name, code) in reasons) {
             assertEquals(EngineUnknownReason.valueOf(camel(name)), ScoreWire.REASONS[code.toInt() - 1], name)
             val score = ScoreWire.decode(read(-1, -1, 2, code.toInt(), code.toInt()), 0.milliseconds)

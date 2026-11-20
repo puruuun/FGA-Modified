@@ -31,8 +31,8 @@ class SupportScoreEngineBindingTest {
 
     /**
      * The unit tests run on the ci build type, where the Hilt provider must give the no-op object.
-     * libfga_ffi.so is not on this test's library path, so a provider that tried to load it would
-     * fail this test with UnsatisfiedLinkError.
+     * A provider that built RustSupportScoreEngine here would not fail on its own (the library
+     * loads lazily and a load failure is caught), so the test checks the object it gets.
      */
     @Test fun `the script provider binds the no-op engine in this build`() {
         assertFalse(BuildConfig.RUST_TEST_BUILD)

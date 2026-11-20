@@ -238,6 +238,21 @@ mod tests {
         );
     }
 
+    /// Every `Display` variant, walked through a match without a wildcard: a new variant does not
+    /// compile here until it is chained in, and the table test then fails until wire-codes.txt
+    /// gives it a code. Rust cannot list an enum's variants on its own.
+    fn every_display() -> Vec<Display> {
+        fn after(display: Option<Display>) -> Option<Display> {
+            match display {
+                None => Some(Display::Ordinary),
+                Some(Display::Ordinary) => Some(Display::Compound),
+                Some(Display::Compound) => Some(Display::Unknown),
+                Some(Display::Unknown) => None,
+            }
+        }
+        std::iter::successors(after(None), |d| after(Some(*d))).collect()
+    }
+
     #[test]
     fn codes_match_the_shared_table() {
         let table = include_str!("wire-codes.txt");
@@ -261,9 +276,9 @@ mod tests {
             .map(|r| (r.name().to_owned(), reason_code(*r)))
             .collect();
         assert_eq!(reasons, ours);
-        let ours: Vec<(String, i32)> = [Display::Ordinary, Display::Compound, Display::Unknown]
-            .iter()
-            .map(|d| (d.name().to_owned(), display_code(*d)))
+        let ours: Vec<(String, i32)> = every_display()
+            .into_iter()
+            .map(|d| (d.name().to_owned(), display_code(d)))
             .collect();
         assert_eq!(displays, ours);
     }

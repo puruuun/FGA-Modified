@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.file.Files
@@ -393,41 +394,47 @@ abstract class ProvideOcrModel : DefaultTask() {
 
     private fun download(url: String, target: File, size: Long) {
         var uri = httpsUri(url, "The pinned OCR model URL")
-        var connection: HttpURLConnection
         var redirects = 0
         while (true) {
-            connection = uri.toURL().openConnection() as HttpURLConnection
-            connection.connectTimeout = 30_000
-            connection.readTimeout = 60_000
-            // Redirects are followed here, one by one, so each target can be held to HTTPS.
-            connection.instanceFollowRedirects = false
-            val status = connection.responseCode
-            if (status !in 300..399) break
-            val location = connection.getHeaderField("Location")
-            connection.disconnect()
-            if (location == null) throw GradleException("OCR model download from $uri answered HTTP $status without a Location")
-            if (++redirects > 5) throw GradleException("OCR model download from $url was redirected more than 5 times")
-            uri = httpsUri(uri.resolve(location).toString(), "A redirect of the OCR model download to")
-        }
-        try {
-            val status = connection.responseCode
-            if (status != 200) throw GradleException("OCR model download from $uri answered HTTP $status")
-            connection.inputStream.use { input ->
-                target.outputStream().use { output ->
-                    val buffer = ByteArray(1 shl 16)
-                    var total = 0L
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        total += read
-                        // A server that sends more than the pinned size is wrong; stop before the disk fills.
-                        if (total > size) throw GradleException("OCR model download from $url is longer than the pinned $size bytes")
-                        output.write(buffer, 0, read)
+            val connection = uri.toURL().openConnection() as HttpURLConnection
+            // Every connection is closed here, also when the status or a header read throws.
+            try {
+                connection.connectTimeout = 30_000
+                connection.readTimeout = 60_000
+                // Redirects are followed here, one by one, so each target can be held to HTTPS.
+                connection.instanceFollowRedirects = false
+                val status = connection.responseCode
+                if (status in 300..399) {
+                    val location = connection.getHeaderField("Location")
+                        ?: throw GradleException("OCR model download from $uri answered HTTP $status without a Location")
+                    if (++redirects > 5) throw GradleException("OCR model download from $url was redirected more than 5 times")
+                    val next = try {
+                        uri.resolve(URI(location))
+                    } catch (e: java.net.URISyntaxException) {
+                        throw GradleException("A redirect of the OCR model download to '$location' is not a URL: ${e.message}")
+                    }
+                    uri = httpsUri(next.toString(), "A redirect of the OCR model download to")
+                    continue
+                }
+                if (status != 200) throw GradleException("OCR model download from $uri answered HTTP $status")
+                connection.inputStream.use { input ->
+                    target.outputStream().use { output ->
+                        val buffer = ByteArray(1 shl 16)
+                        var total = 0L
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            total += read
+                            // A server that sends more than the pinned size is wrong; stop before the disk fills.
+                            if (total > size) throw GradleException("OCR model download from $url is longer than the pinned $size bytes")
+                            output.write(buffer, 0, read)
+                        }
                     }
                 }
+                return
+            } finally {
+                connection.disconnect()
             }
-        } finally {
-            connection.disconnect()
         }
     }
 
@@ -474,8 +481,9 @@ if (nativeEnabled) {
  * Issue #568: the `rust` build type is the owner's Rust test APK, built only from the `rust`
  * branch and never published. Without the library it would be a beta with another name, so
  * without `fga.native` its variant does not exist (beforeVariants below), and aggregate tasks
- * such as `assemble`, `test` and `check` run as before. A request that names the variant, or an
- * abbreviation of it (`assembleRu`), stops with this message instead of Gradle's "not found".
+ * such as `assemble`, `test` and `check` run as before. The tasks listed in rustVariantTasks stop
+ * with this message instead of Gradle's "not found"; an abbreviation or any other rust task gets
+ * Gradle's own message, because matching task names by pattern also caught unrelated tasks.
  */
 val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let { raw ->
     when {
@@ -486,13 +494,78 @@ val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let
 }
 val rustNativeMissing = "The rust build type packages the Rust engine; build it with -Pfga.native=true " +
     "(see docs/agents/rust-native.md, \"Rust test APK\")."
-if (!nativeEnabled && gradle.startParameter.taskNames.any { Regex("[a-z]Ru(st?)?([A-Z]|$)").containsMatchIn(it.substringAfterLast(':')) }) {
+val rustVariantTasks = listOf("assembleRust", "installRust", "bundleRust", "packageRust")
+    .flatMap { listOf(it, ":app:$it") }
+    .toSet()
+if (!nativeEnabled && gradle.startParameter.taskNames.any { it in rustVariantTasks }) {
     throw GradleException(rustNativeMissing)
 }
 
 if (!nativeEnabled) {
     androidComponents {
         beforeVariants(selector().withBuildType("rust")) { it.enable = false }
+    }
+}
+
+/*
+ * JNI binds RustSensing's natives by class and method name, and R8 renames or drops whatever
+ * proguard-rust.pro does not keep; a missing rule shows only on a device, as an
+ * UnsatisfiedLinkError the engine turns into "unavailable". So assembleRust fails unless R8's
+ * seeds file (outputs/mapping/rust/seeds.txt, written next to the mapping file) lists the class,
+ * INSTANCE and the four natives, and the mapping file maps the class to its own name.
+ */
+abstract class CheckRustKeepRules : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val mappingFile: RegularFileProperty
+
+    @get:Internal
+    abstract val seedsFile: RegularFileProperty
+
+    @get:OutputFile
+    abstract val stamp: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val seeds = seedsFile.get().asFile
+        if (!seeds.isFile) throw GradleException("R8 wrote no ${seeds.path}; cannot check that RustSensing keeps its native methods")
+        val seedLines = seeds.readLines().map { it.trim() }.toSet()
+        val cls = "io.github.fate_grand_automata.sensing.RustSensing"
+        val wanted = listOf(
+            cls,
+            "$cls: $cls INSTANCE",
+            "$cls: java.lang.String load(java.lang.String)",
+            "$cls: int[] readScore(byte[],int,int)",
+            "$cls: int unload()",
+            "$cls: int isLoaded()",
+        )
+        val missing = wanted.filterNot { it in seedLines }
+        val renamed = mappingFile.get().asFile.useLines { lines ->
+            lines.none { it == "$cls -> $cls:" }
+        }
+        if (missing.isNotEmpty() || renamed) {
+            throw GradleException(
+                "R8 did not keep RustSensing for JNI (check app/proguard-rust.pro). " +
+                    "Missing from ${seeds.path}: $missing" +
+                    (if (renamed) "; ${mappingFile.get().asFile.path} does not map $cls to itself" else ""),
+            )
+        }
+        stamp.get().asFile.writeText("ok\n")
+    }
+}
+
+if (nativeEnabled) {
+    androidComponents {
+        onVariants(selector().withBuildType("rust")) { variant ->
+            val mapping = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE)
+            val checkKeep = tasks.register<CheckRustKeepRules>("checkRustKeepRules") {
+                description = "Fails the rust build when R8 did not keep RustSensing and its natives."
+                mappingFile.set(mapping)
+                seedsFile.set(mapping.map { it.asFile.resolveSibling("seeds.txt") }.let { layout.file(it) })
+                stamp.set(layout.buildDirectory.file("intermediates/checkRustKeepRules/ok.txt"))
+            }
+            tasks.matching { it.name == "assembleRust" }.configureEach { dependsOn(checkKeep) }
+        }
     }
 }
 
@@ -664,7 +737,7 @@ val debugSigningOnly: Provider<Boolean> = providers.environmentVariable("CI").ma
     .orElse(false)
     .zip(providers.gradleProperty("fgaDebugSigning").map { it == "true" }.orElse(false)) { a, b -> a || b }
 
-listOf("ci", "beta", "rust").forEach { buildType ->
+(listOf("ci", "beta") + if (nativeEnabled) listOf("rust") else emptyList()).forEach { buildType ->
     val signTask = tasks.register<SignRotatedApk>("sign${buildType.replaceFirstChar { it.uppercase() }}Rotated") {
         description = "Re-signs the $buildType APK with the rotated release key (or logs debug-only signing)."
         apk.set(layout.buildDirectory.file("outputs/apk/$buildType/app-$buildType.apk"))
