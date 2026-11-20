@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name" translatable="false">FGA Rust</string>
+
+    <!-- Issue #568: the owner's support score scan; only the rust build type carries these. -->
+    <string name="support_score_scan">Support score scan</string>
+    <string name="support_score_scan_not_started">The support score scan did not start: %1$s</string>
+    <string name="support_score_scan_result">Support score scan ended: %1$s\nScreens: %2$d, rows read: %3$d\nReaders agree: %4$d, differ: %5$d\nFolder: %6$s</string>
+    <string name="support_score_scan_reason_not_support_list">this is not the support list, or it has not loaded</string>
+    <string name="support_score_scan_reason_no_rows">the support list has no supports</string>
+    <string name="support_score_scan_reason_dialog_open">a dialog is open</string>
+    <string name="support_score_scan_reason_engine_unavailable">the Rust engine is not available</string>
+    <string name="support_score_scan_reason_low_space">too little free storage</string>
+    <string name="support_score_scan_reason_user_stopped">stopped by you</string>
+    <string name="support_score_scan_reason_bottom">end of the list</string>
+    <string name="support_score_scan_reason_screen_limit">screen limit reached</string>
+    <string name="support_score_scan_reason_screen_lost">the support list is no longer on screen</string>
+    <string name="support_score_scan_reason_error">unexpected error</string>
 </resources>

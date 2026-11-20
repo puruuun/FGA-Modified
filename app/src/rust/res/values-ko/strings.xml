@@ -1,0 +1,15 @@
+<resources>
+    <string name="support_score_scan">서포트 점수 스캔</string>
+    <string name="support_score_scan_not_started">서포트 점수 스캔을 시작하지 않았습니다: %1$s</string>
+    <string name="support_score_scan_result">서포트 점수 스캔 종료: %1$s\n화면: %2$d, 읽은 행: %3$d\n두 리더 일치: %4$d, 불일치: %5$d\n폴더: %6$s</string>
+    <string name="support_score_scan_reason_not_support_list">서포트 목록 화면이 아니거나 아직 불러오지 않았습니다</string>
+    <string name="support_score_scan_reason_no_rows">서포트 목록에 서포트가 없습니다</string>
+    <string name="support_score_scan_reason_dialog_open">대화상자가 열려 있습니다</string>
+    <string name="support_score_scan_reason_engine_unavailable">Rust 엔진을 사용할 수 없습니다</string>
+    <string name="support_score_scan_reason_low_space">저장 공간이 부족합니다</string>
+    <string name="support_score_scan_reason_user_stopped">사용자가 중지했습니다</string>
+    <string name="support_score_scan_reason_bottom">목록 끝에 도달했습니다</string>
+    <string name="support_score_scan_reason_screen_limit">화면 수 한도에 도달했습니다</string>
+    <string name="support_score_scan_reason_screen_lost">서포트 목록이 더 이상 화면에 없습니다</string>
+    <string name="support_score_scan_reason_error">예상하지 못한 오류</string>
+</resources>

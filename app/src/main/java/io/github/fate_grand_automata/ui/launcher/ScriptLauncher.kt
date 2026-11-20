@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.runner.OwnerTestScript
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.modules.SkillLevelMode
@@ -32,7 +33,8 @@ fun ScriptLauncher(
     prefsCore: PrefsCore,
     onWeeklyExpanded: (Boolean) -> Unit = {},
     prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> },
-    prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> }
+    prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> },
+    ownerTests: List<OwnerTestScript> = emptyList()
 ) {
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
     var weeklyOpen by remember { mutableStateOf(false) }
@@ -76,6 +78,12 @@ fun ScriptLauncher(
                     if (scriptMode == ScriptModeEnum.SupportImageMaker) {
                         TextButton(onClick = { onResponse(ScriptLauncherResponse.SupportImageMaker) }) {
                             Text(stringResource(R.string.p_script_mode_support_image_maker))
+                        }
+                    }
+                    // Issue #568: empty outside the rust build type.
+                    ownerTests.filter { it.offeredFor(scriptMode) }.forEach { test ->
+                        TextButton(onClick = { onResponse(ScriptLauncherResponse.OwnerTest(test)) }) {
+                            Text(test.label(LocalContext.current))
                         }
                     }
 

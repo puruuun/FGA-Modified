@@ -89,7 +89,8 @@ class ScriptManager @Inject constructor(
     private val launcherResponseHandler: ScriptLauncherResponseHandler,
     private val weeklyRoute: WeeklyRouteFlow,
     private val gameAreaPreview: GameAreaPreviewManager,
-    private val battleLog: BattleLogRepository
+    private val battleLog: BattleLogRepository,
+    private val ownerTestScripts: OwnerTestScripts
 ) {
     var scriptState: ScriptState = ScriptState.Stopped
         private set
@@ -235,7 +236,12 @@ class ScriptManager @Inject constructor(
 
         val scriptExitedString by lazy { context.getString(R.string.script_exited) }
 
-        when (e) {
+        // Issue #568: the list is empty outside the rust build type.
+        val ownerTestMessage = ownerTestScripts.scripts.firstNotNullOfOrNull { it.exitMessage(context, e) }
+        if (ownerTestMessage != null) {
+            messages.notify(ownerTestMessage)
+            messageBox.show(scriptExitedString, ownerTestMessage)
+        } else when (e) {
             is SupportImageMaker.ExitException -> {
                 when (e.reason) {
                     SupportImageMaker.ExitReason.NotFound -> {
@@ -620,7 +626,10 @@ class ScriptManager @Inject constructor(
                     delay(500.milliseconds)
                     runEntryPoint(
                         screenshotService = screenshotService,
-                        entryPointProvider = { getEntryPoint(hiltEntryPoint) }
+                        entryPointProvider = {
+                            (effectiveResp as? ScriptLauncherResponse.OwnerTest)?.script?.entryPoint(scriptComponent)
+                                ?: getEntryPoint(hiltEntryPoint)
+                        }
                     )
                 } else {
                     // onScriptExit never runs on this path
@@ -699,6 +708,7 @@ class ScriptManager @Inject constructor(
                     prefsCore = prefsCore,
                     prepareWeekly = weeklyRoute::prepare,
                     prepareProbe = weeklyRoute::prepareProbe,
+                    ownerTests = ownerTestScripts.scripts,
                     onWeeklyExpanded = { expanded ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
                         val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }

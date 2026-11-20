@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.ui.launcher
 
+import io.github.fate_grand_automata.runner.OwnerTestScript
+
 sealed class ScriptLauncherResponse {
     data object Cancel : ScriptLauncherResponse()
     data class FP(val limit: Int?) : ScriptLauncherResponse()
@@ -24,6 +26,9 @@ sealed class ScriptLauncherResponse {
 
     /** The weekly mission route entry: the route is computed and confirmed in a second dialog. */
     data object WeeklyRoute : ScriptLauncherResponse()
+
+    /** Issue #568: a script of the rust build type only; it sets no preference. */
+    data class OwnerTest(val script: OwnerTestScript) : ScriptLauncherResponse()
 }
 
 class ScriptLauncherResponseBuilder(
