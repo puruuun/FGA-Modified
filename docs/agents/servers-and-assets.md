@@ -18,9 +18,10 @@ bars that leaves the image itself taller. That is the resolution matching runs a
 taken from a reference image is exactly the pixels the script compares, with no resampling in
 between. Downscale a contributed screenshot before committing it.
 
-To draft the templates of a server and screen that has no screenshot, use the
-`apk-template-asset` skill (`.claude/skills/apk-template-asset/`), which cuts them from that
-server's APK; the result is checked against a real screenshot before it is committed.
+Templates are cut from the owner's screenshots first (`extract-template-asset`). Only when no
+screenshot of a screen can be had does the `apk-template-asset` skill
+(`.claude/skills/apk-template-asset/`) draw one from the APK. Its "When to use this skill" section says
+which element types may be used that way and what margins they must clear on real screens.
 
 ## NA: not a target
 

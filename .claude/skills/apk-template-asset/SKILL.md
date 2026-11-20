@@ -1,6 +1,6 @@
 ---
 name: apk-template-asset
-description: Draft templates and Regions for a new KR or JP feature from the game's APK data (NGUI layout, labels, atlas sprites, bitmap fonts) before any screenshot exists, and score them on the reference screenshots. Use for KR/JP feature work - "draft templates for a new feature from the APK", "where is this button and what Region", "predict the KR template from a JP screen", "which sprite/label is this", "does the APK have this button". If a screenshot of that server's screen already exists, extract-template-asset cuts from it instead.
+description: Fallback only - draft a KR or JP template from the game's APK data (NGUI layout, labels, atlas sprites, bitmap fonts) when the owner cannot get a screenshot of that screen, and judge it by the measured per-type criteria; also to cross-check a template or find which sprite/label/widget an element is. Screenshots come first - templates are cut with extract-template-asset. Use when "there is no screenshot of this screen", "can we make this template without a capture", "which sprite/label is this", "does the APK have this button".
 ---
 
 # Drafting templates from the game's data
@@ -8,15 +8,43 @@ description: Draft templates and Regions for a new KR or JP feature from the gam
 A feature needs templates (`app/src/main/assets/<Server>/`) and Regions (`scripts/.../locations/`). The APK of
 each server holds the NGUI layout of every scene and prefab (widget sizes, pivots, Transform chains), the decoded
 label settings (font size, effect, colours, ShrinkContent), the atlas sprites, the bitmap fonts and the
-localization table. This skill turns those into a draft template and a Region **before** a screenshot exists;
-the owner's in-game check then confirms it (or the template is re-cut from those captures with
-`extract-template-asset`). Game code and layout are shared by KR and JP, so one screenshot of either server
-settles what the data cannot.
+localization table. This skill turns those into a draft template and a Region when no screenshot of the screen
+can be had, and locates elements for any template work. Game code and layout are shared by KR and JP, so one
+screenshot of either server settles what the data cannot.
 
 Read [`docs/agents/coordinates.md`](../../../docs/agents/coordinates.md) and
 [`docs/agents/servers-and-assets.md`](../../../docs/agents/servers-and-assets.md) first: templates are 720p,
 Regions 1440p with the X origin by aspect ratio, and the `En` fallback rules apply. The fork's target servers are
 KR and official JP; the scripts take any server's APK, but drafts for other servers are not a fork deliverable.
+
+## When to use this skill
+
+**Screenshots come first.** A feature's templates are cut from the owner's screenshots with
+`extract-template-asset`. This skill is the fallback when the owner cannot get a screenshot of that screen,
+and a check: it may locate an element (which sprite, label or widget; its Region) at any time, but a draft is
+used as a template only under the criteria below.
+
+A draft is used only when **both** hold:
+
+1. Its element type is in a usable row of the table.
+2. On real screenshots of the same screen from either server, it clears both margins: true score at least the
+   code's threshold + 0.05, and best false positive at most the threshold - 0.15 (see "Judging a draft").
+   For the "use without a screenshot" row, a screen of the other server drafted from that server's data counts.
+
+If either fails, the draft is not used and the feature waits for a screenshot. A PR that commits a drafted
+template says so, with the margins, and the owner's final in-game check covers it before release.
+
+Measured on real screens (cross-server acceptance below, and the NA comparison of 2026-11-20 in issue #570):
+
+| Element type | Measured true score | Use |
+|---|---|---|
+| Button labels of standard dialogs: static text from the string table, standard font, no run-time state (Close, OK, Execute, Repeat, quest-item Close) | 0.952–0.986 in 13 of 13 KR/JP/NA cases, as good as the cut templates | Use without a screenshot when no screenshot can be had; the final in-game check confirms it |
+| Static atlas sprites, icons and sprite text drawn at the layout size (tool icons, reselect buttons, labels drawn as sprites, the weekly terminal button) | 0.87–0.99 | Use only when it clears the margins on a real screen of the same screen, either server |
+| Bitmap-font digits | 0.94–0.97 against the cut templates only, never scored on screens | Same as the row above |
+| Dialog titles and tab labels | JP 0.83–0.98; KR failed twice for an unknown reason (0.559, 0.682) and once with a wrong string (0.190) | Do not use without a real screen of the same server |
+| Art not in the APK (downloaded banners, result and bond titles, summon button art) | cannot be drawn | Screenshot only |
+| Run-time state: disabled tint, glow, size set by the layout at run time (four-button rows), bar lengths | 0.13–0.79 | Screenshot only |
+| A template that crops part of a widget, or an element the tool cannot locate | 0.11–0.66 | Screenshot only |
 
 Needs Python 3, Pillow, numpy, opencv-python-headless and UnityPy. Run the scripts with `py -3 -E -P script.py`
 on Windows so nothing from the current folder is imported. Do not install anything yourself; report a missing
