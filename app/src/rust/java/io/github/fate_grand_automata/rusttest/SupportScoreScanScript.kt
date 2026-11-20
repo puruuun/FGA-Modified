@@ -52,16 +52,15 @@ class SupportScoreScanScript @Inject constructor() : OwnerTestScript {
     }
 
     private fun reasonText(reason: ScoreScanEndReason) = when (reason) {
-        ScoreScanEndReason.NotSupportList -> R.string.support_score_scan_reason_not_support_list
+        ScoreScanEndReason.NotSupportListOrDialog -> R.string.support_score_scan_reason_not_support_list_or_dialog
+        ScoreScanEndReason.ListNotLoaded -> R.string.support_score_scan_reason_list_not_loaded
         ScoreScanEndReason.NoRows -> R.string.support_score_scan_reason_no_rows
-        ScoreScanEndReason.DialogOpen -> R.string.support_score_scan_reason_dialog_open
+        ScoreScanEndReason.RowsLost -> R.string.support_score_scan_reason_rows_lost
         ScoreScanEndReason.EngineUnavailable -> R.string.support_score_scan_reason_engine_unavailable
         ScoreScanEndReason.LowSpace -> R.string.support_score_scan_reason_low_space
         ScoreScanEndReason.UserStopped -> R.string.support_score_scan_reason_user_stopped
         ScoreScanEndReason.Bottom -> R.string.support_score_scan_reason_bottom
         ScoreScanEndReason.ScreenLimit -> R.string.support_score_scan_reason_screen_limit
-        ScoreScanEndReason.ScreenLost -> R.string.support_score_scan_reason_screen_lost
-        ScoreScanEndReason.Error -> R.string.support_score_scan_reason_error
     }
 }
 

@@ -13,6 +13,11 @@ class SupportSelectionLoop @Inject constructor(
     private val refresher: SupportScreenRefresher,
     private val supportClassPicker: SupportClassPicker
 ) {
+    companion object {
+        /** The wait after each scroll of the support list; the support score scan waits the same. */
+        val SCROLL_SETTLE = 0.3.seconds
+    }
+
     fun select(provider: SupportSelectionProvider): Boolean {
         var numberOfSwipes = 0
         var numberOfUpdates = 0
@@ -39,7 +44,7 @@ class SupportSelectionLoop @Inject constructor(
                     screen.scrollDown()
 
                     ++numberOfSwipes
-                    screen.delay(0.3.seconds)
+                    screen.delay(SCROLL_SETTLE)
                 }
                 // Switch to All if user asked to
                 alsoCheckAll && !onAllList -> {

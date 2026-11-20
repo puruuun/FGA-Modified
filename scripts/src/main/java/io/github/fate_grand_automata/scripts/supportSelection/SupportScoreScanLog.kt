@@ -119,25 +119,29 @@ data class ScoreScanRecord(
     val agree: Boolean get() = ScoreScanLog.agree(kotlin, rust)
 }
 
-/** Why a scan did not start or how it ended. A scan that started has a folder; one that did not, none. */
+/**
+ * Why a scan did not start or how it ended. A scan that started has a folder; one that did not, none.
+ * The names follow what the screen checks can tell apart: `SupportScreen.isAnyDialogOpen` is "the
+ * SupportExtra tab is not in its region", true on any other screen as well as under a dialog.
+ */
 enum class ScoreScanEndReason(val wireName: String) {
-    // Before any folder exists.
-    NotSupportList("not_support_list"),
+    /** The SupportExtra tab is not in its region: another screen, or a dialog over the list. */
+    NotSupportListOrDialog("not_support_list_or_dialog"),
+
+    /** At the start: the tab is there but the list shows neither a support nor its "not found" text. */
+    ListNotLoaded("list_not_loaded"),
+
+    /** No row to read: the list's "not found" text, or only a guest row, which has no confirm-setup button. */
     NoRows("no_rows"),
 
-    // At the start or on a later screen.
-    DialogOpen("dialog_open"),
+    /** During the scan: the tab is still there but no support is on screen any more. */
+    RowsLost("rows_lost"),
+
     EngineUnavailable("engine_unavailable"),
     LowSpace("low_space"),
     UserStopped("user_stopped"),
-
-    // Only after the first screen was read.
     Bottom("bottom"),
     ScreenLimit("screen_limit"),
-    ScreenLost("screen_lost"),
-
-    /** An exception the scan did not expect; it is rethrown after the summary is written. */
-    Error("error"),
 }
 
 /** What the owner is shown at the end. [folder] is null when the scan never started. */
@@ -192,7 +196,8 @@ data class ScoreScanSummary(
     val folder: String,
     val startTime: Long,
     val endTime: Long,
-    val reason: ScoreScanEndReason,
+    /** A [ScoreScanEndReason.wireName], or [ScoreScanLog.ERROR]. */
+    val reason: String,
     val detail: String?,
     val screens: Int,
     val tally: ScoreScanTally,
@@ -206,6 +211,9 @@ object ScoreScanLog {
     const val LINES = "scan.jsonl"
     const val SUMMARY = "summary.json"
     const val CROPS = "crops"
+
+    /** The summary's reason for an exception the scan did not expect; it is rethrown, so the owner sees the app's error dialog. */
+    const val ERROR = "error"
 
     /** The 20 newest scans are kept: about 2 MB each at the screen bound, so the folder stays small. */
     const val KEEP_SCANS = 20
@@ -328,7 +336,7 @@ object ScoreScanLog {
         "folder" to s.folder,
         "startTime" to s.startTime,
         "endTime" to s.endTime,
-        "endReason" to s.reason.wireName,
+        "endReason" to s.reason,
         "detail" to s.detail,
         "screens" to s.screens,
         "rows" to s.tally.rows,

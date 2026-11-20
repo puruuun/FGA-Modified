@@ -9,6 +9,7 @@ import assertk.assertions.isTrue
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.SupportClass
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
+import io.github.fate_grand_automata.scripts.modules.SupportSelectionLoop
 import io.github.fate_grand_automata.scripts.supportSelection.ApiScoreScanFrames
 import io.github.fate_grand_automata.scripts.supportSelection.DirectoryScoreScanStorage
 import io.github.fate_grand_automata.scripts.supportSelection.EngineDisplay
@@ -18,9 +19,13 @@ import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReaso
 import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanDevice
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanEndReason
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFolder
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrames
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanLog
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanRecord
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanResult
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanStorage
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanTally
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBounds
 import io.github.fate_grand_automata.scripts.supportSelection.SupportBoundsFinder
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreDisplay
@@ -39,6 +44,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -85,42 +91,54 @@ class SupportScoreScanTest {
     /**
      * A support list of [total] rows, [perScreen] on screen; each scroll moves it by two rows until
      * the last row is on screen, after which a scroll changes nothing (the bottom).
+     *
+     * The checks answer as RealSupportScreen's do. isAnyDialogOpen is "the SupportExtra tab is not in
+     * its region", so it is true on any other screen ([onSupportScreen] false) as well as under a
+     * dialog. someSupportsPresent is a confirm-setup button or a guest in the friend region; a
+     * [guestOnly] list has the latter without a confirm-setup button, so it has no rows to find.
+     * noSupportsPresent is the list's "not found" text.
      */
-    private class World(val total: Int, val perScreen: Int = 3) {
+    private class World(val total: Int, val perScreen: Int = 3, var guestOnly: Boolean = false) {
         val exitManager = ExitManager()
         var offset = 0
+        var onSupportScreen = true
         var dialogOpen = false
-        var listShown = true
         var listLoaded = true
         var snaps = 0
         var inSnap = false
         var currentSnap = -1
         val gestures = mutableListOf<String>()
-        val fieldSnaps = mutableListOf<Int>()
+        val delays = mutableListOf<Duration>()
         val patterns = mutableListOf<FieldPattern>()
+        /** 1-based scroll numbers that the game drops: the list does not move. */
+        val droppedScrolls = mutableSetOf<Int>()
         var onScroll: (Int) -> Unit = {}
         var onDelay: () -> Unit = {}
 
-        fun visible() = (offset until minOf(total, offset + perScreen)).toList()
+        fun visible() = if (guestOnly) emptyList() else (offset until minOf(total, offset + perScreen)).toList()
+
+        private val listShown get() = onSupportScreen && listLoaded
 
         val screen = object : SupportScreen {
             override fun scrollDown() {
                 gestures += "scrollDown"
-                offset = minOf(offset + 2, maxOf(0, total - perScreen))
-                onScroll(gestures.size)
+                val n = gestures.count { it == "scrollDown" }
+                if (n !in droppedScrolls) offset = minOf(offset + 2, maxOf(0, total - perScreen))
+                onScroll(n)
             }
             override fun scrollToTop() { gestures += "scrollToTop" }
             override fun click(supportClass: SupportClass) { gestures += "click" }
             override fun delay(duration: Duration) {
+                delays += duration
                 onDelay()
                 exitManager.checkExitRequested()
             }
             override fun refresh() { gestures += "refresh" }
             override fun refreshAvailable() = true
-            override fun isAnyDialogOpen() = dialogOpen
-            override fun noSupportsPresent() = listLoaded && listShown && total == 0
-            override fun someSupportsPresent() = listLoaded && listShown && total > 0
-            override fun isListLoaded() = listLoaded && listShown
+            override fun isAnyDialogOpen() = dialogOpen || !onSupportScreen
+            override fun noSupportsPresent() = listShown && total == 0 && !guestOnly
+            override fun someSupportsPresent() = listShown && (total > 0 || guestOnly)
+            override fun isListLoaded() = noSupportsPresent() || someSupportsPresent()
         }
 
         val rowsBounds = mutableMapOf<Int, Int>()
@@ -138,7 +156,6 @@ class SupportScoreScanTest {
             }
             override fun field(bounds: SupportBounds): Pattern {
                 check(inSnap) { "field outside a snapshot" }
-                fieldSnaps += currentSnap
                 return FieldPattern.of(rowsBounds.getValue(bounds.region.y)).also { patterns += it }
             }
         }
@@ -158,19 +175,29 @@ class SupportScoreScanTest {
         }
     }
 
+    /** Like the real engine, it answers Unavailable from read only once unavailableReason says so. */
     private class Engine(val world: World, val score: (Int) -> EngineScore) : SupportScoreEngine {
         var reason: String? = null
+        var asked = 0
         val reads = mutableListOf<Pair<ByteArray, Int>>()
         var onRead: (Int) -> Unit = {}
-        override val unavailableReason get() = reason
+        var onAsked: () -> Unit = {}
+        /** Runs after a read has returned its score: the engine closes between two reads. */
+        var onReturned: (Int) -> Unit = {}
+        override val unavailableReason: String? get() {
+            asked++
+            onAsked()
+            return reason
+        }
         override val loadTime: Duration? = 420.milliseconds
         override fun read(field: Pattern): EngineScore {
             if (reason != null) return EngineScore.unknown(EngineUnknownReason.Unavailable, reason)
             val pixels = field.grayPixels()!!
             reads += pixels to world.currentSnap
             onRead(reads.size)
+            if (reason != null) return EngineScore.unknown(EngineUnknownReason.Unavailable, reason)
             val id = (0 until 1000).first { FieldPattern.of(it).grayPixels().contentEquals(pixels) }
-            return score(id)
+            return score(id).also { onReturned(reads.size) }
         }
     }
 
@@ -190,18 +217,19 @@ class SupportScoreScanTest {
     private inner class Scan(
         total: Int,
         perScreen: Int = 3,
+        guestOnly: Boolean = false,
         val server: GameServer = GameServer.Kr,
         var free: Long = Long.MAX_VALUE,
         val maxScreens: Int = SupportScoreScanner.MAX_SCREENS,
         kotlin: (Int) -> SupportScores = ::kotlinScore,
         rust: (Int) -> EngineScore = ::rustScore,
     ) {
-        val world = World(total, perScreen)
+        val world = World(total, perScreen, guestOnly)
         val time = TestTimeSource()
         val reader = Reader(world, time, kotlin)
         val engine = Engine(world, rust)
         val root = File(dir, ScoreScanLog.ROOT)
-        val storage = DirectoryScoreScanStorage(root) { free }
+        var storage: ScoreScanStorage = DirectoryScoreScanStorage(root) { free }
         var now = 1_790_000_000_000L
         val device = ScoreScanDevice("1.9.0-beta.1-rust.1", "Test Phone", "15 (API 35)")
 
@@ -219,6 +247,7 @@ class SupportScoreScanTest {
             maxScreens = maxScreens,
         ).run()
 
+        val scrolls get() = world.gestures.count { it == "scrollDown" }
         fun folder(result: ScoreScanResult) = File(root, result.folder!!)
         fun lines(result: ScoreScanResult) = File(folder(result), ScoreScanLog.LINES).readLines().map { Json.parseToJsonElement(it).jsonObject }
         fun summary(result: ScoreScanResult) = Json.parseToJsonElement(File(folder(result), ScoreScanLog.SUMMARY).readText()).jsonObject
@@ -234,12 +263,21 @@ class SupportScoreScanTest {
         val result = scan.run()
 
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
-        // Offsets 0, 2, 4; the fourth snapshot shows offset 4 again.
+        // Offsets 0, 2, 4, then two scrolls that leave offset 4 as it was.
         assertThat(result.screens).isEqualTo(3)
         assertThat(result.rows).isEqualTo(9)
-        assertThat(scan.world.gestures).containsExactly("scrollDown", "scrollDown", "scrollDown")
+        assertThat(scan.world.gestures).containsExactly("scrollDown", "scrollDown", "scrollDown", "scrollDown")
         assertThat(scan.lines(result).size).isEqualTo(9)
         assertThat(scan.summary(result).str("endReason")).isEqualTo("bottom")
+    }
+
+    @Test
+    fun `every scroll is followed by the settle wait of the support selection loop`() {
+        val scan = Scan(total = 7)
+        scan.run()
+        assertThat(scan.world.delays.size).isEqualTo(scan.scrolls)
+        assertThat(scan.world.delays.all { it == SupportSelectionLoop.SCROLL_SETTLE }).isTrue()
+        assertThat(SupportSelectionLoop.SCROLL_SETTLE).isEqualTo(300.milliseconds)
     }
 
     @Test
@@ -262,24 +300,24 @@ class SupportScoreScanTest {
         ).run()
 
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
-        assertThat(world.gestures).containsExactly("scrollDown")
+        assertThat(world.gestures).containsExactly("scrollDown", "scrollDown")
         verify(exactly = 0) { with(api) { any<Location>().click(any()) } }
         verify(exactly = 0) { with(api) { any<Region>().click(any()) } }
-        // The field is the score number region of each row.
-        verify(exactly = 2) { with(api) { Region(76 + 1960, 200 + 310, 120, 60).getPattern(any()) } }
+        // The field is the score number region of each row: one read screen and two unchanged ones.
+        verify(exactly = 3) { with(api) { Region(76 + 1960, 200 + 310, 120, 60).getPattern(any()) } }
     }
 
     @Test
-    fun `one snapshot per screen, and both readers read each row once on that snapshot`() {
+    fun `both readers read each row once on the snapshot of its screen`() {
         val scan = Scan(total = 5)
         val result = scan.run()
 
         assertThat(result.screens).isEqualTo(2)
-        // Two screens read, one more that showed the bottom.
-        assertThat(scan.world.snaps).isEqualTo(3)
+        // Per loop: the screen's snapshot and the look before the scroll. Screens 0 and 2 are read, 4 and 6 unchanged.
+        assertThat(scan.world.snaps).isEqualTo(7)
         assertThat(scan.reader.calls.map { it.first }).containsExactly(0, 1, 2, 2, 3, 4)
-        assertThat(scan.reader.calls.map { it.third }).containsExactly(0, 0, 0, 1, 1, 1)
-        assertThat(scan.engine.reads.map { it.second }).containsExactly(0, 0, 0, 1, 1, 1)
+        assertThat(scan.reader.calls.map { it.third }).containsExactly(0, 0, 0, 2, 2, 2)
+        assertThat(scan.engine.reads.map { it.second }).containsExactly(0, 0, 0, 2, 2, 2)
         val lines = scan.lines(result)
         for ((i, line) in lines.withIndex()) {
             val crop = File(scan.folder(result), line.str("crop")).readBytes()
@@ -307,21 +345,37 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `a dialog at the start ends the scan before anything is written`() {
+    fun `a dialog over the list at the start ends the scan before anything is written`() {
         val scan = Scan(total = 5).apply { world.dialogOpen = true }
-        assertNotStarted(scan, scan.run(), ScoreScanEndReason.DialogOpen)
+        assertNotStarted(scan, scan.run(), ScoreScanEndReason.NotSupportListOrDialog)
+    }
+
+    @Test
+    fun `another screen at the start reads as the same reason as a dialog`() {
+        val scan = Scan(total = 5).apply { world.onSupportScreen = false }
+        assertNotStarted(scan, scan.run(), ScoreScanEndReason.NotSupportListOrDialog)
     }
 
     @Test
     fun `a list that is not loaded ends the scan at once`() {
         val scan = Scan(total = 5).apply { world.listLoaded = false }
-        assertNotStarted(scan, scan.run(), ScoreScanEndReason.NotSupportList)
+        assertNotStarted(scan, scan.run(), ScoreScanEndReason.ListNotLoaded)
     }
 
     @Test
     fun `a loaded list without supports ends the scan at once`() {
         val scan = Scan(total = 0)
         assertNotStarted(scan, scan.run(), ScoreScanEndReason.NoRows)
+    }
+
+    @Test
+    fun `a list with only a guest row ends without any gesture`() {
+        val scan = Scan(total = 0, guestOnly = true)
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NoRows)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(result.rows).isEqualTo(0)
+        assertThat(scan.summary(result).str("endReason")).isEqualTo("no_rows")
     }
 
     @Test
@@ -333,9 +387,17 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `free space below the floor ends the scan before writing`() {
+    fun `a stop during the engine's first load ends as the user's stop`() {
+        val scan = Scan(total = 5)
+        scan.engine.onAsked = { scan.world.exitManager.exit(); scan.engine.reason = "stopped" }
+        assertNotStarted(scan, scan.run(), ScoreScanEndReason.UserStopped)
+    }
+
+    @Test
+    fun `free space below the floor ends the scan before the engine is asked`() {
         val scan = Scan(total = 5, free = ScoreScanLog.MIN_FREE_BYTES - 1)
         assertNotStarted(scan, scan.run(), ScoreScanEndReason.LowSpace)
+        assertThat(scan.engine.asked).isEqualTo(0)
     }
 
     @Test
@@ -349,13 +411,34 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `a list shorter than one screen is read once`() {
+    fun `a list shorter than one screen is read once and ends after two unchanged screens`() {
         val scan = Scan(total = 2)
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
         assertThat(result.screens).isEqualTo(1)
         assertThat(result.rows).isEqualTo(2)
-        assertThat(scan.world.gestures).containsExactly("scrollDown")
+        assertThat(scan.scrolls).isEqualTo(2)
+    }
+
+    @Test
+    fun `the real bottom ends after exactly two extra scrolls`() {
+        val scan = Scan(total = 9)
+        val result = scan.run()
+        // Offsets 0, 2, 4, 6 read with three scrolls, then two scrolls that change nothing.
+        assertThat(result.screens).isEqualTo(4)
+        assertThat(scan.scrolls).isEqualTo(3 + 2)
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+    }
+
+    @Test
+    fun `a dropped scroll in the middle of the list neither ends the scan nor logs a row twice`() {
+        val scan = Scan(total = 9)
+        scan.world.droppedScrolls += 2
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(result.screens).isEqualTo(4)
+        assertThat(scan.lines(result).map { it.int("screen") to it.int("row") }.distinct().size).isEqualTo(result.rows)
+        assertThat(scan.reader.calls.map { it.first }).containsExactly(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8)
     }
 
     @Test
@@ -364,29 +447,76 @@ class SupportScoreScanTest {
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.ScreenLimit)
         assertThat(result.screens).isEqualTo(4)
-        assertThat(scan.world.gestures.size).isEqualTo(3)
+        assertThat(scan.scrolls).isEqualTo(3)
         assertThat(SupportScoreScanner.MAX_SCREENS).isEqualTo(80)
     }
 
     @Test
-    fun `leaving the support list ends the scan without another gesture`() {
+    fun `leaving the support list after a scroll ends the scan without another gesture`() {
         val scan = Scan(total = 20)
-        scan.world.onScroll = { if (it == 2) scan.world.listShown = false }
+        scan.world.onScroll = { if (it == 2) scan.world.onSupportScreen = false }
         val result = scan.run()
-        assertThat(result.reason).isEqualTo(ScoreScanEndReason.ScreenLost)
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
         assertThat(result.screens).isEqualTo(2)
-        assertThat(scan.world.gestures.size).isEqualTo(2)
-        assertThat(scan.summary(result).str("endReason")).isEqualTo("screen_lost")
+        assertThat(scan.scrolls).isEqualTo(2)
+        assertThat(scan.summary(result).str("endReason")).isEqualTo("not_support_list_or_dialog")
     }
 
     @Test
-    fun `a dialog that opens during the scan ends it without another gesture`() {
+    fun `supports that vanish from the list after a scroll end the scan without another gesture`() {
+        val scan = Scan(total = 20)
+        scan.world.onScroll = { scan.world.listLoaded = false }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.RowsLost)
+        assertThat(scan.scrolls).isEqualTo(1)
+    }
+
+    @Test
+    fun `a dialog that opens after a scroll ends the scan without another gesture`() {
         val scan = Scan(total = 20)
         scan.world.onScroll = { scan.world.dialogOpen = true }
         val result = scan.run()
-        assertThat(result.reason).isEqualTo(ScoreScanEndReason.DialogOpen)
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
         assertThat(result.screens).isEqualTo(1)
-        assertThat(scan.world.gestures.size).isEqualTo(1)
+        assertThat(scan.scrolls).isEqualTo(1)
+    }
+
+    @Test
+    fun `a stop during the last row of a screen issues no further scroll`() {
+        val scan = Scan(total = 20)
+        scan.reader.onRead = { if (it == 3) scan.world.exitManager.exit() }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(result.rows).isEqualTo(3)
+        assertThat(scan.scrolls).isEqualTo(0)
+    }
+
+    @Test
+    fun `leaving the support list while rows are read issues no further scroll`() {
+        val scan = Scan(total = 20)
+        scan.reader.onRead = { if (it == 2) scan.world.onSupportScreen = false }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
+        assertThat(result.rows).isEqualTo(3)
+        assertThat(scan.scrolls).isEqualTo(0)
+    }
+
+    @Test
+    fun `a dialog that opens while rows are read issues no further scroll`() {
+        val scan = Scan(total = 20)
+        scan.reader.onRead = { if (it == 3) scan.world.dialogOpen = true }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
+        assertThat(scan.scrolls).isEqualTo(0)
+    }
+
+    @Test
+    fun `supports that vanish while rows are read issue no further scroll`() {
+        val scan = Scan(total = 20)
+        scan.reader.onRead = { if (it == 3) scan.world.listLoaded = false }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.RowsLost)
+        assertThat(scan.scrolls).isEqualTo(0)
     }
 
     @Test
@@ -399,45 +529,50 @@ class SupportScoreScanTest {
         assertThat(scan.lines(result).size).isEqualTo(4)
         assertThat(scan.summary(result).str("endReason")).isEqualTo("user_stopped")
         assertThat(scan.summary(result).int("rows")).isEqualTo(4)
-        assertThat(scan.world.gestures.size).isEqualTo(1)
+        assertThat(scan.scrolls).isEqualTo(1)
     }
 
     @Test
-    fun `a stop between screens ends the scan before the next screen`() {
+    fun `a stop in the wait between screens ends the scan before the next screen`() {
         val scan = Scan(total = 20)
         scan.world.onDelay = { scan.world.exitManager.exit() }
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
         assertThat(result.screens).isEqualTo(1)
-        assertThat(scan.world.snaps).isEqualTo(1)
+        // The first screen and the look before its scroll.
+        assertThat(scan.world.snaps).isEqualTo(2)
     }
 
     @Test
     fun `an engine that becomes unavailable ends the scan with its reason`() {
         val scan = Scan(total = 20)
-        scan.engine.onRead = { if (it == 2) scan.engine.reason = "closed" }
+        scan.engine.onReturned = { if (it == 2) scan.engine.reason = "closed" }
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.EngineUnavailable)
         assertThat(result.rows).isEqualTo(2)
+        assertThat(scan.lines(result).map { it.obj("rust").str("status") }).containsExactly("read", "read")
         assertThat(result.detail).isEqualTo("closed")
         assertThat(scan.summary(result).str("engineUnavailableReason")).isEqualTo("closed")
     }
 
     @Test
-    fun `a read the engine answers as unavailable is logged and ends the scan`() {
+    fun `an engine closed during a read is logged and ends the scan`() {
         val scan = Scan(total = 20)
-        var reads = 0
-        scan.reader.onRead = { reads = it }
-        val unavailable = object : SupportScoreEngine by scan.engine {
-            override fun read(field: Pattern) = if (reads == 3) EngineScore.unknown(EngineUnknownReason.Unavailable, "gone") else scan.engine.read(field)
-        }
-        val result = SupportScoreScanner(
-            scan.world.screen, scan.world.frames, scan.reader, unavailable, scan.storage, scan.device,
-            scan.world.exitManager, GameServer.Kr,
-        ).run()
+        scan.engine.onRead = { if (it == 3) scan.engine.reason = "closed" }
+        val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.EngineUnavailable)
         assertThat(result.rows).isEqualTo(3)
         assertThat(scan.lines(result)[2].obj("rust").str("status")).isEqualTo("unavailable")
+        assertThat(scan.scrolls).isEqualTo(0)
+    }
+
+    @Test
+    fun `a stop that makes the engine unavailable during a read ends as the user's stop`() {
+        val scan = Scan(total = 20)
+        scan.engine.onRead = { if (it == 3) { scan.world.exitManager.exit(); scan.engine.reason = "stopped" } }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(result.rows).isEqualTo(3)
     }
 
     @Test
@@ -453,12 +588,13 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `an unexpected failure leaves the lines read so far and a summary, and is rethrown`() {
+    fun `an unexpected failure leaves the lines and crops read so far and a summary, and is rethrown`() {
         val scan = Scan(total = 20)
         scan.engine.onRead = { if (it == 3) throw IllegalStateException("boom") }
         assertFailsWith<IllegalStateException> { scan.run() }
         val folder = scan.root.listFiles()!!.single()
         assertThat(folder.resolve(ScoreScanLog.LINES).readLines().size).isEqualTo(2)
+        assertThat(folder.resolve(ScoreScanLog.CROPS).list()!!.sorted()).containsExactly("s000-r0.png", "s000-r1.png")
         val summary = Json.parseToJsonElement(folder.resolve(ScoreScanLog.SUMMARY).readText()).jsonObject
         assertThat(summary.str("endReason")).isEqualTo("error")
         assertThat(summary.int("rows")).isEqualTo(2)
@@ -515,6 +651,52 @@ class SupportScoreScanTest {
         assertThat(result.folder).isEqualTo(SupportScoreScanner.stamp(1_790_000_000_000L))
     }
 
+    private fun record(kotlin: SupportScores, rust: EngineScore) = ScoreScanRecord(
+        time = 1, server = "Kr", screen = 0, row = 0, bounds = SupportBounds(Region(1, 2, 3, 4)),
+        crop = "s000-r0.png", cropSha256 = "00", kotlin = kotlin, kotlinCheckGrand = false, kotlinMicros = 7, rust = rust,
+    )
+
+    @Test
+    fun `text and detail are escaped and a NaN confidence is written as null`() {
+        val text = "a\"b\\c\nd\u0001e 한글"
+        val rust = EngineScore(
+            EngineField.Unknown(EngineUnknownReason.Format), EngineField.Unknown(EngineUnknownReason.Format),
+            EngineDisplay.Unknown, text, Float.NaN, Float.POSITIVE_INFINITY, 1.milliseconds, 900.microseconds, detail = text,
+        )
+        val line = ScoreScanLog.line(record(SupportScores(), rust))
+        assertThat(line.contains('\n')).isFalse()
+        val parsed = Json.parseToJsonElement(line).jsonObject.obj("rust")
+        assertThat(parsed.str("text")).isEqualTo(text)
+        assertThat(parsed.str("detail")).isEqualTo(text)
+        assertThat(parsed.getValue("confidence")).isEqualTo(JsonNull)
+        assertThat(parsed.getValue("minCharConfidence")).isEqualTo(JsonNull)
+    }
+
+    @Test
+    fun `an engine error is recorded with its status`() {
+        val rust = EngineScore.unknown(EngineUnknownReason.EngineError, "malformed engine reply: magic 0")
+        assertThat(ScoreScanLog.status(rust)).isEqualTo("engine_error")
+        val parsed = Json.parseToJsonElement(ScoreScanLog.line(record(SupportScores(), rust))).jsonObject.obj("rust")
+        assertThat(parsed.str("status")).isEqualTo("engine_error")
+        assertThat(parsed.str("classReason")).isEqualTo("engine_error")
+        assertThat(parsed.str("detail")).isEqualTo("malformed engine reply: magic 0")
+        assertThat(parsed.getValue("micros")).isEqualTo(JsonNull)
+    }
+
+    @Test
+    fun `the tally counts reads that only one reader or neither made`() {
+        val tally = ScoreScanTally()
+        val unknown = EngineScore.unknown(EngineUnknownReason.LowConfidence, null)
+        tally.add(record(SupportScores(62, display = SupportScoreDisplay.Ordinary), unknown))
+        tally.add(record(SupportScores(), unknown))
+        tally.add(record(SupportScores(), unknown))
+        tally.add(record(SupportScores(), rustScore(12)))
+        tally.add(record(SupportScores(62, display = SupportScoreDisplay.Ordinary), rustScore(12)))
+        assertThat(listOf(tally.kotlinOnly, tally.rustOnly, tally.bothUnknown, tally.agree, tally.differ))
+            .containsExactly(1, 1, 2, 3, 2)
+        assertThat(listOf(tally.kotlinClass62, tally.rustClass62)).containsExactly(2, 2)
+    }
+
     @Test
     fun `agreement treats an unknown as equal only to an unknown`() {
         val unknownRust = EngineScore.unknown(EngineUnknownReason.LowConfidence, null)
@@ -540,6 +722,32 @@ class SupportScoreScanTest {
     }
 
     @Test
+    fun `a folder that cannot be created deletes no older scan`() {
+        val scan = Scan(total = 1)
+        val old = (1..25).map { "20200101-0000%02d".format(it) }
+        old.forEach { File(scan.root, it).mkdirs() }
+        val real = scan.storage
+        scan.storage = object : ScoreScanStorage by real {
+            override fun create(name: String): ScoreScanFolder = throw java.io.IOException("read-only")
+        }
+        assertFailsWith<java.io.IOException> { scan.run() }
+        assertThat(scan.root.list()!!.sorted()).isEqualTo(old)
+        assertThat(scan.reader.calls.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `the storage refuses names that are not scan folders`() {
+        val root = File(dir, "refuse")
+        File(root, "notes").mkdirs()
+        val storage = DirectoryScoreScanStorage(root) { Long.MAX_VALUE }
+        assertFailsWith<IllegalArgumentException> { storage.delete("notes") }
+        assertFailsWith<IllegalArgumentException> { storage.delete("../refuse") }
+        assertFailsWith<IllegalArgumentException> { storage.create("notes") }
+        assertThat(File(root, "notes").isDirectory).isTrue()
+        assertThat(storage.scanNames()).isEqualTo(emptyList())
+    }
+
+    @Test
     fun `a second scan in the same second gets its own folder`() {
         assertThat(ScoreScanLog.newName("20261120-101010", listOf("20261120-101010"))).isEqualTo("20261120-101010-2")
         assertThat(ScoreScanLog.newName("20261120-101010", emptyList())).isEqualTo("20261120-101010")
@@ -548,8 +756,9 @@ class SupportScoreScanTest {
     @Test
     fun `the end reasons in the summary have their documented names`() {
         assertThat(ScoreScanEndReason.entries.map { it.wireName }).isEqualTo(listOf(
-            "not_support_list", "no_rows", "dialog_open", "engine_unavailable", "low_space", "user_stopped",
-            "bottom", "screen_limit", "screen_lost", "error",
+            "not_support_list_or_dialog", "list_not_loaded", "no_rows", "rows_lost",
+            "engine_unavailable", "low_space", "user_stopped", "bottom", "screen_limit",
         ))
+        assertThat(ScoreScanLog.ERROR).isEqualTo("error")
     }
 }
