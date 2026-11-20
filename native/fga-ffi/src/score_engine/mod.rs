@@ -77,8 +77,6 @@ pub fn poison_engine_lock_for_tests() -> Result<String, String> {
     panic!("poisoning the support-score engine lock")
 }
 
-/// Only for tests/score_engine_hooks.rs: fills the slot with `model` as `load` would, refusing a
-/// filled slot as `load` does, so the slot rules can be checked without a model file.
 /// Only for tests/score_engine_busy.rs: runs `body` while this thread holds the engine lock, as a
 /// load or a read would.
 #[cfg(feature = "test-hooks")]
@@ -88,6 +86,8 @@ pub fn with_engine_locked_for_tests<R>(body: impl FnOnce() -> R) -> Result<R, St
     Ok(body())
 }
 
+/// Only for tests/score_engine_hooks.rs: fills the slot with `model` as `load` would, refusing a
+/// filled slot as `load` does, so the slot rules can be checked without a model file.
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {

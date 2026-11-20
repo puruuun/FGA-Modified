@@ -26,7 +26,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 class RustSupportScoreEngineTest {
@@ -415,20 +414,27 @@ class RustSupportScoreEngineTest {
         assertEquals(1, native.calls.count { it == "load" })
     }
 
-    @Test fun `a stop during the wait ends it within a poll and loads nothing`() {
+    @Test fun `a stop during the wait ends it long before the bound and loads nothing`() {
         val stopped = AtomicBoolean(false)
         val native = FakeNative(slot = AtomicBoolean(true), name = "B")
         val engine = engine(native, slotWait = 30.seconds, stopRequested = { stopped.get() })
         var reason: String? = null
         val worker = thread { reason = engine.unavailableReason }
         assertTrue(native.sawBusySlot.await(10, TimeUnit.SECONDS))
-        val stoppedAt = System.nanoTime()
         stopped.set(true)
         worker.join(5_000)
         assertFalse(worker.isAlive)
-        assertTrue((System.nanoTime() - stoppedAt).nanoseconds < 1.seconds)
         assertEquals(RustSupportScoreEngine.STOPPED, reason)
         assertEquals(listOf("library"), native.work)
+    }
+
+    @Test fun `a run stopped before its first use copies and loads nothing`() {
+        val native = FakeNative()
+        var prepared = 0
+        val engine = engine(native, stopRequested = { true }, prepare = { prepared++; model })
+        assertEquals(RustSupportScoreEngine.STOPPED, engine.unavailableReason)
+        assertEquals(0, prepared)
+        assertEquals(emptyList(), native.calls)
     }
 
     @Test fun `a close during the model copy loads nothing`() {

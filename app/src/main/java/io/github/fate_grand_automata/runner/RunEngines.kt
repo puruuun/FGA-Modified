@@ -20,7 +20,10 @@ class RunEngines {
     private var ocrService: OcrService? = null
     private var supportScoreEngine: SupportScoreEngine? = null
 
-    /** Holds the engines of a new run; whatever an earlier run left is closed first. */
+    /**
+     * Holds the engines of a new run. Whatever an earlier run left is swapped out under the monitor
+     * and closed after leaving it, so the new engines are already held while the old ones close.
+     */
     fun attach(ocrService: OcrService, supportScoreEngine: SupportScoreEngine) {
         val old = synchronized(this) {
             val taken = this.ocrService to this.supportScoreEngine

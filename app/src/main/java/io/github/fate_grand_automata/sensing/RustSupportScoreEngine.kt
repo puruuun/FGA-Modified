@@ -51,9 +51,10 @@ import kotlin.time.Duration.Companion.seconds
  * a model it did not load, because the filled slot may belong to a run that is still reading, and
  * one live run holds one loaded engine. Waiting is bounded because an engine whose close never
  * finishes must cost the next run its engine, not its script thread. A close, a stop
- * ([stopRequested]) or an interrupt during the wait ends it without a load. The model copy and
- * `native.load` themselves cannot be cut short: on the three QA devices the first load of a run,
- * copy included, took 146 to 581 ms, and a stop that arrives during it takes effect after it.
+ * ([stopRequested]) or an interrupt during the wait ends it without a load, and a run already
+ * stopped before its first use loads neither the library nor the model. The model copy and
+ * `native.load` themselves cannot be cut short; they take up to several hundred milliseconds, and
+ * a stop that arrives during them takes effect after them.
  *
  * Errors: every Throwable from the library or the model copy (an `UnsatisfiedLinkError` from a
  * library that does not match this class included) becomes "unavailable" or "engine error" with
@@ -62,8 +63,8 @@ import kotlin.time.Duration.Companion.seconds
  *
  * [prepareModel] returns the model file to load. [stopRequested] tells whether the run was stopped
  * (the script component's `ExitManager.isExitRequested`, wired in ScriptsModule); it must answer at
- * once and never wait, so a paused run's stop still ends the wait. [isMainThread] exists for the unit tests, which have no
- * Android looper, and [slotWait] for the test of an expiring wait.
+ * once and never wait, so a paused run's stop still ends the wait. [isMainThread] exists for the
+ * unit tests, which have no Android looper, and [slotWait] for the test of an expiring wait.
  */
 class RustSupportScoreEngine(
     private val native: ScoreNative,
@@ -196,6 +197,8 @@ class RustSupportScoreEngine(
     }
 
     private fun load(): String? {
+        // A run stopped before its first use would otherwise still copy the 21 MB model.
+        if (stopRequested()) return STOPPED
         native.loadLibrary()?.let { return "libfga_ffi.so did not load: $it" }
         val model = try {
             prepareModel()
@@ -230,7 +233,7 @@ class RustSupportScoreEngine(
         const val PIN_ASSET = "$ASSET_DIR/ocr-model.properties"
         const val CLOSED = "the engine was closed at the end of the run"
         const val SLOT_BUSY = "an earlier run's engine was still loaded when the wait for it ended; this run has no engine"
-        const val STOPPED = "the run was stopped during the wait for an earlier run's engine; nothing was loaded"
+        const val STOPPED = "the run was stopped before the engine loaded; nothing was loaded"
         const val SLOT_POLL_MS = 20L
 
         private fun describe(t: Throwable) = "${t.javaClass.simpleName}: ${t.message}"
