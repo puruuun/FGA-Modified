@@ -42,6 +42,12 @@ class LogDayUiTest {
     @get:Rule val rules = screenshotRules(rule)
     private val back get() = ApplicationProvider.getApplicationContext<android.content.Context>().getString(R.string.navigate_back)
 
+    private fun chooseView(view: String) {
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-$view").performClick()
+        rule.onNodeWithText("적용").performClick()
+    }
+
     @androidx.compose.runtime.Composable private fun Screen() = FGATheme(false) {
         LogScreenContent(listOf(dayBattleToday, dayBattleOlder), {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP"))
     }
@@ -49,7 +55,7 @@ class LogDayUiTest {
     @Test fun switchSelectDayOpenBattleAndGoBackOnANarrowScreen() {
         rule.setContent { Screen() }
         rule.onNodeWithTag("log-card:today").assertExists()
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-card:today").assertDoesNotExist()
         rule.onNodeWithContentDescription("삭제").assertDoesNotExist()
         rule.onNodeWithTag("log-day:2026-11-11").assertExists()
@@ -64,13 +70,13 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day-detail").assertExists()
         rule.onNodeWithContentDescription(back).performClick()
         rule.onNodeWithTag("log-day:2026-11-11").assertExists()
-        rule.onNodeWithTag("log-view-record").performClick()
+        chooseView("record")
         rule.onNodeWithTag("log-card:today").assertExists()
     }
 
     @Test fun theIncludedBattleCountAndTheEmptySectionLinesShow() {
         rule.setContent { Screen() }
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day:2026-11-11").performClick()
         rule.onNodeWithText("전투 1회 포함").assertExists()
         rule.onNodeWithContentDescription(back).performClick()
@@ -82,7 +88,7 @@ class LogDayUiTest {
     @Test fun theViewAndTheSelectedDaySurviveRecreation() {
         val restoration = StateRestorationTester(rule)
         restoration.setContent { Screen() }
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day:2026-11-10").performClick()
         restoration.emulateSavedInstanceStateRestore()
         rule.onNodeWithTag("log-day-detail").assertExists()
@@ -91,7 +97,7 @@ class LogDayUiTest {
 
     @Test @Config(qualifiers = "ko-w1000dp-h700dp-hdpi") fun wideScreenShowsTheFirstDayAtOnceAndSwitchesPanes() {
         rule.setContent { Screen() }
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day:2026-11-11").assertIsSelected()
         rule.onNodeWithTag("log-day-account:A").assertExists()
         rule.onNodeWithTag("log-day:2026-11-10").performClick()
@@ -106,7 +112,7 @@ class LogDayUiTest {
         val later = dayOutside.copy(id = "later", startedAt = kst("2026-11-12T09:00:00"), endedAt = kst("2026-11-12T09:30:00"),
             period = OutsidePeriod("A", kst("2026-11-12T09:00:00") / 1000).add(ChangeSource(ChangeSource.Group.Shop), AccountDelta(qp = 5), kst("2026-11-12T09:10:00") / 1000))
         rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday), {}, {}, outsideEntries = listOf(later)) } }
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day:2026-11-12").assertExists()
         rule.onNodeWithTag("log-filter-button").performClick()
         rule.onNodeWithTag("log-filter-source:Script").performScrollTo().performClick()
@@ -115,9 +121,79 @@ class LogDayUiTest {
         rule.onNodeWithTag("log-day:2026-11-11").assertExists()
     }
 
+    @Test fun theHeadingNoLongerHasViewChipsAndTheDialogChoiceTakesEffectOnlyOnApply() {
+        rule.setContent { Screen() }
+        rule.onNodeWithTag("log-view-day").assertDoesNotExist()
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-record").assertIsSelected()
+        rule.onNodeWithTag("log-view-day").performClick()
+        rule.onNodeWithTag("log-view-day").assertIsSelected()
+        rule.onNodeWithTag("log-card:today").assertExists()
+        rule.onNodeWithText("적용").performClick()
+        rule.onNodeWithTag("log-card:today").assertDoesNotExist()
+        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+    }
+
+    @Test fun cancelKeepsTheCurrentView() {
+        rule.setContent { Screen() }
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-day").performClick()
+        rule.onNodeWithText("취소").performClick()
+        rule.onNodeWithTag("log-card:today").assertExists()
+        rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
+        chooseView("day")
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-day").assertIsSelected()
+        rule.onNodeWithTag("log-view-record").performClick()
+        rule.onNodeWithText("취소").performClick()
+        rule.onNodeWithTag("log-day:2026-11-11").assertExists()
+    }
+
+    @Test fun resetKeepsTheViewAndStaysDisabledWhenOnlyTheViewChanged() {
+        rule.setContent { Screen() }
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-day").performClick()
+        rule.onNodeWithTag("log-filter-reset").assertIsNotEnabled()
+        rule.onNodeWithTag("log-filter-source:Script").performScrollTo().performClick()
+        rule.onNodeWithTag("log-filter-reset").assertIsEnabled().performClick()
+        rule.onNodeWithTag("log-view-day").assertIsSelected()
+        rule.onNodeWithTag("log-filter-reset").assertIsNotEnabled()
+    }
+
+    @Test fun theSummaryShowsByDayOnlyWhileTheDayViewIsOn() {
+        rule.setContent { Screen() }
+        rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
+        chooseView("day")
+        rule.onNode(hasText("날짜별") and hasAnyAncestor(hasTestTag("log-filter-summary"))).assertExists()
+        rule.onNodeWithTag("log-filter-active").assertDoesNotExist()
+        chooseView("record")
+        rule.onNodeWithTag("log-filter-summary").assertDoesNotExist()
+    }
+
+    @Test fun theDayViewHasNoDeleteModeAndTheFilterButtonIsHiddenWhileDeleting() {
+        rule.setContent { Screen() }
+        rule.onNodeWithContentDescription("삭제").performClick()
+        rule.onNodeWithText("선택 삭제").assertExists()
+        rule.onNodeWithTag("log-filter-button").assertDoesNotExist()
+        rule.onNodeWithText("취소").performClick()
+        chooseView("day")
+        rule.onNodeWithText("선택 삭제").assertDoesNotExist()
+        rule.onNodeWithContentDescription("삭제").assertDoesNotExist()
+    }
+
+    @Test fun twoAccountsOnADayStayDistinctWithoutACardBackground() {
+        val other = dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회")
+        rule.setContent { FGATheme(false) { LogScreenContent(listOf(dayBattleToday, other), {}, {}) } }
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+        rule.onNodeWithTag("log-day-account:A").assertExists()
+        rule.onNodeWithTag("log-day-account:B").assertExists()
+        rule.onAllNodesWithTag("log-day-divider").assertCountEquals(1)
+    }
+
     @Test fun anEmptyDayViewShowsTheNormalEmptyText() {
         rule.setContent { FGATheme(false) { LogScreenContent(emptyList(), {}, {}) } }
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithText("전투 기록이 없습니다", substring = true).assertExists()
     }
 }
@@ -132,14 +208,33 @@ class LogDayScreenshotTest {
     @androidx.compose.runtime.Composable private fun Screen() =
         LogScreenContent(listOf(dayBattleToday, dayBattleOlder), {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP"))
 
+    private fun chooseView(view: String) {
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-$view").performClick()
+        rule.onNodeWithText("적용").performClick()
+    }
+
     @Test fun narrowDay() = rule.shoot("log-day", "NarrowDayDetail", 360, 800, false, "ko", beforeCapture = {
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day:2026-11-11").performClick()
         rule.onNodeWithTag("log-day-expand:A").performClick()
     }) { Screen() }
 
     @Test fun wideDay() = rule.shoot("log-day", "WideDayView", 1280, 720, false, "ko", beforeCapture = {
-        rule.onNodeWithTag("log-view-day").performClick()
+        chooseView("day")
         rule.onNodeWithTag("log-day-expand:A").performClick()
+    }) { Screen() }
+
+    @Test fun narrowTwoAccounts() = rule.shoot("log-day", "NarrowTwoAccounts", 360, 800, false, "ko", beforeCapture = {
+        chooseView("day")
+        rule.onNodeWithTag("log-day:2026-11-11").performClick()
+    }) {
+        LogScreenContent(listOf(dayBattleToday, dayBattleToday.copy(id = "b", accountId = "B", accountName = "둘째", configName = "다른 주회")),
+            {}, {}, outsideEntries = listOf(dayOutside), accountServers = mapOf("A" to "JP", "B" to "KR"))
+    }
+
+    @Test fun filterDialogWithView() = rule.shoot("log-day", "FilterDialogView", 360, 800, false, "ko", beforeCapture = {
+        rule.onNodeWithTag("log-filter-button").performClick()
+        rule.onNodeWithTag("log-view-day").performClick()
     }) { Screen() }
 }

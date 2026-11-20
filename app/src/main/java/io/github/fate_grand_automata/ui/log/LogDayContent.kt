@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
@@ -56,16 +57,6 @@ internal fun LogDayCard(day: LogDay, selected: Boolean, now: Long, onClick: () -
     }
 }
 
-@Composable
-internal fun LogViewSwitch(dayView: Boolean, onDayView: (Boolean) -> Unit) {
-    Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(!dayView, { onDayView(false) }, { Text(stringResource(R.string.capture_log_view_record)) },
-            Modifier.testTag("log-view-record"))
-        FilterChip(dayView, { onDayView(true) }, { Text(stringResource(R.string.capture_log_view_day)) },
-            Modifier.testTag("log-view-day"))
-    }
-}
-
 internal fun LazyListScope.logDayItems(day: LogDay, names: GameNameMap, now: Long, onBattle: (String) -> Unit) {
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -78,7 +69,7 @@ internal fun LazyListScope.logDayItems(day: LogDay, names: GameNameMap, now: Lon
         style = MaterialTheme.typography.titleSmall) }
     if (day.accounts.isEmpty()) item { Text(stringResource(R.string.capture_log_day_no_changes),
         Modifier.padding(horizontal = 16.dp).testTag("log-day-no-changes")) }
-    items(day.accounts, key = { "account:${it.accountId}" }) { LogDayAccountCard(day, it, names) }
+    itemsIndexed(day.accounts, key = { _, it -> "account:${it.accountId}" }) { index, it -> LogDayAccountCard(day, it, names, index == 0) }
     item { Text(stringResource(R.string.capture_log_day_scripts), Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         style = MaterialTheme.typography.titleSmall) }
     if (day.battles.isEmpty()) item { Text(stringResource(R.string.capture_log_day_no_scripts),
@@ -89,12 +80,13 @@ internal fun LazyListScope.logDayItems(day: LogDay, names: GameNameMap, now: Lon
 }
 
 @Composable
-private fun LogDayAccountCard(day: LogDay, account: LogDayAccount, names: GameNameMap) {
+private fun LogDayAccountCard(day: LogDay, account: LogDayAccount, names: GameNameMap, first: Boolean) {
     var expanded by rememberSaveable(day.key, account.accountId) { mutableStateOf(false) }
     val noProfile = stringResource(R.string.capture_log_no_profile)
-    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).testTag("log-day-account:${account.accountId}"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // No card container: the account sits on the page, and the divider keeps several accounts apart.
+    Column(Modifier.fillMaxWidth().testTag("log-day-account:${account.accountId}")) {
+        if (!first) HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("log-day-divider"))
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(account.name ?: noProfile, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 account.server?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

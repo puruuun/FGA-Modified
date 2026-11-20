@@ -64,10 +64,12 @@ internal fun LogFilterDialog(
     battleCount: Int, outsideCount: Int, entries: List<CaptureLogItem>, names: GameNameMap, profile: String?,
     onDismiss: () -> Unit, onApply: (LogTimeFilter, Set<String>, Long?, Long?, Int, String?, LogSourceFilter?) -> Unit,
     source: LogSourceFilter? = null,
+    dayView: Boolean = false, onViewApply: (Boolean) -> Unit = {},
 ) {
     var draftTime by rememberSaveable { mutableStateOf(time) }
     var draftResources by rememberSaveable(stateSaver = LogResourceSetSaver) { mutableStateOf(resources) }
     var draftProfile by rememberSaveable { mutableStateOf(profile) }
+    var draftDayView by rememberSaveable { mutableStateOf(dayView) }
     var draftSource by rememberSaveable { mutableStateOf(source) }
     var draftStart by rememberSaveable { mutableStateOf(start) }
     var draftEnd by rememberSaveable { mutableStateOf(end) }
@@ -88,7 +90,8 @@ internal fun LogFilterDialog(
         draftTime = d.time; draftResources = d.resources; draftProfile = d.profile; draftSource = d.source
         draftStart = d.start; draftEnd = d.end; query = ""
     }
-    val apply = { onApply(draftTime, activeResources, draftStart, draftEnd, draftRetention, activeProfile, draftSource) }
+    // The view is not a filter: Reset leaves it alone and atDefaults ignores it.
+    val apply = { onViewApply(draftDayView); onApply(draftTime, activeResources, draftStart, draftEnd, draftRetention, activeProfile, draftSource) }
     val screen = LocalConfiguration.current
     AlertDialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -97,6 +100,13 @@ internal fun LogFilterDialog(
         title = { Text(stringResource(R.string.capture_log_filter)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.capture_log_view), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterChip(selected = !draftDayView, onClick = { draftDayView = false },
+                        modifier = Modifier.testTag("log-view-record"), label = { Text(stringResource(R.string.capture_log_view_record)) })
+                    FilterChip(selected = draftDayView, onClick = { draftDayView = true },
+                        modifier = Modifier.testTag("log-view-day"), label = { Text(stringResource(R.string.capture_log_view_day)) })
+                }
                 Text(stringResource(R.string.capture_log_date), style = MaterialTheme.typography.titleSmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     LogTimeFilter.entries.forEach { value ->

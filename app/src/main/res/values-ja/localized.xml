@@ -1168,6 +1168,7 @@
     <string name="capture_root_adguard_vpn_note">"AdGuard は「自動プロキシ」モードにし、AdGuard のフィルタリングから FGO と FGA の両方を除外してください。WireGuard などの個人 VPN と併用できます。"</string>
     <string name="card_swap_detection">青子のカード変化を検出</string>
     <string name="card_swap_detection_summary">オンにするとすべてのウェーブとターンに適用されます。変換アイコンのあるカードをArtsとして扱います</string>
+    <string name="capture_log_view">表示</string>
     <string name="capture_log_view_record">記録別</string>
     <string name="capture_log_view_day">日別</string>
     <string name="capture_log_day_summary">バトル %1$d · アカウント %2$d</string>

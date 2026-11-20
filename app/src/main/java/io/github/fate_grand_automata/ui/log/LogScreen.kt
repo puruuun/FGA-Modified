@@ -119,7 +119,8 @@ fun LogScreenContent(
     val noProfileLabel = stringResource(R.string.capture_log_no_profile)
     val (resourceNames, hiddenResources) = resourceSummaryParts(activeResources.map { resourceLabel(it, names) })
     val resourceSummaryText = if (hiddenResources > 0) stringResource(R.string.capture_log_resources_more, resourceNames, hiddenResources) else resourceNames
-    val summary = if (filtered) listOfNotNull(
+    val summary = if (filtered || dayView) listOfNotNull(
+        if (dayView) stringResource(R.string.capture_log_view_day) else null,
         if (time == LogTimeFilter.Custom) customRangeLabel(start, end) else if (time != LogTimeFilter.All) timeFilterLabel(time) else null,
         activeProfile?.let { if (it == NO_LOG_PROFILE) noProfileLabel else profiles[it] }, resourceSummaryText.takeIf { it.isNotEmpty() }, source?.let { sourceFilterLabel(it) }).joinToString(" · ") else null
     BackHandler(enabled = deletion.active) { cancelDelete() }
@@ -138,7 +139,7 @@ fun LogScreenContent(
                 onClear = { pendingIds = ArrayList(deletion.targets(all, all = true)); confirmAll = true },
                 hasEntries = all.isNotEmpty(), emptyText = if (twoPanes) "" else emptyText,
                 onFilter = { showFilters = true }, filterSummary = summary,
-                dayView = dayView, onDayView = { if (it) cancelDelete(); dayView = it },
+                dayView = dayView, filterActive = filtered,
                 days = days, selectedDay = selectedDay?.day, now = now,
                 onSelectDay = { selectedDayKey = it.key(); dayBattleId = null })
         }
@@ -178,7 +179,8 @@ fun LogScreenContent(
             profile = newProfile; source = newSource
             if (newRetention != retention) onRetention(newRetention)
             showFilters = false
-        }, source = source)
+        }, source = source, dayView = dayView,
+        onViewApply = { if (it) cancelDelete(); dayView = it })
     if (pendingIds != null) AlertDialog(
         onDismissRequest = { pendingIds = null; confirmAll = false },
         title = { Text(stringResource(if (confirmAll) R.string.battle_log_delete_all else R.string.capture_log_delete_selected)) },
@@ -198,7 +200,7 @@ internal fun ColumnScope.LogList(
     deletion: LogDeleteSelection, onEnterDelete: () -> Unit, onCancelDelete: () -> Unit,
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
     emptyText: String, onFilter: () -> Unit, filterSummary: String?,
-    dayView: Boolean = false, onDayView: ((Boolean) -> Unit)? = null, days: List<LogDay> = emptyList(),
+    dayView: Boolean = false, filterActive: Boolean = filterSummary != null, days: List<LogDay> = emptyList(),
     selectedDay: GameDay? = null, now: Long = 0L, onSelectDay: (GameDay) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
@@ -216,13 +218,12 @@ internal fun ColumnScope.LogList(
                 Text(stringResource(R.string.battle_log_delete))
             }
             IconButton(onClick = onFilter, modifier = Modifier.testTag("log-filter-button")) {
-                BadgedBox(badge = { if (filterSummary != null) Badge(Modifier.testTag("log-filter-active")) }) {
+                BadgedBox(badge = { if (filterActive) Badge(Modifier.testTag("log-filter-active")) }) {
                     Icon(Icons.Default.FilterList, stringResource(R.string.capture_log_filter))
                 }
             }
         }
     })
-    if (onDayView != null && !deletion.active) LogViewSwitch(dayView, onDayView)
     if (deletion.active) FlowRow(Modifier.padding(horizontal = 8.dp)) {
         TextButton(onClick = onDeleteSelected, enabled = deletion.selected.isNotEmpty()) { Text(stringResource(R.string.capture_log_delete_selected)) }
         TextButton(onClick = onClear) { Text(stringResource(R.string.battle_log_delete_all)) }
