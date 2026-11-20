@@ -1,291 +1,209 @@
 ---
 name: apk-template-asset
-description: Draft a 720p template image for app/src/main/assets from a server's game APK (UI atlas sprites or the game font), for a server and screen you have no screenshot of. Use when a template is missing for a server (NA, CN, TW, or a KR/JP screen the owner has not captured) - "make the TW asset without playing", "does the APK have this button", "draft a template from the APK". If a screenshot exists, use extract-template-asset instead.
+description: Draft templates and Regions for a new KR or JP feature from the game's APK data (NGUI layout, labels, atlas sprites, bitmap fonts) before any screenshot exists, and score them on the reference screenshots. Use for KR/JP feature work - "draft templates for a new feature from the APK", "where is this button and what Region", "predict the KR template from a JP screen", "which sprite/label is this", "does the APK have this button". If a screenshot of that server's screen already exists, extract-template-asset cuts from it instead.
 ---
 
-# Drafting a template asset from the game's APK
+# Drafting templates from the game's data
 
-`extract-template-asset` cuts a template from a screenshot. This skill is for when there is
-**no screenshot** of that server and screen: the APK of that server's game holds the UI font, the
-string tables and the NGUI atlases (the real button and label art), enough to draft many
-templates without playing. Read [`docs/agents/coordinates.md`](../../../docs/agents/coordinates.md)
-and [`docs/agents/servers-and-assets.md`](../../../docs/agents/servers-and-assets.md) first; the
-Region, the 720p size and the `En` fallback rules still apply.
+A feature needs templates (`app/src/main/assets/<Server>/`) and Regions (`scripts/.../locations/`). The APK of
+each server holds the NGUI layout of every scene and prefab (widget sizes, pivots, Transform chains), the decoded
+label settings (font size, effect, colours, ShrinkContent), the atlas sprites, the bitmap fonts and the
+localization table. This skill turns those into a draft template and a Region **before** a screenshot exists;
+the owner's in-game check then confirms it (or the template is re-cut from those captures with
+`extract-template-asset`). Game code and layout are shared by KR and JP, so one screenshot of either server
+settles what the data cannot.
 
-Needs Python 3, Pillow, numpy, opencv-python-headless and UnityPy. On Windows run the scripts with
-`py -3 -E -P script.py ...` so nothing from the current folder is imported. Do not install
-anything yourself; report a missing package.
+Read [`docs/agents/coordinates.md`](../../../docs/agents/coordinates.md) and
+[`docs/agents/servers-and-assets.md`](../../../docs/agents/servers-and-assets.md) first: templates are 720p,
+Regions 1440p with the X origin by aspect ratio, and the `En` fallback rules apply. The fork's target servers are
+KR and official JP; the scripts take any server's APK, but drafts for other servers are not a fork deliverable.
 
-## Getting the APK
+Needs Python 3, Pillow, numpy, opencv-python-headless and UnityPy. Run the scripts with `py -3 -E -P script.py`
+on Windows so nothing from the current folder is imported. Do not install anything yourself; report a missing
+package.
 
-The owner supplies the `.apk` or `.xapk` (or pulls it read-only from an app player the owner set
-up; never from a device or account an agent operates). An XAPK is a zip of APKs: the script finds
-the one that holds `assets/bin/Data/` and stops with a message if none does. Never write into the
-folder the package came from.
+## Workflow
 
-## Procedure
-
-1. **Extract** into a scratch folder outside the repository (the session scratchpad or `build/`):
+1. **Extract** each server's APK once (the owner supplies the `.apk`/`.xapk`; never from a device an agent
+   operates). About a minute per APK:
 
    ```bash
    py -3 -E -P .claude/skills/apk-template-asset/extract_apk_ui.py kr.apk --out-dir build/apk-kr
+   py -3 -E -P .claude/skills/apk-template-asset/extract_apk_ui.py jp.apk --out-dir build/apk-jp
    ```
 
-   It writes `fonts/`, `text/` (the `Localization*` tables), `textures/` (atlases with their
-   `_alpha` texture merged in), `sprites/<Atlas>/<sprite>.png` and `index.json`. It prints each
-   font's family and style, and the counts to compare with the reference table below.
+   It writes `fonts/`, `text/` (localization tables), `textures/`, `sprites/<Atlas>/<sprite>.png`, `index.json`,
+   `layout.json` (every widget, atlas, UI Root and layout component, `ngui_dump.py`) and `uifonts.json` (bitmap
+   fonts). Check it with `selfcheck.py` (below) after a game update.
 
-2. **Find a sprite** the screen could use. For a server whose templates already exist elsewhere
-   (KR sprites against the KR folder) `find_sprite.py` shows which sprite each template was cut from:
+2. **Locate the element in the layout data** and draft it with `draft_element.py`. Name it the way you know it:
 
    ```bash
-   py -3 -E -P .claude/skills/apk-template-asset/find_sprite.py --extracted build/apk-kr \
-       --templates app/src/main/assets/Kr --names retreat_button.png --out-csv build/match-kr.csv
+   # a label by the text it shows, a sprite by name, a widget by path, or what sits at a 720p point
+   py -3 -E -P .claude/skills/apk-template-asset/draft_element.py --data build/apk-kr --text "닫기" --out-dir build/d
+   py -3 -E -P .claude/skills/apk-template-asset/draft_element.py --data build/apk-kr \
+       --path 'SvtCombinePanel/RecommendedMaterialButton/Label$' --key RECOMMENDED_MATERIAL_BUTTON_LABEL \
+       --with 'RecommendedMaterialButton/Bg$' --out-dir build/d --name servant_auto_select
+   py -3 -E -P .claude/skills/apk-template-asset/draft_element.py --data build/apk-jp \
+       --sprite CombineAtlas/btn_txt_servant_reselect --out-dir build/d
    ```
 
-   For a missing template, search the sprite names (`index.json`, or `build/apk-xx/sprites/`
-   by eye) and the string table: the sprite names are the same on every server
-   (`BattleUIAtlas/buttontxt_retire` is the retreat label), only the art in them is localized.
-   Use another server's template of the same name as the `--check` to see whether a sprite fits.
+   Every match is listed with its path; `--pick N` keeps some, `--with RX` adds widgets of the same scene or prefab
+   (the button sprite under a label). For each widget it prints the size rule's branch, the box at 720p (16:9) and
+   `Region(x, y, w, h).xFromCenter()` at 1440p, and it writes `<name>.png` plus `<name>.json`.
 
-   **Layout: where it is drawn and at what scale.** The APK's scenes hold every widget that uses
-   the sprite, so the screen position and the draft scale need no screenshot:
+   **From a screenshot of the other server.** When you have the screen on JP but draft for KR (or the reverse),
+   let the screenshot find the element. The other server's template (or a box) marks it; the widgets drawn there
+   are found in that server's data and drafted from the target's data under the same paths:
 
    ```bash
-   py -3 -E -P .claude/skills/apk-template-asset/layout_calc.py --data build/apk-kr-unpacked/assets/bin/Data \
-       --extracted build/apk-kr BattleUIAtlas/buttontxt_retire --out-json build/layout.json
+   py -3 -E -P .claude/skills/apk-template-asset/draft_element.py --data build/apk-kr \
+       --locate-on docs/reference-images/Jp/weekly-route/32-repeat-dialog.webp --locate-data build/apk-jp \
+       --locate-template app/src/main/assets/Jp/close.png --background-from app/src/main/assets/Jp/close.png \
+       --out-dir build/d --name close
    ```
 
-   `--data` is the APK's `assets/bin/Data` (unpack the APK; the script only reads it),
-   `--extracted` the folder of step 1 (each sprite's own pixel size comes from its `index.json`).
-   Sprites are `Atlas/sprite` or a bare name. It takes about 10 s. For every widget it prints
-   the scene file, the Transform path, the box at 720p and in 1440p script coordinates (16:9, X
-   origin as in `coordinates.md`) and the draft scale.
+   A label whose text is set by code shows something else in the data: give the text it shows on the screenshot
+   with `--shown-text 閉じる`; the target text is the same localization entry on the target server, or, for texts
+   that come from server data and are not in the APK table, the one you give with `--target-text 닫기`.
+   The margin between the drawn content and the located box carries over as the crop.
 
-   - **Position.** Predicted boxes of `retreat_button`, `retreat_confirm`, `skill_level_label`,
-     `skill_level_reselect`, `support_region_tool` and `weekly_notice` agree with the planner's
-     numbers within 0.5 px on KR 8.1.0, and NA 2.95.0 gives the same boxes; they matched the KR
-     screenshots within 2 px. The same sprite can sit on several screens: pick the widget whose
-     path is the screen you want. A sprite whose widgets hang under no `UI Root` (a prefab that a
-     scene instantiates at run time) is listed as "no UI Root": its position is not in the data.
-     A widget with a UIRect anchor is marked `anchored`; the game may resize it at run time, so
-     check its box against a screenshot.
-   - **Scale.** The script prints the widget/sprite ratio per axis (`1.25 * widget / sprite`) and
-     suggests `--scale 1.25` unless both axes agree on another value. Do not read the ratio as the
-     drawn scale: a localized sprite is not the size of the widget it sits in. KR's retire label
-     is 90x31 and NA's is 140x30 in the same 90x32 widget, so the ratio on NA is x 0.80, y 1.33.
-     The game either stretches the sprite to the widget (non-uniform) or resizes the widget to
-     the sprite at run time (uniform 1.25), and which one happens is not in the data (no NA
-     screenshot of that screen exists to check). Where widget and sprite differ by more than 2
-     NGUI units (NGUI's even-size rounding is 1-2) the script warns and prints both candidates;
-     `draft_template.py --scale X,Y` drafts the stretched one, `--scale 1.25` the other. Draft
-     both and let a screenshot decide; without one the draft stays a guess.
-   - **What the widget rule did and did not predict**, against the scale that won when the
-     sprite was matched against screenshots (KR 8.1.0 data; NA 2.95.0 prints the same):
+3. **Settle what the data cannot decide.** A sprite whose code swaps it and resizes it to its own size (N) cannot
+   be told from one stretched to its widget (W) when the scene lists only one sprite for that slot. When the two
+   sizes differ, both drafts are written (`<name>_N.png`, `<name>_W.png`) with a warning. One screenshot of either
+   server decides: `--decide-from SHOT --decide-data DIR` measures the widget there with that server's art (size
+   sweep, alpha-weighted NCC), picks the mode whose prediction from **that** server's data matches, and applies
+   the mode (not the size) to the target. `--locate-on` decides from its screenshot automatically.
 
-     | Sprite | Widget rule | Best scale found | |
-     |---|---|---|---|
-     | `CommonUIAtlas/btn_boostitem_off` | no widget; its `btn_boostitem_on` sibling (62x62) is drawn 54x54 units: 1.089, with a warning | x1.1 | agrees |
-     | `CommonUIAtlas/rarity4_0` | 58x20 widget on the costume dialog: 1.047, with a warning | x0.9 (drop screen) | differs: the matched screen's widget is not in the scene data (prefab) |
-     | `GachaAtlas/img_bg_friendpointuse` | 234x38 widget: x 1.25, y 1.28, suggests 1.25 | x1.0 | differs: the matched crop is a smooth gradient, so every scale scores the same |
-     | `CommonUIAtlas/btn_list_small` | no widget in the scenes (set at run time) | x1.35 | no prediction |
-
-     The rule agrees on 1 of 4. For the sprites of the sprite-match table below it suggests 1.25
-     (retire, decide, `support_region_tool`: widget one unit off its sprite); on
-     `btn_txt_servant_reselect` (widget 104x64 for a 63x46 sprite) it warns, and the sprite
-     matched at 1.25 as a layer. It gives nothing for sprites that are set from code. The boxes
-     printed in the issue as "widget 292x48" and "60x21" are 720p sizes (units x 1.25), not NGUI
-     units.
-
-3. **Draft** it, in one of two modes:
-
-   - **Atlas sprite first.** The sprite is the real art, so bold, outlined, glowing or colored
-     labels only work this way.
-
-     ```bash
-     py -3 -E -P .claude/skills/apk-template-asset/draft_template.py --extracted build/apk-kr          --sprite BattleUIAtlas/buttontxt_retire --check app/src/main/assets/Kr/retreat_button.png          --out build/draft/retreat_button.png
-     ```
-
-     The sprite is scaled like a device screenshot: bilinear to a `--device-height` screen
-     (default 1080, so x1.875), then `INTER_AREA` down to 720p (`--scale` 1.25 overall). One
-     `INTER_AREA` enlargement acts like nearest neighbour and scores 0.01-0.03 lower;
-     `--device-height 720` gives that old behaviour. `--background` defaults to the median of the
-     first `--check` (or of the `--crop-like` / `--layers-like` template).
-     `--crop x,y,w,h` (720p pixels after scaling) keeps a box of the draft: the sprite's
-     transparent margin is flattened on the background color and would be noise in a template.
-   - **Font rendering** for plain text that is not in an atlas. Take the text from the string
-     table (`text/LocalizationXxx.txt`) and the color from its `[RRGGBB]` markup, if any.
-
-     ```bash
-     py -3 -E -P .claude/skills/apk-template-asset/draft_template.py          --font build/apk-kr/fonts/FGO-Main-Font.otf --text "닫기" --color FFFFFF --fit          --check app/src/main/assets/Kr/close.png
-     ```
-
-     `--fit` picks the font size by the best worst-shift score on the first check; `--stroke` adds
-     the dark outline (usually it does not help: outlined labels are atlas cases). Without `--color`
-     the ink color is estimated from the check.
-
-4. **Score** it with `--check`: against an existing template or 720p crop (the smaller image is
-   searched inside the larger), or against a full screenshot's search region with
-   `--region X,Y,W,H --anchor ... [--anchor-y ...]`, resolved by `extract-template-asset`'s
-   `crop_template.py` so both skills compare the same pixels. Four scores are printed, at
-   half-pixel shifts, because a real screenshot lands on an arbitrary sub-pixel offset. The
-   app's threshold is on the best match, so judge by the worst shift. `--check` can be repeated:
-   include screenshots that must not match too.
-
-   When screenshots of the server exist, `score_screens.py` scores whole folders of drafts the
-   way FGA matches (game area, 720p, grayscale, best score over the screenshot):
+4. **Score on real screens** if the server's reference screenshots show the element:
 
    ```bash
-   py -3 -E -P .claude/skills/apk-template-asset/score_screens.py --templates app/src/main/assets/Kr        --drafts build/drafts --screens docs/reference-images/Kr --out-csv build/score.csv
+   ... draft_element.py ... --screens docs/reference-images/Kr --reference app/src/main/assets/Kr/close.png
+   py -3 -E -P .claude/skills/apk-template-asset/screen_score.py --screens docs/reference-images/Kr \
+       --reference app/src/main/assets/Kr/close.png --template build/d/close.png --out-csv build/close.csv
    ```
 
-   Per template it prints the positives (screenshots where the existing template scores 0.85 or
-   more), the existing minimum, the draft's minimum and mean on them, and the highest draft score
-   on a screenshot without the label, with its name. FGA searches only a Region, so the false
-   scores are an upper bound, and each call has its own similarity threshold, often not the 0.80
-   default: compare with the threshold of the call that uses the template.
+   The threshold is read from `scripts/` (`--threshold code`, the default: every call of the `Images` entry, its
+   `similarity = ...` or minSimilarity 0.8; the highest is used and each call is listed) or given as a number.
+   Positives are the screenshots where the reference scores at least the threshold (or `--positive RX`), negatives
+   where it scores under 0.6. Printed and written per draft: the true score (worst positive, best match within
+   +-12 px of the element), the best false positive (whole screen, an upper bound; `--region` for the Region),
+   and both margins, true - threshold and threshold - false.
 
-5. **Verify before committing.** A draft is only a start. Check it against a real screenshot of
-   that server (ask the owner for one, or for a QA capture) before it goes into
-   `app/src/main/assets/<Server>/`, and run the usual `extract-template-asset` verification.
+5. **Implement**, with the Region from step 2 (add the margin the call needs, and the `isWide` value where the
+   element follows an edge), then **the owner's in-game check**. Templates that fail there are re-cut from the
+   owner's captures with `extract-template-asset`; keep those captures in `docs/reference-images/`.
 
-## Another server: crop and layers that carry over
+### Judging a draft
 
-Sprite names are the same on every server but the art inside differs by language, so a crop box in
-pixels (or one found by matching the text) does not transfer. Edge insets and layer offsets do.
+Only margins on real screens count: true score - threshold, and threshold - best false positive, both positive.
+Similarity between a draft and an existing template does not predict either (a draft can score 0.95 against the
+template and fail on screens, or 0.7 and pass). Fit nothing to the screens you judge on: no scale, offset,
+colour, font size or threshold chosen by scoring against them. A flat background colour taken from a template's
+1 px border, where the draft has no widget behind it, is allowed and is reported.
 
-a. **On KR or JP, where the template exists**, draft from the sprite and derive the numbers:
+### When a screenshot is needed up front
 
-   ```bash
-   py -3 -E -P .claude/skills/apk-template-asset/draft_template.py --extracted build/apk-kr        --sprite PartyOrganizationAtlas/btn_supportform        --crop-like app/src/main/assets/Kr/support_region_tool.png
-   # crop-like support_region_tool.png: score 0.948, insets 21,12,20,10  (--inset 21,12,20,10)
-   ```
+- A sprite set from code (N or W open) with no screenshot of either server to decide.
+- Art that is not in the APK: downloaded banners and atlases (weekly route banners, the KR `ResultAtlas`, which is
+  the JP original replaced at run time), card faces.
+- Elements over animation or glow (the drawn pixels change between frames), or semi-transparent strips over
+  changing content.
+- Bar-driven lengths (UIScrollBar / UIProgressBar / UISlider set the length at run time; `D` in the output).
+- Positions that follow an edge on screens wider than 16:9 (UIAnchor / anchored widgets are reported; the data
+  gives the 16:9 position).
+- Labels whose text comes from server data and is not in the APK table (give `--target-text`; the style is still
+  from data).
 
-   `--crop-like` finds the template inside the draft, prints the match score and the insets
-   `left,top,right,bottom` in 720p pixels and crops to the template's box. A dimension where the
-   template is larger than the draft is reported and not cropped. For a layered template repeat
-   `--sprite` (bottom layer first) and add `--layers-like` with the same template: each layer is
-   found in it and the offsets from the first layer are printed as `--offset dx,dy`.
-   Which sprites make up a layered template is found with `find_sprite.py` (a template's best
-   sprite is the label) and by matching the template against larger sprites: `weekly_notice`
-   is `CommonUIAtlas/icon_return_bg` (the arrow and the strip behind it, found as a 172x81 sprite
-   that holds the template's left edge at 0.978) under `img_return_info`; `skill_level_reselect`
-   is `CombineAtlas/button_reselect` under `btn_txt_servant_reselect`.
-b. **On the target server**, apply the same sprite names with the printed numbers:
+## Scripts
 
-   ```bash
-   py -3 -E -P .claude/skills/apk-template-asset/draft_template.py --extracted build/apk-tw        --sprite PartyOrganizationAtlas/btn_supportform --inset 21,12,20,10 --background RRGGBB        --out build/draft/support_region_tool.png
-   ```
+| Script | Does |
+|---|---|
+| `extract_apk_ui.py APK --out-dir DIR` | fonts, localization, textures, sprites, `index.json`, `layout.json`, `uifonts.json` |
+| `ngui_dump.py` | the raw MonoBehaviour decoders (UIWidget, UISprite, UILabel, UIAtlas, UIFont, UIRoot), used by the extraction |
+| `ngui_layout.py` | loads an extraction; the size rule (`Rule`), positions, `region_1440` |
+| `ngui_render.py` | draws labels (dynamic font), bitmap-font labels and sprites (Simple/Sliced) like a 1080p screenshot shrunk to 720p |
+| `element.py` | a widget as a layer, masked matching, size measurement, N/W decision, locating widgets on a screenshot |
+| `draft_element.py` | the entry point above |
+| `screen_score.py` | true score, false positives and margins on a folder of screenshots; the threshold from `scripts/` |
+| `selfcheck.py --kr DIR --jp DIR` | replays the accepted numbers (below) on your extraction; `text_check.py --record` rewrites the text expectations |
+| `cross_server.py` | the cross-server acceptance replay (below) |
+| `draft_template.py`, `find_sprite.py`, `score_screens.py`, `template_lib.py` | the manual tools: one sprite or font text at a chosen scale, which sprite a template was cut from, folder scoring |
 
-   Layers use `--sprite A --sprite B --offset dx,dy [--inset l,t,r,b]`. The same insets give the
-   same image as `--crop-like` did on KR (checked byte for byte on `support_region_tool`). Give
-   `--background` from a screenshot of that server or from the KR/JP template's color; its art may
-   differ in language but a button background rarely does.
-c. **Score**: with `score_screens.py` when screenshots of the target server exist; otherwise
-   `--check` against the KR/JP template only to see that the shape fits (the art differs, so a
-   high score is not expected).
-d. **A real screenshot of the target server** before committing, as in step 5.
+## What the rules are and how well they hold
 
-## What to expect
+**Sprite size** (`ngui_layout.Rule`, learned on KR 8.1.0, frozen, then held out on JP). Decision list: D when a
+bar component drives the widget; N when the slot names several sprites in the APK, the widget does not fit the
+sprite within 2 units and the aspect ratios differ by more than 25 %; otherwise W, NGUI's `drawingDimensions`
+(padding in proportion with the odd-size fix for Simple/Filled, padding x pixelSize for Sliced) x world scale x
+720/`manualHeight`. Measured sizes (within 2 px or 3 %) on the screenshots of `docs/reference-images`:
 
-- **Scale 1.25 is the default, not a law.** It takes an NGUI sprite drawn at its own size to
-  720p, and every sprite in the KR table below won at 1.25. A sprite is drawn at its widget's
-  size, so others win elsewhere (`btn_boostitem_off` x1.1, `btn_list_small` x1.35, `rarity4_0`
-  x0.9): read the widget with `layout_calc.py` before reading a different winner as a false match.
-- **Cards and banners from Atlas Academy.** Some screens show art that is not in the APK atlases.
-  Atlas Academy's images (downloaded by the owner or planner; they are copyrighted too and stay
-  outside the repository) cover two cases: weekly banners `Banner/chaldea_category_*` and
-  `Banner/questboard_cap*` at x1.25, and card faces `Faces/f_<id>.png` (128x128) drawn at about
-  x0.77 under the APK's frame sprites (for the Ember of Wisdom cards: `CommonUIAtlas/listframes2_bg`,
-  `listframes3_bg`, `listframes*_txt_expup` and `rarity3_0`/`rarity4_0`/`rarity5_0`, offsets located
-  inside the template). Such a composite is an `APK-partial` draft: the top-left corner badge is in
-  no sprite, and offsets are off by 1-3 px (worst shift 0.74-0.79 on `En`).
-- **Resources of the KR APK that are the JP originals** make `Jp` drafts, for atlases the JP APK
-  lacks (`ResultAtlas`). Drafted from the KR extraction against `app/src/main/assets/Jp`:
-
-  ```bash
-  py -3 -E -P .claude/skills/apk-template-asset/draft_template.py --extracted build/apk-kr \
-      --sprite ResultAtlas/btn_txt_next --crop-like app/src/main/assets/Jp/mat_rewards.png \
-      --check app/src/main/assets/Jp/mat_rewards.png --out build/draft/mat_rewards.png
-  ```
-
-  | Template | Sprite | Worst shift | Screenshots |
-  |---|---|---|---|
-  | `mat_rewards` | `ResultAtlas/btn_txt_next` | 0.925 | none |
-  | `bond_result_title` | `ResultAtlas/img_txt_servantbonds01` | 0.872 | 8 positives, draft min 0.879, false max 0.406; call similarity 0.85 |
-
-  Both reproduce with the command above (the second with `servantbonds01` and `bond_result_title.png`).
-- **The worst half-pixel shift underestimates small templates.** `friend_summon` has a worst
-  shift of 0.766 but a draft minimum of 0.998 on its 2 positives; Jp `bond_popup_title` 0.481 and
-  0.897 on 2. A small or smooth crop moves by more than a large one when it shifts half a pixel.
-  Judge a draft by `score_screens.py` against the call's similarity wherever screenshots exist,
-  and by the worst shift only when they do not.
-- Font rendering reaches 0.80 or more at the worst shift for plain labels; bold, outlined or
-  glowing ones fail.
-- A rendered label scored at most 0.49 inside another template; sprites at most 0.42 on KR
-  except where two templates share art (`weekly_notice` scores 0.76 inside `weekly_close`).
-
-### Reference, KR 8.1.0 (`com.netmarble.fgok`)
-
-Extraction: `FGO-Main-Font.otf` (family `RixVita L`), `LocalizationJpn` 5,070 lines, 290 Texture2D
-objects of which 288 decode, 233 merged textures, 68 atlases with 2,535 sprites (2 of 70 atlases
-list sprites but have no texture in the APK).
-
-Sprite matches against `app/src/main/assets/Kr`, all at scale 1.25 (`find_sprite.py`, no shift,
-default device-like scaling; the single-`INTER_AREA` score with `--device-height 720` in brackets):
-
-| Template | Sprite | Score |
+| | rule | old fixed x1.25 |
 |---|---|---|
-| `retreat_button` | `BattleUIAtlas/buttontxt_retire` | 0.972 (0.954) |
-| `retreat_confirm` | `CommonUIAtlas/buttontxt_decide` | 0.928 (0.911) |
-| `skill_level_label` | `CombineAtlas/img_txt_skillitem` | 0.968 (0.961) |
-| `skill_level_reselect` | `CombineAtlas/btn_txt_servant_reselect` (+ `CombineAtlas/button_reselect` below) | 0.952 (0.927) |
-| `ce_enhance_reselect` | `CombineAtlas/btn_txt_synthesis_reselect` | 0.945 (0.913) |
-| `support_region_tool` | `PartyOrganizationAtlas/btn_supportform` | 0.948 (0.942) |
-| `weekly_notice` | `CommonUIAtlas/img_return_info` (+ `CommonUIAtlas/icon_return_bg` below) | 0.978 (0.969) |
-| `weekly_terminal` | `CommonUIAtlas/img_return_terminal` | 0.975 (0.967) |
+| KR (training, 90 elements) | 89/90 | 74/90 |
+| JP (held out, 106) | 97/106 | 79/106 |
 
-Drafts on the 270 screenshots of `docs/reference-images/Kr` (`score_screens.py`, positives =
-existing template at 0.85 or more; drafts made with `--crop-like` against the KR template, and
-layers for the two layered ones):
+The JP misses are `icon_limit_on` (8: drawn about 22 px where the prefab widget says 16-24) and one
+`img_commonbg_02`; the KR miss is `img_combine_arrow` (3 px tall). `selfcheck_sizes.csv` holds the element
+identifiers and measured sizes (no images).
 
-| Template | Positives | Existing min | Draft min | Draft mean | Highest false draft score |
-|---|---|---|---|---|---|
-| `skill_level_label` | 8 | 0.948 | 0.924 | 0.959 | 0.764 (`wide-2560/41-skill-9to10.webp`) |
-| `skill_level_reselect` (2 layers) | 63 | 0.933 | 0.894 | 0.948 | 0.492 |
-| `ce_enhance_reselect` | 7 | 0.905 | 0.897 | 0.924 | 0.534 |
-| `support_region_tool` | 2 | 0.861 | 0.931 | 0.939 | 0.354 |
-| `weekly_notice` (2 layers) | 48 | 0.851 | 0.836 | 0.866 | 0.588 |
-| `weekly_terminal` | 5 | 0.969 | 0.966 | 0.972 | 0.489 |
+**Text** (`ngui_render`): glyphs at the printed size on the label's unit grid, NGUIText's baseline, effect copies
+(Shadow, Outline, Outline8), gradient, ShrinkContent by pen width, world scale x 720/576.
+`selfcheck_text.csv` replays 19 labels (2 KR, 17 JP) on the reference screenshots they appear on, drawn at
+their data scale and matched alpha-weighted: KR 0.82-0.95, JP 0.85-0.98 (the study the renderer came from swept
+the scale and reached 0.88-0.99 on the same labels).
 
-`weekly_notice` stays under its template: the arrow strip `icon_return_bg` is drawn
-semi-transparent over a screen that changes behind it, so the flattened background is not exact.
-`retreat_button` and `retreat_confirm` have no positive in the KR screenshots.
+**Numbers**: bitmap-font labels (`critfont01`, `FGO-NumberFont-*`) are drawn from the font's glyph table at label
+size / font size. Earlier research measured 0.94-0.97 on critical-star digit templates; no KR/JP number template was in the
+acceptance set below.
 
-Font rendering with `--fit`, worst of the four shifts: `close` (닫기) 0.935, `retry` (다시 시도)
-0.933, `execute` (실행) 0.903, `withdraw` (철수하기) 0.873. Sprite mode `retreat_button` scores
-0.972 / 0.909 / 0.914 / 0.852 over the four shifts (0.954 / 0.895 / 0.900 / 0.844 with
-`--device-height 720`): a scaled sprite is sharper than a screenshot, so its worst shift is lower
-than the unshifted score.
+## Cross-server acceptance (`cross_server.py`)
+
+Every template that exists in both `Kr/` and `Jp/` and that the existing template finds on both servers'
+reference screenshots (38): the KR draft from KR data plus **one** JP screenshot (the JP template's best 16:9
+positive, used to locate the element and to decide N/W), the JP draft the same way the other round; drafts frozen
+(sha256) before scoring; scored on the target server's screenshots against the existing template and the code's
+threshold. Grade of the first draft per template (as good as existing / passes but lower / fails / cannot build):
+
+| | as good | lower | fails | cannot build |
+|---|---|---|---|---|
+| KR (38) | 5 | 7 | 10 | 16 |
+| JP (38) | 6 | 5 | 14 | 13 |
+
+As good on both: `ok`, `quest_item_close`, `skill_level_label`, `support_region_tool`; passing on both:
+`ce_enhance_execute`, `close`, `execute`, `fp_sell_sell`, `inven_full`, `skill_level_reselect`.
+`rank_up` passes (as good) with its W draft on both, but the rule's N draft is first and fails: the arrow was not
+found on the other screenshot, so N/W stayed open.
+
+- **Cannot build (29):** art not in the APK (weekly route banners x10, `bond_popup_title`/`bond_result_title` x4,
+  KR `result`: the KR `ResultAtlas` is the JP original) and elements the other screenshot did not locate (14:
+  sprite text that no rooted widget draws at that spot, runtime tints such as `servant_auto_select_off`).
+- **Fails (24):** mostly a different widget located for the element (20: a label of the same text but another
+  style or size, or a label where the real element is atlas art, e.g. `weekly_close`/`weekly_notice`/
+  `weekly_terminal` whose text is a sprite); `rank_up` x2 (N/W open); `ce_enhance_reselect` KR (the servant
+  reselect sprite located instead); JP `skill_level_result` 0.783 against 0.80 (glowing text; the existing
+  template itself scores 0.804).
+
+So: once the element is the right widget, text, sprite and composite drafts clear the threshold with margin
+(passing drafts: true minimum 0.84-0.99, best false positive 0.36-0.68, existing templates 0.34-0.60). Locating the element automatically
+from the other server's screenshot is the weak step; name the element yourself (`--path`, `--sprite`, `--key`)
+when you know it, and look at what `--locate-on` printed before trusting a draft.
 
 ## Limits
 
-- **Downloaded game data is encrypted** and not used. Some APK atlases are the JP originals that
-  the game replaces with downloaded localized ones (KR `ResultAtlas` is Japanese), so result and
-  reward screens still need a screenshot. The KR APK's JP-original atlases are a JP source only
-  for atlases the JP APK lacks; where both have an atlas, use the JP APK's.
-- `layout_calc.py` matches widgets by sprite name only (the atlas reference is not resolved), so a
-  name used in two atlases lists both; it lists no widget for a sprite the game sets from code,
-  and no position for a prefab outside a `UI Root`.
-- UnityPy cannot decode a few textures (2 on KR 8.1.0); those atlases are skipped or listed
-  without art.
-- The atlas rects come from a byte scan of the il2cpp build's MonoBehaviours (no type tree).
-  If a new client build changes the layout the atlas count drops to zero: compare it with the
-  table above.
+- Downloaded game data is encrypted and not used. The KR APK's `ResultAtlas` is the JP original that the game
+  replaces with a downloaded Korean one; result and reward screens need a screenshot.
+- The layout is read at fixed byte offsets (no type tree). A client update that changes NGUI's field layout makes
+  `selfcheck.py` fail; re-check the offsets in `ngui_dump.py` then.
+- Prefab widgets (dialogs instantiated at run time) have no screen position in the data: their size and look are
+  predicted, their position comes from the other server's screenshot or the owner's capture.
+- Runtime state is not in the data: a button's disabled tint (`servant_auto_select_off`), a selected tab colour,
+  a list that scrolls.
+- Locating picks, among identical-looking labels in different prefabs, the first; their style is the same, so
+  the draft is too.
 
 ## Copyright
 
-The APK, fonts, strings, textures and sprites are copyrighted. They stay outside the repository
-(the session scratchpad or `build/`); never commit them, a crop of them that is not a finished
-template, or the extraction folder. Only a finished, verified template goes into
+The APK, fonts, strings, textures and sprites are copyrighted. Extractions, drafts and screenshots stay outside the
+repository (the session scratchpad or `build/`); only a finished template verified on a real screen goes into
 `app/src/main/assets/`.

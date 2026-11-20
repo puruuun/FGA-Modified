@@ -9,6 +9,9 @@ folder is imported. Nothing is written next to the input; DIR gets:
     textures/   Texture2D with its `_alpha` texture merged in as the alpha channel
     sprites/<Atlas>/<sprite>.png   every NGUI atlas sprite, cut at its own size
     index.json  atlas -> sprites with x, y, w, h, and the texture sizes
+    layout.json every NGUI widget (path, Transform chain, size, pivot, depth, sprite, decoded UILabel settings),
+                atlas (rects, borders, padding, pixelSize), UI Root and layout component (ngui_dump.py)
+    uifonts.json  every NGUI bitmap font (UIFont) with its glyph table and texture name
 
     extract_apk_ui.py kr.apk --out-dir build/apk-kr
     extract_apk_ui.py na.xapk --out-dir build/apk-na
@@ -33,7 +36,11 @@ try:
     import UnityPy
     from PIL import Image, ImageFont
 except ImportError:
-    sys.exit("Pillow and UnityPy are required: pip install pillow UnityPy")
+    sys.exit("Pillow and UnityPy are required")
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ngui_dump  # noqa: E402
 
 DATA_PREFIX = "assets/bin/Data/"
 
@@ -263,6 +270,7 @@ def main() -> None:
         raw_textures, texture_total = read_textures(env)
         textures = merge_alpha(raw_textures)
         atlases = read_atlases(env)
+        layout, uifonts = ngui_dump.Dumper(env).dump()
         del env  # on Windows its open files keep the temp folder locked
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -293,6 +301,10 @@ def main() -> None:
 
     with open(os.path.join(out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(out, "layout.json"), "w", encoding="utf-8") as f:
+        json.dump(layout, f, ensure_ascii=False, default=str)
+    with open(os.path.join(out, "uifonts.json"), "w", encoding="utf-8") as f:
+        json.dump(uifonts, f, ensure_ascii=False)
     print(f"{texture_total} Texture2D objects, {len(raw_textures)} decoded")
     print(f"{len(fonts)} fonts, {len(tables)} text tables, {len(textures)} merged textures, "
           f"{len(index['atlases'])} atlases, {sprite_count} sprites -> {out}")

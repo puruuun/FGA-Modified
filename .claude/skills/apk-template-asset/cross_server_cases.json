@@ -1,0 +1,161 @@
+{
+ "_comment": "Templates in both app/src/main/assets/Kr and Jp that the existing template finds on both servers reference screenshots (2026-11-20). shown: the text the label shows on the other server; target_text: given where the APK localization does not hold it.",
+ "templates": [
+  "append_level_dialog_title",
+  "append_level_label",
+  "battle_menu",
+  "bond_popup_title",
+  "bond_result_title",
+  "ce_enhance_execute",
+  "ce_enhance_reselect",
+  "close",
+  "execute",
+  "fp_continue",
+  "fp_sell_menu",
+  "fp_sell_sell",
+  "fp_sell_summon_button",
+  "fp_sell_summon_button_free",
+  "fp_sell_summon_menu",
+  "fp_sell_tab",
+  "fp_sell_word_servant",
+  "inven_full",
+  "ok",
+  "quest_item_close",
+  "rank_up",
+  "result",
+  "servant_auto_select",
+  "servant_auto_select_off",
+  "skill_level_dialog_title",
+  "skill_level_label",
+  "skill_level_reselect",
+  "skill_level_result",
+  "skill_level_unlock_button",
+  "support_region_tool",
+  "weekly_close",
+  "weekly_daily",
+  "weekly_gate",
+  "weekly_mi",
+  "weekly_mr1",
+  "weekly_mr15",
+  "weekly_notice",
+  "weekly_terminal"
+ ],
+ "cases": {
+  "append_level_dialog_title": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "강화"
+   }
+  },
+  "ce_enhance_execute": {
+   "shown": {
+    "Jp": "実行",
+    "Kr": "실행"
+   }
+  },
+  "execute": {
+   "shown": {
+    "Jp": "実行",
+    "Kr": "실행"
+   }
+  },
+  "fp_sell_sell": {
+   "shown": {
+    "Jp": "売却",
+    "Kr": "판매"
+   }
+  },
+  "fp_sell_summon_button": {
+   "shown": {
+    "Jp": "召喚",
+    "Kr": "소환"
+   }
+  },
+  "fp_sell_summon_button_free": {
+   "shown": {
+    "Jp": "召喚",
+    "Kr": "소환"
+   }
+  },
+  "fp_sell_word_servant": {
+   "shown": {
+    "Jp": "サーヴァント枠",
+    "Kr": "서번트칸"
+   },
+   "target_text": {
+    "Kr": "서번트칸",
+    "Jp": "サーヴァント枠"
+   }
+  },
+  "fp_sell_tab": {
+   "shown": {
+    "Jp": "サーヴァント",
+    "Kr": "서번트"
+   }
+  },
+  "inven_full": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "강화"
+   }
+  },
+  "skill_level_dialog_title": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "레벨업"
+   },
+   "target_text": {
+    "Kr": "레벨업",
+    "Jp": "強化"
+   }
+  },
+  "skill_level_unlock_button": {
+   "shown": {
+    "Jp": "解放",
+    "Kr": "해방"
+   },
+   "target_text": {
+    "Kr": "해방",
+    "Jp": "解放"
+   }
+  },
+  "weekly_close": {
+   "shown": {
+    "Jp": "閉じる",
+    "Kr": "닫기"
+   }
+  },
+  "weekly_notice": {
+   "shown": {
+    "Jp": "お知らせ",
+    "Kr": "공지"
+   },
+   "target_text": {
+    "Kr": "공지",
+    "Jp": "お知らせ"
+   }
+  },
+  "weekly_terminal": {
+   "shown": {
+    "Jp": "ターミナル",
+    "Kr": "터미널"
+   },
+   "target_text": {
+    "Kr": "터미널",
+    "Jp": "ターミナル"
+   }
+  },
+  "servant_auto_select": {
+   "shown": {
+    "Jp": "おすすめ選択",
+    "Kr": "추천 선택"
+   }
+  },
+  "servant_auto_select_off": {
+   "shown": {
+    "Jp": "おすすめ選択",
+    "Kr": "추천 선택"
+   }
+  }
+ }
+}
