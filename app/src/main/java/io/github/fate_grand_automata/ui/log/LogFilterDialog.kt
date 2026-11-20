@@ -60,13 +60,13 @@ internal fun customRangeLabel(start: Long?, end: Long?, locale: Locale = Locale.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LogFilterDialog(
-    time: LogTimeFilter, resource: String?, start: Long?, end: Long?, retention: Int,
+    time: LogTimeFilter, resources: Set<String>, start: Long?, end: Long?, retention: Int,
     battleCount: Int, outsideCount: Int, entries: List<CaptureLogItem>, names: GameNameMap, profile: String?,
-    onDismiss: () -> Unit, onApply: (LogTimeFilter, String?, Long?, Long?, Int, String?, LogSourceFilter?) -> Unit,
+    onDismiss: () -> Unit, onApply: (LogTimeFilter, Set<String>, Long?, Long?, Int, String?, LogSourceFilter?) -> Unit,
     source: LogSourceFilter? = null,
 ) {
     var draftTime by rememberSaveable { mutableStateOf(time) }
-    var draftResource by rememberSaveable { mutableStateOf(resource) }
+    var draftResources by rememberSaveable(stateSaver = LogResourceSetSaver) { mutableStateOf(resources) }
     var draftProfile by rememberSaveable { mutableStateOf(profile) }
     var draftSource by rememberSaveable { mutableStateOf(source) }
     var draftStart by rememberSaveable { mutableStateOf(start) }
@@ -78,9 +78,17 @@ internal fun LogFilterDialog(
     val profiles = logProfiles(entries)
     val hasNoProfile = hasLogWithoutProfile(entries)
     val activeProfile = availableLogProfile(draftProfile, profiles, hasNoProfile)
-    val resources = logResources(filterCaptureLogs(entries, draftTime, null, System.currentTimeMillis(),
+    val availableResources = logResources(filterCaptureLogs(entries, draftTime, emptySet(), System.currentTimeMillis(),
         customStart = draftStart, customEnd = draftEnd, profile = activeProfile, source = draftSource))
-    val apply = { onApply(draftTime, draftResource, draftStart, draftEnd, draftRetention, activeProfile, draftSource) }
+    val activeResources = availableLogResources(draftResources, availableResources)
+    val d = LogFilterState.DEFAULT
+    val atDefaults = draftTime == d.time && draftStart == d.start && draftEnd == d.end && activeProfile == d.profile &&
+        draftSource == d.source && activeResources == d.resources && query.isEmpty()
+    val reset = {
+        draftTime = d.time; draftResources = d.resources; draftProfile = d.profile; draftSource = d.source
+        draftStart = d.start; draftEnd = d.end; query = ""
+    }
+    val apply = { onApply(draftTime, activeResources, draftStart, draftEnd, draftRetention, activeProfile, draftSource) }
     val screen = LocalConfiguration.current
     AlertDialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -124,16 +132,18 @@ internal fun LogFilterDialog(
                     }
                 }
                 Text(stringResource(R.string.capture_log_resource), style = MaterialTheme.typography.titleSmall)
-                val labels = resources.map { it to resourceLabel(it, names) }.sortedBy { it.second }
+                val labels = availableResources.map { it to resourceLabel(it, names) }.sortedBy { it.second }
                 OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().testTag("log-filter-search"), singleLine = true,
                     placeholder = { Text(stringResource(R.string.capture_log_resource_search)) })
-                val shown = labels.filter { (key, label) -> key == draftResource || label.contains(query.trim(), ignoreCase = true) }
+                val shown = labels.filter { (key, label) -> key in activeResources || label.contains(query.trim(), ignoreCase = true) }
                 Column(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()).testTag("log-filter-resources")) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        FilterChip(selected = draftResource == null, onClick = { draftResource = null },
+                        FilterChip(selected = activeResources.isEmpty(), onClick = { draftResources = emptySet() },
+                            modifier = Modifier.testTag("log-filter-resource:all"),
                             label = { Text(stringResource(R.string.capture_log_all_resources)) })
                         shown.forEach { (key, label) ->
-                            FilterChip(selected = draftResource == key, onClick = { draftResource = key }, modifier = Modifier.testTag("log-filter-resource:$key"),
+                            FilterChip(selected = key in activeResources,
+                                onClick = { draftResources = if (key in activeResources) activeResources - key else activeResources + key }, modifier = Modifier.testTag("log-filter-resource:$key"),
                                 label = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         ResourceIcon(key.substringBefore(':').toInt(), key.substringAfter(':').toLong(), names)
@@ -154,7 +164,10 @@ internal fun LogFilterDialog(
         confirmButton = { TextButton(onClick = {
             if (draftRetention < retention && (battleCount > draftRetention || outsideCount > draftRetention)) confirm = true else apply()
         }) { Text(stringResource(R.string.capture_log_apply)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } })
+        dismissButton = { Row {
+            TextButton(onClick = reset, enabled = !atDefaults, modifier = Modifier.testTag("log-filter-reset")) { Text(stringResource(R.string.capture_log_reset_filters)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        } })
     if (confirm) AlertDialog(onDismissRequest = { confirm = false },
         title = { Text(stringResource(R.string.capture_log_retention)) },
         text = { Text(stringResource(R.string.capture_log_retention_confirm, draftRetention)) },

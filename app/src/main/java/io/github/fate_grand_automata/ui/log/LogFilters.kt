@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.capture.CaptureLogItem
 import io.github.fate_grand_automata.scripts.capture.RunGains
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
 import io.github.fate_grand_automata.scripts.capture.SourceDelta
+import androidx.compose.runtime.saveable.listSaver
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -28,6 +29,32 @@ internal fun orderedLogSources(sources: List<SourceDelta>, source: LogSourceFilt
     if (source == null) sources else sources.filter { it.source.logSource() == source } + sources.filter { it.source.logSource() != source }
 
 internal enum class LogTimeFilter { Today, Week, Month, All, Custom }
+
+/** Every filter the dialog edits, so the screen, the dialog's drafts and Reset share one set of defaults. */
+internal data class LogFilterState(
+    val time: LogTimeFilter = LogTimeFilter.All,
+    val resources: Set<String> = emptySet(),
+    val profile: String? = null,
+    val source: LogSourceFilter? = null,
+    val start: Long? = null,
+    val end: Long? = null,
+) {
+    companion object { val DEFAULT = LogFilterState() }
+}
+
+/** Selected keys that no longer exist in the available list are dropped, as for the profile. */
+internal fun availableLogResources(selected: Set<String>, available: Set<String>): Set<String> =
+    selected.filterTo(LinkedHashSet()) { it in available }
+
+internal val LogResourceSetSaver = listSaver<Set<String>, String>(save = { it.toList() }, restore = { it.toSet() })
+
+/** Up to this many resource names are listed in the summary row; beyond it only the first two and a count. */
+internal const val LOG_RESOURCE_SUMMARY_MAX = 3
+
+/** Names shown, and how many more are hidden (0 when all fit). */
+internal fun resourceSummaryParts(labels: List<String>): Pair<String, Int> =
+    if (labels.size <= LOG_RESOURCE_SUMMARY_MAX) labels.joinToString(" · ") to 0
+    else labels.take(2).joinToString(" · ") to labels.size - 2
 
 private val CaptureLogItem.accountId: String? get() = battle?.accountId ?: outside?.accountId
 
@@ -74,7 +101,7 @@ internal fun logResources(entries: List<CaptureLogItem>): Set<String> =
 
 /** Calendar days in the user's zone, including today; no clock or Android dependency in the predicate. */
 internal fun filterCaptureLogs(
-    entries: List<CaptureLogItem>, time: LogTimeFilter, resource: String?, now: Long,
+    entries: List<CaptureLogItem>, time: LogTimeFilter, resources: Set<String>, now: Long,
     zone: TimeZone = TimeZone.getDefault(),
     customStart: Long? = null, customEnd: Long? = null,
     profile: String? = null, source: LogSourceFilter? = null,
@@ -97,7 +124,8 @@ internal fun filterCaptureLogs(
             entry.outside?.period?.sources?.any { it.source.logSource() == source } == true)) &&
         (profile == null || (if (profile == NO_LOG_PROFILE) entry.accountId == null else entry.accountId == profile)) &&
             (start == null || end == null || entry.endedAt in start until end) &&
-            (resource == null || entry.resourceChanges().any { val change = it[resource] ?: 0L; if (entry.battle != null) change != 0L else change > 0L })
+            (resources.isEmpty() || entry.resourceChanges().any { amounts ->
+                resources.any { key -> val change = amounts[key] ?: 0L; if (entry.battle != null) change != 0L else change > 0L } })
     }
 }
 

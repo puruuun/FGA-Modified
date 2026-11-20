@@ -12,7 +12,7 @@ class LogSourceFilterTest {
             period.add(source, AccountDelta(qp = 1), 2)
         }))
     private fun filter(entries: List<CaptureLogItem>, source: LogSourceFilter?) =
-        filterCaptureLogs(entries, LogTimeFilter.All, null, System.currentTimeMillis(), source = source)
+        filterCaptureLogs(entries, LogTimeFilter.All, emptySet(), System.currentTimeMillis(), source = source)
 
     @Test fun everyBattleMatchesOnlyScriptEvenWithoutCollection() {
         LogSourceFilter.entries.forEach { source ->
@@ -56,10 +56,10 @@ class LogSourceFilterTest {
 
     @Test fun sourceCombinesWithDateProfileAndResource() {
         val entry = outside(ChangeSource(ChangeSource.Group.Shop)).let { it.copy(outside = it.outside!!.copy(endedAt = 1000)) }
-        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.Today, null, System.currentTimeMillis(), source = LogSourceFilter.Shop).isEmpty())
-        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, null, 1000, profile = "other", source = LogSourceFilter.Shop).isEmpty())
-        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:4", 1000, source = LogSourceFilter.Shop).isEmpty())
-        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, "2:1", 1000, source = LogSourceFilter.Shop))
+        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.Today, emptySet(), System.currentTimeMillis(), source = LogSourceFilter.Shop).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, emptySet(), 1000, profile = "other", source = LogSourceFilter.Shop).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf("2:4"), 1000, source = LogSourceFilter.Shop).isEmpty())
+        assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf("2:1"), 1000, source = LogSourceFilter.Shop))
     }
 
     @Test fun unknownStoredGroupMatchesTheOtherFilter() {
