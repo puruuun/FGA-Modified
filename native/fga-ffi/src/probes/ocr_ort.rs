@@ -63,7 +63,7 @@ pub fn ocr_load_ort(model_path: &str, threads: i32) -> Result<String, String> {
     let backend = OrtBackend::load_file_with_threads(Path::new(model_path), threads)
         .map_err(|e| e.to_string())?;
     let configured = backend.intra_threads();
-    let loaded = Recognizer::new(backend);
+    let loaded = Recognizer::new(backend).map_err(|e| e.to_string())?;
     let load_ms = started.elapsed().as_millis();
     let classes = loaded.characters().class_count();
     *slot = Some(loaded);

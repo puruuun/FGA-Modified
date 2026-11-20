@@ -137,7 +137,7 @@ mod threads {
     ) -> (i64, i64) {
         let before = settle(&mut *count, baseline, SETTLE_ATTEMPTS, SETTLE_PAUSE).unwrap();
         let mut recognizer =
-            Recognizer::new(OrtBackend::load_file_with_threads(model, threads).unwrap());
+            Recognizer::new(OrtBackend::load_file_with_threads(model, threads).unwrap()).unwrap();
         let after_load = count();
         let crop = GrayImage::new(40, 20, vec![128; 800]).unwrap();
         // Identity's output is not [1, steps, classes], so the read fails, but only after the

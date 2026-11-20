@@ -14,18 +14,21 @@ pub struct Recognizer<B> {
 
 impl<B: Backend> Recognizer<B> {
     /// Uses the 4x upscale of the measured Python path.
-    pub fn new(backend: B) -> Self {
+    pub fn new(backend: B) -> Result<Self, Error> {
         Self::with_upscale(backend, DEFAULT_UPSCALE)
     }
 
-    /// Pads short crops to the backend's [`Backend::min_width`].
-    pub fn with_upscale(backend: B, upscale: usize) -> Self {
+    /// Pads short crops to the backend's [`Backend::min_width`], checked here as
+    /// [`Self::with_min_width`] checks its argument, so a backend that reports a width out of
+    /// range fails at construction and not at its first crop.
+    pub fn with_upscale(backend: B, upscale: usize) -> Result<Self, Error> {
         let min_width = backend.min_width();
-        Self {
+        check_min_width(min_width)?;
+        Ok(Self {
             backend,
             upscale,
             min_width,
-        }
+        })
     }
 
     /// Pads crops to at least `min_width` columns instead of the backend's width (issue #549, a
@@ -127,22 +130,58 @@ mod tests {
         }
     }
 
+    /// A backend that leaves [`Backend::min_width`] to the trait's default.
+    struct Unplanned(WidthRecorder);
+
+    impl Backend for Unplanned {
+        fn load_file(_: &Path) -> Result<Self, Error> {
+            Ok(Self(WidthRecorder::new()))
+        }
+
+        fn load_bytes(_: &[u8]) -> Result<Self, Error> {
+            Ok(Self(WidthRecorder::new()))
+        }
+
+        fn run(&mut self, input: &InputTensor) -> Result<Probabilities, Error> {
+            self.0.run(input)
+        }
+
+        fn characters(&self) -> &CharacterList {
+            self.0.characters()
+        }
+    }
+
     fn crop() -> GrayImage {
         GrayImage::new(60, 30, vec![200; 60 * 30]).unwrap()
     }
 
     #[test]
     fn the_backend_gets_the_default_width() {
-        let mut recognizer = Recognizer::new(WidthRecorder::new());
-        assert_eq!(recognizer.min_width(), MIN_MODEL_WIDTH);
+        let backend = Unplanned(WidthRecorder::new());
+        assert_eq!(backend.min_width(), 320);
+        let mut recognizer = Recognizer::new(backend).unwrap();
+        assert_eq!(recognizer.min_width(), 320);
         recognizer.recognize(&crop(), None).unwrap();
-        assert_eq!(recognizer.backend().widths, vec![MIN_MODEL_WIDTH]);
+        assert_eq!(recognizer.backend().0.widths, vec![320]);
+    }
+
+    #[test]
+    fn a_backend_width_out_of_range_is_refused_at_construction() {
+        for width in [0, 5000] {
+            assert!(
+                matches!(
+                    Recognizer::new(WidthRecorder::planned(width)),
+                    Err(Error::InvalidMinWidth { width: w, .. }) if w == width
+                ),
+                "{width}"
+            );
+        }
     }
 
     #[test]
     fn the_backend_gets_the_width_it_planned() {
         for planned in [256, 160, 320] {
-            let mut recognizer = Recognizer::new(WidthRecorder::planned(planned));
+            let mut recognizer = Recognizer::new(WidthRecorder::planned(planned)).unwrap();
             assert_eq!(recognizer.min_width(), planned);
             recognizer.recognize(&crop(), None).unwrap();
             assert_eq!(recognizer.backend().widths, vec![planned], "{planned}");
@@ -153,6 +192,7 @@ mod tests {
     fn the_backend_gets_the_chosen_width() {
         for (min, width) in [(160, 160), (96, 96), (8, 96)] {
             let mut recognizer = Recognizer::new(WidthRecorder::new())
+                .unwrap()
                 .with_min_width(min)
                 .unwrap();
             assert_eq!(recognizer.min_width(), min);
@@ -164,7 +204,9 @@ mod tests {
     #[test]
     fn a_bad_width_is_refused() {
         assert!(matches!(
-            Recognizer::new(WidthRecorder::new()).with_min_width(7),
+            Recognizer::new(WidthRecorder::new())
+                .unwrap()
+                .with_min_width(7),
             Err(Error::InvalidMinWidth { width: 7, .. })
         ));
     }

@@ -10,7 +10,7 @@ mod common;
 #[cfg(test)]
 mod model {
     use super::common::helpers::{FIXED, first_channel, local_files, ok_json};
-    use fga_ffi::probes::{ocr_load, ocr_unload, support_score_read};
+    use fga_ffi::probes::{ocr_load, ocr_load_tract, ocr_unload, support_score_read};
     use fga_ffi::run_guarded;
     use fga_ffi::score_engine::{
         ALREADY_LOADED, CODE_NO, CODE_YES, NOT_LOADED, is_loaded_entry, load_entry, read_entry,
@@ -92,15 +92,29 @@ mod model {
             format!("ERR: {ALREADY_LOADED}")
         );
         assert_eq!(is_loaded_entry(), CODE_YES);
-        // Issue #591: the engine reads at the reader width; at 320 this sample is unknown (format).
+        // Issue #591: the engine reads at the reader width. The padded width changes every
+        // confidence, so the engine's reply must equal the probe's at 256 in every field and
+        // differ from the probe's at 320 in its confidence; whether the reader accepts the crop
+        // plays no part.
         let (pixels_0299, w_0299, h_0299) = first_channel(&dir.join("0299.png"));
-        let reply = read_entry(|_| Ok(pixels_0299), w_0299, h_0299);
-        assert_eq!(
-            &reply[1..4],
-            &[wire::STATUS_READ, 57, 16],
-            "0299: {}",
-            text(&reply)
-        );
+        let reply = read_entry(|_| Ok(pixels_0299.clone()), w_0299, h_0299);
+        for min_width in [256, 320] {
+            let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, min_width, 1)));
+            assert_eq!(loaded["minWidth"], min_width);
+            let probe = ok_json(&run_guarded(|| {
+                support_score_read(pixels_0299.clone(), w_0299, h_0299)
+            }));
+            if min_width == 256 {
+                assert_same("0299.png", &reply, &probe);
+            } else {
+                assert_ne!(
+                    f32::from_bits(reply[7] as u32),
+                    probe["confidence"].as_f64().unwrap() as f32,
+                    "0299.png at 320: {probe}"
+                );
+            }
+        }
+        assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], true);
 
         // The probe slot: loading, reading and unloading it leaves the engine as it is.
         ok_json(&run_guarded(|| ocr_load(&model_path)));

@@ -50,7 +50,7 @@ pub fn ocr_load(model_path: &str) -> Result<String, String> {
     *slot = None;
     let started = Instant::now();
     let backend = TractBackend::load_file(Path::new(model_path)).map_err(|e| e.to_string())?;
-    let loaded = Recognizer::new(backend);
+    let loaded = Recognizer::new(backend).map_err(|e| e.to_string())?;
     let load_ms = started.elapsed().as_millis();
     let classes = loaded.characters().class_count();
     let min_width = loaded.min_width();
@@ -101,7 +101,7 @@ pub fn ocr_load_tract(model_path: &str, min_width: i32, threads: i32) -> Result<
         TractBackend::load_file_with(Path::new(model_path), settings).map_err(|e| e.to_string())?;
     let configured = backend.threads();
     let loaded = Recognizer::new(backend)
-        .with_min_width(settings.min_width)
+        .and_then(|loaded| loaded.with_min_width(settings.min_width))
         .map_err(|e| e.to_string())?;
     let load_ms = started.elapsed().as_millis();
     let classes = loaded.characters().class_count();

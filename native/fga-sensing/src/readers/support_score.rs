@@ -142,13 +142,14 @@ pub struct ScoreConfig {
 pub const EXPECTED_CROP_SIZE: (usize, usize) = (60, 30);
 
 /// A margin, not a measured boundary: 0.05 below the lowest confidence of a correct read on the
-/// 370 labelled samples (0.91163). It separates nothing there, because no wrong read of a valid
-/// text exists on those samples; the format and the pixel rule do the real work, and the two real
-/// errors found (`0070`, `0299`) read with 0.956 and 0.937.
+/// 370 labelled samples when the floors were set (0.91163, at model width 320). It separates
+/// nothing there, because no wrong read of a valid text exists on those samples; the format and
+/// the pixel rule do the real work.
 pub const DEFAULT_MIN_CONFIDENCE: f64 = 0.86;
 
-/// A character the model itself gives less than even odds is not a read. Not fitted: the lowest
-/// correct read on the 370 samples has a weakest character of 0.517, so it costs no labelled read.
+/// A character the model itself gives less than even odds is not a read. Not fitted: it costs no
+/// labelled read on the 370 samples at model width 320 or at the reader's 256, though at 256 the
+/// weakest character of `0299`'s correct read lies just above it.
 pub const DEFAULT_MIN_CHAR_CONFIDENCE: f32 = 0.5;
 
 impl Default for ScoreConfig {

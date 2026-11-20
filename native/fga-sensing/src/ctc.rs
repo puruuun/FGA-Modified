@@ -177,6 +177,15 @@ fn round5(value: f64) -> f64 {
 mod tests {
     use super::*;
 
+    #[test]
+    fn a_row_is_one_step_and_none_past_the_last() {
+        let probabilities = Probabilities::new(2, 3, vec![0.1, 0.2, 0.7, 0.6, 0.3, 0.1]).unwrap();
+        assert_eq!(probabilities.row(0), Some(&[0.1, 0.2, 0.7][..]));
+        assert_eq!(probabilities.row(1), Some(&[0.6, 0.3, 0.1][..]));
+        assert_eq!(probabilities.row(2), None);
+        assert_eq!(probabilities.row(usize::MAX), None);
+    }
+
     /// Classes: 0 blank, 1 "+", 2 "/", 3 "6", 4 "2", 5 "A", 6 space.
     fn characters() -> CharacterList {
         CharacterList::from_metadata("+\n/\n6\n2\nA").unwrap()

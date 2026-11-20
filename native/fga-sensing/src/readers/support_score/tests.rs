@@ -343,7 +343,7 @@ fn the_defaults_are_pinned() {
 }
 
 fn reader(script: Scripted, config: ScoreConfig) -> SupportScoreReader<Scripted> {
-    SupportScoreReader::new(Recognizer::new(script), config).unwrap()
+    SupportScoreReader::new(Recognizer::new(script).unwrap(), config).unwrap()
 }
 
 #[test]
@@ -469,7 +469,7 @@ fn a_model_without_a_score_character_is_refused() {
         ..config()
     };
     assert!(matches!(
-        SupportScoreReader::new(Recognizer::new(letters), restricted),
+        SupportScoreReader::new(Recognizer::new(letters).unwrap(), restricted),
         Err(Error::UnknownCharacter(_))
     ));
 }
@@ -499,7 +499,7 @@ fn the_weakest_character_is_the_minimum_of_the_text() {
 
     // Through `read_with`: the floor sits between the weakest character and the others, so
     // anything but the minimum would let the read through.
-    let mut recognizer = Recognizer::new(script());
+    let mut recognizer = Recognizer::new(script()).unwrap();
     let floor = |min_char_confidence| ScoreConfig {
         min_confidence: 0.5,
         min_char_confidence,

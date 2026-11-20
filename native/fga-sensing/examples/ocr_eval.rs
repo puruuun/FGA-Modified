@@ -112,7 +112,7 @@ fn evaluate<B: Backend>(
     let backend = load(&args.model).map_err(|e| e.to_string())?;
     let load_time = started.elapsed();
     let mut recognizer = Recognizer::new(backend)
-        .with_min_width(args.min_width)
+        .and_then(|recognizer| recognizer.with_min_width(args.min_width))
         .map_err(|e| e.to_string())?;
     let allowed = match &args.allowed {
         Some(chars) => Some(recognizer.allowed_set(chars).map_err(|e| e.to_string())?),

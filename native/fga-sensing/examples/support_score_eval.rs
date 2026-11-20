@@ -135,8 +135,8 @@ fn observe_all<B: Backend>(
         restrict_characters: restrict,
         ..args.config.clone()
     };
-    let mut reader =
-        SupportScoreReader::new(Recognizer::new(backend), config).map_err(|e| e.to_string())?;
+    let recognizer = Recognizer::new(backend).map_err(|e| e.to_string())?;
+    let mut reader = SupportScoreReader::new(recognizer, config).map_err(|e| e.to_string())?;
     let mut observed = Observed {
         rows: Vec::new(),
         micros: Vec::new(),

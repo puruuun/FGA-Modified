@@ -59,7 +59,7 @@ mod checks {
             return;
         };
         let index = samples::load_index(&dir).unwrap();
-        let mut recognizer = Recognizer::new(load(&model));
+        let mut recognizer = Recognizer::new(load(&model)).unwrap();
         assert_eq!(recognizer.min_width(), 320);
         assert_eq!(recognizer.characters().class_count(), 18710);
         let mut checked = 0;
@@ -139,7 +139,7 @@ mod checks {
             return;
         };
         let index = samples::load_index(&dir).unwrap();
-        let mut recognizer = Recognizer::new(load(&model));
+        let mut recognizer = Recognizer::new(load(&model)).unwrap();
         let allowed = recognizer.allowed_set(SCORE_CHARACTERS).unwrap();
         // Python read "_", "X", "X" and "A" on these blank-looking crops.
         for file in ["0002.png", "0005.png", "0052.png", "0068.png"] {
@@ -167,7 +167,7 @@ mod checks {
             return;
         };
         let mut reader = SupportScoreReader::new(
-            Recognizer::new(B::load_file(&model).unwrap()),
+            Recognizer::new(B::load_file(&model).unwrap()).unwrap(),
             ScoreConfig::default(),
         )
         .unwrap();
@@ -248,7 +248,7 @@ mod checks {
             return;
         };
         let mut reader = SupportScoreReader::new(
-            Recognizer::new(B::load_file(&model).unwrap()),
+            Recognizer::new(B::load_file(&model).unwrap()).unwrap(),
             ScoreConfig::default(),
         )
         .unwrap();
@@ -353,7 +353,7 @@ mod checks {
             return;
         };
         let bytes = std::fs::read(&model).unwrap();
-        let mut recognizer = Recognizer::new(B::load_bytes(&bytes).unwrap());
+        let mut recognizer = Recognizer::new(B::load_bytes(&bytes).unwrap()).unwrap();
         let index = samples::load_index(&dir).unwrap();
         let sample = &index[0];
         let crop = samples::load_gray(&dir.join(&sample.file)).unwrap();
@@ -416,7 +416,7 @@ mod tract {
         };
         let backend = TractBackend::load_file(Path::new(&model)).unwrap();
         assert_eq!(backend.planned_widths(), vec![READER_MIN_WIDTH]);
-        let mut recognizer = Recognizer::new(backend);
+        let mut recognizer = Recognizer::new(backend).unwrap();
         assert_eq!(recognizer.min_width(), READER_MIN_WIDTH);
         let crop = fga_sensing::image::GrayImage::new(60, 30, vec![128; 60 * 30]).unwrap();
         recognizer.recognize(&crop, None).unwrap();
@@ -456,7 +456,10 @@ mod tract {
             |model| {
                 let backend = TractBackend::load_file_with(model, settings).unwrap();
                 assert_eq!(backend.planned_widths(), vec![160]);
-                Recognizer::new(backend).with_min_width(160).unwrap()
+                Recognizer::new(backend)
+                    .unwrap()
+                    .with_min_width(160)
+                    .unwrap()
             },
             false,
         );
@@ -474,7 +477,7 @@ mod tract {
             |model| {
                 let backend = TractBackend::load_file_with(model, settings).unwrap();
                 assert_eq!(backend.threads(), 2);
-                Recognizer::new(backend)
+                Recognizer::new(backend).unwrap()
             },
             true,
         );

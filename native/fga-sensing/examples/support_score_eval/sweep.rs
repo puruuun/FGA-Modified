@@ -117,9 +117,9 @@ pub fn run<B: Backend>(
                 let shifts = &shifts;
                 scope.spawn(move || -> Result<Vec<CutRow>, String> {
                     let backend = load(&args.model).map_err(|e| e.to_string())?;
-                    let mut reader =
-                        SupportScoreReader::new(Recognizer::new(backend), config.clone())
-                            .map_err(|e| e.to_string())?;
+                    let recognizer = Recognizer::new(backend).map_err(|e| e.to_string())?;
+                    let mut reader = SupportScoreReader::new(recognizer, config.clone())
+                        .map_err(|e| e.to_string())?;
                     let mut rows = Vec::new();
                     for (i, sample) in index.iter().enumerate() {
                         if i % workers != worker {

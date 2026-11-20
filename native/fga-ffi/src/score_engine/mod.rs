@@ -116,7 +116,9 @@ pub fn load(model_path: &str) -> Result<String, String> {
     let started = Instant::now();
     let backend = TractBackend::load_file_with(Path::new(model_path), settings())
         .map_err(|e| e.to_string())?;
-    *slot = Some(Box::new(Recognizer::new(backend)));
+    *slot = Some(Box::new(
+        Recognizer::new(backend).map_err(|e| e.to_string())?,
+    ));
     Ok(started.elapsed().as_millis().to_string())
 }
 

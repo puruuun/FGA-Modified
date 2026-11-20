@@ -5,12 +5,17 @@
 //!
 //! cargo run --release -p fga-sensing --features tract --example width_decode_eval -- \
 //!     <model.onnx> <set A dir> <set B dir> <set P dir> <out dir> \
-//!     [--widths 320,256,...] [--timing] [--negatives] [--broad] [--dump <png path>]
+//!     [--widths 320,256,...] [--timing] [--negatives] [--broad] [--dump <png path>] [--time-only]
 //!
 //! Set A has an `index.json`, set B a `labels.tsv` (file, text), set P a `list.tsv` and no label.
 //! Width 320, RapidOCR's (the reader itself plans `READER_MIN_WIDTH`), is always run first: it is
-//! the reference every other width is compared with, and its unshifted read of set A is the
-//! fallback truth of the unlabelled fields, as in the evaluation tool's cut sweep.
+//! the reference every other width is compared with. Set A's fields without a label are scored
+//! against the width-320 P0 answer, as in the evaluation tool's cut sweep, so width 320 can never
+//! be wrong on them and every other width is scored relative to it there; set B and the cut sweep
+//! are scored against their own labels.
+//!
+//! `--time-only` runs `--timing`'s measurement for the given widths and evaluates nothing, so no
+//! 320 run is added.
 
 #[path = "../tests/support/samples.rs"]
 mod samples;
@@ -63,7 +68,7 @@ fn main() -> ExitCode {
 
 fn parse_args() -> Result<Args, String> {
     let usage = "usage: width_decode_eval <model.onnx> <set A> <set B> <set P> <out dir> \
-                 [--widths 320,160] [--timing] [--negatives] [--broad] [--dump <png>]";
+                 [--widths 320,160] [--timing] [--negatives] [--broad] [--dump <png>] [--time-only]";
     let mut it = std::env::args().skip(1);
     let mut next = || it.next().ok_or_else(|| usage.to_string());
     let mut args = Args {
@@ -986,6 +991,10 @@ fn run(args: &Args) -> Result<(), String> {
 
     for &width in &args.widths {
         println!("\n================ width {width} ================");
+        if args.time_only {
+            print_timing(args, &sets, width)?;
+            continue;
+        }
         if let Some(path) = &args.dump {
             dump(&args.model, width, path)?;
         }
@@ -1039,7 +1048,10 @@ fn run(args: &Args) -> Result<(), String> {
         let ev_sw = par_eval(&args.model, width, &sweep_crops)?;
 
         // ---- tables
-        println!("-- set A ({} crops)", items_a.len());
+        println!(
+            "-- set A ({} crops; fields without a label are scored against the width-320 P0 answer)",
+            items_a.len()
+        );
         for &p in &pols {
             println!(
                 "  {:8} {}",
@@ -1059,7 +1071,10 @@ fn run(args: &Args) -> Result<(), String> {
             }
             println!("  P0 only {server}: {}", t.line());
         }
-        println!("-- set B ({} crops)", items_b.len());
+        println!(
+            "-- set B ({} crops; scored against labels.tsv)",
+            items_b.len()
+        );
         for &p in &pols {
             println!(
                 "  {:8} {}",
@@ -1068,7 +1083,7 @@ fn run(args: &Args) -> Result<(), String> {
             );
         }
         println!(
-            "-- cut sweep of tests/model.rs ({} crops)",
+            "-- cut sweep of tests/model.rs ({} crops; scored against the exact labels)",
             sweep_items.len()
         );
         for &p in &pols {

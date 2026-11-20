@@ -72,7 +72,7 @@ mod model {
         assert_eq!(ok_json(&run_guarded(ocr_unload))["dropped"], false);
 
         // Issue #555: the support-score reader uses the recogniser ocrLoad loaded, and none
-        // after ocrUnload. 0299 reads at the reader width (issue #591).
+        // after ocrUnload.
         let (pixels, width, height) = first_channel(&dir.join("0183.png"));
         assert_eq!(
             run_guarded(|| support_score_read(pixels, width, height)),
@@ -82,7 +82,7 @@ mod model {
         for (file, class, grand, reason) in [
             ("0183.png", Some(62), Some(16), None),
             ("0070.png", None, None, Some("clipped")),
-            ("0299.png", Some(57), Some(16), None),
+            ("0168.png", None, None, Some("format")),
         ] {
             let (pixels, width, height) = first_channel(&dir.join(file));
             let read = ok_json(&run_guarded(|| support_score_read(pixels, width, height)));
@@ -112,22 +112,31 @@ mod model {
                 "{file}"
             );
         }
-        // Issue #570: the support-score reader reads on the width ocrLoadTract planned. 0299 is
-        // the one stored sample whose answer the PC evaluation found to differ between 320 and 256.
+        // Issue #591: ocrLoad reads at the reader width. The padded width changes every
+        // confidence, so ocrLoad's read of a crop must equal the one at 256 to the last bit and
+        // differ from the one at 320. Whether the reader accepts the crop plays no part: 0299 is
+        // the sample whose answer differs between the widths, and its weakest character sits
+        // just above the floor at 256, so only its texts are printed.
         let (pixels, width, height) = first_channel(&dir.join("0299.png"));
-        for (min_width, class, grand, reason) in [
-            (320, None, None, Some("format")),
-            (256, Some(57), Some(16), None),
+        let mut reads = Vec::new();
+        for (call, min_width) in [
+            ("ocrLoad", 256),
+            ("ocrLoadTract", 256),
+            ("ocrLoadTract", 320),
         ] {
-            let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, min_width, 1)));
-            assert_eq!(loaded["minWidth"], min_width);
-            let read = ok_json(&run_guarded(|| {
-                support_score_read(pixels.clone(), width, height)
-            }));
-            assert_eq!(read["class"].as_u64(), class, "{min_width}: {read}");
-            assert_eq!(read["grand"].as_u64(), grand, "{min_width}: {read}");
-            assert_eq!(read["classReason"].as_str(), reason, "{min_width}: {read}");
+            let loaded = if call == "ocrLoad" {
+                ok_json(&run_guarded(|| ocr_load(&model_path)))
+            } else {
+                ok_json(&run_guarded(|| ocr_load_tract(&model_path, min_width, 1)))
+            };
+            assert_eq!(loaded["minWidth"], min_width, "{call}");
+            let read = ok_json(&run_guarded(|| ocr_read(pixels.clone(), width, height, "")));
+            println!("ocr probe model test: 0299.png through {call} at {min_width}: {read}");
+            reads.push(read);
         }
+        assert_eq!(reads[0]["text"], reads[1]["text"]);
+        assert_eq!(reads[0]["confidence"], reads[1]["confidence"]);
+        assert_ne!(reads[0]["confidence"], reads[2]["confidence"]);
         #[cfg(feature = "tract-threads")]
         {
             let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, 320, 2)));
