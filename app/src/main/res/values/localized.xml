@@ -1479,4 +1479,14 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_root_adguard_vpn_note">"Set AdGuard to 'Automatic proxy' mode, and exclude both FGO and FGA from AdGuard filtering. Can be used together with personal VPNs such as WireGuard."</string>
     <string name="card_swap_detection">Detect Aoko card change</string>
     <string name="card_swap_detection_summary">When on, applies to every wave and turn: a card with the swap icon is treated as Arts</string>
+    <string name="capture_log_view_record">By record</string>
+    <string name="capture_log_view_day">By day</string>
+    <string name="capture_log_day_summary">Battles %1$d · Accounts %2$d</string>
+    <string name="capture_log_day_changes">Changes by account</string>
+    <string name="capture_log_day_scripts">Scripts run</string>
+    <string name="capture_log_day_included">Includes %1$d battle logs</string>
+    <string name="capture_log_day_breakdown">Show breakdown</string>
+    <string name="capture_log_day_no_changes">No changes recorded</string>
+    <string name="capture_log_day_no_scripts">No script runs recorded on this day</string>
+    <string name="capture_log_day_zone_note">Game day starts at 04:00 Korea/Japan time</string>
 </resources>

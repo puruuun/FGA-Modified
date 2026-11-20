@@ -56,7 +56,7 @@ internal fun resourceSummaryParts(labels: List<String>): Pair<String, Int> =
     if (labels.size <= LOG_RESOURCE_SUMMARY_MAX) labels.joinToString(" · ") to 0
     else labels.take(2).joinToString(" · ") to labels.size - 2
 
-private val CaptureLogItem.accountId: String? get() = battle?.accountId ?: outside?.accountId
+internal val CaptureLogItem.accountId: String? get() = battle?.accountId ?: outside?.accountId
 
 /** Use the newest recorded name for each profile, falling back to its id for unnamed history. */
 internal fun logProfiles(entries: List<CaptureLogItem>): Map<String, String> =
@@ -84,7 +84,7 @@ internal fun pickerDateInZone(date: Long, zone: TimeZone): Long {
 }
 
 /** Stable resource keys keep items, battle drops and outside card counts separate. */
-private fun CaptureLogItem.resourceChanges(): List<Map<String, Long>> = battle?.gains?.let { gains ->
+internal fun CaptureLogItem.resourceChanges(): List<Map<String, Long>> = battle?.gains?.let { gains ->
     listOf(buildMap {
         gains.items.forEach { put("${it.type}:${it.objectId}", (get("${it.type}:${it.objectId}") ?: 0L) + it.gained) }
         gains.qp?.let { put("2:1", (get("2:1") ?: 0L) + it) }

@@ -1410,4 +1410,14 @@
     <string name="capture_root_adguard_vpn_note">"AdGuard는 '자동 프록시' 모드로 두고, AdGuard 필터링에서 FGO와 FGA를 모두 제외하세요. WireGuard 등 개인 VPN과 함께 쓸 수 있습니다."</string>
     <string name="card_swap_detection">아오코 카드 변화 감지</string>
     <string name="card_swap_detection_summary">켜면 모든 웨이브와 턴에 적용됩니다. 카드에 변환 아이콘이 있으면 Arts로 취급합니다</string>
+    <string name="capture_log_view_record">기록별</string>
+    <string name="capture_log_view_day">날짜별</string>
+    <string name="capture_log_day_summary">전투 %1$d · 계정 %2$d</string>
+    <string name="capture_log_day_changes">계정별 변동</string>
+    <string name="capture_log_day_scripts">실행한 스크립트</string>
+    <string name="capture_log_day_included">전투 %1$d회 포함</string>
+    <string name="capture_log_day_breakdown">내역 펼치기</string>
+    <string name="capture_log_day_no_changes">기록된 변동이 없습니다</string>
+    <string name="capture_log_day_no_scripts">이 날 기록된 스크립트 실행이 없습니다</string>
+    <string name="capture_log_day_zone_note">한국·일본 시간 04:00 기준</string>
 </resources>

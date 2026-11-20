@@ -39,6 +39,7 @@ import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.exit.battleSummaryContent
 import java.io.File
 import io.github.fate_grand_automata.scripts.capture.BattleGains
+import io.github.fate_grand_automata.scripts.capture.GameDay
 import java.text.DateFormat
 import java.util.Date
 
@@ -70,7 +71,7 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,
         outsideEntries = outsideEntries, openOutsideEntries = openEntries,
         retention = LogRetentionPrefsCore.normalize(retention), onRetention = viewModel::setRetention,
-        loadBattles = viewModel::battlesOf)
+        loadBattles = viewModel::battlesOf, accountServers = accounts.associate { it.id to it.server })
 }
 
 @Composable
@@ -84,6 +85,7 @@ fun LogScreenContent(
     retention: Int = LogRetentionPrefsCore.DEFAULT,
     onRetention: (Int) -> Unit = {},
     loadBattles: (suspend (String) -> List<BattleGains>?)? = null,
+    accountServers: Map<String, String> = emptyMap(),
 ) {
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var time by rememberSaveable { mutableStateOf(LogTimeFilter.All) }
@@ -92,6 +94,10 @@ fun LogScreenContent(
     var source by rememberSaveable { mutableStateOf<LogSourceFilter?>(null) }
     var start by rememberSaveable { mutableStateOf<Long?>(null) }
     var end by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Not persisted across restarts: the screen opens By record, and only a configuration change keeps the choice.
+    var dayView by rememberSaveable { mutableStateOf(false) }
+    var selectedDayKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var dayBattleId by rememberSaveable { mutableStateOf<String?>(null) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var deletion by rememberSaveable(stateSaver = listSaver<LogDeleteSelection, String>(
         save = { listOf(it.active.toString()) + it.selected },
@@ -108,6 +114,7 @@ fun LogScreenContent(
     val sorted = filterCaptureLogs(all, time, activeResources, now, customStart = start, customEnd = end, profile = activeProfile, source = source)
     val filtered = time != LogTimeFilter.All || activeResources.isNotEmpty() || activeProfile != null || source != null
     val emptyText = stringResource(if (filtered) R.string.capture_log_filter_empty else R.string.battle_log_empty)
+    val days = if (dayView) groupLogDays(sorted, logProfiles(all), accountServers) else emptyList()
     val cancelDelete = { deletion = deletion.cancel(); pendingIds = null; confirmAll = false }
     val noProfileLabel = stringResource(R.string.capture_log_no_profile)
     val (resourceNames, hiddenResources) = resourceSummaryParts(activeResources.map { resourceLabel(it, names) })
@@ -120,6 +127,8 @@ fun LogScreenContent(
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val twoPanes = maxWidth >= 840.dp
         val selected = sorted.find { it.id == selectedId } ?: if (twoPanes) sorted.firstOrNull() else null
+        val selectedDay = days.find { it.key == selectedDayKey } ?: if (twoPanes) days.firstOrNull() else null
+        val dayBattle = selectedDay?.battles?.find { it.id == dayBattleId }?.battle
         val list: @Composable ColumnScope.() -> Unit = {
             LogList(sorted, if (deletion.active) null else selected?.id,
                 onSelect = { if (deletion.active) deletion = deletion.toggle(it) else selectedId = it },
@@ -128,21 +137,36 @@ fun LogScreenContent(
                 onDeleteSelected = { pendingIds = ArrayList(deletion.targets(all)); confirmAll = false },
                 onClear = { pendingIds = ArrayList(deletion.targets(all, all = true)); confirmAll = true },
                 hasEntries = all.isNotEmpty(), emptyText = if (twoPanes) "" else emptyText,
-                onFilter = { showFilters = true }, filterSummary = summary)
+                onFilter = { showFilters = true }, filterSummary = summary,
+                dayView = dayView, onDayView = { if (it) cancelDelete(); dayView = it },
+                days = days, selectedDay = selectedDay?.day, now = now,
+                onSelectDay = { selectedDayKey = it.key(); dayBattleId = null })
         }
         if (twoPanes) {
             CappedWidth {
                 Row(Modifier.fillMaxSize()) {
                     Column(Modifier.weight(0.48f).fillMaxHeight(), content = list)
                     Column(Modifier.weight(0.52f).fillMaxHeight()) {
-                        if (selected == null) Text(emptyText, Modifier.padding(16.dp))
+                        if (dayView) {
+                            if (dayBattle != null) BattleLogDetail(dayBattle, onBack = { dayBattleId = null }, names = names, loadBattles = loadBattles)
+                            else if (selectedDay != null) LogDayDetail(selectedDay, names, now, onBack = null, onBattle = { dayBattleId = it })
+                            else Text(emptyText, Modifier.padding(16.dp))
+                        } else if (selected == null) Text(emptyText, Modifier.padding(16.dp))
                         else LazyColumn(Modifier.fillMaxSize()) { captureLogDetailItems(selected, names, loadBattles, source) }
                     }
                 }
             }
         } else {
-            BackHandler(enabled = selected != null && !deletion.active) { selectedId = null }
-            if (selected != null && !deletion.active) {
+            BackHandler(enabled = !dayView && selected != null && !deletion.active) { selectedId = null }
+            BackHandler(enabled = dayView && (dayBattle != null || selectedDay != null)) {
+                if (dayBattle != null) dayBattleId = null else selectedDayKey = null
+            }
+            if (dayView) {
+                if (dayBattle != null) BattleLogDetail(dayBattle, onBack = { dayBattleId = null }, names = names, loadBattles = loadBattles)
+                else if (selectedDay != null) CappedWidth {
+                    LogDayDetail(selectedDay, names, now, onBack = { selectedDayKey = null }, onBattle = { dayBattleId = it })
+                } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
+            } else if (selected != null && !deletion.active) {
                 selected.battle?.let { BattleLogDetail(it, onBack = { selectedId = null }, names = names, loadBattles = loadBattles) }
                 selected.outside?.let { OutsideLogDetail(it, onBack = { selectedId = null }, names = names, source = source) }
             } else CappedWidth { Column(Modifier.fillMaxSize(), content = list) }
@@ -174,6 +198,8 @@ internal fun ColumnScope.LogList(
     deletion: LogDeleteSelection, onEnterDelete: () -> Unit, onCancelDelete: () -> Unit,
     onDeleteSelected: () -> Unit, onClear: () -> Unit, hasEntries: Boolean,
     emptyText: String, onFilter: () -> Unit, filterSummary: String?,
+    dayView: Boolean = false, onDayView: ((Boolean) -> Unit)? = null, days: List<LogDay> = emptyList(),
+    selectedDay: GameDay? = null, now: Long = 0L, onSelectDay: (GameDay) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val newestId = sorted.firstOrNull()?.id
@@ -184,7 +210,7 @@ internal fun ColumnScope.LogList(
     }
     Heading(stringResource(R.string.p_logs), trailing = {
         if (!deletion.active) Row(verticalAlignment = Alignment.CenterVertically) {
-            if (hasEntries) TextButton(onClick = onEnterDelete) {
+            if (hasEntries && !dayView) TextButton(onClick = onEnterDelete) {
                 Icon(Icons.Default.Delete, stringResource(R.string.battle_log_delete), Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.battle_log_delete))
@@ -196,6 +222,7 @@ internal fun ColumnScope.LogList(
             }
         }
     })
+    if (onDayView != null && !deletion.active) LogViewSwitch(dayView, onDayView)
     if (deletion.active) FlowRow(Modifier.padding(horizontal = 8.dp)) {
         TextButton(onClick = onDeleteSelected, enabled = deletion.selected.isNotEmpty()) { Text(stringResource(R.string.capture_log_delete_selected)) }
         TextButton(onClick = onClear) { Text(stringResource(R.string.battle_log_delete_all)) }
@@ -207,6 +234,8 @@ internal fun ColumnScope.LogList(
     }
     if (sorted.isEmpty()) {
         if (emptyText.isNotEmpty()) Text(emptyText, Modifier.padding(16.dp))
+    } else if (dayView) LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
+        items(days, key = { it.key }) { LogDayCard(it, it.day == selectedDay, now) { onSelectDay(it.day) } }
     } else LazyColumn(Modifier.weight(1f), state = listState, verticalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
         items(sorted, key = { it.id }) { entry ->
             val selected = if (deletion.active) entry.id in deletion.selected else entry.id == selectedId
@@ -253,7 +282,7 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
 }
 
 @Composable
-private fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
+internal fun LogCard(entry: BattleLogEntry, selected: Boolean, onClick: () -> Unit, checked: Boolean?) {
     val summary = listOfNotNull(stringResource(R.string.battle_log_card_runs, entry.timesRan, entry.averageTurnsPerRun),
         if (entry.gains != null) stringResource(R.string.capture_gains_tracked) else null, entry.reasonText.takeIf { it.isNotBlank() }).joinToString(" · ")
     LogCardFrame(entry.id, entry.configName, entry.accountName, localDateTime(entry.endedAt), summary, selected, onClick,

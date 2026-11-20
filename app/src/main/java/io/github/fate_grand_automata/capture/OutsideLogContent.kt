@@ -95,7 +95,7 @@ private val otherSourceLabels = mapOf(
 )
 
 @Composable
-private fun sourceName(source: ChangeSource): String {
+internal fun sourceName(source: ChangeSource): String {
     if (!source.script && source.group == ChangeSource.Group.Other) {
         otherSourceLabels[source.path]?.let { return stringResource(it) }
         return "${sourceFilterLabel(source.logSource())} · ${source.path.orEmpty()}"
