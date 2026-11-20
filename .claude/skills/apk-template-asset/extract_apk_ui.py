@@ -39,6 +39,10 @@ except ImportError:
     sys.exit("Pillow and UnityPy are required")
 
 sys.dont_write_bytecode = True
+# Korean and Japanese text; a Korean Windows console defaults to cp949, which cannot print Japanese
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ngui_dump  # noqa: E402
 

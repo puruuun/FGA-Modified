@@ -52,6 +52,13 @@ package.
    (the button sprite under a label). For each widget it prints the size rule's branch, the box at 720p (16:9) and
    `Region(x, y, w, h).xFromCenter()` at 1440p, and it writes `<name>.png` plus `<name>.json`.
 
+   A text list is not a choice. `--text "확인"` lists 25 KR labels, and with no `--pick` the first one is drawn,
+   which is a profile dialog's button. Each list is in data order. A label whose text code sets shows something
+   else in the data, so the right one can be missing from the list: the KR level-up confirmation's 확인 is `결정`
+   in the data. `--with RX` searches the whole scene or prefab of the element: `--with 'ConfirmBtn/BtnBg$'` adds
+   every such button in CombineScene and gives a 965x278 draft. Anchor it to the element's own path. See "Picking
+   the right widget" below.
+
    **From a screenshot of the other server.** When you have the screen on JP but draft for KR (or the reverse),
    let the screenshot find the element. The other server's template (or a box) marks it; the widgets drawn there
    are found in that server's data and drafted from the target's data under the same paths:
@@ -84,10 +91,16 @@ package.
 4. **Score on real screens** if the server's reference screenshots show the element:
 
    ```bash
-   ... draft_element.py ... --screens docs/reference-images/Kr --reference app/src/main/assets/Kr/close.png
+   ... draft_element.py ... --screens docs/reference-images/Kr --reference app/src/main/assets/Kr/close.png \
+       --cache build/screen-cache
    py -3 -E -P .claude/skills/apk-template-asset/screen_score.py --screens docs/reference-images/Kr \
-       --reference app/src/main/assets/Kr/close.png --template build/d/close.png --out-csv build/close.csv
+       --reference app/src/main/assets/Kr/close.png --template build/d/close.png --out-csv build/close.csv \
+       --cache build/screen-cache
    ```
+
+   `--cache DIR` keeps the decoded screenshots, so a second run skips decoding them. The cache key is each file's
+   absolute path and size (known issue 7). After you replace a screenshot with one of the same size, delete the
+   cache folder.
 
    The threshold is read from `scripts/` (`--threshold code`, the default: every call of the `Images` entry, its
    `similarity = ...` or minSimilarity 0.8; the highest is used and each call is listed) or given as a number.
@@ -99,6 +112,45 @@ package.
 5. **Implement**, with the Region from step 2 (add the margin the call needs, and the `isWide` value where the
    element follows an edge), then **the owner's in-game check**. Templates that fail there are re-cut from the
    owner's captures with `extract-template-asset`; keep those captures in `docs/reference-images/`.
+
+### Picking the right widget
+
+This was tested on the KR `ok` button (확인 in the append skill level-up confirmation). It needs a screenshot of
+the screen, from either server, since the layout is shared:
+
+1. **Find the panel by what the screenshot shows.** Search a distinctive text on that screen, not the
+   button's own word:
+   `draft_element.py --data build/apk-kr --text '강화에 필요한 QP:' --out-dir build/d --name probe`
+   lists `.../SetRarityDialog/DlgPanel/<Kind>ConfirmInfo/SpendQpTxt`, so the dialog is `SetRarityDialog/DlgPanel`.
+   `--at X,Y` (a 720p point) lists every widget whose data rect covers it, every stacked dialog and mask
+   included. Add `--path '^CombineScene/'` to keep it short.
+2. **List that panel's widgets** and compare their 720p boxes with the screenshot:
+   `--path 'SetRarityDialog/DlgPanel/ConfirmBtnInfo/'` lists `CancleBtn/CancleTxt` (취소, box 308,555) and
+   `ConfirmBtn/ConfirmTxt` (`결정` in the data, box 704,555 272x70). The screenshot shows 확인 on the right
+   button, so the element is `ConfirmBtn/ConfirmTxt` and code sets its text.
+3. **Read the element's box on the screenshot** (720p game area, x y w h around what the template should hold):
+   here `803,543,70,42`.
+4. **Draft with the element named** and score it:
+
+   ```bash
+   py -3 -E -P .claude/skills/apk-template-asset/draft_element.py --data build/apk-kr \
+       --locate-on docs/reference-images/Kr/skill-level/03-append-2to3-tablet.png --locate-data build/apk-kr \
+       --locate-box 803,543,70,42 \
+       --locate-path 'SetRarityDialog/DlgPanel/ConfirmBtnInfo/ConfirmBtn/ConfirmTxt$' --shown-text 확인 \
+       --screens docs/reference-images/Kr --reference app/src/main/assets/Kr/ok.png --cache build/screen-cache \
+       --out-dir build/d --name ok
+   ```
+
+   The named label is found at 0.988, and the button sprite under it is added as background. The 71x43 draft
+   scores true 0.979 and best false 0.662 against threshold 0.80, so the margins are 0.179 and 0.138. The existing
+   template's margins are 0.157 and 0.218. Check the `B` lines: the sprites under the element are searched in the
+   whole scene, so look-alike buttons of other dialogs at the same spot can be listed too. They are harmless here
+   (the same sprite in the same place).
+
+Without a screenshot, `--path ... --key COMMON_CONFIRM_DECIDE` (any entry that reads 확인) draws the right label.
+Adding the button with `--with 'SetRarityDialog/DlgPanel/ConfirmBtnInfo/ConfirmBtn$'` crops the whole 272x70
+button, and with N/W open both drafts are written. The W draft scored true 0.942 but best false 0.908, because
+every such button looks alike, so it fails. Get a screenshot for the crop.
 
 ### Judging a draft
 
@@ -169,8 +221,12 @@ Every template that exists in both `Kr/` and `Jp/` and that the existing templat
 reference screenshots (38): the KR draft from KR data plus **one** JP screenshot (the JP template's best 16:9
 positive, used to locate the element and to decide N/W), the JP draft the same way the other round; drafts frozen
 (sha256) before scoring; scored on the target server's screenshots against the existing template and the code's
-threshold. **Element located automatically** — grade of the first draft per template (as good as existing /
-passes but lower / fails / cannot build):
+threshold. The KR reference screenshots are also the size rule's KR training set (the "KR (training, 90 elements)"
+row above), so KR-target numbers are not held out. Only the JP-target numbers come from screens the rule was not
+learned on.
+
+**Element located automatically** — grade of the first draft per template (as good as existing / passes but
+lower / fails / cannot build):
 
 | | as good | lower | fails | cannot build |
 |---|---|---|---|---|
@@ -195,7 +251,9 @@ found on the other screenshot, so N/W stayed open.
 hand from the source server only (its data, template and the same one screenshot; `cross_server_cases.json`
 "named" records each path, sprite, text and why), or marked as art that is not in the APK. The screenshot still
 gives the crop margin, the sprites under the element and the N/W decision. Frozen before scoring, scored the same
-way (as good / lower / fails / cannot build / not in the APK):
+way. **Not a blind result:** each choice cites source-server evidence only, but the one agent that made all of
+them had already seen both servers' templates and screenshots. Grades (as good / lower / fails / cannot build /
+not in the APK):
 
 | | as good | lower | fails | cannot build | not in the APK |
 |---|---|---|---|---|---|
@@ -207,19 +265,37 @@ dialog titles; the failures left are drafting limits and known issues: a label w
 (`ce_enhance_execute`: the dialog's four-button layout), part of a widget cropped by the template (a word of a
 title, the caption of a big button: the draft is the whole widget), runtime tints, a JP or KR atlas that holds
 the other server's art, glow, KR dialog text that the renderer does not match (`append_level_dialog_title`,
-`fp_sell_word_servant` on KR), and the issues below.
+`fp_sell_word_servant` on KR), and the known issues below.
 
-Known issues (not fixed): the N/W decision measures the widget at its data position and ignores where it was
-found, so anchored or moved widgets stay undecided (`rank_up`, `weekly_*`); with `--shown-text`, a target label
-keeps its own data text when the source label already shows the shown text, which can be a placeholder id;
-`--target-text` applies only when the localization mapping finds nothing; `--locate-path` keeps the best raw
-match over its search windows, which can be off the widget's own spot.
+So: naming the right widget is necessary, not sufficient.
+- Most right-widget drafts clear the threshold with margin. Passing named drafts have a true minimum of
+  0.81-0.98 and a best false positive of 0.36-0.68; existing templates have 0.34-0.60.
+- Two fail with the right widget and the right string: KR `append_level_dialog_title` at 0.682 and KR
+  `fp_sell_word_servant` at 0.559. The KR dialog text is not matched by the renderer, and it is not a size
+  difference; the cause is not isolated.
 
-So: once the element is the right widget, text, sprite and composite drafts clear the threshold with margin
-(passing named drafts: true minimum 0.81-0.98, best false positive 0.36-0.68, existing templates 0.34-0.60).
-Name the element yourself (`--locate-path`, or `--path`, `--sprite`, `--key` without a screenshot) when you know
-it, name every widget the template shows (the caption and the button under it), and look at what was printed
-before trusting a draft.
+Name the element yourself (`--locate-path`, or `--path`, `--sprite`, `--key` without a screenshot). Name every
+widget the template shows (the caption and the button under it). Look at what was printed before trusting a
+draft, and judge only by the margins on real screens.
+
+## Known issues (not fixed)
+
+1. The N/W decision (`element.decide_mode`) measures the widget within ±24 px of its data position, and
+   `draft_element` does not pass it where the widget was located. Anchored or moved widgets stay undecided:
+   `rank_up`, `weekly_*`, KR `battle_menu`.
+2. With `--shown-text`, when the source label already shows that text in its own data, the target label keeps
+   *its* data text. That text can be a placeholder id (JP `servant_auto_select`). When it is empty, drafting
+   stops with `min() iterable argument is empty`.
+3. `--target-text` is used only when the localization mapping finds no entry. A single shown word maps to its
+   most common translation, which gave 강화 instead of the given 레벨업 for KR `skill_level_dialog_title`.
+4. `--locate-path` keeps the highest raw match over its search windows, rather than the match at the widget's
+   own spot or the one that explains the box. This cut the JP `skill_level_label` crop.
+5. Crop insets are clamped to ±12 px. A template that crops part of a widget (a word of a title, the caption of a
+   large button) gets the whole widget: `battle_menu`, `fp_continue`.
+6. `screen_score.load_screens` writes its cache without an atomic rename. Several pool workers on a fresh cache
+   folder can hit `BadZipFile`; copy or pre-build the cache.
+7. The screenshot cache key is each file's absolute path and size, not its content. A screenshot replaced by one
+   of the same size reads the stale cache; delete the cache folder.
 
 ## Limits
 

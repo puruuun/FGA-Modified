@@ -23,6 +23,10 @@ import numpy as np
 from PIL import Image
 
 sys.dont_write_bytecode = True  # no __pycache__ inside the skill folder
+# Korean and Japanese text; a Korean Windows console defaults to cp949, which cannot print Japanese
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import template_lib as lib  # noqa: E402
 

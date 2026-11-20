@@ -33,6 +33,10 @@ import cv2
 import numpy as np
 
 sys.dont_write_bytecode = True
+# Korean and Japanese text; a Korean Windows console defaults to cp949, which cannot print Japanese
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 WINDOW = 12

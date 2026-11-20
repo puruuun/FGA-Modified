@@ -31,6 +31,10 @@ import sys
 from multiprocessing import Pool
 
 sys.dont_write_bytecode = True
+# Korean and Japanese text; a Korean Windows console defaults to cp949, which cannot print Japanese
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import screen_score as ss  # noqa: E402
