@@ -20,17 +20,17 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])
-class Dashboard615ScreenshotTest(private val width: Int, private val height: Int, private val dark: Boolean) {
+class Dashboard615ScreenshotTest(private val width: Int, private val height: Int, private val dark: Boolean, private val server: String) {
     companion object {
-        @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}_dark={2}")
-        fun sizes() = listOf(1280 to 800, 360 to 800).flatMap { (w, h) -> listOf(false, true).map { arrayOf<Any>(w, h, it) } }
+        @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}_dark={2}_{3}")
+        fun sizes() = listOf("KR", "JP").flatMap { server -> listOf(1280 to 800, 360 to 800).flatMap { (w, h) -> listOf(false, true).map { arrayOf<Any>(w, h, it, server) } } }
     }
     private val compose = createComposeRule()
     @get:Rule val rules = screenshotRules(compose)
-    private val fixture by lazy { Round615Fixture() }
+    private val fixture by lazy { Round615Fixture(jp = server == "JP") }
 
     private fun shot(name: String, section: String? = null, scrollTo: String? = null) =
-        compose.shoot("dashboard-615", name, width, height, dark, "ko", beforeCapture = {
+        compose.shoot("dashboard-615", if (server == "JP") "${name}_JP" else name, width, height, dark, "ko", beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready").fetchSemanticsNodes().isNotEmpty() ||
                 compose.onAllNodesWithTag("dashboard-section:3").fetchSemanticsNodes().isEmpty() }
             // The tab is opened by its tag so the page starts at its top, the same on every revision.
@@ -40,7 +40,7 @@ class Dashboard615ScreenshotTest(private val width: Int, private val height: Int
         }) {
             fixture.case.fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) {
                 AccountDashboardContent(fixture.data(), fixture.names, "샘플 별명", {}, {}, userId = "synthetic",
-                    friendCount = 24, progress = fixture.progress) // AFTER-ONLY: progress
+                    friendCount = 24, server = server, progress = fixture.progress) // AFTER-ONLY: progress
             } }
         }
 

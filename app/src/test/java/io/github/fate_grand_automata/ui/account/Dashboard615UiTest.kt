@@ -147,6 +147,13 @@ class Dashboard615UiTest {
         compose.onNodeWithTag("overview-account:loginNext").assertDoesNotExist()
     }
 
+    @Test fun aMissingTotalLoginCountHidesItsCellAndTheDaysLeftButNotTheStreak() {
+        show(1280, data = fixture.data().copy(login = DashboardLogin(total = null, seq = 5, nextRewardDay = 2800)))
+        compose.onNodeWithTag("overview-account:loginTotal").assertDoesNotExist()
+        compose.onNodeWithTag("overview-account:loginNext").assertDoesNotExist()
+        compose.onNodeWithTag("overview-account:loginSeq").assertExists()
+    }
+
     @Test fun noLoginDataMeansNoLoginCells() {
         show(1280, data = fixture.data().copy(login = null))
         listOf("loginTotal", "loginSeq", "loginNext").forEach { compose.onNodeWithTag("overview-account:$it").assertDoesNotExist() }
@@ -205,6 +212,13 @@ class Dashboard615UiTest {
         compose.waitForIdle()
         compose.onNodeWithTag("dashboard-party-chip:5").assertIsSelected()
         compose.onNodeWithTag("dashboard-party:5").assertExists()
+    }
+
+    @Test fun aSlotWhoseCeIsUnknownShowsNoCeLineInsteadOfNoCe() {
+        val unknown = fixture.parties.first().let { p -> p.copy(slots = p.slots.map { if (it.position == 3) it.copy(ceMissing = true) else it }) }
+        show(360, data = fixture.data().copy(parties = listOf(unknown)), section = DashboardBlockId.SupportFormation)
+        // Servant 43 (position 3) has no CE of its own; only servant 31 keeps "예장 없음".
+        assertEquals(1, compose.onAllNodes(hasText("예장 없음")).fetchSemanticsNodes().size)
     }
 
     @Test fun theSupportSlotIsARowWithAPlaceholderAndNoLevelLine() {

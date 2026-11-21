@@ -139,11 +139,12 @@ internal class DashboardProgressLoader(
 
     internal suspend fun resolve(input: DashboardProgressInput, server: String, network: Boolean): DashboardProgress = withContext(Dispatchers.IO) {
         val week = try {
-            weeklyRepository.weekAt(server, input.snapshotTime, download = network)
+            weeklyRepository.weekAt(server, input.snapshotTime, download = network && allowDownload())
         } catch (e: CancellationException) { throw e } catch (_: Exception) { null }
         val weekly = weeklyProgress(week, input.achievedMissions)
         val lines = input.eventPoints.take(MAX_EVENT_LOOKUPS).mapNotNull { row ->
-            val info = if (network) events.get(server, row.eventId) else events.cached(server, row.eventId)
+            // A script may start between two requests, so the check is made before each one.
+            val info = if (network && allowDownload()) events.get(server, row.eventId) else events.cached(server, row.eventId)
             info?.let { EventProgress(row.eventId, it.name, row.value, it.maxPoint, it.startedAt, it.endedAt) }
         }.sortedWith(compareBy<EventProgress>({ it.endedAt }, { it.eventId }))
         DashboardProgress(weekly, lines)

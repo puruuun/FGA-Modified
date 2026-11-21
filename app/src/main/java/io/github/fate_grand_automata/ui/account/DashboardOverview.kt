@@ -74,7 +74,7 @@ private fun OverviewTitle(text: String) {
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
-/** "11-17 ~ 11-23" in the device's time zone; the set ends at 23:59:59, so the last second picks the last day. */
+/** "11-17 ~ 11-23" in the device's time zone. `end - 1` keeps a set that ends at midnight on its own last day. */
 internal fun weeklyDates(start: Long, end: Long, locale: Locale = Locale.getDefault(), timeZone: java.util.TimeZone = java.util.TimeZone.getDefault()): Pair<String, String> {
     val format = SimpleDateFormat("MM-dd", locale).apply { this.timeZone = timeZone }
     return format.format(Date(start * 1000)) to format.format(Date((end - 1) * 1000))

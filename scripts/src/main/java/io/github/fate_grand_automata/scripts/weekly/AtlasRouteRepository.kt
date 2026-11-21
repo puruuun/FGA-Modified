@@ -39,24 +39,75 @@ class AtlasRouteRepository(
         Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing, it.wars, it.questNames)
     }.getOrNull()
 
+    @Serializable private class SideWeek(val id: Int, val start: Long, val end: Long, val missionIds: List<Int>)
+
+    /**
+     * What [weekAt] has learned from one state of `<server>-missions.json`, keyed by that file's size and mtime. The
+     * master is up to 30 MB of JSON, so it is parsed only when this file cannot answer. [missed] holds snapshot times no
+     * weekly set covers.
+     */
+    @Serializable private class Side(val size: Long, val mtime: Long, val weeks: List<SideWeek> = emptyList(), val missed: List<Long> = emptyList())
+
+    /** A download that failed or did not cover [snapshot], so the same snapshot is not tried again for a day. */
+    @Serializable private class Attempt(val at: Long, val snapshot: Long)
+
+    private fun SideWeek.toWeek() = AtlasWeekly.Week(id, start, end, missionIds.map { RouteMission(it, "", 1, MissionKind.Unsupported) })
+
+    private fun readSide(file: File, master: File): Side {
+        val fresh = Side(master.length(), master.lastModified())
+        val side = runCatching { json.decodeFromString<Side>(file.readText()) }.getOrNull() ?: return fresh
+        return if (side.size == fresh.size && side.mtime == fresh.mtime) side else fresh
+    }
+
+    private fun writeSmall(target: File, text: String) = runCatching {
+        val temp = File(target.parentFile, target.name + ".tmp")
+        temp.writeText(text)
+        replace(temp, target)
+    }
+
+    /** Answers from the side file when it can and parses the master once otherwise. */
+    private fun weekFromMaster(server: String, master: File, at: Long): AtlasWeekly.Week? {
+        val sideFile = File(cache, "$server-missions-view.json")
+        val side = readSide(sideFile, master)
+        side.weeks.firstOrNull { at >= it.start && at < it.end }?.let { return it.toWeek() }
+        if (at in side.missed) return null
+        val week = runCatching { AtlasWeekly.activeWeek(master.readText(), at) }.getOrNull()
+        val updated = if (week != null) {
+            side.weeks + SideWeek(week.id, week.start, week.end, week.missions.map { it.id })
+        } else side.weeks
+        val missed = if (week == null) side.missed + at else side.missed
+        writeSmall(sideFile, json.encodeToString(Side(side.size, side.mtime, updated.takeLast(4), missed.takeLast(8))))
+        return week
+    }
+
     /**
      * The weekly mission set that was active at [at], for display only: no quest data is loaded. Uses the same
-     * `<server>-missions.json` cache as [load]; a missing or outdated file is downloaded only when [download] is set.
+     * `<server>-missions.json` cache as [load]; a missing or outdated file is downloaded only when [download] is set,
+     * and not again for the same [at] within a day after an attempt that failed or did not cover it. The download goes
+     * to its own temporary file because [load] may be downloading the same list at the same time.
      * Returns null when the list cannot be read or no unique weekly set covers [at].
      */
-    fun weekAt(server: String, at: Long, download: Boolean): AtlasWeekly.Week? {
+    fun weekAt(server: String, at: Long, download: Boolean, now: Long = System.currentTimeMillis() / 1000): AtlasWeekly.Week? {
         require(server in setOf("JP", "KR")) { "unsupported weekly server" }
         val missionFile = File(cache, "$server-missions.json")
-        missionFile.takeIf { it.isFile }?.let { file ->
-            runCatching { AtlasWeekly.activeWeek(file.readText(), at) }.getOrNull()?.let { return it }
-        }
+        if (missionFile.isFile) weekFromMaster(server, missionFile, at)?.let { return it }
         if (!download) return null
+        val attemptFile = File(cache, "$server-missions-attempt.json")
+        val last = runCatching { json.decodeFromString<Attempt>(attemptFile.readText()) }.getOrNull()
+        if (last != null && last.snapshot == at && now - last.at in 0 until RETRY_SECONDS) return null
         cache.mkdirs()
-        val fresh = File(cache, "$server-missions.download")
+        val fresh = File(cache, "$server-missions.dashboard.part")
         return try {
             fetch("export/$server/nice_master_mission.json", fresh)
-            AtlasWeekly.activeWeek(fresh.readText(), at).also { replace(fresh, missionFile) }
+            val week = AtlasWeekly.activeWeek(fresh.readText(), at)
+            replace(fresh, missionFile)
+            attemptFile.delete()
+            // The new file is already parsed, so its side file is written from that result.
+            writeSmall(File(cache, "$server-missions-view.json"), json.encodeToString(
+                Side(missionFile.length(), missionFile.lastModified(), listOf(SideWeek(week.id, week.start, week.end, week.missions.map { it.id })))))
+            week
         } catch (_: Exception) {
+            writeSmall(attemptFile, json.encodeToString(Attempt(now, at)))
             null
         } finally {
             fresh.delete()
@@ -147,6 +198,8 @@ class AtlasRouteRepository(
     }
 
     companion object {
+        private const val RETRY_SECONDS = 24L * 3600
+
         private fun replace(temp: File, target: File) {
             replaceFile(temp, target)
         }

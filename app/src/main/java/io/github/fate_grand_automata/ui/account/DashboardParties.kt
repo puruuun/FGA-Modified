@@ -65,7 +65,8 @@ private fun PartyMemberRow(slot: DashboardPartySlot, names: GameNameMap) {
         svtId = svtId, svtName = names.servants[svtId] ?: atlas?.name ?: "#$svtId", detail = detail, names = names, rowTag = "dashboard-party-row",
     ) { modifier ->
         Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (slot.ces.isEmpty()) FormationCe(0, 0, null, names)
+            // A CE that is not in the owned list is unknown, which is not the same as no CE.
+            if (slot.ces.isEmpty() && !slot.ceMissing) FormationCe(0, 0, null, names)
             slot.ces.forEach { ce -> FormationCe(ce.svtId, ce.limitCount?.toInt() ?: 0, ce.level?.toInt(), names) }
         }
     }

@@ -73,6 +73,15 @@ class DashboardAccountTablesTest {
         assertEquals(40L, party.mysticCodeId)
     }
 
+    @Test fun aCeThatIsNotInTheOwnedListIsMarkedMissingAndNoCeIsNot() {
+        val decks = rows("[" + deck(1, "a", 701, slot(1, 901, 1, "[999999]"), slot(2, 902, 2, "[0]"), slot(3, 903, 3, "[951, 999999]")) + "]")
+        val slots = projectParties(decks, svts, equips).single().slots.associateBy { it.position }
+        assertTrue(slots.getValue(1).ces.isEmpty() && slots.getValue(1).ceMissing)
+        assertTrue(slots.getValue(2).ces.isEmpty() && !slots.getValue(2).ceMissing)
+        assertEquals(1, slots.getValue(3).ces.size)
+        assertTrue(slots.getValue(3).ceMissing)
+    }
+
     @Test fun partiesWithoutAServantOfTheOwnersAreHiddenAndTheRestAreOrderedByNumber() {
         val decks = rows("[" + listOf(
             deck(5, "다섯", 701, slot(1, 903, 1)),

@@ -161,7 +161,10 @@ data class DashboardLogin(val total: Long?, val seq: Long?, val nextRewardDay: L
 data class DashboardPartyCe(val svtId: Long, val level: Long?, val limitCount: Long?)
 
 /** [svtId] is null for the support slot, which belongs to a friend and has no servant of the owner's. */
-data class DashboardPartySlot(val position: Int, val svtId: Long?, val level: Long?, val np: Long?, val ces: List<DashboardPartyCe>) {
+/** [ceMissing] is true when the slot names a CE the owned-Servant list does not hold, so "no CE" must not be shown. */
+data class DashboardPartySlot(
+    val position: Int, val svtId: Long?, val level: Long?, val np: Long?, val ces: List<DashboardPartyCe>, val ceMissing: Boolean = false,
+) {
     val support get() = svtId == null
 }
 
@@ -362,11 +365,12 @@ internal fun projectParties(decks: List<JsonObject>?, svts: List<JsonObject>?, e
             val position = slot.number("initPos")?.toInt() ?: (index + 1)
             if (slot.bool("isFollowerSvt")) return@mapIndexedNotNull DashboardPartySlot(position, null, null, null, emptyList())
             val own = slot.number("userSvtId")?.takeIf { it > 0L }?.let(svtById::get) ?: return@mapIndexedNotNull null
-            val ces = ((slot["userSvtEquipIds"] as? JsonArray).orEmpty()).mapNotNull { id ->
-                val ce = (id as? JsonPrimitive)?.longOrNull?.takeIf { it > 0L }?.let(svtById::get) ?: return@mapNotNull null
+            val ceIds = ((slot["userSvtEquipIds"] as? JsonArray).orEmpty()).mapNotNull { (it as? JsonPrimitive)?.longOrNull?.takeIf { id -> id > 0L } }
+            val ces = ceIds.mapNotNull { id ->
+                val ce = svtById[id] ?: return@mapNotNull null
                 ce.number("svtId")?.let { DashboardPartyCe(it, ce.number("lv"), ce.number("limitCount")) }
             }
-            own.number("svtId")?.let { DashboardPartySlot(position, it, own.number("lv"), own.number("treasureDeviceLv1"), ces) }
+            own.number("svtId")?.let { DashboardPartySlot(position, it, own.number("lv"), own.number("treasureDeviceLv1"), ces, ceMissing = ces.size < ceIds.size) }
         }.sortedBy { it.position }
         if (slots.none { !it.support }) return@mapNotNull null
         val mystic = info.number("userEquipId")?.let(equipById::get)?.number("equipId")

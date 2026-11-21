@@ -24,7 +24,7 @@ class DashboardProgressTest {
 
     // Weekly line
 
-    @Test fun theCurrentSetIsChosenByTheSnapshotTimeAndCountsAchievedAndReceivedOnly() = runBlocking {
+    @Test fun theCurrentSetIsChosenByTheSnapshotTimeAndCountsAchievedAndReceivedOnly() = runBlocking<Unit> {
         val dir = dir()
         val achieved = setOf(21L, 23L, 27L)
         val progress = loader(dir).resolve(input(1500, achieved), "KR", network = true)
@@ -42,7 +42,7 @@ class DashboardProgressTest {
         assertEquals(7, weeklyProgress(week, week.missions.map { it.id.toLong() }.toSet())!!.done)
     }
 
-    @Test fun theWeeklyLineIsHiddenWithoutMasterDataOrWithoutTheMissionTable() = runBlocking {
+    @Test fun theWeeklyLineIsHiddenWithoutMasterDataOrWithoutTheMissionTable() = runBlocking<Unit> {
         val dir = dir()
         assertNull(loader(dir, masterBody = null).resolve(input(1500, setOf(21L)), "KR", network = true).weekly)
         assertNull(loader(dir, masterBody = null).resolve(input(1500, setOf(21L)), "KR", network = false).weekly)
@@ -106,7 +106,7 @@ class DashboardProgressTest {
         assertEquals(1f, EventProgress(6, "F", 500, 100, 1, 2).fraction)
     }
 
-    @Test fun aCachedEventIsNotFetchedAgainAndTheFileIsWrittenWithoutTemporaryLeftovers() = runBlocking {
+    @Test fun aCachedEventIsNotFetchedAgainAndTheFileIsWrittenWithoutTemporaryLeftovers() = runBlocking<Unit> {
         val dir = dir()
         val fetched = mutableListOf<Pair<String, Long>>()
         val events = EventInfoStore(File(dir, "events")) { server, id -> fetched += server to id; EventInfo("이벤트 $id", 1000, 2000, 300) }
@@ -124,7 +124,7 @@ class DashboardProgressTest {
         dir.deleteRecursively()
     }
 
-    @Test fun theFirstPassReadsOnlyTheCacheAndASecondPassFillsIn() = runBlocking {
+    @Test fun theFirstPassReadsOnlyTheCacheAndASecondPassFillsIn() = runBlocking<Unit> {
         val dir = dir()
         var fetches = 0
         val events = EventInfoStore(File(dir, "events")) { _, id -> fetches++; EventInfo("이벤트 $id", 1000, 2000, 300) }
@@ -142,7 +142,7 @@ class DashboardProgressTest {
         dir.deleteRecursively()
     }
 
-    @Test fun noDownloadHappensWhileAScriptIsRunning() = runBlocking {
+    @Test fun noDownloadHappensWhileAScriptIsRunning() = runBlocking<Unit> {
         val dir = dir()
         var fetches = 0
         val events = EventInfoStore(File(dir, "events")) { _, id -> fetches++; EventInfo("e$id", 1000, 2000, 10) }
@@ -155,7 +155,35 @@ class DashboardProgressTest {
         dir.deleteRecursively()
     }
 
-    @Test fun aFailedFetchSkipsTheEventAndIsTriedAgainNextTime() = runBlocking {
+    // A script can start while the dashboard is already downloading, so the check is repeated before every request.
+    @Test fun aScriptStartingAfterTheMasterDownloadStopsTheEventRequests() = runBlocking<Unit> {
+        val dir = dir()
+        var allowed = true
+        var eventFetches = 0
+        val events = EventInfoStore(File(dir, "events")) { _, id -> eventFetches++; EventInfo("e$id", 1000, 2000, 10) }
+        val repository = AtlasRouteRepository(File(dir, "weekly"), fetch = { _, target -> target.writeText(master); allowed = false })
+        val loader = DashboardProgressLoader(repository, events, allowDownload = { allowed })
+        val progress = loader.resolve(input(1500, setOf(21L), listOf(DashboardEventPoint(7, 50, 1500))), "KR", network = true)
+        assertNotNull(progress.weekly)
+        assertEquals(0, eventFetches)
+        assertTrue(progress.events.isEmpty())
+        dir.deleteRecursively()
+    }
+
+    @Test fun aScriptStartingBetweenTwoEventRequestsStopsTheSecond() = runBlocking<Unit> {
+        val dir = dir()
+        var allowed = true
+        val fetched = mutableListOf<Long>()
+        val events = EventInfoStore(File(dir, "events")) { _, id -> fetched += id; allowed = false; EventInfo("e$id", 1000, 2000, 10) }
+        val repository = AtlasRouteRepository(File(dir, "weekly"), fetch = { _, target -> target.writeText(master) })
+        val loader = DashboardProgressLoader(repository, events, allowDownload = { allowed })
+        val rows = listOf(DashboardEventPoint(7, 50, 1500), DashboardEventPoint(8, 60, 1400))
+        assertEquals(1, loader.resolve(input(1500, null, rows), "KR", network = true).events.size)
+        assertEquals(listOf(7L), fetched)
+        dir.deleteRecursively()
+    }
+
+    @Test fun aFailedFetchSkipsTheEventAndIsTriedAgainNextTime() = runBlocking<Unit> {
         val dir = dir()
         var online = false
         var fetches = 0
@@ -184,7 +212,7 @@ class DashboardProgressTest {
         dir.deleteRecursively()
     }
 
-    @Test fun theEventLinesAreOrderedByEndTimeAndLimited() = runBlocking {
+    @Test fun theEventLinesAreOrderedByEndTimeAndLimited() = runBlocking<Unit> {
         val dir = dir()
         val events = EventInfoStore(File(dir, "events")) { _, id -> EventInfo("e$id", 1000, 3000 - id, 10) }
         val rows = (1L..12L).map { DashboardEventPoint(it, it, 2000L - it) }
