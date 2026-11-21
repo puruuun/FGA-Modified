@@ -870,7 +870,6 @@
     <string name="dashboard_sort_cost">コスト</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">全クラス</string>
-    <string name="dashboard_servant_count">%1$d体</string>
     <string name="dashboard_filter_all">すべて</string>
     <string name="dashboard_col_name">名前</string>
     <string name="dashboard_col_np">宝具</string>
@@ -882,12 +881,17 @@
     <string name="dashboard_teapots">ティーポット</string>
     <string name="dashboard_group_gems">輝石・魔石・秘石</string>
     <string name="dashboard_group_pieces">ピース・モニュメント</string>
-    <string name="dashboard_group_grails">聖杯・伝承結晶</string>
+    <string name="dashboard_group_grails">聖杯・伝承結晶・夢火</string>
     <string name="dashboard_group_event">イベントアイテム</string>
     <string name="dashboard_group_coins">サーヴァントコイン</string>
     <string name="dashboard_group_other">その他</string>
     <string name="dashboard_items_search">名前で探す</string>
     <string name="dashboard_items_search_clear">検索語を消す</string>
+    <string name="dashboard_items_search_open">アイテムを検索</string>
+    <string name="dashboard_overview_servants">サーヴァント</string>
+    <string name="dashboard_stat_owned">所持</string>
+    <string name="dashboard_stat_star5_np">★5 宝具Lv合計</string>
+    <string name="dashboard_stat_all_np">全体 宝具Lv合計</string>
     <string name="dashboard_items_no_match">一致するアイテムがありません</string>
     <string name="dashboard_items_show_more">もっと見る (%1$d種)</string>
     <string name="dashboard_items_none">なし</string>
@@ -1098,7 +1102,6 @@
     <string name="screen_capture_permission_denied">"画面キャプチャの許可がないため開始しませんでした。"</string>
     <!-- アカウントダッシュボード追加カード (#379) -->
     <string name="dashboard_present_box_header">プレゼントボックス（%1$d）</string>
-    <string name="dashboard_present_box_notice">最終ログイン以降に受け取ったプレゼントは次回のログイン時に反映されます。</string>
     <string name="dashboard_present_box_empty">プレゼントなし</string>
     <string name="dashboard_command_code_collection">コマンドコード図鑑</string>
     <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>

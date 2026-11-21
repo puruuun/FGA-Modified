@@ -56,9 +56,7 @@ class DashboardServantsTest {
         assertEquals(listOf(0 to 2), gold.map { it.start to it.end })
     }
 
-    @Test fun raritiesAreCountedHighestFirstAndClassChipsShareDisplayedLabels() {
-        fun s(id: Long, rarity: Long?) = DashboardServant(id, AtlasBasic(id, rarity = rarity), null, null, null, emptyList(), null)
-        assertEquals(listOf(5L to 2, 4L to 1), rarityCounts(listOf(s(1, 4), s(2, 5), s(3, 5), s(4, null))))
+    @Test fun classChipsShareDisplayedLabels() {
         val groups = classGroups(listOf("beast", "beastEresh", "saber")) { if (it.startsWith("beast")) "Beast" else it }
         assertEquals(listOf("saber", "Beast"), groups.keys.toList())
         assertEquals(setOf("beast", "beastEresh"), groups["Beast"])
@@ -125,7 +123,8 @@ class DashboardServantsTest {
         compose.onAllNodesWithTag("dashboard-servant-appends").filter(hasText("10/–/–/–/–")).assertCountEquals(1)
         compose.onAllNodesWithTag("dashboard-servant-appends").filter(hasText("–/–/–/–/–")).assertCountEquals(1)
         compose.onAllNodesWithTag("dashboard-servant-skills").filter(hasText("10/10/9")).assertCountEquals(1)
-        compose.onNodeWithTag("dashboard-servant-count").assertTextContains("3명 · ★5 1 · ★4 1 · ★3 1")
+        compose.onNodeWithTag("dashboard-servant-owned").assertTextContains("보유 3", substring = true)
+        compose.onNodeWithTag("dashboard-servant-all-np").assertTextContains("전체 보합 8", substring = true)
     }
 
     @Test fun narrowLayoutHasThreeLineRowsWithTheSameNumbers() {

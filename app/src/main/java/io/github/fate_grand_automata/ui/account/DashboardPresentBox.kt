@@ -25,12 +25,6 @@ internal fun DashboardPresentBoxSection(presentBox: DashboardPresentBox, names: 
 }
 
 @Composable private fun PresentBox(presentBox: DashboardPresentBox, names: GameNameMap) {
-    Text(
-        stringResource(R.string.dashboard_present_box_notice),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.testTag("dashboard-present-notice"),
-    )
     if (presentBox.entries.isEmpty()) {
         Text(
             stringResource(R.string.dashboard_present_box_empty),

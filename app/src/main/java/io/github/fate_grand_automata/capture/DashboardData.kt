@@ -52,17 +52,25 @@ internal fun friendsText(keep: String, count: Int?): String {
 internal fun JsonObject.number(key: String) = (this[key] as? JsonPrimitive)?.longOrNull
 internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
 
-enum class InventoryGroup { Materials, Gems, Pieces, Grails, Event, Coins, Other }
+/** Declaration order is the display order: the grail group leads (owner, 2026-11-22). */
+enum class InventoryGroup { Grails, Materials, Gems, Pieces, Event, Coins, Other }
 enum class ServantSort { Bond, Cost, Level }
 enum class StoredKind { Servant, Equip, Other }
 
+/** Atlas `type` values of the servants a player can own; everything else in `basic_servant` (enemies, CEs, ...) is not counted. */
+internal val PLAYABLE_SERVANT_TYPES = setOf("normal", "heroine")
+
 internal fun storedKind(id: Long?, names: GameNameMap): StoredKind = when {
-    names.servantData[id]?.type in setOf("normal", "heroine") -> StoredKind.Servant
+    names.servantData[id]?.type in PLAYABLE_SERVANT_TYPES -> StoredKind.Servant
     id in names.equipData -> StoredKind.Equip
     else -> StoredKind.Other
 }
 
-internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
+/** Chaldea dream fires: KR "칼데아의 몽화", JP "カルデアの夢火" and "カルデアの大夢火". Matched by their Atlas item name. */
+internal fun isDreamFire(name: String?) = name != null && ("몽화" in name || "夢火" in name)
+
+internal fun inventoryGroup(id: Long, type: String?, name: String? = null): InventoryGroup = when {
+    isDreamFire(name) -> InventoryGroup.Grails
     // Pure Prism (type purePri) and Beast's Footprint (type commandCardPrmUp) are matched by explicit id only.
     id == 46L || id == 2000L -> InventoryGroup.Materials
     // Atlas groups gems/Lore under skillLvUp and pieces/Grails under tdLvUp.
@@ -84,7 +92,8 @@ data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long
     }
 }
 /** Summed friendshipUpItem holdings; the icon comes from the held teapot with the largest count (ties: larger id). */
-data class DashboardTeapots(val total: Long, val iconId: Long)
+/** [iconId] is null when no teapot is known in the item master, which only happens with a total of 0. */
+data class DashboardTeapots(val total: Long, val iconId: Long?)
 internal const val SUMMON_TICKET_ID = 4001L
 internal const val STORM_POD_ID = 49L
 data class DashboardItem(val id: Long, val count: Long, val group: InventoryGroup)
@@ -150,6 +159,10 @@ data class DashboardData(
     val commandCodes: DashboardCommandCodes? = null,
     val classBoards: List<DashboardClassBoard>? = null,
     val summons: DashboardSummons? = null,
+    /** True when the account's item list was captured; only then is a missing resource a real 0. */
+    val itemsCaptured: Boolean = false,
+    /** The playable servants (collectionNo > 0) of the account's own server list; null when that list is not loaded. */
+    val servantCatalog: List<AtlasBasic>? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -195,6 +208,8 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     val teapotHeld = items?.filter { (id, count) -> count > 0 && names.itemData[id]?.type == "friendshipUpItem" }.orEmpty()
     val teapots = teapotHeld.entries.maxWithOrNull(compareBy<Map.Entry<Long, Long>>({ it.value }, { it.key }))
         ?.let { DashboardTeapots(teapotHeld.values.sum(), it.key) }
+        // Without item metadata a held teapot cannot be told from other items, so a 0 would be invented.
+        ?: items?.takeIf { names.itemData.isNotEmpty() }?.let { DashboardTeapots(0, names.itemData.values.filter { row -> row.type == "friendshipUpItem" }.minOfOrNull { row -> row.id }) }
     val teapotIds = teapotHeld.keys
     val classified = names.servantData.isNotEmpty() && names.equipData.isNotEmpty()
     val svts = rows("userSvt")
@@ -213,7 +228,7 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     val collectionRows = rows("userSvtCollection")
     val servants = collectionRows?.takeIf { names.servantData.isNotEmpty() }?.filter { it.number("status") == 2L }?.mapNotNull { row ->
         val id = row.number("svtId") ?: return@mapNotNull null
-        if (names.servantData[id]?.type !in setOf("normal", "heroine")) return@mapNotNull null
+        if (names.servantData[id]?.type !in PLAYABLE_SERVANT_TYPES) return@mapNotNull null
         val copy = owned[id]
         val stats = copy ?: row
         val appends = MutableList<Long?>(5) { null }
@@ -231,7 +246,7 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     }
     val aliases = mapOf(5L to 1L, 6L to 2L, 7L to 2L, 11L to 16L)
     val userItems = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->
-        DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type))
+        DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type, names.itemData[id]?.name))
     }
     val coins = rows("userSvtCoin")?.mapNotNull { row ->
         val svtId = row.number("svtId") ?: return@mapNotNull null
@@ -256,7 +271,11 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     val classBoards = projectClassBoards(rows("userClassBoardSquare"), names)
     val summons = projectSummons(rows("userGacha"), rows("userGachaDrawLog"), names, timeZone)
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
-        OwnFormations.from(state, game), presentBox, commandCodes, classBoards, summons)
+        OwnFormations.from(state, game), presentBox, commandCodes, classBoards, summons,
+        itemsCaptured = items != null,
+        servantCatalog = names.accountServants.values
+            .filter { it.type in PLAYABLE_SERVANT_TYPES && (it.collectionNo ?: 0L) > 0L }
+            .takeIf { it.isNotEmpty() })
 }
 
 private fun projectPresentBox(rows: List<JsonObject>?): DashboardPresentBox? {

@@ -66,7 +66,8 @@ internal data class ItemGroupView(val group: InventoryGroup, val all: List<Dashb
 internal fun visibleItemGroups(
     groups: Map<InventoryGroup, List<DashboardItem>>, query: String, nameOf: (Long) -> String,
 ): List<ItemGroupView> = InventoryGroup.entries.mapNotNull { group ->
-    val all = groups[group].orEmpty()
+    // Materials list in the reverse of the captured order (owner, 2026-11-22).
+    val all = groups[group].orEmpty().let { if (group == InventoryGroup.Materials) it.asReversed() else it }
     val matches = filterItems(all, query, nameOf)
     if (all.isEmpty() || matches.isEmpty()) null else ItemGroupView(group, all, matches)
 }

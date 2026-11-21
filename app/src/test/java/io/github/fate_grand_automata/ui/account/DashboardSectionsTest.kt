@@ -17,10 +17,12 @@ class DashboardSectionsTest {
         classBoards: List<DashboardClassBoard>? = null,
         summons: DashboardSummons? = null,
         teapots: DashboardTeapots? = null,
+        itemsCaptured: Boolean = false,
     ) = DashboardData(
         profile = emptyMap(), snapshotTime = 0, lastUpdateTime = 0, game = null, resources = resources, freePaid = null,
         storage = null, servants = servants, inventory = inventory, equips = null, teapots = teapots,
         formations = null as OwnFormations?, presentBox = presentBox, commandCodes = commandCodes, classBoards = classBoards, summons = summons,
+        itemsCaptured = itemsCaptured,
     )
 
     private val servant = DashboardServant(1, null, null, null, null, emptyList(), null)
@@ -83,29 +85,31 @@ class DashboardSectionsTest {
         assertEquals(DashboardSection.Overview, sectionOfBlock(99))
     }
 
-    @Test fun onlyServantsAndPresentBoxCarryACount() {
-        val d = data(servants = listOf(servant, servant), inventory = listOf(item), presentBox = DashboardPresentBox(16, emptyList()))
-        assertEquals(2, sectionCount(DashboardSection.Servants, d))
-        assertEquals(16, sectionCount(DashboardSection.PresentBox, d))
-        listOf(DashboardSection.Overview, DashboardSection.Items, DashboardSection.Formations, DashboardSection.Collection)
-            .forEach { assertNull(it.name, sectionCount(it, d)) }
-    }
+    private fun keys(d: DashboardData) = overviewResources(d).resources.map { it.key }
 
-    @Test fun overviewSplitsFruitsFromResourcesInTheSpecifiedOrder() {
+    @Test fun overviewSplitsFruitsFromResourcesInTheOwnersOrder() {
         val resources = listOf(1L, 2L, 3L, 16L, 18L, 49L, 100L, 101L, 102L, 103L, 104L, 4001L).associateWith { it * 10 }
         val split = overviewResources(data(resources = resources, teapots = DashboardTeapots(7, 9)))
         assertEquals(listOf(100L, 101L, 104L, 102L), split.fruits.map { it.first })
-        assertEquals(listOf(3L, 18L, 16L, 103L, 4001L, 49L), split.resources.map { it.first })
+        assertEquals(listOf("2", "16", "4001", TEAPOT_ROW, "49", "3", "18", "103", "1"), split.resources.map { it.key })
         assertEquals(100L to 1000L, split.fruits.first())
-        assertEquals(DashboardTeapots(7, 9), split.teapots)
+        assertEquals(OverviewResource(TEAPOT_ROW, null, 9, 7), split.resources.first { it.key == TEAPOT_ROW })
     }
 
-    @Test fun overviewNeverInventsAValueForAnIdTheAccountDoesNotHave() {
-        val split = overviewResources(data(resources = mapOf(1L to 5L, 2L to 6L, 101L to 3L, 18L to 0L)))
-        assertEquals(listOf(101L), split.fruits.map { it.first })
-        // A real stored zero stays; an absent id does not appear.
-        assertEquals(listOf(18L to 0L), split.resources)
-        assertNull(split.teapots)
+    @Test fun anItemListThatWasCapturedShowsEveryResourceRowWithZeroForTheMissing() {
+        val d = data(resources = mapOf(2L to 6L), teapots = DashboardTeapots(0, null), itemsCaptured = true)
+        assertEquals(listOf("2", "16", "4001", TEAPOT_ROW, "49", "3", "18", "103", "1"), keys(d))
+        assertEquals(listOf(6L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), overviewResources(d).resources.map { it.count })
+        assertNull(overviewResources(d).resources.first { it.key == TEAPOT_ROW }.iconId)
+    }
+
+    @Test fun withoutTheItemListNoValueIsInventedAsZero() {
+        val d = data(resources = mapOf(2L to 6L, 1L to 5L, 101L to 3L, 18L to 0L))
+        assertEquals(listOf(101L), overviewResources(d).fruits.map { it.first })
+        // A real stored zero stays; an id the account has no value for does not appear, and there is no teapot row.
+        assertEquals(listOf("2", "18", "1"), keys(d))
+        assertEquals(listOf("2", "18", "1").zip(listOf(6L, 0L, 5L)), overviewResources(d).resources.map { it.key to it.count })
+        assertEquals(emptyList<String>(), keys(data()))
     }
 
     @Test fun relativeAgeUsesTheLargestWholeUnit() {

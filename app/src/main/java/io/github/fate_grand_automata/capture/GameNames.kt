@@ -31,6 +31,11 @@ data class GameNameMap(
     val commandCodeData: Map<Long, AtlasBasic> = emptyMap(),
     val classBoards: Map<Long, ClassBoardSummary> = emptyMap(),
     val gachas: Map<Long, GachaSummary> = emptyMap(),
+    /**
+     * The `basic_servant` list of the account's own server alone (KR or JP), never merged with the other one;
+     * [servantData] is merged, so it cannot give a per-server total. Empty when that list is not available.
+     */
+    val accountServants: Map<Long, AtlasBasic> = emptyMap(),
 ) {
     fun item(id: Long) = items[id] ?: "Item #$id"
     fun servant(id: Long) = servants[id] ?: "Servant #$id"
@@ -283,7 +288,9 @@ class GameNames(
             } else {
                 emptyMap()
             }
+            val accountServants = if (hasJpAccount) cachedMetadata("basic_servant", "JP") else servants
             resolved.copy(
+                accountServants = accountServants,
                 svtData = mergedSvtCards,
                 commandCodeData = mergedCommandCodes,
                 classBoards = classBoards,

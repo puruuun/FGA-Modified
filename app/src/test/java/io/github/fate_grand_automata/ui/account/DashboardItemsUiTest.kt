@@ -51,14 +51,15 @@ class DashboardItemsUiTest {
 
     private fun group(g: InventoryGroup) = compose.onNodeWithTag("items-group:${g.name}")
     private fun header(g: InventoryGroup) = compose.onNodeWithTag("items-group-header:${g.name}")
-    private fun search(text: String) { compose.onNodeWithTag("items-search").performTextInput(text); compose.waitForIdle() }
+    private fun openSearch() { compose.onNodeWithTag("items-search-open").performClick(); compose.waitForIdle() }
+    private fun search(text: String) { openSearch(); compose.onNodeWithTag("items-search").performTextInput(text); compose.waitForIdle() }
     private fun rowsWithPrefix(prefix: String) = compose.onAllNodes(tagStartingWith(prefix)).fetchSemanticsNodes().size
 
     @Test fun searchOpensGroupsWithMatchesHidesTheOthersAndClearingRestoresTheOpenState() {
         show(1280)
         header(InventoryGroup.Event).assertExists()
         compose.onNodeWithTag("item-row:9999").assertDoesNotExist()
-        compose.onNodeWithTag("item-row:9101").assertExists()
+        compose.onNodeWithTag("item-row:9114").assertExists()
 
         search("이벤트")
         group(InventoryGroup.Event).assertExists()
@@ -68,8 +69,42 @@ class DashboardItemsUiTest {
 
         compose.onNodeWithTag("items-search-clear").performClick(); compose.waitForIdle()
         compose.onNodeWithTag("item-row:9999").assertDoesNotExist()
-        compose.onNodeWithTag("item-row:9101").assertExists()
+        compose.onNodeWithTag("item-row:9114").assertExists()
         compose.onNodeWithTag("items-search-clear").assertDoesNotExist()
+    }
+
+    @Test fun theSearchFieldIsHiddenUntilTheIconIsTappedAndTheCloseIconHidesItAgain() {
+        show(1280)
+        compose.onNodeWithTag("items-search").assertDoesNotExist()
+        compose.onNodeWithTag("items-search-open").assertExists().assertHasClickAction()
+        compose.onNodeWithTag("items-search-open").assertContentDescriptionEquals("아이템 검색")
+        openSearch()
+        compose.onNodeWithTag("items-search").assertExists().assertIsFocused()
+        compose.onNodeWithTag("items-search-open").assertDoesNotExist()
+        compose.onNodeWithTag("items-search-clear").assertContentDescriptionEquals("검색어 지우기").performClick(); compose.waitForIdle()
+        compose.onNodeWithTag("items-search").assertDoesNotExist()
+        compose.onNodeWithTag("items-search-open").assertExists()
+    }
+
+    @Test fun closingTheSearchWithATextDropsTheQueryAndRestoresEveryGroupsOpenState() {
+        show(1280)
+        search("이벤트")
+        compose.onNodeWithTag("item-row:9999").assertExists()
+        compose.onNodeWithTag("items-search-clear").performClick(); compose.waitForIdle()
+        compose.onNodeWithTag("item-row:9999").assertDoesNotExist()
+        group(InventoryGroup.Materials).assertExists()
+        group(InventoryGroup.Gems).assertExists()
+        // Reopening starts with an empty field: the old query was dropped, not hidden.
+        openSearch()
+        assertEquals("", compose.onNodeWithTag("items-search").fetchSemanticsNode().config[SemanticsProperties.EditableText].text)
+        compose.onNodeWithTag("items-no-match").assertDoesNotExist()
+    }
+
+    @Test fun materialsListInTheReverseOfTheCapturedOrder() {
+        show(1280)
+        val y = (14 downTo 3L).map { compose.onNodeWithTag("item-row:${9100 + it}").performScrollTo().getUnclippedBoundsInRoot().top.value }
+        assertEquals(y.sorted(), y)
+        compose.onNodeWithTag("item-row:9102").assertDoesNotExist()
     }
 
     @Test fun groupsTheUserToggledKeepTheirStateAcrossASearch() {
@@ -77,14 +112,14 @@ class DashboardItemsUiTest {
         header(InventoryGroup.Coins).performScrollTo().performClick()
         compose.onNodeWithTag("item-row:1000101").assertExists()
         header(InventoryGroup.Materials).performScrollTo().performClick()
-        compose.onNodeWithTag("item-row:9101").assertDoesNotExist()
+        compose.onNodeWithTag("item-row:9114").assertDoesNotExist()
 
         search("재료")
-        compose.onNodeWithTag("item-row:9101").assertExists()
+        compose.onNodeWithTag("item-row:9114").assertExists()
         group(InventoryGroup.Coins).assertDoesNotExist()
 
         compose.onNodeWithTag("items-search-clear").performClick(); compose.waitForIdle()
-        compose.onNodeWithTag("item-row:9101").assertDoesNotExist()
+        compose.onNodeWithTag("item-row:9114").assertDoesNotExist()
         compose.onNodeWithTag("item-row:1000101").assertExists()
     }
 
