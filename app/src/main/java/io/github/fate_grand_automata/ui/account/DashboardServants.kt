@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -67,6 +66,13 @@ internal fun annotatedCells(cells: List<ServantCell>, scheme: ColorScheme): Anno
     }
 }
 
+internal fun joinSegments(parts: List<AnnotatedString>, separatorColor: Color): AnnotatedString = buildAnnotatedString {
+    parts.forEachIndexed { index, part ->
+        if (index > 0) withStyle(SpanStyle(color = separatorColor)) { append(" · ") }
+        append(part)
+    }
+}
+
 internal fun levelText(level: Long?, maxLevel: Long?): String = when {
     level == null && maxLevel == null -> LOCKED_TEXT
     else -> "${level ?: LOCKED_TEXT}/${maxLevel ?: LOCKED_TEXT}"
@@ -76,13 +82,17 @@ internal fun levelText(level: Long?, maxLevel: Long?): String = when {
 internal fun rarityCounts(servants: List<DashboardServant>): List<Pair<Long, Int>> =
     servants.mapNotNull { it.atlas?.rarity }.groupingBy { it }.eachCount().toList().sortedByDescending { it.first }
 
-/**
- * Class chips deduplicated by the displayed label, so beast variants and raw fallback names share one chip.
- * The order is the raw class names sorted, as the old dropdown had it.
- */
+/** The game's class order. Beast classes and anything unknown follow, alphabetically. */
+private val CLASS_ORDER = listOf(
+    "saber", "archer", "lancer", "rider", "caster", "assassin", "berserker", "shielder",
+    "ruler", "alterEgo", "avenger", "moonCancer", "foreigner", "pretender",
+)
+
+/** Class chips deduplicated by the displayed label, so beast variants and raw fallback names share one chip. */
 internal fun classGroups(servantClasses: List<String>, label: (String) -> String): Map<String, Set<String>> {
+    val ordered = servantClasses.sortedWith(compareBy<String> { CLASS_ORDER.indexOf(it).let { i -> if (i < 0) CLASS_ORDER.size else i } }.thenBy { it })
     val groups = linkedMapOf<String, MutableSet<String>>()
-    servantClasses.forEach { name -> groups.getOrPut(label(name)) { linkedSetOf() }.add(name) }
+    ordered.forEach { name -> groups.getOrPut(label(name)) { linkedSetOf() }.add(name) }
     return groups
 }
 
@@ -192,18 +202,20 @@ private fun TableRow(servant: DashboardServant) {
     }
 }
 
-/** Line 1 holds face, name and class; line 2 the numbers, with maxed values in gold and locked ones muted. */
+/** Three lines, because two do not fit at 360dp: face, name and class; then the Lv, bond and NP; then skills and appends. */
 @Composable
 private fun NarrowRow(servant: DashboardServant) {
     val scheme = MaterialTheme.colorScheme
     val muted = scheme.onSurfaceVariant
-    val segments = listOf(
+    val stats = joinSegments(listOf(
         AnnotatedString(stringResource(R.string.dashboard_sort_level) + " " + levelText(servant.level, servant.maxLevel)),
         AnnotatedString(stringResource(R.string.dashboard_sort_bond) + " " + (servant.bond?.toString() ?: LOCKED_TEXT)),
         AnnotatedString(stringResource(R.string.dashboard_col_np) + " " + (servant.np?.toString() ?: LOCKED_TEXT)),
+    ), muted)
+    val levels = joinSegments(listOf(
         buildAnnotatedString { append(stringResource(R.string.dashboard_col_skills) + " "); append(annotatedCells(servant.skillCells(), scheme)) },
         buildAnnotatedString { append(stringResource(R.string.dashboard_col_appends) + " "); append(annotatedCells(servant.appendCells(), scheme)) },
-    )
+    ), muted)
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(vertical = 4.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         AtlasIcon("servants", servant.id, servant.atlas?.icon, size = FaceSize)
         Column(Modifier.weight(1f)) {
@@ -213,13 +225,9 @@ private fun NarrowRow(servant: DashboardServant) {
                     Text(it, style = MaterialTheme.typography.labelSmall, color = muted, maxLines = 1, softWrap = false)
                 }
             }
-            // One segment per item, wrapped between segments: a long line must never split a label from its value (CJK breaks anywhere).
-            FlowRow(Modifier.testTag("dashboard-servant-detail").semantics(mergeDescendants = true) {}) {
-                segments.forEachIndexed { index, text ->
-                    Text(text, style = MaterialTheme.typography.bodySmall.merge(numeric), color = scheme.onSurface, maxLines = 1, softWrap = false)
-                    if (index < segments.lastIndex) Text(" · ", style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, softWrap = false)
-                }
-            }
+            val detail = MaterialTheme.typography.bodySmall.merge(numeric)
+            Text(stats, Modifier.testTag("dashboard-servant-detail"), style = detail, color = scheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(levels, Modifier.testTag("dashboard-servant-levels"), style = detail, color = scheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

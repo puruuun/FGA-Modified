@@ -60,10 +60,21 @@ class DashboardServantsTest {
         fun s(id: Long, rarity: Long?) = DashboardServant(id, AtlasBasic(id, rarity = rarity), null, null, null, emptyList(), null)
         assertEquals(listOf(5L to 2, 4L to 1), rarityCounts(listOf(s(1, 4), s(2, 5), s(3, 5), s(4, null))))
         val groups = classGroups(listOf("beast", "beastEresh", "saber")) { if (it.startsWith("beast")) "Beast" else it }
-        assertEquals(listOf("Beast", "saber"), groups.keys.toList())
+        assertEquals(listOf("saber", "Beast"), groups.keys.toList())
         assertEquals(setOf("beast", "beastEresh"), groups["Beast"])
         assertEquals("120/120", levelText(120, 120))
         assertEquals("–/120", levelText(null, 120))
+    }
+
+    @Test fun classChipsFollowTheGameOrderWithBeastsAndUnknownLast() {
+        val raw = listOf("unknownB", "beast", "foreigner", "avenger", "saber", "alterEgo", "unBeastOlgaMarie", "shielder", "archer", "pretender", "moonCancer", "ruler", "berserker", "assassin", "caster", "rider", "lancer", "beastEresh", "unknownA")
+        assertEquals(
+            listOf("saber", "archer", "lancer", "rider", "caster", "assassin", "berserker", "shielder", "ruler", "alterEgo", "avenger", "moonCancer", "foreigner", "pretender"),
+            classGroups(raw) { it }.keys.take(14),
+        )
+        assertEquals(listOf("beast", "beastEresh", "unBeastOlgaMarie", "unknownA", "unknownB"), classGroups(raw) { it }.keys.drop(14))
+        val grouped = classGroups(listOf("beast", "saber", "beastEresh")) { if (it.startsWith("beast")) "Beast" else it }
+        assertEquals(listOf("saber", "Beast"), grouped.keys.toList())
     }
 
     private fun rows() = listOf(
@@ -117,13 +128,16 @@ class DashboardServantsTest {
         compose.onNodeWithTag("dashboard-servant-count").assertTextContains("3명 · ★5 1 · ★4 1 · ★3 1")
     }
 
-    @Test fun narrowLayoutHasTwoLineRowsWithTheSameNumbers() {
+    @Test fun narrowLayoutHasThreeLineRowsWithTheSameNumbers() {
         show(360)
         compose.onNodeWithTag("dashboard-servant-header").assertDoesNotExist()
         compose.onAllNodesWithTag("dashboard-servant-detail").assertCountEquals(3)
-        val details = compose.onAllNodesWithTag("dashboard-servant-detail").fetchSemanticsNodes()
+        fun texts(tag: String) = compose.onAllNodesWithTag(tag).fetchSemanticsNodes()
             .map { node -> node.config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text } }
-        assertTrue(details.toString(), "Lv 50/90 · 인연 5 · 보구 2 · 스킬 10/10/9 · 어펜드 10/–/–/–/–" in details)
+        assertTrue(texts("dashboard-servant-detail").toString(), "Lv 50/90 · 인연 5 · 보구 2" in texts("dashboard-servant-detail"))
+        assertTrue(texts("dashboard-servant-levels").toString(), "스킬 10/10/9 · 어펜드 10/–/–/–/–" in texts("dashboard-servant-levels"))
+        compose.onAllNodesWithTag("dashboard-servant-levels").assertCountEquals(3)
+        texts("dashboard-servant-detail").plus(texts("dashboard-servant-levels")).forEach { assertFalse(it.trimEnd().endsWith("·")) }
     }
 
     @Test fun titleStaysOnOneLineAt360() {
