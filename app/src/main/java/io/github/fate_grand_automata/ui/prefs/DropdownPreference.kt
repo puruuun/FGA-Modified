@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.prefs.core.Pref
-import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 
 /**
  * A single-choice preference that opens a menu anchored to its own row, as opposed to
@@ -83,8 +82,7 @@ fun <T> DropdownPreference(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor = FGAMenuContainerColor()
+            onDismissRequest = { expanded = false }
         ) {
             entries.forEach { (entryValue, label) ->
                 DropdownMenuItem(
