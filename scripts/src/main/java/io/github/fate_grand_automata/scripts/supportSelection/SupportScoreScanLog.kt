@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
 import io.github.fate_grand_automata.scripts.diagnostics.DiagnosticJson
+import io.github.lib_automata.Region
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
@@ -22,7 +23,7 @@ interface ScoreScanStorage {
     /** Deletes one scan folder and everything in it. */
     fun delete(name: String)
 
-    /** Creates the folder [name] with its `crops/` folder. */
+    /** Creates the folder [name] with its `crops/` and `native/` folders. */
     fun create(name: String): ScoreScanFolder
 }
 
@@ -30,6 +31,8 @@ interface ScoreScanFolder : AutoCloseable {
     val name: String
 
     fun writeCrop(fileName: String, png: ByteArray)
+
+    fun writeNativeCrop(fileName: String, png: ByteArray)
 
     /** Appends one line to `scan.jsonl` and flushes it, so a killed scan keeps what it read. */
     fun appendLine(json: String)
@@ -63,6 +66,8 @@ class DirectoryScoreScanStorage(
         val dir = File(root, name)
         val crops = File(dir, ScoreScanLog.CROPS)
         check(crops.mkdirs() || crops.isDirectory) { "cannot create $crops" }
+        val native = File(dir, ScoreScanNative.FOLDER)
+        check(native.mkdirs() || native.isDirectory) { "cannot create $native" }
         return DirectoryScoreScanFolder(dir)
     }
 
@@ -73,6 +78,9 @@ class DirectoryScoreScanStorage(
 
         override fun writeCrop(fileName: String, png: ByteArray) =
             File(File(dir, ScoreScanLog.CROPS), fileName).writeBytes(png)
+
+        override fun writeNativeCrop(fileName: String, png: ByteArray) =
+            File(File(dir, ScoreScanNative.FOLDER), fileName).writeBytes(png)
 
         override fun appendLine(json: String) {
             lines.write(json)
@@ -142,6 +150,9 @@ enum class ScoreScanEndReason(val wireName: String) {
     UserStopped("user_stopped"),
     Bottom("bottom"),
     ScreenLimit("screen_limit"),
+
+    /** The native capture could not put the 720p capture back as it was; the scan ends before any gesture. */
+    NativeRestoreFailed("native_restore_failed"),
 }
 
 /** What the owner is shown at the end. [folder] is null when the scan never started. */
@@ -152,7 +163,11 @@ data class ScoreScanResult(
     val rows: Int,
     val agree: Int,
     val differ: Int,
-    /** The engine's unavailableReason for an [ScoreScanEndReason.EngineUnavailable] end, else null; an exception is rethrown and never reaches a result. */
+    /**
+     * The engine's unavailableReason for an [ScoreScanEndReason.EngineUnavailable] end, what the capture
+     * said for a [ScoreScanEndReason.NativeRestoreFailed] end, else null; an exception is rethrown and
+     * never reaches a result.
+     */
     val detail: String?,
 )
 
@@ -203,10 +218,14 @@ data class ScoreScanSummary(
     val tally: ScoreScanTally,
     val engineLoadMicros: Long?,
     val engineUnavailableReason: String?,
+    val native: ScoreScanNativeTally,
 )
 
 object ScoreScanLog {
-    const val SCHEMA = 1
+    /** 2 since the native crops (issue #600): every line has a `kind`; schema 1 lines have none and are all rows. */
+    const val SCHEMA = 2
+    const val KIND_ROW = "row"
+    const val KIND_NATIVE = "native"
     const val ROOT = "support-score-scan"
     const val LINES = "scan.jsonl"
     const val SUMMARY = "summary.json"
@@ -215,12 +234,16 @@ object ScoreScanLog {
     /** The summary's reason for an exception the scan did not expect; it is rethrown, so the owner sees the app's error dialog. */
     const val ERROR = "error"
 
-    /** The 20 newest scans are kept: about 2 MB each at the screen bound, so the folder stays small. */
+    /**
+     * The 20 newest scans are kept. At the screen bound a scan holds at most about 25 MB on a 3040x1904
+     * display (docs/agents/rust-native.md, "Support score scan"), so 20 stay below about 500 MB.
+     */
     const val KEEP_SCANS = 20
 
     /**
-     * A scan writes at most about 2 MB (80 screens of a few 3 KB crops and lines); 50 MB leaves the
-     * device room for the game, which also writes to this storage.
+     * Checked before every screen, and one screen writes well under 1 MB (four rows of a native crop of
+     * at most about 70 KB on 3040x1904, a 720p crop and two lines), so the scan never takes the device
+     * much below this; 50 MB leaves room for the game, which also writes to this storage.
      */
     const val MIN_FREE_BYTES = 50L * 1024 * 1024
 
@@ -285,6 +308,7 @@ object ScoreScanLog {
 
     fun line(record: ScoreScanRecord): String = DiagnosticJson.write(linkedMapOf(
         "schema" to SCHEMA,
+        "kind" to KIND_ROW,
         "time" to record.time,
         "server" to record.server,
         "screen" to record.screen,
@@ -318,6 +342,40 @@ object ScoreScanLog {
         "agree" to record.agree,
     ))
 
+    private fun Region.json() = linkedMapOf("x" to x, "y" to y, "w" to width, "h" to height)
+
+    private fun Double.json(): Double? = takeIf { it.isFinite() }
+
+    /**
+     * The native result of one row, written after its screen's row lines (the reads are on disk before
+     * the capture is tried); join it to its row by `screen` and `row`.
+     */
+    fun nativeLine(record: ScoreScanNativeRecord): String = DiagnosticJson.write(linkedMapOf(
+        "schema" to SCHEMA,
+        "kind" to KIND_NATIVE,
+        "time" to record.time,
+        "server" to record.server,
+        "screen" to record.screen,
+        "row" to record.row,
+        "cropSha256" to record.cropSha256,
+        "native" to record.native?.let { native ->
+            linkedMapOf(
+                "crop" to "${ScoreScanNative.FOLDER}/${native.crop}",
+                "cropSha256" to native.cropSha256,
+                "frame" to linkedMapOf("w" to native.frame.width, "h" to native.frame.height),
+                "scale" to linkedMapOf("x" to native.scaleX.json(), "y" to native.scaleY.json()),
+                "region" to native.region.json(),
+                "field" to native.field.json(),
+                "clamped" to native.clamped,
+                "match" to native.match?.json(),
+                "captureMicros" to native.captureMicros,
+            )
+        },
+        "reason" to record.reason,
+        "detail" to record.detail,
+        "captureMicros" to record.captureMicros,
+    ))
+
     /** The lower median, so the value is always one that was measured. */
     private fun times(values: List<Long>) = values.sorted().let { sorted ->
         linkedMapOf(
@@ -326,6 +384,23 @@ object ScoreScanLog {
             "max" to sorted.lastOrNull(),
         )
     }
+
+    private fun matches(values: List<Double>) = values.sorted().let { sorted ->
+        linkedMapOf(
+            "count" to sorted.size,
+            "median" to sorted.getOrNull((sorted.size - 1) / 2),
+            "min" to sorted.firstOrNull(),
+        )
+    }
+
+    private fun native(n: ScoreScanNativeTally) = linkedMapOf(
+        "taken" to n.taken,
+        "failed" to n.failed,
+        "frame" to n.frame?.let { linkedMapOf("w" to it.width, "h" to it.height) },
+        "scale" to n.scaleX?.let { x -> linkedMapOf("x" to x.json(), "y" to n.scaleY?.json()) },
+        "captureMicros" to times(n.captureMicros),
+        "match" to matches(n.matches),
+    )
 
     fun summary(s: ScoreScanSummary): String = DiagnosticJson.write(linkedMapOf(
         "schema" to SCHEMA,
@@ -355,5 +430,6 @@ object ScoreScanLog {
         "kotlinMicros" to times(s.tally.kotlinMicros),
         "rustMicros" to times(s.tally.rustMicros),
         "engineUnavailableReason" to s.engineUnavailableReason,
+        "native" to native(s.native),
     ))
 }

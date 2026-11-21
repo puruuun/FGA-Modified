@@ -7,7 +7,10 @@ import io.github.fate_grand_automata.scripts.modules.SupportScreen
 import io.github.fate_grand_automata.scripts.modules.SupportSelectionLoop
 import io.github.lib_automata.ExitManager
 import io.github.lib_automata.Pattern
+import io.github.lib_automata.Region
 import io.github.lib_automata.ScriptAbortException
+import io.github.lib_automata.Transformer
+import io.github.lib_automata.size
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,11 +25,15 @@ interface ScoreScanFrames {
 
     /** The score field of [bounds] from the current snapshot, as the engine reads it (60x30 at 720p). */
     fun field(bounds: SupportBounds): Pattern
+
+    /** Where [field] crops: 720p image coordinates inside the game-area crop of the capture. */
+    fun fieldImageRegion(bounds: SupportBounds): Region
 }
 
 class ApiScoreScanFrames(
     private val api: IFgoAutomataApi,
     private val boundsFinder: SupportBoundsFinder,
+    private val transformer: Transformer,
 ) : ScoreScanFrames {
     override fun <T> sameSnap(block: () -> T): T = api.useSameSnapIn(block)
 
@@ -36,6 +43,10 @@ class ApiScoreScanFrames(
     override fun field(bounds: SupportBounds): Pattern = with(api) {
         SupportScoreLayout.numberRegion(bounds.region).getPattern(FIELD_TAG)
     }
+
+    // getPattern crops the snapshot at exactly this region.
+    override fun fieldImageRegion(bounds: SupportBounds): Region =
+        transformer.toImage(SupportScoreLayout.numberRegion(bounds.region))
 
     private companion object {
         const val FIELD_TAG = "support-score-scan"
@@ -55,6 +66,11 @@ class ApiScoreScanFrames(
  * that could not (the bottom, or a list shorter than a screen) leaves both as they were. The game
  * can also drop a swipe, so the bottom needs two unchanged screens in a row; an unchanged screen
  * is never read again.
+ *
+ * Native crops (issue #600): once a screen's rows are read and their lines are on disk, one
+ * full-display frame is taken and each row's field, with a margin, is saved at that resolution. A
+ * capture that fails costs only the native lines of that screen; one that could not restore the
+ * 720p capture ends the scan before the next snapshot or gesture.
  */
 class SupportScoreScanner(
     private val screen: SupportScreen,
@@ -65,6 +81,7 @@ class SupportScoreScanner(
     private val device: ScoreScanDevice,
     private val exitManager: ExitManager,
     private val server: GameServer,
+    private val nativeFrames: ScoreScanNativeFrames,
     private val clock: () -> Long = System::currentTimeMillis,
     private val timeSource: TimeSource = TimeSource.Monotonic,
     private val maxScreens: Int = MAX_SCREENS,
@@ -79,7 +96,7 @@ class SupportScoreScanner(
     private data class RowKey(val y: Int, val sha256: String)
 
     private sealed interface ScreenOutcome {
-        data class Read(val keys: List<RowKey>) : ScreenOutcome
+        class Read(val keys: List<RowKey>, val logged: List<ScoreScanLoggedRow>) : ScreenOutcome
         data object Unchanged : ScreenOutcome
         data class End(val reason: ScoreScanEndReason) : ScreenOutcome
     }
@@ -87,7 +104,9 @@ class SupportScoreScanner(
     private val serverName = server.serialize()
     private val checkGrand = SupportScoreSelection.showsGrandScore(server)
     private val tally = ScoreScanTally()
+    private val nativeTally = ScoreScanNativeTally()
     private var screens = 0
+    private var restoreDetail: String? = null
 
     fun run(): ScoreScanResult {
         val startTime = clock()
@@ -115,7 +134,11 @@ class SupportScoreScanner(
             } catch (e: ScriptAbortException) {
                 ScoreScanEndReason.UserStopped
             }
-            val detail = if (reason == ScoreScanEndReason.EngineUnavailable) engine.unavailableReason else null
+            val detail = when (reason) {
+                ScoreScanEndReason.EngineUnavailable -> engine.unavailableReason
+                ScoreScanEndReason.NativeRestoreFailed -> restoreDetail
+                else -> null
+            }
             folder.writeSummary(summary(name, startTime, reason.wireName, detail))
             return ScoreScanResult(reason, name, screens, tally.rows, tally.agree, tally.differ, detail)
         } catch (e: Exception) {
@@ -165,6 +188,8 @@ class SupportScoreScanner(
                 is ScreenOutcome.Read -> {
                     previous = outcome.keys
                     unchangedBefore = false
+                    // Outside the snapshot block: the capture does not use the 720p snapshot.
+                    if (!logNative(folder, outcome.logged)) return ScoreScanEndReason.NativeRestoreFailed
                     if (screens >= maxScreens) return ScoreScanEndReason.ScreenLimit
                 }
             }
@@ -188,6 +213,7 @@ class SupportScoreScanner(
             val keys = rows.indices.map { RowKey(rows[it].region.y, ScoreScanLog.sha256(pngs[it])) }
             if (keys == previous) return ScreenOutcome.Unchanged
 
+            val logged = mutableListOf<ScoreScanLoggedRow>()
             for (row in rows.indices) {
                 exitManager.checkExitRequested()
                 if (!engine.available) return ScreenOutcome.End(engineUnavailable())
@@ -217,11 +243,101 @@ class SupportScoreScanner(
                 tally.add(record)
                 screens = index + 1
                 if (ScoreScanLog.status(rust) == "unavailable") return ScreenOutcome.End(engineUnavailable())
+                logged += ScoreScanLoggedRow(
+                    screen = index,
+                    row = row,
+                    cropSha256 = keys[row].sha256,
+                    fieldImage = frames.fieldImageRegion(rows[row]),
+                    fieldPixels = fields[row].grayPixels() ?: ByteArray(0),
+                    fieldSize = fields[row].size,
+                )
             }
-            return ScreenOutcome.Read(keys)
+            return ScreenOutcome.Read(keys, logged)
         } finally {
             fields.forEach { runCatching { it.close() } }
         }
+    }
+
+    /**
+     * One capture for the screen whose rows were just logged, never retried. False only when the
+     * capture could not restore the 720p capture; every other problem is logged and the scan goes on.
+     */
+    private fun logNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>): Boolean {
+        if (logged.isEmpty()) return true
+        val start = timeSource.markNow()
+        val capture = try {
+            nativeFrames.capture()
+        } catch (e: ScriptAbortException) {
+            throw e
+        } catch (e: Exception) {
+            ScoreScanNativeCapture.Failed(ScoreScanNative.ERROR, e.toString())
+        }
+        val micros = start.elapsedNow().inWholeMicroseconds
+
+        fun failAll(reason: String, detail: String?) {
+            nativeTally.failed(reason, micros)
+            for (row in logged) {
+                folder.appendLine(ScoreScanLog.nativeLine(ScoreScanNativeRecord(
+                    clock(), serverName, row.screen, row.row, row.cropSha256, null, reason, detail, micros,
+                )))
+            }
+        }
+
+        when (capture) {
+            is ScoreScanNativeCapture.RestoreFailed -> {
+                failAll(ScoreScanNative.RESTORE_FAILED, capture.detail)
+                restoreDetail = capture.detail
+                return false
+            }
+            is ScoreScanNativeCapture.Failed -> failAll(capture.reason, capture.detail)
+            is ScoreScanNativeCapture.Frame -> capture.frame.use { frame ->
+                if (micros > ScoreScanNative.CAPTURE_BOUND.inWholeMicroseconds) {
+                    failAll(ScoreScanNative.SLOW, null)
+                } else {
+                    nativeTally.taken(capture.map, micros)
+                    for (row in logged) logNativeRow(folder, frame, capture.map, row, micros)
+                }
+            }
+        }
+        return true
+    }
+
+    private fun logNativeRow(folder: ScoreScanFolder, frame: Pattern, map: ScoreScanNativeMap, row: ScoreScanLoggedRow, micros: Long) {
+        var reason: String? = null
+        var detail: String? = null
+        var saved: Pair<ScoreScanNativeResult, ByteArray>? = null
+        try {
+            val crop = ScoreScanNative.crop(map, row.fieldImage)
+            if (crop == null) {
+                reason = ScoreScanNative.FIELD_OUTSIDE_FRAME
+            } else {
+                val png = frame.crop(crop.region).use { ScoreScanNative.png(it) }
+                val match = ScoreScanNative.match(frame, crop.field + crop.region.location, row.fieldPixels, row.fieldSize)
+                saved = ScoreScanNativeResult(
+                    crop = ScoreScanLog.cropName(row.screen, row.row),
+                    cropSha256 = ScoreScanLog.sha256(png),
+                    frame = map.frame,
+                    scaleX = map.scaleX,
+                    scaleY = map.scaleY,
+                    region = crop.region,
+                    field = crop.field,
+                    clamped = crop.clamped,
+                    match = match,
+                    captureMicros = micros,
+                ) to png
+            }
+        } catch (e: Exception) {
+            reason = ScoreScanNative.ERROR
+            detail = e.toString()
+        }
+        // A failed file write is the scan's own error, as for the 720p crops.
+        saved?.let { (result, png) ->
+            folder.writeNativeCrop(result.crop, png)
+            nativeTally.match(result.match)
+        }
+        folder.appendLine(ScoreScanLog.nativeLine(ScoreScanNativeRecord(
+            clock(), serverName, row.screen, row.row, row.cropSha256, saved?.first, reason, detail, micros,
+        )))
     }
 
     private fun summary(name: String, startTime: Long, reason: String, detail: String?) =
@@ -237,5 +353,6 @@ class SupportScoreScanner(
             tally = tally,
             engineLoadMicros = engine.loadTime?.inWholeMicroseconds,
             engineUnavailableReason = engine.unavailableReason,
+            native = nativeTally,
         ))
 }

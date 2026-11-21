@@ -11,4 +11,5 @@
     <string name="support_score_scan_reason_user_stopped">사용자가 중지했습니다</string>
     <string name="support_score_scan_reason_bottom">목록 끝에 도달했습니다</string>
     <string name="support_score_scan_reason_screen_limit">화면 수 한도에 도달했습니다</string>
+    <string name="support_score_scan_reason_native_restore_failed">원본 해상도 프레임을 찍은 뒤 화면 캡처를 원래대로 되돌리지 못했습니다</string>
 </resources>

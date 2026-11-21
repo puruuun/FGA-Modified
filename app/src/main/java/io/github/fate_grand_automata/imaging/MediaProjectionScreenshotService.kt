@@ -166,6 +166,21 @@ class MediaProjectionScreenshotService(
         } finally { resize(previousSize, previousDensity) }
     }
 
+    /** What the virtual display renders into; [rendersIntoReader] is false when a resize left it without the current reader's surface. */
+    data class CaptureState(val size: Size, val density: Int, val rendersIntoReader: Boolean)
+
+    /**
+     * Reads the capture's state under the capture lock and changes nothing. For a caller of
+     * [takeFullDisplayScreenshot] during a run (the rust build's support score scan): a restore that
+     * threw leaves the old frame in [bufferMat] or a reader of the full size, so it compares this
+     * before and after. Null once closed.
+     */
+    fun captureState(): CaptureState? = synchronized(lock) {
+        if (closed.get()) return@synchronized null
+        val display = virtualDisplay
+        CaptureState(imageSize, screenDensity, display != null && display.surface === imageReader.surface)
+    }
+
     private fun screenshotIntoBuffer() {
         val image = imageReader.acquireLatestImage()
             ?: awaitFirstImage()

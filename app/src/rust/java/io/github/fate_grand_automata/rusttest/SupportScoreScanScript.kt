@@ -20,6 +20,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.DirectoryScoreScan
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanDevice
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanEndReason
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanLog
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeFrames
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanStorage
 import io.github.lib_automata.EntryPoint
 import java.io.File
@@ -61,6 +62,7 @@ class SupportScoreScanScript @Inject constructor() : OwnerTestScript {
         ScoreScanEndReason.UserStopped -> R.string.support_score_scan_reason_user_stopped
         ScoreScanEndReason.Bottom -> R.string.support_score_scan_reason_bottom
         ScoreScanEndReason.ScreenLimit -> R.string.support_score_scan_reason_screen_limit
+        ScoreScanEndReason.NativeRestoreFailed -> R.string.support_score_scan_reason_native_restore_failed
     }
 }
 
@@ -92,6 +94,9 @@ object SupportScoreScanModule {
             ?: return DirectoryScoreScanStorage(File(context.cacheDir, ScoreScanLog.ROOT)) { 0L }
         return DirectoryScoreScanStorage(File(external, ScoreScanLog.ROOT))
     }
+
+    @Provides
+    fun nativeFrames(frames: HolderScoreScanNativeFrames): ScoreScanNativeFrames = frames
 
     @Provides
     fun device() = ScoreScanDevice(

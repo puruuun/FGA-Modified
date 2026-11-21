@@ -63,6 +63,14 @@ class OwnerTestScriptsTest {
         assertEquals(emptyList(), holder.scripts)
     }
 
+    @Test fun `this build compiles none of the rust build type's scan classes`() {
+        assertFalse(BuildConfig.RUST_TEST_BUILD)
+        for (name in listOf("SupportScoreScanScript", "HolderScoreScanNativeFrames", "SupportScoreScanModule")) {
+            val found = runCatching { Class.forName("io.github.fate_grand_automata.rusttest.$name") }.isSuccess
+            assertFalse(found, name)
+        }
+    }
+
     @Test fun `an owner test response sets no script mode`() {
         val (_, prefs) = launcherPrefs()
         for (mode in listOf(ScriptModeEnum.FP, ScriptModeEnum.SupportImageMaker)) {
