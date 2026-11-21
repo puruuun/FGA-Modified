@@ -35,6 +35,8 @@ class Dashboard615ScreenshotTest(private val width: Int, private val height: Int
                 compose.onAllNodesWithTag("dashboard-section:3").fetchSemanticsNodes().isEmpty() }
             // The tab is opened by its tag so the page starts at its top, the same on every revision.
             section?.let { compose.onNodeWithTag("dashboard-nav:$it").performClick(); compose.waitForIdle() }
+            // The servant list fills in after the tab opens; shooting too early gave an empty page.
+            if (section == "Servants") compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-servant-row").fetchSemanticsNodes().isNotEmpty() }
             scrollTo?.let { compose.onNodeWithTag(it).performScrollTo() }
             compose.waitForIdle()
         }) {

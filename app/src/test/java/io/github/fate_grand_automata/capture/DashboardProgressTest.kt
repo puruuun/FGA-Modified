@@ -15,7 +15,10 @@ class DashboardProgressTest {
 
     private val master = "[" + week(1, 0, 1000, 11, 12) + "," + week(2, 1000, 2000, 21, 22, 23, 24, 25, 26, 27) + "]"
 
-    private fun dir() = createTempDirectory("progress").toFile()
+    // Every folder is removed after the test, also when an assertion fails halfway.
+    private val made = mutableListOf<File>()
+    private fun dir() = createTempDirectory("progress").toFile().also(made::add)
+    @AfterTest fun removeFolders() { made.forEach { it.deleteRecursively() }; made.clear() }
 
     private fun loader(dir: File, masterBody: String? = master, events: EventInfoStore = EventInfoStore(File(dir, "events")) { _, _ -> null }) =
         DashboardProgressLoader(AtlasRouteRepository(File(dir, "weekly"), fetch = { _, target -> target.writeText(masterBody ?: error("offline")) }), events)

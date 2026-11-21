@@ -43,7 +43,7 @@ class AtlasRouteRepository(
 
     /**
      * What [weekAt] has learned from one state of `<server>-missions.json`, keyed by that file's size and mtime. The
-     * master is up to 30 MB of JSON, so it is parsed only when this file cannot answer. [missed] holds snapshot times no
+     * master is a few MB of JSON (about 2 MB for KR and 4 MB for JP) that parses into a tree about ten times that size, so it is parsed only when this file cannot answer. [missed] holds snapshot times no
      * weekly set covers.
      */
     @Serializable private class Side(val size: Long, val mtime: Long, val weeks: List<SideWeek> = emptyList(), val missed: List<Long> = emptyList())
@@ -92,6 +92,13 @@ class AtlasRouteRepository(
         val missionFile = File(cache, "$server-missions.json")
         if (missionFile.isFile) weekFromMaster(server, missionFile, at)?.let { return it }
         if (!download) return null
+        // Two dashboard passes can overlap (leaving the screen and coming back), and both would write the same part file.
+        return synchronized(downloadLock(server)) { downloadWeek(server, at, now, missionFile) }
+    }
+
+    private fun downloadWeek(server: String, at: Long, now: Long, missionFile: File): AtlasWeekly.Week? {
+        // A pass that waited for the lock finds the list the first one stored.
+        if (missionFile.isFile) weekFromMaster(server, missionFile, at)?.let { return it }
         val attemptFile = File(cache, "$server-missions-attempt.json")
         val last = runCatching { json.decodeFromString<Attempt>(attemptFile.readText()) }.getOrNull()
         if (last != null && last.snapshot == at && now - last.at in 0 until RETRY_SECONDS) return null
@@ -199,6 +206,8 @@ class AtlasRouteRepository(
 
     companion object {
         private const val RETRY_SECONDS = 24L * 3600
+        private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
+        private fun downloadLock(server: String): Any = locks.getOrPut(server) { Any() }
 
         private fun replace(temp: File, target: File) {
             replaceFile(temp, target)
