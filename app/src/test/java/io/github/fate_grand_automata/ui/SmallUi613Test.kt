@@ -1,7 +1,6 @@
 package io.github.fate_grand_automata.ui
 
 import android.content.Context
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Text
@@ -172,10 +171,10 @@ class SmallUi613Test {
 
     // Thumbnail index
 
-    private fun pngFile(file: File, color: Int) {
+    // The index only looks at names, so the files need no real image data.
+    private fun pngFile(file: File, @Suppress("UNUSED_PARAMETER") color: Int) {
         file.parentFile!!.mkdirs()
-        val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
-        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        file.writeBytes(byteArrayOf(1))
     }
 
     private fun supportRoot(): File = File(context.cacheDir, "face613-${System.nanoTime()}").apply { mkdirs() }
@@ -218,7 +217,10 @@ class SmallUi613Test {
         pngFile(File(root, "support/servant/Gamma/g.png"), 0xFF0000FF.toInt())
         File(root, "support/servant/Beta").mkdirs()
         val index = index(root)
-        return Triple(root, linkedMapOf("Alpha" to "Alpha", "Beta" to "Beta", "Gamma" to "Gamma"), FaceThumbnails(index::thumbnail))
+        return Triple(root, linkedMapOf("Alpha" to "Alpha", "Beta" to "Beta", "Gamma" to "Gamma"), FaceThumbnails { name ->
+            // A real file Uri would make Coil decode on its own thread, which aborts the JVM under Robolectric on Linux.
+            index.thumbnail(name)?.let { android.graphics.drawable.ColorDrawable(0xFF3F51B5.toInt()) }
+        })
     }
 
     @Test
