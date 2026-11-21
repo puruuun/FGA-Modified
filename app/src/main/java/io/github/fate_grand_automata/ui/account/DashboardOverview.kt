@@ -3,6 +3,8 @@ package io.github.fate_grand_automata.ui.account
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +14,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -28,6 +32,7 @@ import io.github.fate_grand_automata.util.grouped
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /** Tabular figures keep digits aligned between rows and across updates. */
 private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
@@ -38,16 +43,16 @@ internal fun DashboardOverview(
     now: Long, wide: Boolean, openLogs: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().testTag("dashboard-overview"), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Headline(data, now, wide)
         val first: @Composable ColumnScope.() -> Unit = {
-            OverviewFruits(data, names)
             OverviewResourceList(data, names)
+            OverviewFruits(data, names)
+            data.servants?.takeIf { it.isNotEmpty() }?.let { OverviewServants(it, data.servantCatalog) }
         }
         val second: @Composable ColumnScope.() -> Unit = {
             data.storage?.let { OverviewStorage(it) }
             if (battle != null || outside != null) OverviewRecent(battle, outside, names, openLogs)
-            OverviewAccount(data, friendCount, now)
         }
+        // Narrow keeps one column in the order of the two wide columns; the account block closes either layout.
         if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp), content = first)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp), content = second)
@@ -55,70 +60,9 @@ internal fun DashboardOverview(
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = first)
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = second)
         }
+        OverviewAccount(data, friendCount, now, wide)
     }
 }
-
-@Composable
-private fun Headline(data: DashboardData, now: Long, wide: Boolean) {
-    val game = data.game
-    val ap = dashboardAp(game, now)
-    val carry = game?.number("carryOverActPoint")
-    val quartz = data.resources[2L]
-    val qp = data.resources[1L]
-    val apBlock: @Composable (Modifier) -> Unit = { modifier ->
-        if (ap != null || carry != null) Column(modifier.testTag("overview-ap"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            HeadlineLabel("AP")
-            if (ap != null) {
-                Text("${ap.current.grouped()} / ${ap.max.grouped()}", style = MaterialTheme.typography.headlineSmall.tabular())
-                LinearProgressIndicator(
-                    progress = { if (ap.max > 0) (ap.current.toFloat() / ap.max).coerceIn(0f, 1f) else 0f },
-                    modifier = Modifier.fillMaxWidth().testTag("overview-ap-bar"),
-                )
-                Text(
-                    if (ap.recoverAt <= now) stringResource(R.string.capture_ap_full)
-                    else stringResource(R.string.dashboard_ap_full_at, clock(ap.recoverAt)),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            carry?.let {
-                Text(
-                    "${stringResource(R.string.dashboard_carry_ap)} ${it.grouped()}", style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-    val quartzBlock: @Composable (Modifier) -> Unit = { modifier ->
-        if (quartz != null) Column(modifier.testTag("overview-quartz"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            HeadlineLabel(stringResource(R.string.capture_quartz))
-            Text(quartz.grouped(), style = MaterialTheme.typography.headlineSmall.tabular())
-            data.freePaid?.let { (free, paid) ->
-                Text(
-                    stringResource(R.string.capture_stone_split, free.grouped(), paid.grouped()),
-                    style = MaterialTheme.typography.bodySmall.tabular(), color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-    val qpBlock: @Composable (Modifier) -> Unit = { modifier ->
-        if (qp != null) Column(modifier.testTag("overview-qp"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            HeadlineLabel(stringResource(R.string.capture_qp))
-            Text(qp.grouped(), style = MaterialTheme.typography.headlineSmall.tabular())
-        }
-    }
-    if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-        apBlock(Modifier.weight(1f)); quartzBlock(Modifier.weight(1f)); qpBlock(Modifier.weight(1f))
-    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        apBlock(Modifier.fillMaxWidth())
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            quartzBlock(Modifier.weight(1f)); qpBlock(Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun HeadlineLabel(text: String) =
-    Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
 @Composable
 private fun OverviewTitle(text: String) {
@@ -151,24 +95,64 @@ private fun OverviewFruits(data: DashboardData, names: GameNameMap) {
 
 @Composable
 private fun OverviewResourceList(data: DashboardData, names: GameNameMap) {
-    val split = overviewResources(data)
-    if (split.resources.isEmpty() && split.teapots == null) return
+    val rows = overviewResources(data).resources
+    if (rows.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("overview-resources")) {
         OverviewTitle(stringResource(R.string.dashboard_overview_resources))
-        split.resources.forEach { (id, count) -> ResourceRow(id, resourceName(2, id, names), count, names) }
-        split.teapots?.let { ResourceRow(it.iconId, stringResource(R.string.dashboard_teapots), it.total, names) }
+        rows.forEach { row ->
+            val name = if (row.key == TEAPOT_ROW) stringResource(R.string.dashboard_teapots) else resourceName(2, row.id!!, names)
+            val note = if (row.id == 2L) data.freePaid?.let { (free, paid) -> stringResource(R.string.capture_stone_split, free.grouped(), paid.grouped()) } else null
+            ResourceRow(row, name, note, names)
+        }
     }
 }
 
 @Composable
-private fun ResourceRow(id: Long, name: String, count: Long, names: GameNameMap) {
+private fun ResourceRow(row: OverviewResource, name: String, note: String?, names: GameNameMap) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 36.dp).testTag("overview-resource:$id"), verticalAlignment = Alignment.CenterVertically,
+        Modifier.fillMaxWidth().heightIn(min = 36.dp).testTag("overview-resource:${row.key}"), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(32.dp)) { ResourceIcon(2, id, names) }
-        Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(count.grouped(), style = MaterialTheme.typography.bodyLarge.tabular(), textAlign = TextAlign.End)
+        Box(Modifier.size(32.dp)) { row.iconId?.let { ResourceIcon(2, it, names) } }
+        Text(name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            note.orEmpty(), Modifier.weight(1f).testTag("overview-resource-note:${row.key}"), style = MaterialTheme.typography.bodySmall.tabular(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        Text(row.count.grouped(), style = MaterialTheme.typography.bodyLarge.tabular(), textAlign = TextAlign.End)
+    }
+}
+
+/** Owned and NP totals, then one row per rarity. Without the server's list there are no totals and no bars. */
+@Composable
+private fun OverviewServants(servants: List<DashboardServant>, catalog: List<AtlasBasic>?) {
+    val summary = remember(servants, catalog) { servantSummary(servants, catalog) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("overview-servants")) {
+        OverviewTitle(stringResource(R.string.dashboard_overview_servants))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            val owned = summary.total?.let { "${summary.owned} / $it" } ?: summary.owned.toString()
+            LabeledValue(stringResource(R.string.dashboard_stat_owned), owned, Modifier.weight(1f).testTag("overview-servants-owned"))
+            LabeledValue(stringResource(R.string.dashboard_stat_star5_np), summary.star5Np.toString(), Modifier.weight(1f).testTag("overview-servants-star5-np"))
+            LabeledValue(stringResource(R.string.dashboard_stat_all_np), summary.allNp.toString(), Modifier.weight(1f).testTag("overview-servants-all-np"))
+        }
+        summary.rarities.forEach { row ->
+            Row(Modifier.fillMaxWidth().heightIn(min = 28.dp).testTag("overview-rarity:${row.rarity}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("★${row.rarity}", Modifier.width(32.dp), style = MaterialTheme.typography.bodyMedium.tabular())
+                if (row.total != null) LinearProgressIndicator(
+                    progress = { if (row.total > 0) (row.owned.toFloat() / row.total).coerceIn(0f, 1f) else 0f },
+                    modifier = Modifier.weight(1f).testTag("overview-rarity-bar:${row.rarity}"), drawStopIndicator = {},
+                ) else Spacer(Modifier.weight(1f))
+                Text(
+                    row.total?.let { "${row.owned} / $it" } ?: row.owned.toString(), Modifier.widthIn(min = 72.dp),
+                    style = MaterialTheme.typography.bodyMedium.tabular(), textAlign = TextAlign.End, maxLines = 1, softWrap = false,
+                )
+                Text(
+                    stringResource(R.string.dashboard_col_np) + " " + row.np, Modifier.widthIn(min = 56.dp),
+                    style = MaterialTheme.typography.bodySmall.tabular(), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End, maxLines = 1, softWrap = false,
+                )
+            }
+        }
     }
 }
 
@@ -282,9 +266,10 @@ private fun gainLine(resources: List<LogResource>, names: GameNameMap): String =
     resources.take(3).map { "${resourceName(it.type, it.id, names)} ${it.count?.let(::signedOutsideCount) ?: "—"}" }.joinToString(" · ")
 
 @Composable
-private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long) {
+private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long, wide: Boolean) {
     val profile = data.profile
     val fields = buildList {
+        profile["friendCode"]?.let { add(Triple("friendCode", R.string.dashboard_friend_code, it)) }
         profile["friendPoint"]?.let { add(Triple("friendPoint", R.string.dashboard_friend_points, it.toLongOrNull()?.grouped() ?: it)) }
         profile["exp"]?.let { add(Triple("exp", R.string.dashboard_exp, it.toLongOrNull()?.grouped() ?: it)) }
         profile["costMax"]?.let { add(Triple("cost", R.string.dashboard_cost, it.toLongOrNull()?.grouped() ?: it)) }
@@ -294,14 +279,21 @@ private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long) {
         data.game?.number("commandSpellRecoverAt")?.takeIf { it > now }
             ?.let { add(Triple("commandSpell", R.string.dashboard_command_spell, date(it))) }
     }
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("overview-account")) {
         OverviewTitle(stringResource(R.string.dashboard_overview_account))
         FlowRow(
-            Modifier.fillMaxWidth(), maxItemsInEachRow = 2, verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxWidth(), maxItemsInEachRow = if (wide) 4 else 2, verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             fields.forEach { (key, label, value) ->
-                LabeledValue(stringResource(label), value, Modifier.weight(1f).testTag("overview-account:$key"))
+                if (key == "friendCode") Row(Modifier.weight(1f).testTag("overview-account:$key"), verticalAlignment = Alignment.CenterVertically) {
+                    LabeledValue(stringResource(label), value, Modifier.weight(1f, fill = false))
+                    IconButton(onClick = { scope.launch { clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("", value))) } }, modifier = Modifier.testTag("overview-friend-code-copy")) {
+                        Icon(Icons.Default.ContentCopy, stringResource(R.string.dashboard_copy))
+                    }
+                } else LabeledValue(stringResource(label), value, Modifier.weight(1f).testTag("overview-account:$key"))
             }
         }
     }
@@ -313,4 +305,4 @@ internal fun friendLimitText(keep: String, count: Int?): String {
     return if (count == null) limit else "$count / $limit"
 }
 
-private fun clock(seconds: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(seconds * 1000))
+internal fun clock(seconds: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(seconds * 1000))

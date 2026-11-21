@@ -58,7 +58,7 @@ class DashboardAccountCardsUiTest {
         content { AccountDashboardContent(data, extraNames, "Alias", {}, {}, initialSection = 10) }
 
         compose.onNodeWithText("선물함 (16)").performScrollTo().assertExists()
-        compose.onNodeWithText("마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.").assertExists()
+        compose.onNodeWithText("마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.").assertDoesNotExist()
         compose.onNodeWithText("SECRET-GIFT-MESSAGE", substring = true).assertDoesNotExist()
 
         compose.onNodeWithText("Gift Entry 12").assertExists()
@@ -78,7 +78,6 @@ class DashboardAccountCardsUiTest {
         content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 10) }
 
         compose.onNodeWithText("선물함 (0)").performScrollTo().assertExists()
-        compose.onNodeWithText("마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.").assertExists()
         compose.onNodeWithText("선물 없음").assertExists()
     }
 

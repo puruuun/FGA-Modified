@@ -90,6 +90,26 @@ class DashboardItemsLogicTest {
         assertTrue(visibleItemGroups(groups, "zzz", nameOf).isEmpty())
     }
 
+    @Test fun theGrailGroupComesFirstAndTheOthersKeepTheirOrder() {
+        val groups = InventoryGroup.entries.associateWith { listOf(item(it.ordinal + 1L, it)) }
+        assertEquals(
+            listOf(InventoryGroup.Grails, InventoryGroup.Materials, InventoryGroup.Gems, InventoryGroup.Pieces,
+                InventoryGroup.Event, InventoryGroup.Coins, InventoryGroup.Other),
+            visibleItemGroups(groups, "", nameOf).map { it.group },
+        )
+    }
+
+    @Test fun materialsAreListedInTheReverseOfTheCapturedOrderAndOtherGroupsAreNot() {
+        val groups = mapOf(
+            InventoryGroup.Materials to listOf(item(46, InventoryGroup.Materials), item(10, InventoryGroup.Materials), item(7, InventoryGroup.Materials)),
+            InventoryGroup.Grails to listOf(item(46, InventoryGroup.Grails), item(10, InventoryGroup.Grails)),
+        )
+        val views = visibleItemGroups(groups, "", nameOf).associateBy { it.group }
+        assertEquals(listOf(7L, 10L, 46L), views.getValue(InventoryGroup.Materials).all.map { it.id })
+        assertEquals(listOf(7L, 10L, 46L), views.getValue(InventoryGroup.Materials).matches.map { it.id })
+        assertEquals(listOf(46L, 10L), views.getValue(InventoryGroup.Grails).all.map { it.id })
+    }
+
     @Test fun aQueryOpensGroupsAndWithoutOneTheStoredStateDecides() {
         assertTrue(isItemGroupOpen("fang", openByUser = false))
         assertFalse(isItemGroupOpen("", openByUser = false))

@@ -35,27 +35,30 @@ internal fun sectionOfBlock(blockId: Int): DashboardSection = when (blockId) {
 /** Blocks that exist as their own group in a section; Overview blocks are not addressable. */
 internal fun isBlockAddressable(blockId: Int) = sectionOfBlock(blockId) != DashboardSection.Overview
 
-/** The small count shown on a list item, where one exists. */
-internal fun sectionCount(section: DashboardSection, data: DashboardData): Int? = when (section) {
-    DashboardSection.Servants -> data.servants?.size
-    DashboardSection.PresentBox -> data.presentBox?.totalCount
-    else -> null
-}
-
 private val FRUIT_ORDER = listOf(100L, 101L, 104L, 102L)
-private val RESOURCE_ORDER = listOf(3L, 18L, 16L, 103L, SUMMON_TICKET_ID, STORM_POD_ID)
 
-/** Overview's "fruit" and "resources" lists. Ids the account has no value for are left out, never shown as 0. */
-internal data class OverviewResources(
-    val fruits: List<Pair<Long, Long>>,
-    val resources: List<Pair<Long, Long>>,
-    val teapots: DashboardTeapots?,
-)
+/** Key of the teapot row, which sums several items and so has no resource id of its own. */
+internal const val TEAPOT_ROW = "teapots"
 
+/** The order of Overview's resource list, fixed by the owner (2026-11-22). */
+private val RESOURCE_ORDER: List<String> = listOf(2L, 16L, SUMMON_TICKET_ID).map { it.toString() } + TEAPOT_ROW +
+    listOf(STORM_POD_ID, 3L, 18L, 103L, 1L).map { it.toString() }
+
+/** [iconId] is the item whose icon is drawn; null draws no icon. */
+internal data class OverviewResource(val key: String, val id: Long?, val iconId: Long?, val count: Long)
+
+internal data class OverviewResources(val fruits: List<Pair<Long, Long>>, val resources: List<OverviewResource>)
+
+/**
+ * Fruit ids the account has no value for are left out. A resource row the account does not hold is a real 0 only when
+ * its item list was captured; without the list a missing value is not invented as 0.
+ */
 internal fun overviewResources(data: DashboardData) = OverviewResources(
     fruits = FRUIT_ORDER.mapNotNull { id -> data.resources[id]?.let { id to it } },
-    resources = RESOURCE_ORDER.mapNotNull { id -> data.resources[id]?.let { id to it } },
-    teapots = data.teapots,
+    resources = RESOURCE_ORDER.mapNotNull { key ->
+        if (key == TEAPOT_ROW) data.teapots?.let { OverviewResource(key, null, it.iconId, it.total) }
+        else key.toLong().let { id -> (data.resources[id] ?: 0L.takeIf { data.itemsCaptured })?.let { OverviewResource(key, id, id, it) } }
+    },
 )
 
 internal enum class AgeUnit { JustNow, Minutes, Hours, Days }

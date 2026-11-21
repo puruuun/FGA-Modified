@@ -17,6 +17,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -78,9 +79,36 @@ internal fun levelText(level: Long?, maxLevel: Long?): String = when {
     else -> "${level ?: LOCKED_TEXT}/${maxLevel ?: LOCKED_TEXT}"
 }
 
-/** Servant counts per rarity, highest rarity first. A servant without Atlas data has no rarity and is left out. */
-internal fun rarityCounts(servants: List<DashboardServant>): List<Pair<Long, Int>> =
-    servants.mapNotNull { it.atlas?.rarity }.groupingBy { it }.eachCount().toList().sortedByDescending { it.first }
+/** Owned / total with its percentage, then the two NP sums. On narrow screens the line wraps between the parts, never inside one. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ServantSummaryLine(summary: ServantSummary, modifier: Modifier) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val bold = SpanStyle(fontWeight = FontWeight.Bold)
+    fun part(label: String, value: String, suffix: String = "") = buildAnnotatedString {
+        append("$label ")
+        withStyle(bold) { append(value) }
+        append(suffix)
+    }
+    val owned = part(
+        stringResource(R.string.dashboard_stat_owned),
+        summary.total?.let { "${summary.owned} / $it" } ?: summary.owned.toString(),
+        summary.percent?.let { " ($it%)" }.orEmpty(),
+    )
+    val parts = listOf(
+        "dashboard-servant-owned" to owned,
+        "dashboard-servant-star5-np" to part(stringResource(R.string.dashboard_stat_star5_np), summary.star5Np.toString()),
+        "dashboard-servant-all-np" to part(stringResource(R.string.dashboard_stat_all_np), summary.allNp.toString()),
+    )
+    FlowRow(modifier.testTag("dashboard-servant-count"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        parts.forEachIndexed { index, (tag, text) ->
+            Text(
+                if (index < parts.lastIndex) buildAnnotatedString { append(text); withStyle(SpanStyle(color = muted)) { append(" · ") } } else text,
+                Modifier.testTag(tag), style = MaterialTheme.typography.titleSmall.merge(numeric), softWrap = false,
+            )
+        }
+    }
+}
 
 /** The game's class order. Beast classes and anything unknown follow, alphabetically. */
 private val CLASS_ORDER = listOf(
@@ -116,16 +144,12 @@ internal fun ColumnScope.Servants(data: DashboardData) {
     val selectedClasses = classes[classLabel]?.toSet()
     var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
     LaunchedEffect(servants, sort, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, selectedClasses) } }
-    val rarities = remember(servants) { rarityCounts(servants) }
+    val summary = remember(servants, data.servantCatalog, selectedClasses) { servantSummary(servants, data.servantCatalog, selectedClasses) }
     val scheme = MaterialTheme.colorScheme
 
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val table = maxWidth >= TABLE_MIN_WIDTH
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val count = buildString {
-                append(stringResource(R.string.dashboard_servant_count, servants.size))
-                rarities.forEach { (rarity, n) -> append(" · ★$rarity $n") }
-            }
             val sortChips = @Composable {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ServantSort.entries.forEach { option ->
@@ -136,10 +160,10 @@ internal fun ColumnScope.Servants(data: DashboardData) {
                 }
             }
             if (table) Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(count, Modifier.weight(1f).testTag("dashboard-servant-count"), style = MaterialTheme.typography.titleSmall)
+                ServantSummaryLine(summary, Modifier.weight(1f))
                 sortChips()
             } else {
-                Text(count, Modifier.testTag("dashboard-servant-count"), style = MaterialTheme.typography.titleSmall)
+                ServantSummaryLine(summary, Modifier)
                 sortChips()
             }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dashboard-class-chips"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
