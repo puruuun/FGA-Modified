@@ -1331,6 +1331,32 @@
     <string name="dashboard_summon_count">%1$s회</string>
     <string name="dashboard_recent_summon_log">최근 소환 내역</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
+    <string name="dashboard_nav_overview">개요</string>
+    <string name="dashboard_nav_servants">서번트</string>
+    <string name="dashboard_nav_items">아이템</string>
+    <string name="dashboard_nav_formations">편성</string>
+    <string name="dashboard_nav_collection">도감·소환</string>
+    <string name="dashboard_nav_present_box">선물함</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
+    <string name="dashboard_updated_just_now">방금 갱신</string>
+    <plurals name="dashboard_updated_minutes">
+        <item quantity="other">%1$d분 전 갱신</item>
+    </plurals>
+    <plurals name="dashboard_updated_hours">
+        <item quantity="other">%1$d시간 전 갱신</item>
+    </plurals>
+    <plurals name="dashboard_updated_days">
+        <item quantity="other">%1$d일 전 갱신</item>
+    </plurals>
+    <string name="dashboard_ap_full_at">%1$s 가득 참</string>
+    <string name="dashboard_overview_fruits">사과</string>
+    <string name="dashboard_overview_resources">재화</string>
+    <string name="dashboard_overview_storage">보관</string>
+    <string name="dashboard_overview_recent">최근 기록</string>
+    <string name="dashboard_overview_account">계정</string>
+    <string name="dashboard_view_all">전체 보기</string>
+    <string name="dashboard_legend_servants">서번트</string>
+    <string name="dashboard_legend_others">기타</string>
     <string name="p_app_theme">"다크 모드"</string>
     <string name="p_app_theme_system">"시스템 설정 따름"</string>
     <string name="p_app_theme_light">"라이트"</string>

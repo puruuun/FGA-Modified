@@ -1089,6 +1089,32 @@
     <string name="dashboard_summon_count">%1$s回</string>
     <string name="dashboard_recent_summon_log">最近の召喚履歴</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
+    <string name="dashboard_nav_overview">概要</string>
+    <string name="dashboard_nav_servants">サーヴァント</string>
+    <string name="dashboard_nav_items">アイテム</string>
+    <string name="dashboard_nav_formations">編成</string>
+    <string name="dashboard_nav_collection">図鑑・召喚</string>
+    <string name="dashboard_nav_present_box">プレゼントボックス</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
+    <string name="dashboard_updated_just_now">たった今更新</string>
+    <plurals name="dashboard_updated_minutes">
+        <item quantity="other">%1$d分前に更新</item>
+    </plurals>
+    <plurals name="dashboard_updated_hours">
+        <item quantity="other">%1$d時間前に更新</item>
+    </plurals>
+    <plurals name="dashboard_updated_days">
+        <item quantity="other">%1$d日前に更新</item>
+    </plurals>
+    <string name="dashboard_ap_full_at">%1$s に全回復</string>
+    <string name="dashboard_overview_fruits">リンゴ</string>
+    <string name="dashboard_overview_resources">所持資源</string>
+    <string name="dashboard_overview_storage">所持枠</string>
+    <string name="dashboard_overview_recent">最近の記録</string>
+    <string name="dashboard_overview_account">アカウント</string>
+    <string name="dashboard_view_all">すべて表示</string>
+    <string name="dashboard_legend_servants">サーヴァント</string>
+    <string name="dashboard_legend_others">その他</string>
     <string name="p_app_theme">"ダークモード"</string>
     <string name="p_app_theme_system">"システム設定に従う"</string>
     <string name="p_app_theme_light">"ライト"</string>

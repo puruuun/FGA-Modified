@@ -1,0 +1,131 @@
+package io.github.fate_grand_automata.ui.account
+
+import io.github.fate_grand_automata.capture.*
+import io.github.fate_grand_automata.scripts.capture.OwnFormations
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class DashboardSectionsTest {
+    private fun data(
+        resources: Map<Long, Long> = emptyMap(),
+        servants: List<DashboardServant>? = null,
+        inventory: List<DashboardItem>? = null,
+        presentBox: DashboardPresentBox? = null,
+        commandCodes: DashboardCommandCodes? = null,
+        classBoards: List<DashboardClassBoard>? = null,
+        summons: DashboardSummons? = null,
+        teapots: DashboardTeapots? = null,
+    ) = DashboardData(
+        profile = emptyMap(), snapshotTime = 0, lastUpdateTime = 0, game = null, resources = resources, freePaid = null,
+        storage = null, servants = servants, inventory = inventory, equips = null, teapots = teapots,
+        formations = null as OwnFormations?, presentBox = presentBox, commandCodes = commandCodes, classBoards = classBoards, summons = summons,
+    )
+
+    private val servant = DashboardServant(1, null, null, null, null, emptyList(), null)
+    private val item = DashboardItem(6001, 1, InventoryGroup.Gems)
+    private val board = DashboardClassBoard(1, "세이버", null, 1, 0, 10, 2)
+    private val summons = DashboardSummons(null, emptyList(), emptyList())
+
+    @Test fun anAccountWithoutDataListsOnlyOverviewAndFormations() {
+        assertEquals(listOf(DashboardSection.Overview, DashboardSection.Formations), dashboardSections(data()))
+    }
+
+    @Test fun everySectionIsListedInTheSpecifiedOrder() {
+        val all = data(
+            servants = listOf(servant), inventory = listOf(item), presentBox = DashboardPresentBox(0, emptyList()),
+            commandCodes = DashboardCommandCodes(emptyList(), null),
+        )
+        assertEquals(
+            listOf(
+                DashboardSection.Overview, DashboardSection.Servants, DashboardSection.Items, DashboardSection.Formations,
+                DashboardSection.Collection, DashboardSection.PresentBox,
+            ),
+            dashboardSections(all),
+        )
+    }
+
+    @Test fun aSectionWithoutDataIsLeftOut() {
+        val sections = dashboardSections(data(servants = emptyList(), inventory = emptyList(), classBoards = emptyList()))
+        assertFalse(DashboardSection.Servants in sections)
+        assertFalse(DashboardSection.Items in sections)
+        assertFalse(DashboardSection.Collection in sections)
+        assertFalse(DashboardSection.PresentBox in sections)
+    }
+
+    @Test fun collectionNeedsAnyOneOfItsThreeBlocks() {
+        assertEquals(true, DashboardSection.Collection in dashboardSections(data(commandCodes = DashboardCommandCodes(emptyList(), 3))))
+        assertEquals(true, DashboardSection.Collection in dashboardSections(data(classBoards = listOf(board))))
+        assertEquals(true, DashboardSection.Collection in dashboardSections(data(summons = summons)))
+    }
+
+    @Test fun anEmptyPresentBoxIsStillASection() {
+        assertEquals(true, DashboardSection.PresentBox in dashboardSections(data(presentBox = DashboardPresentBox(0, emptyList()))))
+    }
+
+    @Test fun aSelectedSectionThatDisappearedFallsBackToOverview() {
+        val available = listOf(DashboardSection.Overview, DashboardSection.Formations)
+        assertEquals(DashboardSection.Formations, resolveSection(DashboardSection.Formations, available))
+        assertEquals(DashboardSection.Overview, resolveSection(DashboardSection.PresentBox, available))
+        assertEquals(DashboardSection.Overview, resolveSection(DashboardSection.Servants, available))
+    }
+
+    @Test fun legacyBlockIdsMapToTheirContainingSection() {
+        val expected = mapOf(
+            0 to DashboardSection.Overview, 1 to DashboardSection.Overview, 2 to DashboardSection.Overview, 6 to DashboardSection.Overview,
+            3 to DashboardSection.Servants, 4 to DashboardSection.Items,
+            5 to DashboardSection.Formations, 7 to DashboardSection.Formations, 8 to DashboardSection.Formations,
+            10 to DashboardSection.PresentBox,
+            12 to DashboardSection.Collection, 13 to DashboardSection.Collection, 14 to DashboardSection.Collection,
+        )
+        expected.forEach { (id, section) -> assertEquals("block $id", section, sectionOfBlock(id)) }
+        assertEquals(DashboardSection.Overview, sectionOfBlock(99))
+    }
+
+    @Test fun onlyServantsAndPresentBoxCarryACount() {
+        val d = data(servants = listOf(servant, servant), inventory = listOf(item), presentBox = DashboardPresentBox(16, emptyList()))
+        assertEquals(2, sectionCount(DashboardSection.Servants, d))
+        assertEquals(16, sectionCount(DashboardSection.PresentBox, d))
+        listOf(DashboardSection.Overview, DashboardSection.Items, DashboardSection.Formations, DashboardSection.Collection)
+            .forEach { assertNull(it.name, sectionCount(it, d)) }
+    }
+
+    @Test fun overviewSplitsFruitsFromResourcesInTheSpecifiedOrder() {
+        val resources = listOf(1L, 2L, 3L, 16L, 18L, 49L, 100L, 101L, 102L, 103L, 104L, 4001L).associateWith { it * 10 }
+        val split = overviewResources(data(resources = resources, teapots = DashboardTeapots(7, 9)))
+        assertEquals(listOf(100L, 101L, 104L, 102L), split.fruits.map { it.first })
+        assertEquals(listOf(3L, 18L, 16L, 103L, 4001L, 49L), split.resources.map { it.first })
+        assertEquals(100L to 1000L, split.fruits.first())
+        assertEquals(DashboardTeapots(7, 9), split.teapots)
+    }
+
+    @Test fun overviewNeverInventsAValueForAnIdTheAccountDoesNotHave() {
+        val split = overviewResources(data(resources = mapOf(1L to 5L, 2L to 6L, 101L to 3L, 18L to 0L)))
+        assertEquals(listOf(101L), split.fruits.map { it.first })
+        // A real stored zero stays; an absent id does not appear.
+        assertEquals(listOf(18L to 0L), split.resources)
+        assertNull(split.teapots)
+    }
+
+    @Test fun relativeAgeUsesTheLargestWholeUnit() {
+        assertEquals(RelativeAge(AgeUnit.JustNow, 0), relativeAge(1_000, 1_000))
+        assertEquals(RelativeAge(AgeUnit.JustNow, 0), relativeAge(1_059, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Minutes, 1), relativeAge(1_060, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Minutes, 59), relativeAge(1_000 + 59 * 60 + 59, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Hours, 1), relativeAge(1_000 + 3_600, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Hours, 23), relativeAge(1_000 + 23 * 3_600 + 3_599, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Days, 1), relativeAge(1_000 + 86_400, 1_000))
+        assertEquals(RelativeAge(AgeUnit.Days, 3), relativeAge(1_000 + 3 * 86_400 + 5, 1_000))
+    }
+
+    @Test fun anUpdateTimeInTheFutureIsJustNow() {
+        assertEquals(RelativeAge(AgeUnit.JustNow, 0), relativeAge(1_000, 5_000))
+    }
+
+    @Test fun friendLimitShowsCountOverLimitOnlyOnceTheListWasSeen() {
+        assertEquals("143 / 146", friendLimitText("146", 143))
+        assertEquals("146", friendLimitText("146", null))
+        assertEquals("1,000", friendLimitText("1000", null))
+    }
+}

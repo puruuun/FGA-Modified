@@ -84,7 +84,7 @@ class DashboardRound4UiTest {
         val battle=io.github.fate_grand_automata.battlelog.battleLogFixture("latest").copy(configName="Recent quest",reasonText="8 runs")
         content { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{route=Route.Logs},battle=battle,
             outside=outsideFixture(),initialSection=6) }
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-section:0").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-overview").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("dashboard-logs").performScrollTo()
         compose.onNodeWithText("Recent quest",substring=true).assertExists()
         compose.onNodeWithText("8 runs").assertExists()
@@ -94,7 +94,9 @@ class DashboardRound4UiTest {
     @Test fun missingTablesHideEverySectionAndSensitiveFieldsNeverAppear() {
         val data=dashboardData(dashboardState("userGame" to """[{"birthday":"PRIVATE-BIRTHDAY","message":"PRIVATE-MESSAGE"}]"""),GameNameMap())
         content { AccountDashboardContent(data,GameNameMap(),null,{},{}) }
-        (0..6).forEach { compose.onNodeWithTag("dashboard-section:$it").assertDoesNotExist() }
+        (0..14).forEach { compose.onNodeWithTag("dashboard-section:$it").assertDoesNotExist() }
+        DashboardSection.entries.filter { it != DashboardSection.Overview && it != DashboardSection.Formations }
+            .forEach { compose.onNodeWithTag("dashboard-nav:${it.name}").assertDoesNotExist() }
         compose.onNodeWithText("PRIVATE-BIRTHDAY",substring=true).assertDoesNotExist()
         compose.onNodeWithText("PRIVATE-MESSAGE",substring=true).assertDoesNotExist()
     }

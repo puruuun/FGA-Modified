@@ -1400,6 +1400,35 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_summon_count">%1$s pulls</string>
     <string name="dashboard_recent_summon_log">Recent summon log</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
+    <string name="dashboard_nav_overview">Overview</string>
+    <string name="dashboard_nav_servants">Servants</string>
+    <string name="dashboard_nav_items">Items</string>
+    <string name="dashboard_nav_formations">Formations</string>
+    <string name="dashboard_nav_collection">Collection and summons</string>
+    <string name="dashboard_nav_present_box">Present box</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
+    <string name="dashboard_updated_just_now">Updated just now</string>
+    <plurals name="dashboard_updated_minutes">
+        <item quantity="one">Updated %1$d minute ago</item>
+        <item quantity="other">Updated %1$d minutes ago</item>
+    </plurals>
+    <plurals name="dashboard_updated_hours">
+        <item quantity="one">Updated %1$d hour ago</item>
+        <item quantity="other">Updated %1$d hours ago</item>
+    </plurals>
+    <plurals name="dashboard_updated_days">
+        <item quantity="one">Updated %1$d day ago</item>
+        <item quantity="other">Updated %1$d days ago</item>
+    </plurals>
+    <string name="dashboard_ap_full_at">Full at %1$s</string>
+    <string name="dashboard_overview_fruits">Fruit</string>
+    <string name="dashboard_overview_resources">Resources</string>
+    <string name="dashboard_overview_storage">Storage</string>
+    <string name="dashboard_overview_recent">Recent records</string>
+    <string name="dashboard_overview_account">Account</string>
+    <string name="dashboard_view_all">View all</string>
+    <string name="dashboard_legend_servants">Servants</string>
+    <string name="dashboard_legend_others">Other</string>
     <string name="p_app_theme">"Dark mode"</string>
     <string name="p_app_theme_system">"Follow system"</string>
     <string name="p_app_theme_light">"Light"</string>

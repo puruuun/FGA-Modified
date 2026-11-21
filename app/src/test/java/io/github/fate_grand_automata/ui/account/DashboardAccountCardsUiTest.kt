@@ -29,6 +29,11 @@ class DashboardAccountCardsUiTest {
         FGATheme { CompositionLocalProvider(LocalNavigateBack provides {}) { fixture.Icons { block() } } }
     }
 
+    private fun select(section: DashboardSection) {
+        compose.onNodeWithTag("dashboard-nav:${section.name}").performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
     @Test
     fun presentBoxShowsHeaderNoticeToggleAndNeverMessage() {
         val entries = (1..14).map { idx ->
@@ -50,7 +55,7 @@ class DashboardAccountCardsUiTest {
             }.joinToString(",", "[", "]"),
         )
         val data = dashboardData(presentState, extraNames)
-        content { AccountDashboardContent(data, extraNames, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, extraNames, "Alias", {}, {}, initialSection = 10) }
 
         compose.onNodeWithText("선물함 (16)").performScrollTo().assertExists()
         compose.onNodeWithText("마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.").assertExists()
@@ -70,7 +75,7 @@ class DashboardAccountCardsUiTest {
     @Test
     fun presentBoxEmptyShowsZeroAndNoGiftsNotice() {
         val data = dashboardData(dashboardState("userPresentBox" to "[]"), fixture.names)
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 10) }
 
         compose.onNodeWithText("선물함 (0)").performScrollTo().assertExists()
         compose.onNodeWithText("마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.").assertExists()
@@ -106,9 +111,12 @@ class DashboardAccountCardsUiTest {
         val data = dashboardData(state, names)
         content { AccountDashboardContent(data, names, "Alias", {}, {}) }
 
-        compose.onNodeWithText("서번트 도감").performScrollTo().assertExists()
-        compose.onNodeWithText("선물함 (1)").performScrollTo().assertExists()
-        compose.onNodeWithText("커맨드 코드 도감").performScrollTo().assertExists()
+        select(DashboardSection.Servants)
+        compose.onNodeWithText("서번트 도감").assertExists()
+        select(DashboardSection.PresentBox)
+        compose.onNodeWithText("선물함 (1)").assertExists()
+        select(DashboardSection.Collection)
+        compose.onNodeWithText("커맨드 코드 도감").assertExists()
 
         compose.onNodeWithText("영의", substring = true).assertDoesNotExist()
         compose.onNodeWithText("내 파티 편성", substring = true).assertDoesNotExist()
@@ -137,7 +145,7 @@ class DashboardAccountCardsUiTest {
             ]""",
         )
         val withTotal = dashboardData(state, namesWithList)
-        content { AccountDashboardContent(withTotal, namesWithList, "Alias", {}, {}) }
+        content { AccountDashboardContent(withTotal, namesWithList, "Alias", {}, {}, initialSection = 12) }
 
         compose.onNodeWithText("커맨드 코드 도감").performScrollTo().assertExists()
         compose.onNodeWithText("보유 2 / 전체 3").assertExists()
@@ -161,12 +169,12 @@ class DashboardAccountCardsUiTest {
             ]""",
         )
         val ownedOnly = dashboardData(state, fixture.names)
-        content { AccountDashboardContent(ownedOnly, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(ownedOnly, fixture.names, "Alias", {}, {}, initialSection = 12) }
         compose.onNodeWithText("보유 2").performScrollTo().assertExists()
     }
 
     @Test
-    fun allSectionsRenderInSpecOrderR5OnNarrowWidth() {
+    fun navigationListsEverySectionInOrderAndEachSectionKeepsItsBlocksInOrder() {
         val names = fixture.names.copy(
             commandCodeData = mapOf(501L to AtlasBasic(501L, "하얀 그릇")),
             mysticData = mapOf(200L to AtlasBasic(200L, "아틀라스원")),
@@ -198,22 +206,33 @@ class DashboardAccountCardsUiTest {
             )
         }
 
-        val expectedOrder = listOf(0, 1, 2, 3, 4, 10, 7, 8, 5, 12, 13, 14, 6)
-        val tops = expectedOrder.map { section ->
-            compose.onNodeWithTag("dashboard-section:$section").fetchSemanticsNode().positionInRoot.y
+        val navOrder = DashboardSection.entries
+        val lefts = navOrder.map { compose.onNodeWithTag("dashboard-nav:${it.name}").fetchSemanticsNode().positionInRoot.x }
+        lefts.zipWithNext().forEach { (a, b) -> assertTrue("tab order $lefts", a < b) }
+
+        val blocksBySection = mapOf(
+            DashboardSection.Servants to listOf(3),
+            DashboardSection.Items to listOf(4),
+            DashboardSection.Formations to listOf(7, 8, 5),
+            DashboardSection.Collection to listOf(12, 13, 14),
+            DashboardSection.PresentBox to listOf(10),
+        )
+        blocksBySection.forEach { (section, blocks) ->
+            select(section)
+            val tops = blocks.map { compose.onNodeWithTag("dashboard-section:$it").fetchSemanticsNode().positionInRoot.y }
+            for (i in 0 until tops.lastIndex) {
+                assertTrue("section $section: block ${blocks[i]} (top=${tops[i]}) above ${blocks[i + 1]} (top=${tops[i + 1]})", tops[i] < tops[i + 1])
+            }
         }
-        for (i in 0 until tops.lastIndex) {
-            assertTrue(
-                "Expected section ${expectedOrder[i]} (top=${tops[i]}) above ${expectedOrder[i + 1]} (top=${tops[i + 1]})",
-                tops[i] < tops[i + 1],
-            )
-        }
+        // Recent activity is in Overview now, not a block of its own.
+        compose.onNodeWithTag("dashboard-section:6").assertDoesNotExist()
     }
 
     @Test
     fun classScoreAndSummonHistoryHiddenWhenMissing() {
         val absent = fixture.data.copy(classBoards = null, summons = null)
         content { AccountDashboardContent(absent, fixture.names, "Alias", {}, {}) }
+        compose.onNodeWithTag("dashboard-nav:Collection").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-section:13").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-section:14").assertDoesNotExist()
     }
@@ -227,7 +246,7 @@ class DashboardAccountCardsUiTest {
                 DashboardClassBoard(99L, null, null, acquired = 4, unlockedLocks = 1, squareTotal = null, lockTotal = null),
             ),
         )
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 13) }
         compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
         compose.onNodeWithTag("dashboard-class-score-notice").assertDoesNotExist()
         compose.onNodeWithText("마지막 로그인 기준").assertDoesNotExist()
@@ -247,7 +266,7 @@ class DashboardAccountCardsUiTest {
             DashboardClassBoard(id, "보드 $id", null, acquired = id.toInt(), unlockedLocks = 1, squareTotal = 10, lockTotal = 2)
         }
         val data = fixture.data.copy(classBoards = boards)
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 13) }
 
         compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
         (1L..3L).forEach { id ->
@@ -283,7 +302,7 @@ class DashboardAccountCardsUiTest {
             DashboardClassBoard(id, "보드 $id", null, acquired = id.toInt(), unlockedLocks = 1, squareTotal = 10, lockTotal = 2)
         }
         val data = fixture.data.copy(classBoards = boards)
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 13) }
 
         compose.onNodeWithText("클래스 스코어").performScrollTo().assertExists()
         (1L..3L).forEach { id ->
@@ -315,7 +334,7 @@ class DashboardAccountCardsUiTest {
                 ),
             ),
         )
-        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}) }
+        content { AccountDashboardContent(data, fixture.names, "Alias", {}, {}, initialSection = 14) }
 
         compose.onNodeWithText("소환 기록").performScrollTo().assertExists()
         compose.onNodeWithTag("dashboard-summons-notice").assertDoesNotExist()
