@@ -31,12 +31,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.OnResume
+import io.github.fate_grand_automata.ui.dialog.FaceThumbnails
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
@@ -84,6 +86,17 @@ fun PreferredSupportScreen(
     }
 }
 
+/** Turns off the checks the screen hides for this state. Only writes a check that is on. */
+internal fun SupportPrefsCore.clearHiddenChecks(hasServants: Boolean, grandServant: Boolean) {
+    if (!hasServants) {
+        if (npLevelCheck.get()) npLevelCheck.set(false)
+        if (score62Check.get()) score62Check.set(false)
+    }
+    if (!hasServants || !grandServant) {
+        if (grandScore16Check.get()) grandScore16Check.set(false)
+    }
+}
+
 @Composable
 internal fun PreferredSupport(
     config: SupportPrefsCore,
@@ -92,6 +105,17 @@ internal fun PreferredSupport(
     val prefServants by config.preferredServants.remember()
     val prefCEs by config.preferredCEs.remember()
     val grandServant by config.grandServant.remember()
+
+    // Runs when the screen opens, which repairs a stored config that breaks the rule, and again whenever a
+    // condition stops holding. A hidden check must not stay active, so it is stored off (#613).
+    // It reads the stored values: the remembered states above start at the defaults until their flows
+    // arrive, and clearing from those would wipe the checks of a valid config on every open.
+    LaunchedEffect(config, prefServants.isNotEmpty(), grandServant) {
+        config.clearHiddenChecks(
+            hasServants = config.preferredServants.get().isNotEmpty(),
+            grandServant = config.grandServant.get()
+        )
+    }
 
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -106,6 +130,10 @@ internal fun PreferredSupport(
     val ceEntries = remember(vm.ces, configuration) {
         vm.ces.mapValues { (_, displayName) -> getLocalizedCEName(context, displayName) }
     }
+
+    // A new index per refresh, so images saved by "이미지 받기" show up in the reopened list.
+    val servantFaces = remember(vm.servants) { vm.storageProvider.supportThumbnails(SupportImageKind.Servant).let { FaceThumbnails(it::thumbnail) } }
+    val ceFaces = remember(vm.ces) { vm.storageProvider.supportThumbnails(SupportImageKind.CE).let { FaceThumbnails(it::thumbnail) } }
 
     CappedWidth {
         LazyColumn {
@@ -133,6 +161,7 @@ internal fun PreferredSupport(
                         config.preferredServants.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_servants),
                             entries = servantEntries,
+                            thumbnails = servantFaces,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.Servant, select, { vm.refresh(context) })
                             }
@@ -176,23 +205,26 @@ internal fun PreferredSupport(
                                 )
                             }
                         }
-                        config.npLevelCheck.SwitchPreference(
-                            title = stringResource(R.string.p_np_level_check)
-                        )
-                        val npEnabled by config.npLevelCheck.remember()
-                        AnimatedVisibility(npEnabled) {
-                            config.minimumNpLevel.ListPreference(
-                                title = stringResource(R.string.p_np_min_level),
-                                entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
-                            )
-                        }
-                        config.score62Check.SwitchPreference(
-                            title = stringResource(R.string.p_score_62_check)
-                        )
-                        config.grandScore16Check.SwitchPreference(
-                            title = stringResource(R.string.p_grand_score_16_check)
-                        )
                         if (prefServants.isNotEmpty()) {
+                            config.npLevelCheck.SwitchPreference(
+                                title = stringResource(R.string.p_np_level_check)
+                            )
+                            val npEnabled by config.npLevelCheck.remember()
+                            AnimatedVisibility(npEnabled) {
+                                config.minimumNpLevel.ListPreference(
+                                    title = stringResource(R.string.p_np_min_level),
+                                    entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
+                                )
+                            }
+                            config.score62Check.SwitchPreference(
+                                title = stringResource(R.string.p_score_62_check)
+                            )
+                            // The game shows +16 only for Grand servants.
+                            if (grandServant) {
+                                config.grandScore16Check.SwitchPreference(
+                                    title = stringResource(R.string.p_grand_score_16_check)
+                                )
+                            }
                             config.appendSkillCheck.SwitchPreference(
                                 title = stringResource(R.string.p_append_skill_check)
                             )
@@ -229,6 +261,7 @@ internal fun PreferredSupport(
                         config.preferredCEs.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_ces),
                             entries = ceEntries,
+                            thumbnails = ceFaces,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.CE, select, { vm.refresh(context) })
                             }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -158,13 +159,18 @@ fun rememberCaptureMain(
     )
 }
 
+// Owner decision (#613): the collecting state is yellow, as on the widget tile (widget_log_tile_on.xml), in both themes.
+// The dark text on this yellow stays above 4.5:1 whatever the theme.
+val captureStopBackground = Color(0xFFFFD54F)
+val captureStopForeground = Color(0xFF1B1B1B)
+
 @Composable
 fun CaptureMainButton(running: Boolean, onClick: () -> Unit) {
     val collecting = captureButtonState(running) == CaptureButtonState.Stop
     ExtendedFloatingActionButton(
         onClick = onClick,
-        containerColor = if (collecting) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        contentColor = if (collecting) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
+        containerColor = if (collecting) captureStopBackground else MaterialTheme.colorScheme.primary,
+        contentColor = if (collecting) captureStopForeground else MaterialTheme.colorScheme.onPrimary,
     ) {
         Icon(Icons.Default.VpnKey, contentDescription = null)
         Spacer(Modifier.width(12.dp))
