@@ -39,6 +39,30 @@ class AtlasRouteRepository(
         Dataset(server, week, it.quests, it.millis, it.mismatched, it.missing, it.wars, it.questNames)
     }.getOrNull()
 
+    /**
+     * The weekly mission set that was active at [at], for display only: no quest data is loaded. Uses the same
+     * `<server>-missions.json` cache as [load]; a missing or outdated file is downloaded only when [download] is set.
+     * Returns null when the list cannot be read or no unique weekly set covers [at].
+     */
+    fun weekAt(server: String, at: Long, download: Boolean): AtlasWeekly.Week? {
+        require(server in setOf("JP", "KR")) { "unsupported weekly server" }
+        val missionFile = File(cache, "$server-missions.json")
+        missionFile.takeIf { it.isFile }?.let { file ->
+            runCatching { AtlasWeekly.activeWeek(file.readText(), at) }.getOrNull()?.let { return it }
+        }
+        if (!download) return null
+        cache.mkdirs()
+        val fresh = File(cache, "$server-missions.download")
+        return try {
+            fetch("export/$server/nice_master_mission.json", fresh)
+            AtlasWeekly.activeWeek(fresh.readText(), at).also { replace(fresh, missionFile) }
+        } catch (_: Exception) {
+            null
+        } finally {
+            fresh.delete()
+        }
+    }
+
     fun load(server: String, now: Long = System.currentTimeMillis() / 1000): Dataset {
         require(server in setOf("JP", "KR")) { "unsupported weekly server" }
         progress("missions", 0, 1)

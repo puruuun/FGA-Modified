@@ -1235,4 +1235,25 @@
     <string name="capture_log_day_no_changes">記録された変動はありません</string>
     <string name="capture_log_day_no_scripts">この日に記録されたスクリプト実行はありません</string>
     <string name="capture_log_day_zone_note">韓国・日本時間 04:00 基準</string>
+    <!-- ダッシュボード: 進行中ブロック、ログイン日数、パーティ、サーヴァントのコマンドコード (#615) -->
+    <string name="dashboard_overview_progress">進行中</string>
+    <string name="dashboard_progress_weekly">週間ミッション · %1$s ~ %2$s · %3$d / %4$d 達成</string>
+    <string name="dashboard_progress_event_open">%1$s · ポイント %2$s</string>
+    <string name="dashboard_login_total">累計ログイン</string>
+    <string name="dashboard_login_seq">連続ログイン</string>
+    <string name="dashboard_login_next">次の累計報酬</string>
+    <plurals name="dashboard_login_days">
+        <item quantity="other">%1$s日</item>
+    </plurals>
+    <string name="dashboard_login_next_value">%1$s (%2$s後)</string>
+    <string name="dashboard_formation_parties">パーティ編成</string>
+    <string name="dashboard_party_title">パーティ%1$d · %2$s</string>
+    <string name="dashboard_party_title_plain">パーティ%1$d</string>
+    <string name="dashboard_party_support">サポート</string>
+    <string name="dashboard_party_mystic">魔術礼装: %1$s</string>
+    <string name="dashboard_formation_deck_named">編成%1$d · %2$s</string>
+    <string name="dashboard_servant_codes">コマンドコード %1$d / %2$d</string>
+    <string name="dashboard_servant_card_boost">カード強化 +%1$s (%2$d枚)</string>
+    <string name="dashboard_col_codes">コード</string>
+    <string name="dashboard_col_card_boost">カード強化</string>
 </resources>

@@ -47,6 +47,7 @@ private val HEADER_PADDING = 24.dp
 internal fun DashboardNavigation(
     data: DashboardData, names: GameNameMap, displayName: String?, battle: BattleLogEntry?, outside: OutsideLogEntry?,
     initialSection: Int, friendCount: Int?, server: String, now: Long, wide: Boolean, openLogs: () -> Unit,
+    progress: DashboardProgress = DashboardProgress(),
 ) {
     val sections = remember(data) { dashboardSections(data) }
     // The raw choice survives rotation and process recreation; each opening of the dashboard starts from initialSection.
@@ -68,7 +69,7 @@ internal fun DashboardNavigation(
                     }
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, progress, Modifier.weight(1f))
         } else Column(Modifier.fillMaxSize()) {
             AccountHeader(data, displayName, server, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
             PrimaryScrollableTabRow(selectedTabIndex = sections.indexOf(selected).coerceAtLeast(0), edgePadding = 8.dp) {
@@ -80,7 +81,7 @@ internal fun DashboardNavigation(
                     )
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, progress, Modifier.weight(1f))
         }
     }
 }
@@ -106,7 +107,7 @@ private fun RailItem(label: String, selected: Boolean, onClick: () -> Unit, name
 @Composable
 private fun SectionPane(
     selected: DashboardSection, data: DashboardData, names: GameNameMap, battle: BattleLogEntry?, outside: OutsideLogEntry?,
-    friendCount: Int?, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, modifier: Modifier,
+    friendCount: Int?, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress, modifier: Modifier,
 ) {
     key(selected) {
         Column(
@@ -117,7 +118,7 @@ private fun SectionPane(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (selected) {
-                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, battle, outside, now, wide, openLogs)
+                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, battle, outside, now, wide, openLogs, progress)
                 DashboardSection.Servants -> DashboardServantsSection(data)
                 DashboardSection.Items -> data.inventory?.let { DashboardItemsSection(it, names) }
                 DashboardSection.Formations -> DashboardFormationsSection(data, names)

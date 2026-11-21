@@ -2,8 +2,11 @@ package io.github.fate_grand_automata.scripts.capture
 
 import kotlinx.serialization.json.*
 
-/** One of the owner's own support decks: its 1-based position in the game's deck list and one slot per class. */
-data class OwnDeck(val deckId: Long, val index: Int, val slots: List<FriendSlot>)
+/**
+ * One of the owner's own support decks: its 1-based position in the game's deck list and one slot per class.
+ * [name] is the user's own name from `userSupportDeck`; the game only stores a row for decks that were renamed.
+ */
+data class OwnDeck(val deckId: Long, val index: Int, val slots: List<FriendSlot>, val name: String? = null)
 
 /**
  * The owner's own support and Grand formations, read from the stored account state. Display only:
@@ -30,13 +33,17 @@ data class OwnFormations(
             val byDeck = slots.groupBy { it.deckId }
             val mainIds = userGame?.longs("fixMainSupportDeckIds").orEmpty()
             val eventIds = userGame?.longs("fixEventSupportDeckIds").orEmpty()
+            val names = rows(state, "userSupportDeck").mapNotNull { row ->
+                val id = (row["supportDeckId"] as? JsonPrimitive)?.longOrNull ?: return@mapNotNull null
+                (row["name"] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }?.let { id to it }
+            }.toMap()
             fun decks(ids: List<Long>) = ids.mapIndexedNotNull { position, id ->
-                byDeck[id]?.let { OwnDeck(id, position + 1, it.sortedBy { slot -> classOrder(slot.classId) }) }
+                byDeck[id]?.let { OwnDeck(id, position + 1, it.sortedBy { slot -> classOrder(slot.classId) }, names[id]) }
             }
             val (main, event) = if (mainIds.isEmpty() && eventIds.isEmpty()) {
                 // The deck lists are missing: every deck is listed under the normal formation.
                 byDeck.keys.sorted().mapIndexed { position, id ->
-                    OwnDeck(id, position + 1, byDeck.getValue(id).sortedBy { classOrder(it.classId) })
+                    OwnDeck(id, position + 1, byDeck.getValue(id).sortedBy { classOrder(it.classId) }, names[id])
                 } to emptyList()
             } else decks(mainIds) to decks(eventIds)
             val grand = rows(state, "userSvtGrand").mapNotNull { row -> runCatching { FriendRoster.grandSlot(row) }.getOrNull() }

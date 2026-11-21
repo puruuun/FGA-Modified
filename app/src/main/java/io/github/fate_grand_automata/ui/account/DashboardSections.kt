@@ -26,7 +26,7 @@ internal fun resolveSection(selected: DashboardSection, available: List<Dashboar
 internal fun sectionOfBlock(blockId: Int): DashboardSection = when (blockId) {
     DashboardBlockId.Servants -> DashboardSection.Servants
     DashboardBlockId.Items -> DashboardSection.Items
-    DashboardBlockId.MysticCodes, DashboardBlockId.SupportFormation, DashboardBlockId.GrandFormation -> DashboardSection.Formations
+    DashboardBlockId.MysticCodes, DashboardBlockId.Parties, DashboardBlockId.SupportFormation, DashboardBlockId.GrandFormation -> DashboardSection.Formations
     DashboardBlockId.CommandCodes, DashboardBlockId.ClassScore, DashboardBlockId.Summons -> DashboardSection.Collection
     DashboardBlockId.PresentBox -> DashboardSection.PresentBox
     else -> DashboardSection.Overview

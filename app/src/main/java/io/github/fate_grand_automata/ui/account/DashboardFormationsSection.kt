@@ -12,9 +12,14 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
 
-/** Formations section: support formation, Grand formation and mystic codes, as they were before the navigation. */
+/** Formations section: the owner's parties, then the support formation, Grand formation and mystic codes. */
 @Composable
 internal fun DashboardFormationsSection(data: DashboardData, names: GameNameMap) {
+    if (data.parties.isNotEmpty()) {
+        DashboardBlock(DashboardBlockId.Parties, stringResource(R.string.dashboard_formation_parties)) {
+            PartyFormation(data.parties, names)
+        }
+    }
     DashboardBlock(DashboardBlockId.SupportFormation, stringResource(R.string.dashboard_formation_support)) {
         SupportFormation(data.formations, names)
     }
