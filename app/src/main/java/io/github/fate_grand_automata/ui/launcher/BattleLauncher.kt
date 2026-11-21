@@ -7,6 +7,9 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.layout.Layout
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -355,78 +358,74 @@ fun battleLauncher(
             state = mainConfigState
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "${stringResource(R.string.p_refill)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-
-                    // Short label in the title row (#613); the full text stays as the description for screen readers.
-                    val waitDescription = stringResource(R.string.p_wait_ap_regen_text)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                            .wrapContentWidth(Alignment.Start)
-                            .heightIn(min = 48.dp)
-                            .toggleable(value = waitApRegen, role = Role.Checkbox, onValueChange = { waitApRegen = it })
-                            .semantics { contentDescription = waitDescription }
-                            .testTag(LauncherWaitApRegenTag)
-                    ) {
-                        Checkbox(
-                            checked = waitApRegen,
-                            onCheckedChange = null,
-                            modifier = Modifier.alpha(if (waitApRegen) 1f else 0.7f)
-                        )
+                // Short label next to the title (#613); the full text stays as the description for screen readers.
+                val waitDescription = stringResource(R.string.p_wait_ap_regen_text)
+                ApRecoveryBlock(
+                    title = {
                         Text(
-                            stringResource(R.string.p_wait_ap_regen_short),
+                            "${stringResource(R.string.p_refill)}:",
                             style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1
+                            color = MaterialTheme.colorScheme.secondary
                         )
-                    }
-
-                    Stepper(
-                        value = refillCount.value,
-                        onValueChange = { value ->
-                            when {
-                                RefillResourceEnum.Copper in refillResources -> copperApple = value
-                                RefillResourceEnum.Bronze in refillResources -> blueApple = value
-                                RefillResourceEnum.Silver in refillResources -> silverApple = value
-                                RefillResourceEnum.Gold in refillResources -> goldApple = value
-                                RefillResourceEnum.SQ in refillResources -> rainbowApple = value
-                            }
-                        },
-                        valueRange = 0..999,
-                        enabled = refillResources.isNotEmpty()
-                    )
-                }
-            }
-
-            item {
-                LazyRow(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-
-                    items(availableRefills) {
-                        it.RefillResource(
-                            isSelected = it in refillResources,
-                            toggle = {
-                                // TODO change back to refillResources.toggle()
-
-                                // if the tapped resource is the only one in the list, disable it. otherwise only select the tapped resource
-                                refillResources = if (it in refillResources) emptySet() else setOf(it)
-                            }
+                    },
+                    wait = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .heightIn(min = 48.dp)
+                                .toggleable(value = waitApRegen, role = Role.Checkbox, onValueChange = { waitApRegen = it })
+                                .semantics { contentDescription = waitDescription }
+                                .testTag(LauncherWaitApRegenTag)
+                        ) {
+                            // Same box and 48dp area as the other launcher checkboxes; the row toggles, so the box has no click.
+                            Checkbox(
+                                checked = waitApRegen,
+                                onCheckedChange = null,
+                                modifier = Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .alpha(if (waitApRegen) 1f else 0.7f)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.p_wait_ap_regen_short),
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    },
+                    stepper = {
+                        Stepper(
+                            value = refillCount.value,
+                            onValueChange = { value ->
+                                when {
+                                    RefillResourceEnum.Copper in refillResources -> copperApple = value
+                                    RefillResourceEnum.Bronze in refillResources -> blueApple = value
+                                    RefillResourceEnum.Silver in refillResources -> silverApple = value
+                                    RefillResourceEnum.Gold in refillResources -> goldApple = value
+                                    RefillResourceEnum.SQ in refillResources -> rainbowApple = value
+                                }
+                            },
+                            valueRange = 0..999,
+                            enabled = refillResources.isNotEmpty()
                         )
+                    },
+                    fruits = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            availableRefills.forEach {
+                                it.RefillResource(
+                                    isSelected = it in refillResources,
+                                    toggle = {
+                                        // TODO change back to refillResources.toggle()
+
+                                        // if the tapped resource is the only one in the list, disable it. otherwise only select the tapped resource
+                                        refillResources = if (it in refillResources) emptySet() else setOf(it)
+                                    }
+                                )
+                            }
+                        }
                     }
-                }
+                )
             }
 
             item {
@@ -786,6 +785,57 @@ private fun LauncherFolderRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+/**
+ * The AP recovery block: title, the wait checkbox and the stepper on one line when they fit at full size, with the
+ * fruits right-aligned below. When the panel is too narrow, which it often is in the landscape phone launcher, the
+ * wait pair moves to the start of the fruits line instead of being squeezed; the fruits stay right-aligned and drop to
+ * a line of their own only if the pair and the fruits do not fit together either.
+ */
+@Composable
+internal fun ApRecoveryBlock(
+    title: @Composable () -> Unit,
+    wait: @Composable () -> Unit,
+    stepper: @Composable () -> Unit,
+    fruits: @Composable () -> Unit
+) {
+    Layout(
+        modifier = Modifier.fillMaxWidth(),
+        content = {
+            Box { title() }
+            Box { wait() }
+            Box { stepper() }
+            Box { fruits() }
+        }
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val (t, w, s, f) = measurables.map { it.measure(loose) }
+        val maxW = constraints.maxWidth
+        val gap = 8.dp.roundToPx()
+        val inline = t.width + gap + w.width + gap + s.width <= maxW
+        val pairWithFruits = w.width + gap + f.width <= maxW
+
+        val row1 = if (inline) maxOf(t.height, w.height, s.height) else maxOf(t.height, s.height)
+        val row2 = when {
+            inline -> f.height
+            pairWithFruits -> maxOf(w.height, f.height)
+            else -> w.height
+        }
+        val row3 = if (!inline && !pairWithFruits) f.height else 0
+        layout(maxW, row1 + row2 + row3) {
+            t.placeRelative(0, (row1 - t.height) / 2)
+            s.placeRelative(maxW - s.width, (row1 - s.height) / 2)
+            if (inline) {
+                w.placeRelative(t.width + gap, (row1 - w.height) / 2)
+                f.placeRelative(maxW - f.width, row1 + (row2 - f.height) / 2)
+            } else {
+                w.placeRelative(0, row1 + (row2 - w.height) / 2)
+                if (pairWithFruits) f.placeRelative(maxW - f.width, row1 + (row2 - f.height) / 2)
+                else f.placeRelative(maxW - f.width, row1 + row2)
+            }
+        }
     }
 }
 

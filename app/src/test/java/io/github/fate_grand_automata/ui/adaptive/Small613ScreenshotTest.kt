@@ -175,6 +175,16 @@ class Small613ScreenshotTest(private val dark: Boolean, private val width: Int) 
     }
 
     @Test
+    fun launcherLandscapePhone() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Jp.Original)
+        composeRule.shoot(dir, "LauncherLandscapePhone", 800, 360, dark = dark, locale = "ko") {
+            Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+                battleLauncher(fixture.prefs, prefsCore = fixture.core)
+            }
+        }
+    }
+
+    @Test
     fun launcherLimits() {
         val fixture = CaptureLauncherFixture(context, GameServer.Jp.Original)
         shoot("LauncherLimits", beforeCapture = { composeRule.onNodeWithTag(LauncherResetAllTag).performScrollTo() }) {

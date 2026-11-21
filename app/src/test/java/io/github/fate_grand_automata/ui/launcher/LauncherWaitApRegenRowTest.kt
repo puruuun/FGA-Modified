@@ -139,4 +139,51 @@ class LauncherWaitApRegenRowTest {
         assertEquals(32f, node.boundsInRoot.height / density, 0.5f)
         assertTrue("touch ${node.touchBoundsInRoot.height / density}", node.touchBoundsInRoot.height / density >= 47.5f)
     }
+
+    private fun assertWaitFullSize() {
+        val wait = compose.onNodeWithTag(LauncherWaitApRegenTag)
+        val node = wait.fetchSemanticsNode()
+        val density = node.layoutInfo.density.density
+        val label = compose.onNodeWithText(context.getString(R.string.p_wait_ap_regen_short), useUnmergedTree = true)
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        label.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals("label must be on one line", 1, layouts.single().lineCount)
+        assertTrue("label must not be cut", label.fetchSemanticsNode().boundsInRoot.width + 1f >= layouts.single().getLineRight(0))
+        // A 48dp checkbox area, 4dp gap, then the label.
+        val start = (label.fetchSemanticsNode().boundsInRoot.left - node.boundsInRoot.left) / density
+        assertTrue("label starts $start dp after the row start", start in 50.5f..53.5f)
+        assertTrue(node.boundsInRoot.width >= label.fetchSemanticsNode().boundsInRoot.right - node.boundsInRoot.left - 1f)
+    }
+
+    @Test
+    @Config(qualifiers = "en-w360dp-h800dp-hdpi")
+    fun `in a narrow panel the pair keeps its full size and moves to the start of the fruits line`() {
+        val visible = mutableStateOf(true)
+        val fixture = open(initial = false, visible = visible)
+        assertWaitFullSize()
+        val title = compose.onNodeWithText("${context.getString(R.string.p_refill)}:").fetchSemanticsNode().boundsInRoot
+        val wait = compose.onNodeWithTag(LauncherWaitApRegenTag).fetchSemanticsNode().boundsInRoot
+        val stepper = compose.onAllNodesWithText("-").onFirst().fetchSemanticsNode().boundsInRoot
+        assertTrue("wait ${wait.top} is not below the title row ${title.bottom}", wait.top >= title.center.y)
+        assertTrue(wait.center.y > title.bottom)
+        assertTrue(wait.left < title.right)
+        assertEquals(title.center.y, stepper.center.y, 8f)
+        compose.onNodeWithTag(LauncherWaitApRegenTag).performClick().assertIsOn()
+        compose.runOnIdle { visible.value = false }
+        compose.waitForIdle()
+        assertTrue(fixture.prefs.getPerServerConfigPref(server).waitForAPRegen)
+    }
+
+    @Test
+    @Config(qualifiers = "en-w800dp-h360dp-hdpi")
+    fun `on a landscape phone the pair is never squeezed`() {
+        open(initial = false)
+        assertWaitFullSize()
+    }
+
+    @Test
+    fun `on a tablet the pair keeps its full size too`() {
+        open(initial = false)
+        assertWaitFullSize()
+    }
 }
