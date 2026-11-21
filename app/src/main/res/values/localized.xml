@@ -1565,6 +1565,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_formation_parties">Parties</string>
     <string name="dashboard_party_title">Party %1$d · %2$s</string>
     <string name="dashboard_party_title_plain">Party %1$d</string>
+    <string name="dashboard_party_chip">Party %1$d</string>
     <string name="dashboard_party_support">Support</string>
     <string name="dashboard_party_mystic">Mystic Code: %1$s</string>
     <string name="dashboard_formation_deck_named">Deck %1$d · %2$s</string>

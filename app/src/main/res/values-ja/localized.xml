@@ -1249,6 +1249,7 @@
     <string name="dashboard_formation_parties">パーティ編成</string>
     <string name="dashboard_party_title">パーティ%1$d · %2$s</string>
     <string name="dashboard_party_title_plain">パーティ%1$d</string>
+    <string name="dashboard_party_chip">パーティ%1$d</string>
     <string name="dashboard_party_support">サポート</string>
     <string name="dashboard_party_mystic">魔術礼装: %1$s</string>
     <string name="dashboard_formation_deck_named">編成%1$d · %2$s</string>

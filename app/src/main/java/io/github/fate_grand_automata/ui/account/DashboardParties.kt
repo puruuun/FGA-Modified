@@ -1,8 +1,12 @@
 package io.github.fate_grand_automata.ui.account
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -12,30 +16,39 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
 
-/** 파티 편성: the owner's own parties that have at least one servant, in party-number order. */
+/** The icon spot of a servant row: a 40 dp icon and the 8 dp gap, so text lines up across every row. */
+private val IconSize = 40.dp
+
+/** 파티 편성: one party at a time, chosen by chips like the support formations; only parties with a servant get a chip. */
 @Composable
 internal fun PartyFormation(parties: List<DashboardParty>, names: GameNameMap) {
-    Column(Modifier.fillMaxWidth().testTag("dashboard-parties"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        parties.forEach { party -> PartyCard(party, names) }
+    // The party number is what survives a configuration change; a number that is gone falls back to the first party.
+    var chosen by rememberSaveable { mutableLongStateOf(-1L) }
+    val party = parties.firstOrNull { it.deckNo == chosen } ?: parties.firstOrNull() ?: return
+    Column(Modifier.fillMaxWidth().testTag("dashboard-parties")) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("dashboard-party-chips")) {
+            parties.forEach { option ->
+                FilterChip(
+                    selected = option.deckNo == party.deckNo, onClick = { chosen = option.deckNo },
+                    label = { Text(stringResource(R.string.dashboard_party_chip, option.deckNo.toInt())) },
+                    modifier = Modifier.testTag("dashboard-party-chip:${option.deckNo}"),
+                )
+            }
+        }
+        PartyCard(party, names)
     }
 }
 
 @Composable
 private fun PartyCard(party: DashboardParty, names: GameNameMap) {
-    Column(Modifier.fillMaxWidth().testTag("dashboard-party:${party.deckNo}")) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp).testTag("dashboard-party:${party.deckNo}")) {
         val title = party.name?.let { stringResource(R.string.dashboard_party_title, party.deckNo.toInt(), it) }
             ?: stringResource(R.string.dashboard_party_title_plain, party.deckNo.toInt())
         Text(title, Modifier.testTag("dashboard-party-title"), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         party.slots.forEach { slot ->
             if (slot.support) PartySupportRow() else PartyMemberRow(slot, names)
         }
-        party.mysticCodeId?.let { id ->
-            val metadata = names.mysticData[id]
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp).testTag("dashboard-party-mystic"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                AtlasIcon("mystics", id, metadata?.icon)
-                Text(stringResource(R.string.dashboard_party_mystic, metadata?.name ?: "#$id"), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
+        party.mysticCodeId?.let { id -> PartyMysticRow(id, names) }
     }
 }
 
@@ -58,13 +71,38 @@ private fun PartyMemberRow(slot: DashboardPartySlot, names: GameNameMap) {
     }
 }
 
+/** An outlined square in the icon spot, for rows that have no image of their own. */
+@Composable
+private fun IconPlaceholder(content: @Composable BoxScope.() -> Unit = {}) {
+    Surface(
+        Modifier.size(IconSize), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center, content = content) }
+}
+
 /** The support slot holds a friend's servant, which the account state does not carry, so it is only marked. */
 @Composable
 private fun PartySupportRow() {
     Column(Modifier.fillMaxWidth().testTag("dashboard-party-support")) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.dashboard_party_support), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconPlaceholder {
+                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(stringResource(R.string.dashboard_party_support), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         HorizontalDivider()
+    }
+}
+
+/** The icon sits in the same spot as a servant face; without one the outlined square keeps the text from floating. */
+@Composable
+private fun PartyMysticRow(id: Long, names: GameNameMap) {
+    val metadata = names.mysticData[id]
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("dashboard-party-mystic"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconPlaceholder { AtlasIcon("mystics", id, metadata?.icon, size = IconSize) }
+        Text(stringResource(R.string.dashboard_party_mystic, metadata?.name ?: "#$id"), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

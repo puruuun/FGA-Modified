@@ -1491,6 +1491,7 @@
     <string name="dashboard_formation_parties">파티 편성</string>
     <string name="dashboard_party_title">파티 %1$d · %2$s</string>
     <string name="dashboard_party_title_plain">파티 %1$d</string>
+    <string name="dashboard_party_chip">파티 %1$d</string>
     <string name="dashboard_party_support">서포트</string>
     <string name="dashboard_party_mystic">마술예장: %1$s</string>
     <string name="dashboard_formation_deck_named">편성 %1$d · %2$s</string>

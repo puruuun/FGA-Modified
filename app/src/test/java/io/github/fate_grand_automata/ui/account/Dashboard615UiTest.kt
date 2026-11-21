@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.LocalNavigateBack
@@ -153,20 +154,79 @@ class Dashboard615UiTest {
 
     // Formations
 
-    @Test fun partiesListTheirServantsTheSupportSlotAndTheMysticCode() {
+    private fun chips() = compose.onAllNodes(hasTestTag("dashboard-party-chips").not() and hasAnyAncestor(hasTestTag("dashboard-party-chips")) and hasClickAction())
+    private fun selectParty(no: Int) {
+        compose.onNodeWithTag("dashboard-party-chip:$no").performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
+    @Test fun onlyPartiesWithServantsGetAChipAndTheFirstOneIsSelected() {
         show(360, section = DashboardBlockId.SupportFormation)
-        assertEquals("파티 1 · 주력 파티", allTexts("dashboard-party-title")[0])
-        assertEquals("파티 2", allTexts("dashboard-party-title")[1])
-        assertEquals("파티 5 · 농장", allTexts("dashboard-party-title")[2])
-        compose.onNodeWithTag("dashboard-party:3").assertDoesNotExist()
+        assertEquals(listOf("파티 1", "파티 2", "파티 5"), chips().fetchSemanticsNodes().map {
+            it.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString("") { text -> text.text }
+        })
+        compose.onNodeWithTag("dashboard-party-chip:3").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-party-chip:1").assertIsSelected()
+        compose.onNodeWithTag("dashboard-party-chip:2").assertIsNotSelected()
+        // Only the selected party is on screen, and its header carries the user's name rather than the chip.
+        compose.onNodeWithTag("dashboard-party:1").assertExists()
+        compose.onNodeWithTag("dashboard-party:2").assertDoesNotExist()
+        assertEquals(listOf("파티 1 · 주력 파티"), allTexts("dashboard-party-title"))
+    }
+
+    @Test fun selectingAChipShowsThatPartyAndItsRows() {
+        show(360, section = DashboardBlockId.SupportFormation)
         val first = hasAnyAncestor(hasTestTag("dashboard-party:1"))
         assertEquals(5, compose.onAllNodes(hasTestTag("dashboard-party-row") and first).fetchSemanticsNodes().size)
-        compose.onAllNodes(hasTestTag("dashboard-party-support") and first).assertCountEquals(1)
-        compose.onAllNodes(hasText("서포트") and hasAnyAncestor(hasTestTag("dashboard-party-support"))).assertCountEquals(2)
         compose.onNode(hasText("샘플 서번트 10") and first).assertExists()
         compose.onNode(hasText("샘플 예장 A", substring = true) and first).assertExists()
         compose.onNode(hasText("마술예장: 샘플 전투복") and first).assertExists()
-        compose.onAllNodes(hasTestTag("dashboard-party-mystic") and hasAnyAncestor(hasTestTag("dashboard-party:5"))).assertCountEquals(0)
+
+        selectParty(5)
+        compose.onNodeWithTag("dashboard-party:1").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-party-chip:5").assertIsSelected()
+        assertEquals(listOf("파티 5 · 농장"), allTexts("dashboard-party-title"))
+        assertEquals(2, compose.onAllNodes(hasTestTag("dashboard-party-row")).fetchSemanticsNodes().size)
+        // This party has no mystic code and no support slot.
+        compose.onAllNodes(hasTestTag("dashboard-party-mystic")).assertCountEquals(0)
+        compose.onAllNodes(hasTestTag("dashboard-party-support")).assertCountEquals(0)
+
+        selectParty(2)
+        assertEquals(listOf("파티 2"), allTexts("dashboard-party-title"))
+    }
+
+    @Test fun theSelectedPartySurvivesARestoredState() {
+        RuntimeEnvironment.setQualifiers("ko-w360dp-h800dp-hdpi")
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent { FGATheme { icons.Icons { PartyFormation(fixture.parties, fixture.names) } } }
+        compose.onNodeWithTag("dashboard-party-chip:5").performClick()
+        compose.waitForIdle()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.waitForIdle()
+        compose.onNodeWithTag("dashboard-party-chip:5").assertIsSelected()
+        compose.onNodeWithTag("dashboard-party:5").assertExists()
+    }
+
+    @Test fun theSupportSlotIsARowWithAPlaceholderAndNoLevelLine() {
+        show(360, section = DashboardBlockId.SupportFormation)
+        val support = compose.onNodeWithTag("dashboard-party-support")
+        support.assertExists()
+        compose.onNode(hasText("서포트") and hasAnyAncestor(hasTestTag("dashboard-party-support"))).assertExists()
+        // A row of normal height, not a thin band, and nothing but the name beside the placeholder.
+        assertTrue(bounds("dashboard-party-support").let { (it.bottom - it.top).value } >= 56f)
+        assertEquals("서포트", under("dashboard-party-support"))
+        // The support slot is the sixth position of party 1, after the five servants.
+        assertTrue(bounds("dashboard-party-support").top > compose.onAllNodes(hasTestTag("dashboard-party-row")).onLast().getUnclippedBoundsInRoot().top)
+    }
+
+    @Test fun theMysticLineStartsAtTheSameXAsTheServantRowsAndKeepsAPlaceholderWithoutAnIcon() {
+        show(360, section = DashboardBlockId.SupportFormation)
+        val face = compose.onAllNodes(hasTestTag("dashboard-party-row")).onFirst().getUnclippedBoundsInRoot().left
+        val mystic = compose.onNodeWithTag("dashboard-party-mystic").getUnclippedBoundsInRoot()
+        assertEquals(face.value, mystic.left.value, 0.5f)
+        // The text sits after the 40 dp icon spot and its gap, with or without an icon, as the servant names do.
+        val text = compose.onNode(hasText("마술예장: 샘플 전투복"), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(face.value + 48f, text.left.value, 1f)
     }
 
     @Test fun thePartyGroupLeadsTheSupportFormationAndTheSupportDecksShowTheirNames() {
