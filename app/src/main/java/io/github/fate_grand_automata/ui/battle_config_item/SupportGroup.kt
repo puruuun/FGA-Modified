@@ -10,9 +10,9 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -168,7 +168,6 @@ fun SupportGroup(
 
 const val SupportClassTagPrefix = "supportClass:"
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SupportClassPicker(
     selected: SupportClass,
@@ -183,13 +182,12 @@ fun SupportClassPicker(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
-        // Ten 48dp touch targets do not fit one 360dp row, so they wrap into two rows of five.
-        FlowRow(
+        // Exception to the 48dp touch target rule, by owner decision: the ten classes stay on one row as before,
+        // each taking an equal share of the width.
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(5.dp),
-            maxItemsInEachRow = 5,
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(5.dp)
         ) {
             SupportClass.entries.drop(1).forEach {
                 val isSelected = selected == it
@@ -206,7 +204,7 @@ fun SupportClassPicker(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(48.dp)
+                        .weight(1f)
                         .selectable(
                             selected = isSelected,
                             role = Role.RadioButton,
@@ -218,6 +216,7 @@ fun SupportClassPicker(
                                 )
                             }
                         )
+                        .padding(horizontal = 2.dp, vertical = 4.dp)
                         .testTag("$SupportClassTagPrefix${it.name}")
                 ) {
                     AsyncImage(
@@ -226,7 +225,9 @@ fun SupportClassPicker(
                         contentScale = ContentScale.Crop,
                         alpha = alpha,
                         modifier = Modifier
-                            .size(25.dp)
+                            .fillMaxWidth()
+                            .widthIn(max = 40.dp)
+                            .aspectRatio(1f)
                             .border(2.dp, borderClass, DiamondShape)
                             .clip(DiamondShape)
                     )

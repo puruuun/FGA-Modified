@@ -122,7 +122,7 @@ class StandardButtonsTest {
         compose.onNodeWithText("EXPORT").assertRole(Role.Button).performClick()
         compose.onNodeWithText("DELETE").assertRole(Role.Button).performClick()
         assertEquals(11, clicks)
-        compose.onNodeWithText("EXPORT").assertTouchTarget(40.dp, layout = true)
+        compose.onNodeWithText("EXPORT").assertTouchTarget(36.dp, layout = true)
     }
 
     @Test
@@ -314,8 +314,11 @@ class StandardButtonsTest {
             FGATheme { SupportClassPicker(selected = selected.value, onSelectedChange = { selected.value = it }) }
         }
 
-        compose.onNodeWithTag("${SupportClassTagPrefix}Saber").assertRole(Role.RadioButton).assertIsNotSelected()
-            .assertTouchTarget(layout = true).performClick()
+        compose.onNodeWithTag("${SupportClassTagPrefix}Saber").assertRole(Role.RadioButton).assertIsNotSelected().performClick()
+        val tops = SupportClass.entries.drop(1)
+            .map { compose.onNodeWithTag("${SupportClassTagPrefix}${it.name}").fetchSemanticsNode().boundsInRoot.top }
+        assertEquals(10, tops.size)
+        assertEquals("all ten classes on one row", 1, tops.distinct().size)
         assertEquals(SupportClass.Saber, selected.value)
         compose.onNodeWithTag("${SupportClassTagPrefix}Saber").assertIsSelected().performClick()
         assertEquals(SupportClass.None, selected.value)

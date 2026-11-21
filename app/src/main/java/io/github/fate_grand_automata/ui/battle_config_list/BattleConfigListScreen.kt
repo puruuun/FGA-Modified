@@ -194,7 +194,7 @@ internal fun BattleConfigListContent(
                                     HeadingButton(
                                         text = stringResource(R.string.battle_config_folder_move),
                                         onClick = { action(BattleConfigListAction.MoveToFolder) },
-                                        modifier = Modifier.padding(end = 5.dp),
+                                        modifier = Modifier.padding(end = 8.dp),
                                         icon = icon(Icons.Default.Folder)
                                     )
                                     HeadingButton(

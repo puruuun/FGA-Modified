@@ -5,7 +5,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -99,7 +101,7 @@ fun Heading(
 }
 
 /**
- * A header action: a standard outlined button, 40dp high, with an optional leading [icon].
+ * A header action: a compact outlined button, 36dp high (the header row is crowded at 360dp), with an optional leading [icon].
  * [isDanger] swaps the outline and content to the error role for destructive actions.
  */
 @Composable
@@ -116,17 +118,17 @@ fun HeadingButton(
         onClick = onClick,
         colors = ButtonDefaults.outlinedButtonColors(contentColor = accent),
         border = BorderStroke(1.dp, if (isDanger) accent else MaterialTheme.colorScheme.outline),
-        contentPadding = if (icon != null) ButtonDefaults.ButtonWithIconContentPadding else ButtonDefaults.ContentPadding,
-        modifier = modifier
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        modifier = modifier.height(36.dp)
     ) {
         if (icon != null) {
             // The label names the action, so the icon is decoration for screen readers.
             Icon(
                 icon.asPainter(),
                 contentDescription = null,
-                modifier = Modifier.size(ButtonDefaults.IconSize)
+                modifier = Modifier.size(18.dp)
             )
-            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+            Spacer(Modifier.size(6.dp))
         }
 
         Text(
