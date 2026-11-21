@@ -1,6 +1,7 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
@@ -31,14 +32,21 @@ interface ScoreScanFrames {
     fun fieldImageRegion(bounds: SupportBounds): Region
 
     /**
-     * From the current snapshot, the regions the list check looked at when it answered [reason]: the
-     * SupportExtra tab's region, and for [ScoreScanEndReason.RowsLost] also the confirm-setup column and
-     * the guest mark's column. Named crops the caller closes.
+     * The SupportExtra tab's region of the current snapshot (65x65 at 720p in the class filter bar),
+     * where the list check looks for the tab; the caller closes it. Not the rows: they hold account text.
      */
-    fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>>
+    fun extraTab(): Pattern
 
     /** Mean, minimum and maximum gray value of the whole 720p game area in the current snapshot. */
     fun frameStats(): ScoreScanFrameStats?
+
+    /** What the rows check finds in the current snapshot, by the same templates it uses. */
+    fun listMeasures(): ScoreScanListMeasures
+}
+
+/** Confirm-setup buttons found in their column, and whether the guest mark was found in its column. */
+data class ScoreScanListMeasures(val confirmButtons: Int, val guestMark: Boolean) {
+    override fun toString() = "confirm-setup buttons $confirmButtons, guest mark ${if (guestMark) "found" else "not found"}"
 }
 
 data class ScoreScanFrameStats(val mean: Double, val min: Int, val max: Int) {
@@ -79,21 +87,17 @@ class ApiScoreScanFrames(
     override fun fieldImageRegion(bounds: SupportBounds): Region =
         transformer.toImage(SupportScoreLayout.numberRegion(bounds.region))
 
-    // The regions RealSupportScreen.isAnyDialogOpen and someSupportsPresent match in. The friend name
-    // sits left of the score panel, outside all three.
-    override fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>> = with(api) {
-        val support = locations.support
-        buildList {
-            add("extra-tab" to support.extraRegion.getPattern(FIELD_TAG))
-            if (reason == ScoreScanEndReason.RowsLost) {
-                add("confirm-column" to support.confirmSetupButtonRegion.getPattern(FIELD_TAG))
-                add("guest-column" to support.friendRegion.getPattern(FIELD_TAG))
-            }
-        }
-    }
+    // The region RealSupportScreen.isAnyDialogOpen matches the SupportExtra tab in.
+    override fun extraTab(): Pattern = with(api) { locations.support.extraRegion.getPattern(FIELD_TAG) }
 
     override fun frameStats(): ScoreScanFrameStats? = with(api) {
         locations.scriptArea.getPattern(FIELD_TAG).use { it.grayPixels() }?.let { ScoreScanFrameStats.of(it) }
+    }
+
+    // The two halves of RealSupportScreen.someSupportsPresent: the confirm-setup buttons (what
+    // SupportBoundsFinder finds) and the guest mark.
+    override fun listMeasures(): ScoreScanListMeasures = with(api) {
+        ScoreScanListMeasures(boundsFinder.all().size, images[Images.Guest] in locations.support.friendRegion)
     }
 
     private companion object {
@@ -140,10 +144,10 @@ class SupportScoreScanner(
 
         /**
          * After a native capture the list check may look up to this many times, waiting
-         * [POST_NATIVE_WAIT] before each further look. On a device the first 720p frame after the
-         * restore did sometimes not show the list although the game stayed on it; the game draws
-         * continuously, so 150 ms spans several new frames, and three further looks cover 0.45 s.
-         * A real dialog costs those 0.45 s before the scan ends.
+         * [POST_NATIVE_WAIT] before each further look. The first 720p buffer after the capture's
+         * restore is whatever the compositor queued first, and it is not known to show the screen;
+         * the game draws continuously, so 150 ms spans several new frames, and three further looks
+         * cover 0.45 s. A real dialog costs those 0.45 s before the scan ends.
          */
         const val POST_NATIVE_LOOKS = 4
         val POST_NATIVE_WAIT = 150.milliseconds
@@ -240,6 +244,7 @@ class SupportScoreScanner(
         while (true) {
             if (storage.freeBytes() < ScoreScanLog.MIN_FREE_BYTES) return ScoreScanEndReason.LowSpace
             var native: NativeScreen? = null
+            var logged = emptyList<ScoreScanLoggedRow>()
             when (val outcome = frames.sameSnap { readScreen(folder, screens, previous) }) {
                 is ScreenOutcome.End -> return outcome.reason
                 ScreenOutcome.Unchanged -> {
@@ -251,18 +256,18 @@ class SupportScoreScanner(
                     unchangedBefore = false
                     // A stop during the last row must not pay for the capture (two display resizes).
                     exitManager.checkExitRequested()
-                    // Outside the snapshot block: the capture does not use the 720p snapshot.
-                    native = captureNative(folder, outcome.logged)
-                    if (native.restoreFailed) {
-                        native.writeLines(folder)
-                        return ScoreScanEndReason.NativeRestoreFailed
-                    }
+                    native = NativeScreen()
+                    logged = outcome.logged
                 }
             }
-            // The native lines carry the look count, so they are written once the looks are over,
-            // however the scan goes on or ends.
+            // The native lines carry the look count, so they are written once the looks are over. Every
+            // native crop already on disk gets its line, however the screen ends.
+            var failure: Throwable? = null
             try {
                 if (native != null) {
+                    // Outside the snapshot block: the capture does not use the 720p snapshot.
+                    captureNative(folder, logged, native)
+                    if (native.restoreFailed) return ScoreScanEndReason.NativeRestoreFailed
                     // A stop at the last allowed screen is the user's, not the screen limit.
                     exitManager.checkExitRequested()
                     if (screens >= maxScreens) return ScoreScanEndReason.ScreenLimit
@@ -270,52 +275,69 @@ class SupportScoreScanner(
                 exitManager.checkExitRequested()
                 val problem = if (native != null) lookAfterNative(folder, native) else frames.sameSnap { listProblem() }
                 problem?.let { return it }
+            } catch (e: Throwable) {
+                failure = e
+                throw e
             } finally {
-                native?.writeLines(folder)
+                if (native != null) {
+                    // A failed write must not hide a stop or the error that ended the screen.
+                    if (failure == null) native.writeLines(folder)
+                    else try { native.writeLines(folder) } catch (w: Throwable) { failure.addSuppressed(w) }
+                }
             }
+            // The lines were just written: a stop that arrived meanwhile must not be followed by a swipe.
+            exitManager.checkExitRequested()
             screen.scrollDown()
             screen.delay(SupportSelectionLoop.SCROLL_SETTLE)
         }
     }
 
-    /** The native lines of one screen, held until its post-capture looks are over. */
-    private inner class NativeScreen(val restoreFailed: Boolean) {
+    /**
+     * The native lines of one screen, gathered as each row's crop is written and held until its
+     * post-capture looks are over. [attempt] is what the capture did: `ok`, or its failure reason.
+     */
+    private inner class NativeScreen {
         val records = mutableListOf<ScoreScanNativeRecord>()
         var looks: Int? = null
+        var restoreFailed = false
+        var attempt = ScoreScanNative.OK
 
         fun writeLines(folder: ScoreScanFolder) {
+            while (records.isNotEmpty()) {
+                folder.appendLine(ScoreScanLog.nativeLine(records.first().copy(postNativeLooks = looks)))
+                records.removeAt(0)
+            }
             looks?.let { nativeTally.looks(it) }
-            for (record in records) folder.appendLine(ScoreScanLog.nativeLine(record.copy(postNativeLooks = looks)))
-            records.clear()
         }
     }
 
     /**
-     * The list check after a native capture, which resized the capture twice: it looks again on a new
-     * snapshot, after [POST_NATIVE_WAIT], at most [POST_NATIVE_LOOKS] times in all, before it ends the
-     * scan with what it saw. No gesture happens before a look passes. On the last failed look it saves
-     * the regions it looked at and the frame's gray levels for diagnosis.
+     * The list check after a native capture attempt, which may have resized the capture twice: it
+     * looks again on a new snapshot, after [POST_NATIVE_WAIT], at most [POST_NATIVE_LOOKS] times in
+     * all, before it ends the scan with what the last look saw. No gesture happens before a look
+     * passes. A look counts once its snapshot was taken and checked. On the last failed look it saves
+     * the SupportExtra tab's region and writes what the look measured into the summary's detail.
      */
     private fun lookAfterNative(folder: ScoreScanFolder, native: NativeScreen): ScoreScanEndReason? {
         var looks = 0
         while (true) {
+            val last = looks + 1 >= POST_NATIVE_LOOKS
+            val problem = frames.sameSnap {
+                listProblem()?.also { if (last) saveLookDiagnosis(folder, it, looks + 1, native.attempt) }
+            }
             looks++
             native.looks = looks
-            val last = looks >= POST_NATIVE_LOOKS
-            val problem = frames.sameSnap {
-                listProblem()?.also { if (last) saveLookDiagnosis(folder, it, looks) }
-            }
             if (problem == null || last) return problem
             screen.delay(POST_NATIVE_WAIT)
         }
     }
 
-    private fun saveLookDiagnosis(folder: ScoreScanFolder, reason: ScoreScanEndReason, looks: Int) {
-        val prefix = String.format(Locale.ROOT, "s%03d", screens - 1)
-        for ((name, pattern) in frames.checkedRegions(reason)) {
-            pattern.use { folder.writeDebug("$prefix-$name.png", ScoreScanNative.png(it)) }
-        }
-        lookDetail = "after the native capture, $looks looks saw ${reason.wireName}; last 720p frame ${frames.frameStats()}"
+    private fun saveLookDiagnosis(folder: ScoreScanFolder, reason: ScoreScanEndReason, looks: Int, attempt: String) {
+        val name = String.format(Locale.ROOT, "s%03d-extra-tab.png", screens - 1)
+        frames.extraTab().use { folder.writeDebug(name, ScoreScanNative.png(it)) }
+        val measured = listOfNotNull(frames.frameStats()?.let { "last 720p frame $it" }, frames.listMeasures().toString())
+        lookDetail = "after the native capture attempt ($attempt), $looks looks, the last saw ${reason.wireName}; " +
+            measured.joinToString("; ")
     }
 
     private fun readScreen(folder: ScoreScanFolder, index: Int, previous: List<RowKey>?): ScreenOutcome {
@@ -378,10 +400,10 @@ class SupportScoreScanner(
 
     /**
      * One capture for the screen whose rows were just logged, never retried. Its crops are written at
-     * once, its lines are held in the result. [NativeScreen.restoreFailed] only when the capture could
-     * not restore the 720p capture; every other problem is logged and the scan goes on.
+     * once and their lines gathered in [result]. [NativeScreen.restoreFailed] only when the capture
+     * could not restore the 720p capture; every other problem is logged and the scan goes on.
      */
-    private fun captureNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>): NativeScreen {
+    private fun captureNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>, result: NativeScreen) {
         val start = timeSource.markNow()
         val capture = try {
             nativeFrames.capture()
@@ -392,9 +414,8 @@ class SupportScoreScanner(
         }
         val micros = start.elapsedNow().inWholeMicroseconds
 
-        val result = NativeScreen(restoreFailed = capture is ScoreScanNativeCapture.RestoreFailed)
-
         fun failAll(reason: String, detail: String?) {
+            result.attempt = reason
             nativeTally.failed(reason, micros)
             for (row in logged) {
                 result.records += ScoreScanNativeRecord(
@@ -407,6 +428,7 @@ class SupportScoreScanner(
             is ScoreScanNativeCapture.RestoreFailed -> {
                 failAll(ScoreScanNative.RESTORE_FAILED, capture.detail)
                 restoreDetail = capture.detail
+                result.restoreFailed = true
             }
             is ScoreScanNativeCapture.Failed -> failAll(capture.reason, capture.detail)
             is ScoreScanNativeCapture.Frame -> capture.frame.use { frame ->
@@ -419,7 +441,6 @@ class SupportScoreScanner(
                 }
             }
         }
-        return result
     }
 
     private fun nativeRow(folder: ScoreScanFolder, frame: Pattern, map: ScoreScanNativeMap, row: ScoreScanLoggedRow, micros: Long): ScoreScanNativeRecord {

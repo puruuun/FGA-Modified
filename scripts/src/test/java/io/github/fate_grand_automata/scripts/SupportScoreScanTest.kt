@@ -6,6 +6,8 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.enums.SupportClass
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
@@ -21,6 +23,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanDevice
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanEndReason
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFolder
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameStats
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanListMeasures
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrames
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanLog
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNative
@@ -127,6 +130,7 @@ class SupportScoreScanTest {
          * one with the tab but without the list's rows answers as rows lost.
          */
         val badFrames = ArrayDeque<ScoreScanEndReason>()
+        val failingSnaps = mutableSetOf<Int>()
         var badNow: ScoreScanEndReason? = null
 
         fun visible() = if (guestOnly) emptyList() else (offset until minOf(total, offset + perScreen)).toList()
@@ -161,6 +165,8 @@ class SupportScoreScanTest {
             override fun <T> sameSnap(block: () -> T): T {
                 currentSnap = snaps++
                 onSnap(currentSnap)
+                // What MediaProjectionScreenshotService throws once the projection has stopped.
+                if (currentSnap in failingSnaps) throw IllegalStateException("screen capture stopped")
                 badNow = badFrames.removeFirstOrNull()
                 inSnap = true
                 try { return block() } finally { inSnap = false }
@@ -176,18 +182,21 @@ class SupportScoreScanTest {
             }
             override fun fieldImageRegion(bounds: SupportBounds) =
                 if (position(bounds) == outsidePosition) Region(1250, 0, 60, 30) else fieldImage(position(bounds))
-            override fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>> {
-                check(inSnap) { "regions outside a snapshot" }
-                regionsAsked += reason
-                val names = if (reason == ScoreScanEndReason.RowsLost) listOf("extra-tab", "confirm-column", "guest-column") else listOf("extra-tab")
-                return names.map { it to GrayPattern(4, 2, ByteArray(8) { i -> (i + it.length).toByte() }) }
+            override fun extraTab(): Pattern {
+                check(inSnap) { "tab outside a snapshot" }
+                return GrayPattern(65, 65, ByteArray(65 * 65) { (it % 7).toByte() }).also { tabs += it }
             }
+            // A blank buffer is all black; one that only lost the rows still shows the rest of the screen.
             override fun frameStats(): ScoreScanFrameStats? {
                 check(inSnap) { "stats outside a snapshot" }
-                return if (badNow != null) ScoreScanFrameStats(0.0, 0, 0) else ScoreScanFrameStats.of(screen720())
+                return if (badNow == ScoreScanEndReason.NotSupportListOrDialog) ScoreScanFrameStats(0.0, 0, 0) else ScoreScanFrameStats.of(screen720())
+            }
+            override fun listMeasures(): ScoreScanListMeasures {
+                check(inSnap) { "measures outside a snapshot" }
+                return if (badNow != null) ScoreScanListMeasures(0, false) else ScoreScanListMeasures(visible().size, guestOnly)
             }
         }
-        val regionsAsked = mutableListOf<ScoreScanEndReason>()
+        val tabs = mutableListOf<GrayPattern>()
 
         /** A row position whose field the frames place partly outside the display, as a wrong geometry would. */
         var outsidePosition: Int? = null
@@ -1221,11 +1230,11 @@ class SupportScoreScanTest {
         assertThat(scan.summary(result).obj("native").obj("postNativeLooks"))
             .isEqualTo(Json.parseToJsonElement("""{"screens":3,"moreThanOne":1,"max":2}"""))
         assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).exists()).isFalse()
-        assertThat(scan.world.regionsAsked.size).isEqualTo(0)
+        assertThat(scan.world.tabs.size).isEqualTo(0)
     }
 
     @Test
-    fun `bad frames on every look end the scan with the reason, no gesture, the checked regions and the frame's levels`() {
+    fun `bad frames on every look end the scan with the reason, no gesture, the tab crop and the frame's levels`() {
         val scan = Scan(total = 7)
         scan.native.onCapture = { repeat(SupportScoreScanner.POST_NATIVE_LOOKS) { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog } }
         val result = scan.run()
@@ -1235,26 +1244,30 @@ class SupportScoreScanTest {
         assertThat(scan.world.delays).isEqualTo(List(SupportScoreScanner.POST_NATIVE_LOOKS - 1) { SupportScoreScanner.POST_NATIVE_WAIT })
         assertThat(SupportScoreScanner.POST_NATIVE_LOOKS).isEqualTo(4)
         assertThat(SupportScoreScanner.POST_NATIVE_WAIT).isEqualTo(150.milliseconds)
-        val detail = "after the native capture, 4 looks saw not_support_list_or_dialog; last 720p frame mean 0.0, min 0, max 0"
+        val detail = "after the native capture attempt (ok), 4 looks, the last saw not_support_list_or_dialog; " +
+            "last 720p frame mean 0.0, min 0, max 0; confirm-setup buttons 0, guest mark not found"
         assertThat(result.detail).isEqualTo(detail)
         assertThat(scan.summary(result).str("detail")).isEqualTo(detail)
         assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).list()!!.sorted()).containsExactly("s000-extra-tab.png")
+        assertThat(scan.world.tabs.single().closed).isTrue()
         assertThat(scan.nativeLines(result).map { it.int("postNativeLooks") }).containsExactly(4, 4, 4)
         assertThat(scan.summary(result).obj("native").obj("postNativeLooks"))
             .isEqualTo(Json.parseToJsonElement("""{"screens":1,"moreThanOne":1,"max":4}"""))
     }
 
     @Test
-    fun `rows lost on every look saves the tab and both columns the check looked at`() {
+    fun `rows lost on every look saves only the tab and puts what the look measured into the detail`() {
         val scan = Scan(total = 7)
         scan.native.onCapture = { repeat(SupportScoreScanner.POST_NATIVE_LOOKS) { scan.world.badFrames += ScoreScanEndReason.RowsLost } }
         val result = scan.run()
 
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.RowsLost)
         assertThat(scan.world.gestures.size).isEqualTo(0)
-        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).list()!!.sorted())
-            .containsExactly("s000-confirm-column.png", "s000-extra-tab.png", "s000-guest-column.png")
-        assertThat(result.detail!!.startsWith("after the native capture, 4 looks saw rows_lost; last 720p frame mean 0.0")).isTrue()
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).list()!!.sorted()).containsExactly("s000-extra-tab.png")
+        val detail = result.detail!!
+        assertThat(detail.startsWith("after the native capture attempt (ok), 4 looks, the last saw rows_lost; last 720p frame mean ")).isTrue()
+        assertThat(detail.contains("mean 0.0")).isFalse()
+        assertThat(detail.endsWith("; confirm-setup buttons 0, guest mark not found")).isTrue()
     }
 
     @Test
@@ -1302,5 +1315,201 @@ class SupportScoreScanTest {
         assertThat(ScoreScanFrameStats.of(byteArrayOf(0, 10, 20, -1))).isEqualTo(ScoreScanFrameStats(71.25, 0, 255))
         assertThat(ScoreScanFrameStats.of(ByteArray(0))).isNull()
         assertThat(ScoreScanFrameStats(71.25, 0, 255).toString()).isEqualTo("mean 71.3, min 0, max 255")
+    }
+
+    /** A storage whose folders pass through [hook] (to fail or observe writes as a real disk can). */
+    private fun Scan.hookFolders(hook: (ScoreScanFolder) -> ScoreScanFolder) {
+        val real = storage
+        storage = object : ScoreScanStorage by real {
+            override fun create(name: String) = hook(real.create(name))
+        }
+    }
+
+    private open class FolderHook(val real: ScoreScanFolder) : ScoreScanFolder by real {
+        override fun close() = real.close()
+    }
+
+    private fun Scan.onlyFolder() = root.listFiles()!!.single()
+    private fun Scan.linesOnDisk() = onlyFolder().resolve(ScoreScanLog.LINES).readLines().map { Json.parseToJsonElement(it).jsonObject }
+    private fun Scan.summaryOnDisk() = Json.parseToJsonElement(onlyFolder().resolve(ScoreScanLog.SUMMARY).readText()).jsonObject
+    private fun List<JsonObject>.natives() = filter { it.str("kind") == "native" }
+
+    @Test
+    fun `a look counts only once its snapshot was taken and checked`() {
+        val first = Scan(total = 7)
+        // Snapshots: 0 the start, 1 the first screen, 2 its first look.
+        first.world.failingSnaps += 2
+        assertFailsWith<IllegalStateException> { first.run() }
+        assertThat(first.linesOnDisk().natives().map { it.getValue("postNativeLooks") }).containsExactly(JsonNull, JsonNull, JsonNull)
+        first.root.deleteRecursively()
+
+        val second = Scan(total = 7)
+        second.native.onCapture = { second.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog }
+        second.world.failingSnaps += 3
+        assertFailsWith<IllegalStateException> { second.run() }
+        assertThat(second.linesOnDisk().natives().map { it.int("postNativeLooks") }).containsExactly(1, 1, 1)
+    }
+
+    @Test
+    fun `a native crop that cannot be written leaves a line for every crop already saved`() {
+        val scan = Scan(total = 7)
+        scan.hookFolders { real ->
+            object : FolderHook(real) {
+                var crops = 0
+                override fun writeNativeCrop(fileName: String, png: ByteArray) {
+                    if (++crops == 2) throw java.io.IOException("disk full")
+                    real.writeNativeCrop(fileName, png)
+                }
+            }
+        }
+        assertFailsWith<java.io.IOException> { scan.run() }
+
+        val natives = scan.linesOnDisk().natives()
+        assertThat(natives.map { it.obj("native").str("crop") }).containsExactly("native/s000-r0.png")
+        assertThat(scan.onlyFolder().resolve("native").list()!!.toList()).containsExactly("s000-r0.png")
+        val summary = scan.summaryOnDisk()
+        assertThat(summary.str("endReason")).isEqualTo("error")
+        assertThat(summary.obj("native").obj("match").int("count")).isEqualTo(1)
+        assertThat(summary.obj("native").int("taken")).isEqualTo(1)
+    }
+
+    private fun failingNativeLines(scan: Scan) = scan.hookFolders { real ->
+        object : FolderHook(real) {
+            override fun appendLine(json: String) {
+                if ("\"kind\":\"native\"" in json) throw java.io.IOException("disk full")
+                real.appendLine(json)
+            }
+        }
+    }
+
+    @Test
+    fun `a failed line write does not hide a stop that is already on its way`() {
+        val scan = Scan(total = 7)
+        failingNativeLines(scan)
+        scan.native.onCapture = { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog }
+        scan.world.onDelay = { if (scan.world.delays.last() == SupportScoreScanner.POST_NATIVE_WAIT) scan.world.exitManager.exit() }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.summary(result).obj("native").obj("postNativeLooks"))
+            .isEqualTo(Json.parseToJsonElement("""{"screens":0,"moreThanOne":0,"max":null}"""))
+    }
+
+    @Test
+    fun `a failed line write with nothing else on its way ends the scan as an error`() {
+        val scan = Scan(total = 7)
+        failingNativeLines(scan)
+        assertFailsWith<java.io.IOException> { scan.run() }
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        val summary = scan.summaryOnDisk()
+        assertThat(summary.str("endReason")).isEqualTo("error")
+        assertThat(summary.obj("native").obj("postNativeLooks").int("screens")).isEqualTo(0)
+    }
+
+    @Test
+    fun `the tab crop is closed when its file cannot be written`() {
+        val scan = Scan(total = 7)
+        scan.hookFolders { real ->
+            object : FolderHook(real) {
+                override fun writeDebug(fileName: String, png: ByteArray) = throw java.io.IOException("disk full")
+            }
+        }
+        scan.native.onCapture = { repeat(SupportScoreScanner.POST_NATIVE_LOOKS) { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog } }
+        assertFailsWith<java.io.IOException> { scan.run() }
+        assertThat(scan.world.tabs.single().closed).isTrue()
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `a stop while the native lines are written is not followed by a scroll`() {
+        val scan = Scan(total = 7)
+        scan.hookFolders { real ->
+            object : FolderHook(real) {
+                override fun appendLine(json: String) {
+                    real.appendLine(json)
+                    if ("\"kind\":\"native\"" in json) scan.world.exitManager.exit()
+                }
+            }
+        }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `a look that passes on the fourth try continues the scan without a diagnosis`() {
+        val scan = Scan(total = 7)
+        scan.native.onCapture = { if (it == 1) repeat(SupportScoreScanner.POST_NATIVE_LOOKS - 1) { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog } }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(result.detail).isNull()
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).exists()).isFalse()
+        assertThat(scan.nativeLines(result).take(3).map { it.int("postNativeLooks") }).containsExactly(4, 4, 4)
+        assertThat(scan.world.tabs.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `screens whose looks were never made log no look count`() {
+        val limit = Scan(total = 100, maxScreens = 2)
+        val limitResult = limit.run()
+        assertThat(limit.nativeLines(limitResult).map { it.getValue("postNativeLooks") })
+            .isEqualTo(listOf(JsonPrimitive(1), JsonPrimitive(1), JsonPrimitive(1), JsonNull, JsonNull, JsonNull))
+
+        val restore = Scan(total = 20)
+        restore.native.answer = { ScoreScanNativeCapture.RestoreFailed("before a, after b") }
+        val restoreResult = restore.run()
+        assertThat(restore.nativeLines(restoreResult).map { it.getValue("postNativeLooks") }).isEqualTo(List(3) { JsonNull })
+        assertThat(restore.summary(restoreResult).obj("native").obj("postNativeLooks"))
+            .isEqualTo(Json.parseToJsonElement("""{"screens":0,"moreThanOne":0,"max":null}"""))
+
+        val stopped = Scan(total = 100, maxScreens = 2)
+        stopped.native.onCapture = { if (it == 2) stopped.world.exitManager.exit() }
+        val stoppedResult = stopped.run()
+        assertThat(stoppedResult.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(stopped.nativeLines(stoppedResult).drop(3).map { it.getValue("postNativeLooks") }).isEqualTo(List(3) { JsonNull })
+    }
+
+    @Test
+    fun `a screen counts as low-match only when every known match is below 0_9`() {
+        val tally = io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeTally()
+        tally.screenMatches(listOf(0.5, null, Double.NaN))
+        assertThat(tally.lowMatchScreens).isEqualTo(1)
+        tally.screenMatches(listOf(0.5, 0.95))
+        tally.screenMatches(listOf(0.9))
+        tally.screenMatches(listOf(null, Double.POSITIVE_INFINITY))
+        tally.screenMatches(emptyList())
+        assertThat(tally.lowMatchScreens).isEqualTo(1)
+        tally.screenMatches(listOf(0.8999, 0.1))
+        assertThat(tally.lowMatchScreens).isEqualTo(2)
+    }
+
+    @Test
+    fun `the real frames crop the SupportExtra tab region and the whole script area once, and close what they crop`() {
+        val api = mockk<IFgoAutomataApi>(relaxed = true)
+        val finder = mockk<SupportBoundsFinder>()
+        val extra = Region(1200, 200, 130, 130)
+        val area = Region(0, 0, 2560, 1440)
+        val friend = Region(2234, 332, 120, 1091)
+        val guest = mockk<Pattern>()
+        every { api.locations.support.extraRegion } returns extra
+        every { api.locations.support.friendRegion } returns friend
+        every { api.locations.scriptArea } returns area
+        every { api.images[Images.Guest] } returns guest
+        val tab = GrayPattern(2, 1, byteArrayOf(1, 2))
+        val whole = GrayPattern(2, 1, byteArrayOf(0, -56))
+        every { with(api) { extra.getPattern(any()) } } returns tab
+        every { with(api) { area.getPattern(any()) } } returns whole
+        every { with(api) { friend.contains(guest) } } returns true
+        every { finder.all() } returns listOf(SupportBounds(Region(76, 200, 2356, 428)), SupportBounds(Region(76, 640, 2356, 428)))
+        val frames = ApiScoreScanFrames(api, finder, mockk())
+
+        assertThat(frames.extraTab()).isEqualTo(tab)
+        assertThat(frames.frameStats()).isEqualTo(ScoreScanFrameStats(100.0, 0, 200))
+        assertThat(whole.closed).isTrue()
+        assertThat(frames.listMeasures()).isEqualTo(ScoreScanListMeasures(2, true))
+        verify(exactly = 1) { with(api) { extra.getPattern(any()) } }
+        verify(exactly = 1) { with(api) { area.getPattern(any()) } }
+        verify(exactly = 2) { with(api) { any<Region>().getPattern(any()) } }
     }
 }

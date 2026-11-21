@@ -174,8 +174,9 @@ data class ScoreScanResult(
     val differ: Int,
     /**
      * The engine's unavailableReason for an [ScoreScanEndReason.EngineUnavailable] end, what the capture
-     * said for a [ScoreScanEndReason.NativeRestoreFailed] end, else null; an exception is rethrown and
-     * never reaches a result.
+     * said for a [ScoreScanEndReason.NativeRestoreFailed] end, what the last look measured for a
+     * [ScoreScanEndReason.NotSupportListOrDialog] or [ScoreScanEndReason.RowsLost] end after a native
+     * capture attempt, else null; an exception is rethrown and never reaches a result.
      */
     val detail: String?,
 )

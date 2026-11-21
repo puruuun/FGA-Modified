@@ -95,6 +95,9 @@ object ScoreScanNative {
     const val ERROR = "error"
     const val FIELD_OUTSIDE_FRAME = "field_outside_frame"
     const val RESTORE_FAILED = "restore_failed"
+
+    /** The look diagnosis's word for a capture that delivered a frame. */
+    const val OK = "ok"
     const val CAPTURE_STOPPED = "capture_stopped"
 
     /** Null when the field itself is not wholly inside the frame. */
