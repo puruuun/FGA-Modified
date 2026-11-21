@@ -16,7 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -39,15 +42,29 @@ import kotlinx.coroutines.withContext
 /** Items section. Its content and helpers stay in the Items files so nothing else in the dashboard is touched. */
 @Composable
 internal fun DashboardItemsSection(items: List<DashboardItem>, names: GameNameMap) {
-    DashboardBlock(DashboardBlockId.Items, stringResource(R.string.dashboard_items)) { Inventory(items, names) }
+    // The search field is hidden until the icon is tapped; closing it drops the query, so the groups return to their own open state.
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    DashboardBlock(
+        DashboardBlockId.Items, stringResource(R.string.dashboard_items),
+        actions = {
+            if (!searching) IconButton(onClick = { searching = true }, modifier = Modifier.testTag("items-search-open")) {
+                Icon(Icons.Default.Search, stringResource(R.string.dashboard_items_search_open))
+            }
+        },
+    ) {
+        Inventory(items, names, searching, query, { query = it }, { query = ""; searching = false })
+    }
 }
 
 private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 
-@Composable private fun Inventory(items: List<DashboardItem>, names: GameNameMap) {
+@Composable private fun Inventory(
+    items: List<DashboardItem>, names: GameNameMap, searching: Boolean, searchText: String, onQuery: (String) -> Unit, onCloseSearch: () -> Unit,
+) {
+    val query = if (searching) searchText else ""
     var groups by remember { mutableStateOf(emptyMap<InventoryGroup, List<DashboardItem>>()) }
     LaunchedEffect(items) { groups = withContext(Dispatchers.Default) { items.groupBy { it.group } } }
-    var query by rememberSaveable { mutableStateOf("") }
     // Kept here, not in the group: a group that does not match leaves the composition, and its own state would be lost
     // with it. Names of the groups whose open state the user flipped from the default, and of those shown in full.
     var flipped by rememberSaveable { mutableStateOf("") }
@@ -56,7 +73,7 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val widthDp = maxWidth.value
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ItemSearchField(query) { query = it }
+            if (searching) ItemSearchField(searchText, onQuery, onCloseSearch)
             if (query.isNotBlank() && views.isEmpty()) {
                 Text(
                     stringResource(R.string.dashboard_items_no_match), Modifier.padding(vertical = 12.dp).testTag("items-no-match"),
@@ -79,20 +96,23 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 private fun toggleName(list: String, name: String): String =
     list.split(',').filter { it.isNotEmpty() }.let { if (name in it) it - name else it + name }.joinToString(",")
 
-@Composable private fun ItemSearchField(query: String, onChange: (String) -> Unit) {
+@Composable private fun ItemSearchField(query: String, onChange: (String) -> Unit, onClose: () -> Unit) {
     val focus = LocalFocusManager.current
+    val requester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) { requester.requestFocus(); keyboard?.show() }
     OutlinedTextField(
         value = query, onValueChange = onChange, singleLine = true,
         placeholder = { Text(stringResource(R.string.dashboard_items_search)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        trailingIcon = if (query.isEmpty()) null else ({
-            IconButton(onClick = { onChange("") }, modifier = Modifier.testTag("items-search-clear")) {
+        trailingIcon = {
+            IconButton(onClick = onClose, modifier = Modifier.testTag("items-search-clear")) {
                 Icon(Icons.Default.Clear, stringResource(R.string.dashboard_items_search_clear))
             }
-        }),
+        },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
-        modifier = Modifier.fillMaxWidth().testTag("items-search"),
+        modifier = Modifier.fillMaxWidth().focusRequester(requester).testTag("items-search"),
     )
 }
 

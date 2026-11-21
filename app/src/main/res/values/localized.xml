@@ -1184,7 +1184,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_sort_cost">Cost</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">All classes</string>
-    <string name="dashboard_servant_count">%1$d servants</string>
     <string name="dashboard_filter_all">All</string>
     <string name="dashboard_col_name">Name</string>
     <string name="dashboard_col_np">NP</string>
@@ -1196,12 +1195,17 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_teapots">Teapots</string>
     <string name="dashboard_group_gems">Gems</string>
     <string name="dashboard_group_pieces">Pieces and monuments</string>
-    <string name="dashboard_group_grails">Grails and Lore</string>
+    <string name="dashboard_group_grails">Holy Grails, Lores and Dream Fires</string>
     <string name="dashboard_group_event">Event items</string>
     <string name="dashboard_group_coins">Servant coins</string>
     <string name="dashboard_group_other">Other</string>
     <string name="dashboard_items_search">Search by name</string>
     <string name="dashboard_items_search_clear">Clear search</string>
+    <string name="dashboard_items_search_open">Search items</string>
+    <string name="dashboard_overview_servants">Servants</string>
+    <string name="dashboard_stat_owned">Owned</string>
+    <string name="dashboard_stat_star5_np">★5 NP total</string>
+    <string name="dashboard_stat_all_np">All NP total</string>
     <string name="dashboard_items_no_match">No matching items</string>
     <string name="dashboard_items_show_more">Show more (%1$d)</string>
     <string name="dashboard_items_none">none</string>
@@ -1410,7 +1414,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="screen_capture_permission_denied">"Screen capture permission was not granted, so nothing was started."</string>
     <!-- Dashboard account cards (#379) -->
     <string name="dashboard_present_box_header">Present box (%1$d)</string>
-    <string name="dashboard_present_box_notice">Gifts received after the last login are shown after the next login.</string>
     <string name="dashboard_present_box_empty">No gifts</string>
     <string name="dashboard_command_code_collection">Command code collection</string>
     <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>

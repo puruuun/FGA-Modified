@@ -50,14 +50,21 @@ internal val LocalDashboardTarget = staticCompositionLocalOf<DashboardTarget?> {
 
 /** A titled group inside a section: a small `primary` title over a thin divider, without a card around it. */
 @Composable
-internal fun DashboardBlock(blockId: Int, title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+internal fun DashboardBlock(
+    blockId: Int, title: String, modifier: Modifier = Modifier, actions: (@Composable RowScope.() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val target = LocalDashboardTarget.current
     Column(
         modifier.fillMaxWidth().testTag("dashboard-section:$blockId")
             .then(if (target != null && target.blockId == blockId) Modifier.bringIntoViewRequester(target.requester) else Modifier),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        if (actions == null) Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        else Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            actions()
+        }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         content()
     }

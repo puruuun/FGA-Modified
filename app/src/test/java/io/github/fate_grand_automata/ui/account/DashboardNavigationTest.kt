@@ -88,12 +88,13 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNodeWithTag("dashboard-section:3").assertDoesNotExist()
     }
 
-    @Test fun servantAndPresentBoxItemsShowTheirCounts() {
+    @Test fun navigationItemsCarryNoCounts() {
         show()
-        nav(DashboardSection.Servants).assertTextContains("35", substring = true)
-        nav(DashboardSection.PresentBox).assertTextContains("3", substring = true)
-        nav(DashboardSection.Items).assertTextContains("아이템", substring = true)
-        assertFalse(nav(DashboardSection.Items).fetchSemanticsNode().config[SemanticsProperties.Text].any { it.text.any(Char::isDigit) })
+        DashboardSection.entries.forEach { section ->
+            val texts = nav(section).fetchSemanticsNode().config[SemanticsProperties.Text].map { it.text }
+            assertTrue("$section $texts", texts.none { text -> text.any(Char::isDigit) })
+        }
+        nav(DashboardSection.Servants).assertTextContains("서번트", substring = true)
     }
 
     @Test fun initialSectionSelectsTheContainingSection() {
@@ -170,14 +171,14 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNodeWithTag("dashboard-overview").assertExists()
     }
 
-    @Test fun headerShowsNamesServerLevelFriendCodeAndRelativeUpdateTime() {
+    @Test fun headerShowsNamesServerLevelAndRelativeUpdateTimeButNotTheFriendCode() {
         val updated = System.currentTimeMillis() / 1000 - 5 * 60 - 20
         show(all.copy(lastUpdateTime = updated))
         val header = hasAnyAncestor(hasTestTag("dashboard-account-header"))
         compose.onNode(hasText("샘플 · 샘플 마스터") and header).assertExists()
         compose.onNode(hasText("KR") and header).assertExists()
         compose.onNode(hasText("Lv 160") and header).assertExists()
-        compose.onNode(hasText("123456789") and header).assertExists()
+        compose.onNode(hasText("123456789") and header).assertDoesNotExist()
         compose.onNodeWithTag("dashboard-updated").assertTextEquals("5분 전 갱신")
         val description = compose.onNodeWithTag("dashboard-updated").fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
         assertTrue(description, description.endsWith(date(updated)))
@@ -185,7 +186,7 @@ class DashboardNavigationTest(private val width: Int) {
 
     @Test fun friendCodeIsCopiedToTheClipboard() {
         show()
-        compose.onNode(hasContentDescription("친구 코드 복사")).performClick()
+        compose.onNode(hasContentDescription("친구 코드 복사") and hasAnyAncestor(hasTestTag("overview-account:friendCode"))).performScrollTo().performClick()
         compose.waitForIdle()
         val clipboard = RuntimeEnvironment.getApplication().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         assertEquals("123456789", clipboard.primaryClip?.getItemAt(0)?.text?.toString())
@@ -205,24 +206,23 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNodeWithTag("overview-recent").assertDoesNotExist()
     }
 
-    @Test fun overviewHeadlineNumbersFruitsResourcesAndStorage() {
+    @Test fun overviewListsApInTheHeaderAndTheResourcesInTheOwnersOrder() {
         show()
-        compose.onNodeWithTag("overview-ap").assertExists()
-        compose.onNodeWithTag("overview-ap-bar").assertExists()
-        compose.onNode(hasText("이월 AP 12") and hasAnyAncestor(hasTestTag("overview-ap"))).assertExists()
-        compose.onNode(hasText("123") and hasAnyAncestor(hasTestTag("overview-quartz"))).assertExists()
-        compose.onNode(hasText("무료 100 · 유료 23") and hasAnyAncestor(hasTestTag("overview-quartz"))).assertExists()
-        compose.onNode(hasText("123,456,789") and hasAnyAncestor(hasTestTag("overview-qp"))).assertExists()
+        // AP lives in the header, so Overview has no headline row any more.
+        compose.onNodeWithTag("header-ap").assertExists()
+        listOf("overview-ap", "overview-quartz", "overview-qp").forEach { compose.onNodeWithTag(it).assertDoesNotExist() }
+        compose.onNode(hasText("무료 100 · 유료 23") and hasAnyAncestor(hasTestTag("overview-resource:2"))).assertExists()
+        compose.onNode(hasText("123,456,789") and hasAnyAncestor(hasTestTag("overview-resource:1"))).assertExists()
 
         // The fruit row wraps when an icon has not loaded and its name is drawn instead, so compare reading order.
         val fruitPos = listOf(100, 101, 104, 102).map {
             compose.onNodeWithTag("overview-fruit:$it").getUnclippedBoundsInRoot().let { b -> b.top.value to b.left.value }
         }
         assertEquals(fruitPos.sortedWith(compareBy({ it.first }, { it.second })), fruitPos)
-        val resourceY = listOf(3, 18, 16, 103, 4001, 49).map { compose.onNodeWithTag("overview-resource:$it").getUnclippedBoundsInRoot().top.value }
+        val keys = listOf("2", "16", "4001", TEAPOT_ROW, "49", "3", "18", "103", "1")
+        val resourceY = keys.map { compose.onNodeWithTag("overview-resource:$it").getUnclippedBoundsInRoot().top.value }
         assertEquals(resourceY.sorted(), resourceY)
-        // Quartz and QP are headline numbers, not rows of the resource list; fruit is not a row either.
-        listOf(1, 2, 100, 101, 102, 104).forEach { compose.onNodeWithTag("overview-resource:$it").assertDoesNotExist() }
+        listOf(100, 101, 102, 104).forEach { compose.onNodeWithTag("overview-resource:$it").assertDoesNotExist() }
 
         compose.onNodeWithTag("overview-storage").assertExists()
         compose.onNodeWithTag("overview-storage-bar").assertExists()
@@ -230,38 +230,45 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNode(hasText("123,456") and hasAnyAncestor(hasTestTag("overview-account:friendPoint"))).assertExists()
     }
 
-    @Test fun overviewListsTwoColumnsOnWideAndOneOnNarrow() {
-        show(all.copy(storage = all.storage))
-        val resources = compose.onNodeWithTag("overview-fruits").getUnclippedBoundsInRoot()
-        val storage = compose.onNodeWithTag("overview-storage").getUnclippedBoundsInRoot()
+    @Test fun overviewListsTwoColumnsOnWideAndOneOnNarrowWithTheAccountBlockLast() {
+        show(all.copy(storage = all.storage), battle = battleLogFixture("recent"))
+        fun box(tag: String) = compose.onNodeWithTag(tag).getUnclippedBoundsInRoot()
+        val resources = box("overview-resources"); val fruits = box("overview-fruits"); val servants = box("overview-servants")
+        val storage = box("overview-storage"); val recent = box("overview-recent"); val account = box("overview-account")
+        assertTrue(resources.bottom <= fruits.top); assertTrue(fruits.bottom <= servants.top)
+        assertTrue(storage.bottom <= recent.top)
         if (wide) {
             assertTrue(resources.right <= storage.left)
-            assertEquals(resources.top.value, storage.top.value, 40f)
+            assertEquals(resources.top.value, storage.top.value, 1f)
+            assertEquals(resources.left, servants.left)
+            assertTrue(account.top >= servants.bottom && account.top >= recent.bottom)
+            assertEquals(account.left, resources.left)
         } else {
             assertEquals(resources.left, storage.left)
-            assertTrue(resources.bottom <= storage.top)
+            assertTrue(servants.bottom <= storage.top)
+            assertTrue(recent.bottom <= account.top)
         }
     }
 
     @Test fun overviewNeverInventsValuesForMissingData() {
-        show(all.copy(resources = emptyMap(), teapots = null, storage = null, game = null, profile = emptyMap(), freePaid = null))
-        listOf("overview-fruits", "overview-resources", "overview-storage", "overview-ap", "overview-quartz", "overview-qp")
+        show(all.copy(resources = emptyMap(), teapots = null, itemsCaptured = false, servants = null, storage = null, game = null, profile = emptyMap(), freePaid = null))
+        listOf("overview-fruits", "overview-resources", "overview-servants", "overview-storage", "header-ap")
             .forEach { compose.onNodeWithTag(it).assertDoesNotExist() }
-        listOf("friendPoint", "exp", "cost", "friends", "created", "commandSpell").forEach { compose.onNodeWithTag("overview-account:$it").assertDoesNotExist() }
+        listOf("friendCode", "friendPoint", "exp", "cost", "friends", "created", "commandSpell").forEach { compose.onNodeWithTag("overview-account:$it").assertDoesNotExist() }
         compose.onNodeWithTag("overview-account:snapshot").assertExists()
     }
 
     @Test fun apShowsFullOrTheTimeItBecomesFull() {
         val game = { recoverAt: Long -> dashboardData(dashboardState("userGame" to """[{"actMax":144,"actRecoverAt":$recoverAt}]"""), case.names) }
         show(game(1))
-        compose.onNode(hasText("144 / 144") and hasAnyAncestor(hasTestTag("overview-ap"))).assertExists()
-        compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("overview-ap"))).assertExists()
+        compose.onNode(hasText("144 / 144") and hasAnyAncestor(hasTestTag("header-ap"))).assertExists()
+        compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap"))).assertExists()
     }
 
     @Test fun apShowsTheClockTimeWhenNotYetFull() {
         val recoverAt = System.currentTimeMillis() / 1000 + 3 * 3600
         show(dashboardData(dashboardState("userGame" to """[{"actMax":144,"actRecoverAt":$recoverAt}]"""), case.names))
-        val texts = compose.onAllNodes(hasAnyAncestor(hasTestTag("overview-ap")), useUnmergedTree = true).fetchSemanticsNodes()
+        val texts = compose.onAllNodes(hasAnyAncestor(hasTestTag("header-ap")), useUnmergedTree = true).fetchSemanticsNodes()
             .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { t -> t.text } }
         assertTrue(texts.toString(), texts.any { Regex("""\d{2}:\d{2} 가득 참""").matches(it) })
     }

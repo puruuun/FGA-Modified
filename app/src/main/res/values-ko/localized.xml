@@ -1114,7 +1114,6 @@
     <string name="dashboard_sort_cost">코스트</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">모든 클래스</string>
-    <string name="dashboard_servant_count">%1$d명</string>
     <string name="dashboard_filter_all">전체</string>
     <string name="dashboard_col_name">이름</string>
     <string name="dashboard_col_np">보구</string>
@@ -1126,12 +1125,17 @@
     <string name="dashboard_teapots">티포트</string>
     <string name="dashboard_group_gems">휘석·마석·비석</string>
     <string name="dashboard_group_pieces">피스·모뉴먼트</string>
-    <string name="dashboard_group_grails">성배·전승 결정</string>
+    <string name="dashboard_group_grails">성배·전승 결정·몽화</string>
     <string name="dashboard_group_event">이벤트 아이템</string>
     <string name="dashboard_group_coins">서번트 코인</string>
     <string name="dashboard_group_other">기타</string>
     <string name="dashboard_items_search">이름으로 찾기</string>
     <string name="dashboard_items_search_clear">검색어 지우기</string>
+    <string name="dashboard_items_search_open">아이템 검색</string>
+    <string name="dashboard_overview_servants">서번트</string>
+    <string name="dashboard_stat_owned">보유</string>
+    <string name="dashboard_stat_star5_np">★5 보합</string>
+    <string name="dashboard_stat_all_np">전체 보합</string>
     <string name="dashboard_items_no_match">일치하는 아이템이 없습니다</string>
     <string name="dashboard_items_show_more">더 보기 (%1$d종)</string>
     <string name="dashboard_items_none">없음</string>
@@ -1340,7 +1344,6 @@
     <string name="screen_capture_permission_denied">"화면 캡처 권한이 없어 시작하지 않았습니다."</string>
     <!-- 계정 대시보드 추가 카드 (#379) -->
     <string name="dashboard_present_box_header">선물함 (%1$d)</string>
-    <string name="dashboard_present_box_notice">마지막 로그인 이후 받은 선물은 다음 로그인 때 반영됩니다.</string>
     <string name="dashboard_present_box_empty">선물 없음</string>
     <string name="dashboard_command_code_collection">커맨드 코드 도감</string>
     <string name="dashboard_command_codes_progress">보유 %1$d / 전체 %2$d</string>

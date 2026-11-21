@@ -203,7 +203,7 @@ class DashboardRound7UiTest {
         chips[1].performClick().assertIsSelected()
         chips[2].performClick().assertIsSelected()
         compose.onAllNodes(hasSetTextAction() and collection).assertCountEquals(0)
-        compose.onNodeWithText("Owned",substring=true).assertDoesNotExist()
+        compose.onNode(hasText("Owned",substring=true) and hasClickAction()).assertDoesNotExist()
         compose.onNodeWithText("Bond ≥10",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Collection no.").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-class:all").assertIsSelected()
