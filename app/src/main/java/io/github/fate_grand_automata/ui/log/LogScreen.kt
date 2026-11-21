@@ -260,7 +260,7 @@ internal fun LogCardFrame(id: String, title: String, account: String?, time: Str
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
         .testTag("log-card:$id").semantics { this.selected = selected },
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-        colors = CardDefaults.cardColors(containerColor = if (outside) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
+        colors = CardDefaults.cardColors(containerColor = if (outside) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if (checked != null) Checkbox(checked = checked, onCheckedChange = { onClick() }, modifier = Modifier.size(32.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {

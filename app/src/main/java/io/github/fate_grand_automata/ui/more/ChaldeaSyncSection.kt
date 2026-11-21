@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -147,7 +148,7 @@ fun LazyListScope.chaldeaSyncItems(
             title = stringResource(R.string.chaldea_sync_enable),
             summary = stringResource(R.string.chaldea_sync_enable_summary),
             onClick = { onEnabled(!ui.enabled) },
-        ) { Switch(checked = ui.enabled, onCheckedChange = onEnabled) }
+        ) { Switch(checked = ui.enabled, onCheckedChange = onEnabled, colors = FGASwitchColors()) }
     }
     item {
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

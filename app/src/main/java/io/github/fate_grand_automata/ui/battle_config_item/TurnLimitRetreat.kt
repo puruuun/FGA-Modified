@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.battle_config_item
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,7 +63,8 @@ fun TurnLimitRetreat(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(
                     checked = currentEnabled,
-                    onCheckedChange = { currentEnabled = it }
+                    onCheckedChange = { currentEnabled = it },
+                    colors = FGASwitchColors()
                 )
                 Text(
                     stringResource(R.string.config_state_on).uppercase(),

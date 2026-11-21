@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.card_priority
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -94,7 +95,8 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                         Switch(
                             checked = useServantPriority,
                             onCheckedChange = { useServantPriority = it },
-                            enabled = !servantStyle
+                            enabled = !servantStyle,
+                            colors = FGASwitchColors()
                         )
                     },
                     colors = FGAListItemColors()
@@ -165,7 +167,8 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                 trailingContent = {
                     Switch(
                         checked = swapDetection,
-                        onCheckedChange = { swapDetection = it }
+                        onCheckedChange = { swapDetection = it },
+                        colors = FGASwitchColors()
                     )
                 },
                 colors = FGAListItemColors()

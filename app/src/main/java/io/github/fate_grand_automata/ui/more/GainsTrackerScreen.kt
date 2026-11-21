@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -737,6 +738,7 @@ fun GainsTrackerContent(
                             checked = state.enabled,
                             enabled = !state.modeSwitching,
                             onCheckedChange = handleEnabledChange,
+                            colors = FGASwitchColors()
                         )
                     }
                 }
@@ -970,7 +972,7 @@ fun GainsTrackerContent(
                         summary = stringResource(R.string.capture_stop_with_service_summary),
                         onClick = { onStopWithService(!state.stopWithService) },
                     ) {
-                        androidx.compose.material3.Switch(checked = state.stopWithService, onCheckedChange = onStopWithService)
+                        androidx.compose.material3.Switch(checked = state.stopWithService, onCheckedChange = onStopWithService, colors = FGASwitchColors())
                     }
                 }
                 extraItems()
@@ -1342,6 +1344,7 @@ private fun AdGuardProxyCard(
                     Switch(
                         checked = state.adGuardAutoSwitch,
                         onCheckedChange = onAdGuardAutoSwitch,
+                        colors = FGASwitchColors()
                     )
                 }
                 OutlinedTextField(

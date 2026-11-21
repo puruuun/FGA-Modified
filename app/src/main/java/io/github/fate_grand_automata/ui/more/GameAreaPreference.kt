@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -190,7 +191,8 @@ fun GameAreaPreference(prefs: PrefsCore, preview: GameAreaPreviewManager) {
                         Switch(
                             checked = preview.visible,
                             enabled = previewEnabled,
-                            onCheckedChange = { if (it) preview.show() else preview.hide() }
+                            onCheckedChange = { if (it) preview.show() else preview.hide() },
+                            colors = FGASwitchColors()
                         )
                     }
                     if (!serviceStarted) {

@@ -425,8 +425,8 @@ internal fun MainBuildStatusRow(
                 // Preserve the old guard against disabling accessibility during an overlay run.
                 enabled = !serviceStarted || !overlayServiceStarted,
                 shape = CircleShape,
-                color = if (serviceStarted) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
-                contentColor = if (serviceStarted) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+                color = if (serviceStarted) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.errorContainer,
+                contentColor = if (serviceStarted) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.testTag("accessibilityStatus"),
             ) {
                 Text(

@@ -495,7 +495,7 @@ fun battleLauncher(
                             Card(
                                 shape = CircleShape,
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                                 ),
                                 enabled = resetAllButton,
                                 onClick = {
@@ -516,8 +516,8 @@ fun battleLauncher(
                                         text = stringResource(R.string.reset_all).uppercase(),
                                         style = MaterialTheme.typography.labelSmall,
                                         textAlign = TextAlign.Center,
-                                        color = if (resetAllButton) MaterialTheme.colorScheme.onSecondaryContainer
-                                        else MaterialTheme.colorScheme.onSecondaryContainer.copy(0.38f)
+                                        color = if (resetAllButton) MaterialTheme.colorScheme.onSurface
+                                        else MaterialTheme.colorScheme.onSurface.copy(0.38f)
                                     )
                                 }
                             }

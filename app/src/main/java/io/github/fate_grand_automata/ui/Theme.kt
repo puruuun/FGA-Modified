@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
@@ -31,8 +32,8 @@ val md_theme_light_primaryContainer = Color(0xFFDAE2FF)
 val md_theme_light_onPrimaryContainer = Color(0xFF0F1F4F)
 val md_theme_light_secondary = Color(0xFF5D5E66)
 val md_theme_light_onSecondary = Color(0xFFFFFFFF)
-val md_theme_light_secondaryContainer = Color(0xFFE4E4E8)
-val md_theme_light_onSecondaryContainer = Color(0xFF1A1B1F)
+val md_theme_light_secondaryContainer = Color(0xFFDDE3F3)
+val md_theme_light_onSecondaryContainer = Color(0xFF151C2C)
 val md_theme_light_tertiary = Color(0xFF7A5900)
 val md_theme_light_onTertiary = Color(0xFFFFFFFF)
 val md_theme_light_tertiaryContainer = Color(0xFFFFDEA6)
@@ -68,8 +69,8 @@ val md_theme_dark_primaryContainer = Color(0xFF2A3F7A)
 val md_theme_dark_onPrimaryContainer = Color(0xFFDAE2FF)
 val md_theme_dark_secondary = Color(0xFFA5A5AD)
 val md_theme_dark_onSecondary = Color(0xFF1A1B1F)
-val md_theme_dark_secondaryContainer = Color(0xFF2E2E33)
-val md_theme_dark_onSecondaryContainer = Color(0xFFE4E4E7)
+val md_theme_dark_secondaryContainer = Color(0xFF343D52)
+val md_theme_dark_onSecondaryContainer = Color(0xFFDDE3F3)
 val md_theme_dark_tertiary = Color(0xFFF2BF48)
 val md_theme_dark_onTertiary = Color(0xFF402D00)
 val md_theme_dark_tertiaryContainer = Color(0xFF5C4200)
@@ -193,13 +194,26 @@ fun FGAListItemColors() = ListItemDefaults.colors(
 )
 
 /**
- * Sliders default their inactive track to `secondaryContainer`, which is the same grey as the
- * `surfaceVariant` cards they sit on, so the empty half of the track would vanish. The thumb and
+ * Sliders default their inactive track to `secondaryContainer`, the pale navy of selected chips, which
+ * is almost the same lightness as the `surfaceVariant` cards they sit on, so the empty half of the
+ * track would vanish. The thumb and
  * active track already default to `primary`.
  */
 @Composable
 fun FGASliderColors() = SliderDefaults.colors(
     inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant
+)
+
+/**
+ * Switches sit in list items on `surfaceVariant` cards, where the default off track
+ * (`surfaceContainerHighest`) cannot be told from the card. The off state is drawn as a light (or
+ * near-black) track with an `outline` border and thumb; the on state keeps the default `primary`.
+ */
+@Composable
+fun FGASwitchColors() = SwitchDefaults.colors(
+    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+    uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+    uncheckedThumbColor = MaterialTheme.colorScheme.outline
 )
 
 @Composable
