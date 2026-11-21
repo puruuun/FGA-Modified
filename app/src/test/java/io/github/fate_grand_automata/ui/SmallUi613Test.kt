@@ -209,6 +209,34 @@ class SmallUi613Test {
         assertFalse(File(root, "support/servant").exists())
     }
 
+    @Test
+    fun `index lists the folders off the calling thread`() {
+        val root = supportRoot()
+        pngFile(File(root, "support/servant/Alpha/a.png"), 0)
+        val caller = Thread.currentThread()
+        var listedOn: Thread? = null
+        val index = SupportThumbnailIndex {
+            listedOn = Thread.currentThread()
+            DocumentFile.fromFile(File(root, "support/servant"))
+        }
+        runBlocking { index.thumbnail("Alpha") }
+        assertNotNull(listedOn)
+        assertTrue("the folder was listed on the calling thread", listedOn !== caller)
+    }
+
+    @Test
+    fun `index finds a renamed folder for a legacy number name like the support search does`() {
+        val root = supportRoot()
+        pngFile(File(root, "support/servant/No.444 Renamed Servant/a.png"), 0)
+        pngFile(File(root, "support/servant/No.5 Other/b.png"), 0)
+        val index = index(root)
+        runBlocking {
+            assertEquals("No.444 Renamed Servant", File(index.thumbnail("No.444")!!.path!!).parentFile!!.name)
+            assertNull(index.thumbnail("No.445"))
+            assertNull(index.thumbnail("Renamed"))
+        }
+    }
+
     // Support picker
 
     private fun faceFixture(): Triple<File, Map<String, String>, FaceThumbnails> {
@@ -248,6 +276,21 @@ class SmallUi613Test {
         assertEquals(setOf("Alpha", "Gamma"), pref.get())
         compose.onNodeWithText("OK").performClick()
         assertEquals(setOf("Beta", "Gamma"), pref.get())
+    }
+
+    @Test
+    fun `picker stores and resolves faces by key when the key differs from the display name`() {
+        val (_, _, faces) = faceFixture()
+        val entries = linkedMapOf("Alpha" to "알파", "Beta" to "베타", "Gamma" to "감마")
+        val pref = prefsCore("face613_key").forBattleConfig("t").support.preferredServants
+        pref.set(setOf("Alpha", "Gamma"))
+        compose.setContent { FGATheme { pref.SupportSelectPreference("Servants", entries, thumbnails = faces) } }
+        compose.onNodeWithText("Servants").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag(FaceThumbnailTag, useUnmergedTree = true).fetchSemanticsNodes().size == 2 }
+        compose.onNode(hasText("알파") and isToggleable() and hasAnyAncestor(isDialog())).assertIsOn()
+        compose.onNode(hasText("베타") and isToggleable() and hasAnyAncestor(isDialog())).performClick()
+        compose.onNodeWithText("OK").performClick()
+        assertEquals(setOf("Alpha", "Beta", "Gamma"), pref.get())
     }
 
     @Test

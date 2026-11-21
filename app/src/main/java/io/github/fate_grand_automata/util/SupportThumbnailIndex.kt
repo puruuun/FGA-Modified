@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.util
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import io.github.fate_grand_automata.SupportImageKind
+import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -31,7 +32,10 @@ class SupportThumbnailIndex(private val kindFolder: () -> DocumentFile?) {
                 .mapNotNull { file -> file.name?.let { it to file } }
                 .toMap()
                 .also { children = it }
-        }[name]
+        }.let { all ->
+            // Same lookup as StorageProvider.readSupportImage: a legacy "No.444" request finds its renamed folder.
+            all[name] ?: ServantPortraitFolder.resolve(name, all.filterValues { it.isDirectory }.keys.toList())?.let(all::get)
+        }
         val uri = entry?.let(::firstImage)?.uri
         resolved[name] = Found(uri)
         uri
