@@ -1,16 +1,24 @@
 package io.github.fate_grand_automata.ui.account
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -22,65 +30,196 @@ import kotlinx.coroutines.withContext
 /** Servants section. Its content and helpers stay inside this file so the servant rewrite touches nothing else. */
 @Composable
 internal fun DashboardServantsSection(data: DashboardData) {
-    DashboardBlock(DashboardBlockId.Servants, stringResource(R.string.dashboard_servants)) { Servants(data) }
+    // The list is lazy and fills the pane, so the pane must not scroll this section (see SectionPane).
+    DashboardBlock(DashboardBlockId.Servants, stringResource(R.string.dashboard_servants), Modifier.fillMaxSize()) { Servants(data) }
 }
 
-@Composable internal fun Servants(data: DashboardData) {
+internal enum class CellKind { Normal, Maxed, Locked }
+
+internal data class ServantCell(val text: String, val kind: CellKind)
+
+private const val MAX_LEVEL = 10L
+private const val LOCKED_TEXT = "–"
+
+internal fun skillCell(value: Long?): ServantCell = when {
+    value == null -> ServantCell(LOCKED_TEXT, CellKind.Locked)
+    value >= MAX_LEVEL -> ServantCell(value.toString(), CellKind.Maxed)
+    else -> ServantCell(value.toString(), CellKind.Normal)
+}
+
+/** An append that is not unlocked is stored as null or 0; both read as "not unlocked". */
+internal fun appendCell(value: Long?): ServantCell = if (value == null || value == 0L) ServantCell(LOCKED_TEXT, CellKind.Locked) else skillCell(value)
+
+internal fun DashboardServant.skillCells() = (0..2).map { skillCell(skills.getOrNull(it)) }
+internal fun DashboardServant.appendCells() = (0..4).map { appendCell(appends.getOrNull(it)) }
+
+/** Gold marks maxed values only; a locked value is muted. */
+internal fun CellKind.color(scheme: ColorScheme): Color = when (this) {
+    CellKind.Maxed -> scheme.tertiary
+    CellKind.Locked -> scheme.onSurfaceVariant.copy(alpha = 0.6f)
+    CellKind.Normal -> scheme.onSurface
+}
+
+internal fun annotatedCells(cells: List<ServantCell>, scheme: ColorScheme): AnnotatedString = buildAnnotatedString {
+    cells.forEachIndexed { index, cell ->
+        if (index > 0) withStyle(SpanStyle(color = scheme.onSurfaceVariant)) { append("/") }
+        withStyle(SpanStyle(color = cell.kind.color(scheme))) { append(cell.text) }
+    }
+}
+
+internal fun levelText(level: Long?, maxLevel: Long?): String = when {
+    level == null && maxLevel == null -> LOCKED_TEXT
+    else -> "${level ?: LOCKED_TEXT}/${maxLevel ?: LOCKED_TEXT}"
+}
+
+/** Servant counts per rarity, highest rarity first. A servant without Atlas data has no rarity and is left out. */
+internal fun rarityCounts(servants: List<DashboardServant>): List<Pair<Long, Int>> =
+    servants.mapNotNull { it.atlas?.rarity }.groupingBy { it }.eachCount().toList().sortedByDescending { it.first }
+
+/**
+ * Class chips deduplicated by the displayed label, so beast variants and raw fallback names share one chip.
+ * The order is the raw class names sorted, as the old dropdown had it.
+ */
+internal fun classGroups(servantClasses: List<String>, label: (String) -> String): Map<String, Set<String>> {
+    val groups = linkedMapOf<String, MutableSet<String>>()
+    servantClasses.forEach { name -> groups.getOrPut(label(name)) { linkedSetOf() }.add(name) }
+    return groups
+}
+
+private val TABLE_MIN_WIDTH = 600.dp
+private val FaceSize = 40.dp
+private val LevelWidth = 76.dp
+private val BondWidth = 44.dp
+private val NpWidth = 36.dp
+private val SkillsWidth = 76.dp
+private val AppendsWidth = 116.dp
+
+private val numeric = TextStyle(fontFeatureSettings = "tnum")
+
+@Composable
+internal fun ColumnScope.Servants(data: DashboardData) {
     val servants = data.servants.orEmpty()
     var sort by rememberSaveable { mutableStateOf(ServantSort.Bond) }
     var classLabel by rememberSaveable { mutableStateOf<String?>(null) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    var classMenu by remember { mutableStateOf(false) }
-    // Deduplicate by the displayed label, including future beast variants and raw fallbacks.
-    val classes = linkedMapOf<String, MutableSet<String>>()
-    data.servantClasses.forEach { name -> classes.getOrPut(dashboardClass(name)) { linkedSetOf() }.add(name) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        ServantSort.entries.forEach { option ->
-            FilterChip(selected = sort == option, onClick = { sort = option }, label = {
-                Text(stringResource(when (option) { ServantSort.Bond -> R.string.dashboard_sort_bond; ServantSort.Cost -> R.string.dashboard_sort_cost; ServantSort.Level -> R.string.dashboard_sort_level }))
-            })
-        }
-        Box {
-            OutlinedButton(onClick = { classMenu = true }) { Text(classLabel ?: stringResource(R.string.dashboard_all_classes)) }
-            DropdownMenu(expanded = classMenu, onDismissRequest = { classMenu = false }) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.dashboard_all_classes)) }, onClick = { classLabel = null; classMenu = false })
-                classes.keys.forEach { label ->
-                    DropdownMenuItem(text = { Text(label) }, onClick = { classLabel = label; classMenu = false })
-                }
-            }
-        }
-    }
-    var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
+    val labels = data.servantClasses.associateWith { dashboardClass(it) }
+    val classes = classGroups(data.servantClasses) { labels.getValue(it) }
     val selectedClasses = classes[classLabel]?.toSet()
+    var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
     LaunchedEffect(servants, sort, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, selectedClasses) } }
-    val shown = if (expanded) selected else selected.take(5)
-    LazyColumn(Modifier.fillMaxWidth().heightIn(max = if (expanded) 560.dp else 280.dp).testTag("dashboard-servant-list"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(shown, key = { it.id }) { servant ->
-            Row(Modifier.heightIn(min = 48.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                AtlasIcon("servants", servant.id, servant.atlas?.icon)
-                Column(Modifier.weight(1f)) {
-                    val parts = buildList {
-                        servant.atlas?.className?.let { add(dashboardClass(it)) }
-                        servant.atlas?.rarity?.let { add("★$it") }
-                        servant.level?.let { add(stringResource(R.string.friends2_level_compact, it)) }
-                        servant.bond?.let { add(stringResource(R.string.dashboard_bond, it)) }
-                        servant.np?.let { add(stringResource(R.string.friends2_np_compact, it)) }
+    val rarities = remember(servants) { rarityCounts(servants) }
+    val scheme = MaterialTheme.colorScheme
+
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+        val table = maxWidth >= TABLE_MIN_WIDTH
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val count = buildString {
+                append(stringResource(R.string.dashboard_servant_count, servants.size))
+                rarities.forEach { (rarity, n) -> append(" · ★$rarity $n") }
+            }
+            val sortChips = @Composable {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ServantSort.entries.forEach { option ->
+                        FilterChip(selected = sort == option, onClick = { sort = option }, modifier = Modifier.testTag("dashboard-sort:${option.name}"), label = {
+                            Text(stringResource(when (option) { ServantSort.Bond -> R.string.dashboard_sort_bond; ServantSort.Cost -> R.string.dashboard_sort_cost; ServantSort.Level -> R.string.dashboard_sort_level }))
+                        })
                     }
-                    Text(buildAnnotatedString {
-                        append(servant.name)
-                        if (parts.isNotEmpty()) withStyle(MaterialTheme.typography.labelSmall.toSpanStyle()) {
-                            append("  "); append(parts.joinToString(" · "))
-                        }
-                    }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(stringResource(R.string.friends2_dashboard_skills,
-                        (0..2).joinToString("/") { servant.skills.getOrNull(it)?.toString() ?: "–" },
-                        (0..4).joinToString("/") { servant.appends.getOrNull(it)?.toString() ?: "–" }), style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (table) Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(count, Modifier.weight(1f).testTag("dashboard-servant-count"), style = MaterialTheme.typography.titleSmall)
+                sortChips()
+            } else {
+                Text(count, Modifier.testTag("dashboard-servant-count"), style = MaterialTheme.typography.titleSmall)
+                sortChips()
+            }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dashboard-class-chips"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = classLabel == null, onClick = { classLabel = null }, modifier = Modifier.testTag("dashboard-class:all"),
+                    label = { Text(stringResource(R.string.dashboard_filter_all)) })
+                classes.keys.forEach { label ->
+                    FilterChip(selected = classLabel == label, onClick = { classLabel = label }, modifier = Modifier.testTag("dashboard-class:$label"), label = { Text(label) })
+                }
+            }
+            if (table) TableHeader()
+            HorizontalDivider(color = scheme.outlineVariant)
+            LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("dashboard-servant-list")) {
+                items(selected, key = { it.id }) { servant ->
+                    if (table) TableRow(servant) else NarrowRow(servant)
+                    HorizontalDivider(color = scheme.outlineVariant)
                 }
             }
         }
     }
-    if (expanded || selected.size > 5) TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("dashboard-servants-toggle")) {
-        Text(if (expanded) stringResource(R.string.friends2_collapse) else stringResource(R.string.dashboard_show_all, selected.size))
+}
+
+@Composable
+private fun TableHeader() {
+    val style = MaterialTheme.typography.labelMedium
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(Modifier.fillMaxWidth().testTag("dashboard-servant-header"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Spacer(Modifier.width(FaceSize))
+        Text(stringResource(R.string.dashboard_col_name), Modifier.weight(1f), style = style, color = color)
+        Text(stringResource(R.string.dashboard_sort_level), Modifier.width(LevelWidth), style = style, color = color, textAlign = TextAlign.End)
+        Text(stringResource(R.string.dashboard_sort_bond), Modifier.width(BondWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        Text(stringResource(R.string.dashboard_col_np), Modifier.width(NpWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        Text(stringResource(R.string.dashboard_col_skills), Modifier.width(SkillsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        Text(stringResource(R.string.dashboard_col_appends), Modifier.width(AppendsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+    }
+}
+
+@Composable
+private fun classAndRarity(servant: DashboardServant): String = listOfNotNull(
+    servant.atlas?.className?.let { dashboardClass(it) },
+    servant.atlas?.rarity?.let { "★$it" },
+).joinToString(" · ")
+
+@Composable
+private fun TableRow(servant: DashboardServant) {
+    val scheme = MaterialTheme.colorScheme
+    val body = MaterialTheme.typography.bodyMedium.merge(numeric)
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        AtlasIcon("servants", servant.id, servant.atlas?.icon, size = FaceSize)
+        Column(Modifier.weight(1f)) {
+            Text(servant.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            classAndRarity(servant).takeIf { it.isNotEmpty() }?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        Text(levelText(servant.level, servant.maxLevel), Modifier.width(LevelWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
+        Text(servant.bond?.toString() ?: LOCKED_TEXT, Modifier.width(BondWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
+        Text(servant.np?.toString() ?: LOCKED_TEXT, Modifier.width(NpWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
+        Text(annotatedCells(servant.skillCells(), scheme), Modifier.width(SkillsWidth).testTag("dashboard-servant-skills"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+        Text(annotatedCells(servant.appendCells(), scheme), Modifier.width(AppendsWidth).testTag("dashboard-servant-appends"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+    }
+}
+
+/** Line 1 holds face, name and class; line 2 the numbers, with maxed values in gold and locked ones muted. */
+@Composable
+private fun NarrowRow(servant: DashboardServant) {
+    val scheme = MaterialTheme.colorScheme
+    val muted = scheme.onSurfaceVariant
+    val segments = listOf(
+        AnnotatedString(stringResource(R.string.dashboard_sort_level) + " " + levelText(servant.level, servant.maxLevel)),
+        AnnotatedString(stringResource(R.string.dashboard_sort_bond) + " " + (servant.bond?.toString() ?: LOCKED_TEXT)),
+        AnnotatedString(stringResource(R.string.dashboard_col_np) + " " + (servant.np?.toString() ?: LOCKED_TEXT)),
+        buildAnnotatedString { append(stringResource(R.string.dashboard_col_skills) + " "); append(annotatedCells(servant.skillCells(), scheme)) },
+        buildAnnotatedString { append(stringResource(R.string.dashboard_col_appends) + " "); append(annotatedCells(servant.appendCells(), scheme)) },
+    )
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(vertical = 4.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        AtlasIcon("servants", servant.id, servant.atlas?.icon, size = FaceSize)
+        Column(Modifier.weight(1f)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(servant.name, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                classAndRarity(servant).takeIf { it.isNotEmpty() }?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = muted, maxLines = 1, softWrap = false)
+                }
+            }
+            // One segment per item, wrapped between segments: a long line must never split a label from its value (CJK breaks anywhere).
+            FlowRow(Modifier.testTag("dashboard-servant-detail").semantics(mergeDescendants = true) {}) {
+                segments.forEachIndexed { index, text ->
+                    Text(text, style = MaterialTheme.typography.bodySmall.merge(numeric), color = scheme.onSurface, maxLines = 1, softWrap = false)
+                    if (index < segments.lastIndex) Text(" · ", style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, softWrap = false)
+                }
+            }
+        }
     }
 }

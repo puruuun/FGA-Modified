@@ -1114,6 +1114,12 @@
     <string name="dashboard_sort_cost">코스트</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">모든 클래스</string>
+    <string name="dashboard_servant_count">%1$d명</string>
+    <string name="dashboard_filter_all">전체</string>
+    <string name="dashboard_col_name">이름</string>
+    <string name="dashboard_col_np">보구</string>
+    <string name="dashboard_col_skills">스킬</string>
+    <string name="dashboard_col_appends">어펜드</string>
     <string name="dashboard_bond">인연%1$d</string>
     <string name="dashboard_show_all">전체 보기 (%1$d)</string>
     <string name="dashboard_group_materials">강화 재료</string>

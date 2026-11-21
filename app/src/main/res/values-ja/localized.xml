@@ -870,6 +870,12 @@
     <string name="dashboard_sort_cost">コスト</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">全クラス</string>
+    <string name="dashboard_servant_count">%1$d体</string>
+    <string name="dashboard_filter_all">すべて</string>
+    <string name="dashboard_col_name">名前</string>
+    <string name="dashboard_col_np">宝具</string>
+    <string name="dashboard_col_skills">スキル</string>
+    <string name="dashboard_col_appends">アペンド</string>
     <string name="dashboard_bond">絆 %1$d</string>
     <string name="dashboard_show_all">すべて表示（%1$d）</string>
     <string name="dashboard_group_materials">強化素材</string>

@@ -1184,6 +1184,12 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_sort_cost">Cost</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">All classes</string>
+    <string name="dashboard_servant_count">%1$d servants</string>
+    <string name="dashboard_filter_all">All</string>
+    <string name="dashboard_col_name">Name</string>
+    <string name="dashboard_col_np">NP</string>
+    <string name="dashboard_col_skills">Skills</string>
+    <string name="dashboard_col_appends">Appends</string>
     <string name="dashboard_bond">Bond %1$d</string>
     <string name="dashboard_show_all">Show all (%1$d)</string>
     <string name="dashboard_group_materials">Enhancement materials</string>

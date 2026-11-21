@@ -35,7 +35,6 @@ class DashboardRound7ScreenshotTest(private val width: Int, private val height: 
     }
     @Test fun servantCollection() = compose.shoot("dashboard-round7","ServantCollection",width,height,dark,"ko", beforeCapture = {
         compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("dashboard-servant-list").performScrollTo()
     }) {
         fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) {
             AccountDashboardContent(fixture.data,fixture.names,"샘플 별명",{},{},initialSection=3,userId="synthetic")

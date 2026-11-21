@@ -1,8 +1,14 @@
 package io.github.fate_grand_automata.ui.account
 
+import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
+import io.github.fate_grand_automata.ui.LocalNavigateBack
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
@@ -19,7 +25,6 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.battlelog.BattleLogEntry
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.CappedWidth
-import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.rememberChaldeaAccountExport
 import io.github.fate_grand_automata.ui.log.*
 import kotlinx.coroutines.delay
@@ -53,20 +58,32 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
         Column(Modifier.fillMaxSize()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { Heading(stringResource(R.string.dashboard_title)) }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    IconButton(onClick = { exportAccount(userId) }, modifier = Modifier.testTag("dashboard-export")) {
-                        Icon(Icons.Default.FileUpload, stringResource(R.string.capture_chaldea_create))
+            BoxWithConstraints {
+                // At 360dp three 48dp action icons leave the title about 160dp, so the icons shrink and the title scales down to one line.
+                val compact = maxWidth < 420.dp
+                val iconModifier = if (compact) Modifier.size(40.dp) else Modifier
+                val back = LocalNavigateBack.current
+                Row(Modifier.padding(vertical = 16.dp).padding(start = if (back != null) 4.dp else 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    back?.let { IconButton(onClick = it) { Icon(Icons.AutoMirrored.Default.ArrowBack, stringResource(R.string.navigate_back)) } }
+                    val title = stringResource(R.string.dashboard_title)
+                    // Landscape keeps the small upper-case title every Heading has.
+                    if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        Text(title.uppercase(), Modifier.weight(1f).testTag("dashboard-title"), style = MaterialTheme.typography.titleSmall)
+                    } else Text(title, Modifier.weight(1f).testTag("dashboard-title"), style = MaterialTheme.typography.headlineMedium,
+                        maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = MaterialTheme.typography.headlineMedium.fontSize))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        IconButton(onClick = { exportAccount(userId) }, modifier = iconModifier.testTag("dashboard-export")) {
+                            Icon(Icons.Default.FileUpload, stringResource(R.string.capture_chaldea_create))
+                        }
                     }
-                }
-                if (friendCount != null) {
-                    IconButton(onClick = { openFriends(userId) }, modifier = Modifier.testTag("dashboard-friends")) {
-                        Icon(Icons.Default.People, stringResource(R.string.friends_title))
+                    if (friendCount != null) {
+                        IconButton(onClick = { openFriends(userId) }, modifier = iconModifier.testTag("dashboard-friends")) {
+                            Icon(Icons.Default.People, stringResource(R.string.friends_title))
+                        }
                     }
-                }
-                IconButton(onClick = openSettings, modifier = Modifier.testTag("dashboard-settings")) {
-                    Icon(Icons.Default.Settings, stringResource(R.string.capture_title))
+                    IconButton(onClick = openSettings, modifier = iconModifier.testTag("dashboard-settings")) {
+                        Icon(Icons.Default.Settings, stringResource(R.string.capture_title))
+                    }
                 }
             }
             if (loading && data == null) {

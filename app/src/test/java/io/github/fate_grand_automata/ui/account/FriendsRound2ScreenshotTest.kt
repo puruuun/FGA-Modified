@@ -44,16 +44,13 @@ class FriendsRound2ScreenshotTest {
         compose.onNodeWithTag("friends-login-inactive").performScrollTo().performClick()
     }) { FriendManagerContent(syntheticRoster(), friendTestNames(), FRIEND_NOW) }
 
-    private fun servants(expanded: Boolean) {
+    @Test fun servantsSection360Light() {
         val fixture = DashboardUiFixture()
         val data = fixture.data.copy(servants = fixture.data.servants!!.map { it.copy(level = 100, np = 5, skills = listOf(10, 10, 9),
             appends = listOf(10, 1, null, null, 5)) })
-        compose.shoot("friends-round2", if (expanded) "ServantsExpanded" else "ServantsCollapsed", 360, 800, locale = "ko", beforeCapture = {
+        compose.shoot("friends-round2", "ServantsSection", 360, 800, locale = "ko", beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-servant-row").fetchSemanticsNodes().isNotEmpty() }
-            if (expanded) compose.onNodeWithTag("dashboard-servants-toggle").performClick()
-            compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready", useUnmergedTree = true).fetchSemanticsNodes().size >= if (expanded) 10 else 5 }
-        }) { fixture.Icons { Card(Modifier.fillMaxWidth().padding(8.dp)) { Column(Modifier.padding(12.dp)) { Servants(data) } } } }
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready", useUnmergedTree = true).fetchSemanticsNodes().size >= 5 }
+        }) { fixture.Icons { AccountDashboardContent(data, fixture.names, "샘플 별명", {}, {}, initialSection = 3) } }
     }
-    @Test fun servantsCollapsed360Light() = servants(false)
-    @Test fun servantsExpanded360Light() = servants(true)
 }

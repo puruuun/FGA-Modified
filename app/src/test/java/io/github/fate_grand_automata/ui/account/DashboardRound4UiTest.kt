@@ -106,17 +106,13 @@ class DashboardRound4UiTest {
         compose.onNodeWithText("PRIVATE-BIRTHDAY",substring=true).assertDoesNotExist()
         compose.onNodeWithText("PRIVATE-MESSAGE",substring=true).assertDoesNotExist()
     }
-    @Test fun servantListStartsWithFiveExpandsAllAndCollapses() {
+    @Test fun servantListHasNoCapAndNoShowAll() {
         content { fixture.Icons { AccountDashboardContent(fixture.data,fixture.names,"Alias",{},{},initialSection=3) } }
         compose.waitUntil(10_000) { compose.onAllNodes(hasText("샘플 서번트 1", substring = true)).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("dashboard-servant-list").performScrollToIndex(4)
-        compose.onNodeWithText("샘플 서번트 5", substring = true).assertExists()
-        compose.onNodeWithText("샘플 서번트 6", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("Show all (35)").performScrollTo().performClick()
         compose.onNodeWithTag("dashboard-servant-list").performScrollToIndex(34)
         compose.onNodeWithText("샘플 서번트 35", substring = true).assertExists()
-        compose.onNodeWithText("Collapse").performScrollTo().performClick()
-        compose.onNodeWithText("샘플 서번트 35", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Show all (35)").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-servants-toggle").assertDoesNotExist()
     }
     @Test fun additionalFeaturesOrdersToolsThenCollectionThenGameArea() {
         var gains=0

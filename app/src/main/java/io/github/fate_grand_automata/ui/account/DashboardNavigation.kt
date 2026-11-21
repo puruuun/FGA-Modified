@@ -99,7 +99,9 @@ private fun SectionPane(
     key(selected) {
         Column(
             modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).testTag("dashboard-page")
-                .verticalScroll(rememberScrollState()).padding(16.dp),
+                // Servants is one lazy list that fills the pane; a lazy list cannot sit inside a vertical scroll.
+                .then(if (selected == DashboardSection.Servants) Modifier else Modifier.verticalScroll(rememberScrollState()))
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (selected) {

@@ -197,7 +197,7 @@ class DashboardRound7UiTest {
         show(fixture.data.copy(servants = rows, inventory = null), initialSection = 3)
         val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        val chips = listOf("Bond","Cost","Lv").map { compose.onNode(hasText(it) and collection) }
+        val chips = ServantSort.entries.map { compose.onNodeWithTag("dashboard-sort:${it.name}") }
         chips[0].assertIsSelected()
         chips.map { it.getUnclippedBoundsInRoot() }.zipWithNext().forEach { (a,b) -> assertTrue(a.left < b.left) }
         chips[1].performClick().assertIsSelected()
@@ -206,19 +206,19 @@ class DashboardRound7UiTest {
         compose.onNodeWithText("Owned",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Bond ≥10",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Collection no.").assertDoesNotExist()
-        compose.onNode(hasText("All classes") and collection).performClick()
-        compose.onAllNodesWithText("Beast").assertCountEquals(1)
-        compose.onAllNodesWithText("unknownClass").assertCountEquals(1)
-        compose.onNodeWithText("Beast").performClick()
+        compose.onNodeWithTag("dashboard-class:all").assertIsSelected()
+        compose.onAllNodesWithTag("dashboard-class:Beast").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:unknownClass").assertCountEquals(1)
+        compose.onNodeWithTag("dashboard-class:Beast").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isEmpty() }
         (1..3).forEach { compose.onNodeWithText("Servant $it", substring = true).assertExists() }
         (4..6).forEach { compose.onNodeWithText("Servant $it", substring = true).assertDoesNotExist() }
-        compose.onAllNodesWithText("Beast · ★5", substring = true).assertCountEquals(3)
+        compose.onAllNodesWithText("Beast · ★5").assertCountEquals(3)
     }
 
     @Test
     @Config(sdk = [32], qualifiers = "ko-w840dp-h800dp-hdpi")
-    fun unBeastClassShowsSeparatelyInRowAndFilterMenu() {
+    fun unBeastClassShowsSeparatelyInRowAndFilterChips() {
         val rows = listOf("unBeastOlgaMarie", "beastIII", "saber").mapIndexed { index, cls ->
             val id = index.toLong() + 1
             DashboardServant(id, AtlasBasic(id, "서번트 $id", "normal", cls, 5), id, id, null, emptyList(), id)
@@ -228,18 +228,13 @@ class DashboardRound7UiTest {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNode(
-            hasText("서번트 1", substring = true) and hasText("언비스트 · ★5", substring = true),
-        ).assertExists()
-        compose.onNode(
-            hasText("서번트 2", substring = true) and hasText("  비스트 · ★5", substring = true),
-        ).assertExists()
+        compose.onAllNodesWithText("언비스트 · ★5").assertCountEquals(1)
+        compose.onAllNodesWithText("비스트 · ★5").assertCountEquals(1)
 
-        compose.onNode(hasText("모든 클래스") and collection).performClick()
-        compose.onAllNodesWithText("언비스트").assertCountEquals(1)
-        compose.onAllNodesWithText("비스트").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:언비스트").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:비스트").assertCountEquals(1)
 
-        compose.onNodeWithText("언비스트").performClick()
+        compose.onNodeWithTag("dashboard-class:언비스트").performClick()
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("서번트 2", substring = true).fetchSemanticsNodes().isEmpty()
         }
