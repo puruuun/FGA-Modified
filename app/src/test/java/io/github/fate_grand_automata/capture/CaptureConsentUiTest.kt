@@ -11,12 +11,8 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.ui.FGATheme
-import io.github.fate_grand_automata.ui.md_theme_dark_error
-import io.github.fate_grand_automata.ui.md_theme_dark_onError
 import io.github.fate_grand_automata.ui.md_theme_dark_onPrimary
 import io.github.fate_grand_automata.ui.md_theme_dark_primary
-import io.github.fate_grand_automata.ui.md_theme_light_error
-import io.github.fate_grand_automata.ui.md_theme_light_onError
 import io.github.fate_grand_automata.ui.md_theme_light_onPrimary
 import io.github.fate_grand_automata.ui.md_theme_light_primary
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -98,8 +94,7 @@ class CaptureConsentUiTest {
         fun contrast(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Float =
             (maxOf(a.luminance(), b.luminance()) + 0.05f) / (minOf(a.luminance(), b.luminance()) + 0.05f)
         assertTrue(contrast(md_theme_light_primary, md_theme_light_onPrimary) >= 4.5f)
-        assertTrue(contrast(md_theme_light_error, md_theme_light_onError) >= 4.5f)
+        assertTrue(contrast(captureStopBackground, captureStopForeground) >= 4.5f)
         assertTrue(contrast(md_theme_dark_primary, md_theme_dark_onPrimary) >= 4.5f)
-        assertTrue(contrast(md_theme_dark_error, md_theme_dark_onError) >= 4.5f)
     }
 }

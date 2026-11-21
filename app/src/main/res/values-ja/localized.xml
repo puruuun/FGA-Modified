@@ -1257,4 +1257,6 @@
     <string name="dashboard_servant_card_boost">カード強化 +%1$s (%2$d枚)</string>
     <string name="dashboard_col_codes">コード</string>
     <string name="dashboard_col_card_boost">カード強化</string>
+    <string name="clear_all">"すべて解除"</string>
+    <string name="p_wait_ap_regen_short">"待機"</string>
 </resources>

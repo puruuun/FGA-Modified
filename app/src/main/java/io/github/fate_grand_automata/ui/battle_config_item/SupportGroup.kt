@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CutCornerShape
@@ -168,6 +169,8 @@ fun SupportGroup(
 
 const val SupportClassTagPrefix = "supportClass:"
 
+val SupportClassIconMax = 30.dp
+
 @Composable
 fun SupportClassPicker(
     selected: SupportClass,
@@ -183,7 +186,8 @@ fun SupportClassPicker(
         )
     ) {
         // Exception to the 48dp touch target rule, by owner decision: the ten classes stay on one row as before,
-        // each taking an equal share of the width.
+        // each taking an equal share of the width. The diamond is drawn at most SupportClassIconMax wide (#613),
+        // while the touch target keeps its share of the row and the 48dp height it had before the diamonds shrank.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -205,6 +209,7 @@ fun SupportClassPicker(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = 48.dp)
                         .selectable(
                             selected = isSelected,
                             role = Role.RadioButton,
@@ -225,8 +230,8 @@ fun SupportClassPicker(
                         contentScale = ContentScale.Crop,
                         alpha = alpha,
                         modifier = Modifier
+                            .widthIn(max = SupportClassIconMax)
                             .fillMaxWidth()
-                            .widthIn(max = 40.dp)
                             .aspectRatio(1f)
                             .border(2.dp, borderClass, DiamondShape)
                             .clip(DiamondShape)

@@ -1,6 +1,8 @@
 package io.github.fate_grand_automata.ui.prefs
 
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +11,8 @@ import androidx.compose.runtime.setValue
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.ui.VectorIcon
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
+import io.github.fate_grand_automata.ui.dialog.FaceThumbnails
+import io.github.fate_grand_automata.ui.dialog.FaceThumbnail
 import io.github.fate_grand_automata.ui.dialog.multiChoiceList
 
 @Composable
@@ -17,7 +21,8 @@ fun <T> multiSelectListDialog(
     onSelectedChange: (Set<T>) -> Unit,
     entries: Map<T, String>,
     title: String,
-    dialogAction: (@Composable ((T) -> Unit) -> Unit)? = null
+    dialogAction: (@Composable ((T) -> Unit) -> Unit)? = null,
+    thumbnails: FaceThumbnails? = null
 ): FgaDialog {
     val dialog = FgaDialog()
 
@@ -31,7 +36,8 @@ fun <T> multiSelectListDialog(
             onSelectedChange = { current = it },
             items = entries.keys.toList()
         ) {
-            Text(entries[it] ?: "--")
+            if (thumbnails != null) FaceThumbnail(thumbnails, it.toString())
+            Text(entries[it] ?: "--", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
 
         buttons(
@@ -52,6 +58,7 @@ fun <T> Pref<Set<T>>.MultiSelectListPreference(
     entries: Map<T, String>,
     enabled: Boolean = true,
     dialogAction: (@Composable ((T) -> Unit) -> Unit)? = null,
+    thumbnails: FaceThumbnails? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     var selected by remember()
@@ -64,7 +71,8 @@ fun <T> Pref<Set<T>>.MultiSelectListPreference(
         onSelectedChange = { selected = it },
         entries = entries,
         title = title,
-        dialogAction = dialogAction
+        dialogAction = dialogAction,
+        thumbnails = thumbnails
     )
 
     Preference(

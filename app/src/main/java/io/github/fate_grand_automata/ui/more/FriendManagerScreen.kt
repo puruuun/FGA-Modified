@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.scripts.capture.*
+import io.github.fate_grand_automata.ui.dialog.FaceChoiceRow
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.account.dashboardClass
@@ -477,9 +478,8 @@ private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap
             itemsIndexed(options, key = { _, option -> option.id }) { index, option ->
                 if (ce && index > 0 && isBondCe(options[index - 1].id) && !isBondCe(option.id)) HorizontalDivider()
                 val label = stringResource(R.string.friends_option_count, option.name, option.count)
-                Row(Modifier.fillMaxWidth().clickable { choose(option.id) }.testTag("friends-pick-" + option.id), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(option.id in (if (ce) filter.ceIds else filter.servantIds), { choose(option.id) })
-                    Text(label)
+                FaceChoiceRow(option.id in (if (ce) filter.ceIds else filter.servantIds), { choose(option.id) }, Modifier.testTag("friends-pick-" + option.id)) {
+                    Text(label, Modifier.weight(1f))
                 }
             }
         }
