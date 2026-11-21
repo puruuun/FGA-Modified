@@ -214,8 +214,11 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNode(hasText("무료 100 · 유료 23") and hasAnyAncestor(hasTestTag("overview-quartz"))).assertExists()
         compose.onNode(hasText("123,456,789") and hasAnyAncestor(hasTestTag("overview-qp"))).assertExists()
 
-        val fruitX = listOf(100, 101, 104, 102).map { compose.onNodeWithTag("overview-fruit:$it").getUnclippedBoundsInRoot().left.value }
-        assertEquals(fruitX.sorted(), fruitX)
+        // The fruit row wraps when an icon has not loaded and its name is drawn instead, so compare reading order.
+        val fruitPos = listOf(100, 101, 104, 102).map {
+            compose.onNodeWithTag("overview-fruit:$it").getUnclippedBoundsInRoot().let { b -> b.top.value to b.left.value }
+        }
+        assertEquals(fruitPos.sortedWith(compareBy({ it.first }, { it.second })), fruitPos)
         val resourceY = listOf(3, 18, 16, 103, 4001, 49).map { compose.onNodeWithTag("overview-resource:$it").getUnclippedBoundsInRoot().top.value }
         assertEquals(resourceY.sorted(), resourceY)
         // Quartz and QP are headline numbers, not rows of the resource list; fruit is not a row either.
