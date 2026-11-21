@@ -1130,6 +1130,26 @@
     <string name="dashboard_group_event">이벤트 아이템</string>
     <string name="dashboard_group_coins">서번트 코인</string>
     <string name="dashboard_group_other">기타</string>
+    <string name="dashboard_items_search">이름으로 찾기</string>
+    <string name="dashboard_items_search_clear">검색어 지우기</string>
+    <string name="dashboard_items_no_match">일치하는 아이템이 없습니다</string>
+    <string name="dashboard_items_show_more">더 보기 (%1$d종)</string>
+    <string name="dashboard_items_none">없음</string>
+    <plurals name="dashboard_items_count">
+        <item quantity="other">%1$d종</item>
+    </plurals>
+    <string name="dashboard_item_row_gem">휘석</string>
+    <string name="dashboard_item_row_magic_gem">마석</string>
+    <string name="dashboard_item_row_secret_gem">비석</string>
+    <string name="dashboard_item_row_piece">피스</string>
+    <string name="dashboard_item_row_monument">모뉴먼트</string>
+    <string name="dashboard_item_class_short_saber">세이</string>
+    <string name="dashboard_item_class_short_archer">아처</string>
+    <string name="dashboard_item_class_short_lancer">랜서</string>
+    <string name="dashboard_item_class_short_rider">라이</string>
+    <string name="dashboard_item_class_short_caster">캐스</string>
+    <string name="dashboard_item_class_short_assassin">어새</string>
+    <string name="dashboard_item_class_short_berserker">버서</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">장착 중</string>
     <string name="dashboard_quest">퀘스트 #%1$d</string>

@@ -262,27 +262,26 @@ class DashboardRound7UiTest {
             }
         }
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithText("+ Servant coins (2)").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("items-group-header:Coins").fetchSemanticsNodes().isNotEmpty()
         }
-        val eventBounds = compose.onNodeWithText("+ Event items (1)").fetchSemanticsNode().boundsInRoot
-        val coinsHeader = compose.onNodeWithText("+ Servant coins (2)")
+        val eventBounds = compose.onNodeWithTag("items-group-header:Event").fetchSemanticsNode().boundsInRoot
+        val coinsHeader = compose.onNodeWithTag("items-group-header:Coins")
         val coinsBounds = coinsHeader.fetchSemanticsNode().boundsInRoot
-        val otherBounds = compose.onNodeWithText("+ Other (1)").fetchSemanticsNode().boundsInRoot
+        val otherBounds = compose.onNodeWithTag("items-group-header:Other").fetchSemanticsNode().boundsInRoot
         assertTrue(eventBounds.bottom <= coinsBounds.top)
         assertTrue(coinsBounds.bottom <= otherBounds.top)
+        coinsHeader.assertTextContains("2", substring = true)
 
         compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
         compose.onNodeWithText("Coin Beta").assertDoesNotExist()
 
         coinsHeader.performScrollTo().performClick()
-        compose.onNodeWithText("− Servant coins (2)").assertExists()
         compose.onNodeWithText("Coin Alpha").assertExists()
         compose.onNodeWithText("Coin Beta").assertExists()
         compose.onNodeWithText("30").assertExists()
         compose.onNodeWithText("10").assertExists()
 
-        compose.onNodeWithText("− Servant coins (2)").performClick()
-        compose.onNodeWithText("+ Servant coins (2)").assertExists()
+        coinsHeader.performClick()
         compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
     }
 }
