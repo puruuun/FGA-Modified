@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -40,15 +41,18 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 @Composable
 internal fun DashboardOverview(
     data: DashboardData, names: GameNameMap, friendCount: Int?, battle: BattleLogEntry?, outside: OutsideLogEntry?,
-    now: Long, wide: Boolean, openLogs: () -> Unit,
+    now: Long, wide: Boolean, openLogs: () -> Unit, progress: DashboardProgress = DashboardProgress(),
 ) {
     Column(Modifier.fillMaxWidth().testTag("dashboard-overview"), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         val first: @Composable ColumnScope.() -> Unit = {
             OverviewResourceList(data, names)
             OverviewFruits(data, names)
+            // Narrow: right after the resources and apples. Wide: the top of the right column instead.
+            if (!wide) OverviewProgress(progress, now)
             data.servants?.takeIf { it.isNotEmpty() }?.let { OverviewServants(it, data.servantCatalog) }
         }
         val second: @Composable ColumnScope.() -> Unit = {
+            if (wide) OverviewProgress(progress, now)
             data.storage?.let { OverviewStorage(it) }
             if (battle != null || outside != null) OverviewRecent(battle, outside, names, openLogs)
         }
@@ -68,6 +72,46 @@ internal fun DashboardOverview(
 private fun OverviewTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+/** "11-17 ~ 11-23" in the device's time zone. `end - 1` keeps a set that ends at midnight on its own last day. */
+internal fun weeklyDates(start: Long, end: Long, locale: Locale = Locale.getDefault(), timeZone: java.util.TimeZone = java.util.TimeZone.getDefault()): Pair<String, String> {
+    val format = SimpleDateFormat("MM-dd", locale).apply { this.timeZone = timeZone }
+    return format.format(Date(start * 1000)) to format.format(Date((end - 1) * 1000))
+}
+
+/** Hidden as a whole when it has no line; events that are not running are left out. */
+@Composable
+private fun OverviewProgress(progress: DashboardProgress, now: Long) {
+    if (progress.isEmpty(now)) return
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("overview-progress")) {
+        OverviewTitle(stringResource(R.string.dashboard_overview_progress))
+        progress.weekly?.let { weekly ->
+            val (from, to) = weeklyDates(weekly.start, weekly.end)
+            Text(
+                stringResource(R.string.dashboard_progress_weekly, from, to, weekly.done, weekly.total),
+                Modifier.testTag("overview-progress-weekly"), style = MaterialTheme.typography.bodyMedium.tabular(),
+            )
+        }
+        progress.running(now).forEach { event ->
+            val color = if (event.complete) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+            Column(Modifier.fillMaxWidth().testTag("overview-progress-event:${event.eventId}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (event.max != null) {
+                    Text(
+                        "${event.name} · ${event.points.grouped()} / ${event.max.grouped()}", style = MaterialTheme.typography.bodyMedium.tabular(),
+                        color = if (event.complete) color else MaterialTheme.colorScheme.onSurface,
+                    )
+                    LinearProgressIndicator(
+                        progress = { event.fraction }, color = color, modifier = Modifier.fillMaxWidth().testTag("overview-progress-bar:${event.eventId}"),
+                        drawStopIndicator = {},
+                    )
+                } else Text(
+                    stringResource(R.string.dashboard_progress_event_open, event.name, event.points.grouped()),
+                    style = MaterialTheme.typography.bodyMedium.tabular(),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -275,6 +319,14 @@ private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long, w
         profile["costMax"]?.let { add(Triple("cost", R.string.dashboard_cost, it.toLongOrNull()?.grouped() ?: it)) }
         profile["friendKeep"]?.let { add(Triple("friends", R.string.dashboard_friends, friendLimitText(it, friendCount))) }
         profile["createdAt"]?.let { add(Triple("created", R.string.dashboard_created, it.toLongOrNull()?.let(::date) ?: it)) }
+        data.login?.let { login ->
+            login.total?.let { add(Triple("loginTotal", R.string.dashboard_login_total, loginDays(it))) }
+            login.seq?.let { add(Triple("loginSeq", R.string.dashboard_login_seq, loginDays(it))) }
+            val left = login.daysLeft
+            if (login.nextRewardDay != null && left != null) {
+                add(Triple("loginNext", R.string.dashboard_login_next, stringResource(R.string.dashboard_login_next_value, loginDays(login.nextRewardDay), loginDays(left))))
+            }
+        }
         add(Triple("snapshot", R.string.dashboard_snapshot, date(data.snapshotTime)))
         data.game?.number("commandSpellRecoverAt")?.takeIf { it > now }
             ?.let { add(Triple("commandSpell", R.string.dashboard_command_spell, date(it))) }
@@ -298,6 +350,10 @@ private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long, w
         }
     }
 }
+
+@Composable
+private fun loginDays(days: Long): String =
+    pluralStringResource(R.plurals.dashboard_login_days, days.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(), days.grouped())
 
 /** "143 / 146" once a friend list was seen, the plain limit before that. */
 internal fun friendLimitText(keep: String, count: Int?): String {

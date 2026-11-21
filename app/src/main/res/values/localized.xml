@@ -1552,4 +1552,27 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_day_no_changes">No changes recorded</string>
     <string name="capture_log_day_no_scripts">No script runs recorded on this day</string>
     <string name="capture_log_day_zone_note">Game day starts at 04:00 Korea/Japan time</string>
+    <!-- Dashboard: in-progress block, login counts, parties, servant command codes (#615) -->
+    <string name="dashboard_overview_progress">In progress</string>
+    <string name="dashboard_progress_weekly">Weekly missions · %1$s ~ %2$s · %3$d / %4$d done</string>
+    <string name="dashboard_progress_event_open">%1$s · Points %2$s</string>
+    <string name="dashboard_login_total">Total logins</string>
+    <string name="dashboard_login_seq">Login streak</string>
+    <string name="dashboard_login_next">Next total reward</string>
+    <plurals name="dashboard_login_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="dashboard_login_next_value">%1$s (in %2$s)</string>
+    <string name="dashboard_formation_parties">Parties</string>
+    <string name="dashboard_party_title">Party %1$d · %2$s</string>
+    <string name="dashboard_party_title_plain">Party %1$d</string>
+    <string name="dashboard_party_chip">Party %1$d</string>
+    <string name="dashboard_party_support">Support</string>
+    <string name="dashboard_party_mystic">Mystic Code: %1$s</string>
+    <string name="dashboard_formation_deck_named">Deck %1$d · %2$s</string>
+    <string name="dashboard_servant_codes">Command Codes %1$d / %2$d</string>
+    <string name="dashboard_servant_card_boost">Card boost +%1$s (%2$d cards)</string>
+    <string name="dashboard_col_codes">Codes</string>
+    <string name="dashboard_col_card_boost">Card boost</string>
 </resources>

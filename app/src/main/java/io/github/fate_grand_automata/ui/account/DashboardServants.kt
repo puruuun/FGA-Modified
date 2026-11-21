@@ -24,6 +24,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
+import io.github.fate_grand_automata.util.grouped
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -49,6 +50,12 @@ internal fun skillCell(value: Long?): ServantCell = when {
 
 /** An append that is not unlocked is stored as null or 0; both read as "not unlocked". */
 internal fun appendCell(value: Long?): ServantCell = if (value == null || value == 0L) ServantCell(LOCKED_TEXT, CellKind.Locked) else skillCell(value)
+
+/** "2 / 5": filled slots of the unlocked ones. Null for a servant without a command code row. */
+internal fun DashboardServant.codesText(): String? = commandCodes?.let { "${it.filled} / ${it.unlocked}" }
+
+/** "+1,000 (2)": the summed enhancement and the number of enhanced cards. Null when nothing is enhanced. */
+internal fun DashboardServant.boostText(): String? = cardBoost?.let { "+${it.sum.grouped()} (${it.cards})" }
 
 internal fun DashboardServant.skillCells() = (0..2).map { skillCell(skills.getOrNull(it)) }
 internal fun DashboardServant.appendCells() = (0..4).map { appendCell(appends.getOrNull(it)) }
@@ -125,6 +132,10 @@ internal fun classGroups(servantClasses: List<String>, label: (String) -> String
 }
 
 private val TABLE_MIN_WIDTH = 600.dp
+/** Below this the two extra columns (command codes, card boost) do not leave the name enough room and join the class line. */
+private val EXTRA_COLUMNS_MIN_WIDTH = 880.dp
+private val CodesWidth = 52.dp
+private val BoostWidth = 92.dp
 private val FaceSize = 40.dp
 private val LevelWidth = 76.dp
 private val BondWidth = 44.dp
@@ -149,6 +160,8 @@ internal fun ColumnScope.Servants(data: DashboardData) {
 
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val table = maxWidth >= TABLE_MIN_WIDTH
+        // The columns are only worth their width when some servant has a value for them.
+        val extraColumns = maxWidth >= EXTRA_COLUMNS_MIN_WIDTH && servants.any { it.commandCodes != null || it.cardBoost != null }
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val sortChips = @Composable {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -173,11 +186,11 @@ internal fun ColumnScope.Servants(data: DashboardData) {
                     FilterChip(selected = classLabel == label, onClick = { classLabel = label }, modifier = Modifier.testTag("dashboard-class:$label"), label = { Text(label) })
                 }
             }
-            if (table) TableHeader()
+            if (table) TableHeader(extraColumns)
             HorizontalDivider(color = scheme.outlineVariant)
             LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("dashboard-servant-list")) {
                 items(selected, key = { it.id }) { servant ->
-                    if (table) TableRow(servant) else NarrowRow(servant)
+                    if (table) TableRow(servant, extraColumns) else NarrowRow(servant)
                     HorizontalDivider(color = scheme.outlineVariant)
                 }
             }
@@ -186,7 +199,7 @@ internal fun ColumnScope.Servants(data: DashboardData) {
 }
 
 @Composable
-private fun TableHeader() {
+private fun TableHeader(extraColumns: Boolean) {
     val style = MaterialTheme.typography.labelMedium
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     Row(Modifier.fillMaxWidth().testTag("dashboard-servant-header"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -197,6 +210,10 @@ private fun TableHeader() {
         Text(stringResource(R.string.dashboard_col_np), Modifier.width(NpWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
         Text(stringResource(R.string.dashboard_col_skills), Modifier.width(SkillsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
         Text(stringResource(R.string.dashboard_col_appends), Modifier.width(AppendsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        if (extraColumns) {
+            Text(stringResource(R.string.dashboard_col_codes), Modifier.width(CodesWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+            Text(stringResource(R.string.dashboard_col_card_boost), Modifier.width(BoostWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        }
     }
 }
 
@@ -207,15 +224,16 @@ private fun classAndRarity(servant: DashboardServant): String = listOfNotNull(
 ).joinToString(" · ")
 
 @Composable
-private fun TableRow(servant: DashboardServant) {
+private fun TableRow(servant: DashboardServant, extraColumns: Boolean) {
     val scheme = MaterialTheme.colorScheme
     val body = MaterialTheme.typography.bodyMedium.merge(numeric)
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         AtlasIcon("servants", servant.id, servant.atlas?.icon, size = FaceSize)
         Column(Modifier.weight(1f)) {
             Text(servant.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            classAndRarity(servant).takeIf { it.isNotEmpty() }?.let {
-                Text(it, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val line = (listOf(classAndRarity(servant)) + if (extraColumns) emptyList() else servantExtras(servant)).filter { it.isNotEmpty() }.joinToString(" · ")
+            if (line.isNotEmpty()) {
+                Text(line, Modifier.testTag("dashboard-servant-subline"), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Text(levelText(servant.level, servant.maxLevel), Modifier.width(LevelWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
@@ -223,10 +241,21 @@ private fun TableRow(servant: DashboardServant) {
         Text(servant.np?.toString() ?: LOCKED_TEXT, Modifier.width(NpWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
         Text(annotatedCells(servant.skillCells(), scheme), Modifier.width(SkillsWidth).testTag("dashboard-servant-skills"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
         Text(annotatedCells(servant.appendCells(), scheme), Modifier.width(AppendsWidth).testTag("dashboard-servant-appends"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+        if (extraColumns) {
+            Text(servant.codesText() ?: "", Modifier.width(CodesWidth).testTag("dashboard-servant-codes"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+            Text(servant.boostText() ?: "", Modifier.width(BoostWidth).testTag("dashboard-servant-boost"), style = body, textAlign = TextAlign.End, maxLines = 1, softWrap = false)
+        }
     }
 }
 
-/** Three lines, because two do not fit at 360dp: face, name and class; then the Lv, bond and NP; then skills and appends. */
+/** Command codes and card boost as the sentences of the narrow rows; a part without data is left out. */
+@Composable
+private fun servantExtras(servant: DashboardServant): List<String> = listOfNotNull(
+    servant.commandCodes?.let { stringResource(R.string.dashboard_servant_codes, it.filled, it.unlocked) },
+    servant.cardBoost?.let { stringResource(R.string.dashboard_servant_card_boost, it.sum.grouped(), it.cards) },
+)
+
+/** Three lines, because two do not fit at 360dp: face, name and class; then the Lv, bond and NP; then skills and appends. A fourth line holds command codes and card boost. */
 @Composable
 private fun NarrowRow(servant: DashboardServant) {
     val scheme = MaterialTheme.colorScheme
@@ -240,6 +269,7 @@ private fun NarrowRow(servant: DashboardServant) {
         buildAnnotatedString { append(stringResource(R.string.dashboard_col_skills) + " "); append(annotatedCells(servant.skillCells(), scheme)) },
         buildAnnotatedString { append(stringResource(R.string.dashboard_col_appends) + " "); append(annotatedCells(servant.appendCells(), scheme)) },
     ), muted)
+    val extras = servantExtras(servant).joinToString(" · ")
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(vertical = 4.dp).testTag("dashboard-servant-row"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         AtlasIcon("servants", servant.id, servant.atlas?.icon, size = FaceSize)
         Column(Modifier.weight(1f)) {
@@ -252,6 +282,8 @@ private fun NarrowRow(servant: DashboardServant) {
             val detail = MaterialTheme.typography.bodySmall.merge(numeric)
             Text(stats, Modifier.testTag("dashboard-servant-detail"), style = detail, color = scheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(levels, Modifier.testTag("dashboard-servant-levels"), style = detail, color = scheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Command codes and card boost do not fit the third line at 360dp, so servants that have them get a fourth.
+            if (extras.isNotEmpty()) Text(extras, Modifier.testTag("dashboard-servant-extras"), style = detail, color = scheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

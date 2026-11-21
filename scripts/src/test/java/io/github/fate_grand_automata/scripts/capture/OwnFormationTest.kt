@@ -36,6 +36,16 @@ class OwnFormationTest {
         assertTrue(result.grand.isEmpty())
     }
 
+    @Test fun userSupportDeckNamesAreAttachedByDeckIdAndOtherDecksStayUnnamed() {
+        val result = OwnFormations.from(state(
+            "userGame" to game("[101,102]", "[201]"),
+            "userSvtLeader" to "[${leader(101, 1)},${leader(102, 1)},${leader(201, 3)}]",
+            "userSupportDeck" to """[{"supportDeckId":102,"name":" 내 덱 "},{"supportDeckId":201,"name":""},{"supportDeckId":999,"name":"없는 덱"}]""",
+        ))!!
+        assertEquals(listOf(null, "내 덱"), result.main.map { it.name })
+        assertNull(result.event.single().name)
+    }
+
     @Test fun missingDeckIdListsPutEveryDeckUnderNormal() {
         val rows = "[${leader(103, 1)},${leader(101, 1)},${leader(101, 2)}]"
         for (game in listOf(null, game(null, null), game("[]", "[]"), """[{"userId":"1","fixMainSupportDeckIds":"broken"}]""")) {

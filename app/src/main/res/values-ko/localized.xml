@@ -1477,6 +1477,28 @@
     <string name="capture_log_day_no_changes">기록된 변동이 없습니다</string>
     <string name="capture_log_day_no_scripts">이 날 기록된 스크립트 실행이 없습니다</string>
     <string name="capture_log_day_zone_note">한국·일본 시간 04:00 기준</string>
+    <!-- 대시보드: 진행 중 블록, 로그인 일수, 파티, 서번트 커맨드 코드 (#615) -->
+    <string name="dashboard_overview_progress">진행 중</string>
+    <string name="dashboard_progress_weekly">주간 미션 · %1$s ~ %2$s · %3$d / %4$d 완료</string>
+    <string name="dashboard_progress_event_open">%1$s · 포인트 %2$s</string>
+    <string name="dashboard_login_total">누적 로그인</string>
+    <string name="dashboard_login_seq">연속 로그인</string>
+    <string name="dashboard_login_next">다음 누적 보상</string>
+    <plurals name="dashboard_login_days">
+        <item quantity="other">%1$s일</item>
+    </plurals>
+    <string name="dashboard_login_next_value">%1$s (%2$s 후)</string>
+    <string name="dashboard_formation_parties">파티 편성</string>
+    <string name="dashboard_party_title">파티 %1$d · %2$s</string>
+    <string name="dashboard_party_title_plain">파티 %1$d</string>
+    <string name="dashboard_party_chip">파티 %1$d</string>
+    <string name="dashboard_party_support">서포트</string>
+    <string name="dashboard_party_mystic">마술예장: %1$s</string>
+    <string name="dashboard_formation_deck_named">편성 %1$d · %2$s</string>
+    <string name="dashboard_servant_codes">커맨드 코드 %1$d / %2$d</string>
+    <string name="dashboard_servant_card_boost">카드 강화 +%1$s (%2$d장)</string>
+    <string name="dashboard_col_codes">코드</string>
+    <string name="dashboard_col_card_boost">카드 강화</string>
     <string name="clear_all">"모두 해제"</string>
     <string name="p_wait_ap_regen_short">"기다리기"</string>
 </resources>
