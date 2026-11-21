@@ -67,6 +67,39 @@ fun CardPriorityWaveSelector(
                         modifier = Modifier.testTag("$WaveTabTagPrefix$index")
                     )
                 }
+
+                // Part of the scrolling row so it follows the last tab; the row's index-based indicator
+                // is unaffected because this comes after every tab.
+                AnimatedVisibility(
+                    items.size < CARD_PRIORITY_MAX_ENTRIES,
+                    enter = slideInHorizontally(initialOffsetX = { it * 2 }),
+                    exit = slideOutHorizontally(targetOffsetX = { it * 2 })
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (items.size < CARD_PRIORITY_MAX_ENTRIES) {
+                                items.add(
+                                    CardPriorityListItem(
+                                        items[0].scores.toMutableStateList(),
+                                        items[0].servantPriority.toMutableStateList(),
+                                        items[0].servantCards.toMutableStateList(),
+                                        mutableStateOf(false),
+                                        mutableStateOf(BraveChainEnum.None),
+                                        // A new entry copies the previous entry's style and servant priority switch.
+                                        mutableStateOf(items.last().style.value),
+                                        mutableStateOf(items.last().useServantPriority.value)
+                                    )
+                                )
+                            }
+                        },
+                        modifier = Modifier.testTag(WaveAddTag)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add wave"
+                        )
+                    }
+                }
             }
 
             AnimatedVisibility(items.size > 1) {
@@ -85,37 +118,6 @@ fun CardPriorityWaveSelector(
                         painterResource(R.drawable.ic_close),
                         contentDescription = "Remove wave",
                         tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                items.size < CARD_PRIORITY_MAX_ENTRIES,
-                enter = slideInHorizontally(initialOffsetX = { it * 2 }),
-                exit = slideOutHorizontally(targetOffsetX = { it * 2 })
-            ) {
-                IconButton(
-                    onClick = {
-                        if (items.size < CARD_PRIORITY_MAX_ENTRIES) {
-                            items.add(
-                                CardPriorityListItem(
-                                    items[0].scores.toMutableStateList(),
-                                    items[0].servantPriority.toMutableStateList(),
-                                    items[0].servantCards.toMutableStateList(),
-                                    mutableStateOf(false),
-                                    mutableStateOf(BraveChainEnum.None),
-                                    // A new entry copies the previous entry's style and servant priority switch.
-                                    mutableStateOf(items.last().style.value),
-                                    mutableStateOf(items.last().useServantPriority.value)
-                                )
-                            )
-                        }
-                    },
-                    modifier = Modifier.testTag(WaveAddTag)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add wave"
                     )
                 }
             }

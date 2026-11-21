@@ -45,13 +45,16 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (servantStyle) {
-            ServantCardDragSort(servantCards)
-        } else {
-            CardPriorityDragSort(scores)
+        ReorderPanel(
+            header = { PriorityDirectionHeader() },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            if (servantStyle) {
+                ServantCardDragSort(servantCards)
+            } else {
+                CardPriorityDragSort(scores)
+            }
         }
-
-        ReorderHint()
 
         if (servantStyle) {
             Text(
@@ -181,42 +184,35 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
 private fun ServantPriority(
     priorities: SnapshotStateList<TeamSlot>
 ) {
-    Text(
-        "Servant Priority".uppercase(),
-        modifier = Modifier
-            .padding(bottom = 5.dp, top = 16.dp)
-    )
-
-    DragSort(
-        items = priorities,
-        key = { it.position },
-        style = {
-            DragSortItemStyle(
-                backgroundColor = colorResource(
-                    when (it.position) {
-                        1 -> R.color.colorArts
-                        2 -> R.color.colorQuick
-                        3 -> R.color.colorBuster
-                        4 -> R.color.colorArtsResist
-                        5 -> R.color.colorQuickResist
-                        else -> R.color.colorBusterResist
-                    }
-                ),
-                contentColor = Color.White,
-                text = "  ${it.position}  "
+    ReorderPanel(
+        header = {
+            Text(
+                "Servant Priority".uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    ReorderHint()
-}
-
-@Composable
-private fun ReorderHint() {
-    Text(
-        stringResource(R.string.card_priority_hint_move_item),
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
+        }
+    ) {
+        DragSort(
+            items = priorities,
+            key = { it.position },
+            style = {
+                DragSortItemStyle(
+                    backgroundColor = colorResource(
+                        when (it.position) {
+                            1 -> R.color.colorArts
+                            2 -> R.color.colorQuick
+                            3 -> R.color.colorBuster
+                            4 -> R.color.colorArtsResist
+                            5 -> R.color.colorQuickResist
+                            else -> R.color.colorBusterResist
+                        }
+                    ),
+                    contentColor = Color.White,
+                    text = "${it.position}"
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
