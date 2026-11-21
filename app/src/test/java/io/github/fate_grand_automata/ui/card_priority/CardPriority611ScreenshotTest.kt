@@ -58,6 +58,7 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
     @Test fun oneWave1280() = shot(1, 1280)
     @Test fun threeWaves360() = shot(3, 360)
     @Test fun threeWaves1280() = shot(3, 1280)
+    @Test fun fiveWaves360() = shot(5, 360)
 
     companion object {
         @JvmStatic

@@ -2,6 +2,8 @@ package io.github.fate_grand_automata.ui.card_priority
 
 import android.content.Context
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -14,7 +16,6 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,11 @@ class CardPriorityRowTest {
         profileIndex = 0
     )
 
-    private fun bounds(tag: String) = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+    // boundsInRoot is clipped to the visible part of a scrolling parent, which would hide a node that is cut off.
+    private fun bounds(tag: String): Rect {
+        val node = compose.onNodeWithTag(tag).fetchSemanticsNode()
+        return Rect(node.positionInRoot, node.size.toSize())
+    }
 
     @Test
     fun `the add button sits right after the last tab and follows it when a wave is added`() {
@@ -69,6 +74,46 @@ class CardPriorityRowTest {
         assertTrue(bounds(WaveAddTag).left > firstAddLeft)
     }
 
+    private fun px(dp: Int) = with(compose.density) { dp.dp.toPx() }
+
+    private fun inside(tag: String) {
+        val row = bounds(WaveTabRowTag)
+        val node = bounds(tag)
+        assertTrue("$tag $node outside $row", node.left >= row.left && node.right <= row.right)
+    }
+
+    @Test
+    fun `at phone width three waves and the add button fit without scrolling`() {
+        val vm = viewModel("cp611_fit")
+        compose.setContent { FGATheme { CardPriorityScreen(vm = vm) } }
+
+        repeat(2) {
+            compose.onNodeWithTag(WaveAddTag).performClick()
+            compose.waitForIdle()
+        }
+
+        assertEquals(3, vm.cardPriorityItems.size)
+        inside("${WaveTabTagPrefix}0")
+        inside("${WaveTabTagPrefix}2")
+        inside(WaveAddTag)
+        assertTrue(bounds(WaveAddTag).left - bounds("${WaveTabTagPrefix}2").right <= px(8))
+    }
+
+    @Test
+    fun `adding a wave beyond the visible width scrolls the new tab and the add button into view`() {
+        val vm = viewModel("cp611_scroll")
+        compose.setContent { FGATheme { CardPriorityScreen(vm = vm) } }
+
+        repeat(5) {
+            compose.onNodeWithTag(WaveAddTag).performClick()
+            compose.waitForIdle()
+        }
+
+        assertEquals(6, vm.cardPriorityItems.size)
+        inside("${WaveTabTagPrefix}5")
+        inside(WaveAddTag)
+    }
+
     @Test
     fun `the add button is gone at the entry limit`() {
         val vm = viewModel("cp611_limit")
@@ -76,7 +121,7 @@ class CardPriorityRowTest {
 
         repeat(CARD_PRIORITY_MAX_ENTRIES + 2) {
             if (compose.onAllNodesWithTag(WaveAddTag).fetchSemanticsNodes().isNotEmpty()) {
-                compose.onNodeWithTag(WaveAddTag).performScrollTo().performClick()
+                compose.onNodeWithTag(WaveAddTag).performClick()
             }
             compose.waitForIdle()
         }

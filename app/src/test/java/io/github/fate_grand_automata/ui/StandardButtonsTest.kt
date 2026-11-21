@@ -21,7 +21,6 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -163,7 +162,7 @@ class StandardButtonsTest {
         compose.setContent { FGATheme { CardPriorityScreen(vm = vm) } }
 
         repeat(12) {
-            if (compose.onAllNodesWithTagCount(WaveAddTag) > 0) compose.onNodeWithTag(WaveAddTag).performScrollTo().performClick()
+            if (compose.onAllNodesWithTagCount(WaveAddTag) > 0) compose.onNodeWithTag(WaveAddTag).performClick()
             compose.waitForIdle()
         }
         assertEquals(io.github.fate_grand_automata.ui.card_priority.CARD_PRIORITY_MAX_ENTRIES, vm.cardPriorityItems.size)
