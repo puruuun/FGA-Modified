@@ -4,7 +4,7 @@ When you have many battle configs, you can group them into collapsible folders. 
 
 ## Creating Folders and Moving Configs
 
-1. Long-press a config in the **Battle Configs** list. Selection mode turns on, and you can tap other configs to select them together.
+1. Long-press a config in the **Battle Configs** list. Selection mode turns on and a checkbox appears to the left of each config; you can tap other configs to select them together.
 2. Tap the **Move to folder** button at the top.
 3. Choose an option in the dialog:
    - An existing folder name: moves the selected configs into that folder.

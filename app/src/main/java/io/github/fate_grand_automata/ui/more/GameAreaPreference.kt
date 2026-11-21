@@ -150,7 +150,6 @@ fun GameAreaPreference(prefs: PrefsCore, preview: GameAreaPreviewManager) {
         if (mode != GameAreaMode.Default) {
             Card(
                 modifier = Modifier.padding(5.dp),
-                elevation = CardDefaults.cardElevation(5.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {

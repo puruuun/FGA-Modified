@@ -6,22 +6,21 @@ import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardDefaults.cardElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -165,13 +166,15 @@ fun SupportGroup(
     }
 }
 
+const val SupportClassTagPrefix = "supportClass:"
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SupportClassPicker(
     selected: SupportClass,
     onSelectedChange: (SupportClass) -> Unit
 ) {
     Card(
-        elevation = cardElevation(2.dp),
         modifier = Modifier
             .padding(16.dp, 5.dp)
             .fillMaxWidth(),
@@ -180,13 +183,15 @@ fun SupportClassPicker(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
-        LazyRow(
+        // Ten 48dp touch targets do not fit one 360dp row, so they wrap into two rows of five.
+        FlowRow(
             modifier = Modifier
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(5.dp),
+                .fillMaxWidth()
+                .padding(5.dp),
+            maxItemsInEachRow = 5,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            items(SupportClass.entries.drop(1)) {
+            SupportClass.entries.drop(1).forEach {
                 val isSelected = selected == it
                 val transition = updateTransition(isSelected, label = "Selected")
                 val alpha by transition.animateFloat(label = "alpha") { selected ->
@@ -194,27 +199,38 @@ fun SupportClassPicker(
                 }
                 val borderClass by transition.animateColor(label = "border color") { selected ->
                     if (selected)
-                        MaterialTheme.colorScheme.secondary
+                        MaterialTheme.colorScheme.primary
                     else Color.Transparent
                 }
 
-                AsyncImage(
-                    it.drawable,
-                    contentDescription = it.name,
-                    contentScale = ContentScale.Crop,
-                    alpha = alpha,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(25.dp)
-                        .border(2.dp, borderClass, DiamondShape)
-                        .clip(DiamondShape)
-                        .clickable {
-                            onSelectedChange(
-                                if (isSelected)
-                                    SupportClass.None
-                                else it
-                            )
-                        }
-                )
+                        .size(48.dp)
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                onSelectedChange(
+                                    if (isSelected)
+                                        SupportClass.None
+                                    else it
+                                )
+                            }
+                        )
+                        .testTag("$SupportClassTagPrefix${it.name}")
+                ) {
+                    AsyncImage(
+                        it.drawable,
+                        contentDescription = it.name,
+                        contentScale = ContentScale.Crop,
+                        alpha = alpha,
+                        modifier = Modifier
+                            .size(25.dp)
+                            .border(2.dp, borderClass, DiamondShape)
+                            .clip(DiamondShape)
+                    )
+                }
             }
         }
     }
@@ -284,7 +300,6 @@ fun PreferredSummary(
 
             if (servants.isNotEmpty()) {
                 Card(
-                    elevation = cardElevation(2.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant

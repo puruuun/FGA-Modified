@@ -17,10 +17,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -60,7 +64,6 @@ import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
-import io.github.fate_grand_automata.ui.HeadingButton
 import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.StartMediaProjection
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
@@ -418,7 +421,17 @@ internal fun MainBuildStatusRow(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         content = {
             Box(Modifier.testTag("buildBadge")) {
-                HeadingButton(text = "Build: ${BuildConfig.VERSION_NAME}", onClick = openBuild)
+                AssistChip(
+                    onClick = openBuild,
+                    label = { Text("Build: ${BuildConfig.VERSION_NAME}") },
+                    leadingIcon = { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    border = null
+                )
             }
             Surface(
                 onClick = toggleService,

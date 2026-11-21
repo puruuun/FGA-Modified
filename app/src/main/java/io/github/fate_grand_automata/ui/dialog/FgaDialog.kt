@@ -3,13 +3,11 @@ package io.github.fate_grand_automata.ui.dialog
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,8 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.VectorIcon
@@ -216,6 +214,7 @@ fun <T> FgaDialog.multiChoiceList(
                 ChoiceListItem(
                     isSelected = it in selected,
                     onClick = { onSelectedChange(selected.toggle(it)) },
+                    multiple = true,
                     modifier = Modifier.animateItem(
                         spring(
                             stiffness = Spring.StiffnessMedium
@@ -229,44 +228,39 @@ fun <T> FgaDialog.multiChoiceList(
     }
 }
 
+/**
+ * One choice of a dialog list: a radio button, or a checkbox when [multiple], and the content.
+ * The whole row is the touch target, so the button itself carries no click of its own.
+ */
 @Composable
 fun ChoiceListItem(
     modifier: Modifier = Modifier,
     isSelected: Boolean,
     onClick: () -> Unit,
+    multiple: Boolean = false,
     content: @Composable RowScope.() -> Unit
 ) {
-    Card(
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(
-            containerColor =
-            if (isSelected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        modifier = Modifier
-            .padding(bottom = 7.dp)
-            .then(modifier)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .then(
+                if (multiple) Modifier.toggleable(value = isSelected, role = Role.Checkbox, onValueChange = { onClick() })
+                else Modifier.selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
+            )
+            .padding(end = 8.dp)
     ) {
+        if (multiple) Checkbox(checked = isSelected, onCheckedChange = null)
+        else RadioButton(selected = isSelected, onClick = null)
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(16.dp, 5.dp)
+                .weight(1f)
+                .padding(start = 16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f)
-            ) {
-                content()
-            }
-
-            if (isSelected) {
-                Icon(
-                    rememberVectorPainter(Icons.Default.Check),
-                    contentDescription = "check"
-                )
-            }
+            content()
         }
     }
 }

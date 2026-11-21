@@ -1,9 +1,7 @@
 package io.github.fate_grand_automata.ui.spam
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +17,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,7 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,6 +43,8 @@ import io.github.fate_grand_automata.ui.prefs.SwitchPreference
 import io.github.fate_grand_automata.ui.prefs.listDialog
 import io.github.fate_grand_automata.util.stringRes
 import kotlinx.coroutines.launch
+
+const val SpamServantTabTagPrefix = "spamServantTab:"
 
 @Composable
 fun SpamScreen(
@@ -73,32 +75,22 @@ fun SpamScreen(
             }
 
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Text(
+                    stringResource(R.string.spam_servant),
                     modifier = Modifier.padding(16.dp, 5.dp)
+                )
+
+                PrimaryTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    divider = {}
                 ) {
-                    Text(
-                        stringResource(R.string.spam_servant),
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
-
-                    (1..vm.spamStates.size).map {
-                        val isSelected = pagerState.currentPage == it - 1
-
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent,
-                                    shape = MaterialTheme.shapes.medium
-                                )
-                                .clickable { scope.launch { pagerState.animateScrollToPage(it - 1) } }
-                                .padding(14.dp, 5.dp)
-                        ) {
-                            Text(
-                                it.toString(),
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    (1..vm.spamStates.size).forEach {
+                        Tab(
+                            selected = pagerState.currentPage == it - 1,
+                            onClick = { scope.launch { pagerState.animateScrollToPage(it - 1) } },
+                            text = { Text(it.toString()) },
+                            modifier = Modifier.testTag("$SpamServantTabTagPrefix${it - 1}")
+                        )
                     }
                 }
 

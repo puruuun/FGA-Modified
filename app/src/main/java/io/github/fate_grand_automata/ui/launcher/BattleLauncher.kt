@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -492,11 +493,7 @@ fun battleLauncher(
                                 .padding(end = 8.dp),
                             horizontalArrangement = Arrangement.End
                         ) {
-                            Card(
-                                shape = CircleShape,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                ),
+                            FilledTonalButton(
                                 enabled = resetAllButton,
                                 onClick = {
                                     shouldLimitRuns = false
@@ -505,21 +502,14 @@ fun battleLauncher(
                                     limitCEs = 1
                                     shouldLimitMats = false
                                     limitMats = 1
-                                }
+                                },
+                                modifier = Modifier.testTag(LauncherResetAllTag)
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .padding(10.dp, 4.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.reset_all).uppercase(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                        color = if (resetAllButton) MaterialTheme.colorScheme.onSurface
-                                        else MaterialTheme.colorScheme.onSurface.copy(0.38f)
-                                    )
-                                }
+                                Text(
+                                    text = stringResource(R.string.reset_all).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
 
@@ -576,6 +566,7 @@ fun battleLauncher(
     )
 }
 
+internal const val LauncherResetAllTag = "launcher-reset-all"
 internal const val LauncherConfigListTag = "launcher-config-list"
 internal const val LauncherSettingsListTag = "launcher-settings-list"
 internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"

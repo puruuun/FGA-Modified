@@ -5,16 +5,17 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults.cardColors
-import androidx.compose.material3.CardDefaults.cardElevation
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.prefs.core.Pref
@@ -30,25 +31,28 @@ fun ChipPreferenceItem(
     enabled: Boolean = true
 ) {
     StatusWrapper(enabled) {
-        Card(
-            colors = cardColors(
-                containerColor = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            elevation = cardElevation(2.dp),
-            modifier = modifier
-                .defaultMinSize(minWidth = 30.dp),
+        FilterChip(
+            selected = isSelected,
             onClick = onSelect,
-            enabled = enabled
-        ) {
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .padding(5.dp, 2.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-        }
+            enabled = enabled,
+            label = {
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            leadingIcon = if (isSelected) {
+                {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    )
+                }
+            } else null,
+            modifier = modifier
+                .defaultMinSize(minWidth = 30.dp)
+        )
     }
 }
 
@@ -86,7 +90,7 @@ fun <T> SingleSelectChip(
             } else {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     entries.forEach { (key, value) ->
@@ -143,7 +147,8 @@ fun <T> MultiSelectChip(
         title = { Text(title) },
         summary = {
             FlowRow(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 entries.forEach { (key, value) ->
                     ChipPreferenceItem(

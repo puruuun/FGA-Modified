@@ -14,12 +14,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
@@ -28,11 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -181,7 +184,8 @@ internal fun BattleConfigListContent(
                                     R.string.battle_config_item_export
                                 else R.string.battle_config_list_export_all
                             ),
-                            onClick = { action(BattleConfigListAction.Export) }
+                            onClick = { action(BattleConfigListAction.Export) },
+                            icon = icon(Icons.Default.FileUpload)
                         )
 
                         Crossfade(selectionMode) {
@@ -190,7 +194,8 @@ internal fun BattleConfigListContent(
                                     HeadingButton(
                                         text = stringResource(R.string.battle_config_folder_move),
                                         onClick = { action(BattleConfigListAction.MoveToFolder) },
-                                        modifier = Modifier.padding(end = 5.dp)
+                                        modifier = Modifier.padding(end = 5.dp),
+                                        icon = icon(Icons.Default.Folder)
                                     )
                                     HeadingButton(
                                         text = stringResource(R.string.battle_config_list_delete),
@@ -202,7 +207,8 @@ internal fun BattleConfigListContent(
                             } else {
                                 HeadingButton(
                                     text = stringResource(R.string.battle_config_list_import),
-                                    onClick = { action(BattleConfigListAction.Import) }
+                                    onClick = { action(BattleConfigListAction.Import) },
+                                    icon = icon(Icons.Default.FileDownload)
                                 )
                             }
                         }
@@ -491,16 +497,19 @@ private fun ServerGroupHeader(
             .fullBleedHorizontal(GridHorizontalPadding)
             .testTag(tag)
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondary)
-            .padding(horizontal = 32.dp, vertical = 5.dp),
     ) {
         Text(
             text = text,
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Left,
-            color = MaterialTheme.colorScheme.onSecondary
+            color = MaterialTheme.colorScheme.onSurface
         )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -524,36 +533,23 @@ private fun Modifier.fullBleedHorizontal(horizontalPadding: Dp): Modifier =
 @Composable
 private fun BattleConfigItemSelected(
     isSelectionMode: Boolean,
-    isSelected: Boolean
+    isSelected: Boolean,
+    name: String,
+    onToggle: () -> Unit
 ) {
     AnimatedVisibility(isSelectionMode) {
-        Box(
-            contentAlignment = Alignment.Center,
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = { onToggle() },
             modifier = Modifier
-                .padding(end = 16.dp)
-                .border(
-                    1.dp,
-                    if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                    CircleShape
-                )
-                .background(
-                    shape = CircleShape,
-                    color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent
-                )
-                .size(15.dp)
-        ) {
-            AnimatedVisibility(isSelected) {
-                Icon(
-                    rememberVectorPainter(Icons.Default.Check),
-                    contentDescription = "Select",
-                    tint = MaterialTheme.colorScheme.onSecondary,
-                    modifier = Modifier
-                        .size(10.dp)
-                )
-            }
-        }
+                .padding(end = 4.dp)
+                .semantics { contentDescription = name }
+                .testTag("$ConfigCheckboxTagPrefix$name")
+        )
     }
 }
+
+const val ConfigCheckboxTagPrefix = "configCheckbox:"
 
 @Composable
 private fun BattleConfigListItem(
@@ -573,11 +569,10 @@ private fun BattleConfigListItem(
 
     Card(
         shape = RoundedCornerShape(25),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 5.dp else 1.dp),
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
         Row(
@@ -591,7 +586,9 @@ private fun BattleConfigListItem(
         ) {
             BattleConfigItemSelected(
                 isSelectionMode = isSelectionMode,
-                isSelected = isSelected
+                isSelected = isSelected,
+                name = name,
+                onToggle = onClick
             )
 
             Text(
