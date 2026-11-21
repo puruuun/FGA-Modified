@@ -141,9 +141,10 @@ class WeeklyWeekAtTest {
         val repo = repo(dir, mutableListOf())
         repo.weekAt("KR", 500, download = true)
         assertNull(repo.weekAt("KR", 5000, download = false))
+        // Same size and time, but now a set covers 5000: only the remembered miss still answers null.
         val master = dir.resolve("KR-missions.json")
         val stamp = master.lastModified()
-        master.writeText("x".repeat(master.length().toInt()))
+        master.writeText(("[" + set(7, 4000, 6000, 71) + "]").padEnd(master.length().toInt()))
         master.setLastModified(stamp)
         assertNull(repo.weekAt("KR", 5000, download = false))
         assertTrue(dir.resolve("KR-missions-view.json").readText().contains("5000"))

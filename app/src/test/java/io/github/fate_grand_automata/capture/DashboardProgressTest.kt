@@ -47,9 +47,12 @@ class DashboardProgressTest {
         assertNull(loader(dir, masterBody = null).resolve(input(1500, setOf(21L)), "KR", network = true).weekly)
         assertNull(loader(dir, masterBody = null).resolve(input(1500, setOf(21L)), "KR", network = false).weekly)
         assertNull(loader(dir, masterBody = "[]").resolve(input(1500, setOf(21L)), "KR", network = true).weekly)
-        assertNull(loader(dir).resolve(input(1500, achieved = null), "KR", network = true).weekly)
-        assertNull(loader(dir).resolve(input(5000, setOf(21L)), "KR", network = true).weekly)
+        // The failed attempts above left a retry marker in [dir], so the cases below start from clean folders.
+        val clean = dir()
+        assertNull(loader(clean).resolve(input(1500, achieved = null), "KR", network = true).weekly)
+        assertNull(loader(clean).resolve(input(5000, setOf(21L)), "KR", network = true).weekly)
         dir.deleteRecursively()
+        clean.deleteRecursively()
     }
 
     @Test fun theMissionRowsAreReadFromTheStoredStateByProgressType() {
@@ -151,6 +154,9 @@ class DashboardProgressTest {
         val loader = DashboardProgressLoader(repository, events, allowDownload = { false })
         val emitted = loader.load(input(1500, setOf(21L), listOf(DashboardEventPoint(7, 50, 1500))), "KR").toList()
         assertEquals(listOf(DashboardProgress()), emitted)
+        assertEquals(0, fetches + downloads)
+        // The same holds for a network pass asked for directly: every request checks on its own.
+        loader.resolve(input(1500, setOf(21L), listOf(DashboardEventPoint(7, 50, 1500))), "KR", network = true)
         assertEquals(0, fetches + downloads)
         dir.deleteRecursively()
     }
