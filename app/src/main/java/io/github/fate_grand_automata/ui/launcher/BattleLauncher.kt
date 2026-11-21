@@ -3,12 +3,16 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,6 +54,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -359,6 +366,31 @@ fun battleLauncher(
                         color = MaterialTheme.colorScheme.secondary
                     )
 
+                    // Short label in the title row (#613); the full text stays as the description for screen readers.
+                    val waitDescription = stringResource(R.string.p_wait_ap_regen_text)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp)
+                            .wrapContentWidth(Alignment.Start)
+                            .heightIn(min = 48.dp)
+                            .toggleable(value = waitApRegen, role = Role.Checkbox, onValueChange = { waitApRegen = it })
+                            .semantics { contentDescription = waitDescription }
+                            .testTag(LauncherWaitApRegenTag)
+                    ) {
+                        Checkbox(
+                            checked = waitApRegen,
+                            onCheckedChange = null,
+                            modifier = Modifier.alpha(if (waitApRegen) 1f else 0.7f)
+                        )
+                        Text(
+                            stringResource(R.string.p_wait_ap_regen_short),
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1
+                        )
+                    }
+
                     Stepper(
                         value = refillCount.value,
                         onValueChange = { value ->
@@ -398,25 +430,6 @@ fun battleLauncher(
             }
 
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable { waitApRegen = !waitApRegen }
-                ) {
-                    Checkbox(
-                        checked = waitApRegen,
-                        onCheckedChange = { waitApRegen = it },
-                        modifier = Modifier
-                            .alpha(if (waitApRegen) 1f else 0.7f)
-                            .padding(end = 5.dp)
-                    )
-
-                    Text(
-                        stringResource(R.string.p_wait_ap_regen_text),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
                 HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
             }
 
@@ -457,7 +470,12 @@ fun battleLauncher(
                     }
                     QuestItemCheckbox(bond.stop, true, stringResource(R.string.p_bond_stop)) { changeBond(bond.copy(stop = it)) }
                     if (bond.stop) {
-                        Text(stringResource(R.string.p_bond_ignore_characters), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.p_bond_ignore_characters),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                        )
                         Row {
                             for (slot in 1..5) {
                                 androidx.compose.foundation.layout.Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -469,7 +487,7 @@ fun battleLauncher(
                             }
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
                 }
             }
 
@@ -503,7 +521,12 @@ fun battleLauncher(
                                     shouldLimitMats = false
                                     limitMats = 1
                                 },
-                                modifier = Modifier.testTag(LauncherResetAllTag)
+                                // The text stays labelSmall; only the button shrinks. The 48dp touch target is kept, as the
+                                // button keeps its minimum interactive size.
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .testTag(LauncherResetAllTag)
                             ) {
                                 Text(
                                     text = stringResource(R.string.reset_all).uppercase(),
@@ -567,6 +590,7 @@ fun battleLauncher(
 }
 
 internal const val LauncherResetAllTag = "launcher-reset-all"
+internal const val LauncherWaitApRegenTag = "launcher-wait-ap-regen"
 internal const val LauncherConfigListTag = "launcher-config-list"
 internal const val LauncherSettingsListTag = "launcher-settings-list"
 internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"

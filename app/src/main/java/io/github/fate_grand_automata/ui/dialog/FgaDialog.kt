@@ -199,7 +199,7 @@ fun <T> FgaDialog.multiChoiceList(
 ) {
     constrained { modifier ->
         LazyColumn(
-            contentPadding = PaddingValues(16.dp, 0.dp),
+            contentPadding = PaddingValues(8.dp, 0.dp),
             modifier = modifier
                 .fillMaxWidth()
         ) {
@@ -211,10 +211,9 @@ fun <T> FgaDialog.multiChoiceList(
                 false -> items
             }
             items(rearrangeItems) {
-                ChoiceListItem(
+                FaceChoiceRow(
                     isSelected = it in selected,
                     onClick = { onSelectedChange(selected.toggle(it)) },
-                    multiple = true,
                     modifier = Modifier.animateItem(
                         spring(
                             stiffness = Spring.StiffnessMedium
@@ -229,15 +228,15 @@ fun <T> FgaDialog.multiChoiceList(
 }
 
 /**
- * One choice of a dialog list: a radio button, or a checkbox when [multiple], and the content.
+ * One choice of a single-choice dialog list: a radio button and the content.
  * The whole row is the touch target, so the button itself carries no click of its own.
+ * Multi-select lists use [FaceChoiceRow] instead.
  */
 @Composable
 fun ChoiceListItem(
     modifier: Modifier = Modifier,
     isSelected: Boolean,
     onClick: () -> Unit,
-    multiple: Boolean = false,
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
@@ -245,14 +244,10 @@ fun ChoiceListItem(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .then(
-                if (multiple) Modifier.toggleable(value = isSelected, role = Role.Checkbox, onValueChange = { onClick() })
-                else Modifier.selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
-            )
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
             .padding(end = 8.dp)
     ) {
-        if (multiple) Checkbox(checked = isSelected, onCheckedChange = null)
-        else RadioButton(selected = isSelected, onClick = null)
+        RadioButton(selected = isSelected, onClick = null)
 
         Row(
             verticalAlignment = Alignment.CenterVertically,

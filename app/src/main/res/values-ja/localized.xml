@@ -1232,4 +1232,6 @@
     <string name="capture_log_day_no_changes">記録された変動はありません</string>
     <string name="capture_log_day_no_scripts">この日に記録されたスクリプト実行はありません</string>
     <string name="capture_log_day_zone_note">韓国・日本時間 04:00 基準</string>
+    <string name="clear_all">"すべて解除"</string>
+    <string name="p_wait_ap_regen_short">"待機"</string>
 </resources>

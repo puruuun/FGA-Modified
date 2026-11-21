@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
@@ -424,11 +423,9 @@ internal fun MainBuildStatusRow(
                 AssistChip(
                     onClick = openBuild,
                     label = { Text("Build: ${BuildConfig.VERSION_NAME}") },
-                    leadingIcon = { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ),
                     border = null
                 )

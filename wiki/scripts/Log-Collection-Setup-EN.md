@@ -54,7 +54,7 @@ Under **Connection → Connection mode**, pick the mode that fits your setup:
 Start log collection from any of these four places:
 
 - **Log collection screen**: Tap **Start** (FGA VPN) or **Turn reading on** (External proxy app / Root) under **Connection**.
-- **Main screen**: Tap the blue **Start log collection** button at the bottom right (turns red as **Stop log collection** while active).
+- **Main screen**: Tap the blue **Start log collection** button at the bottom right (turns yellow as **Stop log collection** while active).
 - **Start with FGA service**: Once setup is ready, tapping **Start service** on the main screen also starts log collection.
 - **Home-screen widget**: Tap the log collection button on a widget ([Home-Screen Widgets](Widgets-EN.md)).
 

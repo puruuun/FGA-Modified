@@ -592,6 +592,8 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="config_state_on">On</string>
     <string name="config_state_off">Off</string>
     <string name="clear">"Clear"</string>
+    <string name="clear_all">"Clear all"</string>
+    <string name="p_wait_ap_regen_short">"Wait"</string>
     <string name="navigate_back">"Back"</string>
     <string name="battle_config_server_any">"Any"</string>
     <string name="battle_config_party_default">"Default"</string>

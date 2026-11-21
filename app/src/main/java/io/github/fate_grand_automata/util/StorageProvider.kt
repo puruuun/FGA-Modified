@@ -197,6 +197,11 @@ class StorageProvider @Inject constructor(
             .mapNotNull { it.name }
     }
 
+    /** Read-only, so it never creates the support folders the way [list] does. */
+    fun supportThumbnails(kind: SupportImageKind) = SupportThumbnailIndex {
+        dirRoot?.findFile(supportFolderName)?.findFile(SupportThumbnailIndex.folderName(kind))?.takeIf { it.isDirectory }
+    }
+
     override fun list(kind: SupportImageKind) = kind.imageFolder
         .listFiles()
         .mapNotNull { it.name }

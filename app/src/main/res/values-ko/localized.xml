@@ -1474,4 +1474,6 @@
     <string name="capture_log_day_no_changes">기록된 변동이 없습니다</string>
     <string name="capture_log_day_no_scripts">이 날 기록된 스크립트 실행이 없습니다</string>
     <string name="capture_log_day_zone_note">한국·일본 시간 04:00 기준</string>
+    <string name="clear_all">"모두 해제"</string>
+    <string name="p_wait_ap_regen_short">"기다리기"</string>
 </resources>
