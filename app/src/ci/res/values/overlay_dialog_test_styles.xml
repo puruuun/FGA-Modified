@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A theme like the tablet's: large dialog corners that the overlay dialog must not inherit. -->
+    <style name="LargeDialogCornerTheme" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="android:dialogCornerRadius">28dp</item>
+        <item name="dialogCornerRadius">28dp</item>
+    </style>
+</resources>
