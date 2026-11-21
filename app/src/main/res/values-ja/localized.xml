@@ -880,6 +880,26 @@
     <string name="dashboard_group_event">イベントアイテム</string>
     <string name="dashboard_group_coins">サーヴァントコイン</string>
     <string name="dashboard_group_other">その他</string>
+    <string name="dashboard_items_search">名前で探す</string>
+    <string name="dashboard_items_search_clear">検索語を消す</string>
+    <string name="dashboard_items_no_match">一致するアイテムがありません</string>
+    <string name="dashboard_items_show_more">もっと見る (%1$d種)</string>
+    <string name="dashboard_items_none">なし</string>
+    <plurals name="dashboard_items_count">
+        <item quantity="other">%1$d種</item>
+    </plurals>
+    <string name="dashboard_item_row_gem">輝石</string>
+    <string name="dashboard_item_row_magic_gem">魔石</string>
+    <string name="dashboard_item_row_secret_gem">秘石</string>
+    <string name="dashboard_item_row_piece">ピース</string>
+    <string name="dashboard_item_row_monument">モニュメント</string>
+    <string name="dashboard_item_class_short_saber">Sab</string>
+    <string name="dashboard_item_class_short_archer">Arc</string>
+    <string name="dashboard_item_class_short_lancer">Lan</string>
+    <string name="dashboard_item_class_short_rider">Rid</string>
+    <string name="dashboard_item_class_short_caster">Cas</string>
+    <string name="dashboard_item_class_short_assassin">Ass</string>
+    <string name="dashboard_item_class_short_berserker">Ber</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">装備中</string>
     <string name="dashboard_quest">クエスト #%1$d</string>

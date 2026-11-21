@@ -1194,6 +1194,27 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_group_event">Event items</string>
     <string name="dashboard_group_coins">Servant coins</string>
     <string name="dashboard_group_other">Other</string>
+    <string name="dashboard_items_search">Search by name</string>
+    <string name="dashboard_items_search_clear">Clear search</string>
+    <string name="dashboard_items_no_match">No matching items</string>
+    <string name="dashboard_items_show_more">Show more (%1$d)</string>
+    <string name="dashboard_items_none">none</string>
+    <plurals name="dashboard_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="dashboard_item_row_gem">Gem</string>
+    <string name="dashboard_item_row_magic_gem">Magic Gem</string>
+    <string name="dashboard_item_row_secret_gem">Secret Gem</string>
+    <string name="dashboard_item_row_piece">Piece</string>
+    <string name="dashboard_item_row_monument">Monument</string>
+    <string name="dashboard_item_class_short_saber">Sab</string>
+    <string name="dashboard_item_class_short_archer">Arc</string>
+    <string name="dashboard_item_class_short_lancer">Lan</string>
+    <string name="dashboard_item_class_short_rider">Rid</string>
+    <string name="dashboard_item_class_short_caster">Cas</string>
+    <string name="dashboard_item_class_short_assassin">Ass</string>
+    <string name="dashboard_item_class_short_berserker">Ber</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">Equipped</string>
     <string name="dashboard_quest">Quest #%1$d</string>
