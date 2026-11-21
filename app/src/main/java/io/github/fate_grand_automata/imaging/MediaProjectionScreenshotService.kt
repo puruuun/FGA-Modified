@@ -149,8 +149,12 @@ class MediaProjectionScreenshotService(
         }
     }
 
-    /** Settings calibration only: reuse the projection, take an owned native-display grayscale frame, then restore.
-     * The same lock as ordinary captures keeps the temporary size invisible to script screenshots. */
+    /**
+     * Reuses the projection to take an owned native-display grayscale frame, then restores the previous
+     * size. The same lock as ordinary captures keeps the temporary size invisible to script screenshots.
+     * When the capture already has [size] and [density] (a 1280x720 display), both resizes return early:
+     * no new reader, and the frame is the newest image or, if nothing changed, the last frame captured.
+     */
     fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern = synchronized(lock) {
         val previousSize = imageSize
         val previousDensity = screenDensity
@@ -171,9 +175,11 @@ class MediaProjectionScreenshotService(
 
     /**
      * Reads the capture's state under the capture lock and changes nothing. For a caller of
-     * [takeFullDisplayScreenshot] during a run (the rust build's support score scan): a restore that
-     * threw leaves the old frame in [bufferMat] or a reader of the full size, so it compares this
-     * before and after. Null once closed.
+     * [takeFullDisplayScreenshot] during a run (the rust build's support score scan), which compares
+     * it before and after: a first resize that throws after detaching the surface leaves the display
+     * without the reader, and later screenshots serve the old frame from [bufferMat] as "nothing new";
+     * a restore that throws leaves the full-size reader in place, so later screenshots are of the full
+     * size. Null once closed.
      */
     fun captureState(): CaptureState? = synchronized(lock) {
         if (closed.get()) return@synchronized null

@@ -188,8 +188,12 @@ class SupportScoreScanner(
                 is ScreenOutcome.Read -> {
                     previous = outcome.keys
                     unchangedBefore = false
+                    // A stop during the last row must not pay for the capture (two display resizes).
+                    exitManager.checkExitRequested()
                     // Outside the snapshot block: the capture does not use the 720p snapshot.
                     if (!logNative(folder, outcome.logged)) return ScoreScanEndReason.NativeRestoreFailed
+                    // A stop at the last allowed screen is the user's, not the screen limit.
+                    exitManager.checkExitRequested()
                     if (screens >= maxScreens) return ScoreScanEndReason.ScreenLimit
                 }
             }

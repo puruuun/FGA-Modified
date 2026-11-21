@@ -25,8 +25,8 @@ import kotlin.test.assertTrue
  * separate path through the game area.
  */
 class ScoreScanNativeMapTest {
-    private class Case(val display: Size, val offsets: GameAreaOffsets?) {
-        val window: (Size) -> Region = { size -> offsets?.region(size, false) ?: Region(Location(), size) }
+    private class Case(val display: Size, val offsets: GameAreaOffsets?, reverseLandscape: Boolean = false) {
+        val window: (Size) -> Region = { size -> offsets?.region(size, reverseLandscape) ?: Region(Location(), size) }
         val landscape = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
         private val region = window(landscape)
         val area = FgoGameAreaManager(region.size) { region.location }
@@ -47,6 +47,9 @@ class ScoreScanNativeMapTest {
         Case(Size(2400, 1080), GameAreaOffsets(left = 80)),
         Case(Size(1080, 2400), GameAreaOffsets(left = 80)),
         Case(Size(2400, 1080), null),
+        // From FgoCaptureGeometryTest: the split-screen tablet started from portrait, and reverse landscape.
+        Case(Size(1904, 3040), GameAreaOffsets(1037, 97, 0, 11)),
+        Case(Size(3040, 1904), GameAreaOffsets(1037, 97, 0, 11), reverseLandscape = true),
     )
 
     /** Score fields of the first and the last row a support list can show, in 1440p script coordinates. */
@@ -104,6 +107,25 @@ class ScoreScanNativeMapTest {
         // 100x70 at 720p scale is about 156x110 native pixels on this display.
         assertTrue(crop.region.width in 155..158, "${crop.region}")
         assertTrue(crop.region.height in 108..111, "${crop.region}")
+    }
+
+    @Test
+    fun `each axis uses its own scale`() {
+        // Artificial: no display gives a frame of another aspect than its capture, but in every real
+        // case the two scales differ by under 0.1 %, so swapped axes would go unnoticed there.
+        val map = ScoreScanNativeMap(Size(2560, 2160), Size(1280, 720), Location(0, 0))
+        assertEquals(2.0, map.scaleX)
+        assertEquals(3.0, map.scaleY)
+        assertEquals(Region(2036, 765, 120, 90), map.toNative(Region(1018, 255, 60, 30)))
+    }
+
+    @Test
+    fun `the reverse landscape tablet and the one started from portrait keep the split-screen geometry`() {
+        assertEquals(Size(1943, 1217), cases[8].map.capture)
+        assertEquals(Location(663, 276), cases[8].map.origin)
+        assertEquals(Size(3040, 1904), cases[8].map.frame)
+        assertEquals(0, cases[9].map.origin.x)
+        assertEquals(Size(1280, 720), cases[9].geometry.crop.size)
     }
 
     @Test

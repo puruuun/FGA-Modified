@@ -71,16 +71,18 @@ object ScoreScanNative {
     /**
      * 20 px at 720p on each side of the 60x30 field: room for later experiments to move and resize the
      * crop. On KR and JP (16:9 and wide) that holds the score panel with its label, the laurel
-     * background of the row and the dark band below the row; the FP text, the friend mark and the skill
-     * icons stay outside (the nearest, the friend mark, about 20 px further right).
+     * background of the row and the dark band below the row; on some screens the left margin also
+     * holds the right edge of the neighbouring icon, a game UI fragment. No friend name, login time, FP
+     * text or servant name was found in it (86 crops cut from every support reference screenshot).
      */
     const val MARGIN = 20
 
     /**
-     * A first frame after a resize normally arrives within a few display frames, and the full-size
-     * copy takes tens of milliseconds; 1.5 s is half the capture's own first-frame timeout (3 s), so
-     * a slower capture means the compositor stalled and the frame may not show the screen the rows
-     * were read from.
+     * Checked after the capture has returned; it cannot interrupt it. A first frame after a resize
+     * normally arrives within a few display frames and the full-size copy takes tens of milliseconds;
+     * 1.5 s is half the capture's own first-frame timeout (3 s, which ends the capture with an
+     * exception, logged as `error`), so a slower capture means the compositor stalled and the frame
+     * may not show the screen the rows were read from.
      */
     val CAPTURE_BOUND = 1500.milliseconds
 
@@ -93,6 +95,7 @@ object ScoreScanNative {
     const val ERROR = "error"
     const val FIELD_OUTSIDE_FRAME = "field_outside_frame"
     const val RESTORE_FAILED = "restore_failed"
+    const val CAPTURE_STOPPED = "capture_stopped"
 
     /** Null when the field itself is not wholly inside the frame. */
     fun crop(map: ScoreScanNativeMap, fieldImage: Region): ScoreScanNativeCrop? {
@@ -215,6 +218,65 @@ class ScoreScanNativeTally {
     }
 
     fun match(value: Double?) {
-        value?.let { matches += it }
+        value?.takeIf { it.isFinite() }?.let { matches += it }
+    }
+}
+
+/** The MediaProjection capture's state, as `MediaProjectionScreenshotService.captureState()` reads it. */
+data class ScoreScanCaptureState(val size: Size, val density: Int, val rendersIntoReader: Boolean)
+
+/**
+ * The checks around one full-display capture, kept apart from the Android calls so they can be tested
+ * on the JVM. [projection] is true for MediaProjection, false for root capture, which changes no state.
+ */
+object ScoreScanNativeChecks {
+    sealed interface Verdict {
+        data class Keep(val map: ScoreScanNativeMap) : Verdict
+        data class Drop(val capture: ScoreScanNativeCapture) : Verdict
+    }
+
+    /** Null to go on with the capture. */
+    fun before(
+        projection: Boolean,
+        state: ScoreScanCaptureState?,
+        geometry: FgoCaptureGeometry,
+        scriptCrop: Region,
+    ): ScoreScanNativeCapture.Failed? = when {
+        // Closed: the next 720p snapshot throws ScreenCaptureStopped, so no stale frame can be read.
+        projection && state == null -> ScoreScanNativeCapture.Failed(ScoreScanNative.CAPTURE_STOPPED)
+        // ScreenshotManager cuts each 720p screenshot at scriptCrop; the map must start from the same.
+        geometry.crop != scriptCrop ->
+            ScoreScanNativeCapture.Failed(ScoreScanNative.GEOMETRY_MISMATCH, "capture ${geometry.crop}, script $scriptCrop")
+        projection && state?.size != geometry.captureSize ->
+            ScoreScanNativeCapture.Failed(ScoreScanNative.GEOMETRY_MISMATCH, "capture size ${state?.size}, geometry ${geometry.captureSize}")
+        else -> null
+    }
+
+    /**
+     * [frameSize] is null when no frame came back. A projection whose state changed, or whose display
+     * no longer renders into the current reader, could serve a stale or full-size frame next.
+     */
+    fun after(
+        projection: Boolean,
+        before: ScoreScanCaptureState?,
+        after: ScoreScanCaptureState?,
+        error: String?,
+        frameSize: Size?,
+        display: Size,
+        geometry: FgoCaptureGeometry,
+    ): Verdict {
+        if (projection) {
+            if (after == null) return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.CAPTURE_STOPPED, error))
+            if (after != before || !after.rendersIntoReader) {
+                return Verdict.Drop(ScoreScanNativeCapture.RestoreFailed("before $before, after $after${error?.let { ", $it" } ?: ""}"))
+            }
+        }
+        if (error != null) return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.ERROR, error))
+        if (frameSize == null) return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.NULL_FRAME))
+        val landscape = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
+        if (frameSize != landscape) {
+            return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.FRAME_SIZE, "frame $frameSize, display $landscape"))
+        }
+        return Verdict.Keep(ScoreScanNativeMap.of(geometry, landscape))
     }
 }

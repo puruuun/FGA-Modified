@@ -222,7 +222,7 @@ data class ScoreScanSummary(
 )
 
 object ScoreScanLog {
-    /** 2 since the native crops (issue #600): every line has a `kind`; schema 1 lines have none and are all rows. */
+    /** Every schema 2 line has a `kind`; schema 1 lines have none and are all rows. */
     const val SCHEMA = 2
     const val KIND_ROW = "row"
     const val KIND_NATIVE = "native"
@@ -235,15 +235,17 @@ object ScoreScanLog {
     const val ERROR = "error"
 
     /**
-     * The 20 newest scans are kept. At the screen bound a scan holds at most about 25 MB on a 3040x1904
-     * display (docs/agents/rust-native.md, "Support score scan"), so 20 stay below about 500 MB.
+     * The 20 newest scans are kept. At the screen bound a scan holds at most about 53 MB on a 3040x1904
+     * display at full screen (about 25 MB in split screen), so 20 stay below about 1.06 GB
+     * (docs/agents/rust-native.md, "Support score scan", "Disk").
      */
     const val KEEP_SCANS = 20
 
     /**
-     * Checked before every screen, and one screen writes well under 1 MB (four rows of a native crop of
-     * at most about 70 KB on 3040x1904, a 720p crop and two lines), so the scan never takes the device
-     * much below this; 50 MB leaves room for the game, which also writes to this storage.
+     * Checked before every screen, and one screen writes well under 1 MB on 3040x1904 (four native crops
+     * of at most about 158 KB, four 720p crops and lines: about 0.67 MB), so the scan never takes the
+     * device more than one screen below this; 50 MB leaves room for the game, which also writes to
+     * this storage.
      */
     const val MIN_FREE_BYTES = 50L * 1024 * 1024
 
@@ -385,6 +387,7 @@ object ScoreScanLog {
         )
     }
 
+    /** [values] holds only finite numbers: [ScoreScanNativeTally.match] skips the others. */
     private fun matches(values: List<Double>) = values.sorted().let { sorted ->
         linkedMapOf(
             "count" to sorted.size,

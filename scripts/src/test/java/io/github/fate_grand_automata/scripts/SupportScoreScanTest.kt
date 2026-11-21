@@ -163,8 +163,12 @@ class SupportScoreScanTest {
                 check(inSnap) { "field outside a snapshot" }
                 return FieldPattern.of(rowsBounds.getValue(bounds.region.y)).also { patterns += it }
             }
-            override fun fieldImageRegion(bounds: SupportBounds) = fieldImage(position(bounds))
+            override fun fieldImageRegion(bounds: SupportBounds) =
+                if (position(bounds) == outsidePosition) Region(1250, 0, 60, 30) else fieldImage(position(bounds))
         }
+
+        /** A row position whose field the frames place partly outside the display, as a wrong geometry would. */
+        var outsidePosition: Int? = null
 
         fun position(bounds: SupportBounds) = (bounds.region.y - 200) / 440
 
@@ -244,8 +248,10 @@ class SupportScoreScanTest {
         var took: Duration = 30.milliseconds
         /** Native pixels the frame is moved right by (content shifted since the snapshot). */
         var shift = 0
+        var onCapture: (Int) -> Unit = {}
 
         override fun capture(): ScoreScanNativeCapture {
+            onCapture(calls.size + 1)
             val lines = linesFile()?.takeIf { it.exists() }?.readLines() ?: emptyList()
             calls += Call(
                 lines.count { "\"kind\":\"row\"" in it }, lines.count { "\"kind\":\"native\"" in it },
@@ -645,13 +651,38 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `a stop during the last row of a screen issues no further scroll`() {
+    fun `a stop during the last row of a screen issues no further scroll and takes no native frame`() {
         val scan = Scan(total = 20)
         scan.reader.onRead = { if (it == 3) scan.world.exitManager.exit() }
         val result = scan.run()
         assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
         assertThat(result.rows).isEqualTo(3)
         assertThat(scan.scrolls).isEqualTo(0)
+        assertThat(scan.native.calls.size).isEqualTo(0)
+        assertThat(scan.nativeLines(result).size).isEqualTo(0)
+        assertThat(File(scan.folder(result), "native").list()!!.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `a stop during the last row of the last allowed screen is the user's stop and takes no native frame`() {
+        val scan = Scan(total = 100, maxScreens = 2)
+        scan.reader.onRead = { if (it == 6) scan.world.exitManager.exit() }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(result.rows).isEqualTo(6)
+        assertThat(scan.native.calls.size).isEqualTo(1)
+        assertThat(scan.nativeLines(result).map { it.int("screen") }.distinct()).containsExactly(0)
+        assertThat(scan.summary(result).str("endReason")).isEqualTo("user_stopped")
+    }
+
+    @Test
+    fun `a stop during the native capture of the last allowed screen is the user's stop`() {
+        val scan = Scan(total = 100, maxScreens = 2)
+        scan.native.onCapture = { if (it == 2) scan.world.exitManager.exit() }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(scan.native.calls.size).isEqualTo(2)
+        assertThat(scan.scrolls).isEqualTo(1)
     }
 
     @Test
@@ -1091,5 +1122,59 @@ class SupportScoreScanTest {
         assertThat(ScoreScanNative.correlation(a, ByteArray(a.size) { 7 })).isNull()
         assertThat(kotlin.math.abs(ScoreScanNative.correlation(a, brighter)!! - 1.0) < 1e-9).isTrue()
         assertThat(ScoreScanNative.correlation(a, a.copyOf(10))).isNull()
+    }
+
+    @Test
+    fun `a field outside the frame costs only its own row's native crop`() {
+        val scan = Scan(total = 3)
+        scan.world.outsidePosition = 1
+        val result = scan.run()
+        val natives = scan.nativeLines(result)
+        assertThat(natives.map { it.getValue("native") is JsonObject }).containsExactly(true, false, true)
+        assertThat(natives[1].str("reason")).isEqualTo("field_outside_frame")
+        assertThat(File(scan.folder(result), "native").list()!!.sorted()).containsExactly("s000-r0.png", "s000-r2.png")
+        assertThat(scan.summary(result).obj("native").int("taken")).isEqualTo(1)
+        assertThat(scan.summary(result).obj("native").obj("match").int("count")).isEqualTo(2)
+    }
+
+    private fun nativeRecord(match: Double?, clamped: List<String>) = io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeRecord(
+        time = 5, server = "Kr", screen = 1, row = 2, cropSha256 = "aa",
+        native = io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeResult(
+            crop = "s001-r2.png", cropSha256 = "bb", frame = Size(2560, 1440), scaleX = 2.0, scaleY = 2.0,
+            region = Region(0, 0, 170, 110), field = Region(10, 10, 120, 60), clamped = clamped, match = match, captureMicros = 9,
+        ),
+        reason = null, detail = null, captureMicros = 9,
+    )
+
+    @Test
+    fun `a native line with cut sides and no match, field by field`() {
+        val expected = Json.parseToJsonElement("""
+            {"schema":2,"kind":"native","time":5,"server":"Kr","screen":1,"row":2,"cropSha256":"aa",
+             "native":{"crop":"native/s001-r2.png","cropSha256":"bb","frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
+                       "region":{"x":0,"y":0,"w":170,"h":110},"field":{"x":10,"y":10,"w":120,"h":60},
+                       "clamped":["left","top"],"match":null,"captureMicros":9},
+             "reason":null,"detail":null,"captureMicros":9}
+        """)
+        assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(null, listOf("left", "top"))))).isEqualTo(expected)
+        assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(Double.NaN, listOf("left", "top"))))).isEqualTo(expected)
+    }
+
+    @Test
+    fun `the summary's match statistics skip a missing or non-finite match`() {
+        val native = io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeTally()
+        native.taken(ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0)), 10)
+        native.match(null)
+        native.match(Double.NaN)
+        native.match(Double.POSITIVE_INFINITY)
+        native.match(0.5)
+        native.match(0.9)
+        val summary = ScoreScanLog.summary(io.github.fate_grand_automata.scripts.supportSelection.ScoreScanSummary(
+            device = ScoreScanDevice("v", "m", "a"), server = "Kr", folder = "f", startTime = 1, endTime = 2,
+            reason = "bottom", detail = null, screens = 1, tally = ScoreScanTally(), engineLoadMicros = null,
+            engineUnavailableReason = null, native = native,
+        ))
+        assertThat(summary.contains("NaN") || summary.contains("Infinity")).isFalse()
+        assertThat(Json.parseToJsonElement(summary).jsonObject.obj("native").obj("match"))
+            .isEqualTo(Json.parseToJsonElement("""{"count":2,"median":0.5,"min":0.5}"""))
     }
 }

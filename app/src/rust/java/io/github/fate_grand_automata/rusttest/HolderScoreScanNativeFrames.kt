@@ -3,10 +3,11 @@ package io.github.fate_grand_automata.rusttest
 import io.github.fate_grand_automata.imaging.MediaProjectionScreenshotService
 import io.github.fate_grand_automata.runner.ScreenshotServiceHolder
 import io.github.fate_grand_automata.scripts.FgoCaptureGeometry
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanCaptureState
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNative
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeCapture
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeChecks
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeFrames
-import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeMap
 import io.github.fate_grand_automata.util.CutoutManager
 import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.lib_automata.GameAreaManager
@@ -21,11 +22,11 @@ import javax.inject.Inject
  * Issue #600, rust build type only: the support score scan's full-display frame, through the same
  * [ScreenshotServiceHolder.takeFullDisplayScreenshot] the settings calibration uses. It runs on the
  * script thread, which is the only thread that takes the run's 720p screenshots, and the capture lock
- * keeps the temporary size invisible to them.
+ * keeps the temporary size invisible to them. The decisions are in [ScoreScanNativeChecks].
  *
  * MediaProjection: the virtual display is resized to the full display and back. The restore installs
  * a new reader and forgets the last frame, so the next 720p screenshot waits for a new frame at the
- * restored size; a restore that threw is caught here by comparing [MediaProjectionScreenshotService.captureState]
+ * restored size; a resize that threw is caught by comparing [MediaProjectionScreenshotService.captureState]
  * before and after. Root: the provider takes its own screencap and changes no state.
  */
 class HolderScoreScanNativeFrames @Inject constructor(
@@ -40,21 +41,14 @@ class HolderScoreScanNativeFrames @Inject constructor(
         if (service !is MediaProjectionScreenshotService && service !is ResizedScreenshotProvider) {
             return ScoreScanNativeCapture.Failed(ScoreScanNative.UNSUPPORTED, service.javaClass.name)
         }
+        val projection = service as? MediaProjectionScreenshotService
         val metrics = display.metrics
         val displaySize = Size(metrics.widthPixels, metrics.heightPixels)
         val geometry = FgoCaptureGeometry.forLandscape(displaySize, cutoutManager::getCutoutAppliedRegion)
-        // ScreenshotManager crops each 720p screenshot at this region; the map must start from the same.
         val scriptCrop = gameAreaManager.gameArea * (scale.screenToImage ?: 1.0)
-        if (geometry.crop != scriptCrop) {
-            return ScoreScanNativeCapture.Failed(ScoreScanNative.GEOMETRY_MISMATCH, "capture ${geometry.crop}, script $scriptCrop")
-        }
 
-        val before = (service as? MediaProjectionScreenshotService)?.captureState()
-        if (service is MediaProjectionScreenshotService && before?.size != geometry.captureSize) {
-            return ScoreScanNativeCapture.Failed(
-                ScoreScanNative.GEOMETRY_MISMATCH, "capture size ${before?.size}, geometry ${geometry.captureSize}"
-            )
-        }
+        val before = projection?.captureState()?.toScan()
+        ScoreScanNativeChecks.before(projection != null, before, geometry, scriptCrop)?.let { return it }
 
         var error: Exception? = null
         val frame: Pattern? = try {
@@ -63,24 +57,19 @@ class HolderScoreScanNativeFrames @Inject constructor(
             error = e
             null
         }
+        val after = projection?.captureState()?.toScan()
+        val frameSize = frame?.let { Size(it.width, it.height) }
 
-        if (service is MediaProjectionScreenshotService) {
-            val after = service.captureState()
-            if (after == null || after != before || !after.rendersIntoReader) {
+        return when (val verdict = ScoreScanNativeChecks.after(
+            projection != null, before, after, error?.toString(), frameSize, displaySize, geometry,
+        )) {
+            is ScoreScanNativeChecks.Verdict.Keep -> ScoreScanNativeCapture.Frame(frame!!, verdict.map)
+            is ScoreScanNativeChecks.Verdict.Drop -> {
                 frame?.close()
-                return ScoreScanNativeCapture.RestoreFailed("before $before, after $after${error?.let { ", $it" } ?: ""}")
+                verdict.capture
             }
         }
-
-        if (error != null) return ScoreScanNativeCapture.Failed(ScoreScanNative.ERROR, error.toString())
-        if (frame == null) return ScoreScanNativeCapture.Failed(ScoreScanNative.NULL_FRAME)
-
-        val landscape = Size(maxOf(displaySize.width, displaySize.height), minOf(displaySize.width, displaySize.height))
-        if (frame.width != landscape.width || frame.height != landscape.height) {
-            val size = "${frame.width}x${frame.height}"
-            frame.close()
-            return ScoreScanNativeCapture.Failed(ScoreScanNative.FRAME_SIZE, "frame $size, display $landscape")
-        }
-        return ScoreScanNativeCapture.Frame(frame, ScoreScanNativeMap.of(geometry, landscape))
     }
+
+    private fun MediaProjectionScreenshotService.CaptureState.toScan() = ScoreScanCaptureState(size, density, rendersIntoReader)
 }
