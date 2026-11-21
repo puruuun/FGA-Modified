@@ -2,10 +2,12 @@ package io.github.fate_grand_automata.ui.card_priority
 
 import androidx.annotation.ColorRes
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.colorResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.scripts.enums.CardAffinityEnum
@@ -23,9 +25,10 @@ fun CardPriorityDragSort(
         items = scores,
         key = { "${it.type}-${it.affinity}" },
         style = {
+            val colors = cardTileColors(it.type, it.affinity)
             DragSortItemStyle(
-                backgroundColor = colorResource(it.getColorRes()),
-                contentColor = Color.White,
+                backgroundColor = colors.background,
+                contentColor = colors.content,
                 text = it.toString()
             )
         },
@@ -41,15 +44,26 @@ fun ServantCardDragSort(
         items = cards,
         key = { it.toString() },
         style = {
+            val colors = cardTileColors(it.type, CardAffinityEnum.Normal)
             DragSortItemStyle(
-                backgroundColor = colorResource(CardScore(it.type, CardAffinityEnum.Normal).getColorRes()),
-                contentColor = Color.White,
+                backgroundColor = colors.background,
+                contentColor = colors.content,
                 text = it.toString()
             )
         },
         modifier = Modifier.fillMaxWidth()
     )
 }
+
+/** Tile colours on the row panel, in the current theme. */
+@Composable
+private fun cardTileColors(type: CardTypeEnum, affinity: CardAffinityEnum): CardTileColors =
+    cardTileColors(
+        type,
+        affinity,
+        panel = MaterialTheme.colorScheme.surfaceContainer,
+        dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    ) ?: CardTileColors(colorResource(R.color.colorPrimaryDark), Color.White)
 
 @ColorRes
 fun CardScore.getColorRes(): Int {
