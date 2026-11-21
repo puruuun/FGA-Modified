@@ -20,6 +20,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReade
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanDevice
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanEndReason
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFolder
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameStats
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrames
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanLog
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNative
@@ -119,6 +120,14 @@ class SupportScoreScanTest {
         val droppedScrolls = mutableSetOf<Int>()
         var onScroll: (Int) -> Unit = {}
         var onDelay: () -> Unit = {}
+        var onSnap: (Int) -> Unit = {}
+        /**
+         * What the next snapshots show instead of the screen, one per snapshot: a frame the capture
+         * delivers right after its restore. A blank frame has no SupportExtra tab (the dialog answer);
+         * one with the tab but without the list's rows answers as rows lost.
+         */
+        val badFrames = ArrayDeque<ScoreScanEndReason>()
+        var badNow: ScoreScanEndReason? = null
 
         fun visible() = if (guestOnly) emptyList() else (offset until minOf(total, offset + perScreen)).toList()
 
@@ -140,9 +149,9 @@ class SupportScoreScanTest {
             }
             override fun refresh() { gestures += "refresh" }
             override fun refreshAvailable() = true
-            override fun isAnyDialogOpen() = dialogOpen || !onSupportScreen
-            override fun noSupportsPresent() = listShown && total == 0 && !guestOnly
-            override fun someSupportsPresent() = listShown && (total > 0 || guestOnly)
+            override fun isAnyDialogOpen() = dialogOpen || !onSupportScreen || badNow == ScoreScanEndReason.NotSupportListOrDialog
+            override fun noSupportsPresent() = listShown && total == 0 && !guestOnly && badNow == null
+            override fun someSupportsPresent() = listShown && (total > 0 || guestOnly) && badNow == null
             override fun isListLoaded() = noSupportsPresent() || someSupportsPresent()
         }
 
@@ -151,6 +160,8 @@ class SupportScoreScanTest {
         val frames = object : ScoreScanFrames {
             override fun <T> sameSnap(block: () -> T): T {
                 currentSnap = snaps++
+                onSnap(currentSnap)
+                badNow = badFrames.removeFirstOrNull()
                 inSnap = true
                 try { return block() } finally { inSnap = false }
             }
@@ -165,7 +176,18 @@ class SupportScoreScanTest {
             }
             override fun fieldImageRegion(bounds: SupportBounds) =
                 if (position(bounds) == outsidePosition) Region(1250, 0, 60, 30) else fieldImage(position(bounds))
+            override fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>> {
+                check(inSnap) { "regions outside a snapshot" }
+                regionsAsked += reason
+                val names = if (reason == ScoreScanEndReason.RowsLost) listOf("extra-tab", "confirm-column", "guest-column") else listOf("extra-tab")
+                return names.map { it to GrayPattern(4, 2, ByteArray(8) { i -> (i + it.length).toByte() }) }
+            }
+            override fun frameStats(): ScoreScanFrameStats? {
+                check(inSnap) { "stats outside a snapshot" }
+                return if (badNow != null) ScoreScanFrameStats(0.0, 0, 0) else ScoreScanFrameStats.of(screen720())
+            }
         }
+        val regionsAsked = mutableListOf<ScoreScanEndReason>()
 
         /** A row position whose field the frames place partly outside the display, as a wrong geometry would. */
         var outsidePosition: Int? = null
@@ -844,14 +866,14 @@ class SupportScoreScanTest {
              "native":{"crop":"native/s000-r0.png","cropSha256":"${ScoreScanLog.sha256(native0)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":160,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
                        "clamped":[],"captureMicros":30000},
-             "reason":null,"detail":null,"captureMicros":30000}
+             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1}
         """))
         assertThat(withoutMatch(natives[1])).isEqualTo(json("""
             {"schema":2,"kind":"native","time":1790000000040,"server":"Jp","screen":0,"row":1,"cropSha256":"${ScoreScanLog.sha256(crop1)}",
              "native":{"crop":"native/s000-r1.png","cropSha256":"${ScoreScanLog.sha256(native1)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":560,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
                        "clamped":[],"captureMicros":30000},
-             "reason":null,"detail":null,"captureMicros":30000}
+             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1}
         """))
         // 200x140 at 2x of the 100x70 region around the field: a 4-byte size header and the pixels.
         assertThat(native0.size).isEqualTo(4 + 200 * 140)
@@ -862,7 +884,8 @@ class SupportScoreScanTest {
         assertThat(kotlin.math.abs(nativeSummary.obj("match").str("min").toDouble() - 1.0) < 1e-9).isTrue()
         assertThat(JsonObject(nativeSummary + ("match" to JsonObject(nativeSummary.obj("match") - "median" - "min")))).isEqualTo(json("""
             {"taken":1,"failed":{},"frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
-             "captureMicros":{"count":1,"median":30000,"max":30000},"match":{"count":2}}
+             "captureMicros":{"count":1,"median":30000,"max":30000},"match":{"count":2},
+             "lowMatchScreens":0,"postNativeLooks":{"screens":1,"moreThanOne":0,"max":1}}
         """))
         assertThat(JsonObject(summary - "native")).isEqualTo(json("""
             {"schema":2,"appVersion":"1.9.0-beta.1-rust.1","deviceModel":"Test Phone","androidVersion":"15 (API 35)",
@@ -1106,13 +1129,17 @@ class SupportScoreScanTest {
     @Test
     fun `the native match is 1 for the frame the rows were read from and lower for a shifted one`() {
         val same = Scan(total = 2)
-        val sameMatches = same.nativeLines(same.run()).map { it.obj("native").str("match").toDouble() }
+        val sameResult = same.run()
+        val sameMatches = same.nativeLines(sameResult).map { it.obj("native").str("match").toDouble() }
         val shifted = Scan(total = 2).apply { native.shift = 6 }
-        val shiftedMatches = shifted.nativeLines(shifted.run()).map { it.obj("native").str("match").toDouble() }
+        val shiftedResult = shifted.run()
+        val shiftedMatches = shifted.nativeLines(shiftedResult).map { it.obj("native").str("match").toDouble() }
 
         assertThat(sameMatches.all { kotlin.math.abs(it - 1.0) < 1e-9 }).isTrue()
         assertThat(shiftedMatches.size).isEqualTo(2)
         assertThat(shiftedMatches.all { it < 0.9 }).isTrue()
+        assertThat(same.summary(sameResult).obj("native").int("lowMatchScreens")).isEqualTo(0)
+        assertThat(shifted.summary(shiftedResult).obj("native").int("lowMatchScreens")).isEqualTo(1)
     }
 
     @Test
@@ -1153,7 +1180,7 @@ class SupportScoreScanTest {
              "native":{"crop":"native/s001-r2.png","cropSha256":"bb","frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
                        "region":{"x":0,"y":0,"w":170,"h":110},"field":{"x":10,"y":10,"w":120,"h":60},
                        "clamped":["left","top"],"match":null,"captureMicros":9},
-             "reason":null,"detail":null,"captureMicros":9}
+             "reason":null,"detail":null,"captureMicros":9,"postNativeLooks":null}
         """)
         assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(null, listOf("left", "top"))))).isEqualTo(expected)
         assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(Double.NaN, listOf("left", "top"))))).isEqualTo(expected)
@@ -1176,5 +1203,104 @@ class SupportScoreScanTest {
         assertThat(summary.contains("NaN") || summary.contains("Infinity")).isFalse()
         assertThat(Json.parseToJsonElement(summary).jsonObject.obj("native").obj("match"))
             .isEqualTo(Json.parseToJsonElement("""{"count":2,"median":0.5,"min":0.5}"""))
+    }
+
+    @Test
+    fun `one bad frame after the native capture costs one more look and nothing else`() {
+        val reference = Scan(total = 7)
+        val referenceResult = reference.run()
+        val scan = Scan(total = 7)
+        scan.native.onCapture = { if (it == 1) scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(scan.world.gestures).isEqualTo(reference.world.gestures)
+        assertThat(scan.rowLinesWithoutTime(result)).isEqualTo(reference.rowLinesWithoutTime(referenceResult))
+        assertThat(scan.world.delays).isEqualTo(listOf(SupportScoreScanner.POST_NATIVE_WAIT) + reference.world.delays)
+        assertThat(scan.nativeLines(result).map { it.int("postNativeLooks") }).containsExactly(2, 2, 2, 1, 1, 1, 1, 1, 1)
+        assertThat(scan.summary(result).obj("native").obj("postNativeLooks"))
+            .isEqualTo(Json.parseToJsonElement("""{"screens":3,"moreThanOne":1,"max":2}"""))
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).exists()).isFalse()
+        assertThat(scan.world.regionsAsked.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `bad frames on every look end the scan with the reason, no gesture, the checked regions and the frame's levels`() {
+        val scan = Scan(total = 7)
+        scan.native.onCapture = { repeat(SupportScoreScanner.POST_NATIVE_LOOKS) { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog } }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.world.delays).isEqualTo(List(SupportScoreScanner.POST_NATIVE_LOOKS - 1) { SupportScoreScanner.POST_NATIVE_WAIT })
+        assertThat(SupportScoreScanner.POST_NATIVE_LOOKS).isEqualTo(4)
+        assertThat(SupportScoreScanner.POST_NATIVE_WAIT).isEqualTo(150.milliseconds)
+        val detail = "after the native capture, 4 looks saw not_support_list_or_dialog; last 720p frame mean 0.0, min 0, max 0"
+        assertThat(result.detail).isEqualTo(detail)
+        assertThat(scan.summary(result).str("detail")).isEqualTo(detail)
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).list()!!.sorted()).containsExactly("s000-extra-tab.png")
+        assertThat(scan.nativeLines(result).map { it.int("postNativeLooks") }).containsExactly(4, 4, 4)
+        assertThat(scan.summary(result).obj("native").obj("postNativeLooks"))
+            .isEqualTo(Json.parseToJsonElement("""{"screens":1,"moreThanOne":1,"max":4}"""))
+    }
+
+    @Test
+    fun `rows lost on every look saves the tab and both columns the check looked at`() {
+        val scan = Scan(total = 7)
+        scan.native.onCapture = { repeat(SupportScoreScanner.POST_NATIVE_LOOKS) { scan.world.badFrames += ScoreScanEndReason.RowsLost } }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.RowsLost)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).list()!!.sorted())
+            .containsExactly("s000-confirm-column.png", "s000-extra-tab.png", "s000-guest-column.png")
+        assertThat(result.detail!!.startsWith("after the native capture, 4 looks saw rows_lost; last 720p frame mean 0.0")).isTrue()
+    }
+
+    @Test
+    fun `a real dialog after the native capture still ends the scan without a gesture after the bounded looks`() {
+        val scan = Scan(total = 20)
+        scan.native.onCapture = { if (it == 2) scan.world.dialogOpen = true }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
+        assertThat(scan.world.gestures).containsExactly("scrollDown")
+        assertThat(scan.world.delays.count { it == SupportScoreScanner.POST_NATIVE_WAIT }).isEqualTo(3)
+        assertThat(scan.nativeLines(result).map { it.int("postNativeLooks") }).containsExactly(1, 1, 1, 4, 4, 4)
+    }
+
+    @Test
+    fun `a stop during the wait between looks ends as the user's stop without a gesture`() {
+        val scan = Scan(total = 7)
+        scan.native.onCapture = { repeat(2) { scan.world.badFrames += ScoreScanEndReason.NotSupportListOrDialog } }
+        scan.world.onDelay = { if (scan.world.delays.last() == SupportScoreScanner.POST_NATIVE_WAIT) scan.world.exitManager.exit() }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.nativeLines(result).map { it.int("postNativeLooks") }).containsExactly(1, 1, 1)
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).exists()).isFalse()
+    }
+
+    @Test
+    fun `a screen without a native capture gets one look and no wait`() {
+        val scan = Scan(total = 2)
+        // Snapshots: 0 the start, 1 the first screen, 2 its look, 3 the unchanged screen, 4 its look.
+        scan.world.onSnap = { if (it == 4) scan.world.dialogOpen = true }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NotSupportListOrDialog)
+        assertThat(scan.world.snaps).isEqualTo(5)
+        assertThat(scan.native.calls.size).isEqualTo(1)
+        assertThat(scan.world.delays.none { it == SupportScoreScanner.POST_NATIVE_WAIT }).isTrue()
+        assertThat(result.detail).isNull()
+        assertThat(File(scan.folder(result), ScoreScanLog.DEBUG).exists()).isFalse()
+    }
+
+    @Test
+    fun `the frame statistics of a gray buffer`() {
+        assertThat(ScoreScanFrameStats.of(byteArrayOf(0, 10, 20, -1))).isEqualTo(ScoreScanFrameStats(71.25, 0, 255))
+        assertThat(ScoreScanFrameStats.of(ByteArray(0))).isNull()
+        assertThat(ScoreScanFrameStats(71.25, 0, 255).toString()).isEqualTo("mean 71.3, min 0, max 255")
     }
 }

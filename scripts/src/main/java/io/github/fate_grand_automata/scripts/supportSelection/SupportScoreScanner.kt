@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
 /** One snapshot of the support list, its rows and each row's score field. */
@@ -28,6 +29,36 @@ interface ScoreScanFrames {
 
     /** Where [field] crops: 720p image coordinates inside the game-area crop of the capture. */
     fun fieldImageRegion(bounds: SupportBounds): Region
+
+    /**
+     * From the current snapshot, the regions the list check looked at when it answered [reason]: the
+     * SupportExtra tab's region, and for [ScoreScanEndReason.RowsLost] also the confirm-setup column and
+     * the guest mark's column. Named crops the caller closes.
+     */
+    fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>>
+
+    /** Mean, minimum and maximum gray value of the whole 720p game area in the current snapshot. */
+    fun frameStats(): ScoreScanFrameStats?
+}
+
+data class ScoreScanFrameStats(val mean: Double, val min: Int, val max: Int) {
+    override fun toString() = String.format(Locale.ROOT, "mean %.1f, min %d, max %d", mean, min, max)
+
+    companion object {
+        fun of(pixels: ByteArray): ScoreScanFrameStats? {
+            if (pixels.isEmpty()) return null
+            var sum = 0L
+            var min = 255
+            var max = 0
+            for (b in pixels) {
+                val v = b.toInt() and 0xff
+                sum += v
+                if (v < min) min = v
+                if (v > max) max = v
+            }
+            return ScoreScanFrameStats(sum.toDouble() / pixels.size, min, max)
+        }
+    }
 }
 
 class ApiScoreScanFrames(
@@ -47,6 +78,23 @@ class ApiScoreScanFrames(
     // getPattern crops the snapshot at exactly this region.
     override fun fieldImageRegion(bounds: SupportBounds): Region =
         transformer.toImage(SupportScoreLayout.numberRegion(bounds.region))
+
+    // The regions RealSupportScreen.isAnyDialogOpen and someSupportsPresent match in. The friend name
+    // sits left of the score panel, outside all three.
+    override fun checkedRegions(reason: ScoreScanEndReason): List<Pair<String, Pattern>> = with(api) {
+        val support = locations.support
+        buildList {
+            add("extra-tab" to support.extraRegion.getPattern(FIELD_TAG))
+            if (reason == ScoreScanEndReason.RowsLost) {
+                add("confirm-column" to support.confirmSetupButtonRegion.getPattern(FIELD_TAG))
+                add("guest-column" to support.friendRegion.getPattern(FIELD_TAG))
+            }
+        }
+    }
+
+    override fun frameStats(): ScoreScanFrameStats? = with(api) {
+        locations.scriptArea.getPattern(FIELD_TAG).use { it.grayPixels() }?.let { ScoreScanFrameStats.of(it) }
+    }
 
     private companion object {
         const val FIELD_TAG = "support-score-scan"
@@ -90,6 +138,16 @@ class SupportScoreScanner(
         /** About 400 rows; a support list is far shorter, so this only stops a scan that never ends. */
         const val MAX_SCREENS = 80
 
+        /**
+         * After a native capture the list check may look up to this many times, waiting
+         * [POST_NATIVE_WAIT] before each further look. On a device the first 720p frame after the
+         * restore did sometimes not show the list although the game stayed on it; the game draws
+         * continuously, so 150 ms spans several new frames, and three further looks cover 0.45 s.
+         * A real dialog costs those 0.45 s before the scan ends.
+         */
+        const val POST_NATIVE_LOOKS = 4
+        val POST_NATIVE_WAIT = 150.milliseconds
+
         fun stamp(millis: Long): String = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date(millis))
     }
 
@@ -107,6 +165,7 @@ class SupportScoreScanner(
     private val nativeTally = ScoreScanNativeTally()
     private var screens = 0
     private var restoreDetail: String? = null
+    private var lookDetail: String? = null
 
     fun run(): ScoreScanResult {
         val startTime = clock()
@@ -137,6 +196,7 @@ class SupportScoreScanner(
             val detail = when (reason) {
                 ScoreScanEndReason.EngineUnavailable -> engine.unavailableReason
                 ScoreScanEndReason.NativeRestoreFailed -> restoreDetail
+                ScoreScanEndReason.NotSupportListOrDialog, ScoreScanEndReason.RowsLost -> lookDetail
                 else -> null
             }
             folder.writeSummary(summary(name, startTime, reason.wireName, detail))
@@ -179,6 +239,7 @@ class SupportScoreScanner(
         var unchangedBefore = false
         while (true) {
             if (storage.freeBytes() < ScoreScanLog.MIN_FREE_BYTES) return ScoreScanEndReason.LowSpace
+            var native: NativeScreen? = null
             when (val outcome = frames.sameSnap { readScreen(folder, screens, previous) }) {
                 is ScreenOutcome.End -> return outcome.reason
                 ScreenOutcome.Unchanged -> {
@@ -191,17 +252,70 @@ class SupportScoreScanner(
                     // A stop during the last row must not pay for the capture (two display resizes).
                     exitManager.checkExitRequested()
                     // Outside the snapshot block: the capture does not use the 720p snapshot.
-                    if (!logNative(folder, outcome.logged)) return ScoreScanEndReason.NativeRestoreFailed
+                    native = captureNative(folder, outcome.logged)
+                    if (native.restoreFailed) {
+                        native.writeLines(folder)
+                        return ScoreScanEndReason.NativeRestoreFailed
+                    }
+                }
+            }
+            // The native lines carry the look count, so they are written once the looks are over,
+            // however the scan goes on or ends.
+            try {
+                if (native != null) {
                     // A stop at the last allowed screen is the user's, not the screen limit.
                     exitManager.checkExitRequested()
                     if (screens >= maxScreens) return ScoreScanEndReason.ScreenLimit
                 }
+                exitManager.checkExitRequested()
+                val problem = if (native != null) lookAfterNative(folder, native) else frames.sameSnap { listProblem() }
+                problem?.let { return it }
+            } finally {
+                native?.writeLines(folder)
             }
-            exitManager.checkExitRequested()
-            frames.sameSnap { listProblem() }?.let { return it }
             screen.scrollDown()
             screen.delay(SupportSelectionLoop.SCROLL_SETTLE)
         }
+    }
+
+    /** The native lines of one screen, held until its post-capture looks are over. */
+    private inner class NativeScreen(val restoreFailed: Boolean) {
+        val records = mutableListOf<ScoreScanNativeRecord>()
+        var looks: Int? = null
+
+        fun writeLines(folder: ScoreScanFolder) {
+            looks?.let { nativeTally.looks(it) }
+            for (record in records) folder.appendLine(ScoreScanLog.nativeLine(record.copy(postNativeLooks = looks)))
+            records.clear()
+        }
+    }
+
+    /**
+     * The list check after a native capture, which resized the capture twice: it looks again on a new
+     * snapshot, after [POST_NATIVE_WAIT], at most [POST_NATIVE_LOOKS] times in all, before it ends the
+     * scan with what it saw. No gesture happens before a look passes. On the last failed look it saves
+     * the regions it looked at and the frame's gray levels for diagnosis.
+     */
+    private fun lookAfterNative(folder: ScoreScanFolder, native: NativeScreen): ScoreScanEndReason? {
+        var looks = 0
+        while (true) {
+            looks++
+            native.looks = looks
+            val last = looks >= POST_NATIVE_LOOKS
+            val problem = frames.sameSnap {
+                listProblem()?.also { if (last) saveLookDiagnosis(folder, it, looks) }
+            }
+            if (problem == null || last) return problem
+            screen.delay(POST_NATIVE_WAIT)
+        }
+    }
+
+    private fun saveLookDiagnosis(folder: ScoreScanFolder, reason: ScoreScanEndReason, looks: Int) {
+        val prefix = String.format(Locale.ROOT, "s%03d", screens - 1)
+        for ((name, pattern) in frames.checkedRegions(reason)) {
+            pattern.use { folder.writeDebug("$prefix-$name.png", ScoreScanNative.png(it)) }
+        }
+        lookDetail = "after the native capture, $looks looks saw ${reason.wireName}; last 720p frame ${frames.frameStats()}"
     }
 
     private fun readScreen(folder: ScoreScanFolder, index: Int, previous: List<RowKey>?): ScreenOutcome {
@@ -263,11 +377,11 @@ class SupportScoreScanner(
     }
 
     /**
-     * One capture for the screen whose rows were just logged, never retried. False only when the
-     * capture could not restore the 720p capture; every other problem is logged and the scan goes on.
+     * One capture for the screen whose rows were just logged, never retried. Its crops are written at
+     * once, its lines are held in the result. [NativeScreen.restoreFailed] only when the capture could
+     * not restore the 720p capture; every other problem is logged and the scan goes on.
      */
-    private fun logNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>): Boolean {
-        if (logged.isEmpty()) return true
+    private fun captureNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>): NativeScreen {
         val start = timeSource.markNow()
         val capture = try {
             nativeFrames.capture()
@@ -278,12 +392,14 @@ class SupportScoreScanner(
         }
         val micros = start.elapsedNow().inWholeMicroseconds
 
+        val result = NativeScreen(restoreFailed = capture is ScoreScanNativeCapture.RestoreFailed)
+
         fun failAll(reason: String, detail: String?) {
             nativeTally.failed(reason, micros)
             for (row in logged) {
-                folder.appendLine(ScoreScanLog.nativeLine(ScoreScanNativeRecord(
+                result.records += ScoreScanNativeRecord(
                     clock(), serverName, row.screen, row.row, row.cropSha256, null, reason, detail, micros,
-                )))
+                )
             }
         }
 
@@ -291,7 +407,6 @@ class SupportScoreScanner(
             is ScoreScanNativeCapture.RestoreFailed -> {
                 failAll(ScoreScanNative.RESTORE_FAILED, capture.detail)
                 restoreDetail = capture.detail
-                return false
             }
             is ScoreScanNativeCapture.Failed -> failAll(capture.reason, capture.detail)
             is ScoreScanNativeCapture.Frame -> capture.frame.use { frame ->
@@ -299,14 +414,15 @@ class SupportScoreScanner(
                     failAll(ScoreScanNative.SLOW, null)
                 } else {
                     nativeTally.taken(capture.map, micros)
-                    for (row in logged) logNativeRow(folder, frame, capture.map, row, micros)
+                    for (row in logged) result.records += nativeRow(folder, frame, capture.map, row, micros)
+                    nativeTally.screenMatches(result.records.map { it.native?.match })
                 }
             }
         }
-        return true
+        return result
     }
 
-    private fun logNativeRow(folder: ScoreScanFolder, frame: Pattern, map: ScoreScanNativeMap, row: ScoreScanLoggedRow, micros: Long) {
+    private fun nativeRow(folder: ScoreScanFolder, frame: Pattern, map: ScoreScanNativeMap, row: ScoreScanLoggedRow, micros: Long): ScoreScanNativeRecord {
         var reason: String? = null
         var detail: String? = null
         var saved: Pair<ScoreScanNativeResult, ByteArray>? = null
@@ -339,9 +455,9 @@ class SupportScoreScanner(
             folder.writeNativeCrop(result.crop, png)
             nativeTally.match(result.match)
         }
-        folder.appendLine(ScoreScanLog.nativeLine(ScoreScanNativeRecord(
+        return ScoreScanNativeRecord(
             clock(), serverName, row.screen, row.row, row.cropSha256, saved?.first, reason, detail, micros,
-        )))
+        )
     }
 
     private fun summary(name: String, startTime: Long, reason: String, detail: String?) =

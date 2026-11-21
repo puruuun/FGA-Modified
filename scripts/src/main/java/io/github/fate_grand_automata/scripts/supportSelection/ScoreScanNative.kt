@@ -179,6 +179,8 @@ data class ScoreScanNativeRecord(
     val reason: String?,
     val detail: String?,
     val captureMicros: Long?,
+    /** How many looks the list check after this screen's capture needed; null when none was made. */
+    val postNativeLooks: Int? = null,
 )
 
 data class ScoreScanNativeResult(
@@ -219,6 +221,28 @@ class ScoreScanNativeTally {
 
     fun match(value: Double?) {
         value?.takeIf { it.isFinite() }?.let { matches += it }
+    }
+
+    /** Screens with at least one match value, all below [LOW_MATCH]: the list had moved since the snapshot. */
+    var lowMatchScreens = 0; private set
+
+    fun screenMatches(values: List<Double?>) {
+        val known = values.filterNotNull().filter { it.isFinite() }
+        if (known.isNotEmpty() && known.all { it < LOW_MATCH }) lowMatchScreens++
+    }
+
+    var lookScreens = 0; private set
+    var lookScreensMoreThanOne = 0; private set
+    var maxLooks = 0; private set
+
+    fun looks(count: Int) {
+        lookScreens++
+        if (count > 1) lookScreensMoreThanOne++
+        maxLooks = maxOf(maxLooks, count)
+    }
+
+    companion object {
+        const val LOW_MATCH = 0.9
     }
 }
 

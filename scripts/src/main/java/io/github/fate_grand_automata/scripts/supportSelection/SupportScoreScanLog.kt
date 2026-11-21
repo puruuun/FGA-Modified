@@ -34,6 +34,9 @@ interface ScoreScanFolder : AutoCloseable {
 
     fun writeNativeCrop(fileName: String, png: ByteArray)
 
+    /** Writes into `debug/`, created on first use: only a failed list check after a native capture writes there. */
+    fun writeDebug(fileName: String, png: ByteArray)
+
     /** Appends one line to `scan.jsonl` and flushes it, so a killed scan keeps what it read. */
     fun appendLine(json: String)
 
@@ -81,6 +84,12 @@ class DirectoryScoreScanStorage(
 
         override fun writeNativeCrop(fileName: String, png: ByteArray) =
             File(File(dir, ScoreScanNative.FOLDER), fileName).writeBytes(png)
+
+        override fun writeDebug(fileName: String, png: ByteArray) {
+            val debug = File(dir, ScoreScanLog.DEBUG)
+            check(debug.mkdirs() || debug.isDirectory) { "cannot create $debug" }
+            File(debug, fileName).writeBytes(png)
+        }
 
         override fun appendLine(json: String) {
             lines.write(json)
@@ -230,6 +239,7 @@ object ScoreScanLog {
     const val LINES = "scan.jsonl"
     const val SUMMARY = "summary.json"
     const val CROPS = "crops"
+    const val DEBUG = "debug"
 
     /** The summary's reason for an exception the scan did not expect; it is rethrown, so the owner sees the app's error dialog. */
     const val ERROR = "error"
@@ -376,6 +386,7 @@ object ScoreScanLog {
         "reason" to record.reason,
         "detail" to record.detail,
         "captureMicros" to record.captureMicros,
+        "postNativeLooks" to record.postNativeLooks,
     ))
 
     /** The lower median, so the value is always one that was measured. */
@@ -403,6 +414,12 @@ object ScoreScanLog {
         "scale" to n.scaleX?.let { x -> linkedMapOf("x" to x.json(), "y" to n.scaleY?.json()) },
         "captureMicros" to times(n.captureMicros),
         "match" to matches(n.matches),
+        "lowMatchScreens" to n.lowMatchScreens,
+        "postNativeLooks" to linkedMapOf(
+            "screens" to n.lookScreens,
+            "moreThanOne" to n.lookScreensMoreThanOne,
+            "max" to n.maxLooks.takeIf { n.lookScreens > 0 },
+        ),
     )
 
     fun summary(s: ScoreScanSummary): String = DiagnosticJson.write(linkedMapOf(
